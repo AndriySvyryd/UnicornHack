@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "noImplicitAny": false,
+    "noEmitOnError": true,
+    "removeComments": false,
+    "sourceMap": true,
+    "jsx": "react",
+    "target": "es5",
+    "outDir": "../wwwroot/js/ts"
+  }
+}

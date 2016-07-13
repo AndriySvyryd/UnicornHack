@@ -1,0 +1,141 @@
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
+@model PlayerCharacter
+@{
+    ViewData["Title"] = "Game";
+}
+
+<div class="container">
+    <div class="col-md-9">
+        @{ Html.RenderPartial("MapPartial", @Model); }
+        <pre>
+@Model.GivenName the Adventurer Lvl:@Model.XPLevel St:@Model.Strength Dx:@Model.Dexterity Co:@Model.Constitution In:@Model.Intelligence Wi:@Model.Wisdom Ch:@Model.Charisma
+@Model.Level.Name:@Model.Level.Depth $:@Model.Gold HP:@Model.HP (@Model.MaxHP) AC:@Model.AC Dmg:0 Xp:@Model.XP (@Model.NextLevelXP) T:@Model.Game.CurrentTurn @Model.LevelX,@Model.LevelY
+</pre>
+    </div>
+
+    <div class="col-md-1">
+        <div class="row">
+            <a class="btn-xs btn-nav" href="javascript:PerformAction('NW')">↖</a>
+            <a class="btn-xs btn-nav" href="javascript:PerformAction('N')">↑</a>
+            <a class="btn-xs btn-nav" href="javascript:PerformAction('NE')">↗</a>
+        </div>
+        <div class="row">
+            <a class="btn-xs btn-nav" href="javascript:PerformAction('W')">←</a>
+            <a class="btn-xs btn-nav" href="javascript:PerformAction('H')">·</a>
+            <a class="btn-xs btn-nav" href="javascript:PerformAction('E')">→</a>
+        </div>
+        <div class="row">
+            <a class="btn-xs btn-nav" href="javascript:PerformAction('SW')">↙</a>
+            <a class="btn-xs btn-nav" href="javascript:PerformAction('S')">↓</a>
+            <a class="btn-xs btn-nav" href="javascript:PerformAction('SE')">↘</a>
+        </div>
+        <div class="row">
+            <a class="btn-xs btn-nav" href="javascript:PerformAction('U')">⇧</a>
+            <a class="btn-xs btn-nav transparent">&nbsp;</a>
+            <a class="btn-xs btn-nav" href="javascript:PerformAction('D')">⇩</a>
+        </div>
+    </div>
+
+    <div class="col-md-3" style="padding: 0px">
+        <h3></h3>
+        <div class="inventory">
+            @foreach (var item in Model.Inventory.OrderBy(i => i.Name))
+            {
+                <div>
+                    @item.Name
+                    @{
+                        var stackableItem = item as StackableItem;
+                        if (stackableItem != null && stackableItem.Quantity > 1)
+                        {
+                            @: (@stackableItem.Quantity)
+                        }
+                        if (item.Type == ItemType.Food)
+                        {
+                            @: <a class="itemAction" href="javascript:PerformAction('EAT', @item.Id)">eat</a>
+                        }
+
+                        @: <a class="itemAction" href="javascript:PerformAction('DROP', @item.Id)">drop</a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-md-3 chat" style="padding: 0px">
+        <h3></h3>
+        <input type="text" style="background-color: black;" id="message"/>
+        <input type="button" id="sendmessage" style="background-color: gray" value="Send"/>
+        <input type="hidden" id="displayname"/>
+        <ul id="discussion"></ul>
+    </div>
+
+    <div class="col-md-9">
+        <div class="log">
+            @foreach (var entry in Model.Log.OrderByDescending(e => e.Id).Take(10))
+            {
+                <div>
+                    @entry.Message
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <environment names="Development">
+        <script src="~/js/ts/game.js"></script>
+        <script src="~/lib/signalr/jquery.signalR.js"></script>
+    </environment>
+    <environment names="Staging,Production">
+        <script src="~/js/ts/game.min.js"></script>
+        <script src="~/lib/signalr/jquery.signalR.min.js"></script>
+    </environment>
+    <script src="~/signalr/hubs"></script>
+    <script>
+                $(function () {
+                    $.connection.hub.logging = true;
+                });
+    </script>
+    <script>
+        $(function () {
+            // Reference the auto-generated proxy for the hub.
+            var chat = $.connection.gameHub;
+            // Create a function that the hub can call back to display messages.
+            chat.client.addNewMessageToPage = function (name, message) {
+                // Add the message to the page.
+                $('#discussion').append('<li><strong>' + htmlEncode(name)
+                    + '</strong>: ' + htmlEncode(message) + '</li>');
+            };
+            // Set initial focus to message input box.
+            $('#message').focus();
+            // Start the connection.
+            //$.connection.hub.qs = { "userId": "123" };
+            $.connection.hub.start().done(function () {
+                $('#sendmessage').click(function () {
+                    // Call the Send method on the hub.
+                    chat.server.send('@Model.GivenName', $('#message').val());
+                    // Clear text box and reset focus for next comment.
+                    $('#message').val('').focus();
+                });
+            });
+        });
+        // This optional function html-encodes messages for display in the page.
+        function htmlEncode(value) {
+            var encodedValue = $('<div />').text(value).html();
+            return encodedValue;
+        }
+    </script>
+    <script type="text/javascript">
+        function PerformAction(action, target) {
+            $.ajax({
+                url: '@Url.Action("PerformAction")',
+                type: 'POST',
+                async: false,
+                cache: false,
+                data: { name: '@Model.GivenName', action: action, target: target },
+                success: function(data) { $('#body-content').html(data); },
+                error: function(xml, status, error) { $('#body-content').html(error); }
+            });
+        }
+    </script>
+}

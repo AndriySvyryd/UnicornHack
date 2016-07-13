@@ -9,6 +9,8 @@
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
+*.pidb
+*DS_Store
 
 # Build results
 [Dd]ebug/
@@ -24,8 +26,14 @@ bld/
 
 # Visual Studio 2015 cache/options directory
 .vs/
-# Uncomment if you have tasks that create the project's static files in wwwroot
-#wwwroot/
+
+# Generated Web files
+**/wwwroot/lib/
+**/wwwroot/js/ts/
+**/wwwroot/_references.js
+*.min.js
+*.min.css
+*.js.map
 
 # MSTest test Results
 [Tt]est[Rr]esult*/
@@ -39,10 +47,6 @@ TestResult.xml
 [Dd]ebugPS/
 [Rr]eleasePS/
 dlldata.c
-
-# DNX
-project.lock.json
-artifacts/
 
 *_i.c
 *_p.c
@@ -113,6 +117,7 @@ _TeamCity*
 _NCrunch_*
 .*crunch*.local.xml
 nCrunchTemp_*
+*.ncrunchsolution
 
 # MightyMoose
 *.mm.*
@@ -144,6 +149,7 @@ publish/
 # but database connection strings (with potential passwords) will be unencrypted
 *.pubxml
 *.publishproj
+PublishProfiles/
 
 # Microsoft Azure Web App publish settings. Comment the next line if you want to
 # checkin your Azure Web App publish settings, but sensitive information contained
@@ -158,9 +164,12 @@ PublishScripts/
 !**/packages/build/
 # Uncomment if necessary however generally it will be regenerated when needed
 #!**/packages/repositories.config
+nuget.exe
 # NuGet v3's project.json files produces more ignoreable files
 *.nuget.props
 *.nuget.targets
+project.lock.json
+artifacts/
 
 # Microsoft Azure Build Output
 csx/
@@ -190,12 +199,12 @@ ClientBin/
 *.dbproj.schemaview
 *.pfx
 *.publishsettings
-node_modules/
 orleans.codegen.cs
 
-# Since there are multiple workflows, uncomment next line to ignore bower_components
-# (https://github.com/github/gitignore/pull/1529#issuecomment-104372622)
-#bower_components/
+# ASP.NET
+*launchSettings.json
+node_modules/
+bower_components/
 
 # RIA/Silverlight projects
 Generated_Code/
@@ -211,6 +220,7 @@ UpgradeLog*.htm
 # SQL Server files
 *.mdf
 *.ldf
+*.db
 
 # Business Intelligence projects
 *.rdl.data

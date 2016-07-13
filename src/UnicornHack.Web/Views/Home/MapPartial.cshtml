@@ -1,0 +1,158 @@
+@using System
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
+@model PlayerCharacter
+
+<pre>
+@{
+    var level = Model.Level;
+    var characters = new char[Level.Width, Level.Height];
+    var classes = new string[Level.Width, Level.Height];
+    var i = 0;
+    for (var y = 0; y < Level.Height; y++)
+    {
+        for (var x = 0; x < Level.Width; x++)
+        {
+            var feature = (MapFeature)level.Layout[i++];
+            var symbol = ' ';
+            string className = "inherit";
+            switch (feature)
+            {
+                case MapFeature.Default:
+                    break;
+                case MapFeature.Floor:
+                    symbol = '·';
+                    className = "mapFloor";
+                    break;
+                case MapFeature.Corridor:
+                    symbol = '▒';
+                    className = "mapCorridor";
+                    break;
+                case MapFeature.WallVertical:
+                    symbol = '│';
+                    className = "mapWall";
+                    break;
+                case MapFeature.WallHorizontal:
+                    symbol = '─';
+                    className = "mapWall";
+                    break;
+                case MapFeature.WallTopLeft:
+                    symbol = '┌';
+                    className = "mapWall";
+                    break;
+                case MapFeature.WallTopRight:
+                    symbol = '┐';
+                    className = "mapWall";
+                    break;
+                case MapFeature.WallBottomLeft:
+                    symbol = '└';
+                    className = "mapWall";
+                    break;
+                case MapFeature.WallBottomRight:
+                    symbol = '┘';
+                    className = "mapWall";
+                    break;
+                case MapFeature.WallCross:
+                    symbol = '┼';
+                    className = "mapWall";
+                    break;
+                case MapFeature.WallTUp:
+                    symbol = '┴';
+                    className = "mapWall";
+                    break;
+                case MapFeature.WallTDown:
+                    symbol = '┬';
+                    className = "mapWall";
+                    break;
+                case MapFeature.WallTLeft:
+                    symbol = '┤';
+                    className = "mapWall";
+                    break;
+                case MapFeature.WallTRight:
+                    symbol = '├';
+                    className = "mapWall";
+                    break;
+                case MapFeature.Pool:
+                    symbol = '≈';
+                    className = "mapPool";
+                    break;
+                default:
+                    throw new NotSupportedException($"Map feature {feature} not supported.");
+            }
+
+            characters[x, y] = symbol;
+            classes[x, y] = className;
+        }
+    }
+
+    foreach (var upStairs in level.UpStairs)
+    {
+        characters[upStairs.DownLevelX, upStairs.DownLevelY] = '<';
+        classes[upStairs.DownLevelX, upStairs.DownLevelY] = "featureUpStairs";
+    }
+
+    foreach (var downStairs in level.DownStairs)
+    {
+        characters[downStairs.UpLevelX, downStairs.UpLevelY] = '>';
+        classes[downStairs.UpLevelX, downStairs.UpLevelY] = "featureDownStairs";
+    }
+
+    foreach (var item in level.Items)
+    {
+        var symbol = ' ';
+        var className = "inherit";
+        switch (item.Type)
+        {
+            case ItemType.Gold:
+                symbol = '$';
+                className = "itemGold";
+                break;
+            case ItemType.Food:
+                symbol = '%';
+                className = "itemCarrot";
+                break;
+            default:
+                throw new NotSupportedException($"Item type {item.Type} not supported.");
+        }
+
+        characters[item.LevelX, item.LevelY] = symbol;
+        classes[item.LevelX, item.LevelY] = className;
+    }
+
+    foreach (var actor in level.Actors)
+    {
+        var symbol = ' ';
+        var className = "inherit";
+        switch (actor.Variant.Name)
+        {
+            case "human":
+                symbol = 'H';
+                className = "monsterHuman" + (actor is PlayerCharacter ? " playerCharacter" : "");
+                break;
+            case "unicorn":
+                symbol = 'U';
+                className = "monsterUnicorn";
+                break;
+            case "lightning bug":
+                symbol = 'b';
+                className = "monsterBug";
+                break;
+            case "firefly":
+                symbol = 'B';
+                className = "monsterNastyBug";
+                break;
+            default:
+                throw new NotSupportedException($"Actor type {actor.Variant.Name} not supported.");
+        }
+
+        characters[actor.LevelX, actor.LevelY] = symbol;
+        classes[actor.LevelX, actor.LevelY] = className;
+    }
+
+    for (var y = 0; y < Level.Height; y++)
+    {
+        for (int x = 0; x < Level.Width; x++)
+        {<span class="@classes[x, y]">@characters[x, y]</span>}
+        @:
+    }
+}
+</pre>
