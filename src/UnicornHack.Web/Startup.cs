@@ -1,6 +1,9 @@
+using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using UnicornHack.Data;
 using UnicornHack.Models;
 using UnicornHack.Services;
+using System;
 
 namespace UnicornHack
 {
@@ -59,6 +63,15 @@ namespace UnicornHack
             services.AddSingleton<GameServices>();
         }
 
+        private string ReplaceNewLines(string text)
+        {
+            var newLine = HtmlEncoder.Default.Encode(Environment.NewLine);
+            return "<p>" + text
+                .Replace(newLine + newLine, "</p><p>")
+                .Replace(newLine, Environment.NewLine + "<br />" + Environment.NewLine)
+                .Replace("</p><p>", "</p>" + Environment.NewLine + "<p>") + "</p>";
+        }
+
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
@@ -68,6 +81,32 @@ namespace UnicornHack
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                app.UseExceptionHandler(errorApp =>
+                {
+                    errorApp.Run(async context =>
+                    {
+                        // Override default exception page for json requests
+                        var error = context.Features.Get<IExceptionHandlerFeature>();
+                        if (error != null
+                            && context.Request.Path == "/Home/PerformAction")
+                        {
+                            context.Response.StatusCode = 200;
+                            context.Response.ContentType = "text/html";
+                            await context.Response.WriteAsync("<html><body><br>Error<br>" + Environment.NewLine);
+
+                            await context.Response.WriteAsync(
+                                ReplaceNewLines(HtmlEncoder.Default.Encode(error.Error.ToString())) +
+                                "<br>" + Environment.NewLine);
+
+                            await context.Response.WriteAsync("</body></html>" + Environment.NewLine);
+                        }
+                        else
+                        {
+                            throw error == null ? new Exception() : error.Error;
+                        }
+                    });
+                });
+
                 app.UseDatabaseErrorPage();
                 //app.UseBrowserLink();
 

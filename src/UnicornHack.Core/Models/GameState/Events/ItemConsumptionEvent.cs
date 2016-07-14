@@ -4,7 +4,7 @@ namespace UnicornHack.Models.GameState.Events
 {
     public class ItemConsumptionEvent : SensoryEvent
     {
-        private ItemConsumptionEvent()
+        protected ItemConsumptionEvent()
         {
         }
 
@@ -20,8 +20,8 @@ namespace UnicornHack.Models.GameState.Events
                 var consumerSensed = sensor.CanSense(consumer);
                 var objectSensed = sensor.CanSense(@object);
 
-                if (consumerSensed == SenseType.None
-                    && objectSensed == SenseType.None)
+                if ((consumerSensed == SenseType.None)
+                    && (objectSensed == SenseType.None))
                 {
                     continue;
                 }
@@ -34,7 +34,7 @@ namespace UnicornHack.Models.GameState.Events
                     ObjectSensed = objectSensed
                 };
 
-                sensor.Sense((dynamic)@event);
+                sensor.Sense(@event);
             }
         }
     }

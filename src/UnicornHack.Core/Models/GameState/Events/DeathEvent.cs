@@ -4,7 +4,7 @@ namespace UnicornHack.Models.GameState.Events
 {
     public class DeathEvent : SensoryEvent
     {
-        private DeathEvent()
+        protected DeathEvent()
         {
         }
 
@@ -21,9 +21,9 @@ namespace UnicornHack.Models.GameState.Events
                 var corpseSensed = corpse == null
                     ? (SenseType?)null
                     : sensor.CanSense(corpse);
-                if (deceasedSensed == SenseType.None
-                    && (corpseSensed == null
-                        || corpseSensed == SenseType.None))
+                if ((deceasedSensed == SenseType.None)
+                    && ((corpseSensed == null)
+                        || (corpseSensed == SenseType.None)))
                 {
                     continue;
                 }
@@ -36,7 +36,7 @@ namespace UnicornHack.Models.GameState.Events
                     CorpseSensed = corpseSensed
                 };
 
-                sensor.Sense((dynamic)@event);
+                sensor.Sense(@event);
             }
         }
     }

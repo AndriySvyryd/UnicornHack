@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using UnicornHack.Data;
 using UnicornHack.Hubs;
+using UnicornHack.Utils;
 using UnicornHack.Models.GameState;
 using UnicornHack.Models.GameViewModels;
 using UnicornHack.Services;
@@ -39,7 +40,7 @@ namespace UnicornHack.Controllers
         }
 
         //
-        // GET: /Home/Game/Name
+        // GET: /Home/Game?Name
         [HttpGet]
         [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Game(Character model)
@@ -54,7 +55,6 @@ namespace UnicornHack.Controllers
         public IActionResult PerformAction(string name, string action, string target)
         {
             var character = FindOrCreateCharacter(name);
-
             if (character.Game.ActingActor == null)
             {
                 if (!character.Game.PlayerCharacters.Any(pc => pc.IsAlive))
@@ -82,7 +82,7 @@ namespace UnicornHack.Controllers
 
             _dbContext.SaveChanges();
 
-            // #6067
+            // TODO: #6067
             if (!level.Actors.Contains(character))
             {
                 character.Level = level;
@@ -111,10 +111,19 @@ namespace UnicornHack.Controllers
                 };
                 character = PlayerCharacter.CreateCharacter(game, name);
                 _dbContext.Characters.Add(character);
+
+                var items = character.Level.Items.ToList();
+                var downStairs = character.Level.DownStairs.ToList();
+                var upStairs = character.Level.UpStairs.ToList();
                 _dbContext.SaveChanges();
 
                 game.ActingActor = character;
                 _dbContext.SaveChanges();
+
+                // TODO: #6067
+                character.Level.Items.AddRange(items);
+                character.Level.DownStairs.AddRange(downStairs);
+                character.Level.UpStairs.AddRange(upStairs);
             }
 
             return character;

@@ -2,7 +2,6 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using UnicornHack.Models.GameDefinitions;
-using UnicornHack.Models.GameState.Events;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Models.GameState
@@ -20,12 +19,6 @@ namespace UnicornHack.Models.GameState
 
         public override bool Act()
         {
-            foreach (var @event in SensedEvents.ToList())
-            {
-                Process((dynamic)@event);
-                SensedEvents.Remove(@event);
-            }
-
             MovementPoints = MovementPoints > Level.MovementCost ? Level.MovementCost : MovementPoints;
             MovementPoints += MovementRate;
 
@@ -42,7 +35,7 @@ namespace UnicornHack.Models.GameState
                 }
 
                 var possibleDirectionsToMove = Level.GetPossibleMovementDirections(
-                    new Point(LevelX, LevelY), allowZ: false);
+                    new Point(LevelX, LevelY), allowZ: false, safe:true);
                 if (possibleDirectionsToMove.Count == 0)
                 {
                     break;
@@ -84,21 +77,10 @@ namespace UnicornHack.Models.GameState
             if (direction != null)
             {
                 var couldMove = Move(direction.Value, safe: true);
-                Debug.Assert(couldMove);
                 return couldMove;
             }
 
             return false;
-        }
-
-        protected override bool IsRelevant(SensoryEvent @event)
-        {
-            return false;
-        }
-
-        private void Process(SensoryEvent @event)
-        {
-            // Do nothing by default
         }
 
         public static Monster CreateMonster(ActorVariant variant, byte x, byte y, Level level)

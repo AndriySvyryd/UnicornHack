@@ -4,7 +4,7 @@ namespace UnicornHack.Models.GameState.Events
 {
     public class ItemPickUpEvent : SensoryEvent
     {
-        private ItemPickUpEvent()
+        protected ItemPickUpEvent()
         {
         }
 
@@ -20,8 +20,8 @@ namespace UnicornHack.Models.GameState.Events
                 var pickerSensed = sensor.CanSense(picker);
                 var itemSensed = sensor.CanSense(item);
 
-                if (pickerSensed == SenseType.None
-                    && itemSensed == SenseType.None)
+                if ((pickerSensed == SenseType.None)
+                    && (itemSensed == SenseType.None))
                 {
                     continue;
                 }
@@ -34,7 +34,7 @@ namespace UnicornHack.Models.GameState.Events
                     ItemSensed = itemSensed
                 };
 
-                sensor.Sense((dynamic)@event);
+                sensor.Sense(@event);
             }
         }
     }

@@ -80,7 +80,6 @@ namespace UnicornHack.Models.GameDefinitions
         WaterWeakness,
         Regeneration,
         EnergyRegeneration,
-        Polymorphism,
         PolymorphControl,
         Unchanging,
         AbilitySustainment,

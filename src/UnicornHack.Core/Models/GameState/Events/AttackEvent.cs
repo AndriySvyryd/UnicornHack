@@ -5,7 +5,7 @@ namespace UnicornHack.Models.GameState.Events
 {
     public class AttackEvent : SensoryEvent
     {
-        private AttackEvent()
+        protected AttackEvent()
         {
         }
 
@@ -36,8 +36,8 @@ namespace UnicornHack.Models.GameState.Events
                 var attackerSensed = sensor.CanSense(attacker);
                 var victimSensed = sensor.CanSense(victim);
 
-                if (attackerSensed == SenseType.None
-                    && victimSensed == SenseType.None)
+                if ((attackerSensed == SenseType.None)
+                    && (victimSensed == SenseType.None))
                 {
                     continue;
                 }
@@ -55,7 +55,7 @@ namespace UnicornHack.Models.GameState.Events
                     Damage = damage
                 };
 
-                sensor.Sense((dynamic)@event);
+                sensor.Sense(@event);
             }
         }
     }

@@ -1982,8 +1982,23 @@ namespace UnicornHack.Models.GameDefinitions
             {
                 WhenConsumedAdd(PoisonResistance, Uncommonly),
                 WhenConsumedAdd(FireResistance, Sometimes)
+            }, generationFrequency: Sometimes);
+
+        public static readonly ActorVariant Tengu = new ActorVariant(
+            name: "tengu", species: Species.Tengu, speciesClass: ShapeChanger, noise: Squawk,
+            initialLevel: 6, movementRate: 13, armorClass: 5, magicResistance: 30, alignment: 7,
+            attacks: new[]
+            {
+                new Attack(Bite, PhysicalDamage, diceCount: 1, diceSides: 8),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 4),
+                new Attack(OnConsumption, Teleport)
             },
-            generationFrequency: Sometimes);
+            properties: Has(PoisonResistance, Teleportation, TeleportationControl, Infravisibility, Infravision),
+            size: Small, weight: 300, nutrition: 150, consumptionProperties: new[]
+            {
+                WhenConsumedAdd(Teleportation, Sometimes),
+                WhenConsumedAdd(TeleportationControl, Uncommonly)
+            }, behavior: NonWandering | Stalking, generationFrequency: Occasionally);
 
         public static readonly ActorVariant MimicSmall = new ActorVariant(
             name: "small mimic", species: Mimic, speciesClass: ShapeChanger,
@@ -3988,7 +4003,8 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(SleepResistance, Infravisibility, Humanoidness, Omnivorism),
             size: Medium, weight: 1000, nutrition: 400,
-            behavior: WeaponCollector, generationFlags: NonPolymorphable, generationFrequency: Never);
+            consumptionProperties: new[] {WhenConsumedAdd(PolymorphControl, Rarely)},
+            behavior: WeaponCollector, generationFlags: NonPolymorphable, generationFrequency: Rarely);
 
         public static readonly ActorVariant Shopkeeper = new ActorVariant(
             name: "shopkeeper", species: Species.Human, noise: Sell,
@@ -4205,6 +4221,448 @@ namespace UnicornHack.Models.GameDefinitions
             behavior: NonWandering | Stalking | GoldCollector | GemCollector | WeaponCollector | MagicUser,
             generationFlags: NonPolymorphable, generationFrequency: Never);
 
+        public static readonly ActorVariant Sandestin = new ActorVariant(
+            name: "sandestin", species: Species.Sandestin, speciesClass: ShapeChanger, noise: Cuss,
+            initialLevel: 13, movementRate: 12, armorClass: 4, magicResistance: 60, alignment: -5,
+            attacks: new[]
+            {
+                new Attack(Weapon, PhysicalDamage, diceCount: 2, diceSides: 6),
+                new Attack(Weapon, PhysicalDamage, diceCount: 2, diceSides: 6),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 2, diceSides: 3)
+            },
+            properties: Has(StoningResistance, Infravision, Infravisibility, Humanoidness),
+            size: Medium, weight: 1500, nutrition: 400,
+            consumptionProperties: new[] { WhenConsumedAdd(PolymorphControl, Sometimes) }, corpse: None,
+            behavior: NonWandering | Stalking | WeaponCollector | AlignmentAware,
+            generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Rarely);
+
+        public static readonly ActorVariant Djinni = new ActorVariant(
+            name: "djinni", species: Species.Djinni, speciesClass: Demon, noise: ActorNoiseType.Djinni,
+            initialLevel: 7, movementRate: 12, armorClass: 4, magicResistance: 30, alignment: 0,
+            attacks: new[]
+            {
+                new Attack(Weapon, PhysicalDamage, diceCount: 2, diceSides: 8),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 4)
+            },
+            properties: Has(StoningResistance, PoisonResistance, SicknessResistance, Flight, Infravisibility, Humanoidness),
+            size: Medium, weight: 1400, nutrition: 400,
+            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
+            behavior: NonWandering | Stalking | WeaponCollector, generationFlags: NonPolymorphable | NonGenocidable,
+            generationFrequency: Never);
+
+        public static readonly ActorVariant DemonWater = new ActorVariant(
+            name: "water demon", species: DemonMajor, speciesClass: Demon, noise: ActorNoiseType.Djinni,
+            initialLevel: 8, movementRate: 12, armorClass: -4, magicResistance: 30, alignment: -7,
+            attacks: new[]
+            {
+                new Attack(Weapon, PhysicalDamage, diceCount: 1, diceSides: 3),
+                new Attack(Claw, PhysicalDamage, diceCount: 1, diceSides: 3),
+                new Attack(Bite, PhysicalDamage, diceCount: 1, diceSides: 3),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 5)
+            },
+            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Swimming, Infravision, Infravisibility, Humanoidness),
+            size: Medium, weight: 1000, nutrition: 400,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: NonWandering | Stalking | WeaponCollector, generationFlags: NonPolymorphable | NonGenocidable,
+            generationFrequency: Never);
+
+        // TODO: incubus
+        public static readonly ActorVariant Succubus = new ActorVariant(
+            name: "succubus", species: Species.Succubus, speciesClass: Demon, noise: Seduction,
+            initialLevel: 6, movementRate: 12, armorClass: 0, magicResistance: 70, alignment: -9,
+            attacks: new[]
+            {
+                new Attack(Touch, Seduce),
+                new Attack(Punch, PhysicalDamage, diceCount: 1, diceSides: 3),
+                new Attack(Punch, PhysicalDamage, diceCount: 1, diceSides: 3),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 4)
+            },
+            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Flight, Infravision, Infravisibility, Humanoidness),
+            size: Medium, weight: 1400, nutrition: 400,
+            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
+            behavior: NonWandering | Stalking | WeaponCollector, generationFlags: NonPolymorphable | NonGenocidable,
+            generationFrequency: Rarely);
+
+        public static readonly ActorVariant DevilHorned = new ActorVariant(
+            name: "horned devil", species: DemonMajor, speciesClass: Demon,
+            initialLevel: 6, movementRate: 9, armorClass: -5, magicResistance: 50, alignment: -11,
+            attacks: new[]
+            {
+                new Attack(Weapon, PhysicalDamage, diceCount: 1, diceSides: 4),
+                new Attack(Claw, PhysicalDamage, diceCount: 1, diceSides: 4),
+                new Attack(Bite, PhysicalDamage, diceCount: 2, diceSides: 3),
+                new Attack(Headbutt, PhysicalDamage, diceCount: 1, diceSides: 3),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 4)
+            },
+            properties: Has(FireResistance, PoisonResistance, SicknessResistance, ThickHide, Infravision, Infravisibility),
+            size: Medium, weight: 1000, nutrition: 400,
+            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
+            behavior: NonWandering | Stalking | WeaponCollector, generationFlags: HellOnly | NonGenocidable,
+            generationFrequency: Uncommonly);
+
+        public static readonly ActorVariant Hezrou = new ActorVariant(
+            name: "hezrou", species: DemonMajor, speciesClass: Demon,
+            initialLevel: 7, movementRate: 6, armorClass: -2, magicResistance: 55, alignment: -10,
+            attacks: new[]
+            {
+                new Attack(Claw, PhysicalDamage, diceCount: 1, diceSides: 3),
+                new Attack(Claw, PhysicalDamage, diceCount: 1, diceSides: 3),
+                new Attack(Bite, PhysicalDamage, diceCount: 2, diceSides: 4),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 6)
+            },
+            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Infravision, Infravisibility,
+                Humanoidness),
+            size: Large, weight: 1600, nutrition: 400,
+            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
+            behavior: NonWandering | Stalking, generationFlags: HellOnly | NonGenocidable | SmallGroup,
+            generationFrequency: Uncommonly);
+
+        public static readonly ActorVariant Erinyes = new ActorVariant(
+            name: "erinyes", species: DemonMajor, speciesClass: Demon,
+            initialLevel: 7, movementRate: 12, armorClass: 2, magicResistance: 30, alignment: -10,
+            attacks: new[]
+            {
+                new Attack(Weapon, VenomDamage, diceCount: 2, diceSides: 4),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 5)
+            },
+            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Infravision, Infravisibility,
+                Humanoidness),
+            size: Medium, weight: 1000, nutrition: 400,
+            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
+            behavior: NonWandering | Stalking | WeaponCollector,
+            generationFlags: HellOnly | NonGenocidable | NonPolymorphable | SmallGroup,
+            generationFrequency: Uncommonly);
+
+        public static readonly ActorVariant DevilBarbed = new ActorVariant(
+            name: "barbed devil", species: DemonMajor, speciesClass: Demon, previousStage: DevilHorned,
+            initialLevel: 8, movementRate: 12, armorClass: 0, magicResistance: 35, alignment: -8,
+            attacks: new[]
+            {
+                new Attack(Punch, PhysicalDamage, diceCount: 2, diceSides: 4),
+                new Attack(Punch, PhysicalDamage, diceCount: 2, diceSides: 4),
+                new Attack(Sting, PhysicalDamage, diceCount: 3, diceSides: 4),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 6)
+            },
+            properties:
+                Has(FireResistance, PoisonResistance, SicknessResistance, ThickHide, Infravision, Infravisibility, Humanoidness),
+            size: Medium, weight: 1200, nutrition: 400,
+            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
+            behavior: NonWandering | Stalking,
+            generationFlags: HellOnly | NonGenocidable | SmallGroup,
+            generationFrequency: Uncommonly);
+
+        public static readonly ActorVariant Vrock = new ActorVariant(
+            name: "vrock", species: DemonMajor, speciesClass: Demon, previousStage: Erinyes,
+            initialLevel: 8, movementRate: 12, armorClass: 0, magicResistance: 50, alignment: -9,
+            attacks: new[]
+            {
+                new Attack(Claw, PhysicalDamage, diceCount: 2, diceSides: 6),
+                new Attack(Claw, PhysicalDamage, diceCount: 2, diceSides: 6),
+                new Attack(Bite, PhysicalDamage, diceCount: 1, diceSides: 6),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 6)
+            },
+            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Flight, Infravision,
+                Infravisibility, Humanoidness),
+            size: Large, weight: 1200, nutrition: 400,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: NonWandering | Stalking, generationFlags: HellOnly | NonGenocidable | SmallGroup,
+            generationFrequency: Uncommonly);
+
+        public static readonly ActorVariant Marilith = new ActorVariant(
+            name: "marilith", species: DemonMajor, speciesClass: Demon, noise: Cuss, previousStage: Hezrou,
+            initialLevel: 9, movementRate: 12, armorClass: -6, magicResistance: 80, alignment: -12,
+            attacks: new[]
+            {
+                new Attack(Weapon, PhysicalDamage, diceCount: 2, diceSides: 4),
+                new Attack(Weapon, PhysicalDamage, diceCount: 2, diceSides: 4),
+                new Attack(Punch, PhysicalDamage, diceCount: 2, diceSides: 4),
+                new Attack(Punch, PhysicalDamage, diceCount: 2, diceSides: 4),
+                new Attack(Punch, PhysicalDamage, diceCount: 2, diceSides: 4),
+                new Attack(Punch, PhysicalDamage, diceCount: 2, diceSides: 4),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 6)
+            },
+            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Infravision,
+                InvisibilityDetection, Infravisibility, HumanoidTorso, SerpentlikeBody, Femaleness),
+            size: Large, weight: 1200, nutrition: 400,
+            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
+            behavior: NonWandering | Stalking | WeaponCollector,
+            generationFlags: HellOnly | NonGenocidable, generationFrequency: Rarely);
+
+        public static readonly ActorVariant DevilBone = new ActorVariant(
+            name: "bone devil", species: DemonMajor, speciesClass: Demon,
+            initialLevel: 9, movementRate: 15, armorClass: -1, magicResistance: 40, alignment: -9,
+            attacks: new[]
+            {
+                new Attack(Weapon, PhysicalDamage, diceCount: 3, diceSides: 3),
+                new Attack(Sting, VenomDamage, diceCount: 2, diceSides: 4),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 6)
+            },
+            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Infravision, Infravisibility,
+                Humanoidness),
+            size: Large, weight: 1600, nutrition: 400,
+            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
+            behavior: NonWandering | Stalking | WeaponCollector, generationFlags: HellOnly | NonGenocidable | SmallGroup,
+            generationFrequency: Uncommonly);
+
+        public static readonly ActorVariant DevilIce = new ActorVariant(
+            name: "ice devil", species: DemonMajor, speciesClass: Demon, previousStage: DevilBone,
+            initialLevel: 11, movementRate: 6, armorClass: -4, magicResistance: 55, alignment: -12,
+            attacks: new[]
+            {
+                new Attack(Claw, PhysicalDamage, diceCount: 1, diceSides: 4),
+                new Attack(Claw, PhysicalDamage, diceCount: 1, diceSides: 4),
+                new Attack(Bite, PhysicalDamage, diceCount: 2, diceSides: 4),
+                new Attack(Sting, ColdDamage, diceCount: 3, diceSides: 4),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 8)
+            },
+            properties: Has(FireResistance, ColdResistance, PoisonResistance, SicknessResistance, Infravision,
+                InvisibilityDetection, Infravisibility, Humanoidness),
+            size: Large, weight: 1800, nutrition: 400,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: NonWandering | Stalking, generationFlags: HellOnly | NonGenocidable,
+            generationFrequency: Uncommonly);
+
+        public static readonly ActorVariant Nalfeshnee = new ActorVariant(
+            name: "nalfeshnee", species: DemonMajor, speciesClass: Demon, noise: Cast, previousStage: DevilBarbed,
+            initialLevel: 11, movementRate: 9, armorClass: -4, magicResistance: 65, alignment: -11,
+            attacks: new[]
+            {
+                new Attack(Claw, PhysicalDamage, diceCount: 1, diceSides: 4),
+                new Attack(Claw, PhysicalDamage, diceCount: 1, diceSides: 4),
+                new Attack(Bite, PhysicalDamage, diceCount: 2, diceSides: 4),
+                new Attack(Spell, ArcaneSpell),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 8)
+            },
+            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Infravision,
+                InvisibilityDetection, Infravisibility, Humanoidness),
+            size: Huge, weight: 2500, nutrition: 400,
+            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
+            behavior: NonWandering | Stalking | MagicUser, generationFlags: HellOnly | NonGenocidable,
+            generationFrequency: Rarely);
+
+        public static readonly ActorVariant FiendPit = new ActorVariant(
+            name: "pit fiend", species: DemonMajor, speciesClass: Demon, noise: Growl, previousStage: Vrock,
+            initialLevel: 13, movementRate: 6, armorClass: -3, magicResistance: 65, alignment: -13,
+            attacks: new[]
+            {
+                new Attack(Weapon, PhysicalDamage, diceCount: 4, diceSides: 2),
+                new Attack(Weapon, PhysicalDamage, diceCount: 4, diceSides: 2),
+                new Attack(Hug, PhysicalDamage, diceCount: 2, diceSides: 4),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 2, diceSides: 3)
+            },
+            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Flight, Infravision,
+                InvisibilityDetection, Infravisibility, Humanoidness),
+            size: Large, weight: 1600, nutrition: 400,
+            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
+            behavior: NonWandering | Stalking | WeaponCollector | MagicUser, generationFlags: HellOnly | NonGenocidable,
+            generationFrequency: Uncommonly);
+
+        public static readonly ActorVariant Balrog = new ActorVariant(
+            name: "balrog", species: DemonMajor, speciesClass: Demon, noise: Growl, previousStage: FiendPit,
+            initialLevel: 16, movementRate: 5, armorClass: -2, magicResistance: 75, alignment: -14,
+            attacks: new[]
+            {
+                new Attack(Weapon, PhysicalDamage, diceCount: 8, diceSides: 4),
+                new Attack(Weapon, PhysicalDamage, diceCount: 4, diceSides: 6),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 2, diceSides: 4)
+            },
+            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Flight, Infravision,
+                InvisibilityDetection, Infravisibility, Humanoidness),
+            size: Huge, weight: 2500, nutrition: 400,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: NonWandering | Stalking | WeaponCollector | MagicUser, generationFlags: HellOnly | NonGenocidable,
+            generationFrequency: Rarely);
+
+        public static readonly ActorVariant Juiblex = new ActorVariant(
+            name: "Juiblex", species: DemonMajor, speciesClass: Demon, noise: Gurgle,
+            initialLevel: 50, movementRate: 3, armorClass: -7, magicResistance: 65, alignment: -15,
+            attacks: new[]
+            {
+                new Attack(Touch, Engulf, diceCount: 8, diceSides: 4),
+                new Attack(Digestion, AcidDamage, diceCount: 4, diceSides: 10),
+                new Attack(Spit, AcidDamage, diceCount: 3, diceSides: 6),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 3, diceSides: 6),
+                new Attack(OnConsumption, AcidDamage, diceCount: 3, diceSides: 6)
+            },
+            properties: Has(FireResistance, PoisonResistance, SicknessResistance, StoningResistance, AcidResistance,
+                Amphibiousness, Flight, Amorphism, Headlessness, Infravision, InvisibilityDetection, Maleness),
+            size: Large, weight: 1500, nutrition: 400, consumptionProperties:
+                new[] {WhenConsumedAdd(PoisonResistance, Sometimes), WhenConsumedAdd(AcidResistance, Sometimes)},
+            corpse: None, behavior: NonWandering | Stalking | RangedPeaceful | Covetous,
+            generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
+
+        public static readonly ActorVariant Yeenoghu = new ActorVariant(
+            name: "Yeenoghu", species: DemonMajor, speciesClass: Demon, noise: Gurgle,
+            initialLevel: 56, movementRate: 18, armorClass: -5, magicResistance: 80, alignment: -15,
+            attacks: new[]
+            {
+                new Attack(Weapon, PhysicalDamage, diceCount: 3, diceSides: 6),
+                new Attack(Claw, Confuse, diceCount: 2, diceSides: 8),
+                new Attack(Bite, Paralyze, diceCount: 1, diceSides: 6),
+                new Attack(Spell, MagicalDamage, diceCount: 2, diceSides: 6),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 3, diceSides: 6)
+            },
+            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Infravision, InvisibilityDetection,
+                Infravisibility, Maleness),
+            size: Large, weight: 1500, nutrition: 400,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: NonWandering | Stalking | WeaponCollector | MagicUser | Covetous ,
+            generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
+
+        public static readonly ActorVariant Orcus = new ActorVariant(
+            name: "Orcus", species: DemonMajor, speciesClass: Demon, noise: Grunt,
+            initialLevel: 66, movementRate: 9, armorClass: -6, magicResistance: 85, alignment: -20,
+            attacks: new[]
+            {
+                new Attack(Weapon, PhysicalDamage, diceCount: 3, diceSides: 6),
+                new Attack(Claw, PhysicalDamage, diceCount: 3, diceSides: 4),
+                new Attack(Headbutt, VenomDamage, diceCount: 2, diceSides: 4),
+                new Attack(Spell, ArcaneSpell, diceCount: 8, diceSides: 6),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 3, diceSides: 8),
+                new Attack(OnConsumption, Infect, diceCount: 3, diceSides: 8)
+            },
+            properties: Has(FireResistance, PoisonResistance, VenomResistance, SicknessResistance, Flight,
+                Infravisibility,  Infravision, InvisibilityDetection, Humanoidness, Maleness),
+            size: Huge, weight: 2500, nutrition: 400,
+            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
+            behavior: NonWandering | RangedPeaceful | Stalking | WeaponCollector | MagicUser | Covetous,
+            generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
+
+        public static readonly ActorVariant Geryon = new ActorVariant(
+            name: "Geryon", species: DemonMajor, speciesClass: Demon, noise: Bribe,
+            initialLevel: 72, movementRate: 3, armorClass: -3, magicResistance: 75, alignment: -15,
+            attacks: new[]
+            {
+                new Attack(Claw, PhysicalDamage, diceCount: 3, diceSides: 6),
+                new Attack(Claw, PhysicalDamage, diceCount: 3, diceSides: 6),
+                new Attack(Sting, VenomDamage, diceCount: 2, diceSides: 4),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 3, diceSides: 8)
+            },
+            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Flight,
+                Infravisibility, Infravision, InvisibilityDetection, SerpentlikeBody, HumanoidTorso, Maleness),
+            size: Huge, weight: 2500, nutrition: 500,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: NonWandering | Bribeable | Stalking | Covetous,
+            generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
+
+        public static readonly ActorVariant Dispater = new ActorVariant(
+            name: "Dispater", species: DemonMajor, speciesClass: Demon, noise: Bribe,
+            initialLevel: 78, movementRate: 15, armorClass: -2, magicResistance: 80, alignment: -15,
+            attacks: new[]
+            {
+                new Attack(Weapon, PhysicalDamage, diceCount: 3, diceSides: 6),
+                new Attack(Spell, ArcaneSpell, diceCount: 6, diceSides: 6),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 3, diceSides: 8)
+            },
+            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Flight,
+                Infravisibility, Infravision, InvisibilityDetection, Humanoidness, Maleness),
+            size: Large, weight: 1500, nutrition: 500,
+            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
+            behavior: NonWandering | Bribeable | Stalking | Covetous | WeaponCollector | MagicUser,
+            generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
+
+        public static readonly ActorVariant Baalzebub = new ActorVariant(
+            name: "Baalzebub", species: DemonMajor, speciesClass: Demon, noise: Bribe,
+            initialLevel: 89, movementRate: 9, armorClass: -5, magicResistance: 85, alignment: -20,
+            attacks: new[]
+            {
+                new Attack(Bite, VenomDamage, diceCount: 2, diceSides: 6),
+                new Attack(Gaze, Stun, diceCount: 2, diceSides: 6),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 4, diceSides: 6)
+            },
+            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Flight,
+                Infravisibility, Infravision, InvisibilityDetection, Maleness),
+            size: Large, weight: 1500, nutrition: 500,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: NonWandering | RangedPeaceful | Bribeable | Stalking | Covetous,
+            generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
+
+        public static readonly ActorVariant Asmodeus = new ActorVariant(
+            name: "Asmodeus", species: DemonMajor, speciesClass: Demon, noise: Bribe,
+            initialLevel: 105, movementRate: 12, armorClass: -7, magicResistance: 90, alignment: -20,
+            attacks: new[]
+            {
+                new Attack(Claw, VenomDamage, diceCount: 4, diceSides: 4),
+                new Attack(Spell, ColdDamage, diceCount: 6, diceSides: 6),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 4, diceSides: 8)
+            },
+            properties: Has(FireResistance, ColdResistance, PoisonResistance, SicknessResistance, Flight,
+                Infravisibility, Infravision, InvisibilityDetection, Humanoidness, Maleness),
+            size: Large, weight: 1500, nutrition: 500,
+            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
+            behavior: NonWandering | RangedPeaceful | Bribeable | Stalking | Covetous,
+            generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
+
+        public static readonly ActorVariant Demogorgon = new ActorVariant(
+            name: "Demogorgon", species: DemonMajor, speciesClass: Demon, noise: Growl,
+            initialLevel: 106, movementRate: 15, armorClass: -8, magicResistance: 95, alignment: -20,
+            attacks: new[]
+            {
+                new Attack(Spell, ArcaneSpell, diceCount: 8, diceSides: 6),
+                new Attack(Sting, DrainLife, diceCount: 1, diceSides: 4),
+                new Attack(Claw, Infect, diceCount: 1, diceSides: 6),
+                new Attack(Claw, Infect, diceCount: 1, diceSides: 6),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 4, diceSides: 8),
+                new Attack(OnConsumption, Infect, diceCount: 1, diceSides: 8)
+            },
+            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Flight,
+                Infravisibility, Infravision, InvisibilityDetection, Handlessness, Humanoidness, Maleness),
+            size: Large, weight: 1500, nutrition: 500,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: NonWandering | Stalking | Covetous, generationFlags: HellOnly | NonGenocidable | NonPolymorphable,
+            generationFrequency: Never);
+
+        public static readonly ActorVariant Death = new ActorVariant(
+            name: "Death", species: Horseman, noise: Rider,
+            initialLevel: 30, movementRate: 12, armorClass: -5, magicResistance: 100, alignment: 0,
+            attacks: new[]
+            {
+                new Attack(Touch, AttackEffect.Death, diceCount: 8, diceSides: 8),
+                new Attack(Touch, AttackEffect.Death, diceCount: 8, diceSides: 8),
+                new Attack(OnConsumption, AttackEffect.Death, diceCount: 8, diceSides: 8)
+            },
+            properties: Has(AcidResistance, FireResistance, ColdResistance, ElectricityResistance,
+                SleepResistance, PoisonResistance, VenomResistance, SicknessResistance, DecayResistance,
+                StoningResistance, SlimingResistance, Breathlessness, Reanimation, Regeneration, Flight,
+                TeleportationControl, PolymorphControl, Infravisibility, Infravision, InvisibilityDetection,
+                Humanoidness, Maleness),
+            size: Medium, weight: 1000, nutrition: 0, behavior: NonWandering | Stalking | Displacing,
+            generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
+
+        public static readonly ActorVariant Pestilence = new ActorVariant(
+            name: "Pestilence", species: Horseman, noise: Rider,
+            initialLevel: 30, movementRate: 12, armorClass: -5, magicResistance: 100, alignment: 0,
+            attacks: new[]
+            {
+                new Attack(Touch, AttackEffect.Pestilence, diceCount: 8, diceSides: 8),
+                new Attack(Touch, AttackEffect.Pestilence, diceCount: 8, diceSides: 8),
+                new Attack(OnConsumption, AttackEffect.Pestilence, diceCount: 8, diceSides: 8)
+            },
+            properties: Has(AcidResistance, FireResistance, ColdResistance, ElectricityResistance,
+                SleepResistance, PoisonResistance, VenomResistance, SicknessResistance, DecayResistance,
+                StoningResistance, SlimingResistance, Breathlessness, Reanimation, Regeneration, Flight,
+                TeleportationControl, PolymorphControl, Infravisibility, Infravision, InvisibilityDetection,
+                Humanoidness, Maleness),
+            size: Medium, weight: 1000, nutrition: 0, behavior: NonWandering | Stalking | Displacing,
+            generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
+
+        public static readonly ActorVariant Famine = new ActorVariant(
+            name: "Famine", species: Horseman, noise: Rider,
+            initialLevel: 30, movementRate: 12, armorClass: -5, magicResistance: 100, alignment: 0,
+            attacks: new[]
+            {
+                new Attack(Touch, AttackEffect.Famine, diceCount: 8, diceSides: 8),
+                new Attack(Touch, AttackEffect.Famine, diceCount: 8, diceSides: 8),
+                new Attack(OnConsumption, AttackEffect.Famine, diceCount: 8, diceSides: 8)
+            },
+            properties: Has(AcidResistance, FireResistance, ColdResistance, ElectricityResistance,
+                SleepResistance, PoisonResistance, VenomResistance, SicknessResistance, DecayResistance,
+                StoningResistance, SlimingResistance, Breathlessness, Reanimation, Regeneration, Flight,
+                TeleportationControl, PolymorphControl, Infravisibility, Infravision, InvisibilityDetection,
+                Humanoidness, Maleness),
+            size: Medium, weight: 1000, nutrition: -5000, behavior: NonWandering | Stalking | Displacing,
+            generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
+
         /*
      struct permonst {const char *name, char symbol, schar level, schar actionRate, schar ac, schar mr, schar alignment, ushort geno,
             struct attack attack[NATTK],
@@ -4212,28 +4670,7 @@ namespace UnicornHack.Models.GameDefinitions
             unsigned long mflags1, unsigned long mflags2, unsigned long mflags3, uchar mcolor };
     Look for G_GENO, M2_WANDER, M2_HOSTILE,
 
-        public static readonly ActorVariant Quasit = new ActorVariant(
-            name: "quasit", species: Species.Imp, speciesClass: Demon, noise: Cuss,
-            initialLevel: 3, movementRate: 15, armorClass: 2, magicResistance: 20, alignment: -7,
-            attacks: new[]
-            {
-                new Attack(Claw, PhysicalDamage, diceCount: 1, diceSides: 3),
-                new Attack(Claw, DrainDexterity, diceCount: 1, diceSides: 2),
-                new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 5)
-            },
-            properties: Has(PoisonResistance, Regeneration, Infravision, Infravisibility),
-            size: Small, weight: 200, nutrition: 100, corpse: None,
-            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)},
-            behavior: Stalking, generationFrequency: Often);
-
-            // ShapeChanger
-        MON("tengu", S_IMP, LVL(6, 13, 5, 30, 7), (G_GENO | 3),
-            A(ATTK(AT_BITE, AD_PHYS, 1, 7), NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK,
-              NO_ATTK),
-            SIZ(300, 200, MS_SQAWK, MZ_SMALL), MR_POISON, MR_POISON,
-            M1_TPORT | M1_TPORT_CNTRL, M2_STALK, M3_INFRAVISIBLE | M3_INFRAVISION,
-            CLR_CYAN),
-            */
+        */
 
         protected ActorVariant(
             string name,

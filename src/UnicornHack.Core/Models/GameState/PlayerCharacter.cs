@@ -26,16 +26,18 @@ namespace UnicornHack.Models.GameState
         public virtual byte Wisdom { get; set; }
         public virtual byte Charisma { get; set; }
 
+        public virtual int NextEventId { get; set; }
+        public virtual ICollection<SensoryEvent> SensedEvents { get; set; } = new HashSet<SensoryEvent>();
+
         public virtual int NextLogEntryId { get; set; }
-        public virtual IList<LogEntry> Log { get; set; } = new List<LogEntry>();
+        public virtual ICollection<LogEntry> Log { get; set; } = new HashSet<LogEntry>();
 
         public virtual string NextAction { get; set; }
         public virtual int NextActionTarget { get; set; }
 
-        protected void WriteLog(string format, params object[] arguments)
+        protected virtual void WriteLog(string format, params object[] arguments)
         {
-            var message = string.Format(format, arguments);
-            Log.Add(new LogEntry {Id = NextLogEntryId++, Message = message, Player = this});
+            Log.Add(new LogEntry(this, string.Format(format, arguments)));
         }
 
         public override bool Act()
@@ -125,9 +127,11 @@ namespace UnicornHack.Models.GameState
             return true;
         }
 
-        protected override bool IsRelevant(SensoryEvent @event)
+        public override void Sense(SensoryEvent @event)
         {
-            return true;
+            @event.Sensor = this;
+            @event.Id = NextEventId++;
+            SensedEvents.Add(@event);
         }
 
         public virtual string GetLogEntry(SensoryEvent @event)
@@ -167,7 +171,7 @@ namespace UnicornHack.Models.GameState
 
         public static PlayerCharacter CreateCharacter(Game game, string name)
         {
-            var initialLevel = Level.CreateLevel(depth: 1, branchName: Level.MainBranchName, game: game);
+            var initialLevel = Level.CreateLevel(game, Level.MainBranchName, depth: 1);
             var upStairs = initialLevel.UpStairs.First();
             var character = new PlayerCharacter(
                 ActorVariant.Human, upStairs.DownLevelX, upStairs.DownLevelY, initialLevel)
@@ -190,7 +194,7 @@ namespace UnicornHack.Models.GameState
             character.MaxHP = 10;
             character.HP = character.MaxHP;
 
-            StackableItem.CreateItem(ItemType.Food, quantity: 3, actor: character);
+            character.Inventory.Add(new StackableItem(ItemType.Food, quantity: 3, actor: character));
             game.Actors.Add(character);
 
             character.WriteLog(game.Services.Language.Welcome(character));

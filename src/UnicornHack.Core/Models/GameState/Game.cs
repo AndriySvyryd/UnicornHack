@@ -11,11 +11,16 @@ namespace UnicornHack.Models.GameState
         public virtual int Id { get; private set; }
         public virtual int CurrentTurn { get; set; }
         public virtual int RandomSeed { get; set; }
+        public virtual int? ActingActorId { get; set; }
         public virtual Actor ActingActor { get; set; }
-        public virtual IList<Actor> Actors { get; set; } = new List<Actor>();
-        public virtual IList<Item> Items { get; set; } = new List<Item>();
-        public virtual IList<Level> Levels { get; set; } = new List<Level>();
-        public virtual IList<Stairs> Stairs { get; set; } = new List<Stairs>();
+        public virtual int NextActorId { get; set; }
+        public virtual ICollection<Actor> Actors { get; set; } = new HashSet<Actor>();
+        public virtual int NextItemId { get; set; }
+        public virtual ICollection<Item> Items { get; set; } = new HashSet<Item>();
+        public virtual int NextLevelId { get; set; }
+        public virtual ICollection<Level> Levels { get; set; } = new HashSet<Level>();
+        public virtual int NextStairsId { get; set; }
+        public virtual ICollection<Stairs> Stairs { get; set; } = new HashSet<Stairs>();
 
         [NotMapped]
         public virtual GameServices Services { get; set; }
@@ -34,6 +39,8 @@ namespace UnicornHack.Models.GameState
                     if (actingActor != null)
                     {
                         ActingActor = actingActor;
+                        // TODO: Issue #6109
+                        ActingActorId = actingActor.Id;
                         return actingActor;
                     }
                 }

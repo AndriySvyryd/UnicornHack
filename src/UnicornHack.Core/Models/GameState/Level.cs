@@ -20,38 +20,51 @@ namespace UnicornHack.Models.GameState
 
         private PathFinder _pathFinder;
 
-        public Level()
+        protected Level()
         {
-            if (PointToIndex == null)
+            _canMoveDelegate = CanMove;
+        }
+
+        protected Level(Game game, string branchName, short depth)
+            : this()
+        {
+            Id = game.NextLevelId++;
+            Game = game;
+            Name = branchName;
+            Depth = depth;
+            LastTurn = game.CurrentTurn;
+            game.Levels.Add(this);
+        }
+
+        static Level()
+        {
+            PointToIndex = new int[Width, Height];
+            IndexToPoint = new Point[Width * Height];
+            var i = 0;
+            for (byte y = 0; y < Height; y++)
             {
-                PointToIndex = new int[Width, Height];
-                IndexToPoint = new Point[Width*Height];
-                var i = 0;
-                for (byte y = 0; y < Height; y++)
+                for (byte x = 0; x < Width; x++)
                 {
-                    for (byte x = 0; x < Width; x++)
-                    {
-                        PointToIndex[x, y] = i;
-                        IndexToPoint[i++] = new Point(x, y);
-                    }
+                    PointToIndex[x, y] = i;
+                    IndexToPoint[i++] = new Point(x, y);
                 }
             }
-            _canMoveDelegate = CanMove;
         }
 
         public virtual int Id { get; private set; }
         public virtual string Name { get; set; }
         public virtual short Depth { get; set; }
-
-        // TODO: update _pathFinder when a value in Layout changes
+        
         public virtual byte[] Layout { get; set; }
         public virtual int LastTurn { get; set; }
 
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
+        public virtual int GameId { get; private set; }
         public virtual Game Game { get; set; }
-        public virtual IList<Item> Items { get; private set; } = new List<Item>();
-        public virtual IList<Actor> Actors { get; private set; } = new List<Actor>();
-        public virtual IList<Stairs> UpStairs { get; private set; } = new List<Stairs>();
-        public virtual IList<Stairs> DownStairs { get; private set; } = new List<Stairs>();
+        public virtual ICollection<Item> Items { get; private set; } = new HashSet<Item>();
+        public virtual ICollection<Actor> Actors { get; private set; } = new HashSet<Actor>();
+        public virtual ICollection<Stairs> UpStairs { get; private set; } = new HashSet<Stairs>();
+        public virtual ICollection<Stairs> DownStairs { get; private set; } = new HashSet<Stairs>();
 
         [NotMapped]
         public virtual IEnumerable<PlayerCharacter> PlayerCharacters => Actors.OfType<PlayerCharacter>();
@@ -75,6 +88,8 @@ namespace UnicornHack.Models.GameState
                             continue;
                         }
                         Game.ActingActor = null;
+                        // TODO: Issue #6109
+                        Game.ActingActorId = null;
                     }
 
                     if (actor.Level != this)
@@ -161,38 +176,39 @@ namespace UnicornHack.Models.GameState
             return newLocationIndex;
         }
 
-        public virtual IReadOnlyList<Vector> GetPossibleMovementDirections(Point currentLocation, bool allowZ)
+        public virtual IReadOnlyList<Vector> GetPossibleMovementDirections(Point currentLocation, bool allowZ, bool safe)
         {
             var availableDirections = new List<Vector>();
             for (var i = 0; i < (allowZ ? 10 : 8); i++)
             {
-                if (CanMove(currentLocation, i) != null)
+                if (CanMove(currentLocation, i) == null)
                 {
-                    availableDirections.Add(MovementDirections[i]);
+                    continue;
                 }
+
+                var direction = MovementDirections[i];
+                if (direction.Z == 0
+                    && Actors.Any(a =>
+                        (a.LevelX == currentLocation.X + direction.X) &&
+                        (a.LevelY == currentLocation.Y + direction.Y)))
+                {
+                    continue;
+                }
+
+                availableDirections.Add(MovementDirections[i]);
             }
 
             return availableDirections;
         }
 
-        public static Level CreateLevel(short depth, string branchName, Game game)
+        public static Level CreateLevel(Game game, string branchName, short depth)
         {
-            var height = Height;
-            var width = Width;
-            var layout = _staticLevels[depth][branchName];
+            var level = new Level(game, branchName, depth);
+            var layout = StaticLevels[depth][branchName];
+            var byteLayout = new byte[Height * Width];
             byte x = 0;
             byte y = 0;
-            var byteLayout = new byte[height*width];
-            var level = new Level
-            {
-                Name = branchName,
-                Depth = depth,
-                Layout = byteLayout,
-                LastTurn = game.CurrentTurn,
-                Game = game
-            };
-            game.Levels.Add(level);
-
+            // ReSharper disable once ForCanBeConvertedToForeach
             for (var i = 0; i < layout.Length; i++)
             {
                 var mapPoint = layout[i];
@@ -245,35 +261,19 @@ namespace UnicornHack.Models.GameState
                         break;
                     case '<':
                         feature = MapFeature.Floor;
-                        var upStairs = new Stairs
-                        {
-                            BranchName = level.Name,
-                            Down = level,
-                            DownLevelX = x,
-                            DownLevelY = y,
-                            Game = game
-                        };
-                        level.UpStairs.Add(upStairs);
+                        level.UpStairs.Add(Stairs.CreateUpStairs(game, level, x, y));
                         break;
                     case '>':
                         feature = MapFeature.Floor;
-                        var downStairs = new Stairs
-                        {
-                            BranchName = level.Name,
-                            Up = level,
-                            UpLevelX = x,
-                            UpLevelY = y,
-                            Game = game
-                        };
-                        level.DownStairs.Add(downStairs);
+                        level.DownStairs.Add(Stairs.CreateDownStairs(game, level, x, y));
                         break;
                     case '$':
                         feature = MapFeature.Floor;
-                        StackableItem.CreateItem(ItemType.Gold, quantity: 9, x: x, y: y, level: level);
+                        level.Items.Add(new StackableItem(ItemType.Gold, quantity: 9, x: x, y: y, level: level));
                         break;
                     case '%':
                         feature = MapFeature.Floor;
-                        StackableItem.CreateItem(ItemType.Food, quantity: 1, x: x, y: y, level: level);
+                        level.Items.Add(new StackableItem(ItemType.Food, quantity: 1, x: x, y: y, level: level));
                         break;
                     case ')':
                         feature = MapFeature.Floor;
@@ -292,32 +292,31 @@ namespace UnicornHack.Models.GameState
                     case '\r':
                         continue;
                     case '\n':
-                        if (x != width)
+                        if (x != Width)
                         {
-                            throw new InvalidOperationException($"The width of line {y} is {x}, but expected {width}");
+                            throw new InvalidOperationException($"The width of line {y} is {x}, but expected {Width}");
                         }
                         x = 0;
                         y++;
                         continue;
-                    default:
-                        break;
                 }
 
-                byteLayout[x + width*y] = (byte)feature;
+                byteLayout[x + Width*y] = (byte)feature;
                 x++;
             }
 
-            if (y + 1 != height)
+            if (y + 1 != Height)
             {
-                throw new InvalidOperationException($"The height is {y + 1}, but expected {height}");
+                throw new InvalidOperationException($"The height is {y + 1}, but expected {Height}");
             }
-
+            
+            level.Layout = byteLayout;
             return level;
         }
 
         public static Level CreateUpLevel(Stairs stairs)
         {
-            var level = CreateLevel((short)(stairs.Down.Depth - 1), stairs.BranchName, stairs.Down.Game);
+            var level = CreateLevel(stairs.Down.Game, stairs.BranchName, (short)(stairs.Down.Depth - 1));
             var connectingStairs = level.DownStairs.Single(s => s.BranchName == stairs.Down.Name);
             stairs.Up = level;
             stairs.UpLevelX = connectingStairs.UpLevelX;
@@ -329,7 +328,7 @@ namespace UnicornHack.Models.GameState
 
         public static Level CreateDownLevel(Stairs stairs)
         {
-            var level = CreateLevel((short)(stairs.Up.Depth + 1), stairs.BranchName, stairs.Up.Game);
+            var level = CreateLevel(stairs.Up.Game, stairs.BranchName, (short)(stairs.Up.Depth + 1));
             var connectingStairs = level.UpStairs.Single(s => s.BranchName == stairs.Up.Name);
             stairs.Down = level;
             stairs.DownLevelX = connectingStairs.DownLevelX;
@@ -352,7 +351,7 @@ namespace UnicornHack.Models.GameState
         public static readonly int MovementCost = 12;
 
         // ReSharper disable ArgumentsStyleStringLiteral
-        private static readonly Dictionary<int, Dictionary<string, string>> _staticLevels =
+        private static readonly Dictionary<int, Dictionary<string, string>> StaticLevels =
             new Dictionary<int, Dictionary<string, string>>
             {
                 {

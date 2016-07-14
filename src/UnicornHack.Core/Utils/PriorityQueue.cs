@@ -8,42 +8,54 @@ namespace UnicornHack.Utils
         private readonly IComparer<T> _comparer;
 
         public PriorityQueue()
+            : this(Comparer<T>.Default, capacity: 0)
         {
-            _comparer = Comparer<T>.Default;
         }
 
         public PriorityQueue(IComparer<T> comparer)
+            : this(comparer, capacity: 0)
         {
-            _comparer = comparer;
         }
 
         public PriorityQueue(IComparer<T> comparer, int capacity)
         {
             _comparer = comparer;
-            _list.Capacity = capacity;
+            if (capacity != 0)
+            {
+                _list.Capacity = capacity;
+            }
         }
 
-        public int Push(T element)
+        public virtual int Push(T element)
         {
-            int newElementPosition = _list.Count;
+            var newElementPosition = _list.Count;
             _list.Add(element);
 
             return BubbleUp(newElementPosition);
         }
 
-        public T Pop()
+        public virtual T Pop()
         {
             var result = _list[index: 0];
-            var newPosition = 0;
-            _list[newPosition] = _list[_list.Count - 1];
+            _list[index: 0] = _list[_list.Count - 1];
             _list.RemoveAt(_list.Count - 1);
 
-            BubbleDown(newPosition);
+            BubbleDown(position: 0);
 
             return result;
         }
 
-        public void Update(int position)
+        public virtual T this[int index]
+        {
+            get { return _list[index]; }
+            set
+            {
+                _list[index] = value;
+                Update(index);
+            }
+        }
+
+        private void Update(int position)
         {
             var newPosition = BubbleUp(position);
             if (newPosition != position)
@@ -56,7 +68,6 @@ namespace UnicornHack.Utils
 
         private int BubbleUp(int position)
         {
-            int parentPosition;
             do
             {
                 if (position == 0)
@@ -64,16 +75,14 @@ namespace UnicornHack.Utils
                     break;
                 }
 
-                parentPosition = (position - 1) >> 1;
-                if (CompareItemsAt(parentPosition, position) > 0)
-                {
-                    SwitchElements(parentPosition, position);
-                    position = parentPosition;
-                }
-                else
+                var parentPosition = (position - 1) >> 1;
+                if (CompareItemsAt(parentPosition, position) <= 0)
                 {
                     break;
                 }
+
+                SwitchElements(parentPosition, position);
+                position = parentPosition;
             } while (true);
 
             return position;
@@ -81,14 +90,12 @@ namespace UnicornHack.Utils
 
         private void BubbleDown(int position)
         {
-            int parentPosition;
-            int leftChildPosition;
-            int rightChildPosition;
             do
             {
-                parentPosition = position;
-                leftChildPosition = (position << 1) + 1;
-                rightChildPosition = (position << 1) + 2;
+                var parentPosition = position;
+                var leftChildPosition = (position << 1) + 1;
+                var rightChildPosition = (position << 1) + 2;
+
                 if (_list.Count > leftChildPosition && CompareItemsAt(position, leftChildPosition) > 0)
                 {
                     position = leftChildPosition;
@@ -107,34 +114,11 @@ namespace UnicornHack.Utils
             } while (true);
         }
 
-        public T Peek()
-        {
-            if (_list.Count > 0)
-            {
-                return _list[index: 0];
-            }
-            return default(T);
-        }
+        public T Peek() => _list.Count > 0 ? _list[index: 0] : default(T);
 
-        public void Clear()
-        {
-            _list.Clear();
-        }
+        public void Clear() => _list.Clear();
 
-        public int Count
-        {
-            get { return _list.Count; }
-        }
-
-        public T this[int index]
-        {
-            get { return _list[index]; }
-            set
-            {
-                _list[index] = value;
-                Update(index);
-            }
-        }
+        public int Count => _list.Count;
 
         private void SwitchElements(int i, int j)
         {
@@ -143,9 +127,6 @@ namespace UnicornHack.Utils
             _list[j] = temp;
         }
 
-        private int CompareItemsAt(int i, int j)
-        {
-            return _comparer.Compare(_list[i], _list[j]);
-        }
+        private int CompareItemsAt(int i, int j) => _comparer.Compare(_list[i], _list[j]);
     }
 }

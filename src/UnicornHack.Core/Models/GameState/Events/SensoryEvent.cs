@@ -1,9 +1,13 @@
 namespace UnicornHack.Models.GameState.Events
 {
-    public class SensoryEvent
+    public abstract class SensoryEvent
     {
         public virtual int Id { get; set; }
-        public virtual int SensorId { get; set; }
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
+        public virtual int SensorId { get; private set; }
         public virtual Actor Sensor { get; set; }
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
+        public int GameId { get; private set; }
+        public Game Game => Sensor.Game;
     }
 }

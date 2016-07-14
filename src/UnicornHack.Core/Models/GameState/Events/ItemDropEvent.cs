@@ -4,7 +4,7 @@ namespace UnicornHack.Models.GameState.Events
 {
     public class ItemDropEvent : SensoryEvent
     {
-        private ItemDropEvent()
+        protected ItemDropEvent()
         {
         }
 
@@ -20,8 +20,8 @@ namespace UnicornHack.Models.GameState.Events
                 var dropperSensed = sensor.CanSense(dropper);
                 var itemSensed = sensor.CanSense(item);
 
-                if (dropperSensed == SenseType.None
-                    && itemSensed == SenseType.None)
+                if ((dropperSensed == SenseType.None)
+                    && (itemSensed == SenseType.None))
                 {
                     continue;
                 }
@@ -34,7 +34,7 @@ namespace UnicornHack.Models.GameState.Events
                     ItemSensed = itemSensed
                 };
 
-                sensor.Sense((dynamic)@event);
+                sensor.Sense(@event);
             }
         }
     }

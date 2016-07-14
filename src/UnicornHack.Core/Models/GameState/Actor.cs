@@ -24,6 +24,7 @@ namespace UnicornHack.Models.GameState
             LevelY = y;
             Level = level;
             Game = level.Game;
+            Id = level.Game.NextActorId++;
         }
 
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
@@ -47,21 +48,18 @@ namespace UnicornHack.Models.GameState
 
         public virtual int Gold { get; set; }
         public virtual int AC { get; set; }
-        public virtual IList<Item> Inventory { get; set; } = new List<Item>();
+        public virtual ICollection<Item> Inventory { get; set; } = new HashSet<Item>();
 
         public virtual byte LevelX { get; set; }
         public virtual byte LevelY { get; set; }
         public virtual Level Level { get; set; }
-        public virtual int GameId { get; set; }
+        public virtual int GameId { get; private set; }
         public virtual Game Game { get; set; }
 
         public virtual int MovementPoints { get; set; }
 
         [NotMapped]
         public virtual byte MovementRate => Variant.MovementRate;
-
-        public virtual int NextEventId { get; set; }
-        public virtual IList<SensoryEvent> SensedEvents { get; set; } = new List<SensoryEvent>();
 
         [NotMapped]
         public virtual IReadOnlyList<Attack> Attacks => Variant.Attacks;
@@ -252,15 +250,7 @@ namespace UnicornHack.Models.GameState
 
         public virtual void Sense(SensoryEvent @event)
         {
-            @event.Sensor = this;
-            if (IsRelevant(@event))
-            {
-                @event.Id = NextEventId++;
-                SensedEvents.Add(@event);
-            }
         }
-
-        protected abstract bool IsRelevant(SensoryEvent @event);
 
         public virtual SenseType CanSense(Actor target)
         {
@@ -345,7 +335,8 @@ namespace UnicornHack.Models.GameState
             }
 
             Gold -= quantity;
-            var item = StackableItem.CreateItem(ItemType.Gold, quantity, LevelX, LevelY, Level);
+            var item = new StackableItem(ItemType.Gold, Level, LevelX, LevelY, quantity);
+            Inventory.Add(item);
 
             ItemDropEvent.New(this, item);
 
@@ -378,13 +369,7 @@ namespace UnicornHack.Models.GameState
                 }
                 if (stackableItem.Quantity > 1)
                 {
-                    item = new StackableItem
-                    {
-                        Name = stackableItem.Name,
-                        Type = stackableItem.Type,
-                        Quantity = 1,
-                        Game = stackableItem.Game
-                    };
+                    item = new StackableItem(stackableItem.Type, Level, LevelX, LevelY, quantity: 1);
                     stackableItem.Quantity--;
                 }
             }
@@ -392,6 +377,7 @@ namespace UnicornHack.Models.GameState
             item.Actor = null;
             item.LevelX = LevelX;
             item.LevelY = LevelY;
+            item.Level = Level;
             Level.Items.Add(item);
 
             ItemDropEvent.New(this, item);

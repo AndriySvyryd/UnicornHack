@@ -4,7 +4,7 @@ namespace UnicornHack.Models.GameState.Events
 {
     public class ActorMoveEvent : SensoryEvent
     {
-        private ActorMoveEvent()
+        protected ActorMoveEvent()
         {
         }
 
@@ -22,9 +22,9 @@ namespace UnicornHack.Models.GameState.Events
                     ? (SenseType?)null
                     : sensor.CanSense(movee);
 
-                if (moverSensed == SenseType.None
-                    && (moveeSensed == null
-                        || moveeSensed.Value == SenseType.None))
+                if ((moverSensed == SenseType.None)
+                    && ((moveeSensed == null)
+                        || (moveeSensed.Value == SenseType.None)))
                 {
                     continue;
                 }
@@ -35,7 +35,7 @@ namespace UnicornHack.Models.GameState.Events
                     MoverSensed = moverSensed
                 };
 
-                sensor.Sense((dynamic)@event);
+                sensor.Sense(@event);
             }
         }
     }
