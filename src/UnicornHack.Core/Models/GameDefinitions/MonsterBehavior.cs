@@ -11,7 +11,7 @@ namespace UnicornHack.Models.GameDefinitions
         RangedPeaceful = 1 << 2,
         Domesticable = 1 << 3,
         Mountable = 1 << 4,
-        NonWandering = 1 << 5,
+        Wandering = 1 << 5,
         Stalking = 1 << 6,
         Displacing = 1 << 7,
         GoldCollector = 1 << 8,

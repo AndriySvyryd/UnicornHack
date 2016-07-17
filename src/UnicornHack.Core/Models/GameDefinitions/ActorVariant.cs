@@ -396,7 +396,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(AnimalBody, Stealthiness, Handlessness, Carnivorism, Asexuality),
             size: Tiny, weight: 10, nutrition: 10, consumptionProperties: null,
-            generationFlags: SmallGroup, generationFrequency: Commonly, behavior: NonWandering);
+            generationFlags: SmallGroup, generationFrequency: Commonly);
 
         public static readonly ActorVariant AntSoldier = new ActorVariant(
             name: "soldier ant", species: Ant, speciesClass: Insect,
@@ -409,7 +409,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(PoisonResistance, AnimalBody, Stealthiness, Handlessness, Carnivorism, Asexuality),
             size: Tiny, weight: 20, nutrition: 5,
-            generationFlags: SmallGroup, generationFrequency: Commonly, behavior: NonWandering);
+            generationFlags: SmallGroup, generationFrequency: Commonly);
 
         public static readonly ActorVariant AntFire = new ActorVariant(
             name: "fire ant", species: Ant, speciesClass: Insect,
@@ -425,7 +425,7 @@ namespace UnicornHack.Models.GameDefinitions
                 Asexuality),
             size: Tiny, weight: 30, nutrition: 10,
             consumptionProperties: new[] {WhenConsumedAdd(FireResistance, Occasionally)},
-            generationFlags: SmallGroup, generationFrequency: Commonly, behavior: NonWandering);
+            generationFlags: SmallGroup, generationFrequency: Commonly);
 
         public static readonly ActorVariant AntQueen = new ActorVariant(
             name: "ant queen", species: Ant, speciesClass: Insect,
@@ -438,7 +438,7 @@ namespace UnicornHack.Models.GameDefinitions
             properties: Has(
                 PoisonResistance, AnimalBody, Stealthiness, Handlessness, Carnivorism, Femaleness, Oviparity),
             size: Tiny, weight: 10, nutrition: 10, consumptionProperties: null,
-            generationFlags: Entourage, generationFrequency: Rarely, behavior: NonWandering);
+            generationFlags: Entourage, generationFrequency: Rarely);
 
         public static readonly ActorVariant BeeKiller = new ActorVariant(
             name: "killer bee", species: Bee, speciesClass: Insect, noise: Buzz,
@@ -450,7 +450,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(PoisonResistance, Flight, AnimalBody, Handlessness, Femaleness),
             size: Tiny, weight: 5, nutrition: 5,
-            generationFlags: LargeGroup, generationFrequency: Commonly, behavior: NonWandering);
+            generationFlags: LargeGroup, generationFrequency: Commonly);
 
         public static readonly ActorVariant BeeQueen = new ActorVariant(
             name: "queen bee", species: Bee, speciesClass: Insect, noise: Buzz,
@@ -462,7 +462,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(PoisonResistance, Flight, AnimalBody, Handlessness, Femaleness),
             size: Tiny, weight: 5, nutrition: 5,
-            generationFlags: Entourage, generationFrequency: Rarely, behavior: NonWandering);
+            generationFlags: Entourage, generationFrequency: Rarely);
 
         public static readonly ActorVariant BeetleGiant = new ActorVariant(
             name: "giant beetle", species: Beetle, speciesClass: Insect,
@@ -634,7 +634,7 @@ namespace UnicornHack.Models.GameDefinitions
             properties:
                 Has(PoisonResistance, Flight, Stealthiness, Infravisibility, AnimalBody, Handlessness, Carnivorism),
             size: Tiny, weight: 50, nutrition: 20,
-            generationFlags: SmallGroup, generationFrequency: Commonly);
+            behavior: Wandering, generationFlags: SmallGroup, generationFrequency: Commonly);
 
         public static readonly ActorVariant BatGiant = new ActorVariant(
             name: "giant bat", species: Species.Bat, speciesClass: Bird, noise: Sqeek, previousStage: Bat,
@@ -646,7 +646,7 @@ namespace UnicornHack.Models.GameDefinitions
             properties:
                 Has(PoisonResistance, Flight, Stealthiness, Infravisibility, AnimalBody, Handlessness, Carnivorism),
             size: Tiny, weight: 100, nutrition: 40,
-            generationFrequency: Commonly);
+            behavior: Wandering, generationFrequency: Commonly);
 
         public static readonly ActorVariant BatVampire = new ActorVariant(
             name: "vampire bat", species: Species.Bat, speciesClass: Bird, noise: Sqeek, previousStage: BatGiant,
@@ -660,7 +660,7 @@ namespace UnicornHack.Models.GameDefinitions
                 Has(PoisonResistance, Regeneration, Flight, Stealthiness, Infravisibility, AnimalBody, Handlessness,
                     Carnivorism),
             size: Tiny, weight: 100, nutrition: 40,
-            generationFrequency: Commonly);
+            behavior: Wandering, generationFrequency: Commonly);
 
         public static readonly ActorVariant Magpie = new ActorVariant(
             name: "magpie", species: Crow, speciesClass: Bird, noise: Squawk,
@@ -672,7 +672,7 @@ namespace UnicornHack.Models.GameDefinitions
             properties: Has(PoisonResistance, Flight, Infravisibility, AnimalBody, Handlessness, Omnivorism),
             size: Tiny, weight: 50, nutrition: 20,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Uncommonly)},
-            behavior: GemCollector, generationFrequency: Sometimes);
+            behavior: GemCollector | Wandering, generationFrequency: Sometimes);
 
         public static readonly ActorVariant Raven = new ActorVariant(
             name: "raven", species: Crow, speciesClass: Bird, noise: Squawk,
@@ -685,7 +685,7 @@ namespace UnicornHack.Models.GameDefinitions
             properties: Has(PoisonResistance, Flight, Infravisibility, AnimalBody, Handlessness, Omnivorism),
             size: Tiny, weight: 100, nutrition: 40,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Uncommonly)},
-            generationFrequency: Sometimes);
+            behavior: Wandering, generationFrequency: Sometimes);
 
         public static readonly ActorVariant Fox = new ActorVariant(
             name: "fox", species: Species.Fox, speciesClass: Canine, noise: Bark,
@@ -757,7 +757,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(AnimalBody, Infravisibility, Handlessness, Carnivorism),
             size: Small, weight: 150, nutrition: 100,
-            behavior: Domesticable, generationFrequency: Often);
+            behavior: Domesticable | Wandering, generationFrequency: Often);
 
         public static readonly ActorVariant DogMedium = new ActorVariant(
             name: "dog", species: Dog, speciesClass: Canine, noise: Bark, previousStage: DogSmall,
@@ -768,7 +768,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(AnimalBody, Infravisibility, Handlessness, Carnivorism),
             size: Medium, weight: 400, nutrition: 300,
-            behavior: Domesticable, generationFrequency: Often);
+            behavior: Domesticable | Wandering, generationFrequency: Often);
 
         public static readonly ActorVariant DogLarge = new ActorVariant(
             name: "large dog", species: Dog, speciesClass: Canine, noise: Bark, previousStage: DogMedium,
@@ -779,7 +779,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(AnimalBody, Infravisibility, Handlessness, Carnivorism),
             size: Medium, weight: 600, nutrition: 400,
-            behavior: Domesticable, generationFrequency: Often);
+            behavior: Domesticable | Wandering, generationFrequency: Often);
 
         public static readonly ActorVariant Dingo = new ActorVariant(
             name: "dingo", species: Dog, speciesClass: Canine, noise: Bark,
@@ -940,7 +940,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(AnimalBody, Infravisibility, Handlessness, Carnivorism),
             size: Small, weight: 150, nutrition: 100,
-            behavior: Domesticable, generationFrequency: Often);
+            behavior: Domesticable | Wandering, generationFrequency: Often);
 
         public static readonly ActorVariant CatMedium = new ActorVariant(
             name: "housecat", species: Cat, speciesClass: Feline, noise: Mew, previousStage: CatSmall,
@@ -951,7 +951,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(AnimalBody, Infravisibility, Handlessness, Carnivorism),
             size: Small, weight: 200, nutrition: 150,
-            behavior: Domesticable, generationFrequency: Often);
+            behavior: Domesticable | Wandering, generationFrequency: Often);
 
         public static readonly ActorVariant CatLarge = new ActorVariant(
             name: "large cat", species: Cat, speciesClass: Feline, noise: Bark, previousStage: CatMedium,
@@ -962,7 +962,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(AnimalBody, Infravisibility, Handlessness, Carnivorism),
             size: Small, weight: 250, nutrition: 200,
-            behavior: Domesticable, generationFrequency: Often);
+            behavior: Domesticable | Wandering, generationFrequency: Often);
 
         public static readonly ActorVariant Lynx = new ActorVariant(
             name: "lynx", species: Cat, speciesClass: Feline, noise: Growl,
@@ -1025,7 +1025,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(AnimalBody, Infravisibility, Handlessness, Herbivorism),
             size: Medium, weight: 1300, nutrition: 900,
-            behavior: Domesticable | Mountable, generationFrequency: Often);
+            behavior: Domesticable | Mountable | Wandering, generationFrequency: Often);
 
         public static readonly ActorVariant Horse = new ActorVariant(
             name: "horse", species: Species.Horse, speciesClass: Equine, noise: Neigh, previousStage: Pony,
@@ -1036,7 +1036,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(AnimalBody, Infravisibility, Handlessness, Herbivorism),
             size: Large, weight: 1500, nutrition: 1100,
-            behavior: Domesticable | Mountable, generationFrequency: Often);
+            behavior: Domesticable | Mountable | Wandering, generationFrequency: Often);
 
         public static readonly ActorVariant Warhorse = new ActorVariant(
             name: "warhorse", species: Species.Horse, speciesClass: Equine, noise: Neigh, previousStage: Horse,
@@ -1047,7 +1047,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(AnimalBody, Infravisibility, Handlessness, Herbivorism),
             size: Large, weight: 1800, nutrition: 1300,
-            behavior: Domesticable | Mountable, generationFrequency: Often);
+            behavior: Domesticable | Mountable | Wandering, generationFrequency: Often);
 
         public static readonly ActorVariant UnicornWhite = new ActorVariant(
             name: "white unicorn", species: Unicorn, speciesClass: Equine, noise: Neigh, alignment: 7,
@@ -1061,7 +1061,7 @@ namespace UnicornHack.Models.GameDefinitions
                 Has(PoisonResistance, VenomResistance, AnimalBody, Infravisibility, Handlessness, Herbivorism),
             size: Large, weight: 1300, nutrition: 700,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)},
-            behavior: GemCollector | AlignmentAware | RangedPeaceful, generationFrequency: Usually);
+            behavior: GemCollector | AlignmentAware | RangedPeaceful | Wandering, generationFrequency: Usually);
 
         public static readonly ActorVariant UnicornGray = new ActorVariant(
             name: "gray unicorn", species: Unicorn, speciesClass: Equine, noise: Neigh,
@@ -1075,7 +1075,7 @@ namespace UnicornHack.Models.GameDefinitions
                 Has(PoisonResistance, VenomResistance, AnimalBody, Infravisibility, Handlessness, Herbivorism),
             size: Large, weight: 1300, nutrition: 700,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)},
-            behavior: GemCollector | AlignmentAware | RangedPeaceful, generationFrequency: Usually);
+            behavior: GemCollector | AlignmentAware | RangedPeaceful | Wandering, generationFrequency: Usually);
 
         public static readonly ActorVariant UnicornBlack = new ActorVariant(
             name: "black unicorn", species: Unicorn, speciesClass: Equine, noise: Neigh, alignment: -7,
@@ -1089,7 +1089,7 @@ namespace UnicornHack.Models.GameDefinitions
                 Has(PoisonResistance, VenomResistance, AnimalBody, Infravisibility, Handlessness, Herbivorism),
             size: Large, weight: 1300, nutrition: 700,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)},
-            behavior: GemCollector | AlignmentAware | RangedPeaceful, generationFrequency: Usually);
+            behavior: GemCollector | AlignmentAware | RangedPeaceful | Wandering, generationFrequency: Usually);
 
         public static readonly ActorVariant Rothe = new ActorVariant(
             name: "rothe", species: Quadruped, noise: Bleat,
@@ -1101,7 +1101,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(Blindness, AnimalBody, Infravisibility, Handlessness, Herbivorism),
             size: Medium, weight: 600, nutrition: 400,
-            behavior: NonWandering, generationFlags: SmallGroup, generationFrequency: Sometimes);
+            generationFlags: SmallGroup, generationFrequency: Sometimes);
 
         public static readonly ActorVariant Mumak = new ActorVariant(
             name: "mumak", species: Quadruped, noise: Roar,
@@ -1273,7 +1273,7 @@ namespace UnicornHack.Models.GameDefinitions
                     Headlessness, Mindlessness, Asexuality, Metallivorism),
             size: Tiny, weight: 30, nutrition: 1,
             consumptionProperties: new[] {WhenConsumedAdd(StoningResistance, Rarely)},
-            generationFrequency: Usually);
+            behavior: Wandering, generationFrequency: Usually);
 
         public static readonly ActorVariant BlobQuivering = new ActorVariant(
             name: "quivering blob", species: Blob,
@@ -1287,7 +1287,7 @@ namespace UnicornHack.Models.GameDefinitions
                 Amorphism, NonAnimal, Eyelessness, Limblessness, Headlessness, Mindlessness, Asexuality),
             size: Small, weight: 200, nutrition: 100,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Uncommonly)},
-            generationFrequency: Usually);
+            behavior: Wandering, generationFrequency: Usually);
 
         public static readonly ActorVariant CubeGelatinous = new ActorVariant(
             name: "gelatinous cube", species: Blob,
@@ -1306,7 +1306,7 @@ namespace UnicornHack.Models.GameDefinitions
                 Eyelessness, Limblessness, Headlessness, Mindlessness, Omnivorism, Asexuality),
             size: Large, weight: 600, nutrition: 150,
             consumptionProperties: new[] {WhenConsumedAdd(ElectricityResistance, Uncommonly)},
-            generationFrequency: Commonly, behavior: WeaponCollector);
+            generationFrequency: Commonly, behavior: WeaponCollector | Wandering);
 
         public static readonly ActorVariant OozeGray = new ActorVariant(
             name: "gray ooze", species: Ooze,
@@ -1398,7 +1398,7 @@ namespace UnicornHack.Models.GameDefinitions
                 Amorphism, NonAnimal, Eyelessness, Limblessness, Headlessness, Mindlessness, Asexuality, NoInventory),
             size: Small, weight: 100, nutrition: 20,
             consumptionProperties: new[] {WhenConsumedAdd(ColdResistance, Uncommonly)},
-            behavior: NonWandering, generationFrequency: Commonly);
+            generationFrequency: Commonly);
 
         public static readonly ActorVariant JellySpotted = new ActorVariant(
             name: "spotted jelly", species: Jelly,
@@ -1414,7 +1414,7 @@ namespace UnicornHack.Models.GameDefinitions
                 NoInventory),
             size: Small, weight: 100, nutrition: 20,
             consumptionProperties: new[] {WhenConsumedAdd(AcidResistance, Uncommonly)},
-            behavior: NonWandering, generationFrequency: Commonly);
+            generationFrequency: Commonly);
 
         public static readonly ActorVariant JellyOchre = new ActorVariant(
             name: "ochre jelly", species: Jelly,
@@ -1446,7 +1446,7 @@ namespace UnicornHack.Models.GameDefinitions
                 SleepResistance, PoisonResistance, VenomResistance, DecayResistance, Stealthiness, Breathlessness,
                 NonAnimal, Eyelessness, Limblessness, Headlessness, Mindlessness, Asexuality, NoInventory),
             size: Small, weight: 20, nutrition: 100,
-            behavior: NonWandering, generationFrequency: Commonly);
+            generationFrequency: Commonly);
 
         public static readonly ActorVariant MoldBrown = new ActorVariant(
             name: "brown mold", species: Fungus,
@@ -1462,7 +1462,7 @@ namespace UnicornHack.Models.GameDefinitions
                 NoInventory),
             size: Small, weight: 50, nutrition: 30,
             consumptionProperties: new[] {WhenConsumedAdd(ColdResistance, Uncommonly)},
-            behavior: NonWandering, generationFrequency: Uncommonly);
+            generationFrequency: Uncommonly);
 
         public static readonly ActorVariant MoldYellow = new ActorVariant(
             name: "yellow mold", species: Fungus,
@@ -1477,7 +1477,7 @@ namespace UnicornHack.Models.GameDefinitions
                 NonAnimal, Eyelessness, Limblessness, Headlessness, Mindlessness, Asexuality, NoInventory),
             size: Small, weight: 50, nutrition: 30,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Uncommonly)},
-            behavior: NonWandering, generationFrequency: Uncommonly);
+            generationFrequency: Uncommonly);
 
         public static readonly ActorVariant MoldGreen = new ActorVariant(
             name: "green mold", species: Fungus,
@@ -1493,7 +1493,7 @@ namespace UnicornHack.Models.GameDefinitions
                 Asexuality, NoInventory),
             size: Small, weight: 50, nutrition: 30,
             consumptionProperties: new[] {WhenConsumedAdd(AcidResistance, Uncommonly)},
-            behavior: NonWandering, generationFrequency: Uncommonly);
+            generationFrequency: Uncommonly);
 
         public static readonly ActorVariant MoldRed = new ActorVariant(
             name: "red mold", species: Fungus,
@@ -1509,7 +1509,7 @@ namespace UnicornHack.Models.GameDefinitions
                 NoInventory),
             size: Small, weight: 50, nutrition: 30,
             consumptionProperties: new[] {WhenConsumedAdd(FireResistance, Uncommonly)},
-            behavior: NonWandering, generationFrequency: Uncommonly);
+            generationFrequency: Uncommonly);
 
         public static readonly ActorVariant Shrieker = new ActorVariant(
             name: "shrieker", species: Fungus,
@@ -1523,7 +1523,7 @@ namespace UnicornHack.Models.GameDefinitions
                 Headlessness, Mindlessness, Asexuality, NoInventory),
             size: Small, weight: 100, nutrition: 100,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Rarely)},
-            behavior: NonWandering, generationFrequency: Uncommonly);
+            generationFrequency: Uncommonly);
 
         public static readonly ActorVariant FungusViolet = new ActorVariant(
             name: "violet fungus", species: Fungus,
@@ -1539,7 +1539,7 @@ namespace UnicornHack.Models.GameDefinitions
                 Limblessness, Headlessness, Mindlessness, Asexuality, NoInventory),
             size: Small, weight: 100, nutrition: 100,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Rarely)},
-            behavior: NonWandering, generationFrequency: Uncommonly);
+            generationFrequency: Uncommonly);
 
         public static readonly ActorVariant CloudFog = new ActorVariant(
             name: "fog cloud", species: Cloud,
@@ -1696,7 +1696,7 @@ namespace UnicornHack.Models.GameDefinitions
                 Flight, Stealthiness, Infravision, Infravisibility, NonAnimal, Breathlessness, Limblessness,
                 Headlessness, Mindlessness, Asexuality, NoInventory),
             size: Small, weight: 10, nutrition: 10, consumptionProperties: new[] {WhenConsumedAdd(Telepathy, Always)},
-            generationFrequency: Occasionally);
+            behavior: Wandering, generationFrequency: Occasionally);
 
         public static readonly ActorVariant SphereFreezing = new ActorVariant(
             name: "freezing sphere", species: FloatingSphere,
@@ -1760,7 +1760,7 @@ namespace UnicornHack.Models.GameDefinitions
             size: Medium, weight: 250, nutrition: 50,
             consumptionProperties:
                 new[] {WhenConsumedAdd(ColdResistance, Occasionally), WhenConsumedAdd(SleepResistance, Sometimes)},
-            generationFlags: NonPolymorphable, generationFrequency: Occasionally);
+            behavior: Wandering, generationFlags: NonPolymorphable, generationFrequency: Occasionally);
 
         public static readonly ActorVariant Homunculus = new ActorVariant(
             name: "homunculus", species: Species.Homunculus,
@@ -1815,7 +1815,7 @@ namespace UnicornHack.Models.GameDefinitions
             properties: Has(Regeneration, Flight, Infravision, Infravisibility),
             size: Tiny, weight: 100, nutrition: 50, corpse: None,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)},
-            behavior: Stalking, generationFrequency: Often);
+            behavior: Stalking | Wandering, generationFrequency: Often);
 
         public static readonly ActorVariant Quasit = new ActorVariant(
             name: "quasit", species: Species.Imp, speciesClass: Demon, noise: Cuss,
@@ -1829,7 +1829,7 @@ namespace UnicornHack.Models.GameDefinitions
             properties: Has(PoisonResistance, Regeneration, Infravision, Infravisibility),
             size: Small, weight: 200, nutrition: 100, corpse: None,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)},
-            behavior: Stalking, generationFrequency: Often);
+            behavior: Stalking | Wandering, generationFrequency: Often);
 
         // TODO: fire, ice imps
 
@@ -1914,7 +1914,7 @@ namespace UnicornHack.Models.GameDefinitions
             properties: Has(StoningResistance, Humanoidness, ThickHide, Breathlessness),
             size: Medium, weight: 1000, nutrition: 50,
             consumptionProperties: new[] {WhenConsumedAdd(StoningResistance, Rarely)},
-            behavior: NonWandering, generationFrequency: Commonly);
+            generationFrequency: Commonly);
 
         public static readonly ActorVariant WingedGargoyle = new ActorVariant(
             name: "winged gargoyle", species: Species.Gargoyle, noise: Grunt, previousStage: Gargoyle,
@@ -1928,7 +1928,7 @@ namespace UnicornHack.Models.GameDefinitions
             properties: Has(StoningResistance, Flight, Humanoidness, ThickHide, Breathlessness, Oviparity),
             size: Medium, weight: 1200, nutrition: 50,
             consumptionProperties: new[] {WhenConsumedAdd(StoningResistance, Rarely)},
-            behavior: NonWandering | MagicUser, generationFrequency: Commonly);
+            behavior: MagicUser, generationFrequency: Commonly);
 
         public static readonly ActorVariant Chickatrice = new ActorVariant(
             name: "chickatrice", species: Species.Cockatrice, speciesClass: Hybrid, noise: Hiss,
@@ -1947,7 +1947,7 @@ namespace UnicornHack.Models.GameDefinitions
                 WhenConsumedAdd(PoisonResistance, Sometimes),
                 WhenConsumedAdd(StoningResistance, Sometimes)
             },
-            generationFlags: SmallGroup, generationFrequency: Commonly, behavior: NonWandering);
+            generationFlags: SmallGroup, generationFrequency: Commonly);
 
         public static readonly ActorVariant Cockatrice = new ActorVariant(
             name: "cockatrice", species: Species.Cockatrice, speciesClass: Hybrid, noise: Hiss,
@@ -1998,7 +1998,7 @@ namespace UnicornHack.Models.GameDefinitions
             {
                 WhenConsumedAdd(Teleportation, Sometimes),
                 WhenConsumedAdd(TeleportationControl, Uncommonly)
-            }, behavior: NonWandering | Stalking, generationFrequency: Occasionally);
+            }, behavior: Stalking, generationFrequency: Occasionally);
 
         public static readonly ActorVariant MimicSmall = new ActorVariant(
             name: "small mimic", species: Mimic, speciesClass: ShapeChanger,
@@ -2013,7 +2013,7 @@ namespace UnicornHack.Models.GameDefinitions
                 AcidResistance, Infravisibility, Camouflage, Stealthiness, Eyelessness, Headlessness, Breathlessness,
                 Limblessness, ThickHide, Clinginess, Amorphism, PolymorphControl, Carnivorism),
             size: Small, weight: 300, nutrition: 200,
-            behavior: NonWandering, generationFrequency: Occasionally);
+            generationFrequency: Occasionally);
 
         public static readonly ActorVariant MimicLarge = new ActorVariant(
             name: "large mimic", species: Mimic, speciesClass: ShapeChanger, previousStage: MimicSmall,
@@ -2028,7 +2028,7 @@ namespace UnicornHack.Models.GameDefinitions
                 AcidResistance, Infravisibility, Camouflage, Stealthiness, Eyelessness, Headlessness, Breathlessness,
                 Limblessness, ThickHide, Clinginess, Amorphism, PolymorphControl, Carnivorism),
             size: Medium, weight: 600, nutrition: 400,
-            behavior: NonWandering, generationFrequency: Occasionally);
+            generationFrequency: Occasionally);
 
         public static readonly ActorVariant MimicGiant = new ActorVariant(
             name: "giant mimic", species: Mimic, speciesClass: ShapeChanger, previousStage: MimicLarge,
@@ -2043,7 +2043,7 @@ namespace UnicornHack.Models.GameDefinitions
                 AcidResistance, Infravisibility, Camouflage, Stealthiness, Eyelessness, Headlessness, Breathlessness,
                 Limblessness, ThickHide, Clinginess, Amorphism, PolymorphControl, Carnivorism),
             size: Large, weight: 800, nutrition: 500,
-            behavior: NonWandering, generationFrequency: Occasionally);
+            generationFrequency: Occasionally);
 
         public static readonly ActorVariant PiercerRock = new ActorVariant(
             name: "rock piercer", species: Piercer,
@@ -2775,7 +2775,7 @@ namespace UnicornHack.Models.GameDefinitions
             size: Large, weight: 900, nutrition: 400,
             consumptionProperties:
                 new[] {WhenConsumedAdd(Invisibility, Uncommonly), WhenConsumedAdd(InvisibilityDetection, Uncommonly)},
-            behavior: Stalking, generationFrequency: Occasionally);
+            behavior: Stalking | Wandering, generationFrequency: Occasionally);
 
         public static readonly ActorVariant ElementalAir = new ActorVariant(
             name: "air elemental", species: Elemental,
@@ -2821,7 +2821,7 @@ namespace UnicornHack.Models.GameDefinitions
                 SicknessResistance, Swimming, NonAnimal, NonSolidBody, Breathlessness, Limblessness, Eyelessness,
                 Headlessness, Mindlessness, Asexuality),
             size: Huge, weight: 2500, nutrition: 0, corpse: None,
-            behavior: NonWandering, generationFrequency: Uncommonly);
+            generationFrequency: Uncommonly);
 
         public static readonly ActorVariant ElementalEarth = new ActorVariant(
             name: "earth elemental", species: Elemental,
@@ -2836,7 +2836,7 @@ namespace UnicornHack.Models.GameDefinitions
                 SicknessResistance, Phasing, ThickHide, NonAnimal, Breathlessness, Limblessness, Eyelessness,
                 Headlessness, Mindlessness, Asexuality),
             size: Huge, weight: 2500, nutrition: 0, corpse: None,
-            behavior: NonWandering, generationFrequency: Uncommonly);
+            generationFrequency: Uncommonly);
 
         public static readonly ActorVariant Gnome = new ActorVariant(
             name: "gnome", species: Species.Gnome, noise: Speach,
@@ -3200,7 +3200,7 @@ namespace UnicornHack.Models.GameDefinitions
                 ColdResistance, SleepResistance, PoisonResistance, SicknessResistance, Infravision, Humanoidness,
                 Breathlessness),
             size: Small, weight: 400, nutrition: 50, corpse: KoboldMedium,
-            behavior: Stalking | NonWandering, generationFlags: SmallGroup, generationFrequency: Uncommonly);
+            behavior: Stalking, generationFlags: SmallGroup, generationFrequency: Uncommonly);
 
         public static readonly ActorVariant MummyKobold = new ActorVariant(
             name: "kobold mummy", species: Kobold, speciesClass: Undead, noise: Moan,
@@ -3215,7 +3215,7 @@ namespace UnicornHack.Models.GameDefinitions
                 ColdResistance, SleepResistance, PoisonResistance, SicknessResistance, Infravision, Humanoidness,
                 Breathlessness),
             size: Small, weight: 400, nutrition: 50, corpse: KoboldMedium,
-            behavior: NonWandering, generationFrequency: Uncommonly);
+            generationFrequency: Uncommonly);
 
         public static readonly ActorVariant ZombieGnome = new ActorVariant(
             name: "gnome zombie", species: Species.Gnome, speciesClass: Undead, noise: Moan,
@@ -3229,7 +3229,7 @@ namespace UnicornHack.Models.GameDefinitions
                 ColdResistance, SleepResistance, PoisonResistance, SicknessResistance, Infravision, Humanoidness,
                 Breathlessness, Mindlessness),
             size: Small, weight: 650, nutrition: 100, corpse: Gnome,
-            behavior: Stalking | NonWandering, generationFlags: SmallGroup, generationFrequency: Uncommonly);
+            behavior: Stalking, generationFlags: SmallGroup, generationFrequency: Uncommonly);
 
         public static readonly ActorVariant MummyGnome = new ActorVariant(
             name: "gnome mummy", species: Species.Gnome, speciesClass: Undead, noise: Moan,
@@ -3243,7 +3243,7 @@ namespace UnicornHack.Models.GameDefinitions
                 ColdResistance, SleepResistance, PoisonResistance, SicknessResistance, Infravision, Humanoidness,
                 Breathlessness),
             size: Small, weight: 650, nutrition: 100, corpse: Gnome,
-            behavior: NonWandering, generationFrequency: Uncommonly);
+            generationFrequency: Uncommonly);
 
         public static readonly ActorVariant ZombieOrc = new ActorVariant(
             name: "orc zombie", species: Species.Orc, speciesClass: Undead, noise: Moan,
@@ -3257,7 +3257,7 @@ namespace UnicornHack.Models.GameDefinitions
                 ColdResistance, SleepResistance, PoisonResistance, SicknessResistance, Infravision, Humanoidness,
                 Breathlessness, Mindlessness),
             size: Medium, weight: 1000, nutrition: 100, corpse: Orc,
-            behavior: Stalking | NonWandering, generationFlags: SmallGroup, generationFrequency: Uncommonly);
+            behavior: Stalking, generationFlags: SmallGroup, generationFrequency: Uncommonly);
 
         public static readonly ActorVariant MummyOrc = new ActorVariant(
             name: "orc mummy", species: Species.Orc, speciesClass: Undead, noise: Moan,
@@ -3271,7 +3271,7 @@ namespace UnicornHack.Models.GameDefinitions
                 ColdResistance, SleepResistance, PoisonResistance, SicknessResistance, Infravision, Humanoidness,
                 Breathlessness),
             size: Medium, weight: 1000, nutrition: 100, corpse: Orc,
-            behavior: NonWandering, generationFrequency: Uncommonly);
+            generationFrequency: Uncommonly);
 
         public static readonly ActorVariant ZombieDwarf = new ActorVariant(
             name: "dwarf zombie", species: Species.Dwarf, speciesClass: Undead, noise: Moan,
@@ -3285,7 +3285,7 @@ namespace UnicornHack.Models.GameDefinitions
                 ColdResistance, SleepResistance, PoisonResistance, SicknessResistance, Infravision, Humanoidness,
                 Breathlessness, Mindlessness),
             size: Medium, weight: 900, nutrition: 200, corpse: Dwarf,
-            behavior: Stalking | NonWandering, generationFlags: SmallGroup, generationFrequency: Sometimes);
+            behavior: Stalking, generationFlags: SmallGroup, generationFrequency: Sometimes);
 
         public static readonly ActorVariant MummyDwarf = new ActorVariant(
             name: "dwarf mummy", species: Species.Dwarf, speciesClass: Undead, noise: Moan,
@@ -3299,7 +3299,7 @@ namespace UnicornHack.Models.GameDefinitions
                 ColdResistance, SleepResistance, PoisonResistance, SicknessResistance, Infravision, Humanoidness,
                 Breathlessness),
             size: Medium, weight: 900, nutrition: 200, corpse: Dwarf,
-            behavior: NonWandering, generationFrequency: Sometimes);
+            generationFrequency: Sometimes);
 
         public static readonly ActorVariant ZombieElf = new ActorVariant(
             name: "elf zombie", species: Species.Elf, speciesClass: Undead, noise: Moan,
@@ -3314,7 +3314,7 @@ namespace UnicornHack.Models.GameDefinitions
                 Infravision, Humanoidness, Breathlessness, Mindlessness),
             size: Medium, weight: 800, nutrition: 150, corpse: Elf,
             consumptionProperties: new[] {WhenConsumedAdd(SleepResistance, Uncommonly)},
-            behavior: Stalking | NonWandering, generationFlags: SmallGroup, generationFrequency: Sometimes);
+            behavior: Stalking, generationFlags: SmallGroup, generationFrequency: Sometimes);
 
         public static readonly ActorVariant MummyElf = new ActorVariant(
             name: "elf mummy", species: Species.Elf, speciesClass: Undead, noise: Moan,
@@ -3329,7 +3329,7 @@ namespace UnicornHack.Models.GameDefinitions
                 Infravision, Humanoidness, Breathlessness),
             size: Medium, weight: 800, nutrition: 150, corpse: Elf,
             consumptionProperties: new[] {WhenConsumedAdd(SleepResistance, Uncommonly)},
-            behavior: NonWandering, generationFrequency: Sometimes);
+            generationFrequency: Sometimes);
 
         public static readonly ActorVariant ZombieHuman = new ActorVariant(
             name: "human zombie", species: Species.Human, speciesClass: Undead, noise: Moan,
@@ -3343,7 +3343,7 @@ namespace UnicornHack.Models.GameDefinitions
                 ColdResistance, SleepResistance, PoisonResistance, SicknessResistance, Infravision, Humanoidness,
                 Breathlessness, Mindlessness),
             size: Medium, weight: 1000, nutrition: 200, corpse: Human,
-            behavior: Stalking | NonWandering, generationFlags: SmallGroup, generationFrequency: Sometimes);
+            behavior: Stalking, generationFlags: SmallGroup, generationFrequency: Sometimes);
 
         public static readonly ActorVariant MummyHuman = new ActorVariant(
             name: "human mummy", species: Species.Human, speciesClass: Undead, noise: Moan,
@@ -3357,7 +3357,7 @@ namespace UnicornHack.Models.GameDefinitions
                 ColdResistance, SleepResistance, PoisonResistance, SicknessResistance, Infravision, Humanoidness,
                 Breathlessness),
             size: Medium, weight: 1000, nutrition: 200, corpse: Human,
-            behavior: NonWandering, generationFrequency: Sometimes);
+            generationFrequency: Sometimes);
 
         public static readonly ActorVariant ZombieGiant = new ActorVariant(
             name: "giant zombie", species: Species.Giant, speciesClass: Undead, noise: Moan,
@@ -3371,7 +3371,7 @@ namespace UnicornHack.Models.GameDefinitions
                 ColdResistance, SleepResistance, PoisonResistance, SicknessResistance, Infravision, Humanoidness,
                 Breathlessness, Mindlessness),
             size: Huge, weight: 2250, nutrition: 350, corpse: Giant,
-            behavior: Stalking | NonWandering, generationFlags: SmallGroup, generationFrequency: Uncommonly);
+            behavior: Stalking, generationFlags: SmallGroup, generationFrequency: Uncommonly);
 
         public static readonly ActorVariant MummyGiant = new ActorVariant(
             name: "giant mummy", species: Species.Giant, speciesClass: Undead, noise: Moan, alignment: -7,
@@ -3385,7 +3385,7 @@ namespace UnicornHack.Models.GameDefinitions
                 ColdResistance, SleepResistance, PoisonResistance, SicknessResistance, Infravision, Humanoidness,
                 Breathlessness),
             size: Huge, weight: 2250, nutrition: 350, corpse: Giant,
-            behavior: NonWandering, generationFrequency: Uncommonly);
+            generationFrequency: Uncommonly);
 
         public static readonly ActorVariant ZombieEttin = new ActorVariant(
             name: "ettin zombie", species: Species.Giant, speciesClass: Undead, noise: Moan,
@@ -3400,7 +3400,7 @@ namespace UnicornHack.Models.GameDefinitions
                 ColdResistance, SleepResistance, PoisonResistance, SicknessResistance, Infravision, Humanoidness,
                 Breathlessness, Mindlessness),
             size: Huge, weight: 2250, nutrition: 350, corpse: Ettin,
-            behavior: Stalking | NonWandering, generationFlags: SmallGroup, generationFrequency: Uncommonly);
+            behavior: Stalking, generationFlags: SmallGroup, generationFrequency: Uncommonly);
 
         public static readonly ActorVariant MummyEttin = new ActorVariant(
             name: "ettin mummy", species: Species.Giant, speciesClass: Undead, noise: Moan,
@@ -3415,7 +3415,7 @@ namespace UnicornHack.Models.GameDefinitions
                 ColdResistance, SleepResistance, PoisonResistance, SicknessResistance, Infravision, Humanoidness,
                 Breathlessness),
             size: Huge, weight: 2250, nutrition: 350, corpse: Ettin,
-            behavior: NonWandering, generationFrequency: Uncommonly);
+            generationFrequency: Uncommonly);
 
         public static readonly ActorVariant Skeleton = new ActorVariant(
             name: "skeleton", species: Species.Skeleton, speciesClass: Undead,
@@ -3474,7 +3474,7 @@ namespace UnicornHack.Models.GameDefinitions
                 StoningResistance, SlimingResistance, Flight, Phasing, Infravision, NonSolidBody, Humanoidness,
                 Breathlessness, NoInventory),
             size: Medium, weight: 0, nutrition: 0, corpse: None,
-            behavior: Stalking | NonWandering, generationFlags: NonPolymorphable | NonGenocidable,
+            behavior: Stalking | Wandering, generationFlags: NonPolymorphable | NonGenocidable,
             generationFrequency: Never);
 
         public static readonly ActorVariant Shade = new ActorVariant(
@@ -3488,10 +3488,10 @@ namespace UnicornHack.Models.GameDefinitions
             properties: Has(
                 ColdResistance, DisintegrationResistance, SleepResistance, PoisonResistance, SicknessResistance,
                 StoningResistance, SlimingResistance, Flight, Phasing, Infravision, InvisibilityDetection, NonSolidBody,
-                Humanoidness,
-                Breathlessness, NoInventory),
+                Humanoidness, Breathlessness, NoInventory),
             size: Medium, weight: 0, nutrition: 0, corpse: None,
-            behavior: Stalking, generationFlags: NonPolymorphable | NonGenocidable, generationFrequency: Never);
+            behavior: Stalking | Wandering, generationFlags: NonPolymorphable | NonGenocidable,
+            generationFrequency: Never);
 
         public static readonly ActorVariant WightBarrow = new ActorVariant(
             name: "barrow wight", species: Species.Wraith, speciesClass: Undead, noise: Howl,
@@ -3550,7 +3550,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(Swimming, Infravisibility, AnimalBody, Handlessness, Metallivorism),
             size: Medium, weight: 1000, nutrition: 300,
-            behavior: NonWandering, generationFrequency: Occasionally);
+            generationFrequency: Occasionally);
 
         public static readonly ActorVariant Disenchanter = new ActorVariant(
             name: "disenchanter", species: Species.Disenchanter, noise: Growl,
@@ -3562,7 +3562,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(Infravisibility, AnimalBody, Handlessness, Metallivorism),
             size: Medium, weight: 750, nutrition: 200,
-            behavior: NonWandering, generationFrequency: Occasionally);
+            generationFrequency: Occasionally);
 
         public static readonly ActorVariant SnakeGarter = new ActorVariant(
             name: "garter snake", species: Species.Snake, noise: Hiss,
@@ -4081,7 +4081,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(Infravisibility, Humanoidness, Omnivorism),
             size: Medium, weight: 1000, nutrition: 400,
-            behavior: Peaceful | Bribeable | Stalking | Displacing | WeaponCollector | GoldCollector,
+            behavior: Peaceful | Bribeable | Stalking | Wandering | Displacing | WeaponCollector | GoldCollector,
             generationFlags: NonPolymorphable, generationFrequency: Never);
 
         public static readonly ActorVariant WatchCaptain = new ActorVariant(
@@ -4094,7 +4094,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(Infravisibility, Humanoidness, Omnivorism),
             size: Medium, weight: 1000, nutrition: 400,
-            behavior: Peaceful | Bribeable | Stalking | Displacing | WeaponCollector | GoldCollector,
+            behavior: Peaceful | Bribeable | Stalking | Wandering | Displacing | WeaponCollector | GoldCollector,
             generationFlags: NonPolymorphable, generationFrequency: Never);
 
         public static readonly ActorVariant Guard = new ActorVariant(
@@ -4118,7 +4118,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(Infravisibility, Humanoidness, Omnivorism),
             size: Medium, weight: 1000, nutrition: 400,
-            behavior: Bribeable | Stalking | Displacing | WeaponCollector | GoldCollector,
+            behavior: Bribeable | Stalking | Wandering | Displacing | WeaponCollector | GoldCollector,
             generationFlags: SmallGroup | NonPolymorphable, generationFrequency: Rarely);
 
         public static readonly ActorVariant Sergeant = new ActorVariant(
@@ -4130,7 +4130,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(Infravisibility, Humanoidness, Omnivorism),
             size: Medium, weight: 1000, nutrition: 400,
-            behavior: Bribeable | Stalking | Displacing | WeaponCollector | GoldCollector,
+            behavior: Bribeable | Stalking | Wandering | Displacing | WeaponCollector | GoldCollector,
             generationFlags: SmallGroup | NonPolymorphable, generationFrequency: Rarely);
 
         public static readonly ActorVariant Lieutenant = new ActorVariant(
@@ -4143,7 +4143,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(Infravisibility, Humanoidness, Omnivorism),
             size: Medium, weight: 1000, nutrition: 400,
-            behavior: Bribeable | Stalking | Displacing | WeaponCollector | GoldCollector,
+            behavior: Bribeable | Stalking | Wandering | Displacing | WeaponCollector | GoldCollector,
             generationFlags: NonPolymorphable, generationFrequency: Rarely);
 
         public static readonly ActorVariant Captain = new ActorVariant(
@@ -4156,7 +4156,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(Infravisibility, Humanoidness, Omnivorism),
             size: Medium, weight: 1000, nutrition: 400,
-            behavior: Bribeable | Stalking | Displacing | WeaponCollector | GoldCollector,
+            behavior: Bribeable | Stalking | Wandering | Displacing | WeaponCollector | GoldCollector,
             generationFlags: Entourage | NonPolymorphable, generationFrequency: Rarely);
 
         public static readonly ActorVariant Oracle = new ActorVariant(
@@ -4168,8 +4168,7 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(Infravisibility, Humanoidness, Femaleness),
             size: Medium, weight: 1000, nutrition: 400,
-            behavior: NonWandering | Peaceful,
-            generationFlags: NonPolymorphable, generationFrequency: Never);
+            behavior: Peaceful, generationFlags: NonPolymorphable, generationFrequency: Never);
 
         public static readonly ActorVariant Medusa = new ActorVariant(
             name: "Medusa", species: Species.Human, noise: Hiss,
@@ -4187,8 +4186,7 @@ namespace UnicornHack.Models.GameDefinitions
                 Humanoidness, Femaleness, Omnivorism),
             size: Medium, weight: 1000, nutrition: 400,
             consumptionProperties: new[] {WhenConsumedAdd(StoningResistance, Often)},
-            behavior: NonWandering | RangedPeaceful,
-            generationFlags: NonPolymorphable, generationFrequency: Never);
+            behavior: RangedPeaceful, generationFlags: NonPolymorphable, generationFrequency: Never);
 
         public static readonly ActorVariant Rodney = new ActorVariant(
             name: "Wizard of Yendor", species: Species.Human, noise: Cuss,
@@ -4205,7 +4203,7 @@ namespace UnicornHack.Models.GameDefinitions
                 Maleness, Omnivorism),
             size: Medium, weight: 1000, nutrition: 400,
             consumptionProperties: new[] {WhenConsumedAdd(StoningResistance, Often)},
-            behavior: NonWandering | RangedPeaceful | Covetous | MagicUser,
+            behavior: RangedPeaceful | Covetous | MagicUser,
             generationFlags: NonPolymorphable | NonGenocidable, generationFrequency: Never);
 
         public static readonly ActorVariant Croesus = new ActorVariant(
@@ -4218,7 +4216,7 @@ namespace UnicornHack.Models.GameDefinitions
             properties: Has(Infravisibility, InvisibilityDetection, Humanoidness, Maleness, Omnivorism),
             size: Medium, weight: 1000, nutrition: 400,
             consumptionProperties: new[] {WhenConsumedAdd(StoningResistance, Often)},
-            behavior: NonWandering | Stalking | GoldCollector | GemCollector | WeaponCollector | MagicUser,
+            behavior: Stalking | GoldCollector | GemCollector | WeaponCollector | MagicUser,
             generationFlags: NonPolymorphable, generationFrequency: Never);
 
         public static readonly ActorVariant Sandestin = new ActorVariant(
@@ -4232,8 +4230,8 @@ namespace UnicornHack.Models.GameDefinitions
             },
             properties: Has(StoningResistance, Infravision, Infravisibility, Humanoidness),
             size: Medium, weight: 1500, nutrition: 400,
-            consumptionProperties: new[] { WhenConsumedAdd(PolymorphControl, Sometimes) }, corpse: None,
-            behavior: NonWandering | Stalking | WeaponCollector | AlignmentAware,
+            consumptionProperties: new[] {WhenConsumedAdd(PolymorphControl, Sometimes)}, corpse: None,
+            behavior: Stalking | WeaponCollector | AlignmentAware,
             generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Rarely);
 
         public static readonly ActorVariant Djinni = new ActorVariant(
@@ -4244,10 +4242,11 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Weapon, PhysicalDamage, diceCount: 2, diceSides: 8),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 4)
             },
-            properties: Has(StoningResistance, PoisonResistance, SicknessResistance, Flight, Infravisibility, Humanoidness),
+            properties: Has(
+                StoningResistance, PoisonResistance, SicknessResistance, Flight, Infravisibility, Humanoidness),
             size: Medium, weight: 1400, nutrition: 400,
-            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
-            behavior: NonWandering | Stalking | WeaponCollector, generationFlags: NonPolymorphable | NonGenocidable,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: Stalking | WeaponCollector, generationFlags: NonPolymorphable | NonGenocidable,
             generationFrequency: Never);
 
         public static readonly ActorVariant DemonWater = new ActorVariant(
@@ -4260,10 +4259,12 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Bite, PhysicalDamage, diceCount: 1, diceSides: 3),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 5)
             },
-            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Swimming, Infravision, Infravisibility, Humanoidness),
+            properties: Has(
+                FireResistance, PoisonResistance, SicknessResistance, Swimming, Infravision, Infravisibility,
+                Humanoidness),
             size: Medium, weight: 1000, nutrition: 400,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
-            behavior: NonWandering | Stalking | WeaponCollector, generationFlags: NonPolymorphable | NonGenocidable,
+            behavior: Stalking | WeaponCollector, generationFlags: NonPolymorphable | NonGenocidable,
             generationFrequency: Never);
 
         // TODO: incubus
@@ -4277,10 +4278,11 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Punch, PhysicalDamage, diceCount: 1, diceSides: 3),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 4)
             },
-            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Flight, Infravision, Infravisibility, Humanoidness),
+            properties: Has(
+                FireResistance, PoisonResistance, SicknessResistance, Flight, Infravision, Infravisibility, Humanoidness),
             size: Medium, weight: 1400, nutrition: 400,
-            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
-            behavior: NonWandering | Stalking | WeaponCollector, generationFlags: NonPolymorphable | NonGenocidable,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: Stalking | WeaponCollector, generationFlags: NonPolymorphable | NonGenocidable,
             generationFrequency: Rarely);
 
         public static readonly ActorVariant DevilHorned = new ActorVariant(
@@ -4294,10 +4296,11 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Headbutt, PhysicalDamage, diceCount: 1, diceSides: 3),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 4)
             },
-            properties: Has(FireResistance, PoisonResistance, SicknessResistance, ThickHide, Infravision, Infravisibility),
+            properties: Has(
+                FireResistance, PoisonResistance, SicknessResistance, ThickHide, Infravision, Infravisibility),
             size: Medium, weight: 1000, nutrition: 400,
-            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
-            behavior: NonWandering | Stalking | WeaponCollector, generationFlags: HellOnly | NonGenocidable,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: Stalking | WeaponCollector, generationFlags: HellOnly | NonGenocidable,
             generationFrequency: Uncommonly);
 
         public static readonly ActorVariant Hezrou = new ActorVariant(
@@ -4310,11 +4313,11 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Bite, PhysicalDamage, diceCount: 2, diceSides: 4),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 6)
             },
-            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Infravision, Infravisibility,
-                Humanoidness),
+            properties: Has(
+                FireResistance, PoisonResistance, SicknessResistance, Infravision, Infravisibility, Humanoidness),
             size: Large, weight: 1600, nutrition: 400,
-            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
-            behavior: NonWandering | Stalking, generationFlags: HellOnly | NonGenocidable | SmallGroup,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: Stalking, generationFlags: HellOnly | NonGenocidable | SmallGroup,
             generationFrequency: Uncommonly);
 
         public static readonly ActorVariant Erinyes = new ActorVariant(
@@ -4325,11 +4328,11 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Weapon, VenomDamage, diceCount: 2, diceSides: 4),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 5)
             },
-            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Infravision, Infravisibility,
-                Humanoidness),
+            properties: Has(
+                FireResistance, PoisonResistance, SicknessResistance, Infravision, Infravisibility, Humanoidness),
             size: Medium, weight: 1000, nutrition: 400,
-            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
-            behavior: NonWandering | Stalking | WeaponCollector,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: Stalking | WeaponCollector,
             generationFlags: HellOnly | NonGenocidable | NonPolymorphable | SmallGroup,
             generationFrequency: Uncommonly);
 
@@ -4343,11 +4346,12 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Sting, PhysicalDamage, diceCount: 3, diceSides: 4),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 6)
             },
-            properties:
-                Has(FireResistance, PoisonResistance, SicknessResistance, ThickHide, Infravision, Infravisibility, Humanoidness),
+            properties: Has(
+                FireResistance, PoisonResistance, SicknessResistance, ThickHide, Infravision, Infravisibility,
+                Humanoidness),
             size: Medium, weight: 1200, nutrition: 400,
-            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
-            behavior: NonWandering | Stalking,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: Stalking,
             generationFlags: HellOnly | NonGenocidable | SmallGroup,
             generationFrequency: Uncommonly);
 
@@ -4361,11 +4365,11 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Bite, PhysicalDamage, diceCount: 1, diceSides: 6),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 6)
             },
-            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Flight, Infravision,
-                Infravisibility, Humanoidness),
+            properties: Has(
+                FireResistance, PoisonResistance, SicknessResistance, Flight, Infravision, Infravisibility, Humanoidness),
             size: Large, weight: 1200, nutrition: 400,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
-            behavior: NonWandering | Stalking, generationFlags: HellOnly | NonGenocidable | SmallGroup,
+            behavior: Stalking, generationFlags: HellOnly | NonGenocidable | SmallGroup,
             generationFrequency: Uncommonly);
 
         public static readonly ActorVariant Marilith = new ActorVariant(
@@ -4381,11 +4385,12 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Punch, PhysicalDamage, diceCount: 2, diceSides: 4),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 6)
             },
-            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Infravision,
-                InvisibilityDetection, Infravisibility, HumanoidTorso, SerpentlikeBody, Femaleness),
+            properties: Has(
+                FireResistance, PoisonResistance, SicknessResistance, Infravision, InvisibilityDetection,
+                Infravisibility, HumanoidTorso, SerpentlikeBody, Femaleness),
             size: Large, weight: 1200, nutrition: 400,
-            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
-            behavior: NonWandering | Stalking | WeaponCollector,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: Stalking | WeaponCollector,
             generationFlags: HellOnly | NonGenocidable, generationFrequency: Rarely);
 
         public static readonly ActorVariant DevilBone = new ActorVariant(
@@ -4397,11 +4402,11 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Sting, VenomDamage, diceCount: 2, diceSides: 4),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 6)
             },
-            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Infravision, Infravisibility,
-                Humanoidness),
+            properties: Has(
+                FireResistance, PoisonResistance, SicknessResistance, Infravision, Infravisibility, Humanoidness),
             size: Large, weight: 1600, nutrition: 400,
-            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
-            behavior: NonWandering | Stalking | WeaponCollector, generationFlags: HellOnly | NonGenocidable | SmallGroup,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: Stalking | WeaponCollector, generationFlags: HellOnly | NonGenocidable | SmallGroup,
             generationFrequency: Uncommonly);
 
         public static readonly ActorVariant DevilIce = new ActorVariant(
@@ -4415,11 +4420,12 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Sting, ColdDamage, diceCount: 3, diceSides: 4),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 8)
             },
-            properties: Has(FireResistance, ColdResistance, PoisonResistance, SicknessResistance, Infravision,
-                InvisibilityDetection, Infravisibility, Humanoidness),
+            properties: Has(
+                FireResistance, ColdResistance, PoisonResistance, SicknessResistance, Infravision, InvisibilityDetection,
+                Infravisibility, Humanoidness),
             size: Large, weight: 1800, nutrition: 400,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
-            behavior: NonWandering | Stalking, generationFlags: HellOnly | NonGenocidable,
+            behavior: Stalking, generationFlags: HellOnly | NonGenocidable,
             generationFrequency: Uncommonly);
 
         public static readonly ActorVariant Nalfeshnee = new ActorVariant(
@@ -4433,11 +4439,12 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Spell, ArcaneSpell),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 8)
             },
-            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Infravision,
-                InvisibilityDetection, Infravisibility, Humanoidness),
+            properties: Has(
+                FireResistance, PoisonResistance, SicknessResistance, Infravision, InvisibilityDetection,
+                Infravisibility, Humanoidness),
             size: Huge, weight: 2500, nutrition: 400,
-            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
-            behavior: NonWandering | Stalking | MagicUser, generationFlags: HellOnly | NonGenocidable,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: Stalking | MagicUser, generationFlags: HellOnly | NonGenocidable,
             generationFrequency: Rarely);
 
         public static readonly ActorVariant FiendPit = new ActorVariant(
@@ -4450,11 +4457,12 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Hug, PhysicalDamage, diceCount: 2, diceSides: 4),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 2, diceSides: 3)
             },
-            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Flight, Infravision,
-                InvisibilityDetection, Infravisibility, Humanoidness),
+            properties: Has(
+                FireResistance, PoisonResistance, SicknessResistance, Flight, Infravision, InvisibilityDetection,
+                Infravisibility, Humanoidness),
             size: Large, weight: 1600, nutrition: 400,
-            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
-            behavior: NonWandering | Stalking | WeaponCollector | MagicUser, generationFlags: HellOnly | NonGenocidable,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: Stalking | WeaponCollector | MagicUser, generationFlags: HellOnly | NonGenocidable,
             generationFrequency: Uncommonly);
 
         public static readonly ActorVariant Balrog = new ActorVariant(
@@ -4466,11 +4474,12 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Weapon, PhysicalDamage, diceCount: 4, diceSides: 6),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 2, diceSides: 4)
             },
-            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Flight, Infravision,
-                InvisibilityDetection, Infravisibility, Humanoidness),
+            properties: Has(
+                FireResistance, PoisonResistance, SicknessResistance, Flight, Infravision, InvisibilityDetection,
+                Infravisibility, Humanoidness),
             size: Huge, weight: 2500, nutrition: 400,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
-            behavior: NonWandering | Stalking | WeaponCollector | MagicUser, generationFlags: HellOnly | NonGenocidable,
+            behavior: Stalking | WeaponCollector | MagicUser, generationFlags: HellOnly | NonGenocidable,
             generationFrequency: Rarely);
 
         public static readonly ActorVariant Juiblex = new ActorVariant(
@@ -4484,11 +4493,12 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(OnConsumption, PoisonDamage, diceCount: 3, diceSides: 6),
                 new Attack(OnConsumption, AcidDamage, diceCount: 3, diceSides: 6)
             },
-            properties: Has(FireResistance, PoisonResistance, SicknessResistance, StoningResistance, AcidResistance,
+            properties: Has(
+                FireResistance, PoisonResistance, SicknessResistance, StoningResistance, AcidResistance,
                 Amphibiousness, Flight, Amorphism, Headlessness, Infravision, InvisibilityDetection, Maleness),
             size: Large, weight: 1500, nutrition: 400, consumptionProperties:
                 new[] {WhenConsumedAdd(PoisonResistance, Sometimes), WhenConsumedAdd(AcidResistance, Sometimes)},
-            corpse: None, behavior: NonWandering | Stalking | RangedPeaceful | Covetous,
+            corpse: None, behavior: Stalking | RangedPeaceful | Covetous,
             generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
 
         public static readonly ActorVariant Yeenoghu = new ActorVariant(
@@ -4502,11 +4512,12 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Spell, MagicalDamage, diceCount: 2, diceSides: 6),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 3, diceSides: 6)
             },
-            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Infravision, InvisibilityDetection,
+            properties: Has(
+                FireResistance, PoisonResistance, SicknessResistance, Infravision, InvisibilityDetection,
                 Infravisibility, Maleness),
             size: Large, weight: 1500, nutrition: 400,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
-            behavior: NonWandering | Stalking | WeaponCollector | MagicUser | Covetous ,
+            behavior: Stalking | WeaponCollector | MagicUser | Covetous,
             generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
 
         public static readonly ActorVariant Orcus = new ActorVariant(
@@ -4521,11 +4532,12 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(OnConsumption, PoisonDamage, diceCount: 3, diceSides: 8),
                 new Attack(OnConsumption, Infect, diceCount: 3, diceSides: 8)
             },
-            properties: Has(FireResistance, PoisonResistance, VenomResistance, SicknessResistance, Flight,
-                Infravisibility,  Infravision, InvisibilityDetection, Humanoidness, Maleness),
+            properties: Has(
+                FireResistance, PoisonResistance, VenomResistance, SicknessResistance, Flight,
+                Infravisibility, Infravision, InvisibilityDetection, Humanoidness, Maleness),
             size: Huge, weight: 2500, nutrition: 400,
-            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
-            behavior: NonWandering | RangedPeaceful | Stalking | WeaponCollector | MagicUser | Covetous,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: RangedPeaceful | Stalking | WeaponCollector | MagicUser | Covetous,
             generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
 
         public static readonly ActorVariant Geryon = new ActorVariant(
@@ -4538,11 +4550,12 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Sting, VenomDamage, diceCount: 2, diceSides: 4),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 3, diceSides: 8)
             },
-            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Flight,
-                Infravisibility, Infravision, InvisibilityDetection, SerpentlikeBody, HumanoidTorso, Maleness),
+            properties: Has(
+                FireResistance, PoisonResistance, SicknessResistance, Flight, Infravisibility, Infravision,
+                InvisibilityDetection, SerpentlikeBody, HumanoidTorso, Maleness),
             size: Huge, weight: 2500, nutrition: 500,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
-            behavior: NonWandering | Bribeable | Stalking | Covetous,
+            behavior: Bribeable | Stalking | Covetous,
             generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
 
         public static readonly ActorVariant Dispater = new ActorVariant(
@@ -4554,11 +4567,12 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Spell, ArcaneSpell, diceCount: 6, diceSides: 6),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 3, diceSides: 8)
             },
-            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Flight,
-                Infravisibility, Infravision, InvisibilityDetection, Humanoidness, Maleness),
+            properties: Has(
+                FireResistance, PoisonResistance, SicknessResistance, Flight, Infravisibility, Infravision,
+                InvisibilityDetection, Humanoidness, Maleness),
             size: Large, weight: 1500, nutrition: 500,
-            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
-            behavior: NonWandering | Bribeable | Stalking | Covetous | WeaponCollector | MagicUser,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: Bribeable | Stalking | Covetous | WeaponCollector | MagicUser,
             generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
 
         public static readonly ActorVariant Baalzebub = new ActorVariant(
@@ -4570,11 +4584,12 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Gaze, Stun, diceCount: 2, diceSides: 6),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 4, diceSides: 6)
             },
-            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Flight,
-                Infravisibility, Infravision, InvisibilityDetection, Maleness),
+            properties: Has(
+                FireResistance, PoisonResistance, SicknessResistance, Flight, Infravisibility, Infravision,
+                InvisibilityDetection, Maleness),
             size: Large, weight: 1500, nutrition: 500,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
-            behavior: NonWandering | RangedPeaceful | Bribeable | Stalking | Covetous,
+            behavior: RangedPeaceful | Bribeable | Stalking | Covetous,
             generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
 
         public static readonly ActorVariant Asmodeus = new ActorVariant(
@@ -4586,11 +4601,12 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Spell, ColdDamage, diceCount: 6, diceSides: 6),
                 new Attack(OnConsumption, PoisonDamage, diceCount: 4, diceSides: 8)
             },
-            properties: Has(FireResistance, ColdResistance, PoisonResistance, SicknessResistance, Flight,
+            properties: Has(
+                FireResistance, ColdResistance, PoisonResistance, SicknessResistance, Flight,
                 Infravisibility, Infravision, InvisibilityDetection, Humanoidness, Maleness),
             size: Large, weight: 1500, nutrition: 500,
-            consumptionProperties: new[] { WhenConsumedAdd(PoisonResistance, Sometimes) }, corpse: None,
-            behavior: NonWandering | RangedPeaceful | Bribeable | Stalking | Covetous,
+            consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
+            behavior: RangedPeaceful | Bribeable | Stalking | Covetous,
             generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
 
         public static readonly ActorVariant Demogorgon = new ActorVariant(
@@ -4605,11 +4621,12 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(OnConsumption, PoisonDamage, diceCount: 4, diceSides: 8),
                 new Attack(OnConsumption, Infect, diceCount: 1, diceSides: 8)
             },
-            properties: Has(FireResistance, PoisonResistance, SicknessResistance, Flight,
-                Infravisibility, Infravision, InvisibilityDetection, Handlessness, Humanoidness, Maleness),
+            properties: Has(
+                FireResistance, PoisonResistance, SicknessResistance, Flight, Infravisibility, Infravision,
+                InvisibilityDetection, Handlessness, Humanoidness, Maleness),
             size: Large, weight: 1500, nutrition: 500,
             consumptionProperties: new[] {WhenConsumedAdd(PoisonResistance, Sometimes)}, corpse: None,
-            behavior: NonWandering | Stalking | Covetous, generationFlags: HellOnly | NonGenocidable | NonPolymorphable,
+            behavior: Stalking | Covetous, generationFlags: HellOnly | NonGenocidable | NonPolymorphable,
             generationFrequency: Never);
 
         public static readonly ActorVariant Death = new ActorVariant(
@@ -4621,12 +4638,12 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Touch, AttackEffect.Death, diceCount: 8, diceSides: 8),
                 new Attack(OnConsumption, AttackEffect.Death, diceCount: 8, diceSides: 8)
             },
-            properties: Has(AcidResistance, FireResistance, ColdResistance, ElectricityResistance,
-                SleepResistance, PoisonResistance, VenomResistance, SicknessResistance, DecayResistance,
-                StoningResistance, SlimingResistance, Breathlessness, Reanimation, Regeneration, Flight,
-                TeleportationControl, PolymorphControl, Infravisibility, Infravision, InvisibilityDetection,
-                Humanoidness, Maleness),
-            size: Medium, weight: 1000, nutrition: 0, behavior: NonWandering | Stalking | Displacing,
+            properties: Has(
+                AcidResistance, FireResistance, ColdResistance, ElectricityResistance, SleepResistance, PoisonResistance,
+                VenomResistance, SicknessResistance, DecayResistance, StoningResistance, SlimingResistance,
+                Breathlessness, Reanimation, Regeneration, Flight, TeleportationControl, PolymorphControl,
+                Infravisibility, Infravision, InvisibilityDetection, Humanoidness, Maleness),
+            size: Medium, weight: 1000, nutrition: 0, behavior: Stalking | Displacing,
             generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
 
         public static readonly ActorVariant Pestilence = new ActorVariant(
@@ -4638,12 +4655,12 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Touch, AttackEffect.Pestilence, diceCount: 8, diceSides: 8),
                 new Attack(OnConsumption, AttackEffect.Pestilence, diceCount: 8, diceSides: 8)
             },
-            properties: Has(AcidResistance, FireResistance, ColdResistance, ElectricityResistance,
-                SleepResistance, PoisonResistance, VenomResistance, SicknessResistance, DecayResistance,
-                StoningResistance, SlimingResistance, Breathlessness, Reanimation, Regeneration, Flight,
-                TeleportationControl, PolymorphControl, Infravisibility, Infravision, InvisibilityDetection,
-                Humanoidness, Maleness),
-            size: Medium, weight: 1000, nutrition: 0, behavior: NonWandering | Stalking | Displacing,
+            properties: Has(
+                AcidResistance, FireResistance, ColdResistance, ElectricityResistance, SleepResistance, PoisonResistance,
+                VenomResistance, SicknessResistance, DecayResistance, StoningResistance, SlimingResistance,
+                Breathlessness, Reanimation, Regeneration, Flight, TeleportationControl, PolymorphControl,
+                Infravisibility, Infravision, InvisibilityDetection, Humanoidness, Maleness),
+            size: Medium, weight: 1000, nutrition: 0, behavior: Stalking | Displacing,
             generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
 
         public static readonly ActorVariant Famine = new ActorVariant(
@@ -4655,12 +4672,12 @@ namespace UnicornHack.Models.GameDefinitions
                 new Attack(Touch, AttackEffect.Famine, diceCount: 8, diceSides: 8),
                 new Attack(OnConsumption, AttackEffect.Famine, diceCount: 8, diceSides: 8)
             },
-            properties: Has(AcidResistance, FireResistance, ColdResistance, ElectricityResistance,
-                SleepResistance, PoisonResistance, VenomResistance, SicknessResistance, DecayResistance,
-                StoningResistance, SlimingResistance, Breathlessness, Reanimation, Regeneration, Flight,
-                TeleportationControl, PolymorphControl, Infravisibility, Infravision, InvisibilityDetection,
-                Humanoidness, Maleness),
-            size: Medium, weight: 1000, nutrition: -5000, behavior: NonWandering | Stalking | Displacing,
+            properties: Has(
+                AcidResistance, FireResistance, ColdResistance, ElectricityResistance, SleepResistance, PoisonResistance,
+                VenomResistance, SicknessResistance, DecayResistance, StoningResistance, SlimingResistance,
+                Breathlessness, Reanimation, Regeneration, Flight, TeleportationControl, PolymorphControl,
+                Infravisibility, Infravision, InvisibilityDetection, Humanoidness, Maleness),
+            size: Medium, weight: 1000, nutrition: -5000, behavior: Stalking | Displacing,
             generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
 
         /*
@@ -4668,7 +4685,7 @@ namespace UnicornHack.Models.GameDefinitions
             struct attack attack[NATTK],
             ushort weight, ushort nutrition, uchar sound, uchar size, uchar resists, uchar conveys;
             unsigned long mflags1, unsigned long mflags2, unsigned long mflags3, uchar mcolor };
-    Look for G_GENO, M2_WANDER, M2_HOSTILE,
+    Look for G_GENO, M2_HOSTILE,
 
         */
 
