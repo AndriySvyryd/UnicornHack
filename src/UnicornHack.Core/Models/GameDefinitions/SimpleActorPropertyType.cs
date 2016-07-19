@@ -19,7 +19,6 @@ namespace UnicornHack.Models.GameDefinitions
         Reflection,
         Protection,
         ProtectionFromShapeChangers,
-        MagicalBreathing, // TODO: Replace with breathless?
         LifeSaving,
         Invulnerability,
         // Senses
@@ -85,6 +84,8 @@ namespace UnicornHack.Models.GameDefinitions
         AbilitySustainment,
         ThickHide,
         Amphibiousness,
+        WaterBreathing,
+        MagicalBreathing, // TODO: Combine with Breathlessness?
         Breathlessness,
         NoInventory,
         Eyelessness,
@@ -98,7 +99,6 @@ namespace UnicornHack.Models.GameDefinitions
         SerpentlikeBody,
         NonSolidBody,
         NonAnimal,
-        NoCorpse,
         DecayResistance,
         Reanimation,
         // Reproduction

@@ -2116,7 +2116,7 @@ namespace UnicornHack.Models.GameDefinitions
             attacks: new[]
             {
                 new Attack(Bite, PhysicalDamage, diceCount: 3, diceSides: 4),
-                new Attack(Hug, Bind)
+                new Attack(Hug, Bind, diceCount: 3, diceSides: 4)
             },
             properties: Has(
                 PoisonResistance, VenomResistance, Flight, Infravision, SerpentlikeBody),
@@ -4680,13 +4680,83 @@ namespace UnicornHack.Models.GameDefinitions
             size: Medium, weight: 1000, nutrition: -5000, behavior: Stalking | Displacing,
             generationFlags: HellOnly | NonGenocidable | NonPolymorphable, generationFrequency: Never);
 
+        public static readonly ActorVariant Jellyfish = new ActorVariant(
+            name: "jellyfish", species: Species.Jellyfish,
+            initialLevel: 3, movementRate: 3, armorClass: 6, magicResistance: 0,
+            attacks: new[]
+            {
+                new Attack(Sting, VenomDamage, diceCount: 3, diceSides: 3),
+                new Attack(OnConsumption, PoisonDamage, diceCount: 1, diceSides: 3),
+            },
+            properties: Has(Swimming, WaterBreathing, Limblessness, NoInventory),
+            size: Small, weight: 80, nutrition: 20,
+            generationFrequency: Sometimes);
+
+        public static readonly ActorVariant Piranha = new ActorVariant(
+            name: "piranha", species: Fish,
+            initialLevel: 5, movementRate: 12, armorClass: 4, magicResistance: 0,
+            attacks: new[]
+            {
+                new Attack(Bite, PhysicalDamage, diceCount: 2, diceSides: 6)
+            },
+            properties: Has(Swimming, WaterBreathing, Limblessness, NoInventory, Oviparity, Carnivorism),
+            size: Small, weight: 60, nutrition: 30,
+            generationFlags: SmallGroup, generationFrequency: Never);
+
+        public static readonly ActorVariant Shark = new ActorVariant(
+            name: "shark", species: Fish,
+            initialLevel: 7, movementRate: 12, armorClass: 2, magicResistance: 0,
+            attacks: new[]
+            {
+                new Attack(Bite, PhysicalDamage, diceCount: 5, diceSides: 6)
+            },
+            properties: Has(Swimming, ThickHide, WaterBreathing, Limblessness, NoInventory, Oviparity, Carnivorism),
+            size: Large, weight: 1000, nutrition: 400,
+            generationFrequency: Never);
+
+        public static readonly ActorVariant EelGiant = new ActorVariant(
+            name: "giant eel", species: Eel,
+            initialLevel: 5, movementRate: 9, armorClass: -1, magicResistance: 0,
+            attacks: new[]
+            {
+                new Attack(Bite, PhysicalDamage, diceCount: 3, diceSides: 6),
+                new Attack(Hug, Bind, diceCount: 2, diceSides: 6)
+            },
+            properties: Has(Swimming, WaterBreathing, Limblessness, NoInventory, Oviparity, Carnivorism),
+            size: Large, weight: 600, nutrition: 300,
+            generationFrequency: Never);
+
+        public static readonly ActorVariant EelElectric = new ActorVariant(
+            name: "electric eel", species: Eel, previousStage: EelGiant,
+            initialLevel: 7, movementRate: 10, armorClass: -3, magicResistance: 0,
+            attacks: new[]
+            {
+                new Attack(Bite, ElectricityDamage, diceCount: 4, diceSides: 6),
+                new Attack(Hug, Bind, diceCount: 3, diceSides: 6)
+            },
+            properties: Has(ElectricityResistance, Swimming, WaterBreathing, Limblessness, NoInventory, Oviparity, Carnivorism),
+            size: Large, weight: 600, nutrition: 300,consumptionProperties: new[] { WhenConsumedAdd(ElectricityResistance, Sometimes) },
+            generationFrequency: Never);
+
+        public static readonly ActorVariant Kraken = new ActorVariant(
+            name: "kraken", species: Squid,
+            initialLevel: 20, movementRate: 3, armorClass: 6, magicResistance: 0, alignment: -3,
+            attacks: new[]
+            {
+                new Attack(Claw, PhysicalDamage, diceCount: 2, diceSides: 4),
+                new Attack(Claw, PhysicalDamage, diceCount: 2, diceSides: 4),
+                new Attack(Bite, PhysicalDamage, diceCount: 5, diceSides: 4),
+                new Attack(Hug, Bind, diceCount: 2, diceSides: 6)
+            },
+            properties: Has(Swimming, WaterBreathing, Limblessness, Oviparity, Carnivorism),
+            size: Huge, weight: 2000, nutrition: 1000,
+            generationFlags: NonPolymorphable, generationFrequency: Never);
         /*
      struct permonst {const char *name, char symbol, schar level, schar actionRate, schar ac, schar mr, schar alignment, ushort geno,
             struct attack attack[NATTK],
             ushort weight, ushort nutrition, uchar sound, uchar size, uchar resists, uchar conveys;
             unsigned long mflags1, unsigned long mflags2, unsigned long mflags3, uchar mcolor };
     Look for G_GENO, M2_HOSTILE,
-
         */
 
         protected ActorVariant(
