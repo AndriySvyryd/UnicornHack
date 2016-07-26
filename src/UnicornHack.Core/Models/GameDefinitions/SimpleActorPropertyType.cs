@@ -87,6 +87,7 @@ namespace UnicornHack.Models.GameDefinitions
         WaterBreathing,
         MagicalBreathing, // TODO: Combine with Breathlessness?
         Breathlessness,
+        SingularInventory,
         NoInventory,
         Eyelessness,
         Handlessness,

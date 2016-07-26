@@ -6,7 +6,6 @@ namespace UnicornHack.Models.GameDefinitions
     public enum GenerationFlags
     {
         None,
-        PlayerUsable = 1 << 0,
         NonGenocidable = 1 << 1,
         NonPolymorphable = 1 << 2,
         SmallGroup = 1 << 3,

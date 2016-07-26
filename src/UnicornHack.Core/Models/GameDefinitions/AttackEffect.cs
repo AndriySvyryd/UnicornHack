@@ -11,6 +11,7 @@ namespace UnicornHack.Models.GameDefinitions
         AcidDamage, // Corrodes items
         VenomDamage, // Decays items
         PoisonDamage,
+        ElementalDamage, // Random from one of the above
         Disintegrate, // Withers items
         DrainLife,
         DrainEnergy,
