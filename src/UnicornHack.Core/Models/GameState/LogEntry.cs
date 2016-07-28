@@ -13,6 +13,7 @@ namespace UnicornHack.Models.GameState
             Id = playerCharacter.NextLogEntryId++;
             Player = playerCharacter;
             Message = message;
+            Turn = playerCharacter.Game.CurrentTurn;
         }
 
         public int Id { get; set; }
@@ -23,5 +24,7 @@ namespace UnicornHack.Models.GameState
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public int GameId { get; private set; }
         public Game Game => Player.Game;
+        public int Turn { get; set; }
+        public LogEntryImportance Importance { get; set; }
     }
 }

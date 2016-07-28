@@ -8,7 +8,9 @@ namespace UnicornHack.Models.GameDefinitions
         None,
         Sight = 1 << 0,
         Sound = 1 << 1,
-        Danger = 1 << 2,
-        Touch = 1 << 3
+        SoundDistant = 1 << 2,
+        Danger = 1 << 3,
+        Telepathy = 1 << 4,
+        Touch = 1 << 5
     }
 }

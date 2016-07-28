@@ -5,10 +5,6 @@ namespace UnicornHack.Models.GameState.Events
 {
     public class AttackEvent : SensoryEvent
     {
-        protected AttackEvent()
-        {
-        }
-
         public virtual Actor Attacker { get; set; }
         public virtual SenseType AttackerSensed { get; set; }
         public virtual Actor Victim { get; set; }

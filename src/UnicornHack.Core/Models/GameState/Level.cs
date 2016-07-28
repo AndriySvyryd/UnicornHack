@@ -20,12 +20,12 @@ namespace UnicornHack.Models.GameState
 
         private PathFinder _pathFinder;
 
-        protected Level()
+        public Level()
         {
             _canMoveDelegate = CanMove;
         }
 
-        protected Level(Game game, string branchName, short depth)
+        public Level(Game game, string branchName, short depth)
             : this()
         {
             Id = game.NextLevelId++;

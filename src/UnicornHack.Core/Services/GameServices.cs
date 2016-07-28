@@ -2,11 +2,11 @@ namespace UnicornHack.Services
 {
     public class GameServices
     {
-        public GameServices(LanguageService language)
+        public GameServices(ILanguageService language)
         {
             Language = language;
         }
 
-        public virtual LanguageService Language { get; }
+        public virtual ILanguageService Language { get; }
     }
 }

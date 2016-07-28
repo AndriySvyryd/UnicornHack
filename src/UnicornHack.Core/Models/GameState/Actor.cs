@@ -14,11 +14,16 @@ namespace UnicornHack.Models.GameState
         {
         }
 
+        protected Actor(ActorVariant variant)
+        {
+            OriginalVariant = variant.Name;
+        }
+
         protected Actor(ActorVariant variant, byte x, byte y, Level level)
+            : this(variant)
         {
             Debug.Assert(variant != ActorVariant.None);
 
-            OriginalVariant = variant.Name;
             XPLevel = variant.InitialLevel;
             LevelX = x;
             LevelY = y;

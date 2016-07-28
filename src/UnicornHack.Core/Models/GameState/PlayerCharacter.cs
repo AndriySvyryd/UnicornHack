@@ -14,7 +14,12 @@ namespace UnicornHack.Models.GameState
         {
         }
 
-        protected PlayerCharacter(ActorVariant variant, byte x, byte y, Level level)
+        public PlayerCharacter(ActorVariant variant)
+            : base(variant)
+        {
+        }
+
+        public PlayerCharacter(ActorVariant variant, byte x, byte y, Level level)
             : base(variant, x, y, level)
         {
         }

@@ -47,9 +47,9 @@ namespace UnicornHack.Models.GameState
             switch (type)
             {
                 case ItemType.Gold:
-                    return "Gold";
+                    return "gold";
                 case ItemType.Food:
-                    return "Carrot";
+                    return "carrot";
                 default:
                     throw new NotSupportedException($"Item type {type} not supported");
             }

@@ -12,7 +12,12 @@ namespace UnicornHack.Models.GameState
         {
         }
 
-        protected Monster(ActorVariant variant, byte x, byte y, Level level)
+        public Monster(ActorVariant variant)
+            : base(variant)
+        {
+        }
+
+        public Monster(ActorVariant variant, byte x, byte y, Level level)
             : base(variant, x, y, level)
         {
         }

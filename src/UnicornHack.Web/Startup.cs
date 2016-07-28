@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using UnicornHack.Data;
 using UnicornHack.Models;
 using UnicornHack.Services;
+using UnicornHack.Services.English;
 using System;
 
 namespace UnicornHack
@@ -59,7 +60,7 @@ namespace UnicornHack
             // Add application services.
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
-            services.AddSingleton<LanguageService>();
+            services.AddSingleton<ILanguageService, EnglishLanguageService>();
             services.AddSingleton<GameServices>();
         }
 
