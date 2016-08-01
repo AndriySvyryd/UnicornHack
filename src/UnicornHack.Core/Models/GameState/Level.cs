@@ -33,7 +33,6 @@ namespace UnicornHack.Models.GameState
             Name = branchName;
             Depth = depth;
             LastTurn = game.CurrentTurn;
-            game.Levels.Add(this);
         }
 
         static Level()
@@ -88,7 +87,6 @@ namespace UnicornHack.Models.GameState
                             continue;
                         }
                         Game.ActingActor = null;
-                        // TODO: Issue #6109
                         Game.ActingActorId = null;
                     }
 
@@ -204,6 +202,7 @@ namespace UnicornHack.Models.GameState
         public static Level CreateLevel(Game game, string branchName, short depth)
         {
             var level = new Level(game, branchName, depth);
+            game.Levels.Add(level);
             var layout = StaticLevels[depth][branchName];
             var byteLayout = new byte[Height * Width];
             byte x = 0;

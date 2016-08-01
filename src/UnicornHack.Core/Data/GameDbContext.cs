@@ -63,7 +63,7 @@ namespace UnicornHack.Data
                     .OnDelete(DeleteBehavior.Restrict);
                 eb.HasOne(g => g.ActingActor)
                     .WithOne()
-                    .HasForeignKey<Game>(nameof(Game.Id), "ActingActorId")
+                    .HasForeignKey<Game>(g => new {g.Id, g.ActingActorId})
                     .IsRequired(required: false);
                 eb.HasMany(g => g.Items)
                     .WithOne(i => i.Game)
@@ -111,13 +111,7 @@ namespace UnicornHack.Data
             modelBuilder.Entity<DeathEvent>();
             modelBuilder.Entity<ItemConsumptionEvent>();
             modelBuilder.Entity<ItemDropEvent>();
-            modelBuilder.Entity<ItemPickUpEvent>(eb =>
-            {
-                // TODO: #5769
-                eb.HasOne(e => e.Item)
-                    .WithMany()
-                    .HasConstraintName(name: "FK_ItemPickUpEvent_Items_ItemId");
-            });
+            modelBuilder.Entity<ItemPickUpEvent>();
         }
     }
 }

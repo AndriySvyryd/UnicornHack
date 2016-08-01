@@ -47,7 +47,7 @@ namespace UnicornHack.Models.GameState
 
         public override bool Act()
         {
-            Debug.Assert(Level.LastTurn + 1 == Game.CurrentTurn);
+            Debug.Assert(Level != null && Level.LastTurn + 1 == Game.CurrentTurn);
 
             // TODO: add option to stop here and display current state
             // even if user already provided the next action / cannot perform an action

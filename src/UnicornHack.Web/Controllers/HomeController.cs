@@ -68,28 +68,24 @@ namespace UnicornHack.Controllers
             character.NextAction = action;
             character.NextActionTarget = string.IsNullOrEmpty(target) ? 0 : Int32.Parse(target);
 
+            var level = character.Level;
             if (character.Game.ActingActor == character)
             {
                 character.Game.Turn();
             }
 
-            var level = character.Level;
-
             if (!character.IsAlive)
             {
+                // Show the last events before death
                 character.Act();
             }
 
             _dbContext.SaveChanges();
 
-            // TODO: #6067
-            if (!level.Actors.Contains(character))
+            if (character.Level == null)
             {
                 character.Level = level;
-                level.Actors.Add(character);
-                character.Game.Actors.Add(character);
             }
-
             return PartialView(nameof(Game), character);
         }
 
@@ -109,21 +105,15 @@ namespace UnicornHack.Controllers
                     RandomSeed = Environment.TickCount,
                     Services = _gameServices
                 };
+                _dbContext.Games.Add(game);
+                _dbContext.SaveChanges();
+
                 character = PlayerCharacter.CreateCharacter(game, name);
                 _dbContext.Characters.Add(character);
-
-                var items = character.Level.Items.ToList();
-                var downStairs = character.Level.DownStairs.ToList();
-                var upStairs = character.Level.UpStairs.ToList();
                 _dbContext.SaveChanges();
 
                 game.ActingActor = character;
                 _dbContext.SaveChanges();
-
-                // TODO: #6067
-                character.Level.Items.AddRange(items);
-                character.Level.DownStairs.AddRange(downStairs);
-                character.Level.UpStairs.AddRange(upStairs);
             }
 
             return character;
