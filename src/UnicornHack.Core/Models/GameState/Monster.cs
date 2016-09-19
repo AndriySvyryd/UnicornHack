@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using UnicornHack.Models.GameDefinitions;
@@ -8,26 +9,25 @@ namespace UnicornHack.Models.GameState
 {
     public class Monster : Actor
     {
-        protected Monster()
+        public Monster()
         {
         }
 
-        public Monster(ActorVariant variant)
-            : base(variant)
-        {
-        }
-
-        public Monster(ActorVariant variant, byte x, byte y, Level level)
+        public Monster(MonsterVariant variant, byte x, byte y, Level level)
             : base(variant, x, y, level)
         {
+            XPLevel = variant.InitialLevel;
         }
+
+        public new virtual MonsterVariant Variant => (MonsterVariant)base.Variant;
+
+        public override byte MovementRate => Variant.MovementRate;
+
+        public override IReadOnlyList<Attack> Attacks => Variant.Attacks;
 
         public override bool Act()
         {
-            MovementPoints = MovementPoints > Level.MovementCost ? Level.MovementCost : MovementPoints;
-            MovementPoints += MovementRate;
-
-            while (MovementPoints >= Level.MovementCost)
+            while (ActionPoints >= ActionPointsPerTurn)
             {
                 if (TryAttackPlayerCharacter())
                 {
@@ -88,7 +88,7 @@ namespace UnicornHack.Models.GameState
             return false;
         }
 
-        public static Monster CreateMonster(ActorVariant variant, byte x, byte y, Level level)
+        public static Monster CreateMonster(MonsterVariant variant, byte x, byte y, Level level)
         {
             var monster = new Monster(variant, x, y, level);
             monster.AdjustInitialXPLevel();
@@ -99,7 +99,7 @@ namespace UnicornHack.Models.GameState
 
         public virtual void AdjustInitialXPLevel()
         {
-            if (Variant == ActorVariant.Rodney)
+            if (Variant == MonsterVariant.Rodney)
             {
                 // TODO: Adjust based on number of deaths
             }

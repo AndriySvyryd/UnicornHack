@@ -125,6 +125,7 @@
         switch (actor.Variant.Name)
         {
             case "human":
+            case "player human":
                 symbol = 'H';
                 className = "monsterHuman" + (actor is PlayerCharacter ? " playerCharacter" : "");
                 break;
@@ -144,6 +145,7 @@
                 throw new NotSupportedException($"Actor type {actor.Variant.Name} not supported.");
         }
 
+        className += (actor is PlayerCharacter ? " playerCharacter" : "");
         characters[actor.LevelX, actor.LevelY] = symbol;
         classes[actor.LevelX, actor.LevelY] = className;
     }

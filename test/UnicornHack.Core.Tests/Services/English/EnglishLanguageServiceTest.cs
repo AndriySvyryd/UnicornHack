@@ -10,18 +10,18 @@ namespace UnicornHack.Services.English
         [Fact]
         public void AttackEventTest()
         {
-            var newt = new Monster(ActorVariant.Newt);
-            var nymph = new Monster(ActorVariant.NymphWater) { Sex = Sex.Female };
-            var rodney = new Monster(ActorVariant.Rodney) { Sex = Sex.None };
-            var player = new PlayerCharacter(ActorVariant.Human) { GivenName = "Dudley", Sex = Sex.Male };
-            var player2 = new PlayerCharacter(ActorVariant.Human) { GivenName = "Cudley", Sex = Sex.Male };
+            var newt = new Monster { OriginalVariant = MonsterVariant.Newt.Name };
+            var nymph = new Monster { OriginalVariant = MonsterVariant.NymphWater.Name, Sex = Sex.Female };
+            var rodney = new Monster { OriginalVariant = MonsterVariant.Rodney.Name, Sex = Sex.None };
+            var player = new PlayerCharacter { OriginalVariant = MonsterVariant.Human.Name, GivenName = "Dudley", Sex = Sex.Male };
+            var player2 = new PlayerCharacter { OriginalVariant = MonsterVariant.Human.Name, GivenName = "Cudley", Sex = Sex.Male };
 
             Verify(newt, nymph, player, SenseType.Sight, SenseType.Sight, AttackType.Bite, 11,
                 expectedMessage: "The newt bites the water nymph. (11 pts.)");
 
             Verify(player, rodney, player2, SenseType.Sight, SenseType.Sight, AttackType.Sting, 11,
                 expectedMessage: "Dudley stings Wizard of Yendor. (11 pts.)");
-            
+
             Verify(rodney, player, player2, SenseType.Sight, SenseType.Sight, AttackType.Spell, null,
                 expectedMessage: "Wizard of Yendor tries to cast a spell at Dudley, but misses.");
 
@@ -105,7 +105,7 @@ namespace UnicornHack.Services.English
             var languageService = CreateLanguageService();
 
             var message = languageService.Welcome(
-                new PlayerCharacter(ActorVariant.Human) { GivenName = "Conan the Barbarian", Level = new Level {Name = "Dungeon of Fun"}});
+                new PlayerCharacter { OriginalVariant = MonsterVariant.Human.Name, GivenName = "Conan the Barbarian", Level = new Level {Name = "Dungeon of Fun"}});
 
             Assert.Equal("Welcome to the Dungeon of Fun, Conan the Barbarian!", message);
         }

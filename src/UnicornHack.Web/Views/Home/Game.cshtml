@@ -8,8 +8,8 @@
     <div class="col-md-9">
         @{ Html.RenderPartial("MapPartial", @Model); }
         <pre>
-@Model.GivenName the Adventurer Lvl:@Model.XPLevel St:@Model.Strength Dx:@Model.Dexterity Co:@Model.Constitution In:@Model.Intelligence Wi:@Model.Wisdom Ch:@Model.Charisma
-@Model.Level.Name:@Model.Level.Depth $:@Model.Gold HP:@Model.HP (@Model.MaxHP) AC:@Model.AC Dmg:0 Xp:@Model.XP (@Model.NextLevelXP) T:@Model.Game.CurrentTurn @Model.LevelX,@Model.LevelY
+@Model.GivenName the Adventurer Lvl:@Model.XPLevel XP:@(Model.XP)(@Model.NextLevelXP) St:@Model.Strength Dx:@Model.Dexterity Co:@Model.Constitution Sp:@Model.Speed In:@Model.Intelligence Wi:@Model.Willpower
+@Model.Level.Name:@Model.Level.Depth @Model.LevelX,@Model.LevelY $:@Model.Gold HP:@(Model.HP)(@Model.MaxHP) EP:@(Model.EP)(@Model.MaxEP) AC:@Model.AC AP:@Model.ActionPoints
 </pre>
     </div>
 
@@ -71,10 +71,10 @@
 
     <div class="col-md-9">
         <div class="log">
-            @foreach (var entry in Model.Log.OrderByDescending(e => e.Id).Take(10))
+            @foreach (var entry in Model.Log.OrderBy(e => e.Id).Take(10))
             {
                 <div>
-                    @entry.Message
+                    @entry.Turn: @entry.Message
                 </div>
             }
         </div>

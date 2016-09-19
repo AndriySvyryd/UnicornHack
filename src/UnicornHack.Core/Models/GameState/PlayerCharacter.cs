@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.ComponentModel.DataAnnotations.Schema;
 using UnicornHack.Models.GameDefinitions;
 using UnicornHack.Models.GameState.Events;
 using UnicornHack.Utils;
@@ -10,26 +11,39 @@ namespace UnicornHack.Models.GameState
 {
     public class PlayerCharacter : Actor
     {
-        protected PlayerCharacter()
+        public PlayerCharacter()
         {
         }
 
-        public PlayerCharacter(ActorVariant variant)
-            : base(variant)
-        {
-        }
-
-        public PlayerCharacter(ActorVariant variant, byte x, byte y, Level level)
+        public PlayerCharacter(PlayerVariant variant, byte x, byte y, Level level)
             : base(variant, x, y, level)
         {
+            XPLevel = 1;
+            Strength = PlayerVariant.StartingAttributeValue + variant.StrengthBonus;
+            Dexterity = PlayerVariant.StartingAttributeValue + variant.DexterityBonus;
+            Speed = PlayerVariant.StartingAttributeValue + variant.SpeedBonus;
+            Constitution = PlayerVariant.StartingAttributeValue + variant.ConstitutionBonus;
+            Intelligence = PlayerVariant.StartingAttributeValue + variant.IntelligenceBonus;
+            Willpower = PlayerVariant.StartingAttributeValue + variant.WillpowerBonus;
+
+            MaxHP = 10 + XPLevel*Constitution/5;
+            HP = MaxHP;
+
+            MaxEP = 10 + XPLevel*Willpower/5;
+            EP = MaxEP;
+
+            NextLevelXP = XPLevel*100;
         }
 
-        public virtual byte Strength { get; set; }
-        public virtual byte Dexterity { get; set; }
-        public virtual byte Constitution { get; set; }
-        public virtual byte Intelligence { get; set; }
-        public virtual byte Wisdom { get; set; }
-        public virtual byte Charisma { get; set; }
+        public virtual int Strength { get; set; }
+        public virtual int Dexterity { get; set; }
+        public virtual int Speed { get; set; }
+        public virtual int Constitution { get; set; }
+        public virtual int Intelligence { get; set; }
+        public virtual int Willpower { get; set; }
+
+        public virtual int MaxEP { get; set; }
+        public virtual int EP { get; set; }
 
         public virtual int NextEventId { get; set; }
         public virtual ICollection<SensoryEvent> SensedEvents { get; set; } = new HashSet<SensoryEvent>();
@@ -44,6 +58,16 @@ namespace UnicornHack.Models.GameState
         {
             Log.Add(new LogEntry(this, string.Format(format, arguments)));
         }
+
+        public override byte MovementRate => (byte)(Variant.MovementRate*Speed/10);
+
+        public override IReadOnlyList<Attack> Attacks { get; } = new[]
+        {
+            new Attack(AttackType.Weapon, AttackEffect.PhysicalDamage, diceCount: 2, diceSides: 4)
+        };
+
+        [NotMapped]
+        public virtual PlayerVariant PlayerVariant => (PlayerVariant)ActorVariant.Get(OriginalVariant);
 
         public override bool Act()
         {
@@ -69,9 +93,6 @@ namespace UnicornHack.Models.GameState
             {
                 return false;
             }
-
-            MovementPoints = MovementPoints > Level.MovementCost ? Level.MovementCost : MovementPoints;
-            MovementPoints += MovementRate;
 
             NextAction = null;
             NextActionTarget = 0;
@@ -179,25 +200,10 @@ namespace UnicornHack.Models.GameState
             var initialLevel = Level.CreateLevel(game, Level.MainBranchName, depth: 1);
             var upStairs = initialLevel.UpStairs.First();
             var character = new PlayerCharacter(
-                ActorVariant.Human, upStairs.DownLevelX, upStairs.DownLevelY, initialLevel)
+                PlayerVariant.Human, upStairs.DownLevelX, upStairs.DownLevelY, initialLevel)
             {
-                GivenName = name,
-                HP = 100,
-                MaxHP = 100,
-                XPLevel = 1,
-                Game = game,
-                NextLevelXP = 100,
-                AC = 8,
-                Charisma = 16,
-                Constitution = 14,
-                Dexterity = 15,
-                Intelligence = 16,
-                Strength = 12,
-                Wisdom = 17
+                GivenName = name
             };
-
-            character.MaxHP = 10;
-            character.HP = character.MaxHP;
 
             character.Inventory.Add(new StackableItem(ItemType.Food, quantity: 3, actor: character));
             game.Actors.Add(character);

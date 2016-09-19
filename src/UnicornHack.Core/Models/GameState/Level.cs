@@ -282,11 +282,11 @@ namespace UnicornHack.Models.GameState
                         break;
                     case 'b':
                         feature = MapFeature.Floor;
-                        Monster.CreateMonster(ActorVariant.BugLighting, x, y, level);
+                        Monster.CreateMonster(MonsterVariant.BugLighting, x, y, level);
                         break;
                     case 'B':
                         feature = MapFeature.Floor;
-                        Monster.CreateMonster(ActorVariant.FireFly, x, y, level);
+                        Monster.CreateMonster(MonsterVariant.FireFly, x, y, level);
                         break;
                     case '\r':
                         continue;
@@ -347,7 +347,7 @@ namespace UnicornHack.Models.GameState
             new Vector(x: 0, y: 0, z: -1), new Vector(x: 0, y: 0, z: 1)
         };
 
-        public static readonly int MovementCost = 12;
+        public static readonly int DefaultMovementCost = 12;
 
         // ReSharper disable ArgumentsStyleStringLiteral
         private static readonly Dictionary<int, Dictionary<string, string>> StaticLevels =

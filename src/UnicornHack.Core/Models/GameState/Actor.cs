@@ -14,17 +14,11 @@ namespace UnicornHack.Models.GameState
         {
         }
 
-        protected Actor(ActorVariant variant)
-        {
-            OriginalVariant = variant.Name;
-        }
-
         protected Actor(ActorVariant variant, byte x, byte y, Level level)
-            : this(variant)
         {
-            Debug.Assert(variant != ActorVariant.None);
+            Debug.Assert(variant != MonsterVariant.None);
 
-            XPLevel = variant.InitialLevel;
+            OriginalVariant = variant.Name;
             LevelX = x;
             LevelY = y;
             Level = level;
@@ -38,8 +32,8 @@ namespace UnicornHack.Models.GameState
         [NotMapped]
         public virtual ActorVariant Variant => ActorVariant.Get(PolymorphedVariant ?? OriginalVariant);
 
-        protected virtual string OriginalVariant { get; set; }
-        protected virtual string PolymorphedVariant { get; set; }
+        public virtual string OriginalVariant { get; set; }
+        public virtual string PolymorphedVariant { get; set; }
 
         public virtual string GivenName { get; set; }
 
@@ -51,6 +45,9 @@ namespace UnicornHack.Models.GameState
         public virtual int MaxHP { get; set; }
         public virtual int HP { get; set; }
 
+        [NotMapped]
+        public virtual bool IsAlive => HP > 0;
+
         public virtual int Gold { get; set; }
         public virtual int AC { get; set; }
         public virtual ICollection<Item> Inventory { get; set; } = new HashSet<Item>();
@@ -61,13 +58,14 @@ namespace UnicornHack.Models.GameState
         public virtual int GameId { get; private set; }
         public virtual Game Game { get; set; }
 
-        public virtual int MovementPoints { get; set; }
+        public const int ActionPointsPerTurn = 100;
+        public virtual int ActionPoints { get; set; }
 
         [NotMapped]
-        public virtual byte MovementRate => Variant.MovementRate;
+        public abstract byte MovementRate { get; }
 
         [NotMapped]
-        public virtual IReadOnlyList<Attack> Attacks => Variant.Attacks;
+        public abstract IReadOnlyList<Attack> Attacks { get; }
 
         public bool Has(SimpleActorPropertyType type)
         {
@@ -179,7 +177,7 @@ namespace UnicornHack.Models.GameState
 
                 ActorMoveEvent.New(this, movee: null);
 
-                MovementPoints = 0;
+                ActionPoints = 0;
 
                 return true;
             }
@@ -213,14 +211,14 @@ namespace UnicornHack.Models.GameState
 
             ActorMoveEvent.New(this, movee: null);
 
-            MovementPoints -= Level.MovementCost;
+            ActionPoints -= (Level.DefaultMovementCost / MovementRate) * ActionPointsPerTurn;
 
             return true;
         }
 
         public virtual int? Attack(Actor victim)
         {
-            MovementPoints = 0;
+            ActionPoints = 0;
             var attack = Attacks.First();
             if (Game.NextRandom(maxValue: 3) == 0)
             {
@@ -239,13 +237,18 @@ namespace UnicornHack.Models.GameState
             return damage;
         }
 
-        public virtual bool IsAlive => HP > 0;
-
         public virtual bool CanAct()
         {
-            MovementPoints += MovementRate;
+            if (!IsAlive)
+            {
+                return false;
+            }
 
-            return IsAlive;
+            ActionPoints = ActionPoints >= ActionPointsPerTurn
+                ? ActionPointsPerTurn
+                : ActionPoints;
+            ActionPoints += ActionPointsPerTurn;
+            return ActionPoints > ActionPointsPerTurn;
         }
 
         /// <summary></summary>
