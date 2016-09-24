@@ -9,6 +9,7 @@
       "version": "1.0.0",
       "type": "platform"
     },
+    "UnicornHack.Core": "0.1.0-*",
     "Microsoft.AspNetCore.Authentication.Cookies": "1.1.0-*",
     "Microsoft.AspNetCore.Diagnostics": "1.1.0-*",
     "Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore": "1.1.0-*",
@@ -30,7 +31,7 @@
     "Microsoft.Extensions.Options.ConfigurationExtensions": "1.1.0-*",
     "Microsoft.VisualStudio.Web.BrowserLink.Loader": "14.1.0-*",
     "Microsoft.VisualStudio.Web.CodeGenerators.Mvc": "1.0.0-*",
-    "UnicornHack.Core": "0.1.0-*"
+    "Microsoft.CodeAnalysis.CSharp.Workspaces": "1.3.2"
   },
 
   "tools": {
@@ -58,7 +59,14 @@
 
   "buildOptions": {
     "emitEntryPoint": true,
-    "preserveCompilationContext": true
+    "warningsAsErrors": true,
+    "preserveCompilationContext": true,
+    // TODO: Remove this hack
+    "copyToOutput": {
+      "mappings": {
+        "Data/": "../UnicornHack.Core/Data/**"
+      }
+    }
   },
 
   "runtimeOptions": {

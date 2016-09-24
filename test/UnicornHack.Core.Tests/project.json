@@ -1,5 +1,14 @@
 {
   "version": "1.0.0-*",
+  "buildOptions": {
+    "warningsAsErrors": true,
+    // TODO: Remove this hack
+    "copyToOutput": {
+      "mappings": {
+        "Data/": "../../src/UnicornHack.Core/Data/**"
+      }
+    }
+  },
   "testRunner": "xunit",
 
   "dependencies": {
@@ -15,7 +24,10 @@
 
   "frameworks": {
     "netcoreapp1.0": {
-      "imports": "dnxcore50"
+      "imports": [
+        "dotnet5.6",
+        "portable-net45+win8"
+      ]
     }
   }
 }

@@ -1,5 +1,4 @@
 @using System
-@using Microsoft.EntityFrameworkCore.Metadata.Internal
 @model PlayerCharacter
 
 <pre>
@@ -14,7 +13,7 @@
         {
             var feature = (MapFeature)level.Layout[i++];
             var symbol = ' ';
-            string className = "inherit";
+            var className = "inherit";
             switch (feature)
             {
                 case MapFeature.Default:
@@ -152,7 +151,7 @@
 
     for (var y = 0; y < Level.Height; y++)
     {
-        for (int x = 0; x < Level.Width; x++)
+        for (var x = 0; x < Level.Width; x++)
         {<span class="@classes[x, y]">@characters[x, y]</span>}
         @:
     }

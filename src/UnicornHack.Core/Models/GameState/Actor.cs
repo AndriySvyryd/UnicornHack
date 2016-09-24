@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
 using System.Linq;
 using UnicornHack.Models.GameDefinitions;
+using UnicornHack.Models.GameDefinitions.Effects;
 using UnicornHack.Models.GameState.Events;
 using UnicornHack.Utils;
 
@@ -16,8 +17,6 @@ namespace UnicornHack.Models.GameState
 
         protected Actor(ActorVariant variant, byte x, byte y, Level level)
         {
-            Debug.Assert(variant != MonsterVariant.None);
-
             OriginalVariant = variant.Name;
             LevelX = x;
             LevelY = y;
@@ -30,7 +29,7 @@ namespace UnicornHack.Models.GameState
         public virtual int Id { get; private set; }
 
         [NotMapped]
-        public virtual ActorVariant Variant => ActorVariant.Get(PolymorphedVariant ?? OriginalVariant);
+        public abstract ActorVariant Variant { get; }
 
         public virtual string OriginalVariant { get; set; }
         public virtual string PolymorphedVariant { get; set; }
@@ -65,36 +64,22 @@ namespace UnicornHack.Models.GameState
         public abstract byte MovementRate { get; }
 
         [NotMapped]
-        public abstract IReadOnlyList<Attack> Attacks { get; }
+        public abstract IList<Ability> Abilities { get; }
 
-        public bool Has(SimpleActorPropertyType type)
+        public bool Has(string property)
         {
-            foreach (var innateProperty in Variant.InnateProperties.OfType<SimpleActorProperty>())
-            {
-                if (innateProperty.Type == type
-                    && innateProperty.Granted)
-                {
-                    return true;
-                }
-            }
-            return false;
+            return Variant.SimpleProperties.Contains(property);
         }
 
-        public IReadOnlyList<ValuedActorProperty<T>> Get<T>(ValuedActorPropertyType type)
+        public T Get<T>(string property)
         {
-            // TODO: Assert T corresponds to type
-            foreach (var innateProperty in Variant.InnateProperties.OfType<ValuedActorProperty<T>>())
+            object value;
+            if (Variant.ValuedProperties.TryGetValue(property, out value))
             {
-                if ((innateProperty.Type == type)
-                    && !innateProperty.Relative)
-                {
-                    return new[] {innateProperty};
-                }
+                return (T)value;
             }
 
-            return Variant.InnateProperties.OfType<ValuedActorProperty<T>>()
-                .Where(p => p.Type == type && p.Relative)
-                .ToList();
+            return default(T);
         }
 
         public bool Move(Vector direction, bool safe = false)
@@ -211,7 +196,7 @@ namespace UnicornHack.Models.GameState
 
             ActorMoveEvent.New(this, movee: null);
 
-            ActionPoints -= (Level.DefaultMovementCost / MovementRate) * ActionPointsPerTurn;
+            ActionPoints -= Level.DefaultMovementCost/MovementRate*ActionPointsPerTurn;
 
             return true;
         }
@@ -219,16 +204,24 @@ namespace UnicornHack.Models.GameState
         public virtual int? Attack(Actor victim)
         {
             ActionPoints = 0;
-            var attack = Attacks.First();
-            if (Game.NextRandom(maxValue: 3) == 0)
+            var ability = Abilities.FirstOrDefault(a => a.Activation == AbilityActivation.Targetted);
+            var damage = ability?.Effects.OfType<PhysicalDamage>().FirstOrDefault()?.Damage
+                ?? ability?.Effects.OfType<ElectricityDamage>().FirstOrDefault()?.Damage
+                ?? ability?.Effects.OfType<FireDamage>().FirstOrDefault()?.Damage;
+            if (ability == null
+                || damage == null)
             {
-                AttackEvent.New(this, victim, attack.Type, hit: false);
                 return null;
             }
 
-            var damage = Game.Roll(attack.DiceCount, attack.DiceSides);
-            AttackEvent.New(this, victim, attack.Type, hit: true, damage: damage);
-            victim.ChangeCurrentHP(-1*damage);
+            if (Game.NextRandom(maxValue: 3) == 0)
+            {
+                AttackEvent.New(this, victim, ability.Action, hit: false);
+                return null;
+            }
+
+            AttackEvent.New(this, victim, ability.Action, hit: true, damage: damage.Value);
+            victim.ChangeCurrentHP(-1*damage.Value);
 
             if (!victim.IsAlive)
             {

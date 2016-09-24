@@ -38,7 +38,7 @@ namespace UnicornHack.Models.GameState
         static Level()
         {
             PointToIndex = new int[Width, Height];
-            IndexToPoint = new Point[Width * Height];
+            IndexToPoint = new Point[Width*Height];
             var i = 0;
             for (byte y = 0; y < Height; y++)
             {
@@ -53,7 +53,7 @@ namespace UnicornHack.Models.GameState
         public virtual int Id { get; private set; }
         public virtual string Name { get; set; }
         public virtual short Depth { get; set; }
-        
+
         public virtual byte[] Layout { get; set; }
         public virtual int LastTurn { get; set; }
 
@@ -204,7 +204,7 @@ namespace UnicornHack.Models.GameState
             var level = new Level(game, branchName, depth);
             game.Levels.Add(level);
             var layout = StaticLevels[depth][branchName];
-            var byteLayout = new byte[Height * Width];
+            var byteLayout = new byte[Height*Width];
             byte x = 0;
             byte y = 0;
             // ReSharper disable once ForCanBeConvertedToForeach
@@ -282,11 +282,11 @@ namespace UnicornHack.Models.GameState
                         break;
                     case 'b':
                         feature = MapFeature.Floor;
-                        Monster.CreateMonster(MonsterVariant.BugLighting, x, y, level);
+                        Creature.CreateMonster(CreatureVariant.Get("lightning bug"), x, y, level);
                         break;
                     case 'B':
                         feature = MapFeature.Floor;
-                        Monster.CreateMonster(MonsterVariant.FireFly, x, y, level);
+                        Creature.CreateMonster(CreatureVariant.Get("firefly"), x, y, level);
                         break;
                     case '\r':
                         continue;
@@ -308,7 +308,7 @@ namespace UnicornHack.Models.GameState
             {
                 throw new InvalidOperationException($"The height is {y + 1}, but expected {Height}");
             }
-            
+
             level.Layout = byteLayout;
             return level;
         }

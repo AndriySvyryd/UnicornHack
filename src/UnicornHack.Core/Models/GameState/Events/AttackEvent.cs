@@ -9,7 +9,7 @@ namespace UnicornHack.Models.GameState.Events
         public virtual SenseType AttackerSensed { get; set; }
         public virtual Actor Victim { get; set; }
         public virtual SenseType VictimSensed { get; set; }
-        public virtual AttackType AttackType { get; set; }
+        public virtual AbilityAction AbilityAction { get; set; }
         public virtual bool Hit { get; set; }
         public virtual Item Weapon { get; set; }
         public virtual Item Projectile { get; set; }
@@ -18,14 +18,13 @@ namespace UnicornHack.Models.GameState.Events
         public static void New(
             Actor attacker,
             Actor victim,
-            AttackType attackType,
+            AbilityAction attackType,
             bool hit,
             Item weapon = null,
             Item projectile = null,
             int damage = 0)
         {
             Debug.Assert(attacker.Level == victim.Level);
-            Debug.Assert(attackType == AttackType.Weapon || weapon == null);
 
             foreach (var sensor in attacker.Level.Actors)
             {
@@ -44,7 +43,7 @@ namespace UnicornHack.Models.GameState.Events
                     AttackerSensed = attackerSensed,
                     Victim = victim,
                     VictimSensed = victimSensed,
-                    AttackType = attackType,
+                    AbilityAction = attackType,
                     Hit = hit,
                     Weapon = weapon,
                     Projectile = projectile,

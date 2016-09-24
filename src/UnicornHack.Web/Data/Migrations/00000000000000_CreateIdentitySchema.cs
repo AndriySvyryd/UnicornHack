@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace UnicornHack.Data.Migrations
+namespace UnicornHack.Models.Migrations
 {
     public partial class CreateIdentitySchema : Migration
     {

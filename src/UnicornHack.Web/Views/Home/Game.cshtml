@@ -1,4 +1,3 @@
-@using Microsoft.EntityFrameworkCore.Metadata.Internal
 @model PlayerCharacter
 @{
     ViewData["Title"] = "Game";
@@ -6,7 +5,7 @@
 
 <div class="container">
     <div class="col-md-9">
-        @{ Html.RenderPartial("MapPartial", @Model); }
+        @{ Html.RenderPartial("MapPartial", Model); }
         <pre>
 @Model.GivenName the Adventurer Lvl:@Model.XPLevel XP:@(Model.XP)(@Model.NextLevelXP) St:@Model.Strength Dx:@Model.Dexterity Co:@Model.Constitution Sp:@Model.Speed In:@Model.Intelligence Wi:@Model.Willpower
 @Model.Level.Name:@Model.Level.Depth @Model.LevelX,@Model.LevelY $:@Model.Gold HP:@(Model.HP)(@Model.MaxHP) EP:@(Model.EP)(@Model.MaxEP) AC:@Model.AC AP:@Model.ActionPoints
@@ -71,7 +70,7 @@
 
     <div class="col-md-9">
         <div class="log">
-            @foreach (var entry in Model.Log.OrderBy(e => e.Id).Take(10))
+            @foreach (var entry in Model.Log.OrderBy(e => e.Id).Skip(Math.Max(0, Model.Log.Count() - 10)))
             {
                 <div>
                     @entry.Turn: @entry.Message
@@ -92,16 +91,16 @@
     </environment>
     <script src="~/signalr/hubs"></script>
     <script>
-                $(function () {
-                    $.connection.hub.logging = true;
-                });
+        $(function() {
+            $.connection.hub.logging = true;
+        });
     </script>
     <script>
-        $(function () {
+        $(function() {
             // Reference the auto-generated proxy for the hub.
             var chat = $.connection.gameHub;
             // Create a function that the hub can call back to display messages.
-            chat.client.addNewMessageToPage = function (name, message) {
+            chat.client.addNewMessageToPage = function(name, message) {
                 // Add the message to the page.
                 $('#discussion').append('<li><strong>' + htmlEncode(name)
                     + '</strong>: ' + htmlEncode(message) + '</li>');
@@ -110,8 +109,8 @@
             $('#message').focus();
             // Start the connection.
             //$.connection.hub.qs = { "userId": "123" };
-            $.connection.hub.start().done(function () {
-                $('#sendmessage').click(function () {
+            $.connection.hub.start().done(function() {
+                $('#sendmessage').click(function() {
                     // Call the Send method on the hub.
                     chat.server.send('@Model.GivenName', $('#message').val());
                     // Clear text box and reset focus for next comment.

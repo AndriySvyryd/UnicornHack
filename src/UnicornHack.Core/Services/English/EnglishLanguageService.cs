@@ -37,7 +37,7 @@ namespace UnicornHack.Services.English
                 return "something";
             }
 
-            var monster = actor as Monster;
+            var monster = actor as Creature;
             if (monster != null)
             {
                 var name = monster.Variant.Name +
@@ -80,72 +80,64 @@ namespace UnicornHack.Services.English
             return "a " + dropedItemString;
         }
 
-        private string ToVerb(AttackType attackType)
+        private string ToVerb(AbilityAction abilityAction)
         {
             string verb;
-            switch (attackType)
+            switch (abilityAction)
             {
-                case AttackType.Weapon:
-                    // TODO: depends on the weapon type
-                    verb = "hit";
-                    break;
-                case AttackType.Punch:
+                case AbilityAction.Punch:
                     verb = "punch";
                     break;
-                case AttackType.Kick:
+                case AbilityAction.Kick:
                     verb = "kick";
                     break;
-                case AttackType.Touch:
+                case AbilityAction.Touch:
                     verb = "touch";
                     break;
-                case AttackType.Headbutt:
+                case AbilityAction.Headbutt:
                     verb = "headbutt";
                     break;
-                case AttackType.Claw:
+                case AbilityAction.Claw:
                     verb = "claw";
                     break;
-                case AttackType.Bite:
+                case AbilityAction.Bite:
                     verb = "bite";
                     break;
-                case AttackType.Suck:
+                case AbilityAction.Suck:
                     verb = "suck";
                     break;
-                case AttackType.Sting:
+                case AbilityAction.Sting:
                     verb = "sting";
                     break;
-                case AttackType.Hug:
+                case AbilityAction.Hug:
                     verb = "squeeze";
                     break;
-                case AttackType.Trample:
+                case AbilityAction.Trample:
                     verb = "trample";
                     break;
-                case AttackType.Spit:
+                case AbilityAction.Spit:
                     verb = "spit at";
                     break;
-                case AttackType.Digestion:
+                case AbilityAction.Digestion:
                     verb = "digest";
                     break;
-                case AttackType.Spell:
+                case AbilityAction.Spell:
                     verb = "cast a spell at";
                     break;
-                case AttackType.Breath:
+                case AbilityAction.Breath:
                     verb = "breath at";
                     break;
-                case AttackType.Gaze:
+                case AbilityAction.Gaze:
                     verb = "gaze at";
                     break;
-                case AttackType.Scream:
+                case AbilityAction.Scream:
                     verb = "scream at";
                     break;
-                case AttackType.Explosion:
+                case AbilityAction.Explosion:
                     verb = "explode";
                     break;
-                case AttackType.OnMeleeHit:
-                case AttackType.OnRangedHit:
-                case AttackType.OnDeath:
-                case AttackType.OnConsumption:
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(attackType), attackType, message: null);
+                    throw new ArgumentOutOfRangeException(nameof(abilityAction), abilityAction, message: null);
             }
 
             return verb;
@@ -200,7 +192,7 @@ namespace UnicornHack.Services.English
 
                 var distanceModifier = @event.AttackerSensed.HasFlag(SenseType.SoundDistant) ? "distant" : null;
 
-                if (@event.AttackType == AttackType.Scream)
+                if (@event.AbilityAction == AbilityAction.Scream)
                 {
                     return ToSentence("You hear a", distanceModifier, "scream.");
                 }
@@ -214,7 +206,7 @@ namespace UnicornHack.Services.English
             var victimPerson = @event.Sensor == @event.Victim ? EnglishPerson.Second : EnglishPerson.Third;
             var victim = ToString(@event.Victim, victimPerson, @event.VictimSensed);
 
-            var attackVerb = ToVerb(@event.AttackType);
+            var attackVerb = ToVerb(@event.AbilityAction);
             var mainVerbForm = attackerPerson == EnglishPerson.Third
                 ? EnglishVerbForm.ThirdPersonSingularPresent
                 : EnglishVerbForm.BareInfinitive;

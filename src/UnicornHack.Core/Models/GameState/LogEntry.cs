@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations.Schema;
-
 namespace UnicornHack.Models.GameState
 {
     public class LogEntry

@@ -1,55 +1,129 @@
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using static UnicornHack.Models.GameDefinitions.Skill;
+using System.IO;
+using UnicornHack.Utils;
 
 namespace UnicornHack.Models.GameDefinitions
 {
     public class PlayerVariant : ActorVariant
     {
-        public static readonly PlayerVariant Human = new PlayerVariant(
-            name: "player human", monsterVariant: MonsterVariant.Human, xpBonus: 1,
-            strengthBonus: 2, dexterityBonus: 2, speedBonus: 2,
-            constitutionBonus: 2, willpowerBonus: 2, intelligenceBonus: 2,
-            skillAptitudes: new Dictionary<Skill, int>());
+        public static readonly int StartingAttributeValue = 10;
+        private Species? _species;
+        private SpeciesClass? _speciesClass;
+        private byte? _movementRate;
+        private Size? _size;
+        private short? _weight;
+        private short? _nutrition;
 
-        public static readonly PlayerVariant Elf = new PlayerVariant(
-            name: "player elf", monsterVariant: MonsterVariant.Elf, xpBonus: 0,
-            strengthBonus: 1, dexterityBonus: 3, speedBonus: 2,
-            constitutionBonus: 0, willpowerBonus: 2, intelligenceBonus: 2,
-            skillAptitudes: new Dictionary<Skill, int> {{Bows, 1}});
+        public CreatureVariant BaseCreatureVariant
+            => BaseCreatureVariantName == null ? null : CreatureVariant.Get(BaseCreatureVariantName);
 
-        public PlayerVariant(
-            string name,
-            MonsterVariant monsterVariant,
-            int xpBonus,
-            int strengthBonus,
-            int dexterityBonus,
-            int speedBonus,
-            int constitutionBonus,
-            int intelligenceBonus,
-            int willpowerBonus,
-            Dictionary<Skill, int> skillAptitudes)
-            : base(
-                name, monsterVariant.Species, monsterVariant.InnateProperties, monsterVariant.MovementRate,
-                monsterVariant.Size, monsterVariant.Weight, monsterVariant.Nutrition,
-                monsterVariant.ConsumptionProperties, monsterVariant.SpeciesClass)
+        public virtual string BaseCreatureVariantName { get; set; }
+
+        public override Species Species
         {
-            StrengthBonus = strengthBonus;
-            DexterityBonus = dexterityBonus;
-            SpeedBonus = speedBonus;
-            ConstitutionBonus = constitutionBonus;
-            IntelligenceBonus = intelligenceBonus;
-            WillpowerBonus = willpowerBonus;
-            SpeedBonus = speedBonus;
-            SkillAptitudes = skillAptitudes;
+            get { return _species ?? BaseCreatureVariant?.Species ?? Species.Default; }
+            set { _species = value; }
         }
 
-        public static readonly int StartingAttributeValue = 10;
-        public virtual int StrengthBonus { get; }
-        public virtual int DexterityBonus { get; }
-        public virtual int ConstitutionBonus { get; }
-        public virtual int IntelligenceBonus { get; }
-        public virtual int WillpowerBonus { get; }
-        public virtual int SpeedBonus { get; }
-        public virtual IReadOnlyDictionary<Skill, int> SkillAptitudes { get; }
+        public override SpeciesClass SpeciesClass
+        {
+            get { return _speciesClass ?? BaseCreatureVariant?.SpeciesClass ?? SpeciesClass.None; }
+            set { _speciesClass = value; }
+        }
+
+        public override byte MovementRate
+        {
+            get { return _movementRate ?? BaseCreatureVariant?.MovementRate ?? 0; }
+            set { _movementRate = value; }
+        }
+
+        public override Size Size
+        {
+            get { return _size ?? BaseCreatureVariant?.Size ?? 0; }
+            set { _size = value; }
+        }
+
+        public override short Weight
+        {
+            get { return _weight ?? BaseCreatureVariant?.Weight ?? 0; }
+            set { _weight = value; }
+        }
+
+        public override short Nutrition
+        {
+            get { return _nutrition ?? BaseCreatureVariant?.Nutrition ?? 0; }
+            set { _nutrition = value; }
+        }
+
+        public override ISet<string> SimpleProperties { get; set; }
+        public override IDictionary<string, object> ValuedProperties { get; set; }
+
+        public virtual int StrengthBonus { get; set; }
+        public virtual int DexterityBonus { get; set; }
+        public virtual int ConstitutionBonus { get; set; }
+        public virtual int IntelligenceBonus { get; set; }
+        public virtual int WillpowerBonus { get; set; }
+        public virtual int SpeedBonus { get; set; }
+        public virtual IDictionary<Skill, int> SkillAptitudes { get; set; }
+
+        protected override void Initialize()
+        {
+            base.Initialize();
+            SkillAptitudes = SkillAptitudes ?? new ConcurrentDictionary<Skill, int>();
+        }
+
+        public static readonly string BasePath = Path.Combine(AppContext.BaseDirectory, @"data\players\");
+
+        public static Dictionary<string, PlayerVariant> NameLookup { get; } =
+            new Dictionary<string, PlayerVariant>(StringComparer.Ordinal);
+
+        private static bool _allLoaded;
+
+        public static IEnumerable<PlayerVariant> GetAllPlayerVariants()
+        {
+            if (!_allLoaded)
+            {
+                foreach (var file in
+                    Directory.EnumerateFiles(BasePath, "*" + CSScriptDeserializer.Extension,
+                        SearchOption.AllDirectories))
+                {
+                    if (!NameLookup.ContainsKey(
+                        CSScriptDeserializer.GetNameFromFilename(Path.GetFileNameWithoutExtension(file))))
+                    {
+                        Load(file);
+                    }
+                }
+                _allLoaded = true;
+            }
+
+            return NameLookup.Values;
+        }
+
+        public static PlayerVariant Get(string name)
+        {
+            PlayerVariant variant;
+            if (NameLookup.TryGetValue(name, out variant))
+            {
+                return variant;
+            }
+
+            var path = Path.Combine(BasePath, CSScriptDeserializer.GetFilename(name));
+            if (!File.Exists(path))
+            {
+                return null;
+            }
+
+            return Load(path);
+        }
+
+        private static PlayerVariant Load(string path)
+        {
+            var variant = CSScriptDeserializer.LoadFile<PlayerVariant>(path);
+            variant.Initialize();
+            NameLookup[variant.Name] = variant;
+            return variant;
+        }
     }
 }

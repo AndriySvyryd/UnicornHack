@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
 using System.Linq;
-using System.ComponentModel.DataAnnotations.Schema;
 using UnicornHack.Models.GameDefinitions;
+using UnicornHack.Models.GameDefinitions.Effects;
 using UnicornHack.Models.GameState.Events;
 using UnicornHack.Utils;
 
@@ -61,13 +62,22 @@ namespace UnicornHack.Models.GameState
 
         public override byte MovementRate => (byte)(Variant.MovementRate*Speed/10);
 
-        public override IReadOnlyList<Attack> Attacks { get; } = new[]
+        public override IList<Ability> Abilities { get; } = new[]
         {
-            new Attack(AttackType.Weapon, AttackEffect.PhysicalDamage, diceCount: 2, diceSides: 4)
+            new Ability
+            {
+                Activation = AbilityActivation.Targetted,
+                Action = AbilityAction.Punch,
+                ActionPointCost = 100,
+                Effects = new AbilityEffect[] {new PhysicalDamage {Damage = 4}}
+            }
         };
 
+        public override ActorVariant Variant
+            => PolymorphedVariant == null ? (ActorVariant)PlayerVariant : CreatureVariant.Get(PolymorphedVariant);
+
         [NotMapped]
-        public virtual PlayerVariant PlayerVariant => (PlayerVariant)ActorVariant.Get(OriginalVariant);
+        public virtual PlayerVariant PlayerVariant => PlayerVariant.Get(OriginalVariant);
 
         public override bool Act()
         {
@@ -200,7 +210,7 @@ namespace UnicornHack.Models.GameState
             var initialLevel = Level.CreateLevel(game, Level.MainBranchName, depth: 1);
             var upStairs = initialLevel.UpStairs.First();
             var character = new PlayerCharacter(
-                PlayerVariant.Human, upStairs.DownLevelX, upStairs.DownLevelY, initialLevel)
+                PlayerVariant.Get("player human"), upStairs.DownLevelX, upStairs.DownLevelY, initialLevel)
             {
                 GivenName = name
             };

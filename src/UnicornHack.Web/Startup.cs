@@ -1,18 +1,18 @@
+using System;
+using System.Runtime.ExceptionServices;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using UnicornHack.Data;
 using UnicornHack.Models;
 using UnicornHack.Services;
 using UnicornHack.Services.English;
-using System;
 
 namespace UnicornHack
 {
@@ -88,8 +88,8 @@ namespace UnicornHack
                     {
                         // Override default exception page for json requests
                         var error = context.Features.Get<IExceptionHandlerFeature>();
-                        if (error != null
-                            && context.Request.Path == "/Home/PerformAction")
+                        if (error != null)
+                            //&& context.Request.Path == "/Home/PerformAction")
                         {
                             context.Response.StatusCode = 200;
                             context.Response.ContentType = "text/html";
@@ -103,7 +103,11 @@ namespace UnicornHack
                         }
                         else
                         {
-                            throw error == null ? new Exception() : error.Error;
+                            if (error == null)
+                            {
+                                throw new Exception();
+                            }
+                            ExceptionDispatchInfo.Capture(error.Error).Throw();
                         }
                     });
                 });

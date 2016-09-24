@@ -135,10 +135,12 @@ namespace UnicornHack.Services.English
         [InlineData("run to", "runs to")]
         public void Verbs_3SPresent(string verb, string expectedPlural)
         {
-            Assert.Equal(expectedPlural, Fixture.EnglishMorphologicalProcessor.ProcessVerb(verb, EnglishVerbForm.ThirdPersonSingularPresent));
+            Assert.Equal(expectedPlural,
+                Fixture.EnglishMorphologicalProcessor.ProcessVerb(verb, EnglishVerbForm.ThirdPersonSingularPresent));
         }
 
         protected TestFixture Fixture { get; }
+
         public EnglishMorphologicalProcessorTest(TestFixture fixture)
         {
             Fixture = fixture;
@@ -146,7 +148,8 @@ namespace UnicornHack.Services.English
 
         public class TestFixture
         {
-            public EnglishMorphologicalProcessor EnglishMorphologicalProcessor { get; } = new EnglishMorphologicalProcessor();
+            public EnglishMorphologicalProcessor EnglishMorphologicalProcessor { get; } =
+                new EnglishMorphologicalProcessor();
         }
     }
 }

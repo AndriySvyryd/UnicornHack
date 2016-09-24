@@ -1,18 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using UnicornHack.Data;
-using UnicornHack.Hubs;
-using UnicornHack.Utils;
-using UnicornHack.Models.GameState;
-using UnicornHack.Models.GameViewModels;
-using UnicornHack.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
-using Microsoft.EntityFrameworkCore.Infrastructure;
+using UnicornHack.Hubs;
+using UnicornHack.Models;
+using UnicornHack.Models.GameState;
+using UnicornHack.Models.GameViewModels;
+using UnicornHack.Services;
 
 namespace UnicornHack.Controllers
 {
@@ -22,7 +18,8 @@ namespace UnicornHack.Controllers
         private readonly IHubContext<GameHub, IGameClient> _hubContext;
         private readonly GameServices _gameServices;
 
-        public HomeController(GameDbContext dbContext, IHubContext<GameHub, IGameClient> hubContext, GameServices gameServices)
+        public HomeController(GameDbContext dbContext, IHubContext<GameHub, IGameClient> hubContext,
+            GameServices gameServices)
         {
             _dbContext = dbContext;
             _hubContext = hubContext;
@@ -139,7 +136,7 @@ namespace UnicornHack.Controllers
                 .Where(c => c.Game == character.Game).ToList();
 
             var currentLevel = character.Level;
-            var levelsToLoad = new List<int> { currentLevel.Id };
+            var levelsToLoad = new List<int> {currentLevel.Id};
 
             // Preload adjacent levels
             var upStairs = character.Level.UpStairs.SingleOrDefault(s =>
