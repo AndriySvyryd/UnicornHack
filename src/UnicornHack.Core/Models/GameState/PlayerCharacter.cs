@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
 using System.Linq;
 using UnicornHack.Models.GameDefinitions;
@@ -62,22 +61,18 @@ namespace UnicornHack.Models.GameState
 
         public override byte MovementRate => (byte)(Variant.MovementRate*Speed/10);
 
-        public override IList<Ability> Abilities { get; } = new[]
+        private readonly Ability _meleeAbility = new Ability
         {
-            new Ability
-            {
-                Activation = AbilityActivation.Targetted,
-                Action = AbilityAction.Punch,
-                ActionPointCost = 100,
-                Effects = new AbilityEffect[] {new PhysicalDamage {Damage = 4}}
-            }
+            Activation = AbilityActivation.Targetted,
+            Action = AbilityAction.Punch,
+            ActionPointCost = 100,
+            Effects = new AbilityEffect[] {new PhysicalDamage {Damage = 4}}
         };
+        public override IEnumerable<Ability> Abilities => base.Abilities.Append(_meleeAbility);
 
-        public override ActorVariant Variant
-            => PolymorphedVariant == null ? (ActorVariant)PlayerVariant : CreatureVariant.Get(PolymorphedVariant);
+        public override ActorVariant Variant => PlayerVariant;
 
-        [NotMapped]
-        public virtual PlayerVariant PlayerVariant => PlayerVariant.Get(OriginalVariant);
+        public virtual PlayerVariant PlayerVariant => PlayerVariant.Get(VariantName);
 
         public override bool Act()
         {
@@ -95,6 +90,7 @@ namespace UnicornHack.Models.GameState
                     WriteLog(logEntry);
                 }
                 SensedEvents.Remove(@event);
+                @event.Delete();
             }
 
             var action = NextAction;
@@ -215,7 +211,9 @@ namespace UnicornHack.Models.GameState
                 GivenName = name
             };
 
-            character.Inventory.Add(new StackableItem(ItemType.Food, quantity: 3, actor: character));
+            character.TryAdd(new Item(ItemType.Food, game));
+            character.TryAdd(new Item(ItemType.Food, game));
+            character.TryAdd(new Item(ItemType.Food, game));
             game.Actors.Add(character);
 
             character.WriteLog(game.Services.Language.Welcome(character));

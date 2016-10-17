@@ -21,5 +21,17 @@ namespace UnicornHack.Utils
 
             return list;
         }
+
+#if NET46
+        public static IEnumerable<T> Append<T>(this IEnumerable<T> source, T item)
+        {
+            foreach (var element in source)
+            {
+                yield return element;
+            }
+
+            yield return item;
+        }
+#endif
     }
 }

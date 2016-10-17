@@ -43,10 +43,10 @@
                 <div>
                     @item.Name
                     @{
-                        var stackableItem = item as StackableItem;
-                        if (stackableItem != null && stackableItem.Quantity > 1)
+                        var itemStack = item as ItemStack;
+                        if (itemStack != null && itemStack.Quantity > 1)
                         {
-                            @: (@stackableItem.Quantity)
+                            @: (@itemStack.Quantity)
                         }
                         if (item.Type == ItemType.Food)
                         {

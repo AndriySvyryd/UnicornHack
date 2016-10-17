@@ -20,8 +20,8 @@ namespace UnicornHack.Models.GameState.Events
                 var dropperSensed = sensor.CanSense(dropper);
                 var itemSensed = sensor.CanSense(item);
 
-                if ((dropperSensed == SenseType.None)
-                    && (itemSensed == SenseType.None))
+                if (dropperSensed == SenseType.None
+                    && itemSensed == SenseType.None)
                 {
                     continue;
                 }
@@ -33,9 +33,16 @@ namespace UnicornHack.Models.GameState.Events
                     Item = item,
                     ItemSensed = itemSensed
                 };
+                item.AddReference();
 
                 sensor.Sense(@event);
             }
+        }
+
+        public override void Delete()
+        {
+            base.Delete();
+            Item?.RemoveReference();
         }
     }
 }

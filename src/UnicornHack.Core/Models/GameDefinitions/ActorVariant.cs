@@ -16,6 +16,8 @@ namespace UnicornHack.Models.GameDefinitions
 
         public virtual short Nutrition { get; set; }
 
+        // Material
+
         public virtual ISet<string> SimpleProperties { get; set; }
         public virtual IDictionary<string, object> ValuedProperties { get; set; }
 

@@ -20,11 +20,11 @@ namespace UnicornHack.Models.GameState
 
         public override ActorVariant Variant => CreatureVariant;
 
-        public virtual CreatureVariant CreatureVariant => CreatureVariant.Get(PolymorphedVariant ?? OriginalVariant);
+        public virtual CreatureVariant CreatureVariant => CreatureVariant.Get(VariantName);
 
         public override byte MovementRate => Variant.MovementRate;
 
-        public override IList<Ability> Abilities => CreatureVariant.Abilities;
+        public override IEnumerable<Ability> Abilities => Variant.Abilities;
 
         public override bool Act()
         {
@@ -123,13 +123,13 @@ namespace UnicornHack.Models.GameState
                 while (CreatureVariant.PreviousStage != null
                        && XPLevel < CreatureVariant.InitialLevel)
                 {
-                    OriginalVariant = CreatureVariant.PreviousStage.Name;
+                    VariantName = CreatureVariant.PreviousStage.Name;
                 }
 
                 while (CreatureVariant.NextStage != null
                        && XPLevel >= CreatureVariant.NextStage.InitialLevel)
                 {
-                    OriginalVariant = CreatureVariant.NextStage.Name;
+                    VariantName = CreatureVariant.NextStage.Name;
                 }
 
                 XPLevel = XPLevel < 1 ? (byte)1 : XPLevel;

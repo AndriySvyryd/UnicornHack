@@ -10,11 +10,11 @@ namespace UnicornHack.Services.English
         [Fact]
         public void AttackEventTest()
         {
-            var newt = new Creature {OriginalVariant = "newt"};
-            var nymph = new Creature {OriginalVariant = "water nymph", Sex = Sex.Female};
-            var rodney = new Creature {OriginalVariant = "Wizard of Yendor", Sex = Sex.None};
-            var player = new PlayerCharacter {OriginalVariant = "human", GivenName = "Dudley", Sex = Sex.Male};
-            var player2 = new PlayerCharacter {OriginalVariant = "human", GivenName = "Cudley", Sex = Sex.Male};
+            var newt = new Creature {VariantName = "newt"};
+            var nymph = new Creature {VariantName = "water nymph", Sex = Sex.Female};
+            var rodney = new Creature {VariantName = "Wizard of Yendor", Sex = Sex.None};
+            var player = new PlayerCharacter {VariantName = "human", GivenName = "Dudley", Sex = Sex.Male};
+            var player2 = new PlayerCharacter {VariantName = "human", GivenName = "Cudley", Sex = Sex.Male};
 
             Verify(newt, nymph, player, SenseType.Sight, SenseType.Sight, AbilityAction.Bite, 11,
                 expectedMessage: "The newt bites the water nymph. (11 pts.)");
@@ -113,7 +113,7 @@ namespace UnicornHack.Services.English
             var message = languageService.Welcome(
                 new PlayerCharacter
                 {
-                    OriginalVariant = "human",
+                    VariantName = "human",
                     GivenName = "Conan the Barbarian",
                     Level = new Level {Name = "Dungeon of Fun"}
                 });

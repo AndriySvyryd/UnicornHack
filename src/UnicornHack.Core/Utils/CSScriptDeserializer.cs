@@ -17,9 +17,11 @@ namespace UnicornHack.Utils
             => CSharpScript.EvaluateAsync<T>(script,
                 ScriptOptions.Default.WithReferences(
                     typeof(T).GetTypeInfo().Assembly,
-                    typeof(IReadOnlyList<>).GetTypeInfo().Assembly,
-                    Assembly.Load(
-                        new AssemblyName("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e")))
+                    typeof(IReadOnlyList<>).GetTypeInfo().Assembly
+#if !NET46
+                    , Assembly.Load(new AssemblyName("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e"))
+#endif
+                    )
                     .AddReferences(typeof(CSScriptDeserializer).GetTypeInfo()
                         .Assembly.GetReferencedAssemblies()
                         .Select(Assembly.Load))

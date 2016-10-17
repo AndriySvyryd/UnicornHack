@@ -113,8 +113,8 @@
                 throw new NotSupportedException($"Item type {item.Type} not supported.");
         }
 
-        characters[item.LevelX, item.LevelY] = symbol;
-        classes[item.LevelX, item.LevelY] = className;
+        characters[item.LevelX.Value, item.LevelY.Value] = symbol;
+        classes[item.LevelX.Value, item.LevelY.Value] = className;
     }
 
     foreach (var actor in level.Actors)

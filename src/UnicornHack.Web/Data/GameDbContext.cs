@@ -25,6 +25,8 @@ namespace UnicornHack.Models
         {
             modelBuilder.Entity<Level>(eb =>
             {
+                eb.Ignore(l => l.PlayerCharacters);
+                eb.Ignore(l => l.Difficulty);
                 eb.Property(l => l.Layout).IsRequired();
                 eb.Property(l => l.Name).IsRequired();
                 eb.HasKey(l => new {l.GameId, l.Id});
@@ -38,20 +40,27 @@ namespace UnicornHack.Models
 
             modelBuilder.Entity<Actor>(eb =>
             {
-                eb.Property<string>(propertyName: "OriginalVariant");
-                eb.Property<string>(propertyName: "PolymorphedVariant");
+                eb.Ignore(a => a.Variant);
+                eb.Ignore(a => a.Abilities);
+                eb.Ignore(a => a.MovementRate);
+                eb.Ignore(a => a.IsAlive);
                 eb.HasKey(a => new {a.GameId, a.Id});
                 eb.HasOne(a => a.Level)
                     .WithMany(l => l.Actors)
-                    .HasForeignKey(nameof(Actor.GameId), "LevelId")
+                    .HasForeignKey(a => new {a.GameId, a.LevelId})
                     .IsRequired();
             });
 
-            modelBuilder.Entity<PlayerCharacter>();
-            modelBuilder.Entity<Creature>();
+            modelBuilder.Entity<PlayerCharacter>()
+                .Ignore(pc => pc.PlayerVariant);
+            modelBuilder.Entity<Creature>()
+                .Ignore(c => c.CreatureVariant);
 
             modelBuilder.Entity<Game>(eb =>
             {
+                eb.Ignore(g => g.Services);
+                eb.Ignore(g => g.Delete);
+                eb.Ignore(g => g.PlayerCharacters);
                 eb.Property(g => g.Id)
                     .ValueGeneratedOnAdd();
                 eb.HasMany(g => g.Levels)
@@ -75,14 +84,23 @@ namespace UnicornHack.Models
 
             modelBuilder.Entity<Item>(eb =>
             {
+                eb.Ignore(i => i.Name);
                 eb.HasKey(i => new {i.GameId, i.Id});
                 eb.HasOne(i => i.Level)
                     .WithMany(l => l.Items)
-                    .HasForeignKey(nameof(Item.GameId), "LevelId");
+                    .HasForeignKey(i => new {i.GameId, i.LevelId});
+                eb.HasOne(i => i.Actor)
+                    .WithMany(a => a.Inventory)
+                    .HasForeignKey(i => new {i.GameId, i.ActorId});
+                eb.HasOne(i => i.Container)
+                    .WithMany(c => c.Items)
+                    .HasForeignKey(i => new {i.GameId, i.ContainerId});
+                eb.Property("_referenceCount");
             });
             modelBuilder.Entity<Weapon>();
             modelBuilder.Entity<Armor>();
-            modelBuilder.Entity<StackableItem>();
+            modelBuilder.Entity<ItemStack>();
+            modelBuilder.Entity<Gold>();
 
             modelBuilder.Entity<Stairs>(eb => { eb.HasKey(s => new {s.GameId, s.Id}); });
 
@@ -103,6 +121,7 @@ namespace UnicornHack.Models
                     .HasForeignKey(s => new {s.GameId, s.SensorId});
                 eb.ToTable(name: "SensoryEvents");
             });
+            // TODO: Specify FKs for all of these:
             modelBuilder.Entity<ActorMoveEvent>();
             modelBuilder.Entity<AttackEvent>();
             modelBuilder.Entity<DeathEvent>();

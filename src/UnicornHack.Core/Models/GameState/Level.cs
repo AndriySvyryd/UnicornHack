@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
 using System.Linq;
 using UnicornHack.Models.GameDefinitions;
@@ -64,12 +63,10 @@ namespace UnicornHack.Models.GameState
         public virtual ICollection<Actor> Actors { get; private set; } = new HashSet<Actor>();
         public virtual ICollection<Stairs> UpStairs { get; private set; } = new HashSet<Stairs>();
         public virtual ICollection<Stairs> DownStairs { get; private set; } = new HashSet<Stairs>();
-
-        [NotMapped]
+        
         public virtual IEnumerable<PlayerCharacter> PlayerCharacters => Actors.OfType<PlayerCharacter>();
 
         // TODO: Adjust based on end game
-        [NotMapped]
         public virtual short Difficulty => Depth;
 
         public virtual Actor Turn()
@@ -199,6 +196,44 @@ namespace UnicornHack.Models.GameState
             return availableDirections;
         }
 
+        public virtual bool TryAdd(Item item, byte x, byte y)
+        {
+            if (!CanAdd(item, x, y))
+            {
+                return false;
+            }
+            
+            var itemOrStack = item.StackWith(Items.Where(i => i.LevelX == x && i.LevelY == y));
+            if (itemOrStack != null)
+            {
+                itemOrStack.LevelId = Id;
+                itemOrStack.Level = this;
+                itemOrStack.LevelX = x;
+                itemOrStack.LevelY = y;
+                Items.Add(itemOrStack);
+                itemOrStack.AddReference();
+            }
+
+            return true;
+        }
+
+        public virtual bool CanAdd(Item item, byte x, byte y)
+            => true;
+
+        public virtual bool Remove(Item item)
+        {
+            item.LevelId = null;
+            item.Level = null;
+            item.LevelX = null;
+            item.LevelY = null;
+            if (Items.Remove(item))
+            {
+                item.RemoveReference();
+                return true;
+            }
+            return false;
+        }
+
         public static Level CreateLevel(Game game, string branchName, short depth)
         {
             var level = new Level(game, branchName, depth);
@@ -268,11 +303,11 @@ namespace UnicornHack.Models.GameState
                         break;
                     case '$':
                         feature = MapFeature.Floor;
-                        level.Items.Add(new StackableItem(ItemType.Gold, quantity: 9, x: x, y: y, level: level));
+                        level.TryAdd(new Gold(quantity: 9, game: game), x, y);
                         break;
                     case '%':
                         feature = MapFeature.Floor;
-                        level.Items.Add(new StackableItem(ItemType.Food, quantity: 1, x: x, y: y, level: level));
+                        level.TryAdd(new Item(ItemType.Food, game), x, y);
                         break;
                     case ')':
                         feature = MapFeature.Floor;

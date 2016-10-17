@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -56,7 +57,7 @@ namespace UnicornHack.Controllers
             {
                 if (!character.Game.PlayerCharacters.Any(pc => pc.IsAlive))
                 {
-                    Delete(character.Game);
+                    Clean(character.Game);
                     _dbContext.SaveChanges();
                     character = FindOrCreateCharacter(name);
                 }
@@ -99,9 +100,9 @@ namespace UnicornHack.Controllers
                 var game = new Game
                 {
                     CurrentTurn = -1,
-                    RandomSeed = Environment.TickCount,
-                    Services = _gameServices
+                    RandomSeed = Environment.TickCount
                 };
+                Initialize(game);
                 _dbContext.Games.Add(game);
                 _dbContext.SaveChanges();
 
@@ -170,17 +171,55 @@ namespace UnicornHack.Controllers
             }
 
             var levels = _dbContext.Levels
-                .Include(l => l.Actors).ThenInclude(a => a.Inventory)
                 .Include(l => l.Items)
+                .Include(l => l.Actors).ThenInclude(l => l.Inventory)
                 .Include(l => l.Game)
                 .Where(l => levelsToLoad.Contains(l.Id)).ToList();
 
-            character.Game.Services = _gameServices;
+            var loadedContainerIds = _dbContext.Items.Local.OfType<Container>().Select(c => c.Id).ToList();
+            _dbContext.Items
+                .Where(i => i.ContainerId.HasValue && loadedContainerIds.Contains(i.ContainerId.Value))
+                .Load();
+
+            Initialize(character.Game);
 
             return character;
         }
 
-        private void Delete(Game game)
+        private void Initialize(Game game)
+        {
+            game.Services = _gameServices;
+            game.Delete = Delete;
+        }
+
+        private static MethodInfo _genericDelete = typeof(HomeController).GetMethod(nameof(GenericDelete),
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        private static Dictionary<Type, MethodInfo> _deleteDelegates = new Dictionary<Type, MethodInfo>();
+
+        private void Delete(object entity)
+        {
+            var type = entity.GetType();
+            MethodInfo delete;
+            if (!_deleteDelegates.TryGetValue(type, out delete))
+            {
+                delete = _genericDelete.MakeGenericMethod(type);
+                _deleteDelegates.Add(type, delete);
+            }
+
+            delete.Invoke(this, new[] {entity});
+        }
+
+        private void GenericDelete<TEntity>(TEntity entity)
+            where TEntity : class
+        {
+            var local = _dbContext.Set<TEntity>().Local;
+            if (local.Contains(entity))
+            {
+                local.Remove(entity);
+            }
+        }
+
+        private void Clean(Game game)
         {
             game = _dbContext.Games
                 .Include(g => g.Actors)

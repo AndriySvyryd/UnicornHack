@@ -69,11 +69,11 @@ namespace UnicornHack.Services.English
         private string ToString(Item item)
         {
             var dropedItemString = item.Name;
-            var stackableItem = item as StackableItem;
-            if (stackableItem != null
-                && stackableItem.Quantity > 1)
+            var quantity = (item as ItemStack)?.Quantity ?? (item as Gold)?.Quantity;
+            if (quantity != null
+                && quantity.Value > 1)
             {
-                return stackableItem.Quantity + " " +
+                return quantity.Value + " " +
                        EnglishMorphologicalProcessor.ProcessNoun(dropedItemString, EnglishNounForm.Plural);
             }
 
@@ -295,7 +295,7 @@ namespace UnicornHack.Services.English
             return ToSentence(
                 ToString(@event.Consumer, consumerPerson, @event.ConsumerSensed),
                 EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "eat", person: consumerPerson),
-                ToString(@event.Object, @event.ObjectSensed));
+                ToString(@event.Item, @event.ItemSensed));
         }
 
         #endregion

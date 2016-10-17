@@ -20,22 +20,29 @@ namespace UnicornHack.Models.GameState.Events
                 var pickerSensed = sensor.CanSense(picker);
                 var itemSensed = sensor.CanSense(item);
 
-                if ((pickerSensed == SenseType.None)
-                    && (itemSensed == SenseType.None))
+                if (pickerSensed == SenseType.None
+                    && itemSensed == SenseType.None)
                 {
                     continue;
                 }
 
-                SensoryEvent @event = new ItemPickUpEvent
+                var @event = new ItemPickUpEvent
                 {
                     Picker = picker,
                     PickerSensed = pickerSensed,
                     Item = item,
                     ItemSensed = itemSensed
                 };
+                item.AddReference();
 
                 sensor.Sense(@event);
             }
+        }
+
+        public override void Delete()
+        {
+            base.Delete();
+            Item?.RemoveReference();
         }
     }
 }

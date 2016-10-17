@@ -42,7 +42,8 @@ namespace UnicornHack
         {
             // Add framework services.
             services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(Configuration.GetConnectionString(name: "DefaultConnection")))
+                options.UseSqlServer(Configuration.GetConnectionString(name: "DefaultConnection"))
+                    .EnableSensitiveDataLogging())
                 .AddDbContext<GameDbContext>(options =>
                     options.EnableSensitiveDataLogging()
                         .UseSqlServer(

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
 using System.Linq;
 using UnicornHack.Models.GameDefinitions;
@@ -17,7 +16,7 @@ namespace UnicornHack.Models.GameState
 
         protected Actor(ActorVariant variant, byte x, byte y, Level level)
         {
-            OriginalVariant = variant.Name;
+            VariantName = variant.Name;
             LevelX = x;
             LevelY = y;
             Level = level;
@@ -28,11 +27,9 @@ namespace UnicornHack.Models.GameState
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public virtual int Id { get; private set; }
 
-        [NotMapped]
         public abstract ActorVariant Variant { get; }
 
-        public virtual string OriginalVariant { get; set; }
-        public virtual string PolymorphedVariant { get; set; }
+        public virtual string VariantName { get; set; }
 
         public virtual string GivenName { get; set; }
 
@@ -44,15 +41,15 @@ namespace UnicornHack.Models.GameState
         public virtual int MaxHP { get; set; }
         public virtual int HP { get; set; }
 
-        [NotMapped]
         public virtual bool IsAlive => HP > 0;
 
         public virtual int Gold { get; set; }
         public virtual int AC { get; set; }
-        public virtual ICollection<Item> Inventory { get; set; } = new HashSet<Item>();
+        public virtual ICollection<Item> Inventory { get; } = new HashSet<Item>();
 
         public virtual byte LevelX { get; set; }
         public virtual byte LevelY { get; set; }
+        public virtual int? LevelId { get; set; }
         public virtual Level Level { get; set; }
         public virtual int GameId { get; private set; }
         public virtual Game Game { get; set; }
@@ -60,12 +57,17 @@ namespace UnicornHack.Models.GameState
         public const int ActionPointsPerTurn = 100;
         public virtual int ActionPoints { get; set; }
 
-        [NotMapped]
         public abstract byte MovementRate { get; }
 
-        [NotMapped]
-        public abstract IList<Ability> Abilities { get; }
+        //Check effects
+        //Check equipment
+        //Check innate abilities (including skills for players)
+        public virtual IEnumerable<Ability> Abilities => Variant.Abilities;
 
+        //Check effects (attributes provide an effect for players)
+        //Check equipment
+        //Check sustained abilities
+        //Check innate properties
         public bool Has(string property)
         {
             return Variant.SimpleProperties.Contains(property);
@@ -188,7 +190,7 @@ namespace UnicornHack.Models.GameState
 
             LevelX = newX;
             LevelY = newY;
-            var itemsOnNewCell = Level.Items.Where(i => (i.LevelX == newX) && (i.LevelY == newY));
+            var itemsOnNewCell = Level.Items.Where(i => (i.LevelX == newX) && (i.LevelY == newY)).ToList();
             foreach (var itemOnNewCell in itemsOnNewCell)
             {
                 PickUp(itemOnNewCell);
@@ -251,6 +253,8 @@ namespace UnicornHack.Models.GameState
 
         public virtual void Sense(SensoryEvent @event)
         {
+            @event.Sensor = this;
+            @event.Delete();
         }
 
         public virtual SenseType CanSense(Actor target)
@@ -275,69 +279,39 @@ namespace UnicornHack.Models.GameState
 
         public virtual bool Eat(Item item)
         {
-            var stackableItem = item as StackableItem;
-            if ((stackableItem != null)
-                && (stackableItem.Quantity > 1))
+            using (var reference = item.Split(1))
             {
-                stackableItem.Quantity--;
-            }
-            else
-            {
-                Inventory.Remove(item);
-                item.Actor = null;
-            }
+                if (reference.Referenced.Type == ItemType.Food)
+                {
+                    ChangeCurrentHP(hp: 5);
+                }
 
-            if (item.Type == ItemType.Food)
-            {
-                ChangeCurrentHP(hp: 5);
+                ItemConsumptionEvent.New(this, reference.Referenced);
+
+                return true;
             }
-
-            ItemConsumptionEvent.New(this, item);
-
-            return true;
         }
 
         public virtual bool PickUp(Item item)
         {
-            var stackableItem = item as StackableItem;
-            if (stackableItem != null)
-            {
-                ItemPickUpEvent.New(this, stackableItem);
-
-                if (stackableItem.Type == ItemType.Gold)
-                {
-                    Gold += stackableItem.Quantity;
-                    stackableItem.Level = null;
-                    return true;
-                }
-
-                var inventoryStack = Inventory.Where(i => i.Type == item.Type).Cast<StackableItem>().SingleOrDefault();
-                if (inventoryStack != null)
-                {
-                    inventoryStack.Quantity += stackableItem.Quantity;
-                    stackableItem.Level = null;
-                    return true;
-                }
-            }
+            item.MoveTo(this);
 
             ItemPickUpEvent.New(this, item);
 
-            item.Level = null;
-            Inventory.Add(item);
             return true;
         }
 
         public virtual bool DropGold(short quantity)
         {
-            if ((quantity == 0)
-                || (quantity > Gold))
+            if (quantity == 0
+                || quantity > Gold)
             {
                 return false;
             }
 
             Gold -= quantity;
-            var item = new StackableItem(ItemType.Gold, Level, LevelX, LevelY, quantity);
-            Inventory.Add(item);
+            var item = new Gold(quantity, Game);
+            item.MoveTo(Level, LevelX, LevelY);
 
             ItemDropEvent.New(this, item);
 
@@ -346,44 +320,45 @@ namespace UnicornHack.Models.GameState
 
         public virtual bool Drop(Item item)
         {
-            var stackableItem = item as StackableItem;
-            if (stackableItem != null)
-            {
-                var groundStack = Level.Items
-                    .Where(i => (i.LevelX == LevelX) && (i.LevelY == LevelY) && (i.Type == item.Type))
-                    .Cast<StackableItem>().SingleOrDefault();
-                if (groundStack != null)
-                {
-                    // TODO: Create a transient item
-                    ItemDropEvent.New(this, stackableItem);
-
-                    groundStack.Quantity++;
-                    if (stackableItem.Quantity > 1)
-                    {
-                        stackableItem.Quantity--;
-                    }
-                    else
-                    {
-                        stackableItem.Actor = null;
-                    }
-                    return true;
-                }
-                if (stackableItem.Quantity > 1)
-                {
-                    item = new StackableItem(stackableItem.Type, Level, LevelX, LevelY, quantity: 1);
-                    stackableItem.Quantity--;
-                }
-            }
-
-            item.Actor = null;
-            item.LevelX = LevelX;
-            item.LevelY = LevelY;
-            item.Level = Level;
-            Level.Items.Add(item);
+            item.MoveTo(Level, LevelX, LevelY);
 
             ItemDropEvent.New(this, item);
 
             return true;
+        }
+
+        public virtual bool TryAdd(Item item)
+        {
+            if (!CanAdd(item))
+            {
+                return false;
+            }
+
+            var itemOrStack = item.StackWith(Inventory);
+            if (itemOrStack != null)
+            {
+                itemOrStack.ActorId = Id;
+                itemOrStack.Actor = this;
+                Inventory.Add(itemOrStack);
+                itemOrStack.AddReference();
+            }
+
+            return true;
+        }
+
+        public virtual bool CanAdd(Item item)
+            => true;
+
+        public virtual bool Remove(Item item)
+        {
+            item.ActorId = null;
+            item.Actor = null;
+            if (Inventory.Remove(item))
+            {
+                item.RemoveReference();
+                return true;
+            }
+            return false;
         }
 
         public virtual bool ChangeCurrentHP(int hp)
@@ -392,7 +367,7 @@ namespace UnicornHack.Models.GameState
             if (!IsAlive)
             {
                 DropGold((short)Gold);
-                foreach (var item in Inventory)
+                foreach (var item in Inventory.ToList())
                 {
                     Drop(item);
                 }

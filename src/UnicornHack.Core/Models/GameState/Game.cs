@@ -1,5 +1,5 @@
+using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using UnicornHack.Services;
 using UnicornHack.Utils;
@@ -21,11 +21,8 @@ namespace UnicornHack.Models.GameState
         public virtual ICollection<Level> Levels { get; set; } = new HashSet<Level>();
         public virtual int NextStairsId { get; set; }
         public virtual ICollection<Stairs> Stairs { get; set; } = new HashSet<Stairs>();
-
-        [NotMapped]
         public virtual GameServices Services { get; set; }
-
-        [NotMapped]
+        public virtual Action<object> Delete { get; set; }
         public virtual IEnumerable<PlayerCharacter> PlayerCharacters => Actors.OfType<PlayerCharacter>();
 
         public virtual Actor Turn()

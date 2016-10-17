@@ -9,5 +9,10 @@ namespace UnicornHack.Models.GameState.Events
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public int GameId { get; private set; }
         public Game Game => Sensor.Game;
+
+        public virtual void Delete()
+        {
+            Game.Delete(this);
+        }
     }
 }
