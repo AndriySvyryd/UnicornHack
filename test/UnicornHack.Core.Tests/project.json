@@ -1,5 +1,6 @@
 {
   "version": "1.0.0-*",
+
   "buildOptions": {
     "warningsAsErrors": true,
     // TODO: Remove this hack
@@ -9,6 +10,7 @@
       }
     }
   },
+
   "testRunner": "xunit",
 
   "dependencies": {

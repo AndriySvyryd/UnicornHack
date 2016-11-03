@@ -2,7 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using CSharpSerialization;
+using CSharpScriptSerialization;
 using UnicornHack.Models.GameDefinitions;
 using UnicornHack.Utils;
 

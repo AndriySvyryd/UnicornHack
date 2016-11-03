@@ -1,4 +1,4 @@
-using CSharpSerialization;
+using CSharpScriptSerialization;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace UnicornHack.Models.GameDefinitions.Effects
