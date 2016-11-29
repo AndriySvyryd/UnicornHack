@@ -20,7 +20,7 @@ new CreatureVariant
     {
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Breath,
             Timeout = 1,
             Effects = new AbilityEffect[] { new FireDamage { Damage = 27 } }
@@ -28,7 +28,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Bite,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 18 } }
@@ -36,7 +36,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Claw,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 10 } }
@@ -44,7 +44,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Claw,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 10 } }
@@ -52,7 +52,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Spell,
             Timeout = 1,
             Effects = new AbilityEffect[] { new ScriptedEffect { Script = "ArcaneSpell" } }
@@ -60,7 +60,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
             Effects = new AbilityEffect[] { new StealAmulet() }

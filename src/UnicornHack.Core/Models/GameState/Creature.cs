@@ -89,9 +89,9 @@ namespace UnicornHack.Models.GameState
             return false;
         }
 
-        public static Creature CreateMonster(CreatureVariant variant, byte x, byte y, Level level)
+        public static Creature Create(string variantName, byte x, byte y, Level level)
         {
-            var monster = new Creature(variant, x, y, level);
+            var monster = new Creature(CreatureVariant.Get(variantName), x, y, level);
             monster.AdjustInitialXPLevel();
 
             level.Actors.Add(monster);

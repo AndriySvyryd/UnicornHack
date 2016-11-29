@@ -20,7 +20,7 @@ new CreatureVariant
     {
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Claw,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
@@ -28,7 +28,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Claw,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
@@ -36,7 +36,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Bite,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }

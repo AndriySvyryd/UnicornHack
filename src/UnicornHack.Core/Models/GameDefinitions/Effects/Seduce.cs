@@ -6,6 +6,6 @@ namespace UnicornHack.Models.GameDefinitions.Effects
     public class Seduce : AbilityEffect, ICSScriptSerializable
     {
         private static readonly CSScriptSerializer Serializer = new ConstructorCSScriptSerializer<Seduce>();
-        public ExpressionSyntax GetCreation() => Serializer.GetCreation(this);
+        public ICSScriptSerializer GetSerializer() => Serializer;
     }
 }

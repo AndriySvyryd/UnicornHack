@@ -32,13 +32,13 @@ new CreatureVariant
     {
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Bite,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 9 } }
         }
 ,
-        new Ability { Activation = AbilityActivation.Targetted, Action = AbilityAction.Touch, Timeout = 1, Effects = new AbilityEffect[] { new Stick() } },
+        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Touch, Timeout = 1, Effects = new AbilityEffect[] { new Stick() } },
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new Polymorph() } }
     }
 }

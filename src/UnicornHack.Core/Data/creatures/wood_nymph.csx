@@ -16,7 +16,7 @@ new CreatureVariant
     SimpleProperties = new HashSet<string> { "Teleportation", "Humanoidness", "Infravisibility", "Femaleness" },
     Abilities = new List<Ability>
     {
-        new Ability { Activation = AbilityActivation.Targetted, Action = AbilityAction.Touch, Timeout = 1, Effects = new AbilityEffect[] { new Seduce() } },
-        new Ability { Activation = AbilityActivation.Targetted, Action = AbilityAction.Touch, Timeout = 1, Effects = new AbilityEffect[] { new StealItem() } }
+        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Touch, Timeout = 1, Effects = new AbilityEffect[] { new Seduce() } },
+        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Touch, Timeout = 1, Effects = new AbilityEffect[] { new StealItem() } }
     }
 }

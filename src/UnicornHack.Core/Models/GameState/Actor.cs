@@ -8,7 +8,7 @@ using UnicornHack.Utils;
 
 namespace UnicornHack.Models.GameState
 {
-    public abstract class Actor
+    public abstract class Actor : IItemLocation
     {
         protected Actor()
         {
@@ -206,7 +206,7 @@ namespace UnicornHack.Models.GameState
         public virtual int? Attack(Actor victim)
         {
             ActionPoints = 0;
-            var ability = Abilities.FirstOrDefault(a => a.Activation == AbilityActivation.Targetted);
+            var ability = Abilities.FirstOrDefault(a => a.Activation == AbilityActivation.OnTarget);
             var damage = ability?.Effects.OfType<PhysicalDamage>().FirstOrDefault()?.Damage
                 ?? ability?.Effects.OfType<ElectricityDamage>().FirstOrDefault()?.Damage
                 ?? ability?.Effects.OfType<FireDamage>().FirstOrDefault()?.Damage;
@@ -281,12 +281,13 @@ namespace UnicornHack.Models.GameState
         {
             using (var reference = item.Split(1))
             {
-                if (reference.Referenced.Type == ItemType.Food)
+                var splitItem = reference.Referenced;
+                if (splitItem.Variant.Type == ItemType.Food)
                 {
-                    ChangeCurrentHP(hp: 5);
+                    ChangeCurrentHP(hp: splitItem.Variant.Nutrition);
                 }
 
-                ItemConsumptionEvent.New(this, reference.Referenced);
+                ItemConsumptionEvent.New(this, splitItem);
 
                 return true;
             }
@@ -310,8 +311,8 @@ namespace UnicornHack.Models.GameState
             }
 
             Gold -= quantity;
-            var item = new Gold(quantity, Game);
-            item.MoveTo(Level, LevelX, LevelY);
+            var item = new Gold(Game, quantity);
+            item.MoveTo(new LevelCell(Level, LevelX, LevelY));
 
             ItemDropEvent.New(this, item);
 
@@ -320,11 +321,22 @@ namespace UnicornHack.Models.GameState
 
         public virtual bool Drop(Item item)
         {
-            item.MoveTo(Level, LevelX, LevelY);
+            item.MoveTo(new LevelCell(Level, LevelX, LevelY));
 
             ItemDropEvent.New(this, item);
 
             return true;
+        }
+
+        public virtual bool TryAdd(IEnumerable<Item> items)
+        {
+            var succeeded = true;
+            foreach (var item in items.ToList())
+            {
+                succeeded = TryAdd(item) && succeeded;
+            }
+
+            return succeeded;
         }
 
         public virtual bool TryAdd(Item item)
@@ -383,5 +395,7 @@ namespace UnicornHack.Models.GameState
 
             return true;
         }
+
+        IEnumerable<Item> IItemLocation.Items => Inventory;
     }
 }

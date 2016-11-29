@@ -106,7 +106,7 @@ namespace UnicornHack.Controllers
                 _dbContext.Games.Add(game);
                 _dbContext.SaveChanges();
 
-                character = PlayerCharacter.CreateCharacter(game, name);
+                character = PlayerCharacter.Create(game, name);
                 _dbContext.Characters.Add(character);
                 _dbContext.SaveChanges();
 

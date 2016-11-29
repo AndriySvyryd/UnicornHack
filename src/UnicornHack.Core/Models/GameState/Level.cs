@@ -303,11 +303,11 @@ namespace UnicornHack.Models.GameState
                         break;
                     case '$':
                         feature = MapFeature.Floor;
-                        level.TryAdd(new Gold(quantity: 9, game: game), x, y);
+                        Item.Create("gold coin", new LevelCell(level, x, y), quantity: 9);
                         break;
                     case '%':
                         feature = MapFeature.Floor;
-                        level.TryAdd(new Item(ItemType.Food, game), x, y);
+                        Item.Create("carrot", new LevelCell(level, x, y));
                         break;
                     case ')':
                         feature = MapFeature.Floor;
@@ -317,11 +317,11 @@ namespace UnicornHack.Models.GameState
                         break;
                     case 'b':
                         feature = MapFeature.Floor;
-                        Creature.CreateMonster(CreatureVariant.Get("lightning bug"), x, y, level);
+                        Creature.Create("lightning bug", x, y, level);
                         break;
                     case 'B':
                         feature = MapFeature.Floor;
-                        Creature.CreateMonster(CreatureVariant.Get("firefly"), x, y, level);
+                        Creature.Create("firefly", x, y, level);
                         break;
                     case '\r':
                         continue;

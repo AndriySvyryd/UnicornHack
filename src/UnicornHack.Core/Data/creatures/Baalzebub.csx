@@ -21,7 +21,7 @@ new CreatureVariant
     {
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Bite,
             Timeout = 1,
             Effects = new AbilityEffect[] { new VenomDamage { Damage = 7 } }
@@ -29,7 +29,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Gaze,
             Timeout = 1,
             Effects = new AbilityEffect[] { new Stun { Duration = 7 } }

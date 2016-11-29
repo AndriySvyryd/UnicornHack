@@ -48,7 +48,7 @@
                         {
                             @: (@itemStack.Quantity)
                         }
-                        if (item.Type == ItemType.Food)
+                        if (item.Variant.Type == ItemType.Food)
                         {
                             @: <a class="itemAction" href="javascript:PerformAction('EAT', @item.Id)">eat</a>
                         }

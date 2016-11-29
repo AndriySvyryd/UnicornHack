@@ -99,9 +99,9 @@
     {
         var symbol = ' ';
         var className = "inherit";
-        switch (item.Type)
+        switch (item.Variant.Type)
         {
-            case ItemType.Gold:
+            case ItemType.Coin:
                 symbol = '$';
                 className = "itemGold";
                 break;
@@ -110,7 +110,7 @@
                 className = "itemCarrot";
                 break;
             default:
-                throw new NotSupportedException($"Item type {item.Type} not supported.");
+                throw new NotSupportedException($"Item type {item.Variant.Type} not supported.");
         }
 
         characters[item.LevelX.Value, item.LevelY.Value] = symbol;

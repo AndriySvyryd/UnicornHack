@@ -40,7 +40,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
@@ -48,7 +48,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Bite,
             Timeout = 1,
             Effects = new AbilityEffect[] { new DrainLife { Amount = 4 } }
@@ -56,7 +56,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Spell,
             Timeout = 1,
             Effects = new AbilityEffect[] { new MagicalDamage { Damage = 4 } }

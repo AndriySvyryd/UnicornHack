@@ -14,7 +14,8 @@
   "frameworks": {
     "netstandard1.6": {
       "dependencies": {
-        "NETStandard.Library": "1.6.1-*"
+        "NETStandard.Library": "1.6.1-*",
+        "Microsoft.CSharp": "4.0.1"
       },
       "imports": [
         "dotnet5.6",
@@ -24,9 +25,8 @@
     "net46": {
       "frameworkAssemblies": {
         "System.Data.Linq": "",
-        "System.Runtime": {
-          "type": "build"
-        }
+        "System.Runtime": { "type": "build" },
+        "Microsoft.CSharp": ""
       }
     }
   }

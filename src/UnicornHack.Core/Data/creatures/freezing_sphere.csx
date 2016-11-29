@@ -32,7 +32,7 @@ new CreatureVariant
     {
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Explosion,
             Timeout = 1,
             Effects = new AbilityEffect[] { new ColdDamage { Damage = 14 } }

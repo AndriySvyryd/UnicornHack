@@ -14,14 +14,7 @@ new CreatureVariant
     SimpleProperties = new HashSet<string> { "Infravisibility", "AnimalBody", "Handlessness", "Metallivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
-        new Ability
-        {
-            Activation = AbilityActivation.Targetted,
-            Action = AbilityAction.Touch,
-            Timeout = 1,
-            Effects = new AbilityEffect[] { new Disenchant() }
-        }
-,
+        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Touch, Timeout = 1, Effects = new AbilityEffect[] { new Disenchant() } },
         new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new AbilityEffect[] { new Disenchant() } }
     }
 }

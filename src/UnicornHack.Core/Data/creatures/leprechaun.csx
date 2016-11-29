@@ -16,6 +16,6 @@ new CreatureVariant
     SimpleProperties = new HashSet<string> { "Teleportation", "Infravisibility", "Omnivorism" },
     Abilities = new List<Ability>
     {
-        new Ability { Activation = AbilityActivation.Targetted, Action = AbilityAction.Claw, Timeout = 1, Effects = new AbilityEffect[] { new StealGold() } }
+        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Claw, Timeout = 1, Effects = new AbilityEffect[] { new StealGold() } }
     }
 }

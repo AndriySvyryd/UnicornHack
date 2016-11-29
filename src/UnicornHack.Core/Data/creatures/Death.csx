@@ -77,7 +77,7 @@ new CreatureVariant
     {
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
             Effects = new AbilityEffect[] { new ScriptedEffect { Script = "Death" } }
@@ -85,7 +85,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
             Effects = new AbilityEffect[] { new ScriptedEffect { Script = "Death" } }

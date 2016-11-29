@@ -28,7 +28,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
@@ -36,7 +36,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Claw,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 7 } }
@@ -44,7 +44,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Headbutt,
             Timeout = 1,
             Effects = new AbilityEffect[] { new VenomDamage { Damage = 5 } }
@@ -52,7 +52,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Spell,
             Timeout = 1,
             Effects = new AbilityEffect[] { new ScriptedEffect { Script = "ArcaneSpell" } }

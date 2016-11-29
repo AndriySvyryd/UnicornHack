@@ -26,7 +26,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
@@ -34,7 +34,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Claw,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 4 } }
@@ -42,13 +42,13 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Bite,
             Timeout = 1,
             Effects = new AbilityEffect[] { new VenomDamage { Damage = 3 } }
         }
 ,
-        new Ability { Activation = AbilityActivation.Targetted, Action = AbilityAction.Gaze, Timeout = 1, Effects = new AbilityEffect[] { new Stone() } },
+        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Gaze, Timeout = 1, Effects = new AbilityEffect[] { new Stone() } },
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 10 } } }
     }
 }

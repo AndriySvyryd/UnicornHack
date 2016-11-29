@@ -27,7 +27,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
@@ -35,7 +35,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
             Effects = new AbilityEffect[] { new FireDamage { Damage = 3 } }
@@ -43,7 +43,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Hug,
             Timeout = 1,
             Effects = new AbilityEffect[] { new FireDamage { Damage = 7 } }
@@ -51,7 +51,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Hug,
             Timeout = 1,
             Effects = new AbilityEffect[] { new FireDamage { Damage = 10 } }

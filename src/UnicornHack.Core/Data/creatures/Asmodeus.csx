@@ -21,7 +21,7 @@ new CreatureVariant
     {
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Claw,
             Timeout = 1,
             Effects = new AbilityEffect[] { new VenomDamage { Damage = 10 } }
@@ -29,7 +29,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Spell,
             Timeout = 1,
             Effects = new AbilityEffect[] { new ColdDamage { Damage = 21 } }

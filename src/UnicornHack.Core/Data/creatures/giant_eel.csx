@@ -14,7 +14,7 @@ new CreatureVariant
     {
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Bite,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 10 } }
@@ -22,7 +22,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Hug,
             Timeout = 1,
             Effects = new AbilityEffect[] { new Bind { Duration = 7 } }

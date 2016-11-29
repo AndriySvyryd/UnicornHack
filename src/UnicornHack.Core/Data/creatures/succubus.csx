@@ -19,10 +19,10 @@ new CreatureVariant
     ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 }, { "PoisonResistance", 3 }, { "SicknessResistance", 3 } },
     Abilities = new List<Ability>
     {
-        new Ability { Activation = AbilityActivation.Targetted, Action = AbilityAction.Touch, Timeout = 1, Effects = new AbilityEffect[] { new Seduce() } },
+        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Touch, Timeout = 1, Effects = new AbilityEffect[] { new Seduce() } },
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
@@ -30,7 +30,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }

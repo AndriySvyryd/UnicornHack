@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace UnicornHack.Models.GameDefinitions
 {
@@ -20,7 +20,6 @@ namespace UnicornHack.Models.GameDefinitions
 
         public virtual ISet<string> SimpleProperties { get; set; }
         public virtual IDictionary<string, object> ValuedProperties { get; set; }
-
         public virtual IList<Ability> Abilities { get; set; }
 
         protected virtual void Initialize()

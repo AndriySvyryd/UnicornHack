@@ -84,6 +84,7 @@ namespace UnicornHack.Models
 
             modelBuilder.Entity<Item>(eb =>
             {
+                eb.Ignore(i => i.Variant);
                 eb.Ignore(i => i.Name);
                 eb.HasKey(i => new {i.GameId, i.Id});
                 eb.HasOne(i => i.Level)

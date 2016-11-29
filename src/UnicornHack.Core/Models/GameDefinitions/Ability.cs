@@ -7,11 +7,12 @@ namespace UnicornHack.Models.GameDefinitions
         public virtual AbilityActivation Activation { get; set; }
         public virtual AbilityAction Action { get; set; }
         public virtual int Timeout { get; set; }
-        // If more than one turn can be interrupted
+        // If more than one turn - can be interrupted
         public virtual int ActionPointCost { get; set; }
         public virtual int EnergyPointCost { get; set; }
-        // Targetting mode
+        // Targeting mode
         // Success condition
+        public virtual int EffectDuration { get; set; }
         public virtual AbilityEffect[] Effects { get; set; }
     }
 }

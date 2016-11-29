@@ -7,6 +7,6 @@ namespace UnicornHack.Models.GameDefinitions.Effects
     {
         // Teleports items
         private static readonly CSScriptSerializer Serializer = new ConstructorCSScriptSerializer<Teleport>();
-        public ExpressionSyntax GetCreation() => Serializer.GetCreation(this);
+        public ICSScriptSerializer GetSerializer() => Serializer;
     }
 }

@@ -60,7 +60,7 @@ new CreatureVariant
     {
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
             Effects = new AbilityEffect[] { new Paralyze { Duration = 7 } }
@@ -68,7 +68,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
             Effects = new AbilityEffect[] { new Slow { Duration = 3 } }

@@ -32,7 +32,7 @@ new CreatureVariant
     {
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Bite,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 3 } }
@@ -40,7 +40,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Gaze,
             Timeout = 7,
             Effects = new AbilityEffect[] { new Disintegrate { Damage = 5 } }
@@ -48,7 +48,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Gaze,
             Timeout = 7,
             Effects = new AbilityEffect[] { new Slow { Duration = 13 } }
@@ -56,7 +56,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Gaze,
             Timeout = 7,
             Effects = new AbilityEffect[] { new Sleep { Duration = 13 } }
@@ -64,13 +64,13 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Gaze,
             Timeout = 7,
             Effects = new AbilityEffect[] { new Confuse { Duration = 13 } }
         }
 ,
-        new Ability { Activation = AbilityActivation.Targetted, Action = AbilityAction.Gaze, Timeout = 7, Effects = new AbilityEffect[] { new Stone() } },
-        new Ability { Activation = AbilityActivation.Targetted, Action = AbilityAction.Gaze, Timeout = 7, Effects = new AbilityEffect[] { new Disenchant() } }
+        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Gaze, Timeout = 7, Effects = new AbilityEffect[] { new Stone() } },
+        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Gaze, Timeout = 7, Effects = new AbilityEffect[] { new Disenchant() } }
     }
 }

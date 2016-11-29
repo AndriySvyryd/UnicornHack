@@ -19,23 +19,16 @@ new CreatureVariant
     {
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Claw,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 7 } }
         }
 ,
+        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Claw, Timeout = 1, Effects = new AbilityEffect[] { new StealAmulet() } },
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
-            Action = AbilityAction.Claw,
-            Timeout = 1,
-            Effects = new AbilityEffect[] { new StealAmulet() }
-        }
-,
-        new Ability
-        {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Sting,
             Timeout = 1,
             Effects = new AbilityEffect[] { new Infect { Strength = 2 } }

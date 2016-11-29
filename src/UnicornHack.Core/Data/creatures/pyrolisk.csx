@@ -18,7 +18,7 @@ new CreatureVariant
     {
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Gaze,
             Timeout = 1,
             Effects = new AbilityEffect[] { new FireDamage { Damage = 7 } }

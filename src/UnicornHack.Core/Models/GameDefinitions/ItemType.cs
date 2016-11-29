@@ -1,16 +1,20 @@
+using System;
+
 namespace UnicornHack.Models.GameDefinitions
 {
-    public enum ItemType : short
+    [Flags]
+    public enum ItemType
     {
-        Default = 0,
-        Gold = 1,
-        Helmet = 2,
-        Armor = 3,
-        Greaves = 4,
-        Gloves = 5,
-        Necklace = 6,
-        Ring = 7,
-        Food,
-        Scroll
+        None = 0,
+        Weapon = 1 << 0,
+        Armor = 1 << 1,
+        Accessory = 1 << 2,
+        Container = 1 << 3,
+        Food = 1 << 4,
+        Potion = 1 << 5,
+        Scroll = 1 << 6,
+        SpellBook = 1 << 7,
+        Coin = 1 << 8,
+        Trinket = 1 << 9
     }
 }

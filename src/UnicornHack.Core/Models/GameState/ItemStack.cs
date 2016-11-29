@@ -13,8 +13,8 @@ namespace UnicornHack.Models.GameState
         {
         }
 
-        public ItemStack(ItemType type, Game game)
-            : base(type, game)
+        public ItemStack(ItemVariant variant, Game game)
+            : base(variant, game)
         {
         }
 
@@ -22,7 +22,12 @@ namespace UnicornHack.Models.GameState
 
         public override bool CanAdd(Item item)
         {
-            if (item.Type != Type)
+            if (item.Variant != Variant)
+            {
+                return false;
+            }
+
+            if (Quantity == Variant.StackSize)
             {
                 return false;
             }
@@ -38,13 +43,13 @@ namespace UnicornHack.Models.GameState
 
         public override TransientReference<Item> Split(int quantity)
         {
-            if (quantity > Items.Count
+            if (quantity > Quantity
                 || quantity <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(quantity));
             }
 
-            if (quantity == Items.Count)
+            if (quantity == Quantity)
             {
                 return AddReference();
             }
@@ -57,7 +62,7 @@ namespace UnicornHack.Models.GameState
             }
             else
             {
-                var newStack = new ItemStack(Type, Game);
+                var newStack = new ItemStack(Variant, Game);
                 foreach (var item in Items.Take(quantity).ToList())
                 {
                     using (item.AddReference())
@@ -69,7 +74,7 @@ namespace UnicornHack.Models.GameState
                 result = newStack.AddReference();
             }
 
-            if (Items.Count == 1)
+            if (Quantity == 1)
             {
                 var lastItem = Items.First();
                 using (lastItem.AddReference())

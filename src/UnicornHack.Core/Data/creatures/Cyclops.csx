@@ -11,7 +11,7 @@ new CreatureVariant
     Size = Size.Huge,
     Weight = 2200,
     Nutrition = 800,
-    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "Infravision", "Infravisibility", "Humanoidness", "Maleness", "Omnivorism" },
+    SimpleProperties = new HashSet<string> { "SingleEyedness", "Infravision", "Infravisibility", "Humanoidness", "Maleness", "Omnivorism" },
     ValuedProperties = new Dictionary<string, Object> { { "StoningResistance", 3 } },
     Abilities = new List<Ability>
     {
@@ -24,7 +24,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
@@ -32,7 +32,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
@@ -40,7 +40,7 @@ new CreatureVariant
 ,
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
             Effects = new AbilityEffect[] { new StealAmulet() }

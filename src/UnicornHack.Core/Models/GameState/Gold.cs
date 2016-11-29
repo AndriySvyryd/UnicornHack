@@ -11,16 +11,22 @@ namespace UnicornHack.Models.GameState
         {
         }
 
-        public Gold(int quantity, Game game)
-            : base(ItemType.Gold, game)
+        public Gold(Game game, int quantity)
+            : base(ItemVariant.Get("gold coin"), game)
         {
             Quantity = quantity;
         }
 
         public int Quantity { get; private set; }
 
-        public override bool MoveTo(Actor actor)
+        public override bool MoveTo(IItemLocation location)
         {
+            var actor = location as Actor;
+            if (actor == null)
+            {
+                return base.MoveTo(location);
+            }
+
             Remove();
             actor.Gold += Quantity;
 
@@ -35,7 +41,10 @@ namespace UnicornHack.Models.GameState
                 throw new ArgumentOutOfRangeException(nameof(quantity));
             }
 
-            return new Gold(quantity, Game).AddReference();
+            return Create(Game, quantity).AddReference();
         }
+
+        public static Gold Create(Game game, int quantity)
+            => new Gold(game, quantity);
     }
 }

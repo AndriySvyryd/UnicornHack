@@ -1,0 +1,1 @@
+new ItemVariant { Name = "carrot", Type = ItemType.Food, Weight = 5, Nutrition = 5, StackSize = 20 }

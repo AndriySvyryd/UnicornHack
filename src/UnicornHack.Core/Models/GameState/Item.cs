@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using UnicornHack.Models.GameDefinitions;
 using UnicornHack.Utils;
 
@@ -13,20 +14,20 @@ namespace UnicornHack.Models.GameState
         {
         }
 
-        public Item(ItemType type, Game game)
+        public Item(ItemVariant variant, Game game)
         {
-            Type = type;
+            VariantName = variant.Name;
             Game = game;
             Id = game.NextItemId++;
             game.Items.Add(this);
         }
 
         public int Id { get; private set; }
-        public string Name => GivenName ?? GetName(Type);
+        public string Name => GivenName ?? Variant.Name;
         public string GivenName { get; set; }
-        public ItemType Type { get; private set; }
+        public ItemVariant Variant => ItemVariant.Get(VariantName);
+        public virtual string VariantName { get; set; }
 
-        // One and only one of theese shouldn't be null
         public int? ActorId { get; set; }
         public Actor Actor { get; set; }
         public int? ContainerId { get; set; }
@@ -40,9 +41,9 @@ namespace UnicornHack.Models.GameState
         public int GameId { get; private set; }
         public Game Game { get; set; }
 
-        public virtual bool MoveTo(Level level, byte x, byte y)
+        public virtual bool MoveTo(IItemLocation location)
         {
-            if (!level.CanAdd(this, x, y))
+            if (!location.CanAdd(this))
             {
                 return false;
             }
@@ -50,39 +51,7 @@ namespace UnicornHack.Models.GameState
             using (AddReference())
             {
                 Remove();
-                level.TryAdd(this, x, y);
-            }
-
-            return true;
-        }
-
-        public virtual bool MoveTo(Actor actor)
-        {
-            if (!actor.CanAdd(this))
-            {
-                return false;
-            }
-
-            using (AddReference())
-            {
-                Remove();
-                actor.TryAdd(this);
-            }
-
-            return true;
-        }
-
-        public virtual bool MoveTo(Container container)
-        {
-            if (!container.CanAdd(this))
-            {
-                return false;
-            }
-
-            using (AddReference())
-            {
-                Remove();
-                container.TryAdd(this);
+                location.TryAdd(this);
             }
 
             return true;
@@ -123,12 +92,12 @@ namespace UnicornHack.Models.GameState
         {
             foreach (var existingItem in existingItems)
             {
-                if (existingItem.Type == Type)
+                if (existingItem.Variant == Variant)
                 {
                     var stack = existingItem as ItemStack;
                     if (stack == null)
                     {
-                        stack = new ItemStack(Type, Game);
+                        stack = new ItemStack(Variant, Game);
 
                         existingItem.MoveTo(stack);
 
@@ -172,20 +141,8 @@ namespace UnicornHack.Models.GameState
             return result;
         }
 
-        private string GetName(ItemType type)
-        {
-            switch (type)
-            {
-                case ItemType.Gold:
-                    return "gold";
-                case ItemType.Food:
-                    return "carrot";
-                default:
-                    throw new NotSupportedException($"Item type {type} not supported");
-            }
-        }
-
         private int _referenceCount;
+
         void IReferenceable.AddReference()
         {
             _referenceCount++;
@@ -198,10 +155,28 @@ namespace UnicornHack.Models.GameState
 
         public void RemoveReference()
         {
-            if(--_referenceCount == 0)
+            if (--_referenceCount == 0)
             {
                 Game.Delete(this);
             }
+        }
+
+        public static bool Create(string variantName, IItemLocation location, int quantity = 1)
+        {
+            var variant = ItemVariant.Get(variantName);
+            if (variant.Name == "gold coin")
+            {
+                return Gold.Create(location.Game, quantity).MoveTo(location);
+            }
+
+            var succeeded = true;
+            for (var i = 0; i < quantity; i++)
+            {
+                var item = new Item(variant, location.Game);
+                succeeded = item.MoveTo(location) && succeeded;
+            }
+
+            return succeeded;
         }
     }
 }

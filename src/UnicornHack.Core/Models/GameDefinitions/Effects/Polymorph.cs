@@ -7,6 +7,6 @@ namespace UnicornHack.Models.GameDefinitions.Effects
     {
         // Polymorphs items
         private static readonly CSScriptSerializer Serializer = new ConstructorCSScriptSerializer<Polymorph>();
-        public ExpressionSyntax GetCreation() => Serializer.GetCreation(this);
+        public ICSScriptSerializer GetSerializer() => Serializer;
     }
 }

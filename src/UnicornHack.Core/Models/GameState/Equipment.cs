@@ -9,8 +9,8 @@ namespace UnicornHack.Models.GameState
         {
         }
 
-        public Equipment(ItemType type, Game game)
-            : base(type, game)
+        public Equipment(ItemVariant variant, Game game)
+            : base(variant, game)
         {
         }
 

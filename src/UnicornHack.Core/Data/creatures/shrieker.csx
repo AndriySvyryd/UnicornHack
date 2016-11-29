@@ -27,7 +27,7 @@ new CreatureVariant
     {
         new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Scream,
             Timeout = 1,
             Effects = new AbilityEffect[] { new Deafen { Duration = 3 } }

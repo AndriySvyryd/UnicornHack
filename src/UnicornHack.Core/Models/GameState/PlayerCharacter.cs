@@ -63,7 +63,7 @@ namespace UnicornHack.Models.GameState
 
         private readonly Ability _meleeAbility = new Ability
         {
-            Activation = AbilityActivation.Targetted,
+            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             ActionPointCost = 100,
             Effects = new AbilityEffect[] {new PhysicalDamage {Damage = 4}}
@@ -201,7 +201,7 @@ namespace UnicornHack.Models.GameState
             return Game.Services.Language.ToString(@event);
         }
 
-        public static PlayerCharacter CreateCharacter(Game game, string name)
+        public static PlayerCharacter Create(Game game, string name)
         {
             var initialLevel = Level.CreateLevel(game, Level.MainBranchName, depth: 1);
             var upStairs = initialLevel.UpStairs.First();
@@ -211,9 +211,7 @@ namespace UnicornHack.Models.GameState
                 GivenName = name
             };
 
-            character.TryAdd(new Item(ItemType.Food, game));
-            character.TryAdd(new Item(ItemType.Food, game));
-            character.TryAdd(new Item(ItemType.Food, game));
+            Item.Create("carrot", character, quantity: 3);
             game.Actors.Add(character);
 
             character.WriteLog(game.Services.Language.Welcome(character));
