@@ -1,19 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 9,
-    ArmorClass = -4,
-    GenerationFlags = GenerationFlags.Entourage,
-    GenerationFrequency = Frequency.Rarely,
-    Noise = ActorNoiseType.Buzz,
     Name = "queen bee",
     Species = Species.Bee,
     SpeciesClass = SpeciesClass.Vermin,
+    InitialLevel = 9,
+    ArmorClass = -4,
     MovementRate = 24,
-    Size = Size.Tiny,
     Weight = 5,
+    Size = Size.Tiny,
     Nutrition = 5,
-    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "AnimalBody", "Handlessness", "Femaleness" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -26,4 +21,10 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 8 } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "AnimalBody", "Handlessness", "Femaleness" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 } },
+    GenerationFlags = GenerationFlags.Entourage,
+    GenerationFrequency = Frequency.Rarely,
+    Noise = ActorNoiseType.Buzz
 }

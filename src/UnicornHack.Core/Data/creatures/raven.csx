@@ -1,19 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 4,
-    ArmorClass = 6,
-    GenerationFrequency = Frequency.Sometimes,
-    Behavior = MonsterBehavior.Wandering,
-    Noise = ActorNoiseType.Squawk,
     Name = "raven",
     Species = Species.Crow,
     SpeciesClass = SpeciesClass.Bird,
+    InitialLevel = 4,
+    ArmorClass = 6,
     MovementRate = 20,
-    Size = Size.Tiny,
     Weight = 100,
+    Size = Size.Tiny,
     Nutrition = 40,
-    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "Infravisibility", "AnimalBody", "Handlessness", "Oviparity", "Omnivorism", "SingularInventory" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -32,4 +27,10 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new Blind { Duration = 13 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "Infravisibility", "AnimalBody", "Handlessness", "Oviparity", "Omnivorism", "SingularInventory" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 } },
+    GenerationFrequency = Frequency.Sometimes,
+    Behavior = MonsterBehavior.Wandering,
+    Noise = ActorNoiseType.Squawk
 }

@@ -1,20 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 10,
-    ArmorClass = 10,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.Peaceful | MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector,
-    Alignment = -2,
-    Noise = ActorNoiseType.Speach,
-    PreviousStageName = "chieftain",
     Name = "barbarian",
     Species = Species.Human,
+    PreviousStageName = "chieftain",
+    InitialLevel = 10,
+    ArmorClass = 10,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Omnivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -40,4 +34,11 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Omnivorism" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 } },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.Peaceful | MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector,
+    Alignment = -2,
+    Noise = ActorNoiseType.Speach
 }

@@ -1,22 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 11,
-    MagicResistance = 30,
-    GenerationFrequency = Frequency.Rarely,
-    Behavior = MonsterBehavior.MagicUser,
-    Alignment = -9,
-    Noise = ActorNoiseType.Mumble,
-    CorpseVariantName = "",
-    NextStageName = "demilich",
     Name = "lich",
     Species = Species.Lich,
     SpeciesClass = SpeciesClass.Undead,
+    CorpseVariantName = "",
+    NextStageName = "demilich",
+    InitialLevel = 11,
+    MagicResistance = 30,
     MovementRate = 6,
-    Size = Size.Medium,
     Weight = 600,
+    Size = Size.Medium,
     Nutrition = 50,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "Infravision", "Humanoidness", "Breathlessness" },
-    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "SicknessResistance", 3 }, { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "Regeneration", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -38,4 +32,11 @@ new CreatureVariant
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new Infect { } } },
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 10 } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "SleepResistance", "Infravision", "Humanoidness", "Breathlessness", "SicknessResistance" },
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "Regeneration", 3 } },
+    GenerationFrequency = Frequency.Rarely,
+    Behavior = MonsterBehavior.MagicUser,
+    Alignment = -9,
+    Noise = ActorNoiseType.Mumble
 }

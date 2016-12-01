@@ -1,19 +1,15 @@
 new CreatureVariant
 {
-    InitialLevel = 3,
-    ArmorClass = 6,
-    GenerationFrequency = Frequency.Uncommonly,
-    Noise = ActorNoiseType.Hiss,
-    NextStageName = "red naga",
     Name = "red naga hatchling",
     Species = Species.Naga,
     SpeciesClass = SpeciesClass.Aberration,
+    NextStageName = "red naga",
+    InitialLevel = 3,
+    ArmorClass = 6,
     MovementRate = 10,
-    Size = Size.Medium,
     Weight = 500,
+    Size = Size.Medium,
     Nutrition = 200,
-    SimpleProperties = new HashSet<string> { "Infravision", "SerpentlikeBody", "Limblessness", "Carnivorism", "SingularInventory" },
-    ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 }, { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "SlimingResistance", 3 }, { "ThickHide", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -24,4 +20,9 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "SerpentlikeBody", "Limblessness", "Carnivorism", "SingularInventory", "SlimingResistance" },
+    ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 }, { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "ThickHide", 3 } },
+    GenerationFrequency = Frequency.Uncommonly,
+    Noise = ActorNoiseType.Hiss
 }

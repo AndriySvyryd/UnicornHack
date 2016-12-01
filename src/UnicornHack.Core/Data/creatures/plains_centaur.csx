@@ -1,17 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 4,
-    ArmorClass = 4,
-    GenerationFrequency = Frequency.Commonly,
-    Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector,
-    Noise = ActorNoiseType.Speach,
     Name = "plains centaur",
     Species = Species.Centaur,
+    InitialLevel = 4,
+    ArmorClass = 4,
     MovementRate = 18,
-    Size = Size.Large,
     Weight = 2000,
+    Size = Size.Large,
     Nutrition = 800,
-    SimpleProperties = new HashSet<string> { "Infravisibility", "HumanoidTorso", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -37,4 +33,9 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 3 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravisibility", "HumanoidTorso", "Omnivorism" },
+    GenerationFrequency = Frequency.Commonly,
+    Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector,
+    Noise = ActorNoiseType.Speach
 }

@@ -1,17 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 1,
-    ArmorClass = 10,
-    GenerationFlags = GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.WeaponCollector,
-    Noise = ActorNoiseType.Speach,
     Name = "human",
     Species = Species.Human,
+    InitialLevel = 1,
+    ArmorClass = 10,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -29,4 +25,9 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFlags = GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.WeaponCollector,
+    Noise = ActorNoiseType.Speach
 }

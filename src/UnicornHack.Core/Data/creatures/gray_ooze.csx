@@ -1,15 +1,35 @@
 new CreatureVariant
 {
-    InitialLevel = 3,
-    ArmorClass = 8,
-    GenerationFrequency = Frequency.Uncommonly,
-    CorpseVariantName = "",
     Name = "gray ooze",
     Species = Species.Ooze,
+    CorpseVariantName = "",
+    InitialLevel = 3,
+    ArmorClass = 8,
     MovementRate = 1,
-    Size = Size.Medium,
     Weight = 500,
+    Size = Size.Medium,
     Nutrition = 250,
+    Abilities = new List<Ability>
+    {
+        new Ability
+        {
+            Activation = AbilityActivation.OnTarget,
+            Action = AbilityAction.Touch,
+            Timeout = 1,
+            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 9 } }
+        }
+,
+        new Ability
+        {
+            Activation = AbilityActivation.OnTarget,
+            Action = AbilityAction.Touch,
+            Timeout = 1,
+            Effects = new AbilityEffect[] { new WaterDamage { Damage = 9 } }
+        }
+,
+        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new AbilityEffect[] { new WaterDamage { Damage = 4 } } }
+    }
+,
     SimpleProperties = new HashSet<string>
     {
         "SleepResistance",
@@ -22,7 +42,8 @@ new CreatureVariant
         "Headlessness",
         "Mindlessness",
         "Asexuality",
-        "Omnivorism"
+        "Omnivorism",
+        "StoningResistance"
     }
 ,
     ValuedProperties = new Dictionary<string, Object>
@@ -48,33 +69,10 @@ new CreatureVariant
             3
         },
         {
-            "StoningResistance",
-            3
-        },
-        {
             "Stealthiness",
             3
         }
     }
 ,
-    Abilities = new List<Ability>
-    {
-        new Ability
-        {
-            Activation = AbilityActivation.OnTarget,
-            Action = AbilityAction.Touch,
-            Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 9 } }
-        }
-,
-        new Ability
-        {
-            Activation = AbilityActivation.OnTarget,
-            Action = AbilityAction.Touch,
-            Timeout = 1,
-            Effects = new AbilityEffect[] { new WaterDamage { Damage = 9 } }
-        }
-,
-        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new AbilityEffect[] { new WaterDamage { Damage = 4 } } }
-    }
+    GenerationFrequency = Frequency.Uncommonly
 }

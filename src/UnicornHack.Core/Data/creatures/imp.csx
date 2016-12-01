@@ -1,22 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 3,
-    ArmorClass = 2,
-    MagicResistance = 20,
-    GenerationFrequency = Frequency.Often,
-    Behavior = MonsterBehavior.Wandering | MonsterBehavior.Stalking,
-    Alignment = -7,
-    Noise = ActorNoiseType.Cuss,
-    CorpseVariantName = "",
     Name = "imp",
     Species = Species.Imp,
     SpeciesClass = SpeciesClass.Demon,
+    CorpseVariantName = "",
+    InitialLevel = 3,
+    ArmorClass = 2,
+    MagicResistance = 20,
     MovementRate = 12,
-    Size = Size.Tiny,
     Weight = 100,
+    Size = Size.Tiny,
     Nutrition = 50,
-    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "Infravision", "Infravisibility" },
-    ValuedProperties = new Dictionary<string, Object> { { "Regeneration", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -29,4 +23,11 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 2 } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "Infravision", "Infravisibility" },
+    ValuedProperties = new Dictionary<string, Object> { { "Regeneration", 3 } },
+    GenerationFrequency = Frequency.Often,
+    Behavior = MonsterBehavior.Wandering | MonsterBehavior.Stalking,
+    Alignment = -7,
+    Noise = ActorNoiseType.Cuss
 }

@@ -1,20 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 1,
-    ArmorClass = 10,
-    GenerationFrequency = Frequency.Often,
-    Behavior = MonsterBehavior.WeaponCollector,
-    Alignment = -2,
-    Noise = ActorNoiseType.Grunt,
-    NextStageName = "large kobold",
     Name = "kobold",
     Species = Species.Kobold,
+    NextStageName = "large kobold",
+    InitialLevel = 1,
+    ArmorClass = 10,
     MovementRate = 6,
-    Size = Size.Small,
     Weight = 400,
+    Size = Size.Small,
     Nutrition = 100,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -34,4 +28,11 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 5 } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 } },
+    GenerationFrequency = Frequency.Often,
+    Behavior = MonsterBehavior.WeaponCollector,
+    Alignment = -2,
+    Noise = ActorNoiseType.Grunt
 }

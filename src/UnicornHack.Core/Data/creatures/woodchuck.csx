@@ -1,17 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 3,
-    ArmorClass = 5,
-    GenerationFrequency = Frequency.Sometimes,
-    Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector,
     Name = "woodchuck",
     Species = Species.Woodchuck,
     SpeciesClass = SpeciesClass.Rodent,
+    InitialLevel = 3,
+    ArmorClass = 5,
     MovementRate = 3,
-    Size = Size.Small,
     Weight = 100,
+    Size = Size.Small,
     Nutrition = 50,
-    SimpleProperties = new HashSet<string> { "Swimming", "AnimalBody", "Infravisibility", "Handlessness", "Herbivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -22,4 +19,8 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 3 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Swimming", "AnimalBody", "Infravisibility", "Handlessness", "Herbivorism", "SingularInventory" },
+    GenerationFrequency = Frequency.Sometimes,
+    Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector
 }

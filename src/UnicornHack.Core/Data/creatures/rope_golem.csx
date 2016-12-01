@@ -1,43 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 4,
-    ArmorClass = 8,
-    GenerationFrequency = Frequency.Rarely,
-    CorpseVariantName = "",
     Name = "rope golem",
     Species = Species.Golem,
+    CorpseVariantName = "",
+    InitialLevel = 4,
+    ArmorClass = 8,
     MovementRate = 12,
-    Size = Size.Large,
     Weight = 450,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "NonAnimal", "Breathlessness", "Mindlessness", "Humanoidness", "Asexuality" },
-    ValuedProperties = new Dictionary<string, Object>
-    {
-        {
-            "ColdResistance",
-            3
-        },
-        {
-            "PoisonResistance",
-            3
-        },
-        {
-            "VenomResistance",
-            3
-        },
-        {
-            "StoningResistance",
-            3
-        },
-        {
-            "SicknessResistance",
-            3
-        },
-        {
-            "MaxHP",
-            30
-        }
-    }
-,
+    Size = Size.Large,
     Abilities = new List<Ability>
     {
         new Ability
@@ -64,4 +34,19 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string>
+    {
+        "SleepResistance",
+        "NonAnimal",
+        "Breathlessness",
+        "Mindlessness",
+        "Humanoidness",
+        "Asexuality",
+        "StoningResistance",
+        "SicknessResistance"
+    }
+,
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "MaxHP", 30 } },
+    GenerationFrequency = Frequency.Rarely
 }

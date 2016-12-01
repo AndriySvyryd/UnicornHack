@@ -1,16 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 2,
-    ArmorClass = 6,
-    GenerationFrequency = Frequency.Uncommonly,
-    Noise = ActorNoiseType.Growl,
     Name = "monkey",
     Species = Species.Simian,
+    InitialLevel = 2,
+    ArmorClass = 6,
     MovementRate = 18,
-    Size = Size.Small,
     Weight = 100,
+    Size = Size.Small,
     Nutrition = 50,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -23,4 +20,8 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Claw, Timeout = 1, Effects = new AbilityEffect[] { new StealItem() } }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFrequency = Frequency.Uncommonly,
+    Noise = ActorNoiseType.Growl
 }

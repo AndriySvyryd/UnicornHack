@@ -1,20 +1,14 @@
 new CreatureVariant
 {
+    Name = "Arch Priest",
+    Species = Species.Human,
     InitialLevel = 16,
     ArmorClass = 7,
     MagicResistance = 60,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.Peaceful | MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser,
-    Alignment = 3,
-    Noise = ActorNoiseType.Quest,
-    Name = "Arch Priest",
-    Species = Species.Human,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Maleness", "Omnivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "StoningResistance", 3 }, { "PoisonResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -40,4 +34,11 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new ScriptedEffect { Script = "DivineSpell" } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Maleness", "Omnivorism", "StoningResistance" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 } },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.Peaceful | MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser,
+    Alignment = 3,
+    Noise = ActorNoiseType.Quest
 }

@@ -1,14 +1,24 @@
 new CreatureVariant
 {
-    InitialLevel = 3,
-    ArmorClass = 7,
-    GenerationFrequency = Frequency.Uncommonly,
     Name = "shrieker",
     Species = Species.Fungus,
+    InitialLevel = 3,
+    ArmorClass = 7,
     MovementRate = 1,
-    Size = Size.Small,
     Weight = 100,
+    Size = Size.Small,
     Nutrition = 100,
+    Abilities = new List<Ability>
+    {
+        new Ability
+        {
+            Activation = AbilityActivation.OnTarget,
+            Action = AbilityAction.Scream,
+            Timeout = 1,
+            Effects = new AbilityEffect[] { new Deafen { Duration = 3 } }
+        }
+    }
+,
     SimpleProperties = new HashSet<string>
     {
         "SleepResistance",
@@ -23,14 +33,5 @@ new CreatureVariant
     }
 ,
     ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 } },
-    Abilities = new List<Ability>
-    {
-        new Ability
-        {
-            Activation = AbilityActivation.OnTarget,
-            Action = AbilityAction.Scream,
-            Timeout = 1,
-            Effects = new AbilityEffect[] { new Deafen { Duration = 3 } }
-        }
-    }
+    GenerationFrequency = Frequency.Uncommonly
 }

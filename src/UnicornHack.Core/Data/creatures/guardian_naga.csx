@@ -1,20 +1,15 @@
 new CreatureVariant
 {
-    InitialLevel = 12,
-    MagicResistance = 50,
-    GenerationFrequency = Frequency.Uncommonly,
-    Alignment = 7,
-    Noise = ActorNoiseType.Hiss,
-    PreviousStageName = "guardian naga hatchling",
     Name = "guardian naga",
     Species = Species.Naga,
     SpeciesClass = SpeciesClass.Aberration,
+    PreviousStageName = "guardian naga hatchling",
+    InitialLevel = 12,
+    MagicResistance = 50,
     MovementRate = 16,
-    Size = Size.Huge,
     Weight = 1500,
+    Size = Size.Huge,
     Nutrition = 600,
-    SimpleProperties = new HashSet<string> { "Infravision", "SerpentlikeBody", "Limblessness", "Carnivorism", "Oviparity", "SingularInventory" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "ThickHide", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -33,4 +28,10 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new VenomDamage { Damage = 14 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "SerpentlikeBody", "Limblessness", "Carnivorism", "Oviparity", "SingularInventory" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "ThickHide", 3 } },
+    GenerationFrequency = Frequency.Uncommonly,
+    Alignment = 7,
+    Noise = ActorNoiseType.Hiss
 }

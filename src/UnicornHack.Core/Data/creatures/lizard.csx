@@ -1,16 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 4,
-    ArmorClass = 6,
-    GenerationFrequency = Frequency.Sometimes,
     Name = "lizard",
     Species = Species.Lizard,
     SpeciesClass = SpeciesClass.Reptile,
+    InitialLevel = 4,
+    ArmorClass = 6,
     MovementRate = 6,
-    Size = Size.Small,
     Weight = 50,
+    Size = Size.Small,
     Nutrition = 50,
-    SimpleProperties = new HashSet<string> { "Handlessness", "Oviparity", "Carnivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -21,4 +19,7 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 3 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Handlessness", "Oviparity", "Carnivorism", "SingularInventory" },
+    GenerationFrequency = Frequency.Sometimes
 }

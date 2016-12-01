@@ -1,13 +1,23 @@
 new CreatureVariant
 {
-    InitialLevel = 3,
-    GenerationFrequency = Frequency.Sometimes,
-    CorpseVariantName = "",
     Name = "yellow light",
     Species = Species.FloatingSphere,
     SpeciesClass = SpeciesClass.Extraplanar,
+    CorpseVariantName = "",
+    InitialLevel = 3,
     MovementRate = 15,
     Size = Size.Small,
+    Abilities = new List<Ability>
+    {
+        new Ability
+        {
+            Activation = AbilityActivation.OnTarget,
+            Action = AbilityAction.Explosion,
+            Timeout = 1,
+            Effects = new AbilityEffect[] { new Blind { Duration = 27 } }
+        }
+    }
+,
     SimpleProperties = new HashSet<string>
     {
         "SleepResistance",
@@ -23,7 +33,9 @@ new CreatureVariant
         "Headlessness",
         "Mindlessness",
         "Asexuality",
-        "NoInventory"
+        "NoInventory",
+        "SlimingResistance",
+        "SicknessResistance"
     }
 ,
     ValuedProperties = new Dictionary<string, Object>
@@ -57,27 +69,10 @@ new CreatureVariant
             3
         },
         {
-            "SlimingResistance",
-            3
-        },
-        {
-            "SicknessResistance",
-            3
-        },
-        {
             "Stealthiness",
             3
         }
     }
 ,
-    Abilities = new List<Ability>
-    {
-        new Ability
-        {
-            Activation = AbilityActivation.OnTarget,
-            Action = AbilityAction.Explosion,
-            Timeout = 1,
-            Effects = new AbilityEffect[] { new Blind { Duration = 27 } }
-        }
-    }
+    GenerationFrequency = Frequency.Sometimes
 }

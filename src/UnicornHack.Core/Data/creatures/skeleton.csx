@@ -1,47 +1,15 @@
 new CreatureVariant
 {
-    InitialLevel = 3,
-    ArmorClass = 10,
-    GenerationFlags = GenerationFlags.SmallGroup,
-    GenerationFrequency = Frequency.Occasionally,
-    Behavior = MonsterBehavior.WeaponCollector,
-    CorpseVariantName = "",
     Name = "skeleton",
     Species = Species.Skeleton,
     SpeciesClass = SpeciesClass.Undead,
+    CorpseVariantName = "",
+    InitialLevel = 3,
+    ArmorClass = 10,
     MovementRate = 6,
-    Size = Size.Medium,
     Weight = 300,
+    Size = Size.Medium,
     Nutrition = 5,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "Infravision", "Humanoidness", "Breathlessness", "Mindlessness" },
-    ValuedProperties = new Dictionary<string, Object>
-    {
-        {
-            "ColdResistance",
-            3
-        },
-        {
-            "PoisonResistance",
-            3
-        },
-        {
-            "StoningResistance",
-            3
-        },
-        {
-            "SicknessResistance",
-            3
-        },
-        {
-            "VenomResistance",
-            3
-        },
-        {
-            "ThickHide",
-            3
-        }
-    }
-,
     Abilities = new List<Ability>
     {
         new Ability
@@ -59,4 +27,20 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string>
+    {
+        "SleepResistance",
+        "Infravision",
+        "Humanoidness",
+        "Breathlessness",
+        "Mindlessness",
+        "StoningResistance",
+        "SicknessResistance"
+    }
+,
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "ThickHide", 3 } },
+    GenerationFlags = GenerationFlags.SmallGroup,
+    GenerationFrequency = Frequency.Occasionally,
+    Behavior = MonsterBehavior.WeaponCollector
 }

@@ -1,17 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = 6,
-    GenerationFrequency = Frequency.Uncommonly,
-    Noise = ActorNoiseType.Growl,
     Name = "yeti",
     Species = Species.Simian,
+    InitialLevel = 5,
+    ArmorClass = 6,
     MovementRate = 15,
-    Size = Size.Large,
     Weight = 1600,
+    Size = Size.Large,
     Nutrition = 700,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Humanoidness", "Omnivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -38,4 +34,9 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Humanoidness", "Omnivorism" },
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 } },
+    GenerationFrequency = Frequency.Uncommonly,
+    Noise = ActorNoiseType.Growl
 }

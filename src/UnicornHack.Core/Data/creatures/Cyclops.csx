@@ -1,18 +1,12 @@
 new CreatureVariant
 {
-    InitialLevel = 16,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser | MonsterBehavior.Covetous,
-    Alignment = -15,
-    Noise = ActorNoiseType.Quest,
     Name = "Cyclops",
     Species = Species.Giant,
+    InitialLevel = 16,
     MovementRate = 12,
-    Size = Size.Huge,
     Weight = 2200,
+    Size = Size.Huge,
     Nutrition = 800,
-    SimpleProperties = new HashSet<string> { "SingleEyedness", "Infravision", "Infravisibility", "Humanoidness", "Maleness", "Omnivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "StoningResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -46,4 +40,10 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new StealAmulet() }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "SingleEyedness", "Infravision", "Infravisibility", "Humanoidness", "Maleness", "Omnivorism", "StoningResistance" },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser | MonsterBehavior.Covetous,
+    Alignment = -15,
+    Noise = ActorNoiseType.Quest
 }

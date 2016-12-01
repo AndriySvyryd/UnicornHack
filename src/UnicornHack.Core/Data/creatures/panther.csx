@@ -1,17 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 6,
-    ArmorClass = 6,
-    GenerationFrequency = Frequency.Commonly,
-    Noise = ActorNoiseType.Growl,
     Name = "panther",
     Species = Species.BigCat,
     SpeciesClass = SpeciesClass.Feline,
+    InitialLevel = 6,
+    ArmorClass = 6,
     MovementRate = 15,
-    Size = Size.Large,
     Weight = 600,
+    Size = Size.Large,
     Nutrition = 300,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -38,4 +35,8 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 3 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
+    GenerationFrequency = Frequency.Commonly,
+    Noise = ActorNoiseType.Growl
 }

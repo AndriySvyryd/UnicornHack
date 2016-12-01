@@ -1,20 +1,15 @@
 new CreatureVariant
 {
+    Name = "monk",
+    Species = Species.Human,
+    PreviousStageName = "abbot",
     InitialLevel = 10,
     ArmorClass = 6,
     MagicResistance = 10,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.Peaceful,
-    Alignment = 3,
-    Noise = ActorNoiseType.Speach,
-    PreviousStageName = "abbot",
-    Name = "monk",
-    Species = Species.Human,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Herbivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -33,4 +28,10 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 4 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Herbivorism" },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.Peaceful,
+    Alignment = 3,
+    Noise = ActorNoiseType.Speach
 }

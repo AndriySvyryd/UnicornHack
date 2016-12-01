@@ -1,18 +1,15 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = 6,
-    MagicResistance = 10,
-    GenerationFlags = GenerationFlags.NonPolymorphable,
-    GenerationFrequency = Frequency.Uncommonly,
     Name = "chameleon",
     Species = Species.Lizard,
     SpeciesClass = SpeciesClass.Reptile | SpeciesClass.ShapeChanger,
+    InitialLevel = 5,
+    ArmorClass = 6,
+    MagicResistance = 10,
     MovementRate = 6,
-    Size = Size.Small,
     Weight = 50,
+    Size = Size.Small,
     Nutrition = 50,
-    SimpleProperties = new HashSet<string> { "Handlessness", "PolymorphControl", "Oviparity", "Carnivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -23,4 +20,8 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 6 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Handlessness", "PolymorphControl", "Oviparity", "Carnivorism", "SingularInventory" },
+    GenerationFlags = GenerationFlags.NonPolymorphable,
+    GenerationFrequency = Frequency.Uncommonly
 }

@@ -1,22 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 66,
-    ArmorClass = -6,
-    MagicResistance = 85,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable | GenerationFlags.HellOnly,
-    Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser | MonsterBehavior.Covetous,
-    Alignment = -20,
-    Noise = ActorNoiseType.Grunt,
-    CorpseVariantName = "",
     Name = "Orcus",
     Species = Species.DemonMajor,
     SpeciesClass = SpeciesClass.Demon,
+    CorpseVariantName = "",
+    InitialLevel = 66,
+    ArmorClass = -6,
+    MagicResistance = 85,
     MovementRate = 9,
-    Size = Size.Huge,
     Weight = 2500,
+    Size = Size.Huge,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "Infravisibility", "Infravision", "InvisibilityDetection", "Humanoidness", "Maleness" },
-    ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 }, { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "SicknessResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -61,4 +55,22 @@ new CreatureVariant
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 13 } } },
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new Infect { Strength = 13 } } }
     }
+,
+    SimpleProperties = new HashSet<string>
+    {
+        "Flight",
+        "FlightControl",
+        "Infravisibility",
+        "Infravision",
+        "InvisibilityDetection",
+        "Humanoidness",
+        "Maleness",
+        "SicknessResistance"
+    }
+,
+    ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 }, { "PoisonResistance", 3 }, { "VenomResistance", 3 } },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable | GenerationFlags.HellOnly,
+    Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser | MonsterBehavior.Covetous,
+    Alignment = -20,
+    Noise = ActorNoiseType.Grunt
 }

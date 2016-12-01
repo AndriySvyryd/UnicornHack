@@ -1,18 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 9,
-    MagicResistance = 20,
-    GenerationFlags = GenerationFlags.Entourage,
-    GenerationFrequency = Frequency.Rarely,
     Name = "ant queen",
     Species = Species.Ant,
     SpeciesClass = SpeciesClass.Vermin,
+    InitialLevel = 9,
+    MagicResistance = 20,
     MovementRate = 18,
-    Size = Size.Tiny,
     Weight = 10,
+    Size = Size.Tiny,
     Nutrition = 10,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Handlessness", "Carnivorism", "Femaleness", "Oviparity" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "Stealthiness", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -25,4 +21,9 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 5 } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Handlessness", "Carnivorism", "Femaleness", "Oviparity" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "Stealthiness", 3 } },
+    GenerationFlags = GenerationFlags.Entourage,
+    GenerationFrequency = Frequency.Rarely
 }

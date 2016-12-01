@@ -1,16 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 20,
-    ArmorClass = 6,
-    GenerationFlags = GenerationFlags.NonPolymorphable,
-    Alignment = -3,
     Name = "kraken",
     Species = Species.Squid,
+    InitialLevel = 20,
+    ArmorClass = 6,
     MovementRate = 3,
-    Size = Size.Huge,
     Weight = 2000,
+    Size = Size.Huge,
     Nutrition = 1000,
-    SimpleProperties = new HashSet<string> { "Swimming", "WaterBreathing", "Limblessness", "Oviparity", "Carnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -45,4 +42,8 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new Bind { Duration = 7 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Swimming", "WaterBreathing", "Limblessness", "Oviparity", "Carnivorism" },
+    GenerationFlags = GenerationFlags.NonPolymorphable,
+    Alignment = -3
 }

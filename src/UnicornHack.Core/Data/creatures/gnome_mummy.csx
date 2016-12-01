@@ -1,21 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 4,
-    ArmorClass = 6,
-    MagicResistance = 20,
-    GenerationFrequency = Frequency.Uncommonly,
-    Alignment = -3,
-    Noise = ActorNoiseType.Moan,
-    CorpseVariantName = "gnome",
     Name = "gnome mummy",
     Species = Species.Gnome,
     SpeciesClass = SpeciesClass.Undead,
+    CorpseVariantName = "gnome",
+    InitialLevel = 4,
+    ArmorClass = 6,
+    MagicResistance = 20,
     MovementRate = 6,
-    Size = Size.Small,
     Weight = 650,
+    Size = Size.Small,
     Nutrition = 100,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "Infravision", "Humanoidness", "Breathlessness" },
-    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 }, { "SicknessResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -28,4 +23,10 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new Infect { } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "SleepResistance", "Infravision", "Humanoidness", "Breathlessness", "SicknessResistance" },
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 } },
+    GenerationFrequency = Frequency.Uncommonly,
+    Alignment = -3,
+    Noise = ActorNoiseType.Moan
 }

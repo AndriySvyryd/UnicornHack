@@ -1,61 +1,15 @@
 new CreatureVariant
 {
-    InitialLevel = 8,
-    ArmorClass = 2,
-    MagicResistance = 30,
-    GenerationFrequency = Frequency.Uncommonly,
-    CorpseVariantName = "",
     Name = "earth elemental",
     Species = Species.Elemental,
     SpeciesClass = SpeciesClass.Extraplanar,
+    CorpseVariantName = "",
+    InitialLevel = 8,
+    ArmorClass = 2,
+    MagicResistance = 30,
     MovementRate = 6,
-    Size = Size.Huge,
     Weight = 2500,
-    SimpleProperties = new HashSet<string>
-    {
-        "SleepResistance",
-        "Phasing",
-        "NonAnimal",
-        "Breathlessness",
-        "Limblessness",
-        "Eyelessness",
-        "Headlessness",
-        "Mindlessness",
-        "Asexuality"
-    }
-,
-    ValuedProperties = new Dictionary<string, Object>
-    {
-        {
-            "FireResistance",
-            3
-        },
-        {
-            "PoisonResistance",
-            3
-        },
-        {
-            "VenomResistance",
-            3
-        },
-        {
-            "StoningResistance",
-            3
-        },
-        {
-            "SlimingResistance",
-            3
-        },
-        {
-            "SicknessResistance",
-            3
-        },
-        {
-            "ThickHide",
-            3
-        }
-    }
-,
+    Size = Size.Huge,
     Abilities = new List<Ability>
     {
         new Ability
@@ -74,4 +28,23 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new Stun { Duration = 2 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string>
+    {
+        "SleepResistance",
+        "Phasing",
+        "NonAnimal",
+        "Breathlessness",
+        "Limblessness",
+        "Eyelessness",
+        "Headlessness",
+        "Mindlessness",
+        "Asexuality",
+        "StoningResistance",
+        "SlimingResistance",
+        "SicknessResistance"
+    }
+,
+    ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 }, { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "ThickHide", 3 } },
+    GenerationFrequency = Frequency.Uncommonly
 }

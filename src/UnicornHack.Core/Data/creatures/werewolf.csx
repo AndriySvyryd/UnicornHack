@@ -1,22 +1,15 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = 10,
-    MagicResistance = 20,
-    GenerationFlags = GenerationFlags.NonPolymorphable,
-    GenerationFrequency = Frequency.Rarely,
-    Behavior = MonsterBehavior.WeaponCollector,
-    Alignment = -7,
-    Noise = ActorNoiseType.Lycanthrope,
     Name = "werewolf",
     Species = Species.Human,
     SpeciesClass = SpeciesClass.ShapeChanger,
+    InitialLevel = 5,
+    ArmorClass = 10,
+    MagicResistance = 20,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Omnivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "Regeneration", 3 }, { "Lycanthropy", "wolfwere" } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -44,4 +37,12 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new ConferLycanthropy { VariantName = "wolfwere" } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Omnivorism" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "Regeneration", 3 }, { "Lycanthropy", "wolfwere" } },
+    GenerationFlags = GenerationFlags.NonPolymorphable,
+    GenerationFrequency = Frequency.Rarely,
+    Behavior = MonsterBehavior.WeaponCollector,
+    Alignment = -7,
+    Noise = ActorNoiseType.Lycanthrope
 }

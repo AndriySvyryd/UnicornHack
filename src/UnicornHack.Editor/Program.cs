@@ -1,28 +1,24 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using CSharpScriptSerialization;
 using UnicornHack.Models.GameDefinitions;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Editor
 {
-    public class Tuples
-    {
-        public Tuple<int?, bool?> First { get; set; }
-        public Tuple<int, Tuple<bool?>> Second { get; set; }
-    }
-
     public class Program
     {
         public static void Main(string[] args)
         {
-            SerializeCreatureVariants();
-            SerializePlayersVariants();
-            SerializeItemVariants();
+            SerializeCreatureVariants(verify: true);
+            SerializePlayersVariants(verify: true);
+            SerializeItemVariants(verify: true);
         }
 
-        private static void SerializePlayersVariants()
+        private static void SerializePlayersVariants(bool verify = false)
         {
             foreach (var playerVariant in PlayerVariant.GetAllPlayerVariants())
             {
@@ -41,11 +37,14 @@ namespace UnicornHack.Editor
 
                 File.WriteAllText(GetFilePath(playerVariant), script);
 
-                // Verify(script, playerVariant);
+                if (verify)
+                {
+                    Verify(script, playerVariant);
+                }
             }
         }
 
-        private static void SerializeCreatureVariants()
+        private static void SerializeCreatureVariants(bool verify = false)
         {
             foreach (var creatureVariant in CreatureVariant.GetAllCreatureVariants())
             {
@@ -61,11 +60,14 @@ namespace UnicornHack.Editor
 
                 File.WriteAllText(GetFilePath(creatureVariant), script);
 
-                // Verify(script, creatureVariant);
+                if (verify)
+                {
+                    Verify(script, creatureVariant);
+                }
             }
         }
 
-        private static void SerializeItemVariants()
+        private static void SerializeItemVariants(bool verify = false)
         {
             foreach (var itemVariant in ItemVariant.GetAllItemVariants())
             {
@@ -84,35 +86,86 @@ namespace UnicornHack.Editor
 
                 File.WriteAllText(GetFilePath(itemVariant), script);
 
-                // Verify(script, itemVariant);
+                if (verify)
+                {
+                    Verify(script, itemVariant);
+                }
             }
         }
 
         private static void Verify(string script, CreatureVariant creatureVariant)
-        {
-            try
-            {
-                var serializedVariant = CSScriptDeserializer.Load<CreatureVariant>(script);
-                if (creatureVariant.Name != serializedVariant.Name)
-                {
-                    Console.WriteLine(script);
-                }
-            }
-            catch (Exception)
-            {
-                Console.WriteLine(script);
-                throw;
-            }
-        }
+            => Verify<CreatureVariant>(script, c => c.Name == creatureVariant.Name,
+                c => c.SimpleProperties, c => c.ValuedProperties);
 
         private static void Verify(string script, PlayerVariant playerVariant)
+            => Verify<PlayerVariant>(script, c => c.Name == playerVariant.Name,
+                c => c.SimpleProperties, c => c.ValuedProperties);
+
+        private static void Verify(string script, ItemVariant itemVariant)
+            => Verify<ItemVariant>(script, c => c.Name == itemVariant.Name,
+                c => c.SimpleProperties, c => c.ValuedProperties);
+
+        private static readonly Dictionary<string, CustomPropertyDescription> CustomProperties =
+            GetCustomProperties();
+
+        private static void Verify<T>(string script, Func<T, bool> isValid, Func<T, ISet<string>> getSimpleProperties,
+            Func<T, IDictionary<string, object>> getValuedProperties)
         {
             try
             {
-                var serializedVariant = CSScriptDeserializer.Load<PlayerVariant>(script);
-                if (playerVariant.Name != serializedVariant.Name)
+                var serializedVariant = CSScriptDeserializer.Load<T>(script);
+                if (!isValid(serializedVariant))
                 {
                     Console.WriteLine(script);
+                }
+
+                var simpleProperties = getSimpleProperties(serializedVariant);
+                if (simpleProperties != null)
+                {
+                    foreach (var simpleProperty in simpleProperties)
+                    {
+                        CustomPropertyDescription description;
+                        if (!CustomProperties.TryGetValue(simpleProperty, out description))
+                        {
+                            throw new InvalidOperationException(
+                                "Invalid simple property: " + simpleProperty);
+                        }
+                        if (description.PropertyType != typeof(bool))
+                        {
+                            throw new InvalidOperationException(
+                                $"Simple property {simpleProperty} should be of type {description.PropertyType}");
+                        }
+                    }
+                }
+
+                var valuedProperties = getValuedProperties(serializedVariant);
+                if (valuedProperties != null)
+                {
+                    foreach (var valuedProperty in valuedProperties)
+                    {
+                        CustomPropertyDescription description;
+                        if (!CustomProperties.TryGetValue(valuedProperty.Key, out description))
+                        {
+                            throw new InvalidOperationException("Invalid valued property: " + valuedProperty);
+                        }
+                        if (description.PropertyType != valuedProperty.Value.GetType())
+                        {
+                            throw new InvalidOperationException(
+                                $"Valued property {valuedProperty} should be of type {description.PropertyType}");
+                        }
+
+                        if (((IComparable) description.MinValue)?.CompareTo(valuedProperty.Value) > 0)
+                        {
+                            throw new InvalidOperationException(
+                                $"Valued property {valuedProperty} should be lesser or equal to " + description.MinValue);
+                        }
+                        if (((IComparable) description.MaxValue)?.CompareTo(valuedProperty.Value) < 0)
+                        {
+                            throw new InvalidOperationException(
+                                $"Valued property {valuedProperty} should be greater or equal to " +
+                                description.MaxValue);
+                        }
+                    }
                 }
             }
             catch (Exception)
@@ -122,22 +175,13 @@ namespace UnicornHack.Editor
             }
         }
 
-        private static void Verify(string script, ItemVariant itemVariant)
-        {
-            try
-            {
-                var serializedVariant = CSScriptDeserializer.Load<ItemVariant>(script);
-                if (itemVariant.Name != serializedVariant.Name)
-                {
-                    Console.WriteLine(script);
-                }
-            }
-            catch (Exception)
-            {
-                Console.WriteLine(script);
-                throw;
-            }
-        }
+        private static Dictionary<string, CustomPropertyDescription> GetCustomProperties()
+            => typeof(CustomPropertyDescription).GetProperties(
+                    BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Static)
+                .Where(p => !p.CanWrite)
+                .ToDictionary(
+                    p => p.Name,
+                    p => (CustomPropertyDescription) p.GetGetMethod().Invoke(null, null));
 
         private static string GetFilePath(CreatureVariant creatureVariant)
         {

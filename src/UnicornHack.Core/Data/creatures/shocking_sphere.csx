@@ -1,17 +1,27 @@
 new CreatureVariant
 {
-    InitialLevel = 6,
-    ArmorClass = 4,
-    MagicResistance = 10,
-    GenerationFrequency = Frequency.Sometimes,
-    CorpseVariantName = "",
     Name = "shocking sphere",
     Species = Species.FloatingSphere,
     SpeciesClass = SpeciesClass.Extraplanar,
+    CorpseVariantName = "",
+    InitialLevel = 6,
+    ArmorClass = 4,
+    MagicResistance = 10,
     MovementRate = 13,
-    Size = Size.Small,
     Weight = 10,
+    Size = Size.Small,
     Nutrition = 10,
+    Abilities = new List<Ability>
+    {
+        new Ability
+        {
+            Activation = AbilityActivation.OnTarget,
+            Action = AbilityAction.Explosion,
+            Timeout = 1,
+            Effects = new AbilityEffect[] { new ElectricityDamage { Damage = 14 } }
+        }
+    }
+,
     SimpleProperties = new HashSet<string>
     {
         "Flight",
@@ -26,14 +36,5 @@ new CreatureVariant
     }
 ,
     ValuedProperties = new Dictionary<string, Object> { { "ElectricityResistance", 3 } },
-    Abilities = new List<Ability>
-    {
-        new Ability
-        {
-            Activation = AbilityActivation.OnTarget,
-            Action = AbilityAction.Explosion,
-            Timeout = 1,
-            Effects = new AbilityEffect[] { new ElectricityDamage { Damage = 14 } }
-        }
-    }
+    GenerationFrequency = Frequency.Sometimes
 }

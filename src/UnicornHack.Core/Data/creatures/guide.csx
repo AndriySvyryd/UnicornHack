@@ -1,18 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = 10,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.Peaceful | MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector,
-    Noise = ActorNoiseType.Speach,
-    NextStageName = "tourist",
     Name = "guide",
     Species = Species.Human,
+    NextStageName = "tourist",
+    InitialLevel = 5,
+    ArmorClass = 10,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -30,4 +26,9 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.Peaceful | MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector,
+    Noise = ActorNoiseType.Speach
 }

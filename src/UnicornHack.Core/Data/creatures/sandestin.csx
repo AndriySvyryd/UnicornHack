@@ -1,23 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 13,
-    ArmorClass = 4,
-    MagicResistance = 60,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable | GenerationFlags.HellOnly,
-    GenerationFrequency = Frequency.Rarely,
-    Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
-    Alignment = -5,
-    Noise = ActorNoiseType.Cuss,
-    CorpseVariantName = "",
     Name = "sandestin",
     Species = Species.Sandestin,
     SpeciesClass = SpeciesClass.ShapeChanger,
+    CorpseVariantName = "",
+    InitialLevel = 13,
+    ArmorClass = 4,
+    MagicResistance = 60,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1500,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness" },
-    ValuedProperties = new Dictionary<string, Object> { { "StoningResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -45,4 +38,11 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 4 } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "StoningResistance" },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable | GenerationFlags.HellOnly,
+    GenerationFrequency = Frequency.Rarely,
+    Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
+    Alignment = -5,
+    Noise = ActorNoiseType.Cuss
 }

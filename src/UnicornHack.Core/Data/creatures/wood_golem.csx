@@ -1,16 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 7,
-    ArmorClass = 4,
-    GenerationFrequency = Frequency.Rarely,
-    CorpseVariantName = "",
     Name = "wood golem",
     Species = Species.Golem,
+    CorpseVariantName = "",
+    InitialLevel = 7,
+    ArmorClass = 4,
     MovementRate = 3,
-    Size = Size.Large,
     Weight = 1000,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "NonAnimal", "Breathlessness", "Mindlessness", "Humanoidness", "Asexuality" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "ThickHide", 3 }, { "MaxHP", 50 } },
+    Size = Size.Large,
     Abilities = new List<Ability>
     {
         new Ability
@@ -21,4 +18,8 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 7 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "SleepResistance", "NonAnimal", "Breathlessness", "Mindlessness", "Humanoidness", "Asexuality" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "ThickHide", 3 }, { "MaxHP", 50 } },
+    GenerationFrequency = Frequency.Rarely
 }

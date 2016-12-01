@@ -1,20 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = 10,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.Peaceful | MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector,
-    Alignment = -1,
-    Noise = ActorNoiseType.Speach,
-    NextStageName = "valkyrie",
     Name = "warrior",
     Species = Species.Human,
+    NextStageName = "valkyrie",
+    InitialLevel = 5,
+    ArmorClass = 10,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Femaleness", "Omnivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -32,4 +26,11 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Femaleness", "Omnivorism" },
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 } },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.Peaceful | MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector,
+    Alignment = -1,
+    Noise = ActorNoiseType.Speach
 }

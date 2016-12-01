@@ -1,67 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 16,
-    MagicResistance = 30,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector | MonsterBehavior.Covetous,
-    Alignment = -14,
-    Noise = ActorNoiseType.Quest,
     Name = "Chromatic Dragon",
     Species = Species.Dragon,
     SpeciesClass = SpeciesClass.Reptile,
+    InitialLevel = 16,
+    MagicResistance = 30,
     MovementRate = 12,
-    Size = Size.Gigantic,
     Weight = 4500,
+    Size = Size.Gigantic,
     Nutrition = 1500,
-    SimpleProperties = new HashSet<string>
-    {
-        "SleepResistance",
-        "Flight",
-        "FlightControl",
-        "InvisibilityDetection",
-        "Infravision",
-        "AnimalBody",
-        "Handlessness",
-        "Femaleness",
-        "Carnivorism"
-    }
-,
-    ValuedProperties = new Dictionary<string, Object>
-    {
-        {
-            "FireResistance",
-            3
-        },
-        {
-            "ColdResistance",
-            3
-        },
-        {
-            "ElectricityResistance",
-            3
-        },
-        {
-            "PoisonResistance",
-            3
-        },
-        {
-            "AcidResistance",
-            3
-        },
-        {
-            "StoningResistance",
-            3
-        },
-        {
-            "DangerAwareness",
-            3
-        },
-        {
-            "ThickHide",
-            3
-        }
-    }
-,
     Abilities = new List<Ability>
     {
         new Ability
@@ -112,4 +59,55 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new StealAmulet() }
         }
     }
+,
+    SimpleProperties = new HashSet<string>
+    {
+        "SleepResistance",
+        "Flight",
+        "FlightControl",
+        "InvisibilityDetection",
+        "Infravision",
+        "AnimalBody",
+        "Handlessness",
+        "Femaleness",
+        "Carnivorism",
+        "StoningResistance"
+    }
+,
+    ValuedProperties = new Dictionary<string, Object>
+    {
+        {
+            "FireResistance",
+            3
+        },
+        {
+            "ColdResistance",
+            3
+        },
+        {
+            "ElectricityResistance",
+            3
+        },
+        {
+            "PoisonResistance",
+            3
+        },
+        {
+            "AcidResistance",
+            3
+        },
+        {
+            "DangerAwareness",
+            3
+        },
+        {
+            "ThickHide",
+            3
+        }
+    }
+,
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector | MonsterBehavior.Covetous,
+    Alignment = -14,
+    Noise = ActorNoiseType.Quest
 }

@@ -1,16 +1,47 @@
 new CreatureVariant
 {
+    Name = "glass golem",
+    Species = Species.Golem,
+    CorpseVariantName = "",
     InitialLevel = 16,
     ArmorClass = 4,
     MagicResistance = 50,
-    GenerationFrequency = Frequency.Rarely,
-    CorpseVariantName = "",
-    Name = "glass golem",
-    Species = Species.Golem,
     MovementRate = 6,
-    Size = Size.Large,
     Weight = 1800,
-    SimpleProperties = new HashSet<string> { "Reflection", "SleepResistance", "NonAnimal", "Breathlessness", "Mindlessness", "Humanoidness", "Asexuality" },
+    Size = Size.Large,
+    Abilities = new List<Ability>
+    {
+        new Ability
+        {
+            Activation = AbilityActivation.OnTarget,
+            Action = AbilityAction.Punch,
+            Timeout = 1,
+            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 9 } }
+        }
+,
+        new Ability
+        {
+            Activation = AbilityActivation.OnTarget,
+            Action = AbilityAction.Punch,
+            Timeout = 1,
+            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 9 } }
+        }
+    }
+,
+    SimpleProperties = new HashSet<string>
+    {
+        "Reflection",
+        "SleepResistance",
+        "NonAnimal",
+        "Breathlessness",
+        "Mindlessness",
+        "Humanoidness",
+        "Asexuality",
+        "StoningResistance",
+        "SlimingResistance",
+        "SicknessResistance"
+    }
+,
     ValuedProperties = new Dictionary<string, Object>
     {
         {
@@ -38,18 +69,6 @@ new CreatureVariant
             3
         },
         {
-            "SicknessResistance",
-            3
-        },
-        {
-            "StoningResistance",
-            3
-        },
-        {
-            "SlimingResistance",
-            3
-        },
-        {
             "ThickHide",
             3
         },
@@ -59,22 +78,5 @@ new CreatureVariant
         }
     }
 ,
-    Abilities = new List<Ability>
-    {
-        new Ability
-        {
-            Activation = AbilityActivation.OnTarget,
-            Action = AbilityAction.Punch,
-            Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 9 } }
-        }
-,
-        new Ability
-        {
-            Activation = AbilityActivation.OnTarget,
-            Action = AbilityAction.Punch,
-            Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 9 } }
-        }
-    }
+    GenerationFrequency = Frequency.Rarely
 }

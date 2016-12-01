@@ -1,16 +1,21 @@
 new CreatureVariant
 {
-    InitialLevel = 6,
-    ArmorClass = 6,
-    GenerationFlags = GenerationFlags.HellOnly,
-    GenerationFrequency = Frequency.Rarely,
-    CorpseVariantName = "",
     Name = "green slime",
     Species = Species.Ooze,
+    CorpseVariantName = "",
+    InitialLevel = 6,
+    ArmorClass = 6,
     MovementRate = 6,
-    Size = Size.Medium,
     Weight = 400,
+    Size = Size.Medium,
     Nutrition = 150,
+    Abilities = new List<Ability>
+    {
+        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Touch, Timeout = 1, Effects = new AbilityEffect[] { new Slime() } },
+        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new AbilityEffect[] { new Slime() } },
+        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new Slime() } }
+    }
+,
     SimpleProperties = new HashSet<string>
     {
         "SleepResistance",
@@ -23,7 +28,8 @@ new CreatureVariant
         "Headlessness",
         "Mindlessness",
         "Asexuality",
-        "Omnivorism"
+        "Omnivorism",
+        "StoningResistance"
     }
 ,
     ValuedProperties = new Dictionary<string, Object>
@@ -49,19 +55,11 @@ new CreatureVariant
             3
         },
         {
-            "StoningResistance",
-            3
-        },
-        {
             "Stealthiness",
             3
         }
     }
 ,
-    Abilities = new List<Ability>
-    {
-        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Touch, Timeout = 1, Effects = new AbilityEffect[] { new Slime() } },
-        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new AbilityEffect[] { new Slime() } },
-        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new Slime() } }
-    }
+    GenerationFlags = GenerationFlags.HellOnly,
+    GenerationFrequency = Frequency.Rarely
 }

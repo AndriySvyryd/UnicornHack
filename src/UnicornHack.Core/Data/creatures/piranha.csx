@@ -1,15 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = 4,
-    GenerationFlags = GenerationFlags.SmallGroup,
     Name = "piranha",
     Species = Species.Fish,
+    InitialLevel = 5,
+    ArmorClass = 4,
     MovementRate = 12,
-    Size = Size.Tiny,
     Weight = 60,
+    Size = Size.Tiny,
     Nutrition = 30,
-    SimpleProperties = new HashSet<string> { "Swimming", "WaterBreathing", "Limblessness", "Oviparity", "Carnivorism", "NoInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -20,4 +18,7 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 7 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Swimming", "WaterBreathing", "Limblessness", "Oviparity", "Carnivorism", "NoInventory" },
+    GenerationFlags = GenerationFlags.SmallGroup
 }

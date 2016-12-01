@@ -1,16 +1,12 @@
 new CreatureVariant
 {
-    InitialLevel = 12,
-    MagicResistance = 50,
-    GenerationFlags = GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.Peaceful,
-    Noise = ActorNoiseType.Oracle,
     Name = "Oracle",
     Species = Species.Human,
-    Size = Size.Medium,
+    InitialLevel = 12,
+    MagicResistance = 50,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Femaleness" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -21,4 +17,9 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new MagicalDamage { Damage = 4 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Femaleness" },
+    GenerationFlags = GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.Peaceful,
+    Noise = ActorNoiseType.Oracle
 }

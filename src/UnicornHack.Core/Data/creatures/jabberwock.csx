@@ -1,17 +1,14 @@
 new CreatureVariant
 {
+    Name = "jabberwock",
+    Species = Species.Jabberwock,
     InitialLevel = 15,
     ArmorClass = -2,
     MagicResistance = 50,
-    GenerationFrequency = Frequency.Rarely,
-    Noise = ActorNoiseType.Burble,
-    Name = "jabberwock",
-    Species = Species.Jabberwock,
     MovementRate = 12,
-    Size = Size.Large,
     Weight = 1300,
+    Size = Size.Large,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "Infravision", "Infravisibility", "AnimalBody", "Carnivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -38,4 +35,8 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 11 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "Infravision", "Infravisibility", "AnimalBody", "Carnivorism", "SingularInventory" },
+    GenerationFrequency = Frequency.Rarely,
+    Noise = ActorNoiseType.Burble
 }

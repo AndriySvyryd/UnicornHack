@@ -1,17 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 4,
-    ArmorClass = 7,
-    GenerationFrequency = Frequency.Usually,
-    Noise = ActorNoiseType.Bark,
     Name = "dingo",
     Species = Species.Dog,
     SpeciesClass = SpeciesClass.Canine,
+    InitialLevel = 4,
+    ArmorClass = 7,
     MovementRate = 16,
-    Size = Size.Medium,
     Weight = 400,
+    Size = Size.Medium,
     Nutrition = 200,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -22,4 +19,8 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 3 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
+    GenerationFrequency = Frequency.Usually,
+    Noise = ActorNoiseType.Bark
 }

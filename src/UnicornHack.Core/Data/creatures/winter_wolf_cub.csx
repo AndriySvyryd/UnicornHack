@@ -1,21 +1,15 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = 4,
-    GenerationFlags = GenerationFlags.NoHell,
-    GenerationFrequency = Frequency.Commonly,
-    Alignment = -5,
-    Noise = ActorNoiseType.Bark,
-    NextStageName = "winter wolf",
     Name = "winter wolf cub",
     Species = Species.Wolf,
     SpeciesClass = SpeciesClass.Canine,
+    NextStageName = "winter wolf",
+    InitialLevel = 5,
+    ArmorClass = 4,
     MovementRate = 12,
-    Size = Size.Small,
     Weight = 250,
+    Size = Size.Small,
     Nutrition = 200,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
-    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -34,4 +28,11 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new ColdDamage { Damage = 4 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 } },
+    GenerationFlags = GenerationFlags.NoHell,
+    GenerationFrequency = Frequency.Commonly,
+    Alignment = -5,
+    Noise = ActorNoiseType.Bark
 }

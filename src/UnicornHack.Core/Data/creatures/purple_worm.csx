@@ -1,19 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 15,
-    ArmorClass = 5,
-    MagicResistance = 20,
-    GenerationFrequency = Frequency.Commonly,
-    PreviousStageName = "baby purple worm",
     Name = "purple worm",
     Species = Species.Worm,
     SpeciesClass = SpeciesClass.Vermin,
+    PreviousStageName = "baby purple worm",
+    InitialLevel = 15,
+    ArmorClass = 5,
+    MagicResistance = 20,
     MovementRate = 9,
-    Size = Size.Gigantic,
     Weight = 1500,
+    Size = Size.Gigantic,
     Nutrition = 500,
-    SimpleProperties = new HashSet<string> { "SerpentlikeBody", "Eyelessness", "Limblessness", "Oviparity", "Carnivorism", "NoInventory" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -40,4 +37,8 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new AcidDamage { Damage = 5 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "SerpentlikeBody", "Eyelessness", "Limblessness", "Oviparity", "Carnivorism", "NoInventory" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 } },
+    GenerationFrequency = Frequency.Commonly
 }

@@ -1,17 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 12,
-    ArmorClass = 3,
-    GenerationFrequency = Frequency.Occasionally,
-    Behavior = MonsterBehavior.Stalking,
     Name = "trapper",
     Species = Species.Trapper,
+    InitialLevel = 12,
+    ArmorClass = 3,
     MovementRate = 3,
-    Size = Size.Large,
     Weight = 800,
+    Size = Size.Large,
     Nutrition = 350,
-    SimpleProperties = new HashSet<string> { "Camouflage", "AnimalBody", "InvisibilityDetection", "Eyelessness", "Headlessness", "Limblessness", "Carnivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "Stealthiness", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -30,4 +26,9 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new Suffocate() }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Camouflage", "AnimalBody", "InvisibilityDetection", "Eyelessness", "Headlessness", "Limblessness", "Carnivorism" },
+    ValuedProperties = new Dictionary<string, Object> { { "Stealthiness", 3 } },
+    GenerationFrequency = Frequency.Occasionally,
+    Behavior = MonsterBehavior.Stalking
 }

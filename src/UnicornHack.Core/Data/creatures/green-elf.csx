@@ -1,20 +1,14 @@
 new CreatureVariant
 {
+    Name = "green-elf",
+    Species = Species.Elf,
     InitialLevel = 5,
     ArmorClass = 10,
     MagicResistance = 10,
-    GenerationFlags = GenerationFlags.SmallGroup,
-    GenerationFrequency = Frequency.Occasionally,
-    Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.WeaponCollector,
-    Alignment = 6,
-    Noise = ActorNoiseType.Speach,
-    Name = "green-elf",
-    Species = Species.Elf,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 800,
+    Size = Size.Medium,
     Nutrition = 350,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "InvisibilityDetection", "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -32,4 +26,11 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "SleepResistance", "InvisibilityDetection", "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFlags = GenerationFlags.SmallGroup,
+    GenerationFrequency = Frequency.Occasionally,
+    Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.WeaponCollector,
+    Alignment = 6,
+    Noise = ActorNoiseType.Speach
 }

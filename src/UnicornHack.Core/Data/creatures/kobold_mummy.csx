@@ -1,21 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 3,
-    ArmorClass = 6,
-    MagicResistance = 20,
-    GenerationFrequency = Frequency.Uncommonly,
-    Alignment = -2,
-    Noise = ActorNoiseType.Moan,
-    CorpseVariantName = "kobold",
     Name = "kobold mummy",
     Species = Species.Kobold,
     SpeciesClass = SpeciesClass.Undead,
+    CorpseVariantName = "kobold",
+    InitialLevel = 3,
+    ArmorClass = 6,
+    MagicResistance = 20,
     MovementRate = 6,
-    Size = Size.Small,
     Weight = 400,
+    Size = Size.Small,
     Nutrition = 50,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "Infravision", "Humanoidness", "Breathlessness" },
-    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 }, { "SicknessResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -29,4 +24,10 @@ new CreatureVariant
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new Infect { } } },
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 5 } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "SleepResistance", "Infravision", "Humanoidness", "Breathlessness", "SicknessResistance" },
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 } },
+    GenerationFrequency = Frequency.Uncommonly,
+    Alignment = -2,
+    Noise = ActorNoiseType.Moan
 }

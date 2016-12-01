@@ -1,18 +1,12 @@
 new CreatureVariant
 {
-    InitialLevel = 6,
-    GenerationFlags = GenerationFlags.SmallGroup,
-    GenerationFrequency = Frequency.Uncommonly,
-    Behavior = MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
-    Alignment = 2,
-    Noise = ActorNoiseType.Boast,
     Name = "stone giant",
     Species = Species.Giant,
+    InitialLevel = 6,
     MovementRate = 6,
-    Size = Size.Huge,
     Weight = 2250,
+    Size = Size.Huge,
     Nutrition = 750,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -30,4 +24,11 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFlags = GenerationFlags.SmallGroup,
+    GenerationFrequency = Frequency.Uncommonly,
+    Behavior = MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
+    Alignment = 2,
+    Noise = ActorNoiseType.Boast
 }

@@ -1,31 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 1,
-    ArmorClass = 10,
-    GenerationFrequency = Frequency.Sometimes,
-    CorpseVariantName = "",
     Name = "gas spore",
     Species = Species.FloatingSphere,
+    CorpseVariantName = "",
+    InitialLevel = 1,
+    ArmorClass = 10,
     MovementRate = 3,
-    Size = Size.Small,
     Weight = 10,
+    Size = Size.Small,
     Nutrition = 10,
-    SimpleProperties = new HashSet<string>
-    {
-        "SleepResistance",
-        "Flight",
-        "FlightControl",
-        "NonAnimal",
-        "Breathlessness",
-        "Limblessness",
-        "Eyelessness",
-        "Headlessness",
-        "Mindlessness",
-        "Asexuality",
-        "NoInventory"
-    }
-,
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "SlimingResistance", 3 }, { "SicknessResistance", 3 }, { "Stealthiness", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -44,4 +27,24 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new Deafen { Duration = 27 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string>
+    {
+        "SleepResistance",
+        "Flight",
+        "FlightControl",
+        "NonAnimal",
+        "Breathlessness",
+        "Limblessness",
+        "Eyelessness",
+        "Headlessness",
+        "Mindlessness",
+        "Asexuality",
+        "NoInventory",
+        "SlimingResistance",
+        "SicknessResistance"
+    }
+,
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "Stealthiness", 3 } },
+    GenerationFrequency = Frequency.Sometimes
 }

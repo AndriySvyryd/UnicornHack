@@ -1,18 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 20,
-    MagicResistance = 40,
-    GenerationFlags = GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.Stalking | MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser,
-    Alignment = 15,
-    Noise = ActorNoiseType.Guard,
     Name = "Croesus",
     Species = Species.Human,
+    InitialLevel = 20,
+    MagicResistance = 40,
     MovementRate = 15,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravisibility", "InvisibilityDetection", "Humanoidness", "Maleness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -30,4 +25,10 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravisibility", "InvisibilityDetection", "Humanoidness", "Maleness", "Omnivorism" },
+    GenerationFlags = GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.Stalking | MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser,
+    Alignment = 15,
+    Noise = ActorNoiseType.Guard
 }

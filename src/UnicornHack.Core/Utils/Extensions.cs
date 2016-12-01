@@ -22,6 +22,21 @@ namespace UnicornHack.Utils
             return list;
         }
 
+        public static TValue GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
+            => dictionary.GetValueOrDefault(key, default(TValue));
+
+        public static TValue GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary,
+            TKey key, TValue fallBack)
+        {
+            TValue value;
+            if (dictionary.TryGetValue(key, out value))
+            {
+                return value;
+            }
+
+            return fallBack;
+        }
+
 #if NET46
         public static IEnumerable<T> Append<T>(this IEnumerable<T> source, T item)
         {

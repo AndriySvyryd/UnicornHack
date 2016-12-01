@@ -1,17 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 1,
-    ArmorClass = 7,
-    GenerationFrequency = Frequency.Often,
-    Noise = ActorNoiseType.Bark,
     Name = "fox",
     Species = Species.Fox,
     SpeciesClass = SpeciesClass.Canine,
+    InitialLevel = 1,
+    ArmorClass = 7,
     MovementRate = 15,
-    Size = Size.Small,
     Weight = 300,
+    Size = Size.Small,
     Nutrition = 250,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -22,4 +19,8 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
+    GenerationFrequency = Frequency.Often,
+    Noise = ActorNoiseType.Bark
 }

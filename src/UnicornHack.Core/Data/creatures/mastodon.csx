@@ -1,18 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 20,
-    ArmorClass = 5,
-    GenerationFrequency = Frequency.Usually,
-    Noise = ActorNoiseType.Roar,
     Name = "mastodon",
     Species = Species.Quadruped,
     SpeciesClass = SpeciesClass.Quadrupedal,
+    InitialLevel = 20,
+    ArmorClass = 5,
     MovementRate = 12,
-    Size = Size.Large,
     Weight = 3800,
+    Size = Size.Large,
     Nutrition = 800,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Herbivorism", "SingularInventory" },
-    ValuedProperties = new Dictionary<string, Object> { { "ThickHide", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -31,4 +27,9 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 18 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Herbivorism", "SingularInventory" },
+    ValuedProperties = new Dictionary<string, Object> { { "ThickHide", 3 } },
+    GenerationFrequency = Frequency.Usually,
+    Noise = ActorNoiseType.Roar
 }

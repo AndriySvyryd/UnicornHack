@@ -1,17 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = 6,
-    GenerationFrequency = Frequency.Commonly,
-    Noise = ActorNoiseType.Growl,
     Name = "lynx",
     Species = Species.Cat,
     SpeciesClass = SpeciesClass.Feline,
+    InitialLevel = 5,
+    ArmorClass = 6,
     MovementRate = 15,
-    Size = Size.Medium,
     Weight = 400,
+    Size = Size.Medium,
     Nutrition = 200,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -38,4 +35,8 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
+    GenerationFrequency = Frequency.Commonly,
+    Noise = ActorNoiseType.Growl
 }

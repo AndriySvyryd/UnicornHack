@@ -1,18 +1,15 @@
 new CreatureVariant
 {
-    InitialLevel = 6,
-    ArmorClass = 4,
-    MagicResistance = 10,
-    GenerationFrequency = Frequency.Commonly,
-    Noise = ActorNoiseType.Imitate,
     Name = "leocrotta",
     Species = Species.Quadruped,
     SpeciesClass = SpeciesClass.Quadrupedal,
+    InitialLevel = 6,
+    ArmorClass = 4,
+    MagicResistance = 10,
     MovementRate = 18,
-    Size = Size.Large,
     Weight = 1200,
+    Size = Size.Large,
     Nutrition = 500,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Omnivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -39,4 +36,8 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 7 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Omnivorism", "SingularInventory" },
+    GenerationFrequency = Frequency.Commonly,
+    Noise = ActorNoiseType.Imitate
 }

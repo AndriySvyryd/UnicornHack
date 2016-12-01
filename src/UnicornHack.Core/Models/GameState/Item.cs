@@ -41,6 +41,8 @@ namespace UnicornHack.Models.GameState
         public int GameId { get; private set; }
         public Game Game { get; set; }
 
+        public Beatitude Beatitude { get; set; }
+
         public virtual bool MoveTo(IItemLocation location)
         {
             if (!location.CanAdd(this))

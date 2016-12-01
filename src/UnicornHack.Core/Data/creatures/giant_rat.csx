@@ -1,19 +1,15 @@
 new CreatureVariant
 {
-    InitialLevel = 2,
-    ArmorClass = 7,
-    GenerationFlags = GenerationFlags.SmallGroup,
-    GenerationFrequency = Frequency.Usually,
-    Noise = ActorNoiseType.Sqeek,
-    PreviousStageName = "sewer rat",
     Name = "giant rat",
     Species = Species.Rat,
     SpeciesClass = SpeciesClass.Rodent,
+    PreviousStageName = "sewer rat",
+    InitialLevel = 2,
+    ArmorClass = 7,
     MovementRate = 10,
-    Size = Size.Small,
     Weight = 150,
+    Size = Size.Small,
     Nutrition = 75,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -24,4 +20,9 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
+    GenerationFlags = GenerationFlags.SmallGroup,
+    GenerationFrequency = Frequency.Usually,
+    Noise = ActorNoiseType.Sqeek
 }

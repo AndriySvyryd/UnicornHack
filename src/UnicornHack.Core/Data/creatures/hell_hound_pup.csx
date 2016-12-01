@@ -1,22 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 7,
-    ArmorClass = 4,
-    MagicResistance = 20,
-    GenerationFlags = GenerationFlags.SmallGroup | GenerationFlags.HellOnly,
-    GenerationFrequency = Frequency.Sometimes,
-    Alignment = -5,
-    Noise = ActorNoiseType.Bark,
-    NextStageName = "hell hound",
     Name = "hell hound pup",
     Species = Species.Dog,
     SpeciesClass = SpeciesClass.Canine,
+    NextStageName = "hell hound",
+    InitialLevel = 7,
+    ArmorClass = 4,
+    MagicResistance = 20,
     MovementRate = 12,
-    Size = Size.Small,
     Weight = 250,
+    Size = Size.Small,
     Nutrition = 200,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
-    ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -35,4 +29,11 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new FireDamage { Damage = 7 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
+    ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 } },
+    GenerationFlags = GenerationFlags.SmallGroup | GenerationFlags.HellOnly,
+    GenerationFrequency = Frequency.Sometimes,
+    Alignment = -5,
+    Noise = ActorNoiseType.Bark
 }

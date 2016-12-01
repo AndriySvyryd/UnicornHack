@@ -1,21 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 12,
-    ArmorClass = 4,
-    GenerationFrequency = Frequency.Occasionally,
-    Alignment = -2,
-    Noise = ActorNoiseType.Growl,
-    CorpseVariantName = "",
-    NextStageName = "ghast",
     Name = "ghoul",
     Species = Species.Ghoul,
     SpeciesClass = SpeciesClass.Undead,
+    CorpseVariantName = "",
+    NextStageName = "ghast",
+    InitialLevel = 12,
+    ArmorClass = 4,
     MovementRate = 8,
-    Size = Size.Medium,
     Weight = 400,
+    Size = Size.Medium,
     Nutrition = 50,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "Infravision", "Humanoidness", "Breathlessness", "Carnivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 }, { "SicknessResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -36,4 +31,10 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new Infect { } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "SleepResistance", "Infravision", "Humanoidness", "Breathlessness", "Carnivorism", "SicknessResistance" },
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 } },
+    GenerationFrequency = Frequency.Occasionally,
+    Alignment = -2,
+    Noise = ActorNoiseType.Growl
 }

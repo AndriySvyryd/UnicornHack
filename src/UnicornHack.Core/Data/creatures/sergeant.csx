@@ -1,22 +1,16 @@
 new CreatureVariant
 {
+    Name = "sergeant",
+    Species = Species.Human,
+    PreviousStageName = "soldier",
+    NextStageName = "lieutenant",
     InitialLevel = 8,
     ArmorClass = 10,
     MagicResistance = 5,
-    GenerationFlags = GenerationFlags.NonPolymorphable | GenerationFlags.SmallGroup,
-    GenerationFrequency = Frequency.Rarely,
-    Behavior = MonsterBehavior.Wandering | MonsterBehavior.Stalking | MonsterBehavior.Displacing | MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector | MonsterBehavior.Bribeable,
-    Alignment = -3,
-    Noise = ActorNoiseType.Soldier,
-    PreviousStageName = "soldier",
-    NextStageName = "lieutenant",
-    Name = "sergeant",
-    Species = Species.Human,
     MovementRate = 10,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -34,4 +28,11 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFlags = GenerationFlags.NonPolymorphable | GenerationFlags.SmallGroup,
+    GenerationFrequency = Frequency.Rarely,
+    Behavior = MonsterBehavior.Wandering | MonsterBehavior.Stalking | MonsterBehavior.Displacing | MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector | MonsterBehavior.Bribeable,
+    Alignment = -3,
+    Noise = ActorNoiseType.Soldier
 }

@@ -1,18 +1,15 @@
 new CreatureVariant
 {
-    InitialLevel = 9,
-    ArmorClass = 2,
-    MagicResistance = 25,
-    GenerationFrequency = Frequency.Uncommonly,
     Name = "umber hulk",
     Species = Species.Hulk,
     SpeciesClass = SpeciesClass.MagicalBeast,
+    InitialLevel = 9,
+    ArmorClass = 2,
+    MagicResistance = 25,
     MovementRate = 6,
-    Size = Size.Large,
     Weight = 1300,
+    Size = Size.Large,
     Nutrition = 500,
-    SimpleProperties = new HashSet<string> { "Tunneling", "AnimalBody", "Infravision", "Infravisibility", "Carnivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "ThickHide", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -47,4 +44,8 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new Confuse { Duration = 4 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Tunneling", "AnimalBody", "Infravision", "Infravisibility", "Carnivorism" },
+    ValuedProperties = new Dictionary<string, Object> { { "ThickHide", 3 } },
+    GenerationFrequency = Frequency.Uncommonly
 }

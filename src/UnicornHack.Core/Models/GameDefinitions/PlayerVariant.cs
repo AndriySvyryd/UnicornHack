@@ -50,6 +50,12 @@ namespace UnicornHack.Models.GameDefinitions
             set { _nutrition = value; }
         }
 
+        public override Material Material
+        {
+            get { return _material ?? BaseCreatureVariant?.Material ?? Material.Flesh; }
+            set { _material = value; }
+        }
+
         public override ISet<string> SimpleProperties { get; set; }
         public override IDictionary<string, object> ValuedProperties { get; set; }
 
@@ -76,6 +82,7 @@ namespace UnicornHack.Models.GameDefinitions
         private Size? _size;
         private short? _weight;
         private short? _nutrition;
+        private Material? _material;
 
         public static Dictionary<string, PlayerVariant> NameLookup { get; } =
             new Dictionary<string, PlayerVariant>(StringComparer.Ordinal);
@@ -132,10 +139,11 @@ namespace UnicornHack.Models.GameDefinitions
                 {nameof(BaseCreatureVariantName), o => o.BaseCreatureVariantName},
                 {nameof(Species), o => o.Species},
                 {nameof(SpeciesClass), o => o.SpeciesClass},
+                {nameof(MovementRate), o => o.MovementRate},
                 {nameof(Weight), o => o.Weight},
                 {nameof(Size), o => o.Size},
-                {nameof(MovementRate), o => o.MovementRate},
                 {nameof(Nutrition), o => o.Nutrition},
+                {nameof(Material), o => o.Material},
                 {nameof(Abilities), o => o.Abilities},
                 {nameof(SimpleProperties), o => o.SimpleProperties},
                 {nameof(ValuedProperties), o => o.ValuedProperties},
@@ -155,7 +163,8 @@ namespace UnicornHack.Models.GameDefinitions
                 {nameof(Weight), o => o.BaseCreatureVariant?.Weight ?? 0},
                 {nameof(Size), o => o.BaseCreatureVariant?.Size ?? Size.None},
                 {nameof(MovementRate), o => o.BaseCreatureVariant?.MovementRate ?? 0},
-                {nameof(Nutrition), o => o.BaseCreatureVariant?.Nutrition ?? 0}
+                {nameof(Nutrition), o => o.BaseCreatureVariant?.Nutrition ?? 0},
+                {nameof(Material), o => o.BaseCreatureVariant?.Material ?? Material.Flesh}
             });
 
         public ICSScriptSerializer GetSerializer() => Serializer;

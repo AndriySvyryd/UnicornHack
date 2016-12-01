@@ -1,23 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 10,
-    MagicResistance = 30,
-    GenerationFlags = GenerationFlags.NoHell,
-    GenerationFrequency = Frequency.Sometimes,
-    Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
-    Alignment = 7,
-    Noise = ActorNoiseType.Speach,
-    CorpseVariantName = "",
-    NextStageName = "angel",
     Name = "aleax",
     Species = Species.Angel,
     SpeciesClass = SpeciesClass.Celestial,
+    CorpseVariantName = "",
+    NextStageName = "angel",
+    InitialLevel = 10,
+    MagicResistance = 30,
     MovementRate = 8,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "Flight", "FlightControl", "Infravisibility", "Infravision", "InvisibilityDetection", "Humanoidness" },
-    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "ElectricityResistance", 3 }, { "PoisonResistance", 3 }, { "VenomResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -43,4 +36,12 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "SleepResistance", "Flight", "FlightControl", "Infravisibility", "Infravision", "InvisibilityDetection", "Humanoidness" },
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "ElectricityResistance", 3 }, { "PoisonResistance", 3 }, { "VenomResistance", 3 } },
+    GenerationFlags = GenerationFlags.NoHell,
+    GenerationFrequency = Frequency.Sometimes,
+    Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
+    Alignment = 7,
+    Noise = ActorNoiseType.Speach
 }

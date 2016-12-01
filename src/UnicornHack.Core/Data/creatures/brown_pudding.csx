@@ -1,14 +1,27 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = 8,
-    GenerationFrequency = Frequency.Rarely,
     Name = "brown pudding",
     Species = Species.Pudding,
+    InitialLevel = 5,
+    ArmorClass = 8,
     MovementRate = 3,
-    Size = Size.Medium,
     Weight = 512,
+    Size = Size.Medium,
     Nutrition = 256,
+    Abilities = new List<Ability>
+    {
+        new Ability
+        {
+            Activation = AbilityActivation.OnTarget,
+            Action = AbilityAction.Touch,
+            Timeout = 1,
+            Effects = new AbilityEffect[] { new VenomDamage { Damage = 3 } }
+        }
+,
+        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new AbilityEffect[] { new VenomDamage { Damage = 3 } } },
+        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new VenomDamage { Damage = 3 } } }
+    }
+,
     SimpleProperties = new HashSet<string>
     {
         "SleepResistance",
@@ -22,7 +35,8 @@ new CreatureVariant
         "Mindlessness",
         "Asexuality",
         "Omnivorism",
-        "Reanimation"
+        "Reanimation",
+        "StoningResistance"
     }
 ,
     ValuedProperties = new Dictionary<string, Object>
@@ -48,26 +62,10 @@ new CreatureVariant
             3
         },
         {
-            "StoningResistance",
-            3
-        },
-        {
             "Stealthiness",
             3
         }
     }
 ,
-    Abilities = new List<Ability>
-    {
-        new Ability
-        {
-            Activation = AbilityActivation.OnTarget,
-            Action = AbilityAction.Touch,
-            Timeout = 1,
-            Effects = new AbilityEffect[] { new VenomDamage { Damage = 3 } }
-        }
-,
-        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new AbilityEffect[] { new VenomDamage { Damage = 3 } } },
-        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new VenomDamage { Damage = 3 } } }
-    }
+    GenerationFrequency = Frequency.Rarely
 }

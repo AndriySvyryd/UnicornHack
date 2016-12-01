@@ -1,20 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = 5,
-    GenerationFlags = GenerationFlags.SmallGroup,
-    GenerationFrequency = Frequency.Occasionally,
-    Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
-    Alignment = -3,
-    Noise = ActorNoiseType.Grunt,
-    NextStageName = "ogre lord",
     Name = "ogre",
     Species = Species.Ogre,
+    NextStageName = "ogre lord",
+    InitialLevel = 5,
+    ArmorClass = 5,
     MovementRate = 10,
-    Size = Size.Large,
     Weight = 1600,
+    Size = Size.Large,
     Nutrition = 500,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Carnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -32,4 +26,11 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Carnivorism" },
+    GenerationFlags = GenerationFlags.SmallGroup,
+    GenerationFrequency = Frequency.Occasionally,
+    Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
+    Alignment = -3,
+    Noise = ActorNoiseType.Grunt
 }

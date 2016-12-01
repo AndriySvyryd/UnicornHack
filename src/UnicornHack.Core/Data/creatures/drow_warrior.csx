@@ -1,20 +1,14 @@
 new CreatureVariant
 {
+    Name = "drow warrior",
+    Species = Species.Elf,
     InitialLevel = 7,
     ArmorClass = 10,
     MagicResistance = 50,
-    GenerationFlags = GenerationFlags.NonPolymorphable | GenerationFlags.SmallGroup,
-    GenerationFrequency = Frequency.Uncommonly,
-    Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.WeaponCollector,
-    Alignment = -9,
-    Noise = ActorNoiseType.Speach,
-    Name = "drow warrior",
-    Species = Species.Elf,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 800,
+    Size = Size.Medium,
     Nutrition = 350,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "InvisibilityDetection", "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -48,4 +42,11 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new Sleep { Duration = 5 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "SleepResistance", "InvisibilityDetection", "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFlags = GenerationFlags.NonPolymorphable | GenerationFlags.SmallGroup,
+    GenerationFrequency = Frequency.Uncommonly,
+    Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.WeaponCollector,
+    Alignment = -9,
+    Noise = ActorNoiseType.Speach
 }

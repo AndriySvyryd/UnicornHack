@@ -1,21 +1,14 @@
 new CreatureVariant
 {
+    Name = "olog-hai",
+    Species = Species.Troll,
     InitialLevel = 13,
     ArmorClass = -4,
     MagicResistance = 40,
-    GenerationFlags = GenerationFlags.NoHell,
-    GenerationFrequency = Frequency.Rarely,
-    Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
-    Alignment = -7,
-    Noise = ActorNoiseType.Grunt,
-    Name = "olog-hai",
-    Species = Species.Troll,
     MovementRate = 12,
-    Size = Size.Large,
     Weight = 1500,
+    Size = Size.Large,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Carnivorism", "Reanimation" },
-    ValuedProperties = new Dictionary<string, Object> { { "Regeneration", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -49,4 +42,12 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 7 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Carnivorism", "Reanimation" },
+    ValuedProperties = new Dictionary<string, Object> { { "Regeneration", 3 } },
+    GenerationFlags = GenerationFlags.NoHell,
+    GenerationFrequency = Frequency.Rarely,
+    Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
+    Alignment = -7,
+    Noise = ActorNoiseType.Grunt
 }

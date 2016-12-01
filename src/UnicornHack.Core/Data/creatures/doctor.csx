@@ -1,18 +1,12 @@
 new CreatureVariant
 {
-    InitialLevel = 11,
-    GenerationFlags = GenerationFlags.NonPolymorphable,
-    GenerationFrequency = Frequency.Occasionally,
-    Behavior = MonsterBehavior.RangedPeaceful,
-    Noise = ActorNoiseType.Doctor,
     Name = "doctor",
     Species = Species.Human,
+    InitialLevel = 11,
     MovementRate = 6,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Omnivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -23,4 +17,11 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new Heal { Amount = 7 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Omnivorism" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 } },
+    GenerationFlags = GenerationFlags.NonPolymorphable,
+    GenerationFrequency = Frequency.Occasionally,
+    Behavior = MonsterBehavior.RangedPeaceful,
+    Noise = ActorNoiseType.Doctor
 }

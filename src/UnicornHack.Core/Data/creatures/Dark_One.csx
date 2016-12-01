@@ -1,19 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 16,
-    MagicResistance = 60,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser | MonsterBehavior.Covetous,
-    Alignment = -10,
-    Noise = ActorNoiseType.Quest,
     Name = "Dark One",
     Species = Species.Human,
+    InitialLevel = 16,
+    MagicResistance = 60,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Omnivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "StoningResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -55,4 +49,10 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new StealAmulet() }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Omnivorism", "StoningResistance" },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser | MonsterBehavior.Covetous,
+    Alignment = -10,
+    Noise = ActorNoiseType.Quest
 }

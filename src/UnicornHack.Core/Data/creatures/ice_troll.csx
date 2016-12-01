@@ -1,21 +1,14 @@
 new CreatureVariant
 {
+    Name = "ice troll",
+    Species = Species.Troll,
     InitialLevel = 9,
     ArmorClass = 2,
     MagicResistance = 20,
-    GenerationFlags = GenerationFlags.NoHell,
-    GenerationFrequency = Frequency.Occasionally,
-    Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
-    Alignment = -3,
-    Noise = ActorNoiseType.Grunt,
-    Name = "ice troll",
-    Species = Species.Troll,
     MovementRate = 10,
-    Size = Size.Large,
     Weight = 1000,
+    Size = Size.Large,
     Nutrition = 350,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Carnivorism", "Reanimation" },
-    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "Regeneration", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -49,4 +42,12 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 7 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Carnivorism", "Reanimation" },
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "Regeneration", 3 } },
+    GenerationFlags = GenerationFlags.NoHell,
+    GenerationFrequency = Frequency.Occasionally,
+    Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
+    Alignment = -3,
+    Noise = ActorNoiseType.Grunt
 }

@@ -1,23 +1,17 @@
 new CreatureVariant
 {
-    InitialLevel = 7,
-    ArmorClass = -2,
-    MagicResistance = 55,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.SmallGroup | GenerationFlags.HellOnly,
-    GenerationFrequency = Frequency.Uncommonly,
-    Behavior = MonsterBehavior.Stalking,
-    Alignment = -10,
-    CorpseVariantName = "",
-    NextStageName = "marilith",
     Name = "hezrou",
     Species = Species.DemonMajor,
     SpeciesClass = SpeciesClass.Demon,
+    CorpseVariantName = "",
+    NextStageName = "marilith",
+    InitialLevel = 7,
+    ArmorClass = -2,
+    MagicResistance = 55,
     MovementRate = 6,
-    Size = Size.Large,
     Weight = 1600,
+    Size = Size.Large,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness" },
-    ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 }, { "PoisonResistance", 3 }, { "SicknessResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -46,4 +40,11 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 3 } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "SicknessResistance" },
+    ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 }, { "PoisonResistance", 3 } },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.SmallGroup | GenerationFlags.HellOnly,
+    GenerationFrequency = Frequency.Uncommonly,
+    Behavior = MonsterBehavior.Stalking,
+    Alignment = -10
 }

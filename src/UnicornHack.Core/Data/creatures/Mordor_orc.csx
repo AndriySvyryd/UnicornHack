@@ -1,19 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 3,
-    ArmorClass = 10,
-    GenerationFlags = GenerationFlags.LargeGroup,
-    GenerationFrequency = Frequency.Commonly,
-    Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector,
-    Alignment = -5,
-    Noise = ActorNoiseType.Grunt,
     Name = "Mordor orc",
     Species = Species.Orc,
+    InitialLevel = 3,
+    ArmorClass = 10,
     MovementRate = 9,
-    Size = Size.Medium,
     Weight = 1100,
+    Size = Size.Medium,
     Nutrition = 200,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -31,4 +25,11 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFlags = GenerationFlags.LargeGroup,
+    GenerationFrequency = Frequency.Commonly,
+    Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector,
+    Alignment = -5,
+    Noise = ActorNoiseType.Grunt
 }

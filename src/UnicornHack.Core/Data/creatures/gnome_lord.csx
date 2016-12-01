@@ -1,21 +1,16 @@
 new CreatureVariant
 {
+    Name = "gnome lord",
+    Species = Species.Gnome,
+    PreviousStageName = "gnome",
+    NextStageName = "gnome king",
     InitialLevel = 3,
     ArmorClass = 10,
     MagicResistance = 5,
-    GenerationFlags = GenerationFlags.NonPolymorphable,
-    GenerationFrequency = Frequency.Uncommonly,
-    Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector,
-    Noise = ActorNoiseType.Speach,
-    PreviousStageName = "gnome",
-    NextStageName = "gnome king",
-    Name = "gnome lord",
-    Species = Species.Gnome,
     MovementRate = 8,
-    Size = Size.Small,
     Weight = 700,
+    Size = Size.Small,
     Nutrition = 250,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Maleness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -33,4 +28,10 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Maleness", "Omnivorism" },
+    GenerationFlags = GenerationFlags.NonPolymorphable,
+    GenerationFrequency = Frequency.Uncommonly,
+    Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector,
+    Noise = ActorNoiseType.Speach
 }

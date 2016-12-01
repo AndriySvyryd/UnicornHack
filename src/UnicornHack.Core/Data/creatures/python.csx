@@ -1,17 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 6,
-    ArmorClass = 5,
-    GenerationFrequency = Frequency.Uncommonly,
-    Noise = ActorNoiseType.Hiss,
     Name = "python",
     Species = Species.Snake,
     SpeciesClass = SpeciesClass.Reptile,
+    InitialLevel = 6,
+    ArmorClass = 5,
     MovementRate = 3,
-    Size = Size.Medium,
     Weight = 250,
+    Size = Size.Medium,
     Nutrition = 125,
-    SimpleProperties = new HashSet<string> { "Swimming", "Infravision", "SerpentlikeBody", "Limblessness", "Oviparity", "Carnivorism", "NoInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -38,4 +35,8 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new Bind { Duration = 2 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Swimming", "Infravision", "SerpentlikeBody", "Limblessness", "Oviparity", "Carnivorism", "NoInventory" },
+    GenerationFrequency = Frequency.Uncommonly,
+    Noise = ActorNoiseType.Hiss
 }

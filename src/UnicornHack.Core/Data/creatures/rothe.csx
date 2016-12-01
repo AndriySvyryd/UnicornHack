@@ -1,18 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 2,
-    ArmorClass = 7,
-    GenerationFlags = GenerationFlags.SmallGroup,
-    GenerationFrequency = Frequency.Sometimes,
-    Noise = ActorNoiseType.Bleat,
     Name = "rothe",
     Species = Species.Quadruped,
     SpeciesClass = SpeciesClass.Quadrupedal,
+    InitialLevel = 2,
+    ArmorClass = 7,
     MovementRate = 9,
-    Size = Size.Medium,
     Weight = 600,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Blindness", "AnimalBody", "Infravisibility", "Handlessness", "Herbivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -31,4 +27,9 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Blindness", "AnimalBody", "Infravisibility", "Handlessness", "Herbivorism", "SingularInventory" },
+    GenerationFlags = GenerationFlags.SmallGroup,
+    GenerationFrequency = Frequency.Sometimes,
+    Noise = ActorNoiseType.Bleat
 }

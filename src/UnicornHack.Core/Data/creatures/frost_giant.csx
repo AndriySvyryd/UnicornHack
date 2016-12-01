@@ -1,21 +1,14 @@
 new CreatureVariant
 {
+    Name = "frost giant",
+    Species = Species.Giant,
     InitialLevel = 10,
     ArmorClass = 3,
     MagicResistance = 10,
-    GenerationFlags = GenerationFlags.SmallGroup | GenerationFlags.NoHell,
-    GenerationFrequency = Frequency.Uncommonly,
-    Behavior = MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
-    Alignment = -3,
-    Noise = ActorNoiseType.Boast,
-    Name = "frost giant",
-    Species = Species.Giant,
     MovementRate = 12,
-    Size = Size.Huge,
     Weight = 2250,
+    Size = Size.Huge,
     Nutrition = 750,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -33,4 +26,12 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 } },
+    GenerationFlags = GenerationFlags.SmallGroup | GenerationFlags.NoHell,
+    GenerationFrequency = Frequency.Uncommonly,
+    Behavior = MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
+    Alignment = -3,
+    Noise = ActorNoiseType.Boast
 }

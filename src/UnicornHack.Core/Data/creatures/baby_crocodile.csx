@@ -1,17 +1,15 @@
 new CreatureVariant
 {
-    InitialLevel = 6,
-    ArmorClass = 6,
-    GenerationFrequency = Frequency.Uncommonly,
-    NextStageName = "crocodile",
     Name = "baby crocodile",
     Species = Species.Crocodile,
     SpeciesClass = SpeciesClass.Reptile,
+    NextStageName = "crocodile",
+    InitialLevel = 6,
+    ArmorClass = 6,
     MovementRate = 6,
-    Size = Size.Small,
     Weight = 200,
+    Size = Size.Small,
     Nutrition = 200,
-    SimpleProperties = new HashSet<string> { "Swimming", "Amphibiousness", "Handlessness", "Carnivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -22,4 +20,7 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 6 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Swimming", "Amphibiousness", "Handlessness", "Carnivorism", "SingularInventory" },
+    GenerationFrequency = Frequency.Uncommonly
 }

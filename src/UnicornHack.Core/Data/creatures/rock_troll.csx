@@ -1,19 +1,12 @@
 new CreatureVariant
 {
-    InitialLevel = 9,
-    GenerationFlags = GenerationFlags.NoHell,
-    GenerationFrequency = Frequency.Uncommonly,
-    Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
-    Alignment = -3,
-    Noise = ActorNoiseType.Grunt,
     Name = "rock troll",
     Species = Species.Troll,
+    InitialLevel = 9,
     MovementRate = 12,
-    Size = Size.Large,
     Weight = 1200,
+    Size = Size.Large,
     Nutrition = 350,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Carnivorism", "Reanimation" },
-    ValuedProperties = new Dictionary<string, Object> { { "Regeneration", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -47,4 +40,12 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 7 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Carnivorism", "Reanimation" },
+    ValuedProperties = new Dictionary<string, Object> { { "Regeneration", 3 } },
+    GenerationFlags = GenerationFlags.NoHell,
+    GenerationFrequency = Frequency.Uncommonly,
+    Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
+    Alignment = -3,
+    Noise = ActorNoiseType.Grunt
 }

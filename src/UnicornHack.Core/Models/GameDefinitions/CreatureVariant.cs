@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using CSharpScriptSerialization;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Models.GameDefinitions
 {
-    public class CreatureVariant : ActorVariant
+    public class CreatureVariant : ActorVariant, ICSScriptSerializable
     {
         public byte InitialLevel { get; set; }
         public sbyte ArmorClass { get; set; }
@@ -78,5 +79,39 @@ namespace UnicornHack.Models.GameDefinitions
             NameLookup[variant.Name] = variant;
             return variant;
         }
+
+        private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<CreatureVariant>(
+            new Dictionary<string, Func<CreatureVariant, object>>
+            {
+                {nameof(Name), o => o.Name},
+                {nameof(Species), o => o.Species},
+                {nameof(SpeciesClass), o => o.SpeciesClass},
+                {nameof(CorpseVariantName), o => o.CorpseVariantName},
+                {nameof(PreviousStageName), o => o.PreviousStageName},
+                {nameof(NextStageName), o => o.NextStageName},
+                {nameof(InitialLevel), o => o.InitialLevel},
+                {nameof(ArmorClass), o => o.ArmorClass},
+                {nameof(MagicResistance), o => o.MagicResistance},
+                {nameof(MovementRate), o => o.MovementRate},
+                {nameof(Weight), o => o.Weight},
+                {nameof(Size), o => o.Size},
+                {nameof(Nutrition), o => o.Nutrition},
+                {nameof(Material), o => o.Material},
+                {nameof(Abilities), o => o.Abilities},
+                {nameof(SimpleProperties), o => o.SimpleProperties},
+                {nameof(ValuedProperties), o => o.ValuedProperties},
+                {nameof(GenerationFlags), o => o.GenerationFlags},
+                {nameof(GenerationFrequency), o => o.GenerationFrequency},
+                {nameof(Behavior), o => o.Behavior},
+                {nameof(Alignment), o => o.Alignment},
+                {nameof(Noise), o => o.Noise}
+            },
+            new Func<CreatureVariant, object>[0],
+            new Dictionary<string, Func<CreatureVariant, object>>
+            {
+                {nameof(Material), o => Material.Flesh}
+            });
+
+        public ICSScriptSerializer GetSerializer() => Serializer;
     }
 }

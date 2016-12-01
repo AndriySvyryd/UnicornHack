@@ -1,20 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 16,
-    ArmorClass = 3,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.Covetous,
-    Alignment = -15,
-    Noise = ActorNoiseType.Quest,
     Name = "Scorpius",
     Species = Species.Scorpion,
     SpeciesClass = SpeciesClass.Vermin,
+    InitialLevel = 16,
+    ArmorClass = 3,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Handlessness", "Maleness", "Carnivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "StoningResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -36,4 +30,11 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 7 } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Handlessness", "Maleness", "Carnivorism", "StoningResistance" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 } },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.Covetous,
+    Alignment = -15,
+    Noise = ActorNoiseType.Quest
 }

@@ -1,17 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 10,
-    ArmorClass = 3,
-    GenerationFrequency = Frequency.Uncommonly,
-    Behavior = MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
-    Noise = ActorNoiseType.Boast,
     Name = "ettin",
     Species = Species.Giant,
+    InitialLevel = 10,
+    ArmorClass = 3,
     MovementRate = 12,
-    Size = Size.Huge,
     Weight = 2250,
+    Size = Size.Huge,
     Nutrition = 750,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -37,4 +33,9 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFrequency = Frequency.Uncommonly,
+    Behavior = MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
+    Noise = ActorNoiseType.Boast
 }

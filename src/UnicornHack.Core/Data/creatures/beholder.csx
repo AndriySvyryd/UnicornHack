@@ -1,33 +1,15 @@
 new CreatureVariant
 {
-    InitialLevel = 8,
-    ArmorClass = 4,
-    MagicResistance = 35,
-    GenerationFlags = GenerationFlags.NonPolymorphable,
-    GenerationFrequency = Frequency.Occasionally,
-    Behavior = MonsterBehavior.Wandering,
-    Alignment = -10,
     Name = "beholder",
     Species = Species.FloatingSphere,
     SpeciesClass = SpeciesClass.Aberration,
+    InitialLevel = 8,
+    ArmorClass = 4,
+    MagicResistance = 35,
     MovementRate = 4,
-    Size = Size.Medium,
     Weight = 250,
+    Size = Size.Medium,
     Nutrition = 50,
-    SimpleProperties = new HashSet<string>
-    {
-        "Levitation",
-        "FlightControl",
-        "Infravision",
-        "Infravisibility",
-        "Breathlessness",
-        "Limblessness",
-        "Headlessness",
-        "Asexuality",
-        "NoInventory"
-    }
-,
-    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "DangerAwareness", 3 }, { "Stealthiness", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -73,4 +55,23 @@ new CreatureVariant
         new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Gaze, Timeout = 7, Effects = new AbilityEffect[] { new Stone() } },
         new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Gaze, Timeout = 7, Effects = new AbilityEffect[] { new Disenchant() } }
     }
+,
+    SimpleProperties = new HashSet<string>
+    {
+        "Flight",
+        "FlightControl",
+        "Infravision",
+        "Infravisibility",
+        "Breathlessness",
+        "Limblessness",
+        "Headlessness",
+        "Asexuality",
+        "NoInventory"
+    }
+,
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "DangerAwareness", 3 }, { "Stealthiness", 3 } },
+    GenerationFlags = GenerationFlags.NonPolymorphable,
+    GenerationFrequency = Frequency.Occasionally,
+    Behavior = MonsterBehavior.Wandering,
+    Alignment = -10
 }

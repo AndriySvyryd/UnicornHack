@@ -1,15 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 7,
-    ArmorClass = 2,
     Name = "shark",
     Species = Species.Fish,
+    InitialLevel = 7,
+    ArmorClass = 2,
     MovementRate = 12,
-    Size = Size.Large,
     Weight = 1000,
+    Size = Size.Large,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Swimming", "WaterBreathing", "Limblessness", "Oviparity", "Carnivorism", "NoInventory" },
-    ValuedProperties = new Dictionary<string, Object> { { "ThickHide", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -20,4 +18,7 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 17 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Swimming", "WaterBreathing", "Limblessness", "Oviparity", "Carnivorism", "NoInventory" },
+    ValuedProperties = new Dictionary<string, Object> { { "ThickHide", 3 } }
 }

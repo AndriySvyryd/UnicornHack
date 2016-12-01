@@ -1,21 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = 6,
-    MagicResistance = 30,
-    GenerationFlags = GenerationFlags.SmallGroup,
-    GenerationFrequency = Frequency.Occasionally,
-    Noise = ActorNoiseType.Hiss,
-    PreviousStageName = "chickatrice",
     Name = "cockatrice",
     Species = Species.Cockatrice,
     SpeciesClass = SpeciesClass.MagicalBeast,
+    PreviousStageName = "chickatrice",
+    InitialLevel = 5,
+    ArmorClass = 6,
+    MagicResistance = 30,
     MovementRate = 6,
-    Size = Size.Small,
     Weight = 30,
+    Size = Size.Small,
     Nutrition = 30,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Oviparity", "Omnivorism", "SingularInventory" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "StoningResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -30,4 +25,10 @@ new CreatureVariant
         new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new AbilityEffect[] { new Stone() } },
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new Stone() } }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Oviparity", "Omnivorism", "SingularInventory", "StoningResistance" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 } },
+    GenerationFlags = GenerationFlags.SmallGroup,
+    GenerationFrequency = Frequency.Occasionally,
+    Noise = ActorNoiseType.Hiss
 }

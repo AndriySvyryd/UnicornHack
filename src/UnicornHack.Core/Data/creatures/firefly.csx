@@ -1,18 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 1,
-    ArmorClass = 9,
-    GenerationFlags = GenerationFlags.SmallGroup,
-    GenerationFrequency = Frequency.Sometimes,
-    Noise = ActorNoiseType.Buzz,
     Name = "firefly",
     Species = Species.Beetle,
     SpeciesClass = SpeciesClass.Vermin,
+    InitialLevel = 1,
+    ArmorClass = 9,
     MovementRate = 12,
-    Size = Size.Tiny,
     Weight = 10,
+    Size = Size.Tiny,
     Nutrition = 10,
-    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "Infravisibility", "AnimalBody", "Handlessness", "Herbivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -25,4 +21,9 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new FireDamage { Damage = 1 } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "Infravisibility", "AnimalBody", "Handlessness", "Herbivorism" },
+    GenerationFlags = GenerationFlags.SmallGroup,
+    GenerationFrequency = Frequency.Sometimes,
+    Noise = ActorNoiseType.Buzz
 }

@@ -1,16 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 3,
-    ArmorClass = 7,
-    GenerationFrequency = Frequency.Sometimes,
     Name = "iguana",
     Species = Species.Lizard,
     SpeciesClass = SpeciesClass.Reptile,
+    InitialLevel = 3,
+    ArmorClass = 7,
     MovementRate = 6,
-    Size = Size.Small,
     Weight = 50,
+    Size = Size.Small,
     Nutrition = 50,
-    SimpleProperties = new HashSet<string> { "Handlessness", "Oviparity", "Carnivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -21,4 +19,7 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Handlessness", "Oviparity", "Carnivorism", "SingularInventory" },
+    GenerationFrequency = Frequency.Sometimes
 }

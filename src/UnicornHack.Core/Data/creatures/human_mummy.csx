@@ -1,21 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 6,
-    ArmorClass = 4,
-    MagicResistance = 20,
-    GenerationFrequency = Frequency.Sometimes,
-    Alignment = -5,
-    Noise = ActorNoiseType.Moan,
-    CorpseVariantName = "human",
     Name = "human mummy",
     Species = Species.Human,
     SpeciesClass = SpeciesClass.Undead,
+    CorpseVariantName = "human",
+    InitialLevel = 6,
+    ArmorClass = 4,
+    MagicResistance = 20,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 200,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "Infravision", "Humanoidness", "Breathlessness" },
-    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 }, { "SicknessResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -28,4 +23,10 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new Infect { } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "SleepResistance", "Infravision", "Humanoidness", "Breathlessness", "SicknessResistance" },
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 } },
+    GenerationFrequency = Frequency.Sometimes,
+    Alignment = -5,
+    Noise = ActorNoiseType.Moan
 }

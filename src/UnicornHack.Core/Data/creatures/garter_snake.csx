@@ -1,18 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 1,
-    ArmorClass = 8,
-    GenerationFlags = GenerationFlags.LargeGroup,
-    GenerationFrequency = Frequency.Uncommonly,
-    Noise = ActorNoiseType.Hiss,
     Name = "garter snake",
     Species = Species.Snake,
     SpeciesClass = SpeciesClass.Reptile,
+    InitialLevel = 1,
+    ArmorClass = 8,
     MovementRate = 8,
-    Size = Size.Tiny,
     Weight = 50,
+    Size = Size.Tiny,
     Nutrition = 25,
-    SimpleProperties = new HashSet<string> { "Swimming", "Concealment", "Infravision", "SerpentlikeBody", "Limblessness", "Oviparity", "Carnivorism", "NoInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -23,4 +19,9 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Swimming", "Concealment", "Infravision", "SerpentlikeBody", "Limblessness", "Oviparity", "Carnivorism", "NoInventory" },
+    GenerationFlags = GenerationFlags.LargeGroup,
+    GenerationFrequency = Frequency.Uncommonly,
+    Noise = ActorNoiseType.Hiss
 }

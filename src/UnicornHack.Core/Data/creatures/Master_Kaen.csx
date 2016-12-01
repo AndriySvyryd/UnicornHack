@@ -1,19 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 16,
-    MagicResistance = 10,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.MagicUser | MonsterBehavior.Covetous,
-    Alignment = -16,
-    Noise = ActorNoiseType.Quest,
     Name = "Master Kaen",
     Species = Species.Human,
+    InitialLevel = 16,
+    MagicResistance = 10,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "InvisibilityDetection", "Infravisibility", "Humanoidness", "Maleness", "Herbivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "StoningResistance", 3 }, { "PoisonResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -40,4 +34,11 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new StealAmulet() }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "InvisibilityDetection", "Infravisibility", "Humanoidness", "Maleness", "Herbivorism", "StoningResistance" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 } },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.MagicUser | MonsterBehavior.Covetous,
+    Alignment = -16,
+    Noise = ActorNoiseType.Quest
 }

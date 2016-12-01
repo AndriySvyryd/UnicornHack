@@ -1,15 +1,24 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = 8,
-    GenerationFrequency = Frequency.Usually,
-    Behavior = MonsterBehavior.Wandering,
     Name = "quivering blob",
     Species = Species.Blob,
+    InitialLevel = 5,
+    ArmorClass = 8,
     MovementRate = 1,
-    Size = Size.Small,
     Weight = 200,
+    Size = Size.Small,
     Nutrition = 100,
+    Abilities = new List<Ability>
+    {
+        new Ability
+        {
+            Activation = AbilityActivation.OnTarget,
+            Action = AbilityAction.Touch,
+            Timeout = 1,
+            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 4 } }
+        }
+    }
+,
     SimpleProperties = new HashSet<string>
     {
         "SleepResistance",
@@ -25,14 +34,6 @@ new CreatureVariant
     }
 ,
     ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "Stealthiness", 3 } },
-    Abilities = new List<Ability>
-    {
-        new Ability
-        {
-            Activation = AbilityActivation.OnTarget,
-            Action = AbilityAction.Touch,
-            Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 4 } }
-        }
-    }
+    GenerationFrequency = Frequency.Usually,
+    Behavior = MonsterBehavior.Wandering
 }

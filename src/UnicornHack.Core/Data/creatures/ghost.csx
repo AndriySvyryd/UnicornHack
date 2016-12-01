@@ -1,59 +1,15 @@
 new CreatureVariant
 {
-    InitialLevel = 10,
-    ArmorClass = -5,
-    MagicResistance = 15,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.Wandering | MonsterBehavior.Stalking,
-    Alignment = -6,
-    CorpseVariantName = "",
-    NextStageName = "shade",
     Name = "ghost",
     Species = Species.Ghost,
     SpeciesClass = SpeciesClass.Undead,
+    CorpseVariantName = "",
+    NextStageName = "shade",
+    InitialLevel = 10,
+    ArmorClass = -5,
+    MagicResistance = 15,
     MovementRate = 3,
     Size = Size.Medium,
-    SimpleProperties = new HashSet<string>
-    {
-        "SleepResistance",
-        "Flight",
-        "FlightControl",
-        "Phasing",
-        "Infravision",
-        "NonSolidBody",
-        "Humanoidness",
-        "Breathlessness",
-        "NoInventory"
-    }
-,
-    ValuedProperties = new Dictionary<string, Object>
-    {
-        {
-            "ColdResistance",
-            3
-        },
-        {
-            "DisintegrationResistance",
-            3
-        },
-        {
-            "PoisonResistance",
-            3
-        },
-        {
-            "SicknessResistance",
-            3
-        },
-        {
-            "StoningResistance",
-            3
-        },
-        {
-            "SlimingResistance",
-            3
-        }
-    }
-,
     Abilities = new List<Ability>
     {
         new Ability
@@ -64,4 +20,25 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string>
+    {
+        "SleepResistance",
+        "Flight",
+        "FlightControl",
+        "Phasing",
+        "Infravision",
+        "NonSolidBody",
+        "Humanoidness",
+        "Breathlessness",
+        "NoInventory",
+        "StoningResistance",
+        "SlimingResistance",
+        "SicknessResistance"
+    }
+,
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "DisintegrationResistance", 3 }, { "PoisonResistance", 3 } },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.Wandering | MonsterBehavior.Stalking,
+    Alignment = -6
 }

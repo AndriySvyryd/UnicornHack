@@ -1,21 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 3,
-    ArmorClass = 6,
-    MagicResistance = 10,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-    Alignment = -7,
-    Noise = ActorNoiseType.Sqeek,
-    CorpseVariantName = "",
     Name = "ratwere",
     Species = Species.Rat,
     SpeciesClass = SpeciesClass.Rodent | SpeciesClass.ShapeChanger,
+    CorpseVariantName = "",
+    InitialLevel = 3,
+    ArmorClass = 6,
+    MagicResistance = 10,
     MovementRate = 12,
-    Size = Size.Small,
     Weight = 150,
+    Size = Size.Small,
     Nutrition = 50,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "Regeneration", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -36,4 +31,10 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new ConferLycanthropy { VariantName = "ratwere" } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "Regeneration", 3 } },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+    Alignment = -7,
+    Noise = ActorNoiseType.Sqeek
 }

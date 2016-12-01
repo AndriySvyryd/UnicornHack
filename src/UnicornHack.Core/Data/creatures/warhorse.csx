@@ -1,19 +1,15 @@
 new CreatureVariant
 {
-    InitialLevel = 7,
-    ArmorClass = 4,
-    GenerationFrequency = Frequency.Often,
-    Behavior = MonsterBehavior.Domesticable | MonsterBehavior.Mountable | MonsterBehavior.Wandering,
-    Noise = ActorNoiseType.Neigh,
-    PreviousStageName = "horse",
     Name = "warhorse",
     Species = Species.Horse,
     SpeciesClass = SpeciesClass.Quadrupedal,
+    PreviousStageName = "horse",
+    InitialLevel = 7,
+    ArmorClass = 4,
     MovementRate = 24,
-    Size = Size.Large,
     Weight = 1800,
+    Size = Size.Large,
     Nutrition = 1300,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Herbivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -24,4 +20,9 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 5 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Herbivorism", "SingularInventory" },
+    GenerationFrequency = Frequency.Often,
+    Behavior = MonsterBehavior.Domesticable | MonsterBehavior.Mountable | MonsterBehavior.Wandering,
+    Noise = ActorNoiseType.Neigh
 }

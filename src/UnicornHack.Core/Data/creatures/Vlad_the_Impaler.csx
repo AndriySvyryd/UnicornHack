@@ -1,21 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 14,
-    ArmorClass = -3,
-    MagicResistance = 80,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector | MonsterBehavior.Covetous,
-    Alignment = -10,
-    CorpseVariantName = "",
     Name = "Vlad the Impaler",
     Species = Species.Vampire,
     SpeciesClass = SpeciesClass.ShapeChanger | SpeciesClass.Undead,
+    CorpseVariantName = "",
+    InitialLevel = 14,
+    ArmorClass = -3,
+    MagicResistance = 80,
     MovementRate = 18,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "Flight", "FlightControl", "Infravision", "Humanoidness", "Breathlessness", "Maleness" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "SicknessResistance", 3 }, { "Regeneration", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -43,4 +38,21 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new Infect { } } }
     }
+,
+    SimpleProperties = new HashSet<string>
+    {
+        "SleepResistance",
+        "Flight",
+        "FlightControl",
+        "Infravision",
+        "Humanoidness",
+        "Breathlessness",
+        "Maleness",
+        "SicknessResistance"
+    }
+,
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "Regeneration", 3 } },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector | MonsterBehavior.Covetous,
+    Alignment = -10
 }

@@ -1,15 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = -1,
-    NextStageName = "electric eel",
     Name = "giant eel",
     Species = Species.Eel,
+    NextStageName = "electric eel",
+    InitialLevel = 5,
+    ArmorClass = -1,
     MovementRate = 9,
-    Size = Size.Large,
     Weight = 600,
+    Size = Size.Large,
     Nutrition = 300,
-    SimpleProperties = new HashSet<string> { "Swimming", "WaterBreathing", "Limblessness", "Oviparity", "Carnivorism", "NoInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -28,4 +27,6 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new Bind { Duration = 7 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Swimming", "WaterBreathing", "Limblessness", "Oviparity", "Carnivorism", "NoInventory" }
 }

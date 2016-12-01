@@ -1,17 +1,35 @@
 new CreatureVariant
 {
-    InitialLevel = 30,
-    ArmorClass = -5,
-    MagicResistance = 100,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable | GenerationFlags.HellOnly,
-    Behavior = MonsterBehavior.Stalking | MonsterBehavior.Displacing,
-    Noise = ActorNoiseType.Rider,
     Name = "Death",
     Species = Species.Horseman,
     SpeciesClass = SpeciesClass.Extraplanar,
+    InitialLevel = 30,
+    ArmorClass = -5,
+    MagicResistance = 100,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
+    Abilities = new List<Ability>
+    {
+        new Ability
+        {
+            Activation = AbilityActivation.OnTarget,
+            Action = AbilityAction.Touch,
+            Timeout = 1,
+            Effects = new AbilityEffect[] { new ScriptedEffect { Script = "Death" } }
+        }
+,
+        new Ability
+        {
+            Activation = AbilityActivation.OnTarget,
+            Action = AbilityAction.Touch,
+            Timeout = 1,
+            Effects = new AbilityEffect[] { new ScriptedEffect { Script = "Death" } }
+        }
+,
+        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new ScriptedEffect { Script = "Death" } } }
+    }
+,
     SimpleProperties = new HashSet<string>
     {
         "SleepResistance",
@@ -26,7 +44,10 @@ new CreatureVariant
         "Infravision",
         "InvisibilityDetection",
         "Humanoidness",
-        "Maleness"
+        "Maleness",
+        "StoningResistance",
+        "SlimingResistance",
+        "SicknessResistance"
     }
 ,
     ValuedProperties = new Dictionary<string, Object>
@@ -56,41 +77,12 @@ new CreatureVariant
             3
         },
         {
-            "SicknessResistance",
-            3
-        },
-        {
-            "StoningResistance",
-            3
-        },
-        {
-            "SlimingResistance",
-            3
-        },
-        {
             "Regeneration",
             3
         }
     }
 ,
-    Abilities = new List<Ability>
-    {
-        new Ability
-        {
-            Activation = AbilityActivation.OnTarget,
-            Action = AbilityAction.Touch,
-            Timeout = 1,
-            Effects = new AbilityEffect[] { new ScriptedEffect { Script = "Death" } }
-        }
-,
-        new Ability
-        {
-            Activation = AbilityActivation.OnTarget,
-            Action = AbilityAction.Touch,
-            Timeout = 1,
-            Effects = new AbilityEffect[] { new ScriptedEffect { Script = "Death" } }
-        }
-,
-        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new ScriptedEffect { Script = "Death" } } }
-    }
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable | GenerationFlags.HellOnly,
+    Behavior = MonsterBehavior.Stalking | MonsterBehavior.Displacing,
+    Noise = ActorNoiseType.Rider
 }

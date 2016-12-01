@@ -1,20 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = 10,
-    GenerationFlags = GenerationFlags.Entourage,
-    GenerationFrequency = Frequency.Sometimes,
-    Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector,
-    Alignment = -5,
-    Noise = ActorNoiseType.Grunt,
-    PreviousStageName = "orc",
     Name = "orc captain",
     Species = Species.Orc,
+    PreviousStageName = "orc",
+    InitialLevel = 5,
+    ArmorClass = 10,
     MovementRate = 9,
-    Size = Size.Medium,
     Weight = 1350,
+    Size = Size.Medium,
     Nutrition = 350,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -32,4 +26,11 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFlags = GenerationFlags.Entourage,
+    GenerationFrequency = Frequency.Sometimes,
+    Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector,
+    Alignment = -5,
+    Noise = ActorNoiseType.Grunt
 }

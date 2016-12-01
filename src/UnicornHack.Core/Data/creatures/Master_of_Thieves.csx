@@ -1,19 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 16,
-    ArmorClass = 10,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.Peaceful | MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser,
-    Alignment = -10,
-    Noise = ActorNoiseType.Quest,
     Name = "Master of Thieves",
     Species = Species.Human,
+    InitialLevel = 16,
+    ArmorClass = 10,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Maleness", "Omnivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "StoningResistance", 3 }, { "Stealthiness", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -39,4 +33,11 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Maleness", "Omnivorism", "StoningResistance" },
+    ValuedProperties = new Dictionary<string, Object> { { "Stealthiness", 3 } },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.Peaceful | MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser,
+    Alignment = -10,
+    Noise = ActorNoiseType.Quest
 }

@@ -1,21 +1,15 @@
 new CreatureVariant
 {
+    Name = "dwarf",
+    Species = Species.Dwarf,
+    NextStageName = "dwarf lord",
     InitialLevel = 2,
     ArmorClass = 10,
     MagicResistance = 10,
-    GenerationFlags = GenerationFlags.NonPolymorphable,
-    GenerationFrequency = Frequency.Sometimes,
-    Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
-    Alignment = 4,
-    Noise = ActorNoiseType.Speach,
-    NextStageName = "dwarf lord",
-    Name = "dwarf",
-    Species = Species.Dwarf,
     MovementRate = 6,
-    Size = Size.Medium,
     Weight = 900,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "ToolTunneling", "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -33,4 +27,11 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "ToolTunneling", "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFlags = GenerationFlags.NonPolymorphable,
+    GenerationFrequency = Frequency.Sometimes,
+    Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
+    Alignment = 4,
+    Noise = ActorNoiseType.Speach
 }

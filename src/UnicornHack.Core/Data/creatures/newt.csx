@@ -1,16 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 1,
-    ArmorClass = 8,
-    GenerationFrequency = Frequency.Commonly,
     Name = "newt",
     Species = Species.Lizard,
     SpeciesClass = SpeciesClass.Reptile,
+    InitialLevel = 1,
+    ArmorClass = 8,
     MovementRate = 6,
-    Size = Size.Tiny,
     Weight = 10,
+    Size = Size.Tiny,
     Nutrition = 10,
-    SimpleProperties = new HashSet<string> { "Swimming", "Amphibiousness", "Handlessness", "Oviparity", "Carnivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -21,4 +19,7 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Swimming", "Amphibiousness", "Handlessness", "Oviparity", "Carnivorism", "SingularInventory" },
+    GenerationFrequency = Frequency.Commonly
 }

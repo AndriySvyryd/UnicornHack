@@ -1,19 +1,14 @@
 new CreatureVariant
 {
+    Name = "forest centaur",
+    Species = Species.Centaur,
     InitialLevel = 5,
     ArmorClass = 3,
     MagicResistance = 10,
-    GenerationFrequency = Frequency.Commonly,
-    Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector,
-    Alignment = -1,
-    Noise = ActorNoiseType.Speach,
-    Name = "forest centaur",
-    Species = Species.Centaur,
     MovementRate = 18,
-    Size = Size.Large,
     Weight = 2000,
+    Size = Size.Large,
     Nutrition = 800,
-    SimpleProperties = new HashSet<string> { "Infravisibility", "HumanoidTorso", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -39,4 +34,10 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 3 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravisibility", "HumanoidTorso", "Omnivorism" },
+    GenerationFrequency = Frequency.Commonly,
+    Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector,
+    Alignment = -1,
+    Noise = ActorNoiseType.Speach
 }

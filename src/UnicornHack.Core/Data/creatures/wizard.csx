@@ -1,20 +1,15 @@
 new CreatureVariant
 {
+    Name = "wizard",
+    Species = Species.Human,
+    PreviousStageName = "apprentice",
     InitialLevel = 10,
     ArmorClass = 10,
     MagicResistance = 20,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.Peaceful | MonsterBehavior.GoldCollector | MonsterBehavior.MagicUser,
-    Noise = ActorNoiseType.Speach,
-    PreviousStageName = "apprentice",
-    Name = "wizard",
-    Species = Species.Human,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Omnivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -25,4 +20,10 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new ScriptedEffect { Script = "ArcaneSpell" } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Omnivorism" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 } },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.Peaceful | MonsterBehavior.GoldCollector | MonsterBehavior.MagicUser,
+    Noise = ActorNoiseType.Speach
 }

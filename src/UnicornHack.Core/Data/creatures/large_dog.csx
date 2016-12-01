@@ -1,19 +1,15 @@
 new CreatureVariant
 {
-    InitialLevel = 6,
-    ArmorClass = 4,
-    GenerationFrequency = Frequency.Often,
-    Behavior = MonsterBehavior.Domesticable | MonsterBehavior.Wandering,
-    Noise = ActorNoiseType.Bark,
-    PreviousStageName = "dog",
     Name = "large dog",
     Species = Species.Dog,
     SpeciesClass = SpeciesClass.Canine,
+    PreviousStageName = "dog",
+    InitialLevel = 6,
+    ArmorClass = 4,
     MovementRate = 15,
-    Size = Size.Medium,
     Weight = 600,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -24,4 +20,9 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 5 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
+    GenerationFrequency = Frequency.Often,
+    Behavior = MonsterBehavior.Domesticable | MonsterBehavior.Wandering,
+    Noise = ActorNoiseType.Bark
 }

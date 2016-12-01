@@ -1,23 +1,17 @@
 new CreatureVariant
 {
-    InitialLevel = 12,
-    MagicResistance = 40,
-    GenerationFrequency = Frequency.Rarely,
-    Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
-    Alignment = -9,
-    Noise = ActorNoiseType.Vampire,
-    CorpseVariantName = "",
-    PreviousStageName = "vampire",
-    NextStageName = "vampire mage",
     Name = "vampire lord",
     Species = Species.Vampire,
     SpeciesClass = SpeciesClass.ShapeChanger | SpeciesClass.Undead,
+    CorpseVariantName = "",
+    PreviousStageName = "vampire",
+    NextStageName = "vampire mage",
+    InitialLevel = 12,
+    MagicResistance = 40,
     MovementRate = 14,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "Flight", "FlightControl", "Infravision", "Humanoidness", "Breathlessness", "Maleness" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "SicknessResistance", 3 }, { "Regeneration", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -45,4 +39,22 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new Infect { } } }
     }
+,
+    SimpleProperties = new HashSet<string>
+    {
+        "SleepResistance",
+        "Flight",
+        "FlightControl",
+        "Infravision",
+        "Humanoidness",
+        "Breathlessness",
+        "Maleness",
+        "SicknessResistance"
+    }
+,
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "Regeneration", 3 } },
+    GenerationFrequency = Frequency.Rarely,
+    Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
+    Alignment = -9,
+    Noise = ActorNoiseType.Vampire
 }

@@ -1,18 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 7,
-    ArmorClass = 2,
-    GenerationFrequency = Frequency.Uncommonly,
-    Noise = ActorNoiseType.Hiss,
     Name = "cobra",
     Species = Species.Snake,
     SpeciesClass = SpeciesClass.Reptile,
+    InitialLevel = 7,
+    ArmorClass = 2,
     MovementRate = 18,
-    Size = Size.Medium,
     Weight = 250,
+    Size = Size.Medium,
     Nutrition = 100,
-    SimpleProperties = new HashSet<string> { "Swimming", "Concealment", "Infravision", "SerpentlikeBody", "Limblessness", "Oviparity", "Carnivorism", "NoInventory" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -31,4 +27,9 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new Blind { Duration = 5 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Swimming", "Concealment", "Infravision", "SerpentlikeBody", "Limblessness", "Oviparity", "Carnivorism", "NoInventory" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 } },
+    GenerationFrequency = Frequency.Uncommonly,
+    Noise = ActorNoiseType.Hiss
 }

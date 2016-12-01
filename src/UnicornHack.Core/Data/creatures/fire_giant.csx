@@ -1,21 +1,14 @@
 new CreatureVariant
 {
+    Name = "fire giant",
+    Species = Species.Giant,
     InitialLevel = 9,
     ArmorClass = 4,
     MagicResistance = 5,
-    GenerationFlags = GenerationFlags.SmallGroup,
-    GenerationFrequency = Frequency.Uncommonly,
-    Behavior = MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
-    Alignment = 2,
-    Noise = ActorNoiseType.Boast,
-    Name = "fire giant",
-    Species = Species.Giant,
     MovementRate = 12,
-    Size = Size.Huge,
     Weight = 2250,
+    Size = Size.Huge,
     Nutrition = 750,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -33,4 +26,12 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
+    ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 } },
+    GenerationFlags = GenerationFlags.SmallGroup,
+    GenerationFrequency = Frequency.Uncommonly,
+    Behavior = MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
+    Alignment = 2,
+    Noise = ActorNoiseType.Boast
 }

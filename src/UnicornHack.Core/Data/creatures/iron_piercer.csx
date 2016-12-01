@@ -1,16 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = 2,
-    GenerationFrequency = Frequency.Occasionally,
     Name = "iron piercer",
     Species = Species.Piercer,
+    InitialLevel = 5,
+    ArmorClass = 2,
     MovementRate = 1,
-    Size = Size.Small,
     Weight = 300,
+    Size = Size.Small,
     Nutrition = 150,
-    SimpleProperties = new HashSet<string> { "Camouflage", "Eyelessness", "Limblessness", "Clinginess", "Carnivorism", "NoInventory" },
-    ValuedProperties = new Dictionary<string, Object> { { "Stealthiness", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -21,4 +18,8 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 10 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Camouflage", "Eyelessness", "Limblessness", "Clinginess", "Carnivorism", "NoInventory" },
+    ValuedProperties = new Dictionary<string, Object> { { "Stealthiness", 3 } },
+    GenerationFrequency = Frequency.Occasionally
 }

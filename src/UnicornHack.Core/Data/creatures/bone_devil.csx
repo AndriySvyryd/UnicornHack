@@ -1,23 +1,17 @@
 new CreatureVariant
 {
-    InitialLevel = 9,
-    ArmorClass = -1,
-    MagicResistance = 40,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.SmallGroup | GenerationFlags.HellOnly,
-    GenerationFrequency = Frequency.Uncommonly,
-    Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
-    Alignment = -9,
-    CorpseVariantName = "",
-    NextStageName = "ice devil",
     Name = "bone devil",
     Species = Species.DemonMajor,
     SpeciesClass = SpeciesClass.Demon,
+    CorpseVariantName = "",
+    NextStageName = "ice devil",
+    InitialLevel = 9,
+    ArmorClass = -1,
+    MagicResistance = 40,
     MovementRate = 15,
-    Size = Size.Large,
     Weight = 1600,
+    Size = Size.Large,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness" },
-    ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 }, { "PoisonResistance", 3 }, { "SicknessResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -45,4 +39,11 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 3 } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "SicknessResistance" },
+    ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 }, { "PoisonResistance", 3 } },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.SmallGroup | GenerationFlags.HellOnly,
+    GenerationFrequency = Frequency.Uncommonly,
+    Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
+    Alignment = -9
 }

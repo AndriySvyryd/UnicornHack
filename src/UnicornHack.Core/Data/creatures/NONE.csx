@@ -1,7 +1,7 @@
 new CreatureVariant
 {
-    InitialLevel = 1,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
     Name = "NONE",
-    Size = Size.Medium
+    InitialLevel = 1,
+    Size = Size.Medium,
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable
 }

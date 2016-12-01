@@ -1,43 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 3,
-    ArmorClass = 10,
-    GenerationFrequency = Frequency.Rarely,
-    CorpseVariantName = "",
     Name = "straw golem",
     Species = Species.Golem,
+    CorpseVariantName = "",
+    InitialLevel = 3,
+    ArmorClass = 10,
     MovementRate = 12,
-    Size = Size.Large,
     Weight = 400,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "NonAnimal", "Breathlessness", "Mindlessness", "Humanoidness", "Asexuality" },
-    ValuedProperties = new Dictionary<string, Object>
-    {
-        {
-            "ColdResistance",
-            3
-        },
-        {
-            "PoisonResistance",
-            3
-        },
-        {
-            "VenomResistance",
-            3
-        },
-        {
-            "StoningResistance",
-            3
-        },
-        {
-            "SicknessResistance",
-            3
-        },
-        {
-            "MaxHP",
-            20
-        }
-    }
-,
+    Size = Size.Large,
     Abilities = new List<Ability>
     {
         new Ability
@@ -56,4 +26,19 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string>
+    {
+        "SleepResistance",
+        "NonAnimal",
+        "Breathlessness",
+        "Mindlessness",
+        "Humanoidness",
+        "Asexuality",
+        "StoningResistance",
+        "SicknessResistance"
+    }
+,
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "MaxHP", 20 } },
+    GenerationFrequency = Frequency.Rarely
 }

@@ -1,64 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 3,
-    MagicResistance = 30,
-    GenerationFlags = GenerationFlags.NoHell,
-    GenerationFrequency = Frequency.Sometimes,
-    CorpseVariantName = "",
     Name = "fog cloud",
     Species = Species.Cloud,
     SpeciesClass = SpeciesClass.Extraplanar,
+    CorpseVariantName = "",
+    InitialLevel = 3,
+    MagicResistance = 30,
     MovementRate = 1,
-    Size = Size.Huge,
     Weight = 1,
-    SimpleProperties = new HashSet<string>
-    {
-        "SleepResistance",
-        "Flight",
-        "FlightControl",
-        "NonAnimal",
-        "NonSolidBody",
-        "Breathlessness",
-        "Limblessness",
-        "Eyelessness",
-        "Headlessness",
-        "Mindlessness",
-        "Asexuality",
-        "NoInventory"
-    }
-,
-    ValuedProperties = new Dictionary<string, Object>
-    {
-        {
-            "PoisonResistance",
-            3
-        },
-        {
-            "VenomResistance",
-            3
-        },
-        {
-            "StoningResistance",
-            3
-        },
-        {
-            "SlimingResistance",
-            3
-        },
-        {
-            "AcidResistance",
-            3
-        },
-        {
-            "SicknessResistance",
-            3
-        },
-        {
-            "Stealthiness",
-            3
-        }
-    }
-,
+    Size = Size.Huge,
     Abilities = new List<Ability>
     {
         new Ability
@@ -87,4 +37,27 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new AbilityEffect[] { new WaterDamage { Damage = 2 } } }
     }
+,
+    SimpleProperties = new HashSet<string>
+    {
+        "SleepResistance",
+        "Flight",
+        "FlightControl",
+        "NonAnimal",
+        "NonSolidBody",
+        "Breathlessness",
+        "Limblessness",
+        "Eyelessness",
+        "Headlessness",
+        "Mindlessness",
+        "Asexuality",
+        "NoInventory",
+        "StoningResistance",
+        "SlimingResistance",
+        "SicknessResistance"
+    }
+,
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "AcidResistance", 3 }, { "Stealthiness", 3 } },
+    GenerationFlags = GenerationFlags.NoHell,
+    GenerationFrequency = Frequency.Sometimes
 }

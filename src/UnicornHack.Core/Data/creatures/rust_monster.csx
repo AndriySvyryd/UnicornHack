@@ -1,15 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = 2,
-    GenerationFrequency = Frequency.Occasionally,
     Name = "rust monster",
     Species = Species.RustMonster,
+    InitialLevel = 5,
+    ArmorClass = 2,
     MovementRate = 18,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 300,
-    SimpleProperties = new HashSet<string> { "Swimming", "Infravisibility", "AnimalBody", "Handlessness", "Metallivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -30,4 +28,7 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new AbilityEffect[] { new WaterDamage { Damage = 10 } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "Swimming", "Infravisibility", "AnimalBody", "Handlessness", "Metallivorism", "SingularInventory" },
+    GenerationFrequency = Frequency.Occasionally
 }

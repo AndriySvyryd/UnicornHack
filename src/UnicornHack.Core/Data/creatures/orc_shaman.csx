@@ -1,19 +1,14 @@
 new CreatureVariant
 {
+    Name = "orc shaman",
+    Species = Species.Orc,
     InitialLevel = 3,
     ArmorClass = 10,
     MagicResistance = 10,
-    GenerationFrequency = Frequency.Commonly,
-    Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.MagicUser,
-    Alignment = -5,
-    Noise = ActorNoiseType.Grunt,
-    Name = "orc shaman",
-    Species = Species.Orc,
     MovementRate = 9,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 200,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -24,4 +19,10 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new ScriptedEffect { Script = "ArcaneSpell" } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFrequency = Frequency.Commonly,
+    Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.MagicUser,
+    Alignment = -5,
+    Noise = ActorNoiseType.Grunt
 }

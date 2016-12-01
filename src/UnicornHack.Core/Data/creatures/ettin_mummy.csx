@@ -1,21 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 12,
-    ArmorClass = 1,
-    MagicResistance = 20,
-    GenerationFrequency = Frequency.Uncommonly,
-    Alignment = -4,
-    Noise = ActorNoiseType.Moan,
-    CorpseVariantName = "ettin",
     Name = "ettin mummy",
     Species = Species.Giant,
     SpeciesClass = SpeciesClass.Undead,
+    CorpseVariantName = "ettin",
+    InitialLevel = 12,
+    ArmorClass = 1,
+    MagicResistance = 20,
     MovementRate = 12,
-    Size = Size.Huge,
     Weight = 2250,
+    Size = Size.Huge,
     Nutrition = 350,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "Infravision", "Humanoidness", "Breathlessness" },
-    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 }, { "SicknessResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -36,4 +31,10 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new Infect { } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "SleepResistance", "Infravision", "Humanoidness", "Breathlessness", "SicknessResistance" },
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 } },
+    GenerationFrequency = Frequency.Uncommonly,
+    Alignment = -4,
+    Noise = ActorNoiseType.Moan
 }

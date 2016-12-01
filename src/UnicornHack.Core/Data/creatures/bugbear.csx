@@ -1,19 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 3,
-    ArmorClass = 5,
-    GenerationFrequency = Frequency.Commonly,
-    Behavior = MonsterBehavior.WeaponCollector,
-    Alignment = -6,
-    Noise = ActorNoiseType.Growl,
     Name = "bugbear",
     Species = Species.Bugbear,
     SpeciesClass = SpeciesClass.MagicalBeast,
+    InitialLevel = 3,
+    ArmorClass = 5,
     MovementRate = 9,
-    Size = Size.Large,
     Weight = 1250,
+    Size = Size.Large,
     Nutrition = 250,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -31,4 +26,10 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFrequency = Frequency.Commonly,
+    Behavior = MonsterBehavior.WeaponCollector,
+    Alignment = -6,
+    Noise = ActorNoiseType.Growl
 }

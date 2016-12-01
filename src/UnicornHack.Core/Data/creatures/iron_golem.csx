@@ -1,60 +1,14 @@
 new CreatureVariant
 {
+    Name = "iron golem",
+    Species = Species.Golem,
+    CorpseVariantName = "",
     InitialLevel = 18,
     ArmorClass = 3,
     MagicResistance = 60,
-    GenerationFrequency = Frequency.Rarely,
-    CorpseVariantName = "",
-    Name = "iron golem",
-    Species = Species.Golem,
     MovementRate = 6,
-    Size = Size.Large,
     Weight = 2000,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "NonAnimal", "Breathlessness", "Mindlessness", "Humanoidness", "Asexuality" },
-    ValuedProperties = new Dictionary<string, Object>
-    {
-        {
-            "WaterResistance",
-            -3
-        },
-        {
-            "ColdResistance",
-            3
-        },
-        {
-            "FireResistance",
-            3
-        },
-        {
-            "PoisonResistance",
-            3
-        },
-        {
-            "VenomResistance",
-            3
-        },
-        {
-            "SicknessResistance",
-            3
-        },
-        {
-            "StoningResistance",
-            3
-        },
-        {
-            "SlimingResistance",
-            3
-        },
-        {
-            "ThickHide",
-            3
-        },
-        {
-            "MaxHP",
-            80
-        }
-    }
-,
+    Size = Size.Large,
     Abilities = new List<Ability>
     {
         new Ability
@@ -73,4 +27,51 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PoisonDamage { Damage = 14 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string>
+    {
+        "SleepResistance",
+        "NonAnimal",
+        "Breathlessness",
+        "Mindlessness",
+        "Humanoidness",
+        "Asexuality",
+        "StoningResistance",
+        "SlimingResistance",
+        "SicknessResistance"
+    }
+,
+    ValuedProperties = new Dictionary<string, Object>
+    {
+        {
+            "WaterWeakness",
+            3
+        },
+        {
+            "ColdResistance",
+            3
+        },
+        {
+            "FireResistance",
+            3
+        },
+        {
+            "PoisonResistance",
+            3
+        },
+        {
+            "VenomResistance",
+            3
+        },
+        {
+            "ThickHide",
+            3
+        },
+        {
+            "MaxHP",
+            80
+        }
+    }
+,
+    GenerationFrequency = Frequency.Rarely
 }

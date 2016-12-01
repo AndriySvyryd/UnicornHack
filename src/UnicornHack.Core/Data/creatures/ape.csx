@@ -1,18 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 4,
-    ArmorClass = 6,
-    GenerationFlags = GenerationFlags.SmallGroup,
-    GenerationFrequency = Frequency.Uncommonly,
-    Noise = ActorNoiseType.Growl,
-    NextStageName = "carnivorous ape",
     Name = "ape",
     Species = Species.Simian,
+    NextStageName = "carnivorous ape",
+    InitialLevel = 4,
+    ArmorClass = 6,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1100,
+    Size = Size.Medium,
     Nutrition = 500,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -39,4 +35,9 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 3 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFlags = GenerationFlags.SmallGroup,
+    GenerationFrequency = Frequency.Uncommonly,
+    Noise = ActorNoiseType.Growl
 }

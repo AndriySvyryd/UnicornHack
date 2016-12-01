@@ -1,21 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 7,
-    ArmorClass = 4,
-    MagicResistance = 30,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
-    Noise = ActorNoiseType.Djinni,
-    CorpseVariantName = "",
     Name = "djinni",
     Species = Species.Djinni,
     SpeciesClass = SpeciesClass.Demon,
+    CorpseVariantName = "",
+    InitialLevel = 7,
+    ArmorClass = 4,
+    MagicResistance = 30,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1400,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "Infravisibility", "Humanoidness" },
-    ValuedProperties = new Dictionary<string, Object> { { "StoningResistance", 3 }, { "PoisonResistance", 3 }, { "SicknessResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -35,4 +30,10 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 2 } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "Infravisibility", "Humanoidness", "StoningResistance", "SicknessResistance" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 } },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
+    Noise = ActorNoiseType.Djinni
 }

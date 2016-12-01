@@ -1,22 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 56,
-    ArmorClass = -5,
-    MagicResistance = 80,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable | GenerationFlags.HellOnly,
-    Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser | MonsterBehavior.Covetous,
-    Alignment = -15,
-    Noise = ActorNoiseType.Gurgle,
-    CorpseVariantName = "",
     Name = "Yeenoghu",
     Species = Species.DemonMajor,
     SpeciesClass = SpeciesClass.Demon,
+    CorpseVariantName = "",
+    InitialLevel = 56,
+    ArmorClass = -5,
+    MagicResistance = 80,
     MovementRate = 18,
-    Size = Size.Large,
     Weight = 1500,
+    Size = Size.Large,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Infravision", "InvisibilityDetection", "Infravisibility", "Maleness" },
-    ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 }, { "PoisonResistance", 3 }, { "SicknessResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -60,4 +54,11 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 10 } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "InvisibilityDetection", "Infravisibility", "Maleness", "SicknessResistance" },
+    ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 }, { "PoisonResistance", 3 } },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable | GenerationFlags.HellOnly,
+    Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser | MonsterBehavior.Covetous,
+    Alignment = -15,
+    Noise = ActorNoiseType.Gurgle
 }

@@ -1,17 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = 5,
-    GenerationFrequency = Frequency.Occasionally,
-    Noise = ActorNoiseType.Roar,
     Name = "owlbear",
     Species = Species.Simian,
     SpeciesClass = SpeciesClass.MagicalBeast,
+    InitialLevel = 5,
+    ArmorClass = 5,
     MovementRate = 12,
-    Size = Size.Large,
     Weight = 1700,
+    Size = Size.Large,
     Nutrition = 700,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Humanoidness", "Carnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -46,4 +43,8 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new Bind { Duration = 2 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Humanoidness", "Carnivorism" },
+    GenerationFrequency = Frequency.Occasionally,
+    Noise = ActorNoiseType.Roar
 }

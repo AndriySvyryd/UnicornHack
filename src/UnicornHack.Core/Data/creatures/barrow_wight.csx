@@ -1,21 +1,15 @@
 new CreatureVariant
 {
-    InitialLevel = 3,
-    ArmorClass = 5,
-    MagicResistance = 5,
-    GenerationFrequency = Frequency.Uncommonly,
-    Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser,
-    Alignment = -3,
-    Noise = ActorNoiseType.Howl,
-    CorpseVariantName = "",
     Name = "barrow wight",
     Species = Species.Wraith,
     SpeciesClass = SpeciesClass.Undead,
+    CorpseVariantName = "",
+    InitialLevel = 3,
+    ArmorClass = 5,
+    MagicResistance = 5,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1200,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "Infravision", "Humanoidness", "Breathlessness" },
-    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 }, { "SicknessResistance", 3 } },
+    Size = Size.Medium,
     Abilities = new List<Ability>
     {
         new Ability
@@ -51,4 +45,11 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new Infect { } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "SleepResistance", "Infravision", "Humanoidness", "Breathlessness", "SicknessResistance" },
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 } },
+    GenerationFrequency = Frequency.Uncommonly,
+    Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser,
+    Alignment = -3,
+    Noise = ActorNoiseType.Howl
 }

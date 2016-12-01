@@ -1,16 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 7,
-    ArmorClass = 6,
-    GenerationFrequency = Frequency.Rarely,
-    Noise = ActorNoiseType.Growl,
     Name = "sasquatch",
     Species = Species.Simian,
+    InitialLevel = 7,
+    ArmorClass = 6,
     MovementRate = 15,
-    Size = Size.Large,
     Weight = 1550,
+    Size = Size.Large,
     Nutrition = 650,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -37,4 +34,8 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 4 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFrequency = Frequency.Rarely,
+    Noise = ActorNoiseType.Growl
 }

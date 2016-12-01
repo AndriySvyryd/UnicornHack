@@ -1,34 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 15,
-    ArmorClass = -1,
-    MagicResistance = 20,
-    GenerationFrequency = Frequency.Uncommonly,
-    Behavior = MonsterBehavior.Mountable | MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector,
-    Alignment = 4,
-    Noise = ActorNoiseType.Roar,
-    PreviousStageName = "baby deep dragon",
     Name = "deep dragon",
     Species = Species.Dragon,
     SpeciesClass = SpeciesClass.Reptile,
+    PreviousStageName = "baby deep dragon",
+    InitialLevel = 15,
+    ArmorClass = -1,
+    MagicResistance = 20,
     MovementRate = 9,
-    Size = Size.Gigantic,
     Weight = 4500,
+    Size = Size.Gigantic,
     Nutrition = 1500,
-    SimpleProperties = new HashSet<string>
-    {
-        "Flight",
-        "FlightControl",
-        "InvisibilityDetection",
-        "Infravision",
-        "AnimalBody",
-        "Handlessness",
-        "Carnivorism",
-        "Oviparity",
-        "SingularInventory"
-    }
-,
-    ValuedProperties = new Dictionary<string, Object> { { "DrainResistance", 3 }, { "PoisonResistance", 3 }, { "DangerAwareness", 3 }, { "ThickHide", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -63,4 +45,23 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 5 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string>
+    {
+        "Flight",
+        "FlightControl",
+        "InvisibilityDetection",
+        "Infravision",
+        "AnimalBody",
+        "Handlessness",
+        "Carnivorism",
+        "Oviparity",
+        "SingularInventory"
+    }
+,
+    ValuedProperties = new Dictionary<string, Object> { { "DrainResistance", 3 }, { "PoisonResistance", 3 }, { "DangerAwareness", 3 }, { "ThickHide", 3 } },
+    GenerationFrequency = Frequency.Uncommonly,
+    Behavior = MonsterBehavior.Mountable | MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector,
+    Alignment = 4,
+    Noise = ActorNoiseType.Roar
 }

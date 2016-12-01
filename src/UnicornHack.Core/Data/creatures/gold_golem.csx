@@ -1,55 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = 6,
-    GenerationFrequency = Frequency.Rarely,
-    CorpseVariantName = "",
     Name = "gold golem",
     Species = Species.Golem,
+    CorpseVariantName = "",
+    InitialLevel = 5,
+    ArmorClass = 6,
     MovementRate = 9,
-    Size = Size.Medium,
     Weight = 2000,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "NonAnimal", "Breathlessness", "Mindlessness", "Humanoidness", "Asexuality" },
-    ValuedProperties = new Dictionary<string, Object>
-    {
-        {
-            "AcidResistance",
-            3
-        },
-        {
-            "ColdResistance",
-            3
-        },
-        {
-            "PoisonResistance",
-            3
-        },
-        {
-            "VenomResistance",
-            3
-        },
-        {
-            "StoningResistance",
-            3
-        },
-        {
-            "SlimingResistance",
-            3
-        },
-        {
-            "SicknessResistance",
-            3
-        },
-        {
-            "ThickHide",
-            3
-        },
-        {
-            "MaxHP",
-            40
-        }
-    }
-,
+    Size = Size.Medium,
     Abilities = new List<Ability>
     {
         new Ability
@@ -68,4 +26,20 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 5 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string>
+    {
+        "SleepResistance",
+        "NonAnimal",
+        "Breathlessness",
+        "Mindlessness",
+        "Humanoidness",
+        "Asexuality",
+        "StoningResistance",
+        "SlimingResistance",
+        "SicknessResistance"
+    }
+,
+    ValuedProperties = new Dictionary<string, Object> { { "AcidResistance", 3 }, { "ColdResistance", 3 }, { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "ThickHide", 3 }, { "MaxHP", 40 } },
+    GenerationFrequency = Frequency.Rarely
 }

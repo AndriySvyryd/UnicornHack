@@ -1,18 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    ArmorClass = 4,
-    GenerationFlags = GenerationFlags.SmallGroup,
-    GenerationFrequency = Frequency.Commonly,
-    Noise = ActorNoiseType.Bark,
     Name = "wolf",
     Species = Species.Wolf,
     SpeciesClass = SpeciesClass.Canine,
+    InitialLevel = 5,
+    ArmorClass = 4,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 500,
+    Size = Size.Medium,
     Nutrition = 250,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -23,4 +19,9 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 5 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
+    GenerationFlags = GenerationFlags.SmallGroup,
+    GenerationFrequency = Frequency.Commonly,
+    Noise = ActorNoiseType.Bark
 }

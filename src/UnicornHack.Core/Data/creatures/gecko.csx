@@ -1,16 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 2,
-    ArmorClass = 8,
-    GenerationFrequency = Frequency.Sometimes,
     Name = "gecko",
     Species = Species.Lizard,
     SpeciesClass = SpeciesClass.Reptile,
+    InitialLevel = 2,
+    ArmorClass = 8,
     MovementRate = 6,
-    Size = Size.Tiny,
     Weight = 15,
+    Size = Size.Tiny,
     Nutrition = 15,
-    SimpleProperties = new HashSet<string> { "Handlessness", "Oviparity", "Carnivorism", "SingularInventory" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -21,4 +19,7 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Handlessness", "Oviparity", "Carnivorism", "SingularInventory" },
+    GenerationFrequency = Frequency.Sometimes
 }

@@ -1,20 +1,15 @@
 new CreatureVariant
 {
-    InitialLevel = 9,
-    ArmorClass = 5,
-    MagicResistance = 20,
-    GenerationFlags = GenerationFlags.NonPolymorphable,
-    GenerationFrequency = Frequency.Rarely,
-    Behavior = MonsterBehavior.WeaponCollector,
-    Noise = ActorNoiseType.Imitate,
     Name = "doppelganger",
     Species = Species.Doppelganger,
     SpeciesClass = SpeciesClass.ShapeChanger,
+    InitialLevel = 9,
+    ArmorClass = 5,
+    MagicResistance = 20,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "PolymorphControl", "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -32,4 +27,10 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "SleepResistance", "PolymorphControl", "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFlags = GenerationFlags.NonPolymorphable,
+    GenerationFrequency = Frequency.Rarely,
+    Behavior = MonsterBehavior.WeaponCollector,
+    Noise = ActorNoiseType.Imitate
 }

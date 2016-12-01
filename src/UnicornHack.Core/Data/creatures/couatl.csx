@@ -1,23 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 8,
-    ArmorClass = 5,
-    MagicResistance = 30,
-    GenerationFlags = GenerationFlags.SmallGroup | GenerationFlags.NoHell,
-    GenerationFrequency = Frequency.Sometimes,
-    Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.Stalking,
-    Alignment = 7,
-    Noise = ActorNoiseType.Hiss,
-    CorpseVariantName = "",
     Name = "couatl",
     Species = Species.WingedSnake,
     SpeciesClass = SpeciesClass.Reptile | SpeciesClass.Celestial,
+    CorpseVariantName = "",
+    InitialLevel = 8,
+    ArmorClass = 5,
+    MagicResistance = 30,
     MovementRate = 10,
-    Size = Size.Large,
     Weight = 900,
+    Size = Size.Large,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "Infravision", "SerpentlikeBody", "SingularInventory" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -36,4 +29,12 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new Bind { Duration = 7 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "Infravision", "SerpentlikeBody", "SingularInventory" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 } },
+    GenerationFlags = GenerationFlags.SmallGroup | GenerationFlags.NoHell,
+    GenerationFrequency = Frequency.Sometimes,
+    Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.Stalking,
+    Alignment = 7,
+    Noise = ActorNoiseType.Hiss
 }

@@ -1,20 +1,14 @@
 new CreatureVariant
 {
+    Name = "Medusa",
+    Species = Species.Human,
     InitialLevel = 20,
     ArmorClass = 2,
     MagicResistance = 50,
-    GenerationFlags = GenerationFlags.NonPolymorphable,
-    Behavior = MonsterBehavior.RangedPeaceful,
-    Alignment = -15,
-    Noise = ActorNoiseType.Hiss,
-    Name = "Medusa",
-    Species = Species.Human,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1000,
+    Size = Size.Medium,
     Nutrition = 400,
-    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "Amphibiousness", "Infravisibility", "Humanoidness", "Femaleness", "Omnivorism" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "StoningResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -51,4 +45,22 @@ new CreatureVariant
         new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Gaze, Timeout = 1, Effects = new AbilityEffect[] { new Stone() } },
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 10 } } }
     }
+,
+    SimpleProperties = new HashSet<string>
+    {
+        "Flight",
+        "FlightControl",
+        "Amphibiousness",
+        "Infravisibility",
+        "Humanoidness",
+        "Femaleness",
+        "Omnivorism",
+        "StoningResistance"
+    }
+,
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 } },
+    GenerationFlags = GenerationFlags.NonPolymorphable,
+    Behavior = MonsterBehavior.RangedPeaceful,
+    Alignment = -15,
+    Noise = ActorNoiseType.Hiss
 }

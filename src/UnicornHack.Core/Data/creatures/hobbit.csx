@@ -1,20 +1,14 @@
 new CreatureVariant
 {
+    Name = "hobbit",
+    Species = Species.Hobbit,
     InitialLevel = 1,
     ArmorClass = 10,
     MagicResistance = 10,
-    GenerationFlags = GenerationFlags.NonPolymorphable,
-    GenerationFrequency = Frequency.Commonly,
-    Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.WeaponCollector,
-    Alignment = 6,
-    Noise = ActorNoiseType.Speach,
-    Name = "hobbit",
-    Species = Species.Hobbit,
     MovementRate = 9,
-    Size = Size.Medium,
     Weight = 500,
+    Size = Size.Medium,
     Nutrition = 250,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -32,4 +26,11 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFlags = GenerationFlags.NonPolymorphable,
+    GenerationFrequency = Frequency.Commonly,
+    Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.WeaponCollector,
+    Alignment = 6,
+    Noise = ActorNoiseType.Speach
 }

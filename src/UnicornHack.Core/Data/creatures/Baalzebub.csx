@@ -1,22 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 89,
-    ArmorClass = -5,
-    MagicResistance = 85,
-    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable | GenerationFlags.HellOnly,
-    Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.Covetous | MonsterBehavior.Bribeable,
-    Alignment = -20,
-    Noise = ActorNoiseType.Bribe,
-    CorpseVariantName = "",
     Name = "Baalzebub",
     Species = Species.DemonMajor,
     SpeciesClass = SpeciesClass.Demon,
+    CorpseVariantName = "",
+    InitialLevel = 89,
+    ArmorClass = -5,
+    MagicResistance = 85,
     MovementRate = 9,
-    Size = Size.Large,
     Weight = 1500,
+    Size = Size.Large,
     Nutrition = 500,
-    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "Infravisibility", "Infravision", "InvisibilityDetection", "Maleness" },
-    ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 }, { "PoisonResistance", 3 }, { "SicknessResistance", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -37,4 +31,11 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 14 } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "Infravisibility", "Infravision", "InvisibilityDetection", "Maleness", "SicknessResistance" },
+    ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 }, { "PoisonResistance", 3 } },
+    GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable | GenerationFlags.HellOnly,
+    Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.Covetous | MonsterBehavior.Bribeable,
+    Alignment = -20,
+    Noise = ActorNoiseType.Bribe
 }

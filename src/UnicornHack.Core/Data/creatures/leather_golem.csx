@@ -1,16 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 6,
-    ArmorClass = 6,
-    GenerationFrequency = Frequency.Rarely,
-    CorpseVariantName = "",
     Name = "leather golem",
     Species = Species.Golem,
+    CorpseVariantName = "",
+    InitialLevel = 6,
+    ArmorClass = 6,
     MovementRate = 6,
-    Size = Size.Large,
     Weight = 800,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "Breathlessness", "Mindlessness", "Humanoidness", "Asexuality" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "MaxHP", 40 } },
+    Size = Size.Large,
     Abilities = new List<Ability>
     {
         new Ability
@@ -29,4 +26,8 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 3 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "SleepResistance", "Breathlessness", "Mindlessness", "Humanoidness", "Asexuality" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "MaxHP", 40 } },
+    GenerationFrequency = Frequency.Rarely
 }

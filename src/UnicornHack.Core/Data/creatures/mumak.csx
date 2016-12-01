@@ -1,18 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 5,
-    GenerationFrequency = Frequency.Sometimes,
-    Alignment = -2,
-    Noise = ActorNoiseType.Roar,
     Name = "mumak",
     Species = Species.Quadruped,
     SpeciesClass = SpeciesClass.Quadrupedal,
+    InitialLevel = 5,
     MovementRate = 9,
-    Size = Size.Large,
     Weight = 2500,
+    Size = Size.Large,
     Nutrition = 1000,
-    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Herbivorism", "SingularInventory" },
-    ValuedProperties = new Dictionary<string, Object> { { "ThickHide", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -31,4 +26,10 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 7 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Herbivorism", "SingularInventory" },
+    ValuedProperties = new Dictionary<string, Object> { { "ThickHide", 3 } },
+    GenerationFrequency = Frequency.Sometimes,
+    Alignment = -2,
+    Noise = ActorNoiseType.Roar
 }

@@ -34,7 +34,7 @@ namespace UnicornHack.Models.GameDefinitions
             set { _nutrition = value; }
         }
 
-        // Material
+        public virtual Material Material { get; set; }
 
         public virtual bool Nameable
         {
@@ -140,6 +140,7 @@ namespace UnicornHack.Models.GameDefinitions
                 {nameof(Type), o => o.Type},
                 {nameof(Weight), o => o.Weight},
                 {nameof(Nutrition), o => o.Nutrition},
+                {nameof(Material), o => o.Material},
                 {nameof(Nameable), o => o.Nameable},
                 {nameof(StackSize), o => o.StackSize},
                 {nameof(Size), o => o.Size},

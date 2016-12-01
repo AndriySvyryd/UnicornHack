@@ -1,21 +1,14 @@
 new CreatureVariant
 {
-    InitialLevel = 13,
-    MagicResistance = 25,
-    GenerationFlags = GenerationFlags.NonPolymorphable,
-    GenerationFrequency = Frequency.Rarely,
-    Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
-    Alignment = -17,
-    Noise = ActorNoiseType.Howl,
-    CorpseVariantName = "",
     Name = "nazgul",
     Species = Species.Wraith,
     SpeciesClass = SpeciesClass.Undead,
+    CorpseVariantName = "",
+    InitialLevel = 13,
+    MagicResistance = 25,
     MovementRate = 12,
-    Size = Size.Medium,
     Weight = 1000,
-    SimpleProperties = new HashSet<string> { "SleepResistance", "Flight", "FlightControl", "Infravision", "NonSolidBody", "Humanoidness", "Breathlessness", "Maleness" },
-    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 }, { "SicknessResistance", 3 }, { "StoningResistance", 3 }, { "SlimingResistance", 3 } },
+    Size = Size.Medium,
     Abilities = new List<Ability>
     {
         new Ability
@@ -43,4 +36,26 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new DrainLife { Amount = 1 } } }
     }
+,
+    SimpleProperties = new HashSet<string>
+    {
+        "SleepResistance",
+        "Flight",
+        "FlightControl",
+        "Infravision",
+        "NonSolidBody",
+        "Humanoidness",
+        "Breathlessness",
+        "Maleness",
+        "StoningResistance",
+        "SlimingResistance",
+        "SicknessResistance"
+    }
+,
+    ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 } },
+    GenerationFlags = GenerationFlags.NonPolymorphable,
+    GenerationFrequency = Frequency.Rarely,
+    Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
+    Alignment = -17,
+    Noise = ActorNoiseType.Howl
 }

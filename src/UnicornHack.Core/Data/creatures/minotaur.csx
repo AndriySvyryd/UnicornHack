@@ -1,17 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 15,
-    ArmorClass = 6,
-    GenerationFrequency = Frequency.Rarely,
-    Behavior = MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
-    Noise = ActorNoiseType.Roar,
     Name = "minotaur",
     Species = Species.Minotaur,
+    InitialLevel = 15,
+    ArmorClass = 6,
     MovementRate = 15,
-    Size = Size.Large,
     Weight = 1500,
+    Size = Size.Large,
     Nutrition = 600,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -38,4 +34,9 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 9 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFrequency = Frequency.Rarely,
+    Behavior = MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
+    Noise = ActorNoiseType.Roar
 }

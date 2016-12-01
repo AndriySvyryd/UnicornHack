@@ -1,22 +1,16 @@
 new CreatureVariant
 {
-    InitialLevel = 3,
-    ArmorClass = 2,
-    MagicResistance = 20,
-    GenerationFrequency = Frequency.Often,
-    Behavior = MonsterBehavior.Wandering | MonsterBehavior.Stalking,
-    Alignment = -7,
-    Noise = ActorNoiseType.Cuss,
-    CorpseVariantName = "",
     Name = "quasit",
     Species = Species.Imp,
     SpeciesClass = SpeciesClass.Demon,
+    CorpseVariantName = "",
+    InitialLevel = 3,
+    ArmorClass = 2,
+    MagicResistance = 20,
     MovementRate = 15,
-    Size = Size.Small,
     Weight = 200,
+    Size = Size.Small,
     Nutrition = 100,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility" },
-    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "Regeneration", 3 } },
     Abilities = new List<Ability>
     {
         new Ability
@@ -37,4 +31,11 @@ new CreatureVariant
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 3 } } }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility" },
+    ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "Regeneration", 3 } },
+    GenerationFrequency = Frequency.Often,
+    Behavior = MonsterBehavior.Wandering | MonsterBehavior.Stalking,
+    Alignment = -7,
+    Noise = ActorNoiseType.Cuss
 }

@@ -1,18 +1,13 @@
 new CreatureVariant
 {
-    InitialLevel = 1,
-    ArmorClass = 10,
-    GenerationFrequency = Frequency.Commonly,
-    Behavior = MonsterBehavior.WeaponCollector,
-    Alignment = -3,
-    Noise = ActorNoiseType.Grunt,
     Name = "goblin",
     Species = Species.Goblin,
+    InitialLevel = 1,
+    ArmorClass = 10,
     MovementRate = 6,
-    Size = Size.Small,
     Weight = 400,
+    Size = Size.Small,
     Nutrition = 100,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
     Abilities = new List<Ability>
     {
         new Ability
@@ -30,4 +25,10 @@ new CreatureVariant
             Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
         }
     }
+,
+    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
+    GenerationFrequency = Frequency.Commonly,
+    Behavior = MonsterBehavior.WeaponCollector,
+    Alignment = -3,
+    Noise = ActorNoiseType.Grunt
 }
