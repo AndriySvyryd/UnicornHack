@@ -4,10 +4,6 @@ namespace UnicornHack.Models.GameState.Events
 {
     public class ItemDropEvent : SensoryEvent
     {
-        protected ItemDropEvent()
-        {
-        }
-
         public virtual Actor Dropper { get; set; }
         public virtual SenseType DropperSensed { get; set; }
         public virtual Item Item { get; set; }

@@ -139,12 +139,16 @@ namespace UnicornHack.Models.GameState
                 case "H":
                     break;
                 case "EAT":
-                    var itemToEat = Inventory.Single(i => i.Id == target);
-                    Eat(itemToEat);
+                    Eat(Inventory.Single(i => i.Id == target));
                     break;
                 case "DROP":
-                    var itemToDrop = Inventory.Single(i => i.Id == target);
-                    Drop(itemToDrop);
+                    Drop(Inventory.Single(i => i.Id == target));
+                    break;
+                case "EQUIP":
+                    Equip(Inventory.Single(i => i.Id == target));
+                    break;
+                case "UNEQUIP":
+                    Unequip(Inventory.Single(i => i.Id == target));
                     break;
                 default:
                     throw new InvalidOperationException($"Action {action} on character {GivenName} is invalid.");
@@ -186,6 +190,16 @@ namespace UnicornHack.Models.GameState
             return Game.Services.Language.ToString(@event);
         }
 
+        protected virtual string GetSpecificLogEntry(ItemEquipmentEvent @event)
+        {
+            return Game.Services.Language.ToString(@event);
+        }
+
+        protected virtual string GetSpecificLogEntry(ItemUnequipmentEvent @event)
+        {
+            return Game.Services.Language.ToString(@event);
+        }
+
         protected virtual string GetSpecificLogEntry(ItemConsumptionEvent @event)
         {
             return Game.Services.Language.ToString(@event);
@@ -212,6 +226,7 @@ namespace UnicornHack.Models.GameState
             };
 
             Item.Create("carrot", character, quantity: 3);
+            Item.Create("mail armor", character);
             game.Actors.Add(character);
 
             character.WriteLog(game.Services.Language.Welcome(character));

@@ -4,10 +4,6 @@ namespace UnicornHack.Models.GameState.Events
 {
     public class ItemConsumptionEvent : SensoryEvent
     {
-        protected ItemConsumptionEvent()
-        {
-        }
-
         public virtual Actor Consumer { get; set; }
         public virtual SenseType ConsumerSensed { get; set; }
         public virtual Item Item { get; set; }

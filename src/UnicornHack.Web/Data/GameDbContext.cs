@@ -129,6 +129,8 @@ namespace UnicornHack.Models
             modelBuilder.Entity<ItemConsumptionEvent>();
             modelBuilder.Entity<ItemDropEvent>();
             modelBuilder.Entity<ItemPickUpEvent>();
+            modelBuilder.Entity<ItemEquipmentEvent>();
+            modelBuilder.Entity<ItemUnequipmentEvent>();
         }
     }
 }

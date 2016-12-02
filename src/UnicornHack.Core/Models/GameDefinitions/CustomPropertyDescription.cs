@@ -122,6 +122,12 @@ namespace UnicornHack.Models.GameDefinitions
         public static CustomPropertyDescription DangerAwareness { get; } =
             new CustomPropertyDescription {PropertyType = typeof(int), MinValue = 0, MaxValue = 3};
 
+        public static CustomPropertyDescription CreatureSpeciesAwareness { get; } =
+            new CustomPropertyDescription {PropertyType = typeof(string)};
+
+        public static CustomPropertyDescription CreatureClassAwareness { get; } =
+            new CustomPropertyDescription {PropertyType = typeof(string)};
+
         public static CustomPropertyDescription Perception { get; } =
             new CustomPropertyDescription {PropertyType = typeof(bool)};
 
@@ -321,5 +327,14 @@ namespace UnicornHack.Models.GameDefinitions
         // Rusted, corroded, burnt, rotten, dissolved depending on material
         public static CustomPropertyDescription Erodedness { get; } =
             new CustomPropertyDescription {PropertyType = typeof(int), MinValue = 0, MaxValue = 3};
+
+        public static CustomPropertyDescription ArmorClass { get; } =
+            new CustomPropertyDescription {PropertyType = typeof(int), MinValue = -127, MaxValue = 20};
+
+        public static CustomPropertyDescription Hindrance { get; } =
+            new CustomPropertyDescription { PropertyType = typeof(int), MinValue = 0, MaxValue = 10 };
+
+        public static CustomPropertyDescription Enchantment { get; } =
+            new CustomPropertyDescription {PropertyType = typeof(int), MinValue = -5, MaxValue = 5};
     }
 }

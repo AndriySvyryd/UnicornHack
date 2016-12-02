@@ -107,7 +107,11 @@
                 break;
             case ItemType.Food:
                 symbol = '%';
-                className = "itemCarrot";
+                className = "itemFood";
+                break;
+            case ItemType.Armor:
+                symbol = '[';
+                className = "itemArmor";
                 break;
             default:
                 throw new NotSupportedException($"Item type {item.Variant.Type} not supported.");

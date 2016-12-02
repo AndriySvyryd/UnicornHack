@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using UnicornHack.Models.GameDefinitions;
 using UnicornHack.Utils;
 
@@ -9,8 +8,7 @@ namespace UnicornHack.Models.GameState
 {
     public class Item : IReferenceable
     {
-        // For EF
-        protected Item()
+        public Item()
         {
         }
 
@@ -30,6 +28,7 @@ namespace UnicornHack.Models.GameState
 
         public int? ActorId { get; set; }
         public Actor Actor { get; set; }
+        public EquipmentSlot? EquippedSlot { get; set; }
         public int? ContainerId { get; set; }
         public Container Container { get; set; }
         public int? LevelId { get; set; }

@@ -60,7 +60,7 @@ namespace UnicornHack.Models.GameDefinitions
             set { _sizeRestrictions = value; }
         }
 
-        public virtual IList<EquipmentSlot> EquipableSlots { get; set; }
+        public virtual ISet<EquipmentSlot> EquipableSlots { get; set; }
         public virtual IList<Ability> Abilities { get; set; }
         public virtual ISet<string> SimpleProperties { get; set; }
         public virtual IDictionary<string, object> ValuedProperties { get; set; }
@@ -70,7 +70,7 @@ namespace UnicornHack.Models.GameDefinitions
             Abilities = Abilities ?? new List<Ability>();
             SimpleProperties = SimpleProperties ?? new HashSet<string>();
             ValuedProperties = ValuedProperties ?? new Dictionary<string, object>();
-            EquipableSlots = EquipableSlots ?? new List<EquipmentSlot>();
+            EquipableSlots = EquipableSlots ?? new HashSet<EquipmentSlot>();
         }
 
         public static readonly string BasePath = Path.Combine(AppContext.BaseDirectory, @"data\items\");
@@ -157,7 +157,7 @@ namespace UnicornHack.Models.GameDefinitions
                 {nameof(Weight), o => o.BaseItemVariant?.Weight ?? 0},
                 {nameof(Size), o => o.BaseItemVariant?.Size ?? Size.None},
                 {nameof(SizeRestrictions), o => o.BaseItemVariant?.SizeRestrictions ?? Size.None},
-                {nameof(Nutrition), o => o.BaseItemVariant?.Nutrition ?? 0},
+                {nameof(Nutrition), o => o.BaseItemVariant?.Nutrition ?? o.Weight},
                 {nameof(Nameable), o => o.BaseItemVariant?.Nameable ?? true},
                 {nameof(StackSize), o => o.BaseItemVariant?.StackSize ?? 1}
             });

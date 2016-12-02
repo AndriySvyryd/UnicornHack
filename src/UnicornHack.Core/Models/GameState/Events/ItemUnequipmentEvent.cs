@@ -2,30 +2,30 @@ using UnicornHack.Models.GameDefinitions;
 
 namespace UnicornHack.Models.GameState.Events
 {
-    public class ItemPickUpEvent : SensoryEvent
+    public class ItemUnequipmentEvent : SensoryEvent
     {
-        public virtual Actor Picker { get; set; }
-        public virtual SenseType PickerSensed { get; set; }
+        public virtual Actor Unequipper { get; set; }
+        public virtual SenseType UnequipperSensed { get; set; }
         public virtual Item Item { get; set; }
         public virtual SenseType ItemSensed { get; set; }
 
-        public static void New(Actor picker, Item item)
+        public static void New(Actor unequipper, Item item)
         {
-            foreach (var sensor in picker.Level.Actors)
+            foreach (var sensor in unequipper.Level.Actors)
             {
-                var pickerSensed = sensor.CanSense(picker);
+                var unequipperSensed = sensor.CanSense(unequipper);
                 var itemSensed = sensor.CanSense(item);
 
-                if (pickerSensed == SenseType.None
+                if (unequipperSensed == SenseType.None
                     && itemSensed == SenseType.None)
                 {
                     continue;
                 }
 
-                var @event = new ItemPickUpEvent
+                var @event = new ItemUnequipmentEvent
                 {
-                    Picker = picker,
-                    PickerSensed = pickerSensed,
+                    Unequipper = unequipper,
+                    UnequipperSensed = unequipperSensed,
                     Item = item,
                     ItemSensed = itemSensed
                 };

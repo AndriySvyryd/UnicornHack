@@ -4,10 +4,6 @@ namespace UnicornHack.Models.GameState.Events
 {
     public class DeathEvent : SensoryEvent
     {
-        protected DeathEvent()
-        {
-        }
-
         public virtual Actor Deceased { get; set; }
         public virtual SenseType DeceasedSensed { get; set; }
         public virtual Item Corpse { get; set; }

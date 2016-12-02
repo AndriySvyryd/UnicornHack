@@ -68,16 +68,16 @@ namespace UnicornHack.Services.English
 
         private string ToString(Item item)
         {
-            var dropedItemString = item.Name;
+            var itemName = item.Name;
             var quantity = (item as ItemStack)?.Quantity ?? (item as Gold)?.Quantity;
             if (quantity != null
                 && quantity.Value > 1)
             {
                 return quantity.Value + " " +
-                       EnglishMorphologicalProcessor.ProcessNoun(dropedItemString, EnglishNounForm.Plural);
+                       EnglishMorphologicalProcessor.ProcessNoun(itemName, EnglishNounForm.Plural);
             }
 
-            return "a " + dropedItemString;
+            return "a " + itemName;
         }
 
         private string ToVerb(AbilityAction abilityAction)
@@ -262,13 +262,13 @@ namespace UnicornHack.Services.English
                 EnglishMorphologicalProcessor.ProcessVerb(verbPhrase: "miss", form: mainVerbForm));
         }
 
-        public virtual string ToString(ItemDropEvent @event)
+        public virtual string ToString(ItemConsumptionEvent @event)
         {
-            var dropperPerson = @event.Sensor == @event.Dropper ? EnglishPerson.Second : EnglishPerson.Third;
+            var consumerPerson = @event.Sensor == @event.Consumer ? EnglishPerson.Second : EnglishPerson.Third;
             return ToSentence(
-                ToString(@event.Dropper, dropperPerson, @event.DropperSensed),
-                EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "drop", person: dropperPerson),
-                ToString(@event.Item));
+                ToString(@event.Consumer, consumerPerson, @event.ConsumerSensed),
+                EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "eat", person: consumerPerson),
+                ToString(@event.Item, @event.ItemSensed));
         }
 
         public virtual string ToString(ItemPickUpEvent @event)
@@ -280,6 +280,33 @@ namespace UnicornHack.Services.English
                 ToString(@event.Item));
         }
 
+        public virtual string ToString(ItemDropEvent @event)
+        {
+            var dropperPerson = @event.Sensor == @event.Dropper ? EnglishPerson.Second : EnglishPerson.Third;
+            return ToSentence(
+                ToString(@event.Dropper, dropperPerson, @event.DropperSensed),
+                EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "drop", person: dropperPerson),
+                ToString(@event.Item));
+        }
+
+        public string ToString(ItemEquipmentEvent @event)
+        {
+            var equipperPerson = @event.Sensor == @event.Equipper ? EnglishPerson.Second : EnglishPerson.Third;
+            return ToSentence(
+                ToString(@event.Equipper, equipperPerson, @event.EquipperSensed),
+                EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "equip", person: equipperPerson),
+                ToString(@event.Item, @event.ItemSensed));
+        }
+
+        public string ToString(ItemUnequipmentEvent @event)
+        {
+            var equipperPerson = @event.Sensor == @event.Unequipper ? EnglishPerson.Second : EnglishPerson.Third;
+            return ToSentence(
+                ToString(@event.Unequipper, equipperPerson, @event.UnequipperSensed),
+                EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "unequip", person: equipperPerson),
+                ToString(@event.Item, @event.ItemSensed));
+        }
+
         public virtual string ToString(DeathEvent @event)
         {
             var deceasedPerson = @event.Sensor == @event.Deceased ? EnglishPerson.Second : EnglishPerson.Third;
@@ -287,15 +314,6 @@ namespace UnicornHack.Services.English
                 ToString(@event.Deceased, deceasedPerson, @event.DeceasedSensed),
                 EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "die", person: deceasedPerson),
                 deceasedPerson == EnglishPerson.Second ? "!" : ".");
-        }
-
-        public virtual string ToString(ItemConsumptionEvent @event)
-        {
-            var consumerPerson = @event.Sensor == @event.Consumer ? EnglishPerson.Second : EnglishPerson.Third;
-            return ToSentence(
-                ToString(@event.Consumer, consumerPerson, @event.ConsumerSensed),
-                EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "eat", person: consumerPerson),
-                ToString(@event.Item, @event.ItemSensed));
         }
 
         #endregion

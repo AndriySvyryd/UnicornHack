@@ -45,6 +45,23 @@ namespace UnicornHack.Models.GameState
 
         public virtual int Gold { get; set; }
         public virtual int AC { get; set; }
+
+        public virtual int GetEffectiveAC()
+        {
+            var effectiveAC = AC;
+            var maxAC = (int) CustomPropertyDescription.ArmorClass.MaxValue;
+            foreach (var item in Inventory)
+            {
+                if (item.EquippedSlot != null)
+                {
+                    effectiveAC += (int) item.Variant.ValuedProperties.GetValueOrDefault(
+                                       nameof(CustomPropertyDescription.ArmorClass), maxAC) - maxAC;
+                }
+            }
+
+            return effectiveAC;
+        }
+
         public virtual ICollection<Item> Inventory { get; } = new HashSet<Item>();
 
         public virtual byte LevelX { get; set; }
@@ -78,7 +95,7 @@ namespace UnicornHack.Models.GameState
             object value;
             if (Variant.ValuedProperties.TryGetValue(property, out value))
             {
-                return (T)value;
+                return (T) value;
             }
 
             return default(T);
@@ -128,7 +145,7 @@ namespace UnicornHack.Models.GameState
                 if (z < 0)
                 {
                     var upStairs = Level.UpStairs.SingleOrDefault(s =>
-                        (s.DownLevelX == LevelX) && (s.DownLevelY == LevelY));
+                            (s.DownLevelX == LevelX) && (s.DownLevelY == LevelY));
                     moveToLevel = upStairs?.Up;
                     moveToLevelX = upStairs?.UpLevelX;
                     moveToLevelY = upStairs?.UpLevelY;
@@ -136,7 +153,7 @@ namespace UnicornHack.Models.GameState
                 else
                 {
                     var downStairs = Level.DownStairs.SingleOrDefault(s =>
-                        (s.UpLevelX == LevelX) && (s.UpLevelY == LevelY));
+                            (s.UpLevelX == LevelX) && (s.UpLevelY == LevelY));
                     moveToLevel = downStairs?.Down;
                     moveToLevelX = downStairs?.DownLevelX;
                     moveToLevelY = downStairs?.DownLevelY;
@@ -169,8 +186,8 @@ namespace UnicornHack.Models.GameState
                 return true;
             }
 
-            var newX = (byte)(LevelX + x);
-            var newY = (byte)(LevelY + y);
+            var newX = (byte) (LevelX + x);
+            var newY = (byte) (LevelY + y);
             var conflictingActor =
                 Level.Actors.SingleOrDefault(a => (a.LevelX == newX) && (a.LevelY == newY));
             if (conflictingActor != null)
@@ -183,7 +200,7 @@ namespace UnicornHack.Models.GameState
                 return true;
             }
 
-            if (!((MapFeature)Level.Layout[Level.PointToIndex[newX, newY]]).CanMoveTo())
+            if (!((MapFeature) Level.Layout[Level.PointToIndex[newX, newY]]).CanMoveTo())
             {
                 return false;
             }
@@ -208,8 +225,8 @@ namespace UnicornHack.Models.GameState
             ActionPoints = 0;
             var ability = Abilities.FirstOrDefault(a => a.Activation == AbilityActivation.OnTarget);
             var damage = ability?.Effects.OfType<PhysicalDamage>().FirstOrDefault()?.Damage
-                ?? ability?.Effects.OfType<ElectricityDamage>().FirstOrDefault()?.Damage
-                ?? ability?.Effects.OfType<FireDamage>().FirstOrDefault()?.Damage;
+                         ?? ability?.Effects.OfType<ElectricityDamage>().FirstOrDefault()?.Damage
+                         ?? ability?.Effects.OfType<FireDamage>().FirstOrDefault()?.Damage;
             if (ability == null
                 || damage == null)
             {
@@ -293,6 +310,65 @@ namespace UnicornHack.Models.GameState
             }
         }
 
+        public virtual bool Equip(Item item)
+        {
+            var slot = item.Variant.EquipableSlots.FirstOrDefault();
+            if (slot == EquipmentSlot.Default)
+            {
+                return false;
+            }
+
+            var equipped = GetEquippedItem(slot);
+            if (equipped == item)
+            {
+                return true;
+            }
+
+            if (!CanEquip(item, slot))
+            {
+                return false;
+            }
+
+            if (equipped != null)
+            {
+                Unequip(equipped);
+            }
+
+            item.EquippedSlot = slot;
+            ItemEquipmentEvent.New(this, item);
+
+            return true;
+        }
+
+        public virtual void Unequip(Item item)
+        {
+            item.EquippedSlot = null;
+            ItemUnequipmentEvent.New(this, item);
+        }
+
+        public virtual bool CanEquip(Item item, EquipmentSlot slot)
+        {
+            if (item.Variant.EquipableSlots.Contains(slot))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public virtual Item GetEquippedItem(EquipmentSlot slot)
+        {
+            foreach (var item in Inventory)
+            {
+                if (item.EquippedSlot == slot)
+                {
+                    return item;
+                }
+            }
+
+            return null;
+        }
+
         public virtual bool PickUp(Item item)
         {
             item.MoveTo(this);
@@ -302,7 +378,7 @@ namespace UnicornHack.Models.GameState
             return true;
         }
 
-        public virtual bool DropGold(short quantity)
+        public virtual bool DropGold(int quantity)
         {
             if (quantity == 0
                 || quantity > Gold)
@@ -365,6 +441,7 @@ namespace UnicornHack.Models.GameState
         {
             item.ActorId = null;
             item.Actor = null;
+            item.EquippedSlot = null;
             if (Inventory.Remove(item))
             {
                 item.RemoveReference();
@@ -378,7 +455,7 @@ namespace UnicornHack.Models.GameState
             HP += hp;
             if (!IsAlive)
             {
-                DropGold((short)Gold);
+                DropGold(Gold);
                 foreach (var item in Inventory.ToList())
                 {
                     Drop(item);

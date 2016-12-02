@@ -8,7 +8,7 @@ namespace UnicornHack.Services.English
     public class EnglishLanguageServiceTest
     {
         [Fact]
-        public void AttackEventTest()
+        public void AttackEvent()
         {
             var newt = new Creature {VariantName = "newt"};
             var nymph = new Creature {VariantName = "water nymph", Sex = Sex.Female};
@@ -103,6 +103,205 @@ namespace UnicornHack.Services.English
             }
 
             Assert.Equal(expectedMessage, languageService.ToString(attackEvent));
+        }
+
+        [Fact]
+        public void DeathEvent()
+        {
+            var newt = new Creature {VariantName = "newt"};
+            var player = new PlayerCharacter { VariantName = "human", GivenName = "Dudley", Sex = Sex.Male };
+
+            var languageService = CreateLanguageService();
+
+            Assert.Equal("The newt dies.", languageService.ToString(new DeathEvent
+            {
+                Deceased = newt,
+                DeceasedSensed = SenseType.Sight,
+                Sensor = player
+            }));
+
+            Assert.Equal("You die!", languageService.ToString(new DeathEvent
+            {
+                Deceased = player,
+                DeceasedSensed = SenseType.Sight | SenseType.Touch,
+                Sensor = player
+            }));
+        }
+
+        [Fact]
+        public void ItemEquipmentEvent()
+        {
+            var armor = new Item {VariantName = "mail armor", EquippedSlot = EquipmentSlot.Body};
+            var nymph = new Creature { VariantName = "water nymph", Sex = Sex.Female };
+            var player = new PlayerCharacter { VariantName = "human", GivenName = "Dudley", Sex = Sex.Male };
+
+            var languageService = CreateLanguageService();
+
+            Assert.Equal("The water nymph equips something.", languageService.ToString(new ItemEquipmentEvent
+            {
+                Item = armor,
+                ItemSensed = SenseType.Sound,
+                Equipper = nymph,
+                EquipperSensed = SenseType.Sight,
+                Sensor = player
+            }));
+
+            Assert.Equal("Something equips a mail armor.", languageService.ToString(new ItemEquipmentEvent
+            {
+                Item = armor,
+                ItemSensed = SenseType.Sight,
+                Equipper = nymph,
+                EquipperSensed = SenseType.Sound,
+                Sensor = player
+            }));
+
+            Assert.Equal("You equip something.", languageService.ToString(new ItemEquipmentEvent
+            {
+                Item = armor,
+                ItemSensed = SenseType.Touch,
+                Equipper = player,
+                EquipperSensed = SenseType.Sight | SenseType.Touch,
+                Sensor = player
+            }));
+
+            Assert.Equal("You equip a mail armor.", languageService.ToString(new ItemEquipmentEvent
+            {
+                Item = armor,
+                ItemSensed = SenseType.Sight | SenseType.Touch,
+                Equipper = player,
+                EquipperSensed = SenseType.Sight | SenseType.Touch,
+                Sensor = player
+            }));
+        }
+
+        [Fact]
+        public void ItemUnequipmentEvent()
+        {
+            var armor = new Item { VariantName = "mail armor", EquippedSlot = EquipmentSlot.Body };
+            var nymph = new Creature { VariantName = "water nymph", Sex = Sex.Female };
+            var player = new PlayerCharacter { VariantName = "human", GivenName = "Dudley", Sex = Sex.Male };
+
+            var languageService = CreateLanguageService();
+
+            Assert.Equal("The water nymph unequips something.", languageService.ToString(new ItemUnequipmentEvent
+            {
+                Item = armor,
+                ItemSensed = SenseType.Sound,
+                Unequipper = nymph,
+                UnequipperSensed = SenseType.Sight,
+                Sensor = player
+            }));
+
+            Assert.Equal("Something unequips a mail armor.", languageService.ToString(new ItemUnequipmentEvent
+            {
+                Item = armor,
+                ItemSensed = SenseType.Sight,
+                Unequipper = nymph,
+                UnequipperSensed = SenseType.Sound,
+                Sensor = player
+            }));
+
+            Assert.Equal("You unequip something.", languageService.ToString(new ItemUnequipmentEvent
+            {
+                Item = armor,
+                ItemSensed = SenseType.Touch,
+                Unequipper = player,
+                UnequipperSensed = SenseType.Sight | SenseType.Touch,
+                Sensor = player
+            }));
+
+            Assert.Equal("You unequip a mail armor.", languageService.ToString(new ItemUnequipmentEvent
+            {
+                Item = armor,
+                ItemSensed = SenseType.Sight | SenseType.Touch,
+                Unequipper = player,
+                UnequipperSensed = SenseType.Sight | SenseType.Touch,
+                Sensor = player
+            }));
+        }
+
+        [Fact]
+        public void ItemConsumptionEvent()
+        {
+            var carrot = new Item { VariantName = "carrot" };
+            var newt = new Creature { VariantName = "newt" };
+            var player = new PlayerCharacter { VariantName = "human", GivenName = "Dudley", Sex = Sex.Male };
+
+            var languageService = CreateLanguageService();
+
+            Assert.Equal("The newt eats a carrot.", languageService.ToString(new ItemConsumptionEvent
+            {
+                Item = carrot,
+                ItemSensed = SenseType.Sight | SenseType.Sound,
+                Consumer = newt,
+                ConsumerSensed = SenseType.Sight | SenseType.Sound,
+                Sensor = player
+            }));
+
+            Assert.Equal("You eat a carrot.", languageService.ToString(new ItemConsumptionEvent
+            {
+                Item = carrot,
+                ItemSensed = SenseType.Sight | SenseType.Touch,
+                Consumer = player,
+                ConsumerSensed = SenseType.Sight | SenseType.Touch,
+                Sensor = player
+            }));
+        }
+
+        [Fact]
+        public void ItemPickUpEvent()
+        {
+            var coins = new Gold(new Game(), quantity: 11);
+            var newt = new Creature { VariantName = "newt" };
+            var player = new PlayerCharacter { VariantName = "human", GivenName = "Dudley", Sex = Sex.Male };
+
+            var languageService = CreateLanguageService();
+
+            Assert.Equal("The newt picks up 11 gold coins.", languageService.ToString(new ItemPickUpEvent
+            {
+                Item = coins,
+                ItemSensed = SenseType.Sight | SenseType.Sound,
+                Picker = newt,
+                PickerSensed = SenseType.Sight | SenseType.Sound,
+                Sensor = player
+            }));
+
+            Assert.Equal("You pick up 11 gold coins.", languageService.ToString(new ItemPickUpEvent
+            {
+                Item = coins,
+                ItemSensed = SenseType.Sight | SenseType.Sound,
+                Picker = player,
+                PickerSensed = SenseType.Sight | SenseType.Sound,
+                Sensor = player
+            }));
+        }
+
+        [Fact]
+        public void ItemDropEvent()
+        {
+            var coins = new Gold(new Game(), quantity: 11);
+            var newt = new Creature { VariantName = "newt" };
+            var player = new PlayerCharacter { VariantName = "human", GivenName = "Dudley", Sex = Sex.Male };
+
+            var languageService = CreateLanguageService();
+
+            Assert.Equal("The newt drops 11 gold coins.", languageService.ToString(new ItemDropEvent
+            {
+                Item = coins,
+                ItemSensed = SenseType.Sight | SenseType.Sound,
+                Dropper = newt,
+                DropperSensed = SenseType.Sight | SenseType.Sound,
+                Sensor = player
+            }));
+
+            Assert.Equal("You drop 11 gold coins.", languageService.ToString(new ItemDropEvent
+            {
+                Item = coins,
+                ItemSensed = SenseType.Sight | SenseType.Sound,
+                Dropper = player,
+                DropperSensed = SenseType.Sight | SenseType.Sound,
+                Sensor = player
+            }));
         }
 
         [Fact]

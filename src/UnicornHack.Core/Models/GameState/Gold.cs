@@ -6,8 +6,7 @@ namespace UnicornHack.Models.GameState
 {
     public class Gold : Item
     {
-        // For EF
-        protected Gold()
+        public Gold()
         {
         }
 

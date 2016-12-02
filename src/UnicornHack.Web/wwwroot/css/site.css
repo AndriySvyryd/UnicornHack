@@ -99,8 +99,12 @@ a:hover {
     color: gold;
 }
 
-.itemCarrot {
+.itemFood {
     color: orange;
+}
+
+.itemArmor {
+    color: teal;
 }
 
 .monsterBug {
