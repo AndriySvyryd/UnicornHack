@@ -1,22 +1,20 @@
-new CreatureVariant
+new Creature
 {
     Name = "fire vortex",
     Species = Species.Vortex,
     SpeciesClass = SpeciesClass.Extraplanar,
-    CorpseVariantName = "",
-    InitialLevel = 8,
     ArmorClass = 2,
     MagicResistance = 30,
     MovementRate = 22,
     Size = Size.Huge,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new Engulf { Duration = 4 } }
+            Effects = new HashSet<Effect> { new Engulf { Duration = 4 } }
         }
 ,
         new Ability
@@ -24,11 +22,11 @@ new CreatureVariant
             Activation = AbilityActivation.OnDigestion,
             Action = AbilityAction.Digestion,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new FireDamage { Damage = 5 } }
+            Effects = new HashSet<Effect> { new FireDamage { Damage = 5 } }
         }
 ,
-        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new AbilityEffect[] { new FireDamage { Damage = 5 } } },
-        new Ability { Activation = AbilityActivation.OnRangedHit, Effects = new AbilityEffect[] { new FireDamage { Damage = 5 } } }
+        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new HashSet<Effect> { new FireDamage { Damage = 5 } } },
+        new Ability { Activation = AbilityActivation.OnRangedHit, Effects = new HashSet<Effect> { new FireDamage { Damage = 5 } } }
     }
 ,
     SimpleProperties = new HashSet<string>
@@ -51,5 +49,7 @@ new CreatureVariant
     }
 ,
     ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 }, { "AcidResistance", 3 }, { "PoisonResistance", 3 }, { "VenomResistance", 3 } },
+    InitialLevel = 8,
+    CorpseName = "",
     GenerationFrequency = Frequency.Commonly
 }

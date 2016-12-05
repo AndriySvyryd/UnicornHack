@@ -1,1 +1,1 @@
-new ItemVariant { Name = "gold coin", Type = ItemType.Coin, Nameable = false, StackSize = 2147483647 }
+new Gold { Name = "gold coin", Type = ItemType.Coin, Nameable = false, StackSize = 2147483647 }

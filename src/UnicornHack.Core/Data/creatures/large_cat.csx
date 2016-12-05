@@ -1,27 +1,27 @@
-new CreatureVariant
+new Creature
 {
     Name = "large cat",
     Species = Species.Cat,
     SpeciesClass = SpeciesClass.Feline,
-    PreviousStageName = "housecat",
-    InitialLevel = 6,
     ArmorClass = 4,
     MovementRate = 15,
     Weight = 250,
     Size = Size.Small,
     Nutrition = 200,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Bite,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 5 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 5 } }
         }
     }
 ,
     SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
+    InitialLevel = 6,
+    PreviousStageName = "housecat",
     GenerationFrequency = Frequency.Often,
     Behavior = MonsterBehavior.Domesticable | MonsterBehavior.Wandering,
     Noise = ActorNoiseType.Bark

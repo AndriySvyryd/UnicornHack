@@ -1,20 +1,19 @@
-new CreatureVariant
+new Creature
 {
     Name = "uruk-hai",
     Species = Species.Orc,
-    InitialLevel = 4,
     ArmorClass = 10,
     MovementRate = 9,
     Weight = 1300,
     Size = Size.Medium,
     Nutrition = 300,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnMeleeAttack,
             Action = AbilityAction.Modifier,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 4 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 4 } }
         }
 ,
         new Ability
@@ -22,11 +21,12 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 1 } }
         }
     }
 ,
     SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
+    InitialLevel = 4,
     GenerationFlags = GenerationFlags.LargeGroup,
     GenerationFrequency = Frequency.Commonly,
     Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector,

@@ -1,21 +1,20 @@
-new CreatureVariant
+new Creature
 {
     Name = "woodland-elf",
     Species = Species.Elf,
-    InitialLevel = 4,
     ArmorClass = 10,
     MagicResistance = 10,
     MovementRate = 12,
     Weight = 800,
     Size = Size.Medium,
     Nutrition = 350,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnMeleeAttack,
             Action = AbilityAction.Modifier,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 5 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 5 } }
         }
 ,
         new Ability
@@ -23,11 +22,12 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 1 } }
         }
     }
 ,
     SimpleProperties = new HashSet<string> { "SleepResistance", "InvisibilityDetection", "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
+    InitialLevel = 4,
     GenerationFlags = GenerationFlags.SmallGroup,
     GenerationFrequency = Frequency.Occasionally,
     Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.WeaponCollector,

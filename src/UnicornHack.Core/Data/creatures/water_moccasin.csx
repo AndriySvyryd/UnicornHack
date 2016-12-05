@@ -1,27 +1,27 @@
-new CreatureVariant
+new Creature
 {
     Name = "water moccasin",
     Species = Species.Snake,
     SpeciesClass = SpeciesClass.Reptile,
-    InitialLevel = 4,
     ArmorClass = 3,
     MovementRate = 15,
     Weight = 150,
     Size = Size.Small,
     Nutrition = 75,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Bite,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new VenomDamage { Damage = 3 } }
+            Effects = new HashSet<Effect> { new VenomDamage { Damage = 3 } }
         }
     }
 ,
     SimpleProperties = new HashSet<string> { "Swimming", "Concealment", "Infravision", "SerpentlikeBody", "Limblessness", "Oviparity", "Carnivorism", "NoInventory" },
     ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 } },
+    InitialLevel = 4,
     GenerationFlags = GenerationFlags.LargeGroup,
     Noise = ActorNoiseType.Hiss
 }

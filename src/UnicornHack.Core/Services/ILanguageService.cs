@@ -1,6 +1,4 @@
-using UnicornHack.Models.GameDefinitions;
-using UnicornHack.Models.GameState;
-using UnicornHack.Models.GameState.Events;
+using UnicornHack.Events;
 
 namespace UnicornHack.Services
 {
@@ -13,7 +11,9 @@ namespace UnicornHack.Services
         string ToString(ItemDropEvent @event);
         string ToString(ItemEquipmentEvent @event);
         string ToString(ItemUnequipmentEvent @event);
-        string Welcome(PlayerCharacter character);
+        string ToString(Item item);
+        string Welcome(Player character);
+        string InvalidTarget();
         string UnableToMove(Direction direction);
     }
 }

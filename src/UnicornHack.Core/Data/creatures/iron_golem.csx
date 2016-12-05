@@ -1,22 +1,20 @@
-new CreatureVariant
+new Creature
 {
     Name = "iron golem",
     Species = Species.Golem,
-    CorpseVariantName = "",
-    InitialLevel = 18,
     ArmorClass = 3,
     MagicResistance = 60,
     MovementRate = 6,
     Weight = 2000,
     Size = Size.Large,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 22 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 22 } }
         }
 ,
         new Ability
@@ -24,7 +22,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Breath,
             Timeout = 5,
-            Effects = new AbilityEffect[] { new PoisonDamage { Damage = 14 } }
+            Effects = new HashSet<Effect> { new PoisonDamage { Damage = 14 } }
         }
     }
 ,
@@ -73,5 +71,7 @@ new CreatureVariant
         }
     }
 ,
+    InitialLevel = 18,
+    CorpseName = "",
     GenerationFrequency = Frequency.Rarely
 }

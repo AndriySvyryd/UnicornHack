@@ -19,6 +19,6 @@ namespace UnicornHack.Utils
             => (byte)Math.Max(Math.Abs(target.X - X), Math.Abs(target.Y - Y));
 
         public Vector DirectionTo(Point target)
-            => new Vector((sbyte)(target.X - X), (sbyte)(target.Y - Y), z: 0);
+            => new Vector((sbyte)(target.X - X), (sbyte)(target.Y - Y));
     }
 }

@@ -1,23 +1,21 @@
-new CreatureVariant
+new Creature
 {
     Name = "lemure",
     Species = Species.Homunculus,
     SpeciesClass = SpeciesClass.Demon,
-    CorpseVariantName = "",
-    InitialLevel = 3,
     ArmorClass = 7,
     MovementRate = 3,
     Weight = 500,
     Size = Size.Medium,
     Nutrition = 200,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Claw,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 2 } }
         }
 ,
         new Ability
@@ -25,7 +23,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Claw,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 2 } }
         }
 ,
         new Ability
@@ -33,14 +31,16 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Bite,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 2 } }
         }
 ,
-        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 2 } } }
+        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new HashSet<Effect> { new PoisonDamage { Damage = 2 } } }
     }
 ,
     SimpleProperties = new HashSet<string> { "SleepResistance", "Infravision", "Infravisibility" },
     ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "Regeneration", 3 } },
+    InitialLevel = 3,
+    CorpseName = "",
     GenerationFrequency = Frequency.Sometimes,
     Behavior = MonsterBehavior.Stalking,
     Alignment = -7,

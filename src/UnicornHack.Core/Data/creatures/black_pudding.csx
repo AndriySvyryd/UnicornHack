@@ -1,25 +1,24 @@
-new CreatureVariant
+new Creature
 {
     Name = "black pudding",
     Species = Species.Pudding,
-    InitialLevel = 10,
     ArmorClass = 6,
     MovementRate = 6,
     Weight = 512,
     Size = Size.Medium,
     Nutrition = 256,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new AcidDamage { Damage = 13 } }
+            Effects = new HashSet<Effect> { new AcidDamage { Damage = 13 } }
         }
 ,
-        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new AbilityEffect[] { new AcidDamage { Damage = 3 } } },
-        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new AcidDamage { Damage = 13 } } }
+        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new HashSet<Effect> { new AcidDamage { Damage = 3 } } },
+        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new HashSet<Effect> { new AcidDamage { Damage = 13 } } }
     }
 ,
     SimpleProperties = new HashSet<string>
@@ -67,5 +66,6 @@ new CreatureVariant
         }
     }
 ,
+    InitialLevel = 10,
     GenerationFrequency = Frequency.Rarely
 }

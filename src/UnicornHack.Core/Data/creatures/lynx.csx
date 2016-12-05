@@ -1,22 +1,21 @@
-new CreatureVariant
+new Creature
 {
     Name = "lynx",
     Species = Species.Cat,
     SpeciesClass = SpeciesClass.Feline,
-    InitialLevel = 5,
     ArmorClass = 6,
     MovementRate = 15,
     Weight = 400,
     Size = Size.Medium,
     Nutrition = 200,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Bite,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 5 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 5 } }
         }
 ,
         new Ability
@@ -24,7 +23,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Claw,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 2 } }
         }
 ,
         new Ability
@@ -32,11 +31,12 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Claw,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 2 } }
         }
     }
 ,
     SimpleProperties = new HashSet<string> { "AnimalBody", "Infravisibility", "Handlessness", "Carnivorism", "SingularInventory" },
+    InitialLevel = 5,
     GenerationFrequency = Frequency.Commonly,
     Noise = ActorNoiseType.Growl
 }

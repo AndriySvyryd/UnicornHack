@@ -1,20 +1,18 @@
-new CreatureVariant
+new Creature
 {
     Name = "yellow light",
     Species = Species.FloatingSphere,
     SpeciesClass = SpeciesClass.Extraplanar,
-    CorpseVariantName = "",
-    InitialLevel = 3,
     MovementRate = 15,
     Size = Size.Small,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Explosion,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new Blind { Duration = 27 } }
+            Effects = new HashSet<Effect> { new Blind { Duration = 27 } }
         }
     }
 ,
@@ -74,5 +72,7 @@ new CreatureVariant
         }
     }
 ,
+    InitialLevel = 3,
+    CorpseName = "",
     GenerationFrequency = Frequency.Sometimes
 }

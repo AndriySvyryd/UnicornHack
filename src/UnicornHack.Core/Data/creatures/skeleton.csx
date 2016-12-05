@@ -1,22 +1,20 @@
-new CreatureVariant
+new Creature
 {
     Name = "skeleton",
     Species = Species.Skeleton,
     SpeciesClass = SpeciesClass.Undead,
-    CorpseVariantName = "",
-    InitialLevel = 3,
     ArmorClass = 10,
     MovementRate = 6,
     Weight = 300,
     Size = Size.Medium,
     Nutrition = 5,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnMeleeAttack,
             Action = AbilityAction.Modifier,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 3 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 3 } }
         }
 ,
         new Ability
@@ -24,7 +22,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 1 } }
         }
     }
 ,
@@ -40,6 +38,8 @@ new CreatureVariant
     }
 ,
     ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "ThickHide", 3 } },
+    InitialLevel = 3,
+    CorpseName = "",
     GenerationFlags = GenerationFlags.SmallGroup,
     GenerationFrequency = Frequency.Occasionally,
     Behavior = MonsterBehavior.WeaponCollector

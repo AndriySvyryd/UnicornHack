@@ -1,21 +1,21 @@
-new CreatureVariant
+new Creature
 {
     Name = "leprechaun",
     Species = Species.Leprechaun,
     SpeciesClass = SpeciesClass.Fey,
-    InitialLevel = 5,
     ArmorClass = 8,
     MagicResistance = 20,
     MovementRate = 15,
     Weight = 60,
     Size = Size.Tiny,
     Nutrition = 30,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
-        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Claw, Timeout = 1, Effects = new AbilityEffect[] { new StealGold() } }
+        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Claw, Timeout = 1, Effects = new HashSet<Effect> { new StealGold { } } }
     }
 ,
     SimpleProperties = new HashSet<string> { "Teleportation", "Infravisibility", "Omnivorism" },
+    InitialLevel = 5,
     GenerationFrequency = Frequency.Occasionally,
     Behavior = MonsterBehavior.GoldCollector,
     Noise = ActorNoiseType.Laugh

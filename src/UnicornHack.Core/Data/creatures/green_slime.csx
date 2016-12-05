@@ -1,19 +1,17 @@
-new CreatureVariant
+new Creature
 {
     Name = "green slime",
     Species = Species.Ooze,
-    CorpseVariantName = "",
-    InitialLevel = 6,
     ArmorClass = 6,
     MovementRate = 6,
     Weight = 400,
     Size = Size.Medium,
     Nutrition = 150,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
-        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Touch, Timeout = 1, Effects = new AbilityEffect[] { new Slime() } },
-        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new AbilityEffect[] { new Slime() } },
-        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new Slime() } }
+        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Touch, Timeout = 1, Effects = new HashSet<Effect> { new Slime { } } },
+        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new HashSet<Effect> { new Slime { } } },
+        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new HashSet<Effect> { new Slime { } } }
     }
 ,
     SimpleProperties = new HashSet<string>
@@ -60,6 +58,8 @@ new CreatureVariant
         }
     }
 ,
+    InitialLevel = 6,
+    CorpseName = "",
     GenerationFlags = GenerationFlags.HellOnly,
     GenerationFrequency = Frequency.Rarely
 }

@@ -1,21 +1,19 @@
-new CreatureVariant
+new Creature
 {
     Name = "nazgul",
     Species = Species.Wraith,
     SpeciesClass = SpeciesClass.Undead,
-    CorpseVariantName = "",
-    InitialLevel = 13,
     MagicResistance = 25,
     MovementRate = 12,
     Weight = 1000,
     Size = Size.Medium,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnMeleeAttack,
             Action = AbilityAction.Modifier,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 2 } }
         }
 ,
         new Ability
@@ -23,7 +21,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new DrainLife { Amount = 1 } }
+            Effects = new HashSet<Effect> { new DrainLife { Amount = 1 } }
         }
 ,
         new Ability
@@ -31,10 +29,10 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Breath,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new Sleep { Duration = 26 } }
+            Effects = new HashSet<Effect> { new Sleep { Duration = 26 } }
         }
 ,
-        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new DrainLife { Amount = 1 } } }
+        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new HashSet<Effect> { new DrainLife { Amount = 1 } } }
     }
 ,
     SimpleProperties = new HashSet<string>
@@ -53,6 +51,8 @@ new CreatureVariant
     }
 ,
     ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 } },
+    InitialLevel = 13,
+    CorpseName = "",
     GenerationFlags = GenerationFlags.NonPolymorphable,
     GenerationFrequency = Frequency.Rarely,
     Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,

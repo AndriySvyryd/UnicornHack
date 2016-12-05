@@ -1,6 +1,4 @@
-using UnicornHack.Models.GameDefinitions;
-using UnicornHack.Models.GameState;
-using UnicornHack.Models.GameState.Events;
+using UnicornHack.Events;
 using Xunit;
 
 namespace UnicornHack.Services.English
@@ -10,11 +8,11 @@ namespace UnicornHack.Services.English
         [Fact]
         public void AttackEvent()
         {
-            var newt = new Creature {VariantName = "newt"};
-            var nymph = new Creature {VariantName = "water nymph", Sex = Sex.Female};
-            var rodney = new Creature {VariantName = "Wizard of Yendor", Sex = Sex.None};
-            var player = new PlayerCharacter {VariantName = "human", GivenName = "Dudley", Sex = Sex.Male};
-            var player2 = new PlayerCharacter {VariantName = "human", GivenName = "Cudley", Sex = Sex.Male};
+            var newt = new Creature {BaseName = "newt"};
+            var nymph = new Creature {BaseName = "water nymph", Sex = Sex.Female};
+            var rodney = new Creature {BaseName = "Wizard of Yendor", Sex = Sex.None};
+            var player = new Player {BaseName = "human", Name = "Dudley", Sex = Sex.Male};
+            var player2 = new Player {BaseName = "human", Name = "Cudley", Sex = Sex.Male};
 
             Verify(newt, nymph, player, SenseType.Sight, SenseType.Sight, AbilityAction.Bite, 11,
                 expectedMessage: "The newt bites the water nymph. (11 pts.)");
@@ -74,7 +72,7 @@ namespace UnicornHack.Services.English
         private void Verify(
             Actor attacker,
             Actor victim,
-            PlayerCharacter sensor,
+            Player sensor,
             SenseType attackerSensed,
             SenseType victimSensed,
             AbilityAction abilityAction,
@@ -108,8 +106,8 @@ namespace UnicornHack.Services.English
         [Fact]
         public void DeathEvent()
         {
-            var newt = new Creature {VariantName = "newt"};
-            var player = new PlayerCharacter { VariantName = "human", GivenName = "Dudley", Sex = Sex.Male };
+            var newt = new Creature {BaseName = "newt"};
+            var player = new Player {BaseName = "human", Name = "Dudley", Sex = Sex.Male};
 
             var languageService = CreateLanguageService();
 
@@ -131,9 +129,9 @@ namespace UnicornHack.Services.English
         [Fact]
         public void ItemEquipmentEvent()
         {
-            var armor = new Item {VariantName = "mail armor", EquippedSlot = EquipmentSlot.Body};
-            var nymph = new Creature { VariantName = "water nymph", Sex = Sex.Female };
-            var player = new PlayerCharacter { VariantName = "human", GivenName = "Dudley", Sex = Sex.Male };
+            var armor = new Item {BaseName = "mail armor", EquippedSlot = EquipmentSlot.Body};
+            var nymph = new Creature {BaseName = "water nymph", Sex = Sex.Female};
+            var player = new Player {BaseName = "human", Name = "Dudley", Sex = Sex.Male};
 
             var languageService = CreateLanguageService();
 
@@ -177,9 +175,9 @@ namespace UnicornHack.Services.English
         [Fact]
         public void ItemUnequipmentEvent()
         {
-            var armor = new Item { VariantName = "mail armor", EquippedSlot = EquipmentSlot.Body };
-            var nymph = new Creature { VariantName = "water nymph", Sex = Sex.Female };
-            var player = new PlayerCharacter { VariantName = "human", GivenName = "Dudley", Sex = Sex.Male };
+            var armor = new Item {BaseName = "mail armor", EquippedSlot = EquipmentSlot.Body};
+            var nymph = new Creature {BaseName = "water nymph", Sex = Sex.Female};
+            var player = new Player {BaseName = "human", Name = "Dudley", Sex = Sex.Male};
 
             var languageService = CreateLanguageService();
 
@@ -223,9 +221,9 @@ namespace UnicornHack.Services.English
         [Fact]
         public void ItemConsumptionEvent()
         {
-            var carrot = new Item { VariantName = "carrot" };
-            var newt = new Creature { VariantName = "newt" };
-            var player = new PlayerCharacter { VariantName = "human", GivenName = "Dudley", Sex = Sex.Male };
+            var carrot = new Item {BaseName = "carrot"};
+            var newt = new Creature {BaseName = "newt"};
+            var player = new Player {BaseName = "human", Name = "Dudley", Sex = Sex.Male};
 
             var languageService = CreateLanguageService();
 
@@ -251,9 +249,10 @@ namespace UnicornHack.Services.English
         [Fact]
         public void ItemPickUpEvent()
         {
-            var coins = new Gold(new Game(), quantity: 11);
-            var newt = new Creature { VariantName = "newt" };
-            var player = new PlayerCharacter { VariantName = "human", GivenName = "Dudley", Sex = Sex.Male };
+            var coins = (Gold)Gold.Get().Instantiate(new Game());
+            coins.Quantity = 11;
+            var newt = new Creature {BaseName = "newt"};
+            var player = new Player {BaseName = "human", Name = "Dudley", Sex = Sex.Male};
 
             var languageService = CreateLanguageService();
 
@@ -279,9 +278,10 @@ namespace UnicornHack.Services.English
         [Fact]
         public void ItemDropEvent()
         {
-            var coins = new Gold(new Game(), quantity: 11);
-            var newt = new Creature { VariantName = "newt" };
-            var player = new PlayerCharacter { VariantName = "human", GivenName = "Dudley", Sex = Sex.Male };
+            var coins = (Gold)Gold.Get().Instantiate(new Game());
+            coins.Quantity = 11;
+            var newt = new Creature {BaseName = "newt"};
+            var player = new Player {BaseName = "human", Name = "Dudley", Sex = Sex.Male};
 
             var languageService = CreateLanguageService();
 
@@ -310,10 +310,10 @@ namespace UnicornHack.Services.English
             var languageService = CreateLanguageService();
 
             var message = languageService.Welcome(
-                new PlayerCharacter
+                new Player
                 {
-                    VariantName = "human",
-                    GivenName = "Conan the Barbarian",
+                    BaseName = "human",
+                    Name = "Conan the Barbarian",
                     Level = new Level {Name = "Dungeon of Fun"}
                 });
 

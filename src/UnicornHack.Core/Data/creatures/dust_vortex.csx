@@ -1,22 +1,20 @@
-new CreatureVariant
+new Creature
 {
     Name = "dust vortex",
     Species = Species.Vortex,
     SpeciesClass = SpeciesClass.Extraplanar,
-    CorpseVariantName = "",
-    InitialLevel = 4,
     ArmorClass = 2,
     MagicResistance = 30,
     MovementRate = 20,
     Size = Size.Huge,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new Engulf { Duration = 3 } }
+            Effects = new HashSet<Effect> { new Engulf { Duration = 3 } }
         }
 ,
         new Ability
@@ -24,7 +22,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnDigestion,
             Action = AbilityAction.Digestion,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new Blind { Duration = 1 } }
+            Effects = new HashSet<Effect> { new Blind { Duration = 1 } }
         }
     }
 ,
@@ -47,5 +45,7 @@ new CreatureVariant
     }
 ,
     ValuedProperties = new Dictionary<string, Object> { { "WaterWeakness", 3 }, { "PoisonResistance", 3 }, { "VenomResistance", 3 } },
+    InitialLevel = 4,
+    CorpseName = "",
     GenerationFrequency = Frequency.Commonly
 }

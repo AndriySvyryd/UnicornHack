@@ -1,22 +1,20 @@
-new CreatureVariant
+new Creature
 {
     Name = "stone golem",
     Species = Species.Golem,
-    CorpseVariantName = "",
-    InitialLevel = 14,
     ArmorClass = 4,
     MagicResistance = 50,
     MovementRate = 6,
     Weight = 2000,
     Size = Size.Large,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 16 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 16 } }
         }
     }
 ,
@@ -65,5 +63,7 @@ new CreatureVariant
         }
     }
 ,
+    InitialLevel = 14,
+    CorpseName = "",
     GenerationFrequency = Frequency.Rarely
 }

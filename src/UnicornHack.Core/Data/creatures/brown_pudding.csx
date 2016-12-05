@@ -1,25 +1,24 @@
-new CreatureVariant
+new Creature
 {
     Name = "brown pudding",
     Species = Species.Pudding,
-    InitialLevel = 5,
     ArmorClass = 8,
     MovementRate = 3,
     Weight = 512,
     Size = Size.Medium,
     Nutrition = 256,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new VenomDamage { Damage = 3 } }
+            Effects = new HashSet<Effect> { new VenomDamage { Damage = 3 } }
         }
 ,
-        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new AbilityEffect[] { new VenomDamage { Damage = 3 } } },
-        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new VenomDamage { Damage = 3 } } }
+        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new HashSet<Effect> { new VenomDamage { Damage = 3 } } },
+        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new HashSet<Effect> { new VenomDamage { Damage = 3 } } }
     }
 ,
     SimpleProperties = new HashSet<string>
@@ -67,5 +66,6 @@ new CreatureVariant
         }
     }
 ,
+    InitialLevel = 5,
     GenerationFrequency = Frequency.Rarely
 }

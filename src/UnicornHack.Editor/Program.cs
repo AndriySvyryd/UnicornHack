@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using CSharpScriptSerialization;
-using UnicornHack.Models.GameDefinitions;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Editor
@@ -13,26 +12,15 @@ namespace UnicornHack.Editor
     {
         public static void Main(string[] args)
         {
-            SerializeCreatureVariants(verify: true);
-            SerializePlayersVariants(verify: true);
-            SerializeItemVariants(verify: true);
+            SerializeCreatures(verify: true);
+            SerializePlayers(verify: true);
+            SerializeItems(verify: true);
         }
 
-        private static void SerializePlayersVariants(bool verify = false)
+        private static void SerializePlayers(bool verify = false)
         {
-            foreach (var playerVariant in PlayerVariant.GetAllPlayerVariants())
+            foreach (var playerVariant in Player.GetAllPlayerVariants())
             {
-                playerVariant.Abilities = playerVariant.Abilities.Any() ? playerVariant.Abilities : null;
-                playerVariant.SimpleProperties = playerVariant.SimpleProperties.Any()
-                    ? playerVariant.SimpleProperties
-                    : null;
-                playerVariant.ValuedProperties = playerVariant.ValuedProperties.Any()
-                    ? playerVariant.ValuedProperties
-                    : null;
-                playerVariant.SkillAptitudes = playerVariant.SkillAptitudes.Any()
-                    ? playerVariant.SkillAptitudes
-                    : null;
-
                 var script = CSScriptSerializer.Serialize(playerVariant);
 
                 File.WriteAllText(GetFilePath(playerVariant), script);
@@ -44,18 +32,10 @@ namespace UnicornHack.Editor
             }
         }
 
-        private static void SerializeCreatureVariants(bool verify = false)
+        private static void SerializeCreatures(bool verify = false)
         {
-            foreach (var creatureVariant in CreatureVariant.GetAllCreatureVariants())
+            foreach (var creatureVariant in Creature.GetAllCreatureVariants())
             {
-                creatureVariant.Abilities = creatureVariant.Abilities.Any() ? creatureVariant.Abilities : null;
-                creatureVariant.SimpleProperties = creatureVariant.SimpleProperties.Any()
-                    ? creatureVariant.SimpleProperties
-                    : null;
-                creatureVariant.ValuedProperties = creatureVariant.ValuedProperties.Any()
-                    ? creatureVariant.ValuedProperties
-                    : null;
-
                 var script = CSScriptSerializer.Serialize(creatureVariant);
 
                 File.WriteAllText(GetFilePath(creatureVariant), script);
@@ -67,42 +47,31 @@ namespace UnicornHack.Editor
             }
         }
 
-        private static void SerializeItemVariants(bool verify = false)
+        private static void SerializeItems(bool verify = false)
         {
-            foreach (var itemVariant in ItemVariant.GetAllItemVariants())
+            foreach (var item in Item.GetAllItemVariants())
             {
-                itemVariant.Abilities = itemVariant.Abilities.Any() ? itemVariant.Abilities : null;
-                itemVariant.SimpleProperties = itemVariant.SimpleProperties.Any()
-                    ? itemVariant.SimpleProperties
-                    : null;
-                itemVariant.ValuedProperties = itemVariant.ValuedProperties.Any()
-                    ? itemVariant.ValuedProperties
-                    : null;
-                itemVariant.EquipableSlots = itemVariant.EquipableSlots.Any()
-                    ? itemVariant.EquipableSlots
-                    : null;
+                var script = CSScriptSerializer.Serialize(item);
 
-                var script = CSScriptSerializer.Serialize(itemVariant);
-
-                File.WriteAllText(GetFilePath(itemVariant), script);
+                File.WriteAllText(GetFilePath(item), script);
 
                 if (verify)
                 {
-                    Verify(script, itemVariant);
+                    Verify(script, item);
                 }
             }
         }
 
-        private static void Verify(string script, CreatureVariant creatureVariant)
-            => Verify<CreatureVariant>(script, c => c.Name == creatureVariant.Name,
+        private static void Verify(string script, Creature creature)
+            => Verify<Creature>(script, c => c.Name == creature.Name,
                 c => c.SimpleProperties, c => c.ValuedProperties);
 
-        private static void Verify(string script, PlayerVariant playerVariant)
-            => Verify<PlayerVariant>(script, c => c.Name == playerVariant.Name,
+        private static void Verify(string script, Player player)
+            => Verify<Player>(script, c => c.Name == player.Name,
                 c => c.SimpleProperties, c => c.ValuedProperties);
 
-        private static void Verify(string script, ItemVariant itemVariant)
-            => Verify<ItemVariant>(script, c => c.Name == itemVariant.Name,
+        private static void Verify(string script, Item item)
+            => Verify<Item>(script, c => c.Name == item.Name,
                 c => c.SimpleProperties, c => c.ValuedProperties);
 
         private static readonly Dictionary<string, CustomPropertyDescription> CustomProperties =
@@ -154,12 +123,12 @@ namespace UnicornHack.Editor
                                 $"Valued property {valuedProperty} should be of type {description.PropertyType}");
                         }
 
-                        if (((IComparable) description.MinValue)?.CompareTo(valuedProperty.Value) > 0)
+                        if (((IComparable)description.MinValue)?.CompareTo(valuedProperty.Value) > 0)
                         {
                             throw new InvalidOperationException(
                                 $"Valued property {valuedProperty} should be lesser or equal to " + description.MinValue);
                         }
-                        if (((IComparable) description.MaxValue)?.CompareTo(valuedProperty.Value) < 0)
+                        if (((IComparable)description.MaxValue)?.CompareTo(valuedProperty.Value) < 0)
                         {
                             throw new InvalidOperationException(
                                 $"Valued property {valuedProperty} should be greater or equal to " +
@@ -177,31 +146,31 @@ namespace UnicornHack.Editor
 
         private static Dictionary<string, CustomPropertyDescription> GetCustomProperties()
             => typeof(CustomPropertyDescription).GetProperties(
-                    BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Static)
+                BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Static)
                 .Where(p => !p.CanWrite)
                 .ToDictionary(
                     p => p.Name,
-                    p => (CustomPropertyDescription) p.GetGetMethod().Invoke(null, null));
+                    p => (CustomPropertyDescription)p.GetGetMethod().Invoke(null, null));
 
-        private static string GetFilePath(CreatureVariant creatureVariant)
+        private static string GetFilePath(Creature creature)
         {
-            var directory = Path.Combine(CreatureVariant.BasePath, "new");
+            var directory = Path.Combine(Creature.BasePath, "new");
             Directory.CreateDirectory(directory);
-            return Path.Combine(directory, CSScriptDeserializer.GetFilename(creatureVariant.Name));
+            return Path.Combine(directory, CSScriptDeserializer.GetFilename(creature.Name));
         }
 
-        private static string GetFilePath(PlayerVariant playerVariant)
+        private static string GetFilePath(Player player)
         {
-            var directory = Path.Combine(PlayerVariant.BasePath, "new");
+            var directory = Path.Combine(Player.BasePath, "new");
             Directory.CreateDirectory(directory);
-            return Path.Combine(directory, CSScriptDeserializer.GetFilename(playerVariant.Name));
+            return Path.Combine(directory, CSScriptDeserializer.GetFilename(player.Name));
         }
 
-        private static string GetFilePath(ItemVariant itemVariant)
+        private static string GetFilePath(Item item)
         {
-            var directory = Path.Combine(ItemVariant.BasePath, "new");
+            var directory = Path.Combine(Item.BasePath, "new");
             Directory.CreateDirectory(directory);
-            return Path.Combine(directory, CSScriptDeserializer.GetFilename(itemVariant.Name));
+            return Path.Combine(directory, CSScriptDeserializer.GetFilename(item.Name));
         }
     }
 }

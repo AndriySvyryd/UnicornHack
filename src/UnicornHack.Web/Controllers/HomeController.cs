@@ -5,9 +5,9 @@ using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using UnicornHack.Effects;
 using UnicornHack.Hubs;
 using UnicornHack.Models;
-using UnicornHack.Models.GameState;
 using UnicornHack.Models.GameViewModels;
 using UnicornHack.Services;
 
@@ -55,7 +55,7 @@ namespace UnicornHack.Controllers
             var character = FindOrCreateCharacter(name);
             if (character.Game.ActingActor == null)
             {
-                if (!character.Game.PlayerCharacters.Any(pc => pc.IsAlive))
+                if (!character.Game.Players.Any(pc => pc.IsAlive))
                 {
                     Clean(character.Game);
                     _dbContext.SaveChanges();
@@ -80,7 +80,8 @@ namespace UnicornHack.Controllers
 
             _dbContext.SaveChanges();
 
-            if (character.Level == null)
+            // Level is null if the character is dead
+            if (!character.IsAlive)
             {
                 character.Level = level;
             }
@@ -92,21 +93,28 @@ namespace UnicornHack.Controllers
             return View();
         }
 
-        private PlayerCharacter FindOrCreateCharacter(string name)
+        private Player FindOrCreateCharacter(string name)
         {
             var character = FindCharacter(name);
             if (character == null)
             {
                 var game = new Game
                 {
-                    CurrentTurn = -1,
+                    CurrentTurn = 0,
                     RandomSeed = Environment.TickCount
                 };
                 Initialize(game);
                 _dbContext.Games.Add(game);
                 _dbContext.SaveChanges();
 
-                character = PlayerCharacter.Create(game, name);
+                var initialLevel = Level.CreateLevel(game, Level.MainBranchName, depth: 1);
+                var upStairs = initialLevel.UpStairs.First();
+                character = (Player)Player.Get("player human")
+                    .Instantiate(initialLevel, upStairs.DownLevelX, upStairs.DownLevelY);
+                character.Name = name;
+
+                character.WriteLog(game.Services.Language.Welcome(character));
+
                 _dbContext.Characters.Add(character);
                 _dbContext.SaveChanges();
 
@@ -117,11 +125,10 @@ namespace UnicornHack.Controllers
             return character;
         }
 
-        private PlayerCharacter FindCharacter(string name)
+        private Player FindCharacter(string name)
         {
             var character = _dbContext.Characters
-                .Include(c => c.Level.Game)
-                .FirstOrDefault(c => c.GivenName.Equals(name, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(c => c.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
             if (character == null)
             {
@@ -129,15 +136,21 @@ namespace UnicornHack.Controllers
             }
 
             _dbContext.Characters
-                .Include(a => a.Inventory)
-                .Include(a => a.Log)
+                .Include(c => c.Game.ActingActor)
+                .Include(c => c.Log)
+                .Include(c => c.SensedEvents)
                 .Include(c => c.Level.DownStairs)
                 .Include(c => c.Level.UpStairs)
                 .Include(c => c.Level.Game)
-                .Where(c => c.Game == character.Game).ToList();
+                .Where(c => c.GameId == character.GameId)
+                .Load();
 
-            var currentLevel = character.Level;
-            var levelsToLoad = new List<int> {currentLevel.Id};
+            if (character.Level == null)
+            {
+                return character;
+            }
+
+            var levelsToLoad = new List<int> {character.Level.Id};
 
             // Preload adjacent levels
             var upStairs = character.Level.UpStairs.SingleOrDefault(s =>
@@ -171,8 +184,16 @@ namespace UnicornHack.Controllers
             }
 
             var levels = _dbContext.Levels
-                .Include(l => l.Items)
-                .Include(l => l.Actors).ThenInclude(l => l.Inventory)
+                .Include(l => l.Items).ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
+                .Include(l => l.Actors)
+                .ThenInclude(a => a.Inventory)
+                .ThenInclude(i => i.Abilities)
+                .ThenInclude(a => a.Effects)
+                .Include(l => l.Actors).ThenInclude(a => a.Abilities).ThenInclude(a => a.Effects)
+                .Include(l => l.Actors).ThenInclude(a => a.DefaultAttack).ThenInclude(a => a.Effects)
+                .Include(l => l.Actors).ThenInclude(a => a.MeleeAttack).ThenInclude(a => a.Effects)
+                .Include(l => l.DownStairs)
+                .Include(l => l.UpStairs)
                 .Include(l => l.Game)
                 .Where(l => levelsToLoad.Contains(l.Id)).ToList();
 
@@ -180,6 +201,17 @@ namespace UnicornHack.Controllers
             _dbContext.Items
                 .Where(i => i.ContainerId.HasValue && loadedContainerIds.Contains(i.ContainerId.Value))
                 .Load();
+
+            var meleeAttacks = _dbContext.Set<MeleeAttack>()
+                .Local.OfType<MeleeAttack>()
+                .Select(c => c.Id)
+                .ToList();
+            if (meleeAttacks.Any())
+            {
+                // TODO: Remove this
+                _dbContext.Set<MeleeAttack>().Where(e => meleeAttacks.Contains(e.Id))
+                    .Include(e => e.Weapon.Abilities).ThenInclude(a => a.Effects).Load();
+            }
 
             Initialize(character.Game);
 
@@ -192,9 +224,10 @@ namespace UnicornHack.Controllers
             game.Delete = Delete;
         }
 
-        private static MethodInfo _genericDelete = typeof(HomeController).GetMethod(nameof(GenericDelete),
+        private static readonly MethodInfo _genericDelete = typeof(HomeController).GetMethod(nameof(GenericDelete),
             BindingFlags.Instance | BindingFlags.NonPublic);
-        private static Dictionary<Type, MethodInfo> _deleteDelegates = new Dictionary<Type, MethodInfo>();
+
+        private static readonly Dictionary<Type, MethodInfo> _deleteDelegates = new Dictionary<Type, MethodInfo>();
 
         private void Delete(object entity)
         {
@@ -222,18 +255,28 @@ namespace UnicornHack.Controllers
         private void Clean(Game game)
         {
             game = _dbContext.Games
-                .Include(g => g.Actors)
-                .Include(g => g.Items)
                 .Include(g => g.Levels)
                 .Include(g => g.Stairs)
+                .Include(g => g.Actors)
+                .Include(g => g.Items)
+                .Include(g => g.Abilities)
+                .Include(g => g.Effects)
                 .Single(g => g.Id == game.Id);
 
-            foreach (var playerCharacter in game.PlayerCharacters)
+            foreach (var playerCharacter in game.Players)
             {
                 foreach (var log in playerCharacter.Log.ToList())
                 {
                     _dbContext.LogEntries.Remove(log);
                 }
+            }
+            foreach (var effect in game.Effects.ToList())
+            {
+                _dbContext.Effects.Remove(effect);
+            }
+            foreach (var ability in game.Abilities.ToList())
+            {
+                _dbContext.Abilities.Remove(ability);
             }
             foreach (var item in game.Items.ToList())
             {

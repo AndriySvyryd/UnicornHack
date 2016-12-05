@@ -1,21 +1,20 @@
-new CreatureVariant
+new Creature
 {
     Name = "gelatinous cube",
     Species = Species.Blob,
-    InitialLevel = 6,
     ArmorClass = 8,
     MovementRate = 6,
     Weight = 600,
     Size = Size.Large,
     Nutrition = 150,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new Paralyze { Duration = 4 } }
+            Effects = new HashSet<Effect> { new Paralyze { Duration = 4 } }
         }
 ,
         new Ability
@@ -23,7 +22,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 7,
-            Effects = new AbilityEffect[] { new Engulf { Duration = 7 } }
+            Effects = new HashSet<Effect> { new Engulf { Duration = 7 } }
         }
 ,
         new Ability
@@ -31,7 +30,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnDigestion,
             Action = AbilityAction.Digestion,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PoisonDamage { Damage = 1 } }
+            Effects = new HashSet<Effect> { new PoisonDamage { Damage = 1 } }
         }
 ,
         new Ability
@@ -39,10 +38,10 @@ new CreatureVariant
             Activation = AbilityActivation.OnDigestion,
             Action = AbilityAction.Digestion,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new AcidDamage { Damage = 1 } }
+            Effects = new HashSet<Effect> { new AcidDamage { Damage = 1 } }
         }
 ,
-        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new AbilityEffect[] { new Paralyze { Duration = 4 } } }
+        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new HashSet<Effect> { new Paralyze { Duration = 4 } } }
     }
 ,
     SimpleProperties = new HashSet<string>
@@ -92,6 +91,7 @@ new CreatureVariant
         }
     }
 ,
+    InitialLevel = 6,
     GenerationFrequency = Frequency.Commonly,
     Behavior = MonsterBehavior.Wandering | MonsterBehavior.WeaponCollector
 }

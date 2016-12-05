@@ -1,23 +1,21 @@
-new CreatureVariant
+new Creature
 {
     Name = "Nalzok",
     Species = Species.DemonMajor,
     SpeciesClass = SpeciesClass.Demon,
-    CorpseVariantName = "",
-    InitialLevel = 16,
     ArmorClass = -2,
     MagicResistance = 75,
     MovementRate = 12,
     Weight = 2500,
     Size = Size.Huge,
     Nutrition = 400,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnMeleeAttack,
             Action = AbilityAction.Modifier,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 20 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 20 } }
         }
 ,
         new Ability
@@ -25,7 +23,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 1 } }
         }
 ,
         new Ability
@@ -33,7 +31,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 1 } }
         }
 ,
         new Ability
@@ -41,7 +39,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Spell,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new ScriptedEffect { Script = "ArcaneSpell" } }
+            Effects = new HashSet<Effect> { new ScriptedEffect { Script = "ArcaneSpell" } }
         }
 ,
         new Ability
@@ -49,10 +47,10 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new StealAmulet() }
+            Effects = new HashSet<Effect> { new StealAmulet { } }
         }
 ,
-        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 5 } } }
+        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new HashSet<Effect> { new PoisonDamage { Damage = 5 } } }
     }
 ,
     SimpleProperties = new HashSet<string>
@@ -69,6 +67,8 @@ new CreatureVariant
     }
 ,
     ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 }, { "PoisonResistance", 3 } },
+    InitialLevel = 16,
+    CorpseName = "",
     GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
     GenerationFrequency = Frequency.Rarely,
     Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser | MonsterBehavior.Covetous,

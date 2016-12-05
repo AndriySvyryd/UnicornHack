@@ -1,5 +1,6 @@
 @using System
-@model PlayerCharacter
+@using PlayerCharacter = UnicornHack.Player
+@model UnicornHack.Player
 
 <pre>
 @{
@@ -99,7 +100,7 @@
     {
         var symbol = ' ';
         var className = "inherit";
-        switch (item.Variant.Type)
+        switch (item.Type)
         {
             case ItemType.Coin:
                 symbol = '$';
@@ -113,8 +114,12 @@
                 symbol = '[';
                 className = "itemArmor";
                 break;
+            case ItemType.Weapon:
+                symbol = ')';
+                className = "itemWeapon";
+                break;
             default:
-                throw new NotSupportedException($"Item type {item.Variant.Type} not supported.");
+                throw new NotSupportedException($"Item type {item.Type} not supported.");
         }
 
         characters[item.LevelX.Value, item.LevelY.Value] = symbol;
@@ -125,12 +130,12 @@
     {
         var symbol = ' ';
         var className = "inherit";
-        switch (actor.Variant.Name)
+        switch (actor.BaseActor.Name)
         {
             case "human":
             case "player human":
                 symbol = 'H';
-                className = "monsterHuman" + (actor is PlayerCharacter ? " playerCharacter" : "");
+                className = "monsterHuman" + (actor is Player ? " playerCharacter" : "");
                 break;
             case "unicorn":
                 symbol = 'U';
@@ -145,10 +150,10 @@
                 className = "monsterNastyBug";
                 break;
             default:
-                throw new NotSupportedException($"Actor type {actor.Variant.Name} not supported.");
+                throw new NotSupportedException($"Actor type {actor.BaseActor.Name} not supported.");
         }
 
-        className += (actor is PlayerCharacter ? " playerCharacter" : "");
+        className += (actor is Player ? " playerCharacter" : "");
         characters[actor.LevelX, actor.LevelY] = symbol;
         classes[actor.LevelX, actor.LevelY] = className;
     }

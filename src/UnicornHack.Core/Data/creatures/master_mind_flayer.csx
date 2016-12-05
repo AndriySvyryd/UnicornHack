@@ -1,21 +1,19 @@
-new CreatureVariant
+new Creature
 {
     Name = "master mind flayer",
     Species = Species.Illithid,
-    PreviousStageName = "mind flayer",
-    InitialLevel = 13,
     MagicResistance = 90,
     MovementRate = 12,
     Weight = 1200,
     Size = Size.Large,
     Nutrition = 300,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnMeleeAttack,
             Action = AbilityAction.Modifier,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 4 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 4 } }
         }
 ,
         new Ability
@@ -23,7 +21,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 1 } }
         }
 ,
         new Ability
@@ -31,7 +29,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Suck,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new DrainIntelligence { Amount = 2 } }
+            Effects = new HashSet<Effect> { new DrainIntelligence { Amount = 2 } }
         }
 ,
         new Ability
@@ -39,12 +37,14 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Suck,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new DrainIntelligence { Amount = 2 } }
+            Effects = new HashSet<Effect> { new DrainIntelligence { Amount = 2 } }
         }
     }
 ,
     SimpleProperties = new HashSet<string> { "Flight", "FlightControl", "InvisibilityDetection", "Infravision", "Infravisibility", "Humanoidness", "Omnivorism" },
     ValuedProperties = new Dictionary<string, Object> { { "Telepathy", 3 } },
+    InitialLevel = 13,
+    PreviousStageName = "mind flayer",
     GenerationFrequency = Frequency.Commonly,
     Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
     Alignment = -8,

@@ -1,22 +1,21 @@
-new CreatureVariant
+new Creature
 {
     Name = "Chromatic Dragon",
     Species = Species.Dragon,
     SpeciesClass = SpeciesClass.Reptile,
-    InitialLevel = 16,
     MagicResistance = 30,
     MovementRate = 12,
     Weight = 4500,
     Size = Size.Gigantic,
     Nutrition = 1500,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Breath,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new ScriptedEffect { Script = "ElementalDamage" } }
+            Effects = new HashSet<Effect> { new ScriptedEffect { Script = "ElementalDamage" } }
         }
 ,
         new Ability
@@ -24,7 +23,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Bite,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 18 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 18 } }
         }
 ,
         new Ability
@@ -32,7 +31,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Claw,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 10 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 10 } }
         }
 ,
         new Ability
@@ -40,7 +39,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Claw,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 10 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 10 } }
         }
 ,
         new Ability
@@ -48,7 +47,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Spell,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new ScriptedEffect { Script = "ArcaneSpell" } }
+            Effects = new HashSet<Effect> { new ScriptedEffect { Script = "ArcaneSpell" } }
         }
 ,
         new Ability
@@ -56,7 +55,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new StealAmulet() }
+            Effects = new HashSet<Effect> { new StealAmulet { } }
         }
     }
 ,
@@ -106,6 +105,7 @@ new CreatureVariant
         }
     }
 ,
+    InitialLevel = 16,
     GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
     Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector | MonsterBehavior.Covetous,
     Alignment = -14,

@@ -1,24 +1,22 @@
-new CreatureVariant
+new Creature
 {
     Name = "Geryon",
     Species = Species.DemonMajor,
     SpeciesClass = SpeciesClass.Demon,
-    CorpseVariantName = "",
-    InitialLevel = 72,
     ArmorClass = -3,
     MagicResistance = 75,
     MovementRate = 3,
     Weight = 2500,
     Size = Size.Huge,
     Nutrition = 500,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Claw,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 10 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 10 } }
         }
 ,
         new Ability
@@ -26,7 +24,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Claw,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 10 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 10 } }
         }
 ,
         new Ability
@@ -34,10 +32,10 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Sting,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new VenomDamage { Damage = 5 } }
+            Effects = new HashSet<Effect> { new VenomDamage { Damage = 5 } }
         }
 ,
-        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new PoisonDamage { Damage = 13 } } }
+        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new HashSet<Effect> { new PoisonDamage { Damage = 13 } } }
     }
 ,
     SimpleProperties = new HashSet<string>
@@ -54,6 +52,8 @@ new CreatureVariant
     }
 ,
     ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 }, { "PoisonResistance", 3 } },
+    InitialLevel = 72,
+    CorpseName = "",
     GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable | GenerationFlags.HellOnly,
     Behavior = MonsterBehavior.Stalking | MonsterBehavior.Covetous | MonsterBehavior.Bribeable,
     Alignment = -15,

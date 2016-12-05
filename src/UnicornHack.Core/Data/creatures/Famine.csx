@@ -1,23 +1,22 @@
-new CreatureVariant
+new Creature
 {
     Name = "Famine",
     Species = Species.Horseman,
     SpeciesClass = SpeciesClass.Extraplanar,
-    InitialLevel = 30,
     ArmorClass = -5,
     MagicResistance = 100,
     MovementRate = 12,
     Weight = 1000,
     Size = Size.Medium,
     Nutrition = -5000,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new ScriptedEffect { Script = "Famine" } }
+            Effects = new HashSet<Effect> { new ScriptedEffect { Script = "Famine" } }
         }
 ,
         new Ability
@@ -25,10 +24,10 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new ScriptedEffect { Script = "Famine" } }
+            Effects = new HashSet<Effect> { new ScriptedEffect { Script = "Famine" } }
         }
 ,
-        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new ScriptedEffect { Script = "Famine" } } }
+        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new HashSet<Effect> { new ScriptedEffect { Script = "Famine" } } }
     }
 ,
     SimpleProperties = new HashSet<string>
@@ -83,6 +82,7 @@ new CreatureVariant
         }
     }
 ,
+    InitialLevel = 30,
     GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable | GenerationFlags.HellOnly,
     Behavior = MonsterBehavior.Stalking | MonsterBehavior.Displacing,
     Noise = ActorNoiseType.Rider

@@ -2,9 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Globalization;
 using System.Text;
-using UnicornHack.Models.GameDefinitions;
-using UnicornHack.Models.GameState;
-using UnicornHack.Models.GameState.Events;
+using UnicornHack.Events;
 
 namespace UnicornHack.Services.English
 {
@@ -37,11 +35,11 @@ namespace UnicornHack.Services.English
                 return "something";
             }
 
-            var monster = actor as Creature;
-            if (monster != null)
+            var creature = actor as Creature;
+            if (creature != null)
             {
-                var name = monster.Variant.Name +
-                           (monster.GivenName == null ? "" : " named \"" + monster.GivenName + "\"");
+                var name = creature.BaseName +
+                           (creature.Name == null ? "" : " named \"" + creature.Name + "\"");
 
                 var proper = char.IsUpper(name[index: 0]);
                 return (definiteDeterminer == null || proper
@@ -52,8 +50,8 @@ namespace UnicornHack.Services.English
                        + name;
             }
 
-            var character = actor as PlayerCharacter;
-            return character.GivenName;
+            var character = actor as Player;
+            return character?.Name;
         }
 
         private string ToString(Item item, SenseType sense)
@@ -66,9 +64,10 @@ namespace UnicornHack.Services.English
             return ToString(item);
         }
 
-        private string ToString(Item item)
+        public virtual string ToString(Item item)
         {
-            var itemName = item.Name;
+            var itemName = item.BaseName +
+                           (item.Name == null ? "" : " named \"" + item.Name + "\"");
             var quantity = (item as ItemStack)?.Quantity ?? (item as Gold)?.Quantity;
             if (quantity != null
                 && quantity.Value > 1)
@@ -135,6 +134,18 @@ namespace UnicornHack.Services.English
                     break;
                 case AbilityAction.Explosion:
                     verb = "explode";
+                    break;
+                case AbilityAction.Chop:
+                    verb = "chop";
+                    break;
+                case AbilityAction.Bludgeon:
+                    verb = "bludgeon";
+                    break;
+                case AbilityAction.Slash:
+                    verb = "slash";
+                    break;
+                case AbilityAction.Poke:
+                    verb = "poke";
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(abilityAction), abilityAction, message: null);
@@ -320,10 +331,15 @@ namespace UnicornHack.Services.English
 
         #region Interface messages
 
-        public virtual string Welcome(PlayerCharacter character)
+        public virtual string Welcome(Player character)
         {
             return Format("Welcome to the {0}, {1}!", character.Level.Name,
                 ToString(character, EnglishPerson.Third, variantKnown: true));
+        }
+
+        public string InvalidTarget()
+        {
+            return "The specified target is invalid.";
         }
 
         public virtual string UnableToMove(Direction direction)

@@ -1,22 +1,20 @@
-new CreatureVariant
+new Creature
 {
     Name = "glass golem",
     Species = Species.Golem,
-    CorpseVariantName = "",
-    InitialLevel = 16,
     ArmorClass = 4,
     MagicResistance = 50,
     MovementRate = 6,
     Weight = 1800,
     Size = Size.Large,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 9 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 9 } }
         }
 ,
         new Ability
@@ -24,7 +22,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 9 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 9 } }
         }
     }
 ,
@@ -78,5 +76,7 @@ new CreatureVariant
         }
     }
 ,
+    InitialLevel = 16,
+    CorpseName = "",
     GenerationFrequency = Frequency.Rarely
 }

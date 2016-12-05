@@ -1,21 +1,19 @@
-new CreatureVariant
+new Creature
 {
     Name = "straw golem",
     Species = Species.Golem,
-    CorpseVariantName = "",
-    InitialLevel = 3,
     ArmorClass = 10,
     MovementRate = 12,
     Weight = 400,
     Size = Size.Large,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 1 } }
         }
 ,
         new Ability
@@ -23,7 +21,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 1 } }
         }
     }
 ,
@@ -40,5 +38,7 @@ new CreatureVariant
     }
 ,
     ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "MaxHP", 20 } },
+    InitialLevel = 3,
+    CorpseName = "",
     GenerationFrequency = Frequency.Rarely
 }

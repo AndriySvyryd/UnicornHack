@@ -1,27 +1,25 @@
-new CreatureVariant
+new Creature
 {
     Name = "elf zombie",
     Species = Species.Elf,
     SpeciesClass = SpeciesClass.Undead,
-    CorpseVariantName = "elf",
-    InitialLevel = 4,
     ArmorClass = 9,
     MagicResistance = 10,
     MovementRate = 12,
     Weight = 800,
     Size = Size.Medium,
     Nutrition = 150,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 5 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 5 } }
         }
 ,
-        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new AbilityEffect[] { new Infect { } } }
+        new Ability { Activation = AbilityActivation.OnConsumption, Effects = new HashSet<Effect> { new Infect { } } }
     }
 ,
     SimpleProperties = new HashSet<string>
@@ -36,6 +34,8 @@ new CreatureVariant
     }
 ,
     ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "PoisonResistance", 3 } },
+    InitialLevel = 4,
+    CorpseName = "elf",
     GenerationFlags = GenerationFlags.SmallGroup,
     GenerationFrequency = Frequency.Sometimes,
     Behavior = MonsterBehavior.Stalking,

@@ -1,21 +1,19 @@
-new CreatureVariant
+new Creature
 {
     Name = "will o' wisp",
     Species = Species.FloatingSphere,
     SpeciesClass = SpeciesClass.Extraplanar,
-    CorpseVariantName = "",
-    InitialLevel = 7,
     MagicResistance = 20,
     MovementRate = 15,
     Size = Size.Small,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Explosion,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new Confuse { Duration = 27 } }
+            Effects = new HashSet<Effect> { new Confuse { Duration = 27 } }
         }
     }
 ,
@@ -75,5 +73,7 @@ new CreatureVariant
         }
     }
 ,
+    InitialLevel = 7,
+    CorpseName = "",
     GenerationFrequency = Frequency.Sometimes
 }

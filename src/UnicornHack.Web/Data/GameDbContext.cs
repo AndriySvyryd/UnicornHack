@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using UnicornHack.Models.GameState;
-using UnicornHack.Models.GameState.Events;
+using UnicornHack.Effects;
+using UnicornHack.Events;
 
 namespace UnicornHack.Models
 {
@@ -16,10 +16,12 @@ namespace UnicornHack.Models
         public DbSet<Game> Games { get; set; }
         public DbSet<Level> Levels { get; set; }
         public DbSet<Stairs> Stairs { get; set; }
-        public DbSet<PlayerCharacter> Characters { get; set; }
+        public DbSet<Player> Characters { get; set; }
         public DbSet<Actor> Actors { get; set; }
         public DbSet<Item> Items { get; set; }
         public DbSet<LogEntry> LogEntries { get; set; }
+        public DbSet<Ability> Abilities { get; set; }
+        public DbSet<Effect> Effects { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -40,27 +42,36 @@ namespace UnicornHack.Models
 
             modelBuilder.Entity<Actor>(eb =>
             {
-                eb.Ignore(a => a.Variant);
-                eb.Ignore(a => a.Abilities);
+                eb.Ignore(a => a.BaseActor);
+                eb.Ignore(a => a.SimpleProperties);
+                eb.Ignore(a => a.ValuedProperties);
                 eb.Ignore(a => a.MovementRate);
-                eb.Ignore(a => a.IsAlive);
                 eb.HasKey(a => new {a.GameId, a.Id});
                 eb.HasOne(a => a.Level)
                     .WithMany(l => l.Actors)
-                    .HasForeignKey(a => new {a.GameId, a.LevelId})
-                    .IsRequired();
+                    .HasForeignKey(a => new {a.GameId, a.LevelId});
+                eb.HasMany(a => a.Abilities)
+                    .WithOne()
+                    .HasForeignKey(nameof(Ability.GameId), "ActorId")
+                    .OnDelete(DeleteBehavior.Restrict);
+                eb.HasOne(a => a.DefaultAttack)
+                    .WithOne()
+                    .HasForeignKey<Ability>(nameof(Ability.GameId), "DefaultAttackId")
+                    .OnDelete(DeleteBehavior.Restrict);
+                eb.HasOne(a => a.MeleeAttack)
+                    .WithOne()
+                    .HasForeignKey<Ability>(nameof(Ability.GameId), "MeleeAttackId")
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
-            modelBuilder.Entity<PlayerCharacter>()
-                .Ignore(pc => pc.PlayerVariant);
-            modelBuilder.Entity<Creature>()
-                .Ignore(c => c.CreatureVariant);
+            modelBuilder.Entity<Player>(eb => { eb.Ignore(p => p.SkillAptitudes); });
+            modelBuilder.Entity<Creature>();
 
             modelBuilder.Entity<Game>(eb =>
             {
                 eb.Ignore(g => g.Services);
                 eb.Ignore(g => g.Delete);
-                eb.Ignore(g => g.PlayerCharacters);
+                eb.Ignore(g => g.Players);
                 eb.Property(g => g.Id)
                     .ValueGeneratedOnAdd();
                 eb.HasMany(g => g.Levels)
@@ -80,12 +91,19 @@ namespace UnicornHack.Models
                 eb.HasMany(g => g.Stairs)
                     .WithOne(s => s.Game)
                     .HasForeignKey(s => s.GameId);
+                eb.HasMany(g => g.Abilities)
+                    .WithOne(a => a.Game)
+                    .HasForeignKey(a => a.GameId);
+                eb.HasMany(g => g.Effects)
+                    .WithOne(e => e.Game)
+                    .HasForeignKey(e => e.GameId);
             });
 
             modelBuilder.Entity<Item>(eb =>
             {
-                eb.Ignore(i => i.Variant);
-                eb.Ignore(i => i.Name);
+                eb.Ignore(i => i.SimpleProperties);
+                eb.Ignore(i => i.ValuedProperties);
+                eb.Ignore(i => i.EquipableSlots);
                 eb.HasKey(i => new {i.GameId, i.Id});
                 eb.HasOne(i => i.Level)
                     .WithMany(l => l.Items)
@@ -96,10 +114,11 @@ namespace UnicornHack.Models
                 eb.HasOne(i => i.Container)
                     .WithMany(c => c.Items)
                     .HasForeignKey(i => new {i.GameId, i.ContainerId});
+                eb.HasMany(i => i.Abilities)
+                    .WithOne()
+                    .HasForeignKey(nameof(Ability.GameId), "ItemId");
                 eb.Property("_referenceCount");
             });
-            modelBuilder.Entity<Weapon>();
-            modelBuilder.Entity<Armor>();
             modelBuilder.Entity<ItemStack>();
             modelBuilder.Entity<Gold>();
 
@@ -117,11 +136,12 @@ namespace UnicornHack.Models
             modelBuilder.Entity<SensoryEvent>(eb =>
             {
                 eb.HasKey(l => new {l.GameId, l.SensorId, l.Id});
-                eb.HasOne(e => (PlayerCharacter)e.Sensor)
+                eb.HasOne(e => (Player)e.Sensor)
                     .WithMany(a => a.SensedEvents)
                     .HasForeignKey(s => new {s.GameId, s.SensorId});
                 eb.ToTable(name: "SensoryEvents");
             });
+
             // TODO: Specify FKs for all of these:
             modelBuilder.Entity<ActorMoveEvent>();
             modelBuilder.Entity<AttackEvent>();
@@ -131,6 +151,73 @@ namespace UnicornHack.Models
             modelBuilder.Entity<ItemPickUpEvent>();
             modelBuilder.Entity<ItemEquipmentEvent>();
             modelBuilder.Entity<ItemUnequipmentEvent>();
+
+            modelBuilder.Entity<Ability>(eb =>
+            {
+                eb.HasKey(a => new {a.GameId, a.Id});
+                eb.HasMany(a => a.Effects)
+                    .WithOne()
+                    .HasForeignKey(nameof(Effect.GameId), "AbilityId")
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<Effect>()
+                .HasKey(a => new {a.GameId, a.Id});
+            modelBuilder.Entity<AcidDamage>();
+            modelBuilder.Entity<AddAbility>()
+                .Ignore(a => a.Ability);
+            modelBuilder.Entity<Blind>();
+            modelBuilder.Entity<Bind>();
+            modelBuilder.Entity<ChangeSimpleProperty>();
+            modelBuilder.Entity<ChangeValuedProperty>();
+            modelBuilder.Entity<ColdDamage>();
+            modelBuilder.Entity<ConferLycanthropy>();
+            modelBuilder.Entity<Confuse>();
+            modelBuilder.Entity<Cripple>();
+            modelBuilder.Entity<Curse>();
+            modelBuilder.Entity<Deafen>();
+            modelBuilder.Entity<Disarm>();
+            modelBuilder.Entity<Disenchant>();
+            modelBuilder.Entity<Disintegrate>();
+            modelBuilder.Entity<DrainConstitution>();
+            modelBuilder.Entity<DrainDexterity>();
+            modelBuilder.Entity<DrainEnergy>();
+            modelBuilder.Entity<DrainIntelligence>();
+            modelBuilder.Entity<DrainLife>();
+            modelBuilder.Entity<DrainSpeed>();
+            modelBuilder.Entity<DrainStrength>();
+            modelBuilder.Entity<DrainWillpower>();
+            modelBuilder.Entity<ElectricityDamage>();
+            modelBuilder.Entity<Engulf>();
+            modelBuilder.Entity<FireDamage>();
+            modelBuilder.Entity<Hallucinate>();
+            modelBuilder.Entity<Heal>();
+            modelBuilder.Entity<Infect>();
+            modelBuilder.Entity<LevelTeleport>();
+            modelBuilder.Entity<MagicalDamage>();
+            modelBuilder.Entity<MeleeAttack>()
+                .HasOne(m => m.Weapon)
+                .WithMany()
+                // TODO: Use GameId, #7181
+                .HasForeignKey("GameId2", nameof(MeleeAttack.WeaponId));
+            modelBuilder.Entity<Paralyze>();
+            modelBuilder.Entity<PhysicalDamage>();
+            modelBuilder.Entity<PoisonDamage>();
+            modelBuilder.Entity<Polymorph>();
+            modelBuilder.Entity<ScriptedEffect>();
+            modelBuilder.Entity<Seduce>();
+            modelBuilder.Entity<Sleep>();
+            modelBuilder.Entity<Slime>();
+            modelBuilder.Entity<Slow>();
+            modelBuilder.Entity<StealAmulet>();
+            modelBuilder.Entity<StealGold>();
+            modelBuilder.Entity<StealItem>();
+            modelBuilder.Entity<Stick>();
+            modelBuilder.Entity<Stone>();
+            modelBuilder.Entity<Stun>();
+            modelBuilder.Entity<Suffocate>();
+            modelBuilder.Entity<Teleport>();
+            modelBuilder.Entity<VenomDamage>();
         }
     }
 }

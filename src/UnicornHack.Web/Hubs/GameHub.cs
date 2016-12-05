@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Hubs;
-using UnicornHack.Models.GameState;
+using UnicornHack;
 
 namespace UnicornHack.Hubs
 {
@@ -44,6 +44,6 @@ namespace UnicornHack.Hubs
     public interface IGameClient
     {
         void AddNewMessageToPage(string name, string message);
-        void UpdateGameState(PlayerCharacter playerCharacter);
+        void UpdateGameState(Player player);
     }
 }

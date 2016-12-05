@@ -1,24 +1,21 @@
-new CreatureVariant
+new Creature
 {
     Name = "archon",
     Species = Species.Angel,
     SpeciesClass = SpeciesClass.Celestial,
-    CorpseVariantName = "",
-    PreviousStageName = "angel",
-    InitialLevel = 19,
     ArmorClass = -6,
     MagicResistance = 80,
     MovementRate = 16,
     Weight = 1000,
     Size = Size.Medium,
     Nutrition = 400,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnMeleeAttack,
             Action = AbilityAction.Modifier,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 5 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 5 } }
         }
 ,
         new Ability
@@ -26,7 +23,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 1 } }
         }
 ,
         new Ability
@@ -34,7 +31,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 1 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 1 } }
         }
 ,
         new Ability
@@ -42,7 +39,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Spell,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new MagicalDamage { Damage = 14 } }
+            Effects = new HashSet<Effect> { new MagicalDamage { Damage = 14 } }
         }
     }
 ,
@@ -75,6 +72,9 @@ new CreatureVariant
         }
     }
 ,
+    InitialLevel = 19,
+    PreviousStageName = "angel",
+    CorpseName = "",
     GenerationFlags = GenerationFlags.NonPolymorphable | GenerationFlags.NoHell,
     GenerationFrequency = Frequency.Sometimes,
     Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser,

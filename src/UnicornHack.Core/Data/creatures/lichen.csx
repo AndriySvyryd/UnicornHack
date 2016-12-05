@@ -1,17 +1,16 @@
-new CreatureVariant
+new Creature
 {
     Name = "lichen",
     Species = Species.Fungus,
-    InitialLevel = 1,
     ArmorClass = 9,
     MovementRate = 1,
     Weight = 20,
     Size = Size.Small,
     Nutrition = 100,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
-        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Touch, Timeout = 1, Effects = new AbilityEffect[] { new Stick() } },
-        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new AbilityEffect[] { new Stick() } }
+        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Touch, Timeout = 1, Effects = new HashSet<Effect> { new Stick { } } },
+        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new HashSet<Effect> { new Stick { } } }
     }
 ,
     SimpleProperties = new HashSet<string>
@@ -29,5 +28,6 @@ new CreatureVariant
     }
 ,
     ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "Stealthiness", 3 } },
+    InitialLevel = 1,
     GenerationFrequency = Frequency.Commonly
 }

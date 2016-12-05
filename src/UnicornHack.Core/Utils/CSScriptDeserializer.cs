@@ -2,7 +2,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using CSharpScriptSerialization;
-using UnicornHack.Models.GameDefinitions.Effects;
+using UnicornHack.Effects;
 
 namespace UnicornHack.Utils
 {
@@ -14,7 +14,11 @@ namespace UnicornHack.Utils
             => CSScriptSerializer.Deserialize<T>(
                 script,
                 Enumerable.Empty<Assembly>(),
-                new[] {typeof(AbilityEffect).GetTypeInfo().Namespace});
+                new[]
+                {
+                    typeof(Ability).GetTypeInfo().Namespace,
+                    typeof(Effect).GetTypeInfo().Namespace
+                });
 
         public static T LoadFile<T>(string path)
             => Load<T>(File.ReadAllText(path));

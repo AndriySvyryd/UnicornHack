@@ -1,22 +1,20 @@
-new CreatureVariant
+new Creature
 {
     Name = "fog cloud",
     Species = Species.Cloud,
     SpeciesClass = SpeciesClass.Extraplanar,
-    CorpseVariantName = "",
-    InitialLevel = 3,
     MagicResistance = 30,
     MovementRate = 1,
     Weight = 1,
     Size = Size.Huge,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new Engulf { Duration = 3 } }
+            Effects = new HashSet<Effect> { new Engulf { Duration = 3 } }
         }
 ,
         new Ability
@@ -24,7 +22,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnDigestion,
             Action = AbilityAction.Digestion,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 3 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 3 } }
         }
 ,
         new Ability
@@ -32,10 +30,10 @@ new CreatureVariant
             Activation = AbilityActivation.OnDigestion,
             Action = AbilityAction.Digestion,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new WaterDamage { Damage = 1 } }
+            Effects = new HashSet<Effect> { new WaterDamage { Damage = 1 } }
         }
 ,
-        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new AbilityEffect[] { new WaterDamage { Damage = 2 } } }
+        new Ability { Activation = AbilityActivation.OnMeleeHit, Effects = new HashSet<Effect> { new WaterDamage { Damage = 2 } } }
     }
 ,
     SimpleProperties = new HashSet<string>
@@ -58,6 +56,8 @@ new CreatureVariant
     }
 ,
     ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "AcidResistance", 3 }, { "Stealthiness", 3 } },
+    InitialLevel = 3,
+    CorpseName = "",
     GenerationFlags = GenerationFlags.NoHell,
     GenerationFrequency = Frequency.Sometimes
 }

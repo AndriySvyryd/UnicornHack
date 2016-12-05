@@ -1,21 +1,19 @@
-new CreatureVariant
+new Creature
 {
     Name = "gold golem",
     Species = Species.Golem,
-    CorpseVariantName = "",
-    InitialLevel = 5,
     ArmorClass = 6,
     MovementRate = 9,
     Weight = 2000,
     Size = Size.Medium,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 5 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 5 } }
         }
 ,
         new Ability
@@ -23,7 +21,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Punch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 5 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 5 } }
         }
     }
 ,
@@ -41,5 +39,7 @@ new CreatureVariant
     }
 ,
     ValuedProperties = new Dictionary<string, Object> { { "AcidResistance", 3 }, { "ColdResistance", 3 }, { "PoisonResistance", 3 }, { "VenomResistance", 3 }, { "ThickHide", 3 }, { "MaxHP", 40 } },
+    InitialLevel = 5,
+    CorpseName = "",
     GenerationFrequency = Frequency.Rarely
 }

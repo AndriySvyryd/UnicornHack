@@ -1,23 +1,20 @@
-new CreatureVariant
+new Creature
 {
     Name = "shade",
     Species = Species.Ghost,
     SpeciesClass = SpeciesClass.Undead,
-    CorpseVariantName = "",
-    PreviousStageName = "ghost",
-    InitialLevel = 12,
     ArmorClass = 10,
     MagicResistance = 25,
     MovementRate = 10,
     Size = Size.Medium,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new Paralyze { Duration = 7 } }
+            Effects = new HashSet<Effect> { new Paralyze { Duration = 7 } }
         }
 ,
         new Ability
@@ -25,7 +22,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new Slow { Duration = 3 } }
+            Effects = new HashSet<Effect> { new Slow { Duration = 3 } }
         }
     }
 ,
@@ -47,6 +44,9 @@ new CreatureVariant
     }
 ,
     ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 }, { "DisintegrationResistance", 3 }, { "PoisonResistance", 3 } },
+    InitialLevel = 12,
+    PreviousStageName = "ghost",
+    CorpseName = "",
     GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
     Behavior = MonsterBehavior.Wandering | MonsterBehavior.Stalking,
     Alignment = -6,

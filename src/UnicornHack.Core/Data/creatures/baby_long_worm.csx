@@ -1,27 +1,27 @@
-new CreatureVariant
+new Creature
 {
     Name = "baby long worm",
     Species = Species.Worm,
     SpeciesClass = SpeciesClass.Vermin,
-    NextStageName = "long worm",
-    InitialLevel = 2,
     ArmorClass = 5,
     MovementRate = 3,
     Weight = 600,
     Size = Size.Medium,
     Nutrition = 250,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Bite,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new PhysicalDamage { Damage = 2 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 2 } }
         }
     }
 ,
     SimpleProperties = new HashSet<string> { "SerpentlikeBody", "Eyelessness", "Limblessness", "Carnivorism", "NoInventory" },
     ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "Stealthiness", 3 } },
+    InitialLevel = 2,
+    NextStageName = "long worm",
     GenerationFrequency = Frequency.Commonly
 }

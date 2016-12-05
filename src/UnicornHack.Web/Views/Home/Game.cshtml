@@ -1,4 +1,5 @@
-@model PlayerCharacter
+@using PlayerCharacter = UnicornHack.Player
+@model UnicornHack.Player
 @{
     ViewData["Title"] = "Game";
 }
@@ -7,8 +8,8 @@
     <div class="col-md-9">
         @{ Html.RenderPartial("MapPartial", Model); }
         <pre>
-@Model.GivenName the Adventurer Lvl:@Model.XPLevel XP:@(Model.XP)(@Model.NextLevelXP) St:@Model.Strength Dx:@Model.Dexterity Co:@Model.Constitution Sp:@Model.Speed In:@Model.Intelligence Wi:@Model.Willpower
-@Model.Level.Name:@Model.Level.Depth @Model.LevelX,@Model.LevelY $:@Model.Gold HP:@(Model.HP)(@Model.MaxHP) EP:@(Model.EP)(@Model.MaxEP) AC:@Model.GetEffectiveAC() AP:@Model.ActionPoints
+@Model.Name the Adventurer Lvl:@Model.XPLevel XP:@(Model.XP)(@Model.NextLevelXP) St:@Model.Strength Dx:@Model.Dexterity Co:@Model.Constitution Sp:@Model.Speed In:@Model.Intelligence Wi:@Model.Willpower
+@Model.Level.Name:@Model.Level.Depth @Model.LevelX,@Model.LevelY $:@Model.Gold HP:@(Model.HP)(@Model.MaxHP) EP:@(Model.EP)(@Model.MaxEP) ArmorClass:@Model.GetEffectiveAC() AP:@Model.ActionPoints
 </pre>
     </div>
 
@@ -41,32 +42,23 @@
             @foreach (var item in Model.Inventory.OrderBy(i => i.Name))
             {
                 <div>
-                    @item.Name
+                    @Model.Game.Services.Language.ToString(item)
                     @{
-                        var itemStack = item as ItemStack;
-                        if (itemStack != null && itemStack.Quantity > 1)
-                        {
-                            @: (@itemStack.Quantity)
-                        }
-
                         if (item.EquippedSlot != null)
                         {
-                            @: (equipped)
+                            @: (@item.EquippedSlot)
 
-                            if (item.Variant.Type == ItemType.Armor)
-                            {
-                                @: <a class="itemAction" href="javascript:PerformAction('UNEQUIP', @item.Id)">unequip</a>
-                            }
+                            @: <a class="itemAction" href="javascript:PerformAction('UNEQUIP', @item.Id)">unequip</a>
                         }
                         else
                         {
-                            if (item.Variant.Type == ItemType.Armor)
+                            if (item.EquipableSlots.Any())
                             {
                                 @: <a class="itemAction" href="javascript:PerformAction('EQUIP', @item.Id)">equip</a>
                             }
                         }
 
-                        if (item.Variant.Type == ItemType.Food)
+                        if (item.Type == ItemType.Food)
                         {
                             @: <a class="itemAction" href="javascript:PerformAction('EAT', @item.Id)">eat</a>
                         }
@@ -80,9 +72,9 @@
 
     <div class="col-md-3 chat" style="padding: 0px">
         <h3></h3>
-        <input type="text" style="background-color: black;" id="message"/>
-        <input type="button" id="sendmessage" style="background-color: gray" value="Send"/>
-        <input type="hidden" id="displayname"/>
+        <input type="text" style="background-color: black;" id="message" />
+        <input type="button" id="sendmessage" style="background-color: gray" value="Send" />
+        <input type="hidden" id="displayname" />
         <ul id="discussion"></ul>
     </div>
 
@@ -109,16 +101,16 @@
     </environment>
     <script src="~/signalr/hubs"></script>
     <script>
-        $(function() {
+        $(function () {
             $.connection.hub.logging = true;
         });
     </script>
     <script>
-        $(function() {
+        $(function () {
             // Reference the auto-generated proxy for the hub.
             var chat = $.connection.gameHub;
             // Create a function that the hub can call back to display messages.
-            chat.client.addNewMessageToPage = function(name, message) {
+            chat.client.addNewMessageToPage = function (name, message) {
                 // Add the message to the page.
                 $('#discussion').append('<li><strong>' + htmlEncode(name)
                     + '</strong>: ' + htmlEncode(message) + '</li>');
@@ -127,10 +119,10 @@
             $('#message').focus();
             // Start the connection.
             //$.connection.hub.qs = { "userId": "123" };
-            $.connection.hub.start().done(function() {
-                $('#sendmessage').click(function() {
+            $.connection.hub.start().done(function () {
+                $('#sendmessage').click(function () {
                     // Call the Send method on the hub.
-                    chat.server.send('@Model.GivenName', $('#message').val());
+                    chat.server.send('@Model.Name', $('#message').val());
                     // Clear text box and reset focus for next comment.
                     $('#message').val('').focus();
                 });
@@ -149,9 +141,9 @@
                 type: 'POST',
                 async: false,
                 cache: false,
-                data: { name: '@Model.GivenName', action: action, target: target },
-                success: function(data) { $('#body-content').html(data); },
-                error: function(xml, status, error) { $('#body-content').html(error); }
+                data: { name: '@Model.Name', action: action, target: target },
+                success: function (data) { $('#body-content').html(data); },
+                error: function (xml, status, error) { $('#body-content').html(error); }
             });
         }
     </script>

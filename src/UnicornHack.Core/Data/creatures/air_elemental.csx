@@ -1,22 +1,20 @@
-new CreatureVariant
+new Creature
 {
     Name = "air elemental",
     Species = Species.Elemental,
     SpeciesClass = SpeciesClass.Extraplanar,
-    CorpseVariantName = "",
-    InitialLevel = 8,
     ArmorClass = 2,
     MagicResistance = 30,
     MovementRate = 36,
     Size = Size.Huge,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Touch,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new Engulf { Duration = 5 } }
+            Effects = new HashSet<Effect> { new Engulf { Duration = 5 } }
         }
 ,
         new Ability
@@ -24,7 +22,7 @@ new CreatureVariant
             Activation = AbilityActivation.OnDigestion,
             Action = AbilityAction.Digestion,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new Deafen { Duration = 2 } }
+            Effects = new HashSet<Effect> { new Deafen { Duration = 2 } }
         }
     }
 ,
@@ -48,5 +46,7 @@ new CreatureVariant
     }
 ,
     ValuedProperties = new Dictionary<string, Object> { { "PoisonResistance", 3 }, { "VenomResistance", 3 } },
+    InitialLevel = 8,
+    CorpseName = "",
     GenerationFrequency = Frequency.Uncommonly
 }

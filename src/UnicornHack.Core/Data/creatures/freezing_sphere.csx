@@ -1,24 +1,22 @@
-new CreatureVariant
+new Creature
 {
     Name = "freezing sphere",
     Species = Species.FloatingSphere,
     SpeciesClass = SpeciesClass.Extraplanar,
-    CorpseVariantName = "",
-    InitialLevel = 6,
     ArmorClass = 4,
     MagicResistance = 10,
     MovementRate = 13,
     Weight = 10,
     Size = Size.Small,
     Nutrition = 10,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Explosion,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new ColdDamage { Damage = 14 } }
+            Effects = new HashSet<Effect> { new ColdDamage { Damage = 14 } }
         }
     }
 ,
@@ -37,6 +35,8 @@ new CreatureVariant
     }
 ,
     ValuedProperties = new Dictionary<string, Object> { { "ColdResistance", 3 } },
+    InitialLevel = 6,
+    CorpseName = "",
     GenerationFlags = GenerationFlags.NoHell,
     GenerationFrequency = Frequency.Sometimes
 }

@@ -1,26 +1,26 @@
-new CreatureVariant
+new Creature
 {
     Name = "gnomish wizard",
     Species = Species.Gnome,
-    InitialLevel = 3,
     ArmorClass = 10,
     MagicResistance = 20,
     MovementRate = 8,
     Weight = 700,
     Size = Size.Small,
     Nutrition = 250,
-    Abilities = new List<Ability>
+    Abilities = new HashSet<Ability>
     {
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Spell,
             Timeout = 1,
-            Effects = new AbilityEffect[] { new ScriptedEffect { Script = "ArcaneSpell" } }
+            Effects = new HashSet<Effect> { new ScriptedEffect { Script = "ArcaneSpell" } }
         }
     }
 ,
     SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Maleness", "Omnivorism" },
+    InitialLevel = 3,
     GenerationFlags = GenerationFlags.NonPolymorphable,
     GenerationFrequency = Frequency.Uncommonly,
     Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser,

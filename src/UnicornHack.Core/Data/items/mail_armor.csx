@@ -1,4 +1,4 @@
-new ItemVariant
+new Item
 {
     Name = "mail armor",
     Type = ItemType.Armor,
