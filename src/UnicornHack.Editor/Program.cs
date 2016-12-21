@@ -12,8 +12,8 @@ namespace UnicornHack.Editor
     {
         public static void Main(string[] args)
         {
-            SerializeCreatures(verify: true);
-            SerializePlayers(verify: true);
+            //SerializeCreatures(verify: true);
+            //SerializePlayers(verify: true);
             SerializeItems(verify: true);
         }
 

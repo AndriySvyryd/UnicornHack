@@ -12,6 +12,7 @@ namespace UnicornHack.Services
         string ToString(ItemEquipmentEvent @event);
         string ToString(ItemUnequipmentEvent @event);
         string ToString(Item item);
+        string ToString(EquipmentSlot slot, Actor actor, bool abbreviate);
         string Welcome(Player character);
         string InvalidTarget();
         string UnableToMove(Direction direction);

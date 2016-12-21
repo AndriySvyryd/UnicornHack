@@ -5,7 +5,7 @@ namespace UnicornHack
     [Flags]
     public enum AbilityActivation
     {
-        Dafault = 0,
+        Default = 0,
         Always = 1 << 0,
         WhileActivated = 1 << 1,
         WhileEquipped = 1 << 2,

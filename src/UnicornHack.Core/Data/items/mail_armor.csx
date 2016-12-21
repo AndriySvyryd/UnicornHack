@@ -4,6 +4,6 @@ new Item
     Type = ItemType.Armor,
     Weight = 40,
     Material = Material.Steel,
-    EquipableSlots = new HashSet<EquipmentSlot> { EquipmentSlot.Body },
+    EquipableSlots = EquipmentSlot.Body,
     ValuedProperties = new Dictionary<string, Object> { { "ArmorClass", 10 } }
 }

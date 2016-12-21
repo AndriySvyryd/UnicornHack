@@ -135,7 +135,7 @@ namespace UnicornHack.Services.English
 
             var languageService = CreateLanguageService();
 
-            Assert.Equal("The water nymph equips something.", languageService.ToString(new ItemEquipmentEvent
+            Assert.Equal("The water nymph equips something on the body.", languageService.ToString(new ItemEquipmentEvent
             {
                 Item = armor,
                 ItemSensed = SenseType.Sound,
@@ -153,7 +153,7 @@ namespace UnicornHack.Services.English
                 Sensor = player
             }));
 
-            Assert.Equal("You equip something.", languageService.ToString(new ItemEquipmentEvent
+            Assert.Equal("You equip something on the body.", languageService.ToString(new ItemEquipmentEvent
             {
                 Item = armor,
                 ItemSensed = SenseType.Touch,
@@ -162,9 +162,10 @@ namespace UnicornHack.Services.English
                 Sensor = player
             }));
 
-            Assert.Equal("You equip a mail armor.", languageService.ToString(new ItemEquipmentEvent
+            var sword = new Item { BaseName = "long sword", EquippedSlot = EquipmentSlot.GraspMainExtremity };
+            Assert.Equal("You equip a long sword in the main hand.", languageService.ToString(new ItemEquipmentEvent
             {
-                Item = armor,
+                Item = sword,
                 ItemSensed = SenseType.Sight | SenseType.Touch,
                 Equipper = player,
                 EquipperSensed = SenseType.Sight | SenseType.Touch,

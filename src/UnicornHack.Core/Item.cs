@@ -16,13 +16,13 @@ namespace UnicornHack
         private int? _nutrition;
         private Material? _material;
         private Size? _size;
-        private Size? _sizeRestrictions;
+        private Size? _equipableSizes;
         private bool? _nameable;
         private int? _stackSize;
         private Beatitude? _beatitude;
         private ISet<string> _simpleProperties;
         private IDictionary<string, object> _valuedProperties;
-        private ISet<EquipmentSlot> _equipableSlots;
+        private EquipmentSlot? _equipableSlots;
 
         public virtual int Id { get; private set; }
         public virtual string Name { get; set; }
@@ -72,17 +72,19 @@ namespace UnicornHack
             set { _size = value; }
         }
 
-        public virtual Size SizeRestrictions
+        public virtual Size EquipableSizes
         {
-            get { return _sizeRestrictions ?? BaseItem?.SizeRestrictions ?? Size.None; }
-            set { _sizeRestrictions = value; }
+            get { return _equipableSizes ?? BaseItem?.EquipableSizes ?? Size.All; }
+            set { _equipableSizes = value; }
         }
 
-        public virtual Beatitude Beatitude
+        public virtual EquipmentSlot EquipableSlots
         {
-            get { return _beatitude ?? BaseItem?.Beatitude ?? Beatitude.Uncursed; }
-            set { _beatitude = value; }
+            get { return _equipableSlots ?? BaseItem?.EquipableSlots ?? EquipmentSlot.Default; }
+            set { _equipableSlots = value; }
         }
+
+        public virtual ISet<Ability> Abilities { get; set; } = new HashSet<Ability>();
 
         public virtual ISet<string> SimpleProperties
         {
@@ -118,24 +120,11 @@ namespace UnicornHack
             set { _valuedProperties = value; }
         }
 
-        public virtual ISet<EquipmentSlot> EquipableSlots
+        public virtual Beatitude Beatitude
         {
-            get
-            {
-                if (_equipableSlots != null)
-                {
-                    return _equipableSlots;
-                }
-                if (BaseItem != null)
-                {
-                    return BaseItem.EquipableSlots;
-                }
-                return _equipableSlots = new HashSet<EquipmentSlot>();
-            }
-            set { _equipableSlots = value; }
+            get { return _beatitude ?? BaseItem?.Beatitude ?? Beatitude.Uncursed; }
+            set { _beatitude = value; }
         }
-
-        public virtual ISet<Ability> Abilities { get; set; } = new HashSet<Ability>();
 
         public int? ActorId { get; set; }
         public Actor Actor { get; set; }
@@ -149,6 +138,39 @@ namespace UnicornHack
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public int GameId { get; private set; }
         public Game Game { get; set; }
+
+        public EquipmentSlot GetEquipableSlots(Size size)
+        {
+            if (EquipableSizes.HasFlag(size))
+            {
+                return EquipableSlots;
+            }
+
+            var slots = EquipmentSlot.Default;
+            if (EquipableSlots.HasFlag(EquipmentSlot.GraspBothExtremities)
+                && EquipableSlots.HasFlag(EquipmentSlot.GraspSingleExtremity))
+            {
+                if (size != Size.Tiny)
+                {
+                    var smallerSize = (Size)((int)size >> 1);
+                    if (EquipableSizes.HasFlag(smallerSize))
+                    {
+                        slots |= EquipmentSlot.GraspSingleExtremity;
+                    }
+                }
+
+                if (size != Size.Gigantic)
+                {
+                    var biggerSize = (Size)((int)size << 1);
+                    if (EquipableSizes.HasFlag(biggerSize))
+                    {
+                        slots |= EquipmentSlot.GraspBothExtremities;
+                    }
+                }
+            }
+
+            return slots;
+        }
 
         #endregion
 
@@ -170,7 +192,7 @@ namespace UnicornHack
         {
             if (Game != null)
             {
-                throw new InvalidOperationException("This item is part of a game.");
+                throw new InvalidOperationException("This item is already part of a game.");
             }
 
             var itemInstance = CreateInstance(game);
@@ -182,7 +204,7 @@ namespace UnicornHack
             itemInstance.Nameable = Nameable;
             itemInstance.StackSize = StackSize;
             itemInstance.Size = Size;
-            itemInstance.SizeRestrictions = SizeRestrictions;
+            itemInstance.EquipableSizes = EquipableSizes;
 
             foreach (var ability in Abilities)
             {
@@ -409,8 +431,8 @@ namespace UnicornHack
                 {nameof(Nameable), (o, v) => (bool)v != (o.BaseItem?.Nameable ?? true)},
                 {nameof(StackSize), (o, v) => (int)v != (o.BaseItem?.StackSize ?? 1)},
                 {nameof(Size), (o, v) => (Size)v != (o.BaseItem?.Size ?? Size.None)},
-                {nameof(SizeRestrictions), (o, v) => (Size)v != (o.BaseItem?.SizeRestrictions ?? Size.None)},
-                {nameof(EquipableSlots), (o, v) => ((ICollection<EquipmentSlot>)v).Count != 0},
+                {nameof(EquipableSizes), (o, v) => (Size)v != (o.BaseItem?.EquipableSizes ?? Size.All)},
+                {nameof(EquipableSlots), (o, v) => (EquipmentSlot)v != (o.BaseItem?.EquipableSlots ?? EquipmentSlot.Default)},
                 {nameof(Abilities), (o, v) => ((ICollection<Ability>)v).Count != 0},
                 {nameof(SimpleProperties), (o, v) => ((ICollection<string>)v).Count != 0},
                 {nameof(ValuedProperties), (o, v) => ((IDictionary<string, object>)v).Keys.Count != 0}

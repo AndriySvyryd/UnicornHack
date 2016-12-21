@@ -62,6 +62,7 @@ namespace UnicornHack
             creature.CorpseName = CorpseName;
             creature.PreviousStageName = PreviousStageName;
             creature.NextStageName = NextStageName;
+            creature.InitialLevel = InitialLevel;
             creature.XPLevel = InitialLevel;
 
             creature.AdjustInitialXPLevel();
@@ -110,13 +111,7 @@ namespace UnicornHack
                 XPLevel = XPLevel > upperLimit ? upperLimit : XPLevel;
             }
 
-            MaxHP = Game.Roll(XPLevel, diceSides: 8);
-
-            var maxHP = 0;
-            if (maxHP > 0)
-            {
-                MaxHP = maxHP;
-            }
+            MaxHP = 1 + XPLevel*4;
 
             MaxHP = MaxHP < 1 ? 1 : MaxHP;
             HP = MaxHP;

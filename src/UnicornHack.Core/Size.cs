@@ -23,6 +23,8 @@ namespace UnicornHack
         Huge = 1 << 4,
 
         /// <summary> &gt; 25' </summary>
-        Gigantic = 1 << 5
+        Gigantic = 1 << 5,
+
+        All = Tiny | Small | Medium | Large | Huge | Gigantic
     }
 }

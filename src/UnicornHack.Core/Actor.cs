@@ -25,6 +25,12 @@ namespace UnicornHack
         private ISet<string> _simpleProperties;
         private IDictionary<string, object> _valuedProperties;
 
+        public const int ActionPointsPerTurn = 100;
+        public const int MaxCarryOverActionPoints = ActionPointsPerTurn;
+        public const string UnarmedAttackName = "Unarmed attack";
+        public const string MeleeAttackName = "Melee attack";
+        public const string SecondaryMeleeAttackName = "Secondary melee attack";
+
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public virtual int Id { get; private set; }
         public virtual string Name { get; set; }
@@ -126,8 +132,6 @@ namespace UnicornHack
             set { _valuedProperties = value; }
         }
 
-        public virtual Ability DefaultAttack { get; set; }
-        public virtual Ability MeleeAttack { get; set; }
         public virtual ISet<Ability> Abilities { get; set; } = new HashSet<Ability>();
 
         public virtual Sex Sex { get; set; }
@@ -150,10 +154,6 @@ namespace UnicornHack
         public virtual int GameId { get; private set; }
         public virtual Game Game { get; set; }
 
-        public const int ActionPointsPerTurn = 100;
-
-        public const int MaxCarryOverActionPoints = ActionPointsPerTurn;
-
         public virtual int GetEffectiveAC()
         {
             var effectiveAC = ArmorClass;
@@ -175,62 +175,89 @@ namespace UnicornHack
             Item twoHandedWeapon = null;
             Item mainWeapon = null;
             Item secondaryWeapon = null;
+            var usedSlots = EquipmentSlot.Default;
             foreach (var item in Inventory)
             {
-                if (item.EquippedSlot != null)
+                if (item.EquippedSlot.HasValue)
                 {
-                    if (item.EquippedSlot == EquipmentSlot.GraspBothExtremities)
+                    switch (item.EquippedSlot)
                     {
-                        twoHandedWeapon = item;
+                        case EquipmentSlot.GraspBothExtremities:
+                            twoHandedWeapon = item;
+                            break;
+                        case EquipmentSlot.GraspMainExtremity:
+                            mainWeapon = item;
+                            break;
+                        case EquipmentSlot.GraspSecondaryExtremity:
+                            secondaryWeapon = item;
+                            break;
                     }
-                    else if (item.EquippedSlot == EquipmentSlot.GraspMainExtremity)
-                    {
-                        mainWeapon = item;
-                    }
-                    else if (item.EquippedSlot == EquipmentSlot.GraspSecondaryExtremity)
-                    {
-                        secondaryWeapon = item;
-                    }
+
+                    usedSlots |= item.EquippedSlot.Value;
                 }
+            }
+
+            var mainMeleeAttack = Abilities.FirstOrDefault(a => a.Name == MeleeAttackName);
+            if (mainMeleeAttack != null)
+            {
+                mainMeleeAttack.IsUsable = false;
+            }
+
+            var secondaryMeleeAttack = Abilities.FirstOrDefault(a => a.Name == SecondaryMeleeAttackName);
+            if (secondaryMeleeAttack != null)
+            {
+                secondaryMeleeAttack.IsUsable = false;
             }
 
             if (twoHandedWeapon != null
                 || mainWeapon != null
                 || secondaryWeapon != null)
             {
-                if (MeleeAttack == null)
+                if (mainMeleeAttack == null)
                 {
-                    MeleeAttack = new Ability(Game)
+                    mainMeleeAttack = new Ability(Game)
                     {
-                        Name = "Melee attack",
+                        Name = MeleeAttackName,
                         Activation = AbilityActivation.OnTarget,
                         ActionPointCost = 100,
-                        Effects = new HashSet<Effect> {new MeleeAttack(Game), new MeleeAttack(Game)}
+                        Effects = new HashSet<Effect> {new MeleeAttack(Game)}
                     };
+
+                    Abilities.Add(mainMeleeAttack);
                 }
-
-                var firstWeaponEffect = MeleeAttack.Effects.OfType<MeleeAttack>().First();
-                var secondWeaponEffect = MeleeAttack.Effects.OfType<MeleeAttack>().First(e => e != firstWeaponEffect);
-
-                firstWeaponEffect.Weapon = mainWeapon;
-                secondWeaponEffect.Weapon = secondaryWeapon;
-
-                if (DefaultAttack != null)
+                if (secondaryMeleeAttack == null)
                 {
-                    Abilities.Remove(DefaultAttack);
+                    secondaryMeleeAttack = new Ability(Game)
+                    {
+                        Name = SecondaryMeleeAttackName,
+                        Activation = AbilityActivation.OnMeleeAttack,
+                        Effects = new HashSet<Effect> {new MeleeAttack(Game)}
+                    };
+
+                    Abilities.Add(secondaryMeleeAttack);
                 }
-                Abilities.Add(MeleeAttack);
+
+                mainMeleeAttack.IsUsable = true;
+                var firstWeaponEffect = mainMeleeAttack.Effects.OfType<MeleeAttack>().Single();
+                if (mainWeapon != null
+                    && secondaryWeapon != null)
+                {
+                    secondaryMeleeAttack.IsUsable = true;
+                    var secondWeaponEffect = secondaryMeleeAttack.Effects.OfType<MeleeAttack>().Single();
+                    firstWeaponEffect.Weapon = mainWeapon;
+                    secondWeaponEffect.Weapon = secondaryWeapon;
+                }
+                else
+                {
+                    firstWeaponEffect.Weapon = mainWeapon ?? secondaryWeapon ?? twoHandedWeapon;
+                }
             }
-            else
+
+            foreach (var ability in Abilities)
             {
-                // TODO: Increase attack speed if both hands free
-                if (MeleeAttack != null)
+                if (ability.FreeSlotsRequired != EquipmentSlot.Default)
                 {
-                    Abilities.Remove(MeleeAttack);
-                }
-                if (DefaultAttack != null)
-                {
-                    Abilities.Add(DefaultAttack);
+                    ability.IsUsable = (ability.FreeSlotsRequired & usedSlots) == EquipmentSlot.Default;
                 }
             }
 
@@ -263,7 +290,7 @@ namespace UnicornHack
         {
             if (Game != null)
             {
-                throw new InvalidOperationException("This actor is part of a game.");
+                throw new InvalidOperationException("This actor is already part of a game.");
             }
 
             var actorInstance = CreateInstance(level.Game);
@@ -300,10 +327,6 @@ namespace UnicornHack
                 actorInstance.Sex = level.Game.Roll(1, 2) > 1 ? Sex.Female : Sex.Male;
             }
 
-            if (DefaultAttack != null)
-            {
-                actorInstance.DefaultAttack = DefaultAttack.Instantiate(level.Game);
-            }
             foreach (var ability in Abilities)
             {
                 actorInstance.Abilities.Add(ability.Instantiate(level.Game));
@@ -461,22 +484,8 @@ namespace UnicornHack
         public virtual bool Attack(Actor victim, bool pretend = false)
         {
             ActionPoints = 0;
-            var ability = Abilities.FirstOrDefault(a => a.Activation == AbilityActivation.OnTarget);
+            var ability = Abilities.FirstOrDefault(a => a.Activation == AbilityActivation.OnTarget && a.IsUsable);
             if (ability == null)
-            {
-                return false;
-            }
-
-            var weapon = ability.Effects.OfType<MeleeAttack>().FirstOrDefault()?.Weapon;
-            if (weapon != null)
-            {
-                ability = weapon.Abilities.FirstOrDefault(a => a.Activation == AbilityActivation.OnMeleeAttack);
-            }
-
-            var damage = ability.Effects.OfType<PhysicalDamage>().FirstOrDefault()?.Damage
-                         ?? ability.Effects.OfType<ElectricityDamage>().FirstOrDefault()?.Damage
-                         ?? ability.Effects.OfType<FireDamage>().FirstOrDefault()?.Damage;
-            if (damage == null)
             {
                 return false;
             }
@@ -486,24 +495,7 @@ namespace UnicornHack
                 return true;
             }
 
-            // TODO: Calculate AP cost
-            ActionPoints -= ActionPointsPerTurn;
-
-            if (Game.NextRandom(maxValue: 3) == 0)
-            {
-                AttackEvent.New(this, victim, ability.Action, hit: false);
-                return true;
-            }
-
-            AttackEvent.New(this, victim, ability.Action, hit: true, damage: damage.Value, weapon: weapon);
-            victim.ChangeCurrentHP(-1 * damage.Value);
-
-            if (!victim.IsAlive)
-            {
-                XP += victim.XP;
-            }
-
-            return true;
+            return ability.Activate(this, victim, pretend);
         }
 
         public virtual bool Eat(Item item, bool pretend = false)
@@ -532,21 +524,15 @@ namespace UnicornHack
             }
         }
 
-        public virtual bool Equip(Item item, bool pretend = false)
+        public virtual bool Equip(Item item, EquipmentSlot slot, bool pretend = false)
         {
-            var slot = item.EquipableSlots.FirstOrDefault();
-            if (slot == EquipmentSlot.Default)
-            {
-                return false;
-            }
-
             var equipped = GetEquippedItem(slot);
             if (equipped == item)
             {
                 return true;
             }
 
-            if (!item.EquipableSlots.Contains(slot))
+            if (!item.EquipableSlots.HasFlag(slot))
             {
                 return false;
             }
@@ -559,7 +545,20 @@ namespace UnicornHack
             // TODO: Calculate AP cost
             ActionPoints -= ActionPointsPerTurn;
 
-            if (equipped != null)
+            if (equipped == null)
+            {
+                if (slot == EquipmentSlot.GraspMainExtremity ||
+                    slot == EquipmentSlot.GraspSecondaryExtremity)
+                {
+                    Unequip(GetEquippedItem(EquipmentSlot.GraspBothExtremities));
+                }
+                else if(slot == EquipmentSlot.GraspBothExtremities)
+                {
+                    Unequip(GetEquippedItem(EquipmentSlot.GraspMainExtremity));
+                    Unequip(GetEquippedItem(EquipmentSlot.GraspSecondaryExtremity));
+                }
+            }
+            else
             {
                 Unequip(equipped);
             }
@@ -574,7 +573,7 @@ namespace UnicornHack
 
         public virtual bool Unequip(Item item, bool pretend = false)
         {
-            if (item.EquippedSlot == null)
+            if (item?.EquippedSlot == null)
             {
                 return false;
             }
@@ -723,17 +722,7 @@ namespace UnicornHack
         }
 
         public virtual Item GetEquippedItem(EquipmentSlot slot)
-        {
-            foreach (var item in Inventory)
-            {
-                if (item.EquippedSlot == slot)
-                {
-                    return item;
-                }
-            }
-
-            return null;
-        }
+            => Inventory.FirstOrDefault(item => item.EquippedSlot == slot);
 
         public virtual Point? ToLevelCell(Vector direction)
         {

@@ -79,6 +79,71 @@ namespace UnicornHack.Services.English
             return "a " + itemName;
         }
 
+        public string ToString(EquipmentSlot slot, Actor actor, bool abbreviate)
+        {
+            switch (slot)
+            {
+                case EquipmentSlot.GraspMainExtremity:
+                    return abbreviate ? "MH" : "main hand";
+                case EquipmentSlot.GraspSecondaryExtremity:
+                    return abbreviate ? "OH" : "off hand";
+                case EquipmentSlot.GraspSingleExtremity:
+                    return abbreviate ? "SH" : "single hand";
+                case EquipmentSlot.GraspBothExtremities:
+                    return abbreviate ? "BH" : "both hands";
+                case EquipmentSlot.GraspMouth:
+                    return abbreviate ? "M" : "mouth";
+                case EquipmentSlot.Feet:
+                    return abbreviate ? "F" : "feet";
+                case EquipmentSlot.Legs:
+                    return abbreviate ? "L" : "legs";
+                case EquipmentSlot.Body:
+                    return abbreviate ? "B" : "body";
+                case EquipmentSlot.Head:
+                    return abbreviate ? "H" : "head";
+                case EquipmentSlot.Hands:
+                    return abbreviate ? "G" : "hands";
+                case EquipmentSlot.Necklace:
+                    return abbreviate ? "N" : "neck";
+                case EquipmentSlot.RingLeft:
+                    return abbreviate ? "LF" : "left finger";
+                case EquipmentSlot.RingRight:
+                    return abbreviate ? "RF" : "right finger";
+                case EquipmentSlot.Belt:
+                    return abbreviate ? "W" : "waist";
+                case EquipmentSlot.Back:
+                    return abbreviate ? "C" : "back";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(slot), slot, null);
+            }
+        }
+
+        private string PrepositionFor(EquipmentSlot slot)
+        {
+            switch (slot)
+            {
+                case EquipmentSlot.GraspMainExtremity:
+                case EquipmentSlot.GraspSecondaryExtremity:
+                case EquipmentSlot.GraspMouth:
+                    return "in the";
+                case EquipmentSlot.GraspBothExtremities:
+                    return "in";
+                case EquipmentSlot.Feet:
+                case EquipmentSlot.Legs:
+                case EquipmentSlot.Body:
+                case EquipmentSlot.Head:
+                case EquipmentSlot.Hands:
+                case EquipmentSlot.Necklace:
+                case EquipmentSlot.RingLeft:
+                case EquipmentSlot.RingRight:
+                case EquipmentSlot.Belt:
+                case EquipmentSlot.Back:
+                    return "on the";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(slot), slot, null);
+            }
+        }
+
         private string ToVerb(AbilityAction abilityAction)
         {
             string verb;
@@ -303,10 +368,14 @@ namespace UnicornHack.Services.English
         public string ToString(ItemEquipmentEvent @event)
         {
             var equipperPerson = @event.Sensor == @event.Equipper ? EnglishPerson.Second : EnglishPerson.Third;
+            var slotKnown = @event.EquipperSensed.HasFlag(SenseType.Sight) ||
+                            @event.EquipperSensed.HasFlag(SenseType.Touch);
             return ToSentence(
                 ToString(@event.Equipper, equipperPerson, @event.EquipperSensed),
                 EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "equip", person: equipperPerson),
-                ToString(@event.Item, @event.ItemSensed));
+                ToString(@event.Item, @event.ItemSensed),
+                slotKnown ? PrepositionFor(@event.Item.EquippedSlot.Value) : null,
+                slotKnown ? ToString(@event.Item.EquippedSlot.Value, @event.Equipper, abbreviate: false) : null);
         }
 
         public string ToString(ItemUnequipmentEvent @event)

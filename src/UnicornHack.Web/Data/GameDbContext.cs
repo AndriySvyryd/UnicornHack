@@ -54,14 +54,6 @@ namespace UnicornHack.Models
                     .WithOne()
                     .HasForeignKey(nameof(Ability.GameId), "ActorId")
                     .OnDelete(DeleteBehavior.Restrict);
-                eb.HasOne(a => a.DefaultAttack)
-                    .WithOne()
-                    .HasForeignKey<Ability>(nameof(Ability.GameId), "DefaultAttackId")
-                    .OnDelete(DeleteBehavior.Restrict);
-                eb.HasOne(a => a.MeleeAttack)
-                    .WithOne()
-                    .HasForeignKey<Ability>(nameof(Ability.GameId), "MeleeAttackId")
-                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<Player>(eb => { eb.Ignore(p => p.SkillAptitudes); });
@@ -103,7 +95,6 @@ namespace UnicornHack.Models
             {
                 eb.Ignore(i => i.SimpleProperties);
                 eb.Ignore(i => i.ValuedProperties);
-                eb.Ignore(i => i.EquipableSlots);
                 eb.HasKey(i => new {i.GameId, i.Id});
                 eb.HasOne(i => i.Level)
                     .WithMany(l => l.Items)

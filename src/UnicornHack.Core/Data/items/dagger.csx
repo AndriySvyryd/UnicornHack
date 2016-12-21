@@ -1,11 +1,11 @@
 new Item
 {
-    Name = "long sword",
+    Name = "dagger",
     Type = ItemType.Weapon,
-    Weight = 10,
+    Weight = 5,
     Material = Material.Steel,
-    Size = Size.Medium,
-    EquipableSizes = Size.Medium | Size.Large,
+    Size = Size.Small,
+    EquipableSizes = Size.Tiny | Size.Small,
     EquipableSlots = EquipmentSlot.GraspSingleExtremity | EquipmentSlot.GraspBothExtremities,
     Abilities = new HashSet<Ability>
     {
@@ -13,7 +13,7 @@ new Item
         {
             Activation = AbilityActivation.OnMeleeAttack,
             Action = AbilityAction.Slash,
-            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 5 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 3 } }
         }
     }
 }

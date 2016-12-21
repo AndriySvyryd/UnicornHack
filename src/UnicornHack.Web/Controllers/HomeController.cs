@@ -50,7 +50,7 @@ namespace UnicornHack.Controllers
         // POST: /Home/PerformAction
         [HttpPost]
         [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult PerformAction(string name, string action, string target)
+        public IActionResult PerformAction(string name, string action, string target, string target2)
         {
             var character = FindOrCreateCharacter(name);
             if (character.Game.ActingActor == null)
@@ -64,7 +64,8 @@ namespace UnicornHack.Controllers
             }
 
             character.NextAction = action;
-            character.NextActionTarget = string.IsNullOrEmpty(target) ? 0 : Int32.Parse(target);
+            character.NextActionTarget = string.IsNullOrEmpty(target) ? (int?)null : Int32.Parse(target);
+            character.NextActionTarget2 = string.IsNullOrEmpty(target2) ? (int?)null : Int32.Parse(target2);
 
             var level = character.Level;
             if (character.Game.ActingActor == character)
@@ -190,8 +191,6 @@ namespace UnicornHack.Controllers
                 .ThenInclude(i => i.Abilities)
                 .ThenInclude(a => a.Effects)
                 .Include(l => l.Actors).ThenInclude(a => a.Abilities).ThenInclude(a => a.Effects)
-                .Include(l => l.Actors).ThenInclude(a => a.DefaultAttack).ThenInclude(a => a.Effects)
-                .Include(l => l.Actors).ThenInclude(a => a.MeleeAttack).ThenInclude(a => a.Effects)
                 .Include(l => l.DownStairs)
                 .Include(l => l.UpStairs)
                 .Include(l => l.Game)

@@ -9,12 +9,5 @@ new Player
     Constitution = 12,
     Intelligence = 12,
     Willpower = 12,
-    Speed = 12,
-    DefaultAttack = new Ability
-    {
-        Activation = AbilityActivation.OnTarget,
-        Action = AbilityAction.Punch,
-        ActionPointCost = 100,
-        Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 4 } }
-    }
+    Speed = 12
 }

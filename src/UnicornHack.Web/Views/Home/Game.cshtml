@@ -1,3 +1,4 @@
+@using UnicornHack.Utils
 @using PlayerCharacter = UnicornHack.Player
 @model UnicornHack.Player
 @{
@@ -46,15 +47,26 @@
                     @{
                         if (item.EquippedSlot != null)
                         {
-                            @: (@item.EquippedSlot)
+                            @: (@Model.Game.Services.Language.ToString(item.EquippedSlot.Value, @Model, abbreviate: false))
 
                             @: <a class="itemAction" href="javascript:PerformAction('UNEQUIP', @item.Id)">unequip</a>
                         }
                         else
                         {
-                            if (item.EquipableSlots.Any())
+                            var slots = item.GetEquipableSlots(Model.Size).GetNonRedundantFlags(removeComposites: true).ToList();
+                            if (slots.Any())
                             {
-                                @: <a class="itemAction" href="javascript:PerformAction('EQUIP', @item.Id)">equip</a>
+                                if (slots.Count == 1)
+                                {
+                                    @: <a class="itemAction" href="javascript:PerformAction('EQUIP', @item.Id, @((int)slots.Single()))">equip</a>
+                                }
+                                else
+                                {
+                                    var slotLinks = string.Join(" ", slots.Select(equipmentSlot =>
+                                        $"<a class=\"itemAction\" href=\"javascript: PerformAction('EQUIP', {item.Id}, {(int)equipmentSlot})\">{Model.Game.Services.Language.ToString(equipmentSlot, Model, abbreviate: true)}</a>"));
+
+                                    @: equip (@Html.Raw(slotLinks))
+                                }
                             }
                         }
 
@@ -66,7 +78,7 @@
                         @: <a class="itemAction" href="javascript:PerformAction('DROP', @item.Id)">drop</a>
                     }
                 </div>
-            }
+                        }
         </div>
     </div>
 
@@ -135,13 +147,13 @@
         }
     </script>
     <script type="text/javascript">
-        function PerformAction(action, target) {
+        function PerformAction(action, target, target2) {
             $.ajax({
                 url: '@Url.Action("PerformAction")',
                 type: 'POST',
                 async: false,
                 cache: false,
-                data: { name: '@Model.Name', action: action, target: target },
+                data: { name: '@Model.Name', action: action, target: target, target2: target2 },
                 success: function (data) { $('#body-content').html(data); },
                 error: function (xml, status, error) { $('#body-content').html(error); }
             });

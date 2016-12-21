@@ -6,6 +6,7 @@ namespace UnicornHack
         Modifier,
         Slash,
         Chop,
+        Stab,
         Poke,
         Bludgeon,
         Punch,
@@ -18,12 +19,12 @@ namespace UnicornHack
         Sting,
         Hug,
         Trample,
-        Spit,
         Digestion,
-        Spell,
+        Spit,
         Breath,
         Gaze,
         Scream,
+        Spell,
         Explosion
     }
 }

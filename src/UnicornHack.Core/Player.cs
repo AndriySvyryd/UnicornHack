@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using CSharpScriptSerialization;
+using UnicornHack.Effects;
 using UnicornHack.Events;
 using UnicornHack.Utils;
 
@@ -32,7 +33,8 @@ namespace UnicornHack
         public virtual ICollection<LogEntry> Log { get; set; } = new HashSet<LogEntry>();
 
         public virtual string NextAction { get; set; }
-        public virtual int NextActionTarget { get; set; }
+        public virtual int? NextActionTarget { get; set; }
+        public virtual int? NextActionTarget2 { get; set; }
 
         #endregion
 
@@ -66,11 +68,33 @@ namespace UnicornHack
 
             player.NextLevelXP = player.XPLevel*100;
 
+            player.Abilities.Add(new Ability(player.Game)
+            {
+                Name = UnarmedAttackName,
+                Activation = AbilityActivation.OnTarget,
+                Action = AbilityAction.Punch,
+                FreeSlotsRequired = EquipmentSlot.GraspBothExtremities | EquipmentSlot.GraspMainExtremity |
+                                    EquipmentSlot.GraspMainExtremity,
+                ActionPointCost = 100,
+                Effects = new HashSet<Effect> {new PhysicalDamage(player.Game) {Damage = 2}}
+            });
+
+            player.Abilities.Add(new Ability(player.Game)
+            {
+                Name = UnarmedAttackName,
+                Activation = AbilityActivation.OnMeleeAttack,
+                Action = AbilityAction.Punch,
+                FreeSlotsRequired = EquipmentSlot.GraspBothExtremities | EquipmentSlot.GraspMainExtremity |
+                                    EquipmentSlot.GraspMainExtremity,
+                Effects = new HashSet<Effect> {new PhysicalDamage(player.Game) {Damage = 2}}
+            });
+
             player.RecalculateEffectsAndAbilities();
 
             Item.Get("carrot").Instantiate(player, quantity: 3);
             Item.Get("mail armor").Instantiate(player);
             Item.Get("long sword").Instantiate(player);
+            Item.Get("dagger").Instantiate(player);
 
             return player;
         }
@@ -109,13 +133,15 @@ namespace UnicornHack
 
             var action = NextAction;
             var target = NextActionTarget;
+            var target2 = NextActionTarget2;
             if (action == null)
             {
                 return false;
             }
 
             NextAction = null;
-            NextActionTarget = 0;
+            NextActionTarget = null;
+            NextActionTarget2 = null;
 
             Direction? moveDirection = null;
             switch (action)
@@ -154,16 +180,16 @@ namespace UnicornHack
                     ActionPoints -= ActionPointsPerTurn;
                     break;
                 case "EAT":
-                    Eat(GetItem(target));
+                    Eat(GetItem(target.Value));
                     break;
                 case "DROP":
-                    Drop(GetItem(target));
+                    Drop(GetItem(target.Value));
                     break;
                 case "EQUIP":
-                    Equip(GetItem(target));
+                    Equip(GetItem(target.Value), (EquipmentSlot)target2.Value);
                     break;
                 case "UNEQUIP":
-                    Unequip(GetItem(target));
+                    Unequip(GetItem(target.Value));
                     break;
                 default:
                     throw new InvalidOperationException($"Action {action} on character {Name} is invalid.");
@@ -233,7 +259,7 @@ namespace UnicornHack
             return Drop(item, pretend: false);
         }
 
-        public virtual bool Equip(Item item)
+        public virtual bool Equip(Item item, EquipmentSlot slot)
         {
             if (item == null)
             {
@@ -241,7 +267,7 @@ namespace UnicornHack
                 return false;
             }
 
-            return Equip(item, pretend: false);
+            return Equip(item, slot, pretend: false);
         }
 
         public virtual bool Unequip(Item item)

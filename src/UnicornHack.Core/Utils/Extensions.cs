@@ -1,9 +1,53 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace UnicornHack.Utils
 {
     public static class Extensions
     {
+        public static IReadOnlyCollection<T> GetFlags<T>(this T flags)
+        {
+            var values = new List<T>();
+            var defaultValue = Enum.ToObject(typeof(T), value: 0);
+            foreach (Enum currValue in Enum.GetValues(typeof(T)))
+            {
+                if (currValue.Equals(defaultValue))
+                {
+                    continue;
+                }
+
+                if (((Enum)(object)flags).HasFlag(currValue))
+                {
+                    values.Add((T)(object)currValue);
+                }
+            }
+
+            return values;
+        }
+
+        public static IReadOnlyCollection<T> GetNonRedundantFlags<T>(this T flags, bool removeComposites)
+        {
+            var values = new HashSet<T>(flags.GetFlags());
+            foreach (var currentValue in values.ToList())
+            {
+                var decomposedValues = currentValue.GetFlags();
+                if (decomposedValues.Count > 1)
+                {
+                    if (removeComposites)
+                    {
+                        values.Remove(currentValue);
+                    }
+                    else
+                    {
+                        values.ExceptWith(decomposedValues.Where(v => !Equals(v, currentValue)));
+                    }
+                }
+            }
+
+            return values;
+        }
+
         public static TList With<TList, T>(this TList list, T item)
             where TList : ICollection<T>
         {
