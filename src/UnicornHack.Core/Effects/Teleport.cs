@@ -1,3 +1,5 @@
+using UnicornHack.Events;
+
 namespace UnicornHack.Effects
 {
     public class Teleport : Effect
@@ -14,5 +16,10 @@ namespace UnicornHack.Effects
 
         public override Effect Instantiate(Game game)
             => new Teleport(game);
+
+        public override void Apply(AbilityActivationContext abilityContext)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

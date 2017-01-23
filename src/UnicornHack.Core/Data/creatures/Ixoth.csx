@@ -50,14 +50,6 @@ new Creature
             Timeout = 1,
             Effects = new HashSet<Effect> { new ScriptedEffect { Script = "ArcaneSpell" } }
         }
-,
-        new Ability
-        {
-            Activation = AbilityActivation.OnTarget,
-            Action = AbilityAction.Touch,
-            Timeout = 1,
-            Effects = new HashSet<Effect> { new StealAmulet { } }
-        }
     }
 ,
     SimpleProperties = new HashSet<string>

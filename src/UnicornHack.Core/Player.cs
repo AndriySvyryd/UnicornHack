@@ -21,7 +21,7 @@ namespace UnicornHack
         public virtual int Intelligence { get; set; }
         public virtual int Willpower { get; set; }
 
-        public virtual IDictionary<Skill, int> SkillAptitudes { get; set; } = new Dictionary<Skill, int>();
+        public virtual Skills Skills { get; set; }
 
         public virtual int MaxEP { get; set; }
         public virtual int EP { get; set; }
@@ -35,6 +35,63 @@ namespace UnicornHack
         public virtual string NextAction { get; set; }
         public virtual int? NextActionTarget { get; set; }
         public virtual int? NextActionTarget2 { get; set; }
+
+        protected override void RecalculateEffectsAndAbilities()
+        {
+            base.RecalculateEffectsAndAbilities();
+
+            foreach (var unarmedAbility in Abilities.Where(a => a.Name == UnarmedAttackName && a.IsUsable))
+            {
+                unarmedAbility.Effects.OfType<PhysicalDamage>().Single().Damage = 1 + Skills.Unarmed;
+            }
+
+            var mainMeleeAttack = Abilities.FirstOrDefault(a => a.Name == MeleeAttackName);
+            if (mainMeleeAttack != null
+                && mainMeleeAttack.IsUsable)
+            {
+                var mainWeapon = mainMeleeAttack.Effects.OfType<MeleeAttack>().Single().Weapon;
+                var meleeSkill = mainWeapon.EquippedSlot == EquipmentSlot.GraspBothExtremities
+                    ? Skills.TwoHanded
+                    : Skills.OneHanded;
+                var secondaryMeleeAttack = Abilities.FirstOrDefault(a => a.Name == SecondaryMeleeAttackName);
+                if (secondaryMeleeAttack.IsUsable)
+                {
+                    meleeSkill = Skills.DualWielding;
+                    var secondaryWeapon = secondaryMeleeAttack.Effects.OfType<MeleeAttack>().Single().Weapon;
+                    var secondaryWeaponSkill = 0;
+                    if (secondaryWeapon.Type.HasFlag(ItemType.WeaponMeleeShort))
+                    {
+                        secondaryWeaponSkill = Skills.ShortWeapons;
+                    }
+                    else if (secondaryWeapon.Type.HasFlag(ItemType.WeaponMeleeMedium))
+                    {
+                        secondaryWeaponSkill = Skills.MediumWeapons;
+                    }
+                    else if (secondaryWeapon.Type.HasFlag(ItemType.WeaponMeleeLong))
+                    {
+                        secondaryWeaponSkill = Skills.LongWeapons;
+                    }
+                    secondaryMeleeAttack.Effects.OfType<PhysicalDamage>().Single().Damage =
+                        meleeSkill + secondaryWeaponSkill;
+                }
+
+                var mainWeaponSkill = 0;
+                if (mainWeapon.Type.HasFlag(ItemType.WeaponMeleeShort))
+                {
+                    mainWeaponSkill = Skills.ShortWeapons;
+                }
+                else if (mainWeapon.Type.HasFlag(ItemType.WeaponMeleeMedium))
+                {
+                    mainWeaponSkill = Skills.MediumWeapons;
+                }
+                else if (mainWeapon.Type.HasFlag(ItemType.WeaponMeleeLong))
+                {
+                    mainWeaponSkill = Skills.LongWeapons;
+                }
+                mainMeleeAttack.Effects.OfType<PhysicalDamage>().Single().Damage =
+                    meleeSkill + mainWeaponSkill;
+            }
+        }
 
         #endregion
 
@@ -73,10 +130,9 @@ namespace UnicornHack
                 Name = UnarmedAttackName,
                 Activation = AbilityActivation.OnTarget,
                 Action = AbilityAction.Punch,
-                FreeSlotsRequired = EquipmentSlot.GraspBothExtremities | EquipmentSlot.GraspMainExtremity |
-                                    EquipmentSlot.GraspMainExtremity,
+                FreeSlotsRequired = EquipmentSlot.GraspBothExtremities | EquipmentSlot.GraspSingleExtremity,
                 ActionPointCost = 100,
-                Effects = new HashSet<Effect> {new PhysicalDamage(player.Game) {Damage = 2}}
+                Effects = new HashSet<Effect> {new MeleeAttack(player.Game), new PhysicalDamage(player.Game) {Damage = 2}}
             });
 
             player.Abilities.Add(new Ability(player.Game)
@@ -84,11 +140,11 @@ namespace UnicornHack
                 Name = UnarmedAttackName,
                 Activation = AbilityActivation.OnMeleeAttack,
                 Action = AbilityAction.Punch,
-                FreeSlotsRequired = EquipmentSlot.GraspBothExtremities | EquipmentSlot.GraspMainExtremity |
-                                    EquipmentSlot.GraspMainExtremity,
-                Effects = new HashSet<Effect> {new PhysicalDamage(player.Game) {Damage = 2}}
+                FreeSlotsRequired = EquipmentSlot.GraspBothExtremities | EquipmentSlot.GraspSingleExtremity,
+                Effects = new HashSet<Effect> { new MeleeAttack(player.Game), new PhysicalDamage(player.Game) {Damage = 2}}
             });
 
+            player.Skills = Skills != null ? new Skills(Skills) : new Skills();
             player.RecalculateEffectsAndAbilities();
 
             Item.Get("carrot").Instantiate(player, quantity: 3);
@@ -115,7 +171,7 @@ namespace UnicornHack
             // even if user already provided the next action / cannot perform an action
 
             // TODO: Move event processing after user action processing
-            foreach (var @event in SensedEvents.ToList())
+            foreach (var @event in SensedEvents.OrderBy(e => e.TurnOrder).ToList())
             {
                 var logEntry = GetLogEntry(@event);
                 if (logEntry != null)
@@ -406,7 +462,7 @@ namespace UnicornHack
             propertyConditions.Add(nameof(Intelligence), (o, v) => (int)v != 0);
             propertyConditions.Add(nameof(Willpower), (o, v) => (int)v != 0);
             propertyConditions.Add(nameof(Speed), (o, v) => (int)v != 0);
-            propertyConditions.Add(nameof(SkillAptitudes), (o, v) => ((IDictionary<Skill, int>)v).Keys.Count != 0);
+            propertyConditions.Add(nameof(Skills), (o, v) => v != null);
             propertyConditions.Add(nameof(SensedEvents), (o, v) => false);
             propertyConditions.Add(nameof(Log), (o, v) => false);
             return propertyConditions;

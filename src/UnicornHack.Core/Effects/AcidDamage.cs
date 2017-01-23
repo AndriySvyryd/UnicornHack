@@ -1,6 +1,8 @@
+using UnicornHack.Events;
+
 namespace UnicornHack.Effects
 {
-    public class AcidDamage : Effect
+    public class AcidDamage : DamageEffect
     {
         public AcidDamage()
         {
@@ -13,7 +15,14 @@ namespace UnicornHack.Effects
 
         // Corrodes items
         // Removes stoning
-        public int Damage { get; set; }
+        public override void Apply(AbilityActivationContext abilityContext)
+        {
+            base.Apply(abilityContext);
+            if (abilityContext.Succeeded)
+            {
+                abilityContext.Ability.Effects.Add(Instantiate(Game));
+            }
+        }
 
         public override Effect Instantiate(Game game)
             => new AcidDamage(game) {Damage = Damage};

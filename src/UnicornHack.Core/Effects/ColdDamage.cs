@@ -1,6 +1,8 @@
+using UnicornHack.Events;
+
 namespace UnicornHack.Effects
 {
-    public class ColdDamage : Effect
+    public class ColdDamage : DamageEffect
     {
         public ColdDamage()
         {
@@ -13,7 +15,14 @@ namespace UnicornHack.Effects
 
         // Freezes items
         // Removes burning, dissolving
-        public int Damage { get; set; }
+        public override void Apply(AbilityActivationContext abilityContext)
+        {
+            base.Apply(abilityContext);
+            if (abilityContext.Succeeded)
+            {
+                abilityContext.Ability.Effects.Add(Instantiate(Game));
+            }
+        }
 
         public override Effect Instantiate(Game game)
             => new ColdDamage(game) {Damage = Damage};

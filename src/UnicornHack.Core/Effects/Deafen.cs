@@ -1,3 +1,5 @@
+using UnicornHack.Events;
+
 namespace UnicornHack.Effects
 {
     public class Deafen : Effect
@@ -15,5 +17,10 @@ namespace UnicornHack.Effects
 
         public override Effect Instantiate(Game game)
             => new Deafen(game) {Duration = Duration};
+
+        public override void Apply(AbilityActivationContext abilityContext)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

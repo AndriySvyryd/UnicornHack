@@ -21,14 +21,6 @@ new Creature
         new Ability
         {
             Activation = AbilityActivation.OnTarget,
-            Action = AbilityAction.Punch,
-            Timeout = 1,
-            Effects = new HashSet<Effect> { new StealAmulet { } }
-        }
-,
-        new Ability
-        {
-            Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Spell,
             Timeout = 1,
             Effects = new HashSet<Effect> { new ScriptedEffect { Script = "ArcaneSpell" } }

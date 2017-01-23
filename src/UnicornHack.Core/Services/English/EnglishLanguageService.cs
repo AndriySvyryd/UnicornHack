@@ -1,7 +1,9 @@
 using System;
 using System.ComponentModel;
 using System.Globalization;
+using System.Linq;
 using System.Text;
+using UnicornHack.Effects;
 using UnicornHack.Events;
 
 namespace UnicornHack.Services.English
@@ -268,7 +270,7 @@ namespace UnicornHack.Services.English
 
                 var distanceModifier = @event.AttackerSensed.HasFlag(SenseType.SoundDistant) ? "distant" : null;
 
-                if (@event.AbilityAction == AbilityAction.Scream)
+                if (@event.Ability.Action == AbilityAction.Scream)
                 {
                     return ToSentence("You hear a", distanceModifier, "scream.");
                 }
@@ -282,7 +284,7 @@ namespace UnicornHack.Services.English
             var victimPerson = @event.Sensor == @event.Victim ? EnglishPerson.Second : EnglishPerson.Third;
             var victim = ToString(@event.Victim, victimPerson, @event.VictimSensed);
 
-            var attackVerb = ToVerb(@event.AbilityAction);
+            var attackVerb = ToVerb(@event.Ability.Action);
             var mainVerbForm = attackerPerson == EnglishPerson.Third
                 ? EnglishVerbForm.ThirdPersonSingularPresent
                 : EnglishVerbForm.BareInfinitive;
@@ -303,27 +305,28 @@ namespace UnicornHack.Services.English
                     return attackSentence;
                 }
 
+                var damage = @event.Ability.Effects.OfType<DamageEffect>().Aggregate(0, (d, e) => d + e.Damage);
                 var damageSentence = "";
                 if (victimPerson == EnglishPerson.Second)
                 {
-                    if (@event.Damage == 0)
+                    if (damage == 0)
                     {
                         damageSentence = "You are unaffected.";
                     }
                     else
                     {
-                        damageSentence = Format("[{0} pts.]", @event.Damage);
+                        damageSentence = Format("[{0} pts.]", damage);
                     }
                 }
                 else
                 {
-                    if (@event.Damage == 0)
+                    if (damage == 0)
                     {
                         damageSentence = ToSentence(victim, "seems unaffected.");
                     }
                     else
                     {
-                        damageSentence = Format("({0} pts.)", @event.Damage);
+                        damageSentence = Format("({0} pts.)", damage);
                     }
                 }
 

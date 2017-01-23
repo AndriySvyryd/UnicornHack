@@ -9,5 +9,5 @@ new Player
     Intelligence = 12,
     Willpower = 12,
     Speed = 12,
-    SkillAptitudes = new Dictionary<Skill, int> { { Skill.Bows, 1 } }
+    Skills = new Skills { Bows = 1 }
 }

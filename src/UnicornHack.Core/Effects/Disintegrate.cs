@@ -1,3 +1,5 @@
+using UnicornHack.Events;
+
 namespace UnicornHack.Effects
 {
     public class Disintegrate : Effect
@@ -16,5 +18,10 @@ namespace UnicornHack.Effects
 
         public override Effect Instantiate(Game game)
             => new Disintegrate(game) {Damage = Damage};
+
+        public override void Apply(AbilityActivationContext abilityContext)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

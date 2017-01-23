@@ -1,3 +1,5 @@
+using UnicornHack.Events;
+
 namespace UnicornHack.Effects
 {
     public class Heal : Effect
@@ -15,5 +17,10 @@ namespace UnicornHack.Effects
 
         public override Effect Instantiate(Game game)
             => new Heal(game) {Amount = Amount};
+
+        public override void Apply(AbilityActivationContext abilityContext)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

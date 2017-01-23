@@ -1,4 +1,6 @@
-﻿namespace UnicornHack.Effects
+﻿using UnicornHack.Events;
+
+namespace UnicornHack.Effects
 {
     public abstract class Effect
     {
@@ -18,5 +20,7 @@
         public Game Game { get; set; }
 
         public abstract Effect Instantiate(Game game);
+
+        public abstract void Apply(AbilityActivationContext abilityContext);
     }
 }

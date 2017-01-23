@@ -1,3 +1,5 @@
+using UnicornHack.Events;
+
 namespace UnicornHack.Effects
 {
     public class Curse : Effect
@@ -13,5 +15,10 @@ namespace UnicornHack.Effects
 
         public override Effect Instantiate(Game game)
             => new Curse(game);
+
+        public override void Apply(AbilityActivationContext abilityContext)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

@@ -24,14 +24,6 @@ new Creature
             Timeout = 1,
             Effects = new HashSet<Effect> { new ScriptedEffect { Script = "DivineSpell" } }
         }
-,
-        new Ability
-        {
-            Activation = AbilityActivation.OnTarget,
-            Action = AbilityAction.Touch,
-            Timeout = 1,
-            Effects = new HashSet<Effect> { new StealAmulet { } }
-        }
     }
 ,
     SimpleProperties = new HashSet<string> { "InvisibilityDetection", "Infravisibility", "Humanoidness", "Maleness", "Herbivorism", "StoningResistance" },

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using UnicornHack.Effects;
 using UnicornHack.Events;
 using Xunit;
 
@@ -82,6 +84,11 @@ namespace UnicornHack.Services.English
             string expectedMessage = "")
         {
             var languageService = CreateLanguageService();
+            var ability = new Ability
+            {
+                Action = abilityAction,
+                Effects = new HashSet<Effect>()
+            };
             var attackEvent = new AttackEvent
             {
                 Attacker = attacker,
@@ -89,15 +96,18 @@ namespace UnicornHack.Services.English
                 Sensor = sensor,
                 AttackerSensed = attackerSensed,
                 VictimSensed = victimSensed,
-                AbilityAction = abilityAction,
+                Ability = ability,
                 Hit = damage.HasValue,
-                Weapon = weapon,
-                Projectile = projectile
             };
 
             if (damage.HasValue)
             {
-                attackEvent.Damage = damage.Value;
+                ability.Effects.Add(new PhysicalDamage {Damage = damage.Value});
+            }
+
+            if (weapon != null)
+            {
+                ability.Effects.Add(new MeleeAttack { Weapon = weapon });
             }
 
             Assert.Equal(expectedMessage, languageService.ToString(attackEvent));

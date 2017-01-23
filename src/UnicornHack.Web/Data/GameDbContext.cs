@@ -47,6 +47,7 @@ namespace UnicornHack.Models
                 eb.Ignore(a => a.ValuedProperties);
                 eb.Ignore(a => a.MovementRate);
                 eb.HasKey(a => new {a.GameId, a.Id});
+                eb.HasIndex(a => a.Name).IsUnique();
                 eb.HasOne(a => a.Level)
                     .WithMany(l => l.Actors)
                     .HasForeignKey(a => new {a.GameId, a.LevelId});
@@ -56,8 +57,18 @@ namespace UnicornHack.Models
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            modelBuilder.Entity<Player>(eb => { eb.Ignore(p => p.SkillAptitudes); });
+            modelBuilder.Entity<Player>();
             modelBuilder.Entity<Creature>();
+            // TODO: Complex type
+            modelBuilder.Entity<Skills>(eb =>
+            {
+                eb.Property<int>("GameId");
+                eb.Property<int>("Id");
+                eb.HasKey("GameId", "Id");
+                eb.HasOne<Player>().WithOne(p => p.Skills)
+                    .IsRequired().HasForeignKey<Skills>("GameId", "Id");
+            });
+
 
             modelBuilder.Entity<Game>(eb =>
             {
@@ -200,7 +211,6 @@ namespace UnicornHack.Models
             modelBuilder.Entity<Sleep>();
             modelBuilder.Entity<Slime>();
             modelBuilder.Entity<Slow>();
-            modelBuilder.Entity<StealAmulet>();
             modelBuilder.Entity<StealGold>();
             modelBuilder.Entity<StealItem>();
             modelBuilder.Entity<Stick>();

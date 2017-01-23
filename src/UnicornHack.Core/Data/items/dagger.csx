@@ -1,10 +1,9 @@
 new Item
 {
     Name = "dagger",
-    Type = ItemType.Weapon,
+    Type = ItemType.WeaponMeleeShort,
     Weight = 5,
     Material = Material.Steel,
-    Size = Size.Small,
     EquipableSizes = Size.Tiny | Size.Small,
     EquipableSlots = EquipmentSlot.GraspSingleExtremity | EquipmentSlot.GraspBothExtremities,
     Abilities = new HashSet<Ability>

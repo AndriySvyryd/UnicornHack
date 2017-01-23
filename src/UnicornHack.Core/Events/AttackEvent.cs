@@ -8,21 +8,13 @@ namespace UnicornHack.Events
         public virtual SenseType AttackerSensed { get; set; }
         public virtual Actor Victim { get; set; }
         public virtual SenseType VictimSensed { get; set; }
-        public virtual AbilityAction AbilityAction { get; set; }
+        public virtual Ability Ability { get; set; }
         public virtual bool Hit { get; set; }
-        public virtual Item Weapon { get; set; }
-        public virtual Item Projectile { get; set; }
-        public virtual int Damage { get; set; }
 
-        public static void New(
-            Actor attacker,
-            Actor victim,
-            AbilityAction attackType,
-            bool hit,
-            Item weapon = null,
-            Item projectile = null,
-            int damage = 0)
+        public static void New(AbilityActivationContext abilityContext, int turnOrder)
         {
+            var attacker = abilityContext.Activator;
+            var victim = abilityContext.Target;
             Debug.Assert(attacker.Level == victim.Level);
 
             foreach (var sensor in attacker.Level.Actors)
@@ -42,11 +34,9 @@ namespace UnicornHack.Events
                     AttackerSensed = attackerSensed,
                     Victim = victim,
                     VictimSensed = victimSensed,
-                    AbilityAction = attackType,
-                    Hit = hit,
-                    Weapon = weapon,
-                    Projectile = projectile,
-                    Damage = damage
+                    Ability = abilityContext.Ability,
+                    Hit = abilityContext.Succeeded,
+                    TurnOrder = turnOrder
                 };
 
                 sensor.Sense(@event);

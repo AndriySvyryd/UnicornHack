@@ -1,6 +1,8 @@
+using UnicornHack.Events;
+
 namespace UnicornHack.Effects
 {
-    public class VenomDamage : Effect
+    public class VenomDamage : DamageEffect
     {
         public VenomDamage()
         {
@@ -12,7 +14,14 @@ namespace UnicornHack.Effects
         }
 
         // Decays items, gives temporary venom damage bonus
-        public int Damage { get; set; }
+        public override void Apply(AbilityActivationContext abilityContext)
+        {
+            base.Apply(abilityContext);
+            if (abilityContext.Succeeded)
+            {
+                abilityContext.Ability.Effects.Add(Instantiate(Game));
+            }
+        }
 
         public override Effect Instantiate(Game game)
             => new VenomDamage(game) {Damage = Damage};

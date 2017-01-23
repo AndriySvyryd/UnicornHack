@@ -16,9 +16,7 @@ new Creature
             Action = AbilityAction.Claw,
             Timeout = 1,
             Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 7 } }
-        }
-,
-        new Ability { Activation = AbilityActivation.OnTarget, Action = AbilityAction.Claw, Timeout = 1, Effects = new HashSet<Effect> { new StealAmulet { } } },
+        },
         new Ability
         {
             Activation = AbilityActivation.OnTarget,

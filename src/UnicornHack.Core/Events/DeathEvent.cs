@@ -7,7 +7,7 @@ namespace UnicornHack.Events
         public virtual Item Corpse { get; set; }
         public virtual SenseType? CorpseSensed { get; set; }
 
-        public static void New(Actor deceased, Item corpse)
+        public static void New(Actor deceased, Item corpse, int turnOrder)
         {
             foreach (var sensor in deceased.Level.Actors)
             {
@@ -27,7 +27,8 @@ namespace UnicornHack.Events
                     Deceased = deceased,
                     DeceasedSensed = deceasedSensed,
                     Corpse = corpse,
-                    CorpseSensed = corpseSensed
+                    CorpseSensed = corpseSensed,
+                    TurnOrder = turnOrder
                 };
 
                 sensor.Sense(@event);

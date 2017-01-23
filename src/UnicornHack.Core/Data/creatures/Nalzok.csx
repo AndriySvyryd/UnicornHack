@@ -42,14 +42,6 @@ new Creature
             Effects = new HashSet<Effect> { new ScriptedEffect { Script = "ArcaneSpell" } }
         }
 ,
-        new Ability
-        {
-            Activation = AbilityActivation.OnTarget,
-            Action = AbilityAction.Touch,
-            Timeout = 1,
-            Effects = new HashSet<Effect> { new StealAmulet { } }
-        }
-,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new HashSet<Effect> { new PoisonDamage { Damage = 5 } } }
     }
 ,

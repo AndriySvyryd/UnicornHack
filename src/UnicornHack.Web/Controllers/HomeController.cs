@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using UnicornHack.Effects;
+using UnicornHack.Events;
 using UnicornHack.Hubs;
 using UnicornHack.Models;
 using UnicornHack.Models.GameViewModels;
@@ -43,6 +44,10 @@ namespace UnicornHack.Controllers
         [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Game(Character model)
         {
+            if (model.Name == null)
+            {
+                return RedirectToAction(nameof(Index));
+            }
             return View(FindOrCreateCharacter(model.Name));
         }
 
@@ -139,6 +144,7 @@ namespace UnicornHack.Controllers
             _dbContext.Characters
                 .Include(c => c.Game.ActingActor)
                 .Include(c => c.Log)
+                .Include(c => c.Skills)
                 .Include(c => c.SensedEvents)
                 .Include(c => c.Level.DownStairs)
                 .Include(c => c.Level.UpStairs)
@@ -201,8 +207,20 @@ namespace UnicornHack.Controllers
                 .Where(i => i.ContainerId.HasValue && loadedContainerIds.Contains(i.ContainerId.Value))
                 .Load();
 
+            var events = _dbContext.Set<AttackEvent>()
+                .Local
+                .Select(e => e.Id)
+                .ToList();
+            if (events.Any())
+            {
+                // TODO: Remove this
+                _dbContext.Set<AttackEvent>()
+                    .Where(e => events.Contains(e.Id))
+                    .Include(e => e.Ability.Effects);
+            }
+
             var meleeAttacks = _dbContext.Set<MeleeAttack>()
-                .Local.OfType<MeleeAttack>()
+                .Local
                 .Select(c => c.Id)
                 .ToList();
             if (meleeAttacks.Any())

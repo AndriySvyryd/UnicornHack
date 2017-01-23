@@ -1,6 +1,8 @@
+using UnicornHack.Events;
+
 namespace UnicornHack.Effects
 {
-    public class FireDamage : Effect
+    public class FireDamage : DamageEffect
     {
         public FireDamage()
         {
@@ -13,7 +15,14 @@ namespace UnicornHack.Effects
 
         // Burns items
         // Removes slime, wet, frozen
-        public int Damage { get; set; }
+        public override void Apply(AbilityActivationContext abilityContext)
+        {
+            base.Apply(abilityContext);
+            if (abilityContext.Succeeded)
+            {
+                abilityContext.Ability.Effects.Add(Instantiate(Game));
+            }
+        }
 
         public override Effect Instantiate(Game game)
             => new FireDamage(game) {Damage = Damage};

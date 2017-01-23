@@ -1,4 +1,6 @@
-﻿namespace UnicornHack.Effects
+﻿using UnicornHack.Events;
+
+namespace UnicornHack.Effects
 {
     public class ChangeSimpleProperty : Effect
     {
@@ -20,5 +22,10 @@
                 PropertyName = PropertyName,
                 IsAdded = IsAdded
             };
+
+        public override void Apply(AbilityActivationContext abilityContext)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

@@ -15,7 +15,6 @@ namespace UnicornHack
         private int? _weight;
         private int? _nutrition;
         private Material? _material;
-        private Size? _size;
         private Size? _equipableSizes;
         private bool? _nameable;
         private int? _stackSize;
@@ -64,12 +63,6 @@ namespace UnicornHack
         {
             get { return _stackSize ?? BaseItem?.StackSize ?? 1; }
             set { _stackSize = value; }
-        }
-
-        public virtual Size Size
-        {
-            get { return _size ?? BaseItem?.Size ?? Size.None; }
-            set { _size = value; }
         }
 
         public virtual Size EquipableSizes
@@ -203,7 +196,6 @@ namespace UnicornHack
             itemInstance.Material = Material;
             itemInstance.Nameable = Nameable;
             itemInstance.StackSize = StackSize;
-            itemInstance.Size = Size;
             itemInstance.EquipableSizes = EquipableSizes;
 
             foreach (var ability in Abilities)
@@ -430,7 +422,6 @@ namespace UnicornHack
                 {nameof(Material), (o, v) => (Material)v != (o.BaseItem?.Material ?? Material.Default)},
                 {nameof(Nameable), (o, v) => (bool)v != (o.BaseItem?.Nameable ?? true)},
                 {nameof(StackSize), (o, v) => (int)v != (o.BaseItem?.StackSize ?? 1)},
-                {nameof(Size), (o, v) => (Size)v != (o.BaseItem?.Size ?? Size.None)},
                 {nameof(EquipableSizes), (o, v) => (Size)v != (o.BaseItem?.EquipableSizes ?? Size.All)},
                 {nameof(EquipableSlots), (o, v) => (EquipmentSlot)v != (o.BaseItem?.EquipableSlots ?? EquipmentSlot.Default)},
                 {nameof(Abilities), (o, v) => ((ICollection<Ability>)v).Count != 0},

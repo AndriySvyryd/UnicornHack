@@ -1,4 +1,6 @@
-﻿namespace UnicornHack.Effects
+﻿using UnicornHack.Events;
+
+namespace UnicornHack.Effects
 {
     public class ChangeValuedProperty : Effect
     {
@@ -22,5 +24,10 @@
                 Value = Value,
                 IsAbsolute = IsAbsolute
             };
+
+        public override void Apply(AbilityActivationContext abilityContext)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

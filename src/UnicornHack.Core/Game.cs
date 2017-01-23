@@ -11,6 +11,7 @@ namespace UnicornHack
     {
         public virtual int Id { get; private set; }
         public virtual int CurrentTurn { get; set; }
+        public virtual int CurrentTurnOrder { get; set; }
         public virtual int RandomSeed { get; set; }
         public virtual int? ActingActorId { get; set; }
         public virtual Actor ActingActor { get; set; }

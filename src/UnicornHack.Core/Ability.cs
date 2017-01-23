@@ -19,6 +19,7 @@ namespace UnicornHack
             Game = game;
             Id = game.NextAbilityId++;
             game.Abilities.Add(this);
+            IsUsable = true;
         }
 
         public virtual Ability Instantiate(Game game)
@@ -65,13 +66,15 @@ namespace UnicornHack
 
         public virtual bool IsUsable { get; set; }
 
-        public virtual bool Activate(Actor activator, Actor target, bool pretend = false)
+        public virtual bool Activate(AbilityActivationContext abilityContext, bool pretend = false)
         {
             if (!IsUsable)
             {
                 return false;
             }
 
+            var activator = abilityContext.Activator;
+            var target = abilityContext.Target;
             if (!target.IsAlive)
             {
                 return false;
@@ -82,86 +85,47 @@ namespace UnicornHack
                 return true;
             }
 
-            var ability = this;
-            var weapon = Effects.OfType<MeleeAttack>().FirstOrDefault()?.Weapon;
-            if (weapon != null)
+            var turnOrder = 0;
+            var firstAbility = abilityContext.Ability == null;
+            if (firstAbility)
             {
-                ability = weapon.Abilities.FirstOrDefault(a => a.Activation == AbilityActivation.OnMeleeAttack);
-            }
-
-            var damage = ability.Effects.OfType<PhysicalDamage>().FirstOrDefault()?.Damage
-                         ?? ability.Effects.OfType<ElectricityDamage>().FirstOrDefault()?.Damage
-                         ?? ability.Effects.OfType<FireDamage>().FirstOrDefault()?.Damage;
-            if (damage == null)
-            {
-                return false;
-            }
-
-            // TODO: Calculate AP cost
-            activator.ActionPoints -= Actor.ActionPointsPerTurn;
-
-            if (Game.NextRandom(maxValue: 3) == 0)
-            {
-                AttackEvent.New(activator, target, ability.Action, hit: false);
-            }
-            else
-            {
-                AttackEvent.New(activator, target, ability.Action, hit: true, damage: damage.Value, weapon: weapon);
-                target.ChangeCurrentHP(-1*damage.Value);
-            }
-
-            if (!target.IsAlive)
-            {
-                activator.XP += target.XP;
-            }
-            else if (Activation == AbilityActivation.OnTarget)
-            {
-                var abilityTrigger = AbilityActivation.Default;
-
-                switch (ability.Action)
+                if (Activation == AbilityActivation.OnTarget)
                 {
-                    case AbilityAction.Slash:
-                    case AbilityAction.Chop:
-                    case AbilityAction.Stab:
-                    case AbilityAction.Poke:
-                    case AbilityAction.Bludgeon:
-                    case AbilityAction.Punch:
-                    case AbilityAction.Kick:
-                    case AbilityAction.Touch:
-                    case AbilityAction.Headbutt:
-                    case AbilityAction.Claw:
-                    case AbilityAction.Bite:
-                    case AbilityAction.Suck:
-                    case AbilityAction.Sting:
-                    case AbilityAction.Hug:
-                    case AbilityAction.Trample:
-                    case AbilityAction.Digestion:
-                        abilityTrigger = AbilityActivation.OnMeleeAttack;
-                        break;
-                    case AbilityAction.Spit:
-                    case AbilityAction.Breath:
-                    case AbilityAction.Gaze:
-                    case AbilityAction.Scream:
-                    case AbilityAction.Explosion:
-                        abilityTrigger = AbilityActivation.OnRangedAttack;
-                        break;
-                    case AbilityAction.Spell:
-                        abilityTrigger = AbilityActivation.OnSpellCast;
-                        break;
-                    case AbilityAction.Modifier:
-                    case AbilityAction.Default:
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
+                    // TODO: Calculate AP cost
+                    activator.ActionPoints -= Actor.ActionPointsPerTurn;
                 }
 
-                if (abilityTrigger != AbilityActivation.Default)
+                abilityContext.Succeeded = Game.NextRandom(maxValue: 3) != 0;
+                abilityContext.Ability = new Ability(Game) {Action = Action};
+                turnOrder = Game.CurrentTurnOrder++;
+            }
+
+            foreach (var effect in Effects)
+            {
+                effect.Apply(abilityContext);
+            }
+
+            if (firstAbility)
+            {
+                AttackEvent.New(abilityContext, turnOrder);
+                if (!target.IsAlive)
                 {
-                    foreach (var triggeredAbility in
-                        activator.Abilities.Where(a => a.IsUsable && a.Activation == abilityTrigger))
-                    {
-                        triggeredAbility.Activate(activator, target, pretend);
-                    }
+                    activator.XP += target.XP;
+                }
+            }
+
+            if (Activation == AbilityActivation.OnTarget
+                && abilityContext.AbilityTrigger != AbilityActivation.Default)
+            {
+                foreach (var triggeredAbility in
+                    activator.Abilities.Where(a => a.IsUsable && a.Activation == abilityContext.AbilityTrigger))
+                {
+                    triggeredAbility.Activate(
+                        new AbilityActivationContext
+                        {
+                            Activator = abilityContext.Activator,
+                            Target = abilityContext.Target
+                        });
                 }
             }
 

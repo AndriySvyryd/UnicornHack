@@ -220,7 +220,8 @@ namespace UnicornHack
                         Name = MeleeAttackName,
                         Activation = AbilityActivation.OnTarget,
                         ActionPointCost = 100,
-                        Effects = new HashSet<Effect> {new MeleeAttack(Game)}
+                        Effects = new HashSet<Effect> {new MeleeAttack(Game), new PhysicalDamage(Game)},
+                        IsUsable = false
                     };
 
                     Abilities.Add(mainMeleeAttack);
@@ -231,7 +232,8 @@ namespace UnicornHack
                     {
                         Name = SecondaryMeleeAttackName,
                         Activation = AbilityActivation.OnMeleeAttack,
-                        Effects = new HashSet<Effect> {new MeleeAttack(Game)}
+                        Effects = new HashSet<Effect> {new MeleeAttack(Game), new PhysicalDamage(Game)},
+                        IsUsable = false
                     };
 
                     Abilities.Add(secondaryMeleeAttack);
@@ -432,7 +434,7 @@ namespace UnicornHack
             LevelY = moveToLevelY.Value;
             moveToLevel.Actors.Add(this);
 
-            ActorMoveEvent.New(this, movee: null);
+            ActorMoveEvent.New(this, movee: null, turnOrder: Game.CurrentTurnOrder++);
 
             return true;
         }
@@ -466,17 +468,18 @@ namespace UnicornHack
                 return true;
             }
 
-            ActionPoints -= (Level.DefaultMovementCost * ActionPointsPerTurn) / MovementRate;
+            ActionPoints -= Level.DefaultMovementCost*ActionPointsPerTurn/MovementRate;
 
             LevelX = targetCell.X;
             LevelY = targetCell.Y;
-            var itemsOnNewCell = Level.Items.Where(i => (i.LevelX == targetCell.X) && (i.LevelY == targetCell.Y)).ToList();
+            var itemsOnNewCell =
+                Level.Items.Where(i => (i.LevelX == targetCell.X) && (i.LevelY == targetCell.Y)).ToList();
             foreach (var itemOnNewCell in itemsOnNewCell)
             {
                 PickUp(itemOnNewCell);
             }
 
-            ActorMoveEvent.New(this, movee: null);
+            ActorMoveEvent.New(this, movee: null, turnOrder: Game.CurrentTurnOrder++);
 
             return true;
         }
@@ -495,7 +498,7 @@ namespace UnicornHack
                 return true;
             }
 
-            return ability.Activate(this, victim, pretend);
+            return ability.Activate(new AbilityActivationContext {Activator = this, Target = victim}, pretend);
         }
 
         public virtual bool Eat(Item item, bool pretend = false)
@@ -516,9 +519,9 @@ namespace UnicornHack
             using (var reference = item.Split(1))
             {
                 var splitItem = reference.Referenced;
-                    ChangeCurrentHP(hp: splitItem.Nutrition);
+                ChangeCurrentHP(hp: splitItem.Nutrition);
 
-                ItemConsumptionEvent.New(this, splitItem);
+                ItemConsumptionEvent.New(this, splitItem, Game.CurrentTurnOrder++);
 
                 return true;
             }
@@ -552,7 +555,7 @@ namespace UnicornHack
                 {
                     Unequip(GetEquippedItem(EquipmentSlot.GraspBothExtremities));
                 }
-                else if(slot == EquipmentSlot.GraspBothExtremities)
+                else if (slot == EquipmentSlot.GraspBothExtremities)
                 {
                     Unequip(GetEquippedItem(EquipmentSlot.GraspMainExtremity));
                     Unequip(GetEquippedItem(EquipmentSlot.GraspSecondaryExtremity));
@@ -564,7 +567,7 @@ namespace UnicornHack
             }
 
             item.EquippedSlot = slot;
-            ItemEquipmentEvent.New(this, item);
+            ItemEquipmentEvent.New(this, item, Game.CurrentTurnOrder++);
 
             RecalculateEffectsAndAbilities();
 
@@ -587,7 +590,7 @@ namespace UnicornHack
             ActionPoints -= ActionPointsPerTurn;
 
             item.EquippedSlot = null;
-            ItemUnequipmentEvent.New(this, item);
+            ItemUnequipmentEvent.New(this, item, Game.CurrentTurnOrder++);
 
             RecalculateEffectsAndAbilities();
 
@@ -602,11 +605,11 @@ namespace UnicornHack
             }
 
             // TODO: Calculate AP cost
-            ActionPoints -= ActionPointsPerTurn / 10;
+            ActionPoints -= ActionPointsPerTurn/10;
 
             item.MoveTo(this);
 
-            ItemPickUpEvent.New(this, item);
+            ItemPickUpEvent.New(this, item, Game.CurrentTurnOrder++);
 
             return true;
         }
@@ -629,7 +632,7 @@ namespace UnicornHack
             Gold -= quantity;
             var item = UnicornHack.Gold.Get().Instantiate(new LevelCell(Level, LevelX, LevelY), quantity).Single();
 
-            ItemDropEvent.New(this, item);
+            ItemDropEvent.New(this, item, Game.CurrentTurnOrder++);
 
             return true;
         }
@@ -642,11 +645,11 @@ namespace UnicornHack
             }
 
             // TODO: Calculate AP cost
-            ActionPoints -= ActionPointsPerTurn / 10;
+            ActionPoints -= ActionPointsPerTurn/10;
 
             item.MoveTo(new LevelCell(Level, LevelX, LevelY));
 
-            ItemDropEvent.New(this, item);
+            ItemDropEvent.New(this, item, Game.CurrentTurnOrder++);
 
             return true;
         }
@@ -699,6 +702,10 @@ namespace UnicornHack
 
         public virtual bool ChangeCurrentHP(int hp)
         {
+            if (!IsAlive)
+            {
+                return false;
+            }
             HP += hp;
             if (!IsAlive)
             {
@@ -707,9 +714,8 @@ namespace UnicornHack
                 {
                     Drop(item);
                 }
-                DeathEvent.New(this, corpse: null);
+                DeathEvent.New(this, corpse: null, turnOrder: Game.CurrentTurnOrder++);
                 Level.Actors.Remove(this);
-                LevelId = 0;
                 return false;
             }
 

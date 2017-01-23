@@ -1,6 +1,8 @@
+using UnicornHack.Events;
+
 namespace UnicornHack.Effects
 {
-    public class WaterDamage : Effect
+    public class WaterDamage : DamageEffect
     {
         public WaterDamage()
         {
@@ -13,7 +15,14 @@ namespace UnicornHack.Effects
 
         // Only does damage to actors with water weakness, rusts, dillutes and blanks items
         // Removes burning
-        public int Damage { get; set; }
+        public override void Apply(AbilityActivationContext abilityContext)
+        {
+            base.Apply(abilityContext);
+            if (abilityContext.Succeeded)
+            {
+                abilityContext.Ability.Effects.Add(Instantiate(Game));
+            }
+        }
 
         public override Effect Instantiate(Game game)
             => new WaterDamage(game) {Damage = Damage};

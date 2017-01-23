@@ -7,7 +7,7 @@ namespace UnicornHack.Events
         public virtual Item Item { get; set; }
         public virtual SenseType ItemSensed { get; set; }
 
-        public static void New(Actor consumer, Item item)
+        public static void New(Actor consumer, Item item, int turnOrder)
         {
             foreach (var sensor in consumer.Level.Actors)
             {
@@ -25,7 +25,8 @@ namespace UnicornHack.Events
                     Consumer = consumer,
                     ConsumerSensed = consumerSensed,
                     Item = item,
-                    ItemSensed = objectSensed
+                    ItemSensed = objectSensed,
+                    TurnOrder = turnOrder
                 };
                 item.AddReference();
 
