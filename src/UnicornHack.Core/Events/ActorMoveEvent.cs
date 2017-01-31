@@ -7,8 +7,10 @@ namespace UnicornHack.Events
         }
 
         public virtual Actor Mover { get; set; }
+        public virtual int MoverId { get; private set; }
         public virtual SenseType MoverSensed { get; set; }
         public virtual Actor Movee { get; set; }
+        public virtual int? MoveeId { get; private set; }
         public virtual SenseType? MoveeSensed { get; set; }
 
         public static void New(Actor mover, Actor movee, int turnOrder)
@@ -33,9 +35,17 @@ namespace UnicornHack.Events
                     MoverSensed = moverSensed,
                     TurnOrder = turnOrder
                 };
+                mover.AddReference();
 
                 sensor.Sense(@event);
             }
+        }
+
+        protected override void Delete()
+        {
+            base.Delete();
+            Mover?.RemoveReference();
+            Movee?.RemoveReference();
         }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnicornHack.Effects;
+using UnicornHack.Events;
 using UnicornHack.Services;
 using UnicornHack.Utils;
 
@@ -27,6 +28,7 @@ namespace UnicornHack
         public virtual ICollection<Ability> Abilities { get; set; } = new HashSet<Ability>();
         public virtual int NextEffectId { get; set; }
         public virtual ICollection<Effect> Effects { get; set; } = new HashSet<Effect>();
+        public virtual ICollection<SensoryEvent> SensoryEvents { get; set; } = new HashSet<SensoryEvent>();
         public virtual GameServices Services { get; set; }
         public virtual Action<object> Delete { get; set; }
         public virtual IEnumerable<Player> Players => Actors.OfType<Player>();
@@ -49,6 +51,7 @@ namespace UnicornHack
                 }
 
                 CurrentTurn++;
+                CurrentTurnOrder = 0;
             }
 
             return null;

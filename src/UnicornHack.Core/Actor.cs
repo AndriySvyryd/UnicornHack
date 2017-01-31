@@ -9,7 +9,7 @@ using UnicornHack.Utils;
 
 namespace UnicornHack
 {
-    public abstract class Actor : IItemLocation, ICSScriptSerializable
+    public abstract class Actor : IItemLocation, ICSScriptSerializable, IReferenceable
     {
         #region State
 
@@ -300,6 +300,7 @@ namespace UnicornHack
             actorInstance.LevelY = y;
             actorInstance.Level = level;
             level.Actors.Add(actorInstance);
+            actorInstance.AddReference();
 
             actorInstance.BaseName = Name;
             actorInstance.Species = Species;
@@ -339,6 +340,34 @@ namespace UnicornHack
 
         protected abstract Actor CreateInstance(Game game);
 
+        private int _referenceCount;
+
+        void IReferenceable.AddReference()
+        {
+            _referenceCount++;
+        }
+
+        public TransientReference<Actor> AddReference()
+        {
+            return new TransientReference<Actor>(this);
+        }
+
+        public void RemoveReference()
+        {
+            if (--_referenceCount <= 0)
+            {
+                foreach (var item in Inventory)
+                {
+                    item.RemoveReference();
+                }
+                foreach (var ability in Abilities)
+                {
+                    ability.RemoveReference();
+                }
+                Game.Delete(this);
+            }
+        }
+
         #endregion
 
         #region Actions
@@ -350,8 +379,9 @@ namespace UnicornHack
 
         public virtual void Sense(SensoryEvent @event)
         {
-            @event.Sensor = this;
-            @event.Delete();
+            @event.Game = Game;
+            @event.AddReference();
+            @event.RemoveReference();
         }
 
         public virtual bool CanAct()
@@ -428,13 +458,16 @@ namespace UnicornHack
 
             ActionPoints = 0;
 
-            Level.Actors.Remove(this);
-            Level = moveToLevel;
-            LevelX = moveToLevelX.Value;
-            LevelY = moveToLevelY.Value;
-            moveToLevel.Actors.Add(this);
+            using (AddReference())
+            {
+                Level.Actors.Remove(this);
+                Level = moveToLevel;
+                LevelX = moveToLevelX.Value;
+                LevelY = moveToLevelY.Value;
+                moveToLevel.Actors.Add(this);
 
-            ActorMoveEvent.New(this, movee: null, turnOrder: Game.CurrentTurnOrder++);
+                ActorMoveEvent.New(this, movee: null, turnOrder: Game.CurrentTurnOrder++);
+            }
 
             return true;
         }
@@ -607,9 +640,12 @@ namespace UnicornHack
             // TODO: Calculate AP cost
             ActionPoints -= ActionPointsPerTurn/10;
 
-            item.MoveTo(this);
+            using (item.AddReference())
+            {
+                item.MoveTo(this);
 
-            ItemPickUpEvent.New(this, item, Game.CurrentTurnOrder++);
+                ItemPickUpEvent.New(this, item, Game.CurrentTurnOrder++);
+            }
 
             return true;
         }
@@ -639,6 +675,11 @@ namespace UnicornHack
 
         public virtual bool Drop(Item item, bool pretend = false)
         {
+            if (item.EquippedSlot != null && !Unequip(item, pretend))
+            {
+                return false;
+            }
+
             if (pretend)
             {
                 return true;
@@ -647,9 +688,12 @@ namespace UnicornHack
             // TODO: Calculate AP cost
             ActionPoints -= ActionPointsPerTurn/10;
 
-            item.MoveTo(new LevelCell(Level, LevelX, LevelY));
+            using (item.AddReference())
+            {
+                item.MoveTo(new LevelCell(Level, LevelX, LevelY));
 
-            ItemDropEvent.New(this, item, Game.CurrentTurnOrder++);
+                ItemDropEvent.New(this, item, Game.CurrentTurnOrder++);
+            }
 
             return true;
         }
@@ -716,6 +760,7 @@ namespace UnicornHack
                 }
                 DeathEvent.New(this, corpse: null, turnOrder: Game.CurrentTurnOrder++);
                 Level.Actors.Remove(this);
+                RemoveReference();
                 return false;
             }
 

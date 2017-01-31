@@ -1,8 +1,9 @@
-﻿using UnicornHack.Events;
+using UnicornHack.Events;
+using UnicornHack.Utils;
 
 namespace UnicornHack.Effects
 {
-    public abstract class Effect
+    public abstract class Effect : IReferenceable
     {
         protected Effect()
         {
@@ -20,6 +21,31 @@ namespace UnicornHack.Effects
         public Game Game { get; set; }
 
         public abstract Effect Instantiate(Game game);
+
+        private int _referenceCount;
+
+        void IReferenceable.AddReference()
+        {
+            _referenceCount++;
+        }
+
+        public TransientReference<Effect> AddReference()
+        {
+            return new TransientReference<Effect>(this);
+        }
+
+        public void RemoveReference()
+        {
+            if (--_referenceCount < 0)
+            {
+                Delete();
+            }
+        }
+
+        protected virtual void Delete()
+        {
+            Game.Delete(this);
+        }
 
         public abstract void Apply(AbilityActivationContext abilityContext);
     }

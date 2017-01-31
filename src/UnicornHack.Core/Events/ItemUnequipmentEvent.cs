@@ -3,8 +3,10 @@ namespace UnicornHack.Events
     public class ItemUnequipmentEvent : SensoryEvent
     {
         public virtual Actor Unequipper { get; set; }
+        public virtual int UnequipperId { get; private set; }
         public virtual SenseType UnequipperSensed { get; set; }
         public virtual Item Item { get; set; }
+        public virtual int ItemId { get; private set; }
         public virtual SenseType ItemSensed { get; set; }
 
         public static void New(Actor unequipper, Item item, int turnOrder)
@@ -28,15 +30,17 @@ namespace UnicornHack.Events
                     ItemSensed = itemSensed,
                     TurnOrder = turnOrder
                 };
+                unequipper.AddReference();
                 item.AddReference();
 
                 sensor.Sense(@event);
             }
         }
 
-        public override void Delete()
+        protected override void Delete()
         {
             base.Delete();
+            Unequipper?.RemoveReference();
             Item?.RemoveReference();
         }
     }

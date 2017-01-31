@@ -170,8 +170,79 @@ namespace UnicornHack
             // TODO: add option to stop here and display current state
             // even if user already provided the next action / cannot perform an action
 
-            // TODO: Move event processing after user action processing
-            foreach (var @event in SensedEvents.OrderBy(e => e.TurnOrder).ToList())
+            if (ActionPoints > 0)
+            {
+                var action = NextAction;
+                var target = NextActionTarget;
+                var target2 = NextActionTarget2;
+                if (action == null)
+                {
+                    return false;
+                }
+
+                NextAction = null;
+                NextActionTarget = null;
+                NextActionTarget2 = null;
+
+                Direction? moveDirection = null;
+                switch (action)
+                {
+                    case "N":
+                        moveDirection = Direction.North;
+                        break;
+                    case "S":
+                        moveDirection = Direction.South;
+                        break;
+                    case "W":
+                        moveDirection = Direction.West;
+                        break;
+                    case "E":
+                        moveDirection = Direction.East;
+                        break;
+                    case "NW":
+                        moveDirection = Direction.Northwest;
+                        break;
+                    case "NE":
+                        moveDirection = Direction.Northeast;
+                        break;
+                    case "SW":
+                        moveDirection = Direction.Southwest;
+                        break;
+                    case "SE":
+                        moveDirection = Direction.Southeast;
+                        break;
+                    case "U":
+                        UseStairs(up: true);
+                        break;
+                    case "D":
+                        UseStairs(up: false);
+                        break;
+                    case "H":
+                        ActionPoints -= ActionPointsPerTurn;
+                        break;
+                    case "EAT":
+                        Eat(GetItem(target.Value));
+                        break;
+                    case "DROP":
+                        Drop(GetItem(target.Value));
+                        break;
+                    case "EQUIP":
+                        Equip(GetItem(target.Value), (EquipmentSlot)target2.Value);
+                        break;
+                    case "UNEQUIP":
+                        Unequip(GetItem(target.Value));
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Action {action} on character {Name} is invalid.");
+                }
+
+                if (moveDirection != null)
+                {
+                    Move(moveDirection.Value);
+                }
+            }
+
+            foreach (var @event in SensedEvents.OrderBy(e => e.TurnOrder).ThenBy(e => e.Id).ToList())
             {
                 var logEntry = GetLogEntry(@event);
                 if (logEntry != null)
@@ -179,93 +250,21 @@ namespace UnicornHack
                     WriteLog(logEntry);
                 }
                 SensedEvents.Remove(@event);
-                @event.Delete();
+                @event.RemoveReference();
             }
 
-            if (ActionPoints < 0)
-            {
-                return true;
-            }
-
-            var action = NextAction;
-            var target = NextActionTarget;
-            var target2 = NextActionTarget2;
-            if (action == null)
-            {
-                return false;
-            }
-
-            NextAction = null;
-            NextActionTarget = null;
-            NextActionTarget2 = null;
-
-            Direction? moveDirection = null;
-            switch (action)
-            {
-                case "N":
-                    moveDirection = Direction.North;
-                    break;
-                case "S":
-                    moveDirection = Direction.South;
-                    break;
-                case "W":
-                    moveDirection = Direction.West;
-                    break;
-                case "E":
-                    moveDirection = Direction.East;
-                    break;
-                case "NW":
-                    moveDirection = Direction.Northwest;
-                    break;
-                case "NE":
-                    moveDirection = Direction.Northeast;
-                    break;
-                case "SW":
-                    moveDirection = Direction.Southwest;
-                    break;
-                case "SE":
-                    moveDirection = Direction.Southeast;
-                    break;
-                case "U":
-                    UseStairs(up: true);
-                    break;
-                case "D":
-                    UseStairs(up: false);
-                    break;
-                case "H":
-                    ActionPoints -= ActionPointsPerTurn;
-                    break;
-                case "EAT":
-                    Eat(GetItem(target.Value));
-                    break;
-                case "DROP":
-                    Drop(GetItem(target.Value));
-                    break;
-                case "EQUIP":
-                    Equip(GetItem(target.Value), (EquipmentSlot)target2.Value);
-                    break;
-                case "UNEQUIP":
-                    Unequip(GetItem(target.Value));
-                    break;
-                default:
-                    throw new InvalidOperationException($"Action {action} on character {Name} is invalid.");
-            }
-
-            if (moveDirection != null)
-            {
-                Move(moveDirection.Value);
-            }
-
-            return ActionPoints < 0;
+            return ActionPoints <= 0;
         }
 
         public override void Sense(SensoryEvent @event)
         {
             @event.Sensor = this;
+            @event.Game = Game;
             unchecked
             {
                 @event.Id = NextEventId++;
             }
+            @event.AddReference();
             SensedEvents.Add(@event);
         }
 

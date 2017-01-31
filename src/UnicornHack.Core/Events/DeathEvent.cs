@@ -3,8 +3,10 @@ namespace UnicornHack.Events
     public class DeathEvent : SensoryEvent
     {
         public virtual Actor Deceased { get; set; }
+        public virtual int DeceasedId { get; private set; }
         public virtual SenseType DeceasedSensed { get; set; }
         public virtual Item Corpse { get; set; }
+        public virtual int? CorpseId { get; private set; }
         public virtual SenseType? CorpseSensed { get; set; }
 
         public static void New(Actor deceased, Item corpse, int turnOrder)
@@ -30,9 +32,18 @@ namespace UnicornHack.Events
                     CorpseSensed = corpseSensed,
                     TurnOrder = turnOrder
                 };
+                deceased.AddReference();
+                corpse?.AddReference();
 
                 sensor.Sense(@event);
             }
+        }
+
+        protected override void Delete()
+        {
+            base.Delete();
+            Deceased?.RemoveReference();
+            Corpse?.RemoveReference();
         }
     }
 }

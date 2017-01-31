@@ -58,20 +58,17 @@ namespace UnicornHack.Controllers
         public IActionResult PerformAction(string name, string action, string target, string target2)
         {
             var character = FindOrCreateCharacter(name);
-            if (character.Game.ActingActor == null)
-            {
-                if (!character.Game.Players.Any(pc => pc.IsAlive))
-                {
-                    Clean(character.Game);
-                    _dbContext.SaveChanges();
-                    character = FindOrCreateCharacter(name);
-                }
-            }
 
             character.NextAction = action;
             character.NextActionTarget = string.IsNullOrEmpty(target) ? (int?)null : Int32.Parse(target);
             character.NextActionTarget2 = string.IsNullOrEmpty(target2) ? (int?)null : Int32.Parse(target2);
 
+            Turn(character);
+            return PartialView(nameof(Game), character);
+        }
+
+        private void Turn(Player character)
+        {
             var level = character.Level;
             if (character.Game.ActingActor == character)
             {
@@ -91,7 +88,6 @@ namespace UnicornHack.Controllers
             {
                 character.Level = level;
             }
-            return PartialView(nameof(Game), character);
         }
 
         public IActionResult Error()
@@ -106,7 +102,7 @@ namespace UnicornHack.Controllers
             {
                 var game = new Game
                 {
-                    CurrentTurn = 0,
+                    CurrentTurn = 1,
                     RandomSeed = Environment.TickCount
                 };
                 Initialize(game);
@@ -125,9 +121,19 @@ namespace UnicornHack.Controllers
                 _dbContext.SaveChanges();
 
                 game.ActingActor = character;
+                Turn(character);
                 _dbContext.SaveChanges();
             }
 
+            if (character.Game.ActingActor == null)
+            {
+                if (!character.Game.Players.Any(pc => pc.IsAlive))
+                {
+                    Clean(character.Game);
+                    _dbContext.SaveChanges();
+                    character = FindOrCreateCharacter(name);
+                }
+            }
             return character;
         }
 
@@ -145,14 +151,15 @@ namespace UnicornHack.Controllers
                 .Include(c => c.Game.ActingActor)
                 .Include(c => c.Log)
                 .Include(c => c.Skills)
-                .Include(c => c.SensedEvents)
+                //.Include(c => c.SensedEvents)
                 .Include(c => c.Level.DownStairs)
                 .Include(c => c.Level.UpStairs)
                 .Include(c => c.Level.Game)
                 .Where(c => c.GameId == character.GameId)
                 .Load();
 
-            if (character.Level == null)
+            if (character.Level == null
+                || character.Game.ActingActor == null)
             {
                 return character;
             }
@@ -190,7 +197,7 @@ namespace UnicornHack.Controllers
                 }
             }
 
-            var levels = _dbContext.Levels
+            _dbContext.Levels
                 .Include(l => l.Items).ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
                 .Include(l => l.Actors)
                 .ThenInclude(a => a.Inventory)
@@ -200,39 +207,73 @@ namespace UnicornHack.Controllers
                 .Include(l => l.DownStairs)
                 .Include(l => l.UpStairs)
                 .Include(l => l.Game)
-                .Where(l => levelsToLoad.Contains(l.Id)).ToList();
+                .Where(l => levelsToLoad.Contains(l.Id))
+                .Load();
+
+            LoadEvents(character);
 
             var loadedContainerIds = _dbContext.Items.Local.OfType<Container>().Select(c => c.Id).ToList();
             _dbContext.Items
                 .Where(i => i.ContainerId.HasValue && loadedContainerIds.Contains(i.ContainerId.Value))
                 .Load();
 
-            var events = _dbContext.Set<AttackEvent>()
-                .Local
-                .Select(e => e.Id)
-                .ToList();
-            if (events.Any())
-            {
-                // TODO: Remove this
-                _dbContext.Set<AttackEvent>()
-                    .Where(e => events.Contains(e.Id))
-                    .Include(e => e.Ability.Effects);
-            }
-
-            var meleeAttacks = _dbContext.Set<MeleeAttack>()
-                .Local
-                .Select(c => c.Id)
-                .ToList();
+            var meleeAttacks = _dbContext.Set<MeleeAttack>().Local.Select(c => c.Id).ToList();
             if (meleeAttacks.Any())
             {
-                // TODO: Remove this
                 _dbContext.Set<MeleeAttack>().Where(e => meleeAttacks.Contains(e.Id))
-                    .Include(e => e.Weapon.Abilities).ThenInclude(a => a.Effects).Load();
+                    .Include(e => e.Weapon.Abilities).ThenInclude(a => a.Effects)
+                    .Load();
             }
 
             Initialize(character.Game);
 
             return character;
+        }
+
+        private void LoadEvents(Player character)
+        {
+            // TODO: Replace these with inline includes
+            _dbContext.Set<ActorMoveEvent>()
+                .Where(e => e.GameId == character.GameId && e.SensorId == character.Id)
+                .Include(e => e.Mover)
+                .Include(e => e.Movee)
+                .Load();
+            _dbContext.Set<AttackEvent>()
+                .Where(e => e.GameId == character.GameId && e.SensorId == character.Id)
+                .Include(e => e.Ability.Effects)
+                .Include(e => e.Attacker)
+                .Include(e => e.Victim)
+                .Load();
+            _dbContext.Set<DeathEvent>()
+                .Where(e => e.GameId == character.GameId && e.SensorId == character.Id)
+                .Include(e => e.Deceased)
+                .Include(e => e.Corpse)
+                .Load();
+            _dbContext.Set<ItemConsumptionEvent>()
+                .Where(e => e.GameId == character.GameId && e.SensorId == character.Id)
+                .Include(e => e.Consumer)
+                .Include(e => e.Item)
+                .Load();
+            _dbContext.Set<ItemDropEvent>()
+                .Where(e => e.GameId == character.GameId && e.SensorId == character.Id)
+                .Include(e => e.Dropper)
+                .Include(e => e.Item)
+                .Load();
+            _dbContext.Set<ItemPickUpEvent>()
+                .Where(e => e.GameId == character.GameId && e.SensorId == character.Id)
+                .Include(e => e.Picker)
+                .Include(e => e.Item)
+                .Load();
+            _dbContext.Set<ItemEquipmentEvent>()
+                .Where(e => e.GameId == character.GameId && e.SensorId == character.Id)
+                .Include(e => e.Equipper)
+                .Include(e => e.Item)
+                .Load();
+            _dbContext.Set<ItemUnequipmentEvent>()
+                .Where(e => e.GameId == character.GameId && e.SensorId == character.Id)
+                .Include(e => e.Unequipper)
+                .Include(e => e.Item)
+                .Load();
         }
 
         private void Initialize(Game game)
@@ -278,7 +319,13 @@ namespace UnicornHack.Controllers
                 .Include(g => g.Items)
                 .Include(g => g.Abilities)
                 .Include(g => g.Effects)
+                .Include(g => g.SensoryEvents)
                 .Single(g => g.Id == game.Id);
+
+            _dbContext.Set<MeleeAttack>()
+                .Where(e => e.GameId == game.Id)
+                .Include(e => e.Weapon.Abilities).ThenInclude(a => a.Effects)
+                .Load();
 
             foreach (var playerCharacter in game.Players)
             {
@@ -298,6 +345,10 @@ namespace UnicornHack.Controllers
             foreach (var item in game.Items.ToList())
             {
                 _dbContext.Items.Remove(item);
+            }
+            foreach (var sensoryEvent in game.SensoryEvents.ToList())
+            {
+                _dbContext.SensoryEvents.Remove(sensoryEvent);
             }
             foreach (var actor in game.Actors.ToList())
             {

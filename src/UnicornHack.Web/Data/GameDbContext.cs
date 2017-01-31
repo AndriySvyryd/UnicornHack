@@ -22,6 +22,7 @@ namespace UnicornHack.Models
         public DbSet<LogEntry> LogEntries { get; set; }
         public DbSet<Ability> Abilities { get; set; }
         public DbSet<Effect> Effects { get; set; }
+        public DbSet<SensoryEvent> SensoryEvents { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -46,6 +47,7 @@ namespace UnicornHack.Models
                 eb.Ignore(a => a.SimpleProperties);
                 eb.Ignore(a => a.ValuedProperties);
                 eb.Ignore(a => a.MovementRate);
+                eb.Property("_referenceCount");
                 eb.HasKey(a => new {a.GameId, a.Id});
                 eb.HasIndex(a => a.Name).IsUnique();
                 eb.HasOne(a => a.Level)
@@ -68,7 +70,6 @@ namespace UnicornHack.Models
                 eb.HasOne<Player>().WithOne(p => p.Skills)
                     .IsRequired().HasForeignKey<Skills>("GameId", "Id");
             });
-
 
             modelBuilder.Entity<Game>(eb =>
             {
@@ -100,12 +101,16 @@ namespace UnicornHack.Models
                 eb.HasMany(g => g.Effects)
                     .WithOne(e => e.Game)
                     .HasForeignKey(e => e.GameId);
+                eb.HasMany(g => g.SensoryEvents)
+                    .WithOne(e => e.Game)
+                    .HasForeignKey(e => e.GameId);
             });
 
             modelBuilder.Entity<Item>(eb =>
             {
                 eb.Ignore(i => i.SimpleProperties);
                 eb.Ignore(i => i.ValuedProperties);
+                eb.Property("_referenceCount");
                 eb.HasKey(i => new {i.GameId, i.Id});
                 eb.HasOne(i => i.Level)
                     .WithMany(l => l.Items)
@@ -119,7 +124,6 @@ namespace UnicornHack.Models
                 eb.HasMany(i => i.Abilities)
                     .WithOne()
                     .HasForeignKey(nameof(Ability.GameId), "ItemId");
-                eb.Property("_referenceCount");
             });
             modelBuilder.Entity<ItemStack>();
             modelBuilder.Entity<Gold>();
@@ -137,14 +141,14 @@ namespace UnicornHack.Models
 
             modelBuilder.Entity<SensoryEvent>(eb =>
             {
+                eb.Property("_referenceCount");
                 eb.HasKey(l => new {l.GameId, l.SensorId, l.Id});
-                eb.HasOne(e => (Player)e.Sensor)
+                eb.HasOne(e => e.Sensor)
                     .WithMany(a => a.SensedEvents)
                     .HasForeignKey(s => new {s.GameId, s.SensorId});
                 eb.ToTable(name: "SensoryEvents");
             });
 
-            // TODO: Specify FKs for all of these:
             modelBuilder.Entity<ActorMoveEvent>();
             modelBuilder.Entity<AttackEvent>();
             modelBuilder.Entity<DeathEvent>();
@@ -156,6 +160,7 @@ namespace UnicornHack.Models
 
             modelBuilder.Entity<Ability>(eb =>
             {
+                eb.Property("_referenceCount");
                 eb.HasKey(a => new {a.GameId, a.Id});
                 eb.HasMany(a => a.Effects)
                     .WithOne()
@@ -163,11 +168,13 @@ namespace UnicornHack.Models
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            modelBuilder.Entity<Effect>()
-                .HasKey(a => new {a.GameId, a.Id});
+            modelBuilder.Entity<Effect>(eb =>
+            {
+                eb.Property("_referenceCount");
+                eb.HasKey(a => new {a.GameId, a.Id});
+            });
             modelBuilder.Entity<AcidDamage>();
-            modelBuilder.Entity<AddAbility>()
-                .Ignore(a => a.Ability);
+            modelBuilder.Entity<AddAbility>();
             modelBuilder.Entity<Blind>();
             modelBuilder.Entity<Bind>();
             modelBuilder.Entity<ChangeSimpleProperty>();
@@ -219,6 +226,85 @@ namespace UnicornHack.Models
             modelBuilder.Entity<Suffocate>();
             modelBuilder.Entity<Teleport>();
             modelBuilder.Entity<VenomDamage>();
+        }
+
+        private void OnModelCreatingToDo(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<ActorMoveEvent>(eb =>
+            {
+                eb.HasOne(e => e.Mover)
+                    .WithMany()
+                    .HasForeignKey(e => new {e.GameId, e.MoverId});
+                eb.HasOne(e => e.Movee)
+                    .WithMany()
+                    .HasForeignKey(e => new {e.GameId, e.MoverId});
+            });
+            modelBuilder.Entity<AttackEvent>(eb =>
+            {
+                eb.HasOne(e => e.Attacker)
+                    .WithMany()
+                    .HasForeignKey(e => new {e.GameId, e.AttackerId});
+                eb.HasOne(e => e.Victim)
+                    .WithMany()
+                    .HasForeignKey(e => new {e.GameId, e.VictimId});
+                eb.HasOne(e => e.Ability)
+                    .WithMany()
+                    .HasForeignKey(e => new {e.GameId, e.AbilityId});
+            });
+            modelBuilder.Entity<DeathEvent>(eb =>
+            {
+                eb.HasOne(e => e.Deceased)
+                    .WithMany()
+                    .HasForeignKey(e => new {e.GameId, e.DeceasedId});
+                eb.HasOne(e => e.Corpse)
+                    .WithMany()
+                    .HasForeignKey(e => new {e.GameId, e.CorpseId});
+            });
+            modelBuilder.Entity<ItemConsumptionEvent>(eb =>
+            {
+                eb.HasOne(e => e.Consumer)
+                    .WithMany()
+                    .HasForeignKey(e => new {e.GameId, e.ConsumerId});
+                eb.HasOne(e => e.Item)
+                    .WithMany()
+                    .HasForeignKey(e => new {e.GameId, e.ItemId});
+            });
+            modelBuilder.Entity<ItemDropEvent>(eb =>
+            {
+                eb.HasOne(e => e.Dropper)
+                    .WithMany()
+                    .HasForeignKey(e => new {e.GameId, e.DropperId});
+                eb.HasOne(e => e.Item)
+                    .WithMany()
+                    .HasForeignKey(e => new {e.GameId, e.ItemId});
+            });
+            modelBuilder.Entity<ItemPickUpEvent>(eb =>
+            {
+                eb.HasOne(e => e.Picker)
+                    .WithMany()
+                    .HasForeignKey(e => new {e.GameId, e.PickerId});
+                eb.HasOne(e => e.Item)
+                    .WithMany()
+                    .HasForeignKey(e => new {e.GameId, e.ItemId});
+            });
+            modelBuilder.Entity<ItemEquipmentEvent>(eb =>
+            {
+                eb.HasOne(e => e.Equipper)
+                    .WithMany()
+                    .HasForeignKey(e => new {e.GameId, e.EquipperId});
+                eb.HasOne(e => e.Item)
+                    .WithMany()
+                    .HasForeignKey(e => new {e.GameId, e.ItemId});
+            });
+            modelBuilder.Entity<ItemUnequipmentEvent>(eb =>
+            {
+                eb.HasOne(e => e.Unequipper)
+                    .WithMany()
+                    .HasForeignKey(e => new {e.GameId, e.UnequipperId});
+                eb.HasOne(e => e.Item)
+                    .WithMany()
+                    .HasForeignKey(e => new {e.GameId, e.ItemId});
+            });
         }
     }
 }

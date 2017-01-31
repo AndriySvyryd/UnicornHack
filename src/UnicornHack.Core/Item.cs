@@ -200,7 +200,7 @@ namespace UnicornHack
 
             foreach (var ability in Abilities)
             {
-                itemInstance.Abilities.Add(ability.Instantiate(game));
+                itemInstance.Abilities.Add(ability.Instantiate(game).AddReference().Referenced);
             }
 
             return itemInstance;
@@ -227,6 +227,30 @@ namespace UnicornHack
         }
 
         protected virtual Item CreateInstance(Game game) => new Item(game);
+
+        private int _referenceCount;
+
+        void IReferenceable.AddReference()
+        {
+            _referenceCount++;
+        }
+
+        public TransientReference<Item> AddReference()
+        {
+            return new TransientReference<Item>(this);
+        }
+
+        public void RemoveReference()
+        {
+            if (--_referenceCount <= 0)
+            {
+                foreach (var ability in Abilities)
+                {
+                    ability.RemoveReference();
+                }
+                Game.Delete(this);
+            }
+        }
 
         #endregion
 
@@ -330,26 +354,6 @@ namespace UnicornHack
             Remove();
 
             return result;
-        }
-
-        private int _referenceCount;
-
-        void IReferenceable.AddReference()
-        {
-            _referenceCount++;
-        }
-
-        public TransientReference<Item> AddReference()
-        {
-            return new TransientReference<Item>(this);
-        }
-
-        public void RemoveReference()
-        {
-            if (--_referenceCount == 0)
-            {
-                Game.Delete(this);
-            }
         }
 
         #endregion

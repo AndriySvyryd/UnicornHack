@@ -17,8 +17,14 @@ namespace UnicornHack.Effects
             => new MeleeAttack(game)
             {
                 WeaponId = WeaponId,
-                Weapon = Weapon
+                Weapon = Weapon?.AddReference().Referenced
             };
+
+        protected override void Delete()
+        {
+            base.Delete();
+            Weapon?.RemoveReference();
+        }
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -46,7 +52,6 @@ namespace UnicornHack.Effects
                 abilityContext.Ability.Effects.Add(Instantiate(Game));
             }
         }
-
 
         public int? WeaponId { get; set; }
         public Item Weapon { get; set; }

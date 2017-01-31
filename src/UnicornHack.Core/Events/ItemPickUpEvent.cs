@@ -3,8 +3,10 @@ namespace UnicornHack.Events
     public class ItemPickUpEvent : SensoryEvent
     {
         public virtual Actor Picker { get; set; }
+        public virtual int PickerId { get; private set; }
         public virtual SenseType PickerSensed { get; set; }
         public virtual Item Item { get; set; }
+        public virtual int ItemId { get; private set; }
         public virtual SenseType ItemSensed { get; set; }
 
         public static void New(Actor picker, Item item, int turnOrder)
@@ -28,15 +30,17 @@ namespace UnicornHack.Events
                     ItemSensed = itemSensed,
                     TurnOrder = turnOrder
                 };
+                picker.AddReference();
                 item.AddReference();
 
                 sensor.Sense(@event);
             }
         }
 
-        public override void Delete()
+        protected override void Delete()
         {
             base.Delete();
+            Picker?.RemoveReference();
             Item?.RemoveReference();
         }
     }
