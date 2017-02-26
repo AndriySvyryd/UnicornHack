@@ -4,7 +4,7 @@ new Creature
     Species = Species.Worm,
     SpeciesClass = SpeciesClass.Vermin,
     ArmorClass = 5,
-    MovementRate = 3,
+    MovementDelay = 400,
     Weight = 600,
     Size = Size.Medium,
     Nutrition = 250,

@@ -5,7 +5,7 @@ new Creature
     SpeciesClass = SpeciesClass.MagicalBeast,
     ArmorClass = 2,
     MagicResistance = 25,
-    MovementRate = 6,
+    MovementDelay = 200,
     Weight = 1300,
     Size = Size.Large,
     Nutrition = 500,

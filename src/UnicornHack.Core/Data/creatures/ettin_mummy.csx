@@ -5,7 +5,7 @@ new Creature
     SpeciesClass = SpeciesClass.Undead,
     ArmorClass = 1,
     MagicResistance = 20,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 2250,
     Size = Size.Huge,
     Nutrition = 350,

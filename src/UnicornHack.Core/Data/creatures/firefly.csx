@@ -4,7 +4,7 @@ new Creature
     Species = Species.Beetle,
     SpeciesClass = SpeciesClass.Vermin,
     ArmorClass = 9,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 10,
     Size = Size.Tiny,
     Nutrition = 10,

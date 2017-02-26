@@ -4,7 +4,7 @@ new Creature
     Species = Species.Wolf,
     SpeciesClass = SpeciesClass.Canine,
     ArmorClass = 3,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 1400,
     Size = Size.Large,
     Nutrition = 600,

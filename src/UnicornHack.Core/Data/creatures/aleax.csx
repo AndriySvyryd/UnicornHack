@@ -4,7 +4,7 @@ new Creature
     Species = Species.Angel,
     SpeciesClass = SpeciesClass.Celestial,
     MagicResistance = 30,
-    MovementRate = 8,
+    MovementDelay = 150,
     Weight = 1000,
     Size = Size.Medium,
     Nutrition = 400,

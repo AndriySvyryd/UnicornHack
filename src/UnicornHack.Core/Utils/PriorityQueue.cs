@@ -1,8 +1,9 @@
+using System.Collections;
 using System.Collections.Generic;
 
 namespace UnicornHack.Utils
 {
-    public class PriorityQueue<T>
+    public class PriorityQueue<T> : ICollection<T>
     {
         private readonly List<T> _list = new List<T>();
         private readonly IComparer<T> _comparer;
@@ -26,7 +27,37 @@ namespace UnicornHack.Utils
             }
         }
 
-        public virtual int Push(T element)
+        public PriorityQueue(IEnumerable<T> source)
+            : this(source, Comparer<T>.Default)
+        {
+        }
+
+        public PriorityQueue(IEnumerable<T> source, IComparer<T> comparer)
+            : this(comparer, capacity: 0)
+        {
+            foreach (var element in source)
+            {
+                Push(element);
+            }
+        }
+
+        public PriorityQueue(ICollection<T> source)
+            : this(source, Comparer<T>.Default)
+        {
+        }
+
+        public PriorityQueue(ICollection<T> source, IComparer<T> comparer)
+            : this(comparer, source.Count)
+        {
+            foreach (var element in source)
+            {
+                Push(element);
+            }
+        }
+
+        public int Count => _list.Count;
+
+        public int Push(T element)
         {
             var newElementPosition = _list.Count;
             _list.Add(element);
@@ -34,18 +65,36 @@ namespace UnicornHack.Utils
             return BubbleUp(newElementPosition);
         }
 
-        public virtual T Pop()
+        public T Pop() => RemoveAt(0);
+
+        public bool Remove(T item)
         {
-            var result = _list[index: 0];
-            _list[index: 0] = _list[_list.Count - 1];
+            var i = GetPosition(item);
+            if (i == -1)
+            {
+                return false;
+            }
+
+            RemoveAt(i);
+            return true;
+        }
+
+        public T RemoveAt(int position)
+        {
+            var result = _list[position];
+            _list[position] = _list[_list.Count - 1];
             _list.RemoveAt(_list.Count - 1);
 
-            BubbleDown(position: 0);
-
+            if (position != _list.Count)
+            {
+                BubbleDown(position);
+            }
             return result;
         }
 
-        public virtual T this[int index]
+        public void Clear() => _list.Clear();
+
+        public T this[int index]
         {
             get { return _list[index]; }
             set
@@ -55,15 +104,12 @@ namespace UnicornHack.Utils
             }
         }
 
-        private void Update(int position)
+        public int Update(int position)
         {
             var newPosition = BubbleUp(position);
-            if (newPosition != position)
-            {
-                return;
-            }
-
-            BubbleDown(newPosition);
+            return newPosition != position
+                ? newPosition
+                : BubbleDown(newPosition);
         }
 
         private int BubbleUp(int position)
@@ -88,7 +134,7 @@ namespace UnicornHack.Utils
             return position;
         }
 
-        private void BubbleDown(int position)
+        private int BubbleDown(int position)
         {
             do
             {
@@ -112,13 +158,24 @@ namespace UnicornHack.Utils
 
                 SwitchElements(position, parentPosition);
             } while (true);
+
+            return position;
         }
 
         public T Peek() => _list.Count > 0 ? _list[index: 0] : default(T);
 
-        public void Clear() => _list.Clear();
+        private int GetPosition(T item)
+        {
+            for (var i = 0; i < _list.Count; i++)
+            {
+                if (item.Equals(_list[i]))
+                {
+                    return i;
+                }
+            }
 
-        public int Count => _list.Count;
+            return -1;
+        }
 
         private void SwitchElements(int i, int j)
         {
@@ -128,5 +185,22 @@ namespace UnicornHack.Utils
         }
 
         private int CompareItemsAt(int i, int j) => _comparer.Compare(_list[i], _list[j]);
+
+        bool ICollection<T>.IsReadOnly => false;
+
+        void ICollection<T>.Add(T item) => Push(item);
+        bool ICollection<T>.Contains(T item) => GetPosition(item) != -1;
+
+        void ICollection<T>.CopyTo(T[] array, int arrayIndex)
+        {
+            for (var i = 0; i < _list.Count; i++)
+            {
+                array[i + arrayIndex] = _list[i];
+            }
+        }
+
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => _list.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => _list.GetEnumerator();
     }
 }

@@ -4,7 +4,7 @@ new Creature
     Species = Species.Dog,
     SpeciesClass = SpeciesClass.Canine,
     ArmorClass = 7,
-    MovementRate = 16,
+    MovementDelay = 75,
     Weight = 400,
     Size = Size.Medium,
     Nutrition = 200,

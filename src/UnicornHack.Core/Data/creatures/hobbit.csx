@@ -4,7 +4,7 @@ new Creature
     Species = Species.Hobbit,
     ArmorClass = 10,
     MagicResistance = 10,
-    MovementRate = 9,
+    MovementDelay = 133,
     Weight = 500,
     Size = Size.Medium,
     Nutrition = 250,

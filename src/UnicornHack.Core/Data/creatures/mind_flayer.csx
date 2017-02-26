@@ -4,7 +4,7 @@ new Creature
     Species = Species.Illithid,
     ArmorClass = 5,
     MagicResistance = 80,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 1200,
     Size = Size.Large,
     Nutrition = 300,

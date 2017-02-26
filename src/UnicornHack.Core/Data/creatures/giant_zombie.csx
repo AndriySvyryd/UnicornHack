@@ -4,7 +4,7 @@ new Creature
     Species = Species.Giant,
     SpeciesClass = SpeciesClass.Undead,
     ArmorClass = 4,
-    MovementRate = 6,
+    MovementDelay = 200,
     Weight = 2250,
     Size = Size.Huge,
     Nutrition = 350,

@@ -4,7 +4,7 @@ new Creature
     Species = Species.Rat,
     SpeciesClass = SpeciesClass.Rodent,
     ArmorClass = 7,
-    MovementRate = 10,
+    MovementDelay = 120,
     Weight = 150,
     Size = Size.Small,
     Nutrition = 75,

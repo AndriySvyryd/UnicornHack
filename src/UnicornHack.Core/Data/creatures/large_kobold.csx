@@ -3,7 +3,7 @@ new Creature
     Name = "large kobold",
     Species = Species.Kobold,
     ArmorClass = 10,
-    MovementRate = 6,
+    MovementDelay = 200,
     Weight = 450,
     Size = Size.Small,
     Nutrition = 150,

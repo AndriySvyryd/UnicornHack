@@ -4,7 +4,7 @@ new Creature
     Species = Species.Naga,
     SpeciesClass = SpeciesClass.Aberration,
     ArmorClass = 6,
-    MovementRate = 10,
+    MovementDelay = 120,
     Weight = 500,
     Size = Size.Medium,
     Nutrition = 200,

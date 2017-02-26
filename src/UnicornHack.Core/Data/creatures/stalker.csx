@@ -4,7 +4,7 @@ new Creature
     Species = Species.Elemental,
     SpeciesClass = SpeciesClass.Extraplanar,
     ArmorClass = 3,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 900,
     Size = Size.Large,
     Nutrition = 400,

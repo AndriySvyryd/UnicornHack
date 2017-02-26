@@ -3,7 +3,7 @@ new Creature
     Name = "lurker above",
     Species = Species.Trapper,
     ArmorClass = 3,
-    MovementRate = 3,
+    MovementDelay = 400,
     Weight = 800,
     Size = Size.Large,
     Nutrition = 350,

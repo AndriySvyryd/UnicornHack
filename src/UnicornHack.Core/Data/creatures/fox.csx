@@ -4,7 +4,7 @@ new Creature
     Species = Species.Fox,
     SpeciesClass = SpeciesClass.Canine,
     ArmorClass = 7,
-    MovementRate = 15,
+    MovementDelay = 80,
     Weight = 300,
     Size = Size.Small,
     Nutrition = 250,

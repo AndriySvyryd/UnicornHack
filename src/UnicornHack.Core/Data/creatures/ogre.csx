@@ -3,7 +3,7 @@ new Creature
     Name = "ogre",
     Species = Species.Ogre,
     ArmorClass = 5,
-    MovementRate = 10,
+    MovementDelay = 120,
     Weight = 1600,
     Size = Size.Large,
     Nutrition = 500,

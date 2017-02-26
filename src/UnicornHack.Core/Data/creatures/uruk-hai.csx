@@ -3,7 +3,7 @@ new Creature
     Name = "uruk-hai",
     Species = Species.Orc,
     ArmorClass = 10,
-    MovementRate = 9,
+    MovementDelay = 133,
     Weight = 1300,
     Size = Size.Medium,
     Nutrition = 300,

@@ -3,7 +3,7 @@ new Creature
     Name = "rust monster",
     Species = Species.RustMonster,
     ArmorClass = 2,
-    MovementRate = 18,
+    MovementDelay = 66,
     Weight = 1000,
     Size = Size.Medium,
     Nutrition = 300,

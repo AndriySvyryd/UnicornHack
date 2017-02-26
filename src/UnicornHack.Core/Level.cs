@@ -30,7 +30,6 @@ namespace UnicornHack
             Game = game;
             Name = branchName;
             Depth = depth;
-            LastTurn = game.CurrentTurn;
         }
 
         static Level()
@@ -53,55 +52,56 @@ namespace UnicornHack
         public virtual short Depth { get; set; }
 
         public virtual byte[] Layout { get; set; }
-        public virtual int LastTurn { get; set; }
 
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public virtual int GameId { get; private set; }
         public virtual Game Game { get; set; }
         public virtual ICollection<Item> Items { get; private set; } = new HashSet<Item>();
-        public virtual ICollection<Actor> Actors { get; private set; } = new HashSet<Actor>();
+        public virtual PriorityQueue<Actor> Actors { get; private set; } = new PriorityQueue<Actor>(Actor.TickComparer.Instance);
         public virtual ICollection<Stairs> UpStairs { get; private set; } = new HashSet<Stairs>();
         public virtual ICollection<Stairs> DownStairs { get; private set; } = new HashSet<Stairs>();
-
-        public virtual IEnumerable<Player> PlayerCharacters => Actors.OfType<Player>();
-
-        // TODO: Adjust based on end game
-        public virtual short Difficulty => Depth;
+        public virtual IEnumerable<Player> Players => Actors.OfType<Player>();
 
         public virtual Actor Turn()
         {
-            for (; LastTurn < Game.CurrentTurn; LastTurn++)
+            while (Actors.Count > 0)
             {
-                foreach (var actor in Actors
-                    .OrderBy(a => a.Id)
-                    .ToList())
+                var actor = Actors.Peek();
+                if (actor.NextActionTick > Game.NextPlayerTick)
                 {
-                    if (Game.ActingActor != null
-                        && Game.ActingActor != actor)
+                    // Avoid infinite loop if no players are present
+                    break;
+                }
+                Debug.Assert(actor.Level == this && actor.IsAlive);
+
+                var lastTick = actor.NextActionTick;
+                if (!actor.Act())
+                {
+                    return actor;
+                }
+
+                if (actor == Actors.Peek())
+                {
+                    if (lastTick == actor.NextActionTick)
                     {
-                        continue;
+                        Debug.Assert(false, nameof(Actor.NextActionTick) + " hasn't been updated!");
+                        actor.NextActionTick += Actor.DefaultActionDelay;
                     }
 
-                    if (actor.Level != this)
+                    var position = 0;
+                    while (Actors.Count > position + 1
+                       && actor.NextActionTick == Actors[position + 1].NextActionTick)
                     {
-                        continue;
+                        // Make sure actors alternate if they were to act at the same time
+                        actor.NextActionTick++;
+
+                        position = Actors.Update(position);
                     }
 
-                    if (actor.CanAct())
+                    if (position == 0)
                     {
-                        if (Game.ActingActor == null)
-                        {
-                            actor.ActionPoints += Actor.ActionPointsPerTurn;
-                        }
-
-                        if (!actor.Act())
-                        {
-                            return actor;
-                        }
+                        Actors.Update(position);
                     }
-
-                    Game.ActingActor = null;
-                    Game.ActingActorId = null;
                 }
             }
 
@@ -348,7 +348,6 @@ namespace UnicornHack
                 throw new InvalidOperationException($"The height is {y + 1}, but expected {Height}");
             }
 
-            level.LastTurn = game.CurrentTurn - 1;
             level.Layout = byteLayout;
             return level;
         }
@@ -385,8 +384,6 @@ namespace UnicornHack
             new Vector(x: 1, y: -1), new Vector(x: 1, y: 1),
             new Vector(-1, y: 1), new Vector(-1, -1)
         };
-
-        public static readonly int DefaultMovementCost = 12;
 
         // ReSharper disable ArgumentsStyleStringLiteral
         private static readonly Dictionary<int, Dictionary<string, string>> StaticLevels =

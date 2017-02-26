@@ -70,7 +70,7 @@ namespace UnicornHack.Controllers
         private void Turn(Player character)
         {
             var level = character.Level;
-            if (character.Game.ActingActor == character)
+            if (character.Game.NextPlayerTick == character.NextActionTick)
             {
                 character.Game.Turn();
             }
@@ -102,7 +102,6 @@ namespace UnicornHack.Controllers
             {
                 var game = new Game
                 {
-                    CurrentTurn = 1,
                     RandomSeed = Environment.TickCount
                 };
                 Initialize(game);
@@ -120,20 +119,18 @@ namespace UnicornHack.Controllers
                 _dbContext.Characters.Add(character);
                 _dbContext.SaveChanges();
 
-                game.ActingActor = character;
                 Turn(character);
                 _dbContext.SaveChanges();
             }
 
-            if (character.Game.ActingActor == null)
+            if (!character.IsAlive
+                && !character.Game.Players.Any(pc => pc.IsAlive))
             {
-                if (!character.Game.Players.Any(pc => pc.IsAlive))
-                {
-                    Clean(character.Game);
-                    _dbContext.SaveChanges();
-                    character = FindOrCreateCharacter(name);
-                }
+                Clean(character.Game);
+                _dbContext.SaveChanges();
+                character = FindOrCreateCharacter(name);
             }
+
             return character;
         }
 
@@ -148,7 +145,7 @@ namespace UnicornHack.Controllers
             }
 
             _dbContext.Characters
-                .Include(c => c.Game.ActingActor)
+                .Include(c => c.Game)
                 .Include(c => c.Log)
                 .Include(c => c.Skills)
                 //.Include(c => c.SensedEvents)
@@ -158,8 +155,7 @@ namespace UnicornHack.Controllers
                 .Where(c => c.GameId == character.GameId)
                 .Load();
 
-            if (character.Level == null
-                || character.Game.ActingActor == null)
+            if (character.Level == null)
             {
                 return character;
             }
@@ -319,7 +315,7 @@ namespace UnicornHack.Controllers
                 .Include(g => g.Items)
                 .Include(g => g.Abilities)
                 .Include(g => g.Effects)
-                .Include(g => g.SensoryEvents)
+                //.Include(g => g.SensoryEvents)
                 .Single(g => g.Id == game.Id);
 
             _dbContext.Set<MeleeAttack>()
@@ -329,6 +325,8 @@ namespace UnicornHack.Controllers
 
             foreach (var playerCharacter in game.Players)
             {
+                LoadEvents(playerCharacter);
+
                 foreach (var log in playerCharacter.Log.ToList())
                 {
                     _dbContext.LogEntries.Remove(log);

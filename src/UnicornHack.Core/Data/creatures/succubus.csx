@@ -4,7 +4,7 @@ new Creature
     Species = Species.Succubus,
     SpeciesClass = SpeciesClass.Demon,
     MagicResistance = 70,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 1400,
     Size = Size.Medium,
     Nutrition = 400,

@@ -4,7 +4,7 @@ new Creature
     Species = Species.Crow,
     SpeciesClass = SpeciesClass.Bird,
     ArmorClass = 6,
-    MovementRate = 20,
+    MovementDelay = 60,
     Weight = 50,
     Size = Size.Tiny,
     Nutrition = 20,

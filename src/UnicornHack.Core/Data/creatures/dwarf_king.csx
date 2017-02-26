@@ -4,7 +4,7 @@ new Creature
     Species = Species.Dwarf,
     ArmorClass = 10,
     MagicResistance = 20,
-    MovementRate = 6,
+    MovementDelay = 200,
     Weight = 900,
     Size = Size.Medium,
     Nutrition = 400,

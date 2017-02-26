@@ -3,7 +3,7 @@ new Creature
     Name = "lichen",
     Species = Species.Fungus,
     ArmorClass = 9,
-    MovementRate = 1,
+    MovementDelay = 1200,
     Weight = 20,
     Size = Size.Small,
     Nutrition = 100,

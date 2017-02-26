@@ -5,7 +5,7 @@ new Creature
     SpeciesClass = SpeciesClass.Extraplanar,
     ArmorClass = 4,
     MagicResistance = 10,
-    MovementRate = 13,
+    MovementDelay = 92,
     Weight = 10,
     Size = Size.Small,
     Nutrition = 10,

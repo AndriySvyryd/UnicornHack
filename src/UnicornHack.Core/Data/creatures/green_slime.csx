@@ -3,7 +3,7 @@ new Creature
     Name = "green slime",
     Species = Species.Ooze,
     ArmorClass = 6,
-    MovementRate = 6,
+    MovementDelay = 200,
     Weight = 400,
     Size = Size.Medium,
     Nutrition = 150,

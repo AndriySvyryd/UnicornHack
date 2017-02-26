@@ -3,7 +3,7 @@ new Creature
     Name = "shopkeeper",
     Species = Species.Human,
     MagicResistance = 50,
-    MovementRate = 18,
+    MovementDelay = 66,
     Weight = 1000,
     Size = Size.Medium,
     Nutrition = 400,

@@ -5,7 +5,7 @@ new Creature
     SpeciesClass = SpeciesClass.Undead,
     ArmorClass = 10,
     MagicResistance = 25,
-    MovementRate = 10,
+    MovementDelay = 120,
     Size = Size.Medium,
     Abilities = new HashSet<Ability>
     {

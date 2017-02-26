@@ -5,7 +5,7 @@ new Creature
     SpeciesClass = SpeciesClass.Demon,
     ArmorClass = -5,
     MagicResistance = 85,
-    MovementRate = 9,
+    MovementDelay = 133,
     Weight = 1500,
     Size = Size.Large,
     Nutrition = 500,

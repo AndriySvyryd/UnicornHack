@@ -3,7 +3,7 @@ new Creature
     Name = "plains centaur",
     Species = Species.Centaur,
     ArmorClass = 4,
-    MovementRate = 18,
+    MovementDelay = 66,
     Weight = 2000,
     Size = Size.Large,
     Nutrition = 800,

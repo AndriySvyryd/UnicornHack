@@ -4,7 +4,7 @@ new Creature
     Species = Species.Snake,
     SpeciesClass = SpeciesClass.Reptile,
     ArmorClass = 8,
-    MovementRate = 8,
+    MovementDelay = 150,
     Weight = 50,
     Size = Size.Tiny,
     Nutrition = 25,

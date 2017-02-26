@@ -4,7 +4,7 @@ new Creature
     Species = Species.Bee,
     SpeciesClass = SpeciesClass.Vermin,
     ArmorClass = -4,
-    MovementRate = 24,
+    MovementDelay = 50,
     Weight = 5,
     Size = Size.Tiny,
     Nutrition = 5,

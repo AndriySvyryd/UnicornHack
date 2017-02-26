@@ -3,7 +3,7 @@ new Creature
     Name = "rock piercer",
     Species = Species.Piercer,
     ArmorClass = 3,
-    MovementRate = 1,
+    MovementDelay = 1200,
     Weight = 200,
     Size = Size.Small,
     Nutrition = 100,

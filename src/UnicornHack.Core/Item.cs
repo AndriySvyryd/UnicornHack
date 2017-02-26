@@ -231,14 +231,10 @@ namespace UnicornHack
         private int _referenceCount;
 
         void IReferenceable.AddReference()
-        {
-            _referenceCount++;
-        }
+            => _referenceCount++;
 
         public TransientReference<Item> AddReference()
-        {
-            return new TransientReference<Item>(this);
-        }
+            => new TransientReference<Item>(this);
 
         public void RemoveReference()
         {

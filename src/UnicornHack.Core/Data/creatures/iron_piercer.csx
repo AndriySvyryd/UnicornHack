@@ -3,7 +3,7 @@ new Creature
     Name = "iron piercer",
     Species = Species.Piercer,
     ArmorClass = 2,
-    MovementRate = 1,
+    MovementDelay = 1200,
     Weight = 300,
     Size = Size.Small,
     Nutrition = 150,

@@ -4,7 +4,7 @@ new Creature
     Species = Species.Woodchuck,
     SpeciesClass = SpeciesClass.Rodent,
     ArmorClass = 5,
-    MovementRate = 3,
+    MovementDelay = 400,
     Weight = 100,
     Size = Size.Small,
     Nutrition = 50,

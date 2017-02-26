@@ -4,7 +4,7 @@ new Creature
     Species = Species.Homunculus,
     ArmorClass = 6,
     MagicResistance = 10,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 60,
     Size = Size.Small,
     Nutrition = 60,

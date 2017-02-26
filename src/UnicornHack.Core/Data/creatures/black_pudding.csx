@@ -3,7 +3,7 @@ new Creature
     Name = "black pudding",
     Species = Species.Pudding,
     ArmorClass = 6,
-    MovementRate = 6,
+    MovementDelay = 200,
     Weight = 512,
     Size = Size.Medium,
     Nutrition = 256,

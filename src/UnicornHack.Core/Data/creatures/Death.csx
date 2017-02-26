@@ -5,7 +5,7 @@ new Creature
     SpeciesClass = SpeciesClass.Extraplanar,
     ArmorClass = -5,
     MagicResistance = 100,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 1000,
     Size = Size.Medium,
     Abilities = new HashSet<Ability>

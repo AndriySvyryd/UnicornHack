@@ -4,7 +4,7 @@ new Creature
     Species = Species.Giant,
     ArmorClass = 2,
     MagicResistance = 40,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 2200,
     Size = Size.Huge,
     Nutrition = 800,

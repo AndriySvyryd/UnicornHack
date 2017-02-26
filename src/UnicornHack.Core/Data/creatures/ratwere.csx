@@ -5,7 +5,7 @@ new Creature
     SpeciesClass = SpeciesClass.Rodent | SpeciesClass.ShapeChanger,
     ArmorClass = 6,
     MagicResistance = 10,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 150,
     Size = Size.Small,
     Nutrition = 50,

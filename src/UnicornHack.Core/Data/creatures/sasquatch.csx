@@ -3,7 +3,7 @@ new Creature
     Name = "sasquatch",
     Species = Species.Simian,
     ArmorClass = 6,
-    MovementRate = 15,
+    MovementDelay = 80,
     Weight = 1550,
     Size = Size.Large,
     Nutrition = 650,

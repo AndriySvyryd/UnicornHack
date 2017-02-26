@@ -4,7 +4,7 @@ new Creature
     Species = Species.Human,
     ArmorClass = 10,
     MagicResistance = 10,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 1000,
     Size = Size.Medium,
     Nutrition = 400,

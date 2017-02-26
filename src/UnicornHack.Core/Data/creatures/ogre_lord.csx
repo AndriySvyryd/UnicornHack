@@ -4,7 +4,7 @@ new Creature
     Species = Species.Ogre,
     ArmorClass = 3,
     MagicResistance = 30,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 1650,
     Size = Size.Large,
     Nutrition = 550,

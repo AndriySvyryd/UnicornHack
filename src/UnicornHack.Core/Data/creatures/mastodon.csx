@@ -4,7 +4,7 @@ new Creature
     Species = Species.Quadruped,
     SpeciesClass = SpeciesClass.Quadrupedal,
     ArmorClass = 5,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 3800,
     Size = Size.Large,
     Nutrition = 800,

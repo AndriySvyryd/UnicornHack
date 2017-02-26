@@ -4,7 +4,7 @@ new Creature
     Species = Species.Scorpion,
     SpeciesClass = SpeciesClass.Vermin,
     ArmorClass = 3,
-    MovementRate = 15,
+    MovementDelay = 80,
     Weight = 150,
     Size = Size.Small,
     Nutrition = 50,

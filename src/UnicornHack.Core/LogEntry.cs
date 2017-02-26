@@ -14,7 +14,7 @@ namespace UnicornHack
             }
             Player = player;
             Message = message;
-            Turn = player.Game.CurrentTurn;
+            Tick = player.NextActionTick;
         }
 
         public int Id { get; set; }
@@ -25,7 +25,7 @@ namespace UnicornHack
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public int GameId { get; private set; }
         public Game Game => Player.Game;
-        public int Turn { get; set; }
+        public int Tick { get; set; }
         public LogEntryImportance Importance { get; set; }
     }
 }

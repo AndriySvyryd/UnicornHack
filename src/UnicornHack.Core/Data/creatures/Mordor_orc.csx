@@ -3,7 +3,7 @@ new Creature
     Name = "Mordor orc",
     Species = Species.Orc,
     ArmorClass = 10,
-    MovementRate = 9,
+    MovementDelay = 133,
     Weight = 1100,
     Size = Size.Medium,
     Nutrition = 200,

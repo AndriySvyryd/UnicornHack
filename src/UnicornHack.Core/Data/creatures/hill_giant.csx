@@ -3,7 +3,7 @@ new Creature
     Name = "hill giant",
     Species = Species.Giant,
     ArmorClass = 6,
-    MovementRate = 10,
+    MovementDelay = 120,
     Weight = 2250,
     Size = Size.Huge,
     Nutrition = 750,

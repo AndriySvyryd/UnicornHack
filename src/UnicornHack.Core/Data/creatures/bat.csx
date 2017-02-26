@@ -4,7 +4,7 @@ new Creature
     Species = Species.Bat,
     SpeciesClass = SpeciesClass.Bird,
     ArmorClass = 8,
-    MovementRate = 22,
+    MovementDelay = 54,
     Weight = 50,
     Size = Size.Tiny,
     Nutrition = 20,

@@ -3,7 +3,7 @@ new Creature
     Name = "giant",
     Species = Species.Giant,
     ArmorClass = 6,
-    MovementRate = 6,
+    MovementDelay = 200,
     Weight = 2250,
     Size = Size.Huge,
     Nutrition = 750,

@@ -2,7 +2,7 @@ new Creature
 {
     Name = "Cyclops",
     Species = Species.Giant,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 2200,
     Size = Size.Huge,
     Nutrition = 800,

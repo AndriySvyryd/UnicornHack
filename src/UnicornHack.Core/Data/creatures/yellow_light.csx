@@ -3,7 +3,7 @@ new Creature
     Name = "yellow light",
     Species = Species.FloatingSphere,
     SpeciesClass = SpeciesClass.Extraplanar,
-    MovementRate = 15,
+    MovementDelay = 80,
     Size = Size.Small,
     Abilities = new HashSet<Ability>
     {

@@ -3,7 +3,7 @@ new Creature
     Name = "rope golem",
     Species = Species.Golem,
     ArmorClass = 8,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 450,
     Size = Size.Large,
     Abilities = new HashSet<Ability>

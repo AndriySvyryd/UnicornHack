@@ -4,7 +4,7 @@ new Creature
     Species = Species.Simian,
     SpeciesClass = SpeciesClass.MagicalBeast,
     ArmorClass = 5,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 1700,
     Size = Size.Large,
     Nutrition = 700,

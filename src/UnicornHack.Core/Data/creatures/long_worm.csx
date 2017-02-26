@@ -5,7 +5,7 @@ new Creature
     SpeciesClass = SpeciesClass.Vermin,
     ArmorClass = 5,
     MagicResistance = 10,
-    MovementRate = 3,
+    MovementDelay = 400,
     Weight = 1500,
     Size = Size.Gigantic,
     Nutrition = 500,

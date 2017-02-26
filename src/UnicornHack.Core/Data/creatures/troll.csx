@@ -3,7 +3,7 @@ new Creature
     Name = "troll",
     Species = Species.Troll,
     ArmorClass = 5,
-    MovementRate = 10,
+    MovementDelay = 120,
     Weight = 800,
     Size = Size.Large,
     Nutrition = 350,

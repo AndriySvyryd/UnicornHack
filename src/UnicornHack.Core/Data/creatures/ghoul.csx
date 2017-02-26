@@ -4,7 +4,7 @@ new Creature
     Species = Species.Ghoul,
     SpeciesClass = SpeciesClass.Undead,
     ArmorClass = 4,
-    MovementRate = 8,
+    MovementDelay = 150,
     Weight = 400,
     Size = Size.Medium,
     Nutrition = 50,

@@ -4,7 +4,7 @@ new Creature
     Species = Species.Jelly,
     ArmorClass = 8,
     MagicResistance = 20,
-    MovementRate = 3,
+    MovementDelay = 400,
     Weight = 100,
     Size = Size.Small,
     Nutrition = 20,

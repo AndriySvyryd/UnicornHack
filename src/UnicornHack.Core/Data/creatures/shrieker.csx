@@ -3,7 +3,7 @@ new Creature
     Name = "shrieker",
     Species = Species.Fungus,
     ArmorClass = 7,
-    MovementRate = 1,
+    MovementDelay = 1200,
     Weight = 100,
     Size = Size.Small,
     Nutrition = 100,

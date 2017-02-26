@@ -4,7 +4,7 @@ new Creature
     Species = Species.Skeleton,
     SpeciesClass = SpeciesClass.Undead,
     ArmorClass = 10,
-    MovementRate = 6,
+    MovementDelay = 200,
     Weight = 300,
     Size = Size.Medium,
     Nutrition = 5,

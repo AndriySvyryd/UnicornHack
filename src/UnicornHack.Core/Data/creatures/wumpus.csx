@@ -5,7 +5,7 @@ new Creature
     SpeciesClass = SpeciesClass.Aberration,
     ArmorClass = 2,
     MagicResistance = 10,
-    MovementRate = 3,
+    MovementDelay = 400,
     Weight = 2500,
     Size = Size.Large,
     Nutrition = 500,

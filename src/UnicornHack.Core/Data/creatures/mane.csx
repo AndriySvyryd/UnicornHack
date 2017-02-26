@@ -4,7 +4,7 @@ new Creature
     Species = Species.Homunculus,
     SpeciesClass = SpeciesClass.Demon,
     ArmorClass = 7,
-    MovementRate = 3,
+    MovementDelay = 400,
     Weight = 500,
     Size = Size.Medium,
     Nutrition = 200,

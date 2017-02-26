@@ -4,7 +4,7 @@ new Creature
     Species = Species.Jabberwock,
     ArmorClass = -2,
     MagicResistance = 50,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 1300,
     Size = Size.Large,
     Nutrition = 400,

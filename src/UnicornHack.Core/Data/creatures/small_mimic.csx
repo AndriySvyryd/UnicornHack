@@ -4,7 +4,7 @@ new Creature
     Species = Species.Mimic,
     SpeciesClass = SpeciesClass.ShapeChanger,
     ArmorClass = 7,
-    MovementRate = 3,
+    MovementDelay = 400,
     Weight = 300,
     Size = Size.Small,
     Nutrition = 200,

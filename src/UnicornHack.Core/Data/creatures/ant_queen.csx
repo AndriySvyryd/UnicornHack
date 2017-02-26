@@ -4,7 +4,7 @@ new Creature
     Species = Species.Ant,
     SpeciesClass = SpeciesClass.Vermin,
     MagicResistance = 20,
-    MovementRate = 18,
+    MovementDelay = 66,
     Weight = 10,
     Size = Size.Tiny,
     Nutrition = 10,

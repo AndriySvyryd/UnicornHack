@@ -65,57 +65,15 @@ namespace UnicornHack
             creature.InitialLevel = InitialLevel;
             creature.XPLevel = InitialLevel;
 
-            creature.AdjustInitialXPLevel();
+            creature.MaxHP = 1 + creature.XPLevel*4;
+            creature.MaxHP = creature.MaxHP < 1 ? 1 : creature.MaxHP;
+            creature.HP = creature.MaxHP;
+
             creature.RecalculateEffectsAndAbilities();
             return creature;
         }
 
         protected override Actor CreateInstance(Game game) => new Creature(game);
-
-        public virtual void AdjustInitialXPLevel()
-        {
-            if (XPLevel < 50)
-            {
-                var relativeLevelDifficulty = Level.Difficulty - XPLevel;
-                if (relativeLevelDifficulty < 0)
-                {
-                    XPLevel--;
-                }
-                else
-                {
-                    XPLevel += (byte)(relativeLevelDifficulty/5);
-                }
-
-                var playerLevel = Game.Players.OrderByDescending(pc => pc.XPLevel).FirstOrDefault()?.XPLevel ??
-                                  1;
-                var relativePlayerLevel = playerLevel - XPLevel;
-                if (relativePlayerLevel > 0)
-                {
-                    XPLevel += (byte)(relativePlayerLevel/4);
-                }
-
-                while (PreviousStage != null
-                       && XPLevel < InitialLevel)
-                {
-                    BaseName = PreviousStage.Name;
-                }
-
-                while (NextStage != null
-                       && XPLevel >= NextStage.InitialLevel)
-                {
-                    BaseName = NextStage.Name;
-                }
-
-                XPLevel = XPLevel < 1 ? (byte)1 : XPLevel;
-                var upperLimit = (byte)Math.Min(3*InitialLevel/2, 49);
-                XPLevel = XPLevel > upperLimit ? upperLimit : XPLevel;
-            }
-
-            MaxHP = 1 + XPLevel*4;
-
-            MaxHP = MaxHP < 1 ? 1 : MaxHP;
-            HP = MaxHP;
-        }
 
         #endregion
 
@@ -123,31 +81,35 @@ namespace UnicornHack
 
         public override bool Act()
         {
-            while (ActionPoints >= ActionPointsPerTurn)
+            if (TryAttackPlayerCharacter())
             {
-                if (TryAttackPlayerCharacter())
-                {
-                    return true;
-                }
+                return true;
+            }
 
-                if (TryMoveToPlayerCharacter())
-                {
-                    return true;
-                }
+            if (MovementDelay == 0)
+            {
+                NextActionTick += DefaultActionDelay;
+                return true;
+            }
 
-                var possibleDirectionsToMove = Level.GetPossibleMovementDirections(
-                    new Point(LevelX, LevelY), safe: true);
-                if (possibleDirectionsToMove.Count == 0)
-                {
-                    break;
-                }
-                var directionIndex = Game.NextRandom(minValue: 0, maxValue: possibleDirectionsToMove.Count);
+            if (TryMoveToPlayerCharacter())
+            {
+                return true;
+            }
 
-                var targetCell = ToLevelCell(possibleDirectionsToMove[directionIndex]);
-                if (targetCell != null)
-                {
-                    return Move(targetCell.Value, safe: true);
-                }
+            var possibleDirectionsToMove = Level.GetPossibleMovementDirections(
+                new Point(LevelX, LevelY), safe: true);
+            if (possibleDirectionsToMove.Count == 0)
+            {
+                NextActionTick += DefaultActionDelay;
+                return true;
+            }
+            var directionIndex = Game.NextRandom(minValue: 0, maxValue: possibleDirectionsToMove.Count);
+
+            var targetCell = ToLevelCell(possibleDirectionsToMove[directionIndex]);
+            if (targetCell != null)
+            {
+                return Move(targetCell.Value, safe: true);
             }
 
             return true;
@@ -155,10 +117,9 @@ namespace UnicornHack
 
         private bool TryAttackPlayerCharacter()
         {
-            var playerCharacter = Game.Players.FirstOrDefault(pc =>
+            var playerCharacter = Level.Players.FirstOrDefault(pc =>
                 Level.GridDistance(this, pc) <= 1
-                && pc.IsAlive
-                && pc.Level == Level);
+                && pc.IsAlive);
             if (playerCharacter == null)
             {
                 return false;
@@ -170,10 +131,9 @@ namespace UnicornHack
 
         private bool TryMoveToPlayerCharacter()
         {
-            var playerCharacter = Game.Players.FirstOrDefault(pc =>
+            var playerCharacter = Level.Players.FirstOrDefault(pc =>
                 Level.GridDistance(this, pc) <= 6
-                && pc.IsAlive
-                && pc.Level == Level);
+                && pc.IsAlive);
             if (playerCharacter == null)
             {
                 return false;

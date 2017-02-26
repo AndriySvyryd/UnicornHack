@@ -3,7 +3,7 @@ new Creature
     Name = "Master Kaen",
     Species = Species.Human,
     MagicResistance = 10,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 1000,
     Size = Size.Medium,
     Nutrition = 400,

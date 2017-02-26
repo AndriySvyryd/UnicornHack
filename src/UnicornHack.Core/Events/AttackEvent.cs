@@ -14,7 +14,7 @@ namespace UnicornHack.Events
         public virtual int AbilityId { get; private set; }
         public virtual bool Hit { get; set; }
 
-        public static void New(AbilityActivationContext abilityContext, int turnOrder)
+        public static void New(AbilityActivationContext abilityContext, int eventOrder)
         {
             var attacker = abilityContext.Activator;
             var victim = abilityContext.Target;
@@ -39,7 +39,7 @@ namespace UnicornHack.Events
                     VictimSensed = victimSensed,
                     Ability = abilityContext.Ability,
                     Hit = abilityContext.Succeeded,
-                    TurnOrder = turnOrder
+                    EventOrder = eventOrder
                 };
                 attacker.AddReference();
                 victim.AddReference();

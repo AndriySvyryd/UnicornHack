@@ -15,7 +15,7 @@ namespace UnicornHack
 
         private Species? _species;
         private SpeciesClass? _speciesClass;
-        private byte? _movementRate;
+        private int? _movementDelay;
         private Size? _size;
         private int? _weight;
         private int? _nutrition;
@@ -25,8 +25,7 @@ namespace UnicornHack
         private ISet<string> _simpleProperties;
         private IDictionary<string, object> _valuedProperties;
 
-        public const int ActionPointsPerTurn = 100;
-        public const int MaxCarryOverActionPoints = ActionPointsPerTurn;
+        public const int DefaultActionDelay = 100;
         public const string UnarmedAttackName = "Unarmed attack";
         public const string MeleeAttackName = "Melee attack";
         public const string SecondaryMeleeAttackName = "Secondary melee attack";
@@ -67,10 +66,10 @@ namespace UnicornHack
             set { _magicResistance = value; }
         }
 
-        public virtual byte MovementRate
+        public virtual int MovementDelay
         {
-            get { return _movementRate ?? BaseActor?.MovementRate ?? 0; }
-            set { _movementRate = value; }
+            get { return _movementDelay ?? BaseActor?.MovementDelay ?? 0; }
+            set { _movementDelay = value; }
         }
 
         public virtual Size Size
@@ -141,7 +140,10 @@ namespace UnicornHack
         public virtual int MaxHP { get; set; }
         public virtual int HP { get; set; }
         public virtual bool IsAlive => HP > 0;
-        public virtual int ActionPoints { get; set; }
+        /// <summary>
+        ///     Warning: this should only be updated when this actor is acting
+        /// </summary>
+        public virtual int NextActionTick { get; set; }
         public virtual int Gold { get; set; }
         IEnumerable<Item> IItemLocation.Items => Inventory;
         public virtual ICollection<Item> Inventory { get; } = new HashSet<Item>();
@@ -219,7 +221,7 @@ namespace UnicornHack
                     {
                         Name = MeleeAttackName,
                         Activation = AbilityActivation.OnTarget,
-                        ActionPointCost = 100,
+                        DelayTicks = 100,
                         Effects = new HashSet<Effect> {new MeleeAttack(Game), new PhysicalDamage(Game)},
                         IsUsable = false
                     };
@@ -299,7 +301,8 @@ namespace UnicornHack
             actorInstance.LevelX = x;
             actorInstance.LevelY = y;
             actorInstance.Level = level;
-            level.Actors.Add(actorInstance);
+            actorInstance.NextActionTick = level.Game.NextPlayerTick;
+            level.Actors.Push(actorInstance);
             actorInstance.AddReference();
 
             actorInstance.BaseName = Name;
@@ -307,7 +310,7 @@ namespace UnicornHack
             actorInstance.SpeciesClass = SpeciesClass;
             actorInstance.ArmorClass = ArmorClass;
             actorInstance.MagicResistance = MagicResistance;
-            actorInstance.MovementRate = MovementRate;
+            actorInstance.MovementDelay = MovementDelay;
             actorInstance.Size = Size;
             actorInstance.Weight = Weight;
             actorInstance.Nutrition = Nutrition;
@@ -384,20 +387,6 @@ namespace UnicornHack
             @event.RemoveReference();
         }
 
-        public virtual bool CanAct()
-        {
-            if (!IsAlive)
-            {
-                return false;
-            }
-
-            ActionPoints = ActionPoints >= MaxCarryOverActionPoints
-                ? MaxCarryOverActionPoints
-                : ActionPoints;
-
-            return true;
-        }
-
         public virtual SenseType CanSense(Actor target)
         {
             var sense = SenseType.None;
@@ -447,7 +436,7 @@ namespace UnicornHack
                 return true;
             }
 
-            if (!moveToLevel.PlayerCharacters.Any())
+            if (!moveToLevel.Players.Any())
             {
                 // Catch up the level to current turn
                 var waitedFor = moveToLevel.Turn();
@@ -456,7 +445,7 @@ namespace UnicornHack
 
             // TODO: Shove off any monsters standing on stairs
 
-            ActionPoints = 0;
+            NextActionTick += MovementDelay;
 
             using (AddReference())
             {
@@ -464,9 +453,9 @@ namespace UnicornHack
                 Level = moveToLevel;
                 LevelX = moveToLevelX.Value;
                 LevelY = moveToLevelY.Value;
-                moveToLevel.Actors.Add(this);
+                moveToLevel.Actors.Push(this);
 
-                ActorMoveEvent.New(this, movee: null, turnOrder: Game.CurrentTurnOrder++);
+                ActorMoveEvent.New(this, movee: null, eventOrder: Game.EventOrder++);
             }
 
             return true;
@@ -477,6 +466,11 @@ namespace UnicornHack
             if (LevelX == targetCell.X && LevelY == targetCell.Y)
             {
                 return true;
+            }
+
+            if (MovementDelay == 0)
+            {
+                return false;
             }
 
             var conflictingActor = Level.Actors
@@ -501,7 +495,8 @@ namespace UnicornHack
                 return true;
             }
 
-            ActionPoints -= Level.DefaultMovementCost*ActionPointsPerTurn/MovementRate;
+            // TODO: take terrain into account
+            NextActionTick += MovementDelay;
 
             LevelX = targetCell.X;
             LevelY = targetCell.Y;
@@ -512,14 +507,13 @@ namespace UnicornHack
                 PickUp(itemOnNewCell);
             }
 
-            ActorMoveEvent.New(this, movee: null, turnOrder: Game.CurrentTurnOrder++);
+            ActorMoveEvent.New(this, movee: null, eventOrder: Game.EventOrder++);
 
             return true;
         }
 
         public virtual bool Attack(Actor victim, bool pretend = false)
         {
-            ActionPoints = 0;
             var ability = Abilities.FirstOrDefault(a => a.Activation == AbilityActivation.OnTarget && a.IsUsable);
             if (ability == null)
             {
@@ -546,15 +540,15 @@ namespace UnicornHack
                 return true;
             }
 
-            // TODO: Calculate AP cost
-            ActionPoints -= ActionPointsPerTurn;
+            // TODO: Calculate delay
+            NextActionTick += DefaultActionDelay;
 
             using (var reference = item.Split(1))
             {
                 var splitItem = reference.Referenced;
-                ChangeCurrentHP(hp: splitItem.Nutrition);
+                ChangeCurrentHP(splitItem.Nutrition);
 
-                ItemConsumptionEvent.New(this, splitItem, Game.CurrentTurnOrder++);
+                ItemConsumptionEvent.New(this, splitItem, Game.EventOrder++);
 
                 return true;
             }
@@ -578,8 +572,8 @@ namespace UnicornHack
                 return true;
             }
 
-            // TODO: Calculate AP cost
-            ActionPoints -= ActionPointsPerTurn;
+            // TODO: Calculate delay
+            NextActionTick += DefaultActionDelay;
 
             if (equipped == null)
             {
@@ -600,7 +594,7 @@ namespace UnicornHack
             }
 
             item.EquippedSlot = slot;
-            ItemEquipmentEvent.New(this, item, Game.CurrentTurnOrder++);
+            ItemEquipmentEvent.New(this, item, Game.EventOrder++);
 
             RecalculateEffectsAndAbilities();
 
@@ -619,11 +613,11 @@ namespace UnicornHack
                 return true;
             }
 
-            // TODO: Calculate AP cost
-            ActionPoints -= ActionPointsPerTurn;
+            // TODO: Calculate delay
+            NextActionTick += DefaultActionDelay;
 
             item.EquippedSlot = null;
-            ItemUnequipmentEvent.New(this, item, Game.CurrentTurnOrder++);
+            ItemUnequipmentEvent.New(this, item, Game.EventOrder++);
 
             RecalculateEffectsAndAbilities();
 
@@ -637,14 +631,14 @@ namespace UnicornHack
                 return true;
             }
 
-            // TODO: Calculate AP cost
-            ActionPoints -= ActionPointsPerTurn/10;
+            // TODO: Calculate delay
+            NextActionTick += DefaultActionDelay;
 
             using (item.AddReference())
             {
                 item.MoveTo(this);
 
-                ItemPickUpEvent.New(this, item, Game.CurrentTurnOrder++);
+                ItemPickUpEvent.New(this, item, Game.EventOrder++);
             }
 
             return true;
@@ -663,12 +657,12 @@ namespace UnicornHack
                 return true;
             }
 
-            ActionPoints -= quantity;
+            NextActionTick += MovementDelay;
 
             Gold -= quantity;
             var item = UnicornHack.Gold.Get().Instantiate(new LevelCell(Level, LevelX, LevelY), quantity).Single();
 
-            ItemDropEvent.New(this, item, Game.CurrentTurnOrder++);
+            ItemDropEvent.New(this, item, Game.EventOrder++);
 
             return true;
         }
@@ -686,13 +680,13 @@ namespace UnicornHack
             }
 
             // TODO: Calculate AP cost
-            ActionPoints -= ActionPointsPerTurn/10;
+            NextActionTick += DefaultActionDelay;
 
             using (item.AddReference())
             {
                 item.MoveTo(new LevelCell(Level, LevelX, LevelY));
 
-                ItemDropEvent.New(this, item, Game.CurrentTurnOrder++);
+                ItemDropEvent.New(this, item, Game.EventOrder++);
             }
 
             return true;
@@ -758,7 +752,7 @@ namespace UnicornHack
                 {
                     Drop(item);
                 }
-                DeathEvent.New(this, corpse: null, turnOrder: Game.CurrentTurnOrder++);
+                DeathEvent.New(this, corpse: null, eventOrder: Game.EventOrder++);
                 Level.Actors.Remove(this);
                 RemoveReference();
                 return false;
@@ -823,7 +817,7 @@ namespace UnicornHack
                     (o, v) => (int)v != (o.BaseActor?.ArmorClass ?? (int)CustomPropertyDescription.ArmorClass.MaxValue)
                 },
                 {nameof(MagicResistance), (o, v) => (int)v != (o.BaseActor?.MagicResistance ?? 0)},
-                {nameof(MovementRate), (o, v) => (byte)v != (o.BaseActor?.MovementRate ?? 0)},
+                {nameof(MovementDelay), (o, v) => (int)v != (o.BaseActor?.MovementDelay ?? 0)},
                 {nameof(Weight), (o, v) => (int)v != (o.BaseActor?.Weight ?? 0)},
                 {nameof(Size), (o, v) => (Size)v != (o.BaseActor?.Size ?? Size.None)},
                 {nameof(Nutrition), (o, v) => (int)v != (o.BaseActor?.Nutrition ?? 0)},
@@ -837,5 +831,19 @@ namespace UnicornHack
         public abstract ICSScriptSerializer GetSerializer();
 
         #endregion
+
+        public class TickComparer : IComparer<Actor>
+        {
+            public static readonly TickComparer Instance = new TickComparer();
+
+            private TickComparer()
+            {
+            }
+
+            public int Compare(Actor x, Actor y)
+            {
+                return x.NextActionTick - y.NextActionTick;
+            }
+        }
     }
 }

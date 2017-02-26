@@ -11,7 +11,7 @@ namespace UnicornHack.Events
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public int GameId { get; private set; }
         public Game Game { get; set; }
-        public virtual int TurnOrder { get; set; }
+        public virtual int EventOrder { get; set; }
 
         private int _referenceCount;
 

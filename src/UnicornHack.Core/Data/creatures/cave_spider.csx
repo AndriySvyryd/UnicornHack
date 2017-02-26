@@ -4,7 +4,7 @@ new Creature
     Species = Species.Spider,
     SpeciesClass = SpeciesClass.Vermin,
     ArmorClass = 3,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 50,
     Size = Size.Small,
     Nutrition = 25,

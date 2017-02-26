@@ -131,8 +131,12 @@ namespace UnicornHack
                 Activation = AbilityActivation.OnTarget,
                 Action = AbilityAction.Punch,
                 FreeSlotsRequired = EquipmentSlot.GraspBothExtremities | EquipmentSlot.GraspSingleExtremity,
-                ActionPointCost = 100,
-                Effects = new HashSet<Effect> {new MeleeAttack(player.Game), new PhysicalDamage(player.Game) {Damage = 2}}
+                DelayTicks = 100,
+                Effects = new HashSet<Effect>
+                {
+                    new MeleeAttack(player.Game),
+                    new PhysicalDamage(player.Game) {Damage = 2}
+                }
             });
 
             player.Abilities.Add(new Ability(player.Game)
@@ -141,7 +145,11 @@ namespace UnicornHack
                 Activation = AbilityActivation.OnMeleeAttack,
                 Action = AbilityAction.Punch,
                 FreeSlotsRequired = EquipmentSlot.GraspBothExtremities | EquipmentSlot.GraspSingleExtremity,
-                Effects = new HashSet<Effect> { new MeleeAttack(player.Game), new PhysicalDamage(player.Game) {Damage = 2}}
+                Effects = new HashSet<Effect>
+                {
+                    new MeleeAttack(player.Game),
+                    new PhysicalDamage(player.Game) {Damage = 2}
+                }
             });
 
             player.Skills = Skills != null ? new Skills(Skills) : new Skills();
@@ -161,16 +169,16 @@ namespace UnicornHack
 
         #region Actions
 
-        public override byte MovementRate => (byte)(BaseActor.MovementRate*Speed/10);
+        public override int MovementDelay => DefaultActionDelay*10/Speed;
 
         public override bool Act()
         {
-            Debug.Assert(Level != null && Level.LastTurn + 1 == Game.CurrentTurn);
+            Debug.Assert(Level != null);
 
             // TODO: add option to stop here and display current state
             // even if user already provided the next action / cannot perform an action
 
-            if (ActionPoints > 0)
+            if (IsAlive)
             {
                 var action = NextAction;
                 var target = NextActionTarget;
@@ -218,7 +226,7 @@ namespace UnicornHack
                         UseStairs(up: false);
                         break;
                     case "H":
-                        ActionPoints -= ActionPointsPerTurn;
+                        NextActionTick += DefaultActionDelay;
                         break;
                     case "EAT":
                         Eat(GetItem(target.Value));
@@ -242,7 +250,7 @@ namespace UnicornHack
                 }
             }
 
-            foreach (var @event in SensedEvents.OrderBy(e => e.TurnOrder).ThenBy(e => e.Id).ToList())
+            foreach (var @event in SensedEvents.OrderBy(e => e.EventOrder).ThenBy(e => e.Id).ToList())
             {
                 var logEntry = GetLogEntry(@event);
                 if (logEntry != null)
@@ -253,7 +261,7 @@ namespace UnicornHack
                 @event.RemoveReference();
             }
 
-            return ActionPoints <= 0;
+            return true;
         }
 
         public override void Sense(SensoryEvent @event)
@@ -455,6 +463,7 @@ namespace UnicornHack
             where TPlayerCharacter : Player
         {
             var propertyConditions = Actor.GetPropertyConditions<TPlayerCharacter>();
+            propertyConditions[nameof(MovementDelay)] = (o, v) => false;
             propertyConditions.Add(nameof(Strength), (o, v) => (int)v != 0);
             propertyConditions.Add(nameof(Dexterity), (o, v) => (int)v != 0);
             propertyConditions.Add(nameof(Constitution), (o, v) => (int)v != 0);

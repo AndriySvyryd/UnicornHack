@@ -2,7 +2,6 @@ new Player
 {
     Name = "player human",
     BaseName = "human",
-    MovementRate = 14,
     SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Omnivorism" },
     Strength = 12,
     Dexterity = 12,

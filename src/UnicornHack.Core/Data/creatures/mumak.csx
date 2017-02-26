@@ -3,7 +3,7 @@ new Creature
     Name = "mumak",
     Species = Species.Quadruped,
     SpeciesClass = SpeciesClass.Quadrupedal,
-    MovementRate = 9,
+    MovementDelay = 133,
     Weight = 2500,
     Size = Size.Large,
     Nutrition = 1000,

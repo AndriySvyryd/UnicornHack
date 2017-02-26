@@ -3,7 +3,7 @@ new Creature
     Name = "shark",
     Species = Species.Fish,
     ArmorClass = 2,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 1000,
     Size = Size.Large,
     Nutrition = 400,

@@ -3,7 +3,7 @@ new Creature
     Name = "acid blob",
     Species = Species.Blob,
     ArmorClass = 8,
-    MovementRate = 3,
+    MovementDelay = 400,
     Weight = 30,
     Size = Size.Tiny,
     Nutrition = 1,

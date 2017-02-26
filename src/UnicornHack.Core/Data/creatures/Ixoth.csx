@@ -5,7 +5,7 @@ new Creature
     SpeciesClass = SpeciesClass.Reptile,
     ArmorClass = -1,
     MagicResistance = 20,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 4500,
     Size = Size.Gigantic,
     Nutrition = 1500,

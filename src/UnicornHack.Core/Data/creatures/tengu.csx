@@ -5,7 +5,7 @@ new Creature
     SpeciesClass = SpeciesClass.ShapeChanger,
     ArmorClass = 5,
     MagicResistance = 30,
-    MovementRate = 13,
+    MovementDelay = 92,
     Weight = 300,
     Size = Size.Small,
     Nutrition = 150,

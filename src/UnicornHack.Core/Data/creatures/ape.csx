@@ -3,7 +3,7 @@ new Creature
     Name = "ape",
     Species = Species.Simian,
     ArmorClass = 6,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 1100,
     Size = Size.Medium,
     Nutrition = 500,

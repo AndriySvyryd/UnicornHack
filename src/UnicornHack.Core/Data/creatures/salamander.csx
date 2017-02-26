@@ -4,7 +4,7 @@ new Creature
     Species = Species.Salamander,
     SpeciesClass = SpeciesClass.Extraplanar,
     ArmorClass = -1,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 1500,
     Size = Size.Large,
     Nutrition = 400,

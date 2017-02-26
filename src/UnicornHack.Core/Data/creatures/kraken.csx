@@ -3,7 +3,7 @@ new Creature
     Name = "kraken",
     Species = Species.Squid,
     ArmorClass = 6,
-    MovementRate = 3,
+    MovementDelay = 400,
     Weight = 2000,
     Size = Size.Huge,
     Nutrition = 1000,

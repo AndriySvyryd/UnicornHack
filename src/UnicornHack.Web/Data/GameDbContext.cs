@@ -28,8 +28,7 @@ namespace UnicornHack.Models
         {
             modelBuilder.Entity<Level>(eb =>
             {
-                eb.Ignore(l => l.PlayerCharacters);
-                eb.Ignore(l => l.Difficulty);
+                eb.Ignore(l => l.Players);
                 eb.Property(l => l.Layout).IsRequired();
                 eb.Property(l => l.Name).IsRequired();
                 eb.HasKey(l => new {l.GameId, l.Id});
@@ -46,7 +45,7 @@ namespace UnicornHack.Models
                 eb.Ignore(a => a.BaseActor);
                 eb.Ignore(a => a.SimpleProperties);
                 eb.Ignore(a => a.ValuedProperties);
-                eb.Ignore(a => a.MovementRate);
+                eb.Ignore(a => a.MovementDelay);
                 eb.Property("_referenceCount");
                 eb.HasKey(a => new {a.GameId, a.Id});
                 eb.HasIndex(a => a.Name).IsUnique();
@@ -85,10 +84,6 @@ namespace UnicornHack.Models
                     .WithOne(a => a.Game)
                     .HasForeignKey(a => a.GameId)
                     .OnDelete(DeleteBehavior.Restrict);
-                eb.HasOne(g => g.ActingActor)
-                    .WithOne()
-                    .HasForeignKey<Game>(g => new {g.Id, g.ActingActorId})
-                    .IsRequired(required: false);
                 eb.HasMany(g => g.Items)
                     .WithOne(i => i.Game)
                     .HasForeignKey(i => i.GameId);

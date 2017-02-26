@@ -3,7 +3,7 @@ new Creature
     Name = "gelatinous cube",
     Species = Species.Blob,
     ArmorClass = 8,
-    MovementRate = 6,
+    MovementDelay = 200,
     Weight = 600,
     Size = Size.Large,
     Nutrition = 150,

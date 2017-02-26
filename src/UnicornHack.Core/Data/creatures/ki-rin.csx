@@ -5,7 +5,7 @@ new Creature
     SpeciesClass = SpeciesClass.Reptile | SpeciesClass.Celestial,
     ArmorClass = -5,
     MagicResistance = 90,
-    MovementRate = 18,
+    MovementDelay = 66,
     Weight = 1300,
     Size = Size.Large,
     Nutrition = 600,

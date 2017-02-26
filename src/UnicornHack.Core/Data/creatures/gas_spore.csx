@@ -3,7 +3,7 @@ new Creature
     Name = "gas spore",
     Species = Species.FloatingSphere,
     ArmorClass = 10,
-    MovementRate = 3,
+    MovementDelay = 400,
     Weight = 10,
     Size = Size.Small,
     Nutrition = 10,

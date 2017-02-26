@@ -4,7 +4,7 @@ new Creature
     Species = Species.Cat,
     SpeciesClass = SpeciesClass.Feline,
     ArmorClass = 4,
-    MovementRate = 15,
+    MovementDelay = 80,
     Weight = 250,
     Size = Size.Small,
     Nutrition = 200,

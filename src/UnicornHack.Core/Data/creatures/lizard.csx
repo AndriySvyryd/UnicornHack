@@ -4,7 +4,7 @@ new Creature
     Species = Species.Lizard,
     SpeciesClass = SpeciesClass.Reptile,
     ArmorClass = 6,
-    MovementRate = 6,
+    MovementDelay = 200,
     Weight = 50,
     Size = Size.Small,
     Nutrition = 50,

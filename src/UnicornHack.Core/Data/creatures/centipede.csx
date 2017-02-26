@@ -4,7 +4,7 @@ new Creature
     Species = Species.Centipede,
     SpeciesClass = SpeciesClass.Vermin,
     ArmorClass = 4,
-    MovementRate = 4,
+    MovementDelay = 300,
     Weight = 50,
     Size = Size.Tiny,
     Nutrition = 25,

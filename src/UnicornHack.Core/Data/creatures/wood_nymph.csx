@@ -5,7 +5,7 @@ new Creature
     SpeciesClass = SpeciesClass.Fey,
     ArmorClass = 9,
     MagicResistance = 20,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 600,
     Size = Size.Medium,
     Nutrition = 300,

@@ -4,7 +4,7 @@ new Creature
     Species = Species.Horse,
     SpeciesClass = SpeciesClass.Quadrupedal,
     ArmorClass = 5,
-    MovementRate = 20,
+    MovementDelay = 60,
     Weight = 1500,
     Size = Size.Large,
     Nutrition = 1100,

@@ -4,7 +4,7 @@ new Creature
     Species = Species.Centaur,
     ArmorClass = 2,
     MagicResistance = 10,
-    MovementRate = 20,
+    MovementDelay = 60,
     Weight = 2000,
     Size = Size.Large,
     Nutrition = 800,

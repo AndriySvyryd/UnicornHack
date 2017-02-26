@@ -3,7 +3,7 @@ new Creature
     Name = "master mind flayer",
     Species = Species.Illithid,
     MagicResistance = 90,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 1200,
     Size = Size.Large,
     Nutrition = 300,

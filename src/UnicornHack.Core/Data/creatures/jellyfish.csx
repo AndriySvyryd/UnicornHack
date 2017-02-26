@@ -3,7 +3,7 @@ new Creature
     Name = "jellyfish",
     Species = Species.Jellyfish,
     ArmorClass = 6,
-    MovementRate = 3,
+    MovementDelay = 400,
     Weight = 80,
     Size = Size.Small,
     Nutrition = 20,

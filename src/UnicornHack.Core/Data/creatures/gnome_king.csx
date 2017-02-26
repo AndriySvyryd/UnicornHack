@@ -4,7 +4,7 @@ new Creature
     Species = Species.Gnome,
     ArmorClass = 10,
     MagicResistance = 20,
-    MovementRate = 10,
+    MovementDelay = 120,
     Weight = 750,
     Size = Size.Small,
     Nutrition = 300,

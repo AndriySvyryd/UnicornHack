@@ -3,7 +3,7 @@ new Creature
     Name = "minotaur",
     Species = Species.Minotaur,
     ArmorClass = 6,
-    MovementRate = 15,
+    MovementDelay = 80,
     Weight = 1500,
     Size = Size.Large,
     Nutrition = 600,

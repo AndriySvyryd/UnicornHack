@@ -4,7 +4,7 @@ new Creature
     Species = Species.Cloud,
     SpeciesClass = SpeciesClass.Extraplanar,
     MagicResistance = 30,
-    MovementRate = 1,
+    MovementDelay = 1200,
     Weight = 1,
     Size = Size.Huge,
     Abilities = new HashSet<Ability>

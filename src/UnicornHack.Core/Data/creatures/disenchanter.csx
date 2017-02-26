@@ -4,7 +4,7 @@ new Creature
     Species = Species.Disenchanter,
     ArmorClass = -10,
     MagicResistance = 30,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 750,
     Size = Size.Medium,
     Nutrition = 200,

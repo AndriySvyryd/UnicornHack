@@ -4,7 +4,7 @@ new Creature
     Species = Species.Vampire,
     SpeciesClass = SpeciesClass.ShapeChanger | SpeciesClass.Undead,
     MagicResistance = 40,
-    MovementRate = 14,
+    MovementDelay = 85,
     Weight = 1000,
     Size = Size.Medium,
     Nutrition = 400,

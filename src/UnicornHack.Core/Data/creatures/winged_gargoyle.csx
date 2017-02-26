@@ -3,7 +3,7 @@ new Creature
     Name = "winged gargoyle",
     Species = Species.Gargoyle,
     ArmorClass = -4,
-    MovementRate = 15,
+    MovementDelay = 80,
     Weight = 1200,
     Size = Size.Medium,
     Nutrition = 50,

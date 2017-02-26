@@ -4,7 +4,7 @@ new Creature
     Species = Species.Crocodile,
     SpeciesClass = SpeciesClass.Reptile,
     ArmorClass = 6,
-    MovementRate = 6,
+    MovementDelay = 200,
     Weight = 200,
     Size = Size.Small,
     Nutrition = 200,

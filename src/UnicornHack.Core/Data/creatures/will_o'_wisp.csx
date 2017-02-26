@@ -4,7 +4,7 @@ new Creature
     Species = Species.FloatingSphere,
     SpeciesClass = SpeciesClass.Extraplanar,
     MagicResistance = 20,
-    MovementRate = 15,
+    MovementDelay = 80,
     Size = Size.Small,
     Abilities = new HashSet<Ability>
     {

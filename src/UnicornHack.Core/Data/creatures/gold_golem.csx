@@ -3,7 +3,7 @@ new Creature
     Name = "gold golem",
     Species = Species.Golem,
     ArmorClass = 6,
-    MovementRate = 9,
+    MovementDelay = 133,
     Weight = 2000,
     Size = Size.Medium,
     Abilities = new HashSet<Ability>

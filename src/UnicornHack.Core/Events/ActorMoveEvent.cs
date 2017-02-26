@@ -13,7 +13,7 @@ namespace UnicornHack.Events
         public virtual int? MoveeId { get; private set; }
         public virtual SenseType? MoveeSensed { get; set; }
 
-        public static void New(Actor mover, Actor movee, int turnOrder)
+        public static void New(Actor mover, Actor movee, int eventOrder)
         {
             foreach (var sensor in mover.Level.Actors)
             {
@@ -33,7 +33,7 @@ namespace UnicornHack.Events
                 {
                     Mover = mover,
                     MoverSensed = moverSensed,
-                    TurnOrder = turnOrder
+                    EventOrder = eventOrder
                 };
                 mover.AddReference();
 

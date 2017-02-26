@@ -2,7 +2,7 @@ new Creature
 {
     Name = "rock troll",
     Species = Species.Troll,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 1200,
     Size = Size.Large,
     Nutrition = 350,

@@ -4,7 +4,7 @@ new Creature
     Species = Species.Troll,
     ArmorClass = 4,
     MagicResistance = 40,
-    MovementRate = 14,
+    MovementDelay = 85,
     Weight = 1200,
     Size = Size.Large,
     Nutrition = 350,

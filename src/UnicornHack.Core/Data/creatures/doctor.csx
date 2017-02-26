@@ -2,7 +2,7 @@ new Creature
 {
     Name = "doctor",
     Species = Species.Human,
-    MovementRate = 6,
+    MovementDelay = 200,
     Weight = 1000,
     Size = Size.Medium,
     Nutrition = 400,

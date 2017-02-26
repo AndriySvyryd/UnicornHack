@@ -4,7 +4,7 @@ new Creature
     Species = Species.BigCat,
     SpeciesClass = SpeciesClass.Feline,
     ArmorClass = 6,
-    MovementRate = 15,
+    MovementDelay = 80,
     Weight = 600,
     Size = Size.Large,
     Nutrition = 300,

@@ -3,7 +3,7 @@ new Creature
     Name = "orc captain",
     Species = Species.Orc,
     ArmorClass = 10,
-    MovementRate = 9,
+    MovementDelay = 133,
     Weight = 1350,
     Size = Size.Medium,
     Nutrition = 350,

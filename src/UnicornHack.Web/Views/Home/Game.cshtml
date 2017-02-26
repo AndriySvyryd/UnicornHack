@@ -1,4 +1,4 @@
-@using UnicornHack.Utils
+﻿@using UnicornHack.Utils
 @using PlayerCharacter = UnicornHack.Player
 @model UnicornHack.Player
 @{
@@ -10,7 +10,7 @@
         @{ Html.RenderPartial("MapPartial", Model); }
         <pre>
 @Model.Name the Adventurer Lvl:@Model.XPLevel XP:@(Model.XP)(@Model.NextLevelXP) St:@Model.Strength Dx:@Model.Dexterity Co:@Model.Constitution Sp:@Model.Speed In:@Model.Intelligence Wi:@Model.Willpower
-@Model.Level.Name:@Model.Level.Depth @Model.LevelX,@Model.LevelY $:@Model.Gold HP:@(Model.HP)(@Model.MaxHP) EP:@(Model.EP)(@Model.MaxEP) ArmorClass:@Model.GetEffectiveAC() AP:@Model.ActionPoints
+@Model.Level.Name:@Model.Level.Depth @Model.LevelX,@Model.LevelY $:@Model.Gold HP:@(Model.HP)(@Model.MaxHP) EP:@(Model.EP)(@Model.MaxEP) ArmorClass:@Model.GetEffectiveAC() AUT:@(Model.NextActionTick/100f)
 </pre>
     </div>
 
@@ -95,7 +95,7 @@
             @foreach (var entry in Model.Log.OrderBy(e => e.Id).Skip(Math.Max(0, Model.Log.Count() - 10)))
             {
                 <div>
-                    @entry.Turn: @entry.Message
+                    @(entry.Tick/100f): @entry.Message
                 </div>
             }
         </div>

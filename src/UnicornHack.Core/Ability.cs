@@ -22,7 +22,7 @@ namespace UnicornHack
         public virtual EquipmentSlot FreeSlotsRequired { get; set; }
         public virtual bool IsActive { get; set; }
         // If more than one turn - can be interrupted
-        public virtual int ActionPointCost { get; set; }
+        public virtual int DelayTicks { get; set; }
         public virtual int EnergyPointCost { get; set; }
         // Targeting mode
         // Success condition
@@ -60,7 +60,7 @@ namespace UnicornHack
             {
                 Activation = Activation,
                 Action = Action,
-                ActionPointCost = ActionPointCost,
+                DelayTicks = DelayTicks,
                 EnergyPointCost = EnergyPointCost,
                 Timeout = Timeout,
                 EffectDuration = EffectDuration
@@ -121,19 +121,26 @@ namespace UnicornHack
                 return true;
             }
 
-            var turnOrder = 0;
+            var eventOrder = 0;
             var firstAbility = abilityContext.Ability == null;
             if (firstAbility)
             {
                 if (Activation == AbilityActivation.OnTarget)
                 {
-                    // TODO: Calculate AP cost
-                    activator.ActionPoints -= Actor.ActionPointsPerTurn;
+                    if (DelayTicks == 0)
+                    {
+                        // TODO: Specify the correct delay in the abilities
+                        activator.NextActionTick += Actor.DefaultActionDelay;
+                    }
+                    else
+                    {
+                        activator.NextActionTick += DelayTicks;
+                    }
                 }
 
                 abilityContext.Succeeded = Game.NextRandom(maxValue: 3) != 0;
                 abilityContext.Ability = new Ability(Game) {Action = Action};
-                turnOrder = Game.CurrentTurnOrder++;
+                eventOrder = Game.EventOrder++;
             }
 
             foreach (var effect in Effects)
@@ -143,7 +150,7 @@ namespace UnicornHack
 
             if (firstAbility)
             {
-                AttackEvent.New(abilityContext, turnOrder);
+                AttackEvent.New(abilityContext, eventOrder);
                 if (!target.IsAlive)
                 {
                     activator.XP += target.XP;

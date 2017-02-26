@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using UnicornHack.Effects;
 using UnicornHack.Events;
@@ -11,11 +12,9 @@ namespace UnicornHack
     public class Game
     {
         public virtual int Id { get; private set; }
-        public virtual int CurrentTurn { get; set; }
-        public virtual int CurrentTurnOrder { get; set; }
+        public virtual int NextPlayerTick { get; set; }
+        public virtual int EventOrder { get; set; }
         public virtual int RandomSeed { get; set; }
-        public virtual int? ActingActorId { get; set; }
-        public virtual Actor ActingActor { get; set; }
         public virtual int NextActorId { get; set; }
         public virtual ICollection<Actor> Actors { get; set; } = new HashSet<Actor>();
         public virtual int NextItemId { get; set; }
@@ -35,23 +34,21 @@ namespace UnicornHack
 
         public virtual Actor Turn()
         {
-            var playerCharacters = Actors.OfType<Player>().ToList();
-            while (playerCharacters.Any(pc => pc.IsAlive))
+            var orderedPlayers = new PriorityQueue<Player>(Players, Actor.TickComparer.Instance);
+            while (orderedPlayers.Any(pc => pc.IsAlive))
             {
-                foreach (var level in playerCharacters.OrderBy(pc => pc.Id).Select(pc => pc.Level).Distinct().ToList())
+                var player = orderedPlayers.Peek();
+                NextPlayerTick = player.NextActionTick;
+                var actingActor = player.Level.Turn();
+                if (actingActor != null)
                 {
-                    var actingActor = level.Turn();
-                    if (actingActor != null)
-                    {
-                        ActingActor = actingActor;
-                        // TODO: Issue #6109
-                        ActingActorId = actingActor.Id;
-                        return actingActor;
-                    }
+                    NextPlayerTick = player.NextActionTick;
+                    return actingActor;
                 }
 
-                CurrentTurn++;
-                CurrentTurnOrder = 0;
+                Debug.Assert(NextPlayerTick != player.NextActionTick,
+                    nameof(Player.NextActionTick) + " hasn't been updated!");
+                orderedPlayers.Update(0);
             }
 
             return null;

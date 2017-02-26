@@ -4,7 +4,7 @@ new Creature
     Species = Species.Orc,
     SpeciesClass = SpeciesClass.Undead,
     ArmorClass = 9,
-    MovementRate = 9,
+    MovementDelay = 133,
     Weight = 1000,
     Size = Size.Medium,
     Nutrition = 100,

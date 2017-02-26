@@ -4,7 +4,7 @@ new Creature
     Species = Species.Xorn,
     ArmorClass = -2,
     MagicResistance = 20,
-    MovementRate = 9,
+    MovementDelay = 133,
     Weight = 1200,
     Size = Size.Medium,
     Nutrition = 500,

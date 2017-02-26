@@ -5,7 +5,7 @@ new Creature
     SpeciesClass = SpeciesClass.Reptile | SpeciesClass.ShapeChanger,
     ArmorClass = 6,
     MagicResistance = 10,
-    MovementRate = 6,
+    MovementDelay = 200,
     Weight = 50,
     Size = Size.Small,
     Nutrition = 50,

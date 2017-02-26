@@ -5,7 +5,7 @@ new Creature
     SpeciesClass = SpeciesClass.Celestial,
     ArmorClass = -4,
     MagicResistance = 55,
-    MovementRate = 10,
+    MovementDelay = 120,
     Weight = 1000,
     Size = Size.Medium,
     Nutrition = 400,

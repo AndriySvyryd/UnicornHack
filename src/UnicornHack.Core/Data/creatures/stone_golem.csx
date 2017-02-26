@@ -4,7 +4,7 @@ new Creature
     Species = Species.Golem,
     ArmorClass = 4,
     MagicResistance = 50,
-    MovementRate = 6,
+    MovementDelay = 200,
     Weight = 2000,
     Size = Size.Large,
     Abilities = new HashSet<Ability>

@@ -3,7 +3,7 @@ new Creature
     Name = "glass piercer",
     Species = Species.Piercer,
     ArmorClass = 1,
-    MovementRate = 1,
+    MovementDelay = 1200,
     Weight = 400,
     Size = Size.Small,
     Nutrition = 200,

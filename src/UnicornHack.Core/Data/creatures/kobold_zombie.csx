@@ -4,7 +4,7 @@ new Creature
     Species = Species.Kobold,
     SpeciesClass = SpeciesClass.Undead,
     ArmorClass = 9,
-    MovementRate = 6,
+    MovementDelay = 200,
     Weight = 400,
     Size = Size.Small,
     Nutrition = 50,

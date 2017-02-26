@@ -4,7 +4,7 @@ new Creature
     Species = Species.Wraith,
     SpeciesClass = SpeciesClass.Undead,
     MagicResistance = 25,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 1000,
     Size = Size.Medium,
     Abilities = new HashSet<Ability>

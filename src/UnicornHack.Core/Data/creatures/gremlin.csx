@@ -4,7 +4,7 @@ new Creature
     Species = Species.Gremlin,
     ArmorClass = 2,
     MagicResistance = 25,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 100,
     Size = Size.Small,
     Nutrition = 20,

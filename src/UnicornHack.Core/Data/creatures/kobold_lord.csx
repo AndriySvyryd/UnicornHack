@@ -3,7 +3,7 @@ new Creature
     Name = "kobold lord",
     Species = Species.Kobold,
     ArmorClass = 6,
-    MovementRate = 6,
+    MovementDelay = 200,
     Weight = 500,
     Size = Size.Small,
     Nutrition = 200,

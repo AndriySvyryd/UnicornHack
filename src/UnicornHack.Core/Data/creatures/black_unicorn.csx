@@ -5,7 +5,7 @@ new Creature
     SpeciesClass = SpeciesClass.Quadrupedal,
     ArmorClass = 2,
     MagicResistance = 70,
-    MovementRate = 24,
+    MovementDelay = 50,
     Weight = 1300,
     Size = Size.Large,
     Nutrition = 700,

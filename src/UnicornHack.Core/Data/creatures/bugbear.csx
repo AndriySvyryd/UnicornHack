@@ -4,7 +4,7 @@ new Creature
     Species = Species.Bugbear,
     SpeciesClass = SpeciesClass.MagicalBeast,
     ArmorClass = 5,
-    MovementRate = 9,
+    MovementDelay = 133,
     Weight = 1250,
     Size = Size.Large,
     Nutrition = 250,

@@ -3,7 +3,7 @@ new Creature
     Name = "King Arthur",
     Species = Species.Human,
     MagicResistance = 40,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 1000,
     Size = Size.Medium,
     Nutrition = 400,

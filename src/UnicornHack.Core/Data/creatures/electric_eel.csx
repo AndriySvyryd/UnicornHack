@@ -3,7 +3,7 @@ new Creature
     Name = "electric eel",
     Species = Species.Eel,
     ArmorClass = -3,
-    MovementRate = 10,
+    MovementDelay = 120,
     Weight = 600,
     Size = Size.Large,
     Nutrition = 300,

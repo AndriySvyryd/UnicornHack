@@ -3,7 +3,7 @@ new Creature
     Name = "gray ooze",
     Species = Species.Ooze,
     ArmorClass = 8,
-    MovementRate = 1,
+    MovementDelay = 1200,
     Weight = 500,
     Size = Size.Medium,
     Nutrition = 250,

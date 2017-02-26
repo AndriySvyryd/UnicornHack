@@ -3,7 +3,7 @@ new Creature
     Name = "yeti",
     Species = Species.Simian,
     ArmorClass = 6,
-    MovementRate = 15,
+    MovementDelay = 80,
     Weight = 1600,
     Size = Size.Large,
     Nutrition = 700,

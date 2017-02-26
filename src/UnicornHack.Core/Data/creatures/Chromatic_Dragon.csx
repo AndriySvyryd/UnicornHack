@@ -4,7 +4,7 @@ new Creature
     Species = Species.Dragon,
     SpeciesClass = SpeciesClass.Reptile,
     MagicResistance = 30,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 4500,
     Size = Size.Gigantic,
     Nutrition = 1500,

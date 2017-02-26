@@ -3,7 +3,7 @@ new Creature
     Name = "ettin",
     Species = Species.Giant,
     ArmorClass = 3,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 2250,
     Size = Size.Huge,
     Nutrition = 750,

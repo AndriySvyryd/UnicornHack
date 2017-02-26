@@ -3,7 +3,7 @@ new Creature
     Name = "giant eel",
     Species = Species.Eel,
     ArmorClass = -1,
-    MovementRate = 9,
+    MovementDelay = 133,
     Weight = 600,
     Size = Size.Large,
     Nutrition = 300,

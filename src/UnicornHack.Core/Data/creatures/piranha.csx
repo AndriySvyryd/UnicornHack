@@ -3,7 +3,7 @@ new Creature
     Name = "piranha",
     Species = Species.Fish,
     ArmorClass = 4,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 60,
     Size = Size.Tiny,
     Nutrition = 30,

@@ -5,7 +5,7 @@ new Creature
     SpeciesClass = SpeciesClass.Canine,
     ArmorClass = 4,
     MagicResistance = 20,
-    MovementRate = 12,
+    MovementDelay = 100,
     Weight = 250,
     Size = Size.Small,
     Nutrition = 200,

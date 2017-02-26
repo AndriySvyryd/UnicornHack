@@ -3,7 +3,7 @@ new Creature
     Name = "monkey",
     Species = Species.Simian,
     ArmorClass = 6,
-    MovementRate = 18,
+    MovementDelay = 66,
     Weight = 100,
     Size = Size.Small,
     Nutrition = 50,

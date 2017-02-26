@@ -3,7 +3,7 @@ new Creature
     Name = "quivering blob",
     Species = Species.Blob,
     ArmorClass = 8,
-    MovementRate = 1,
+    MovementDelay = 1200,
     Weight = 200,
     Size = Size.Small,
     Nutrition = 100,

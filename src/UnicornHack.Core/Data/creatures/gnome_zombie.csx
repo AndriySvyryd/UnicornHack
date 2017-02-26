@@ -4,7 +4,7 @@ new Creature
     Species = Species.Gnome,
     SpeciesClass = SpeciesClass.Undead,
     ArmorClass = 9,
-    MovementRate = 6,
+    MovementDelay = 200,
     Weight = 650,
     Size = Size.Small,
     Nutrition = 100,

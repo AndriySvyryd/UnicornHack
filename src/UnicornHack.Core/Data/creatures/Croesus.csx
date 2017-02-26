@@ -3,7 +3,7 @@ new Creature
     Name = "Croesus",
     Species = Species.Human,
     MagicResistance = 40,
-    MovementRate = 15,
+    MovementDelay = 80,
     Weight = 1000,
     Size = Size.Medium,
     Nutrition = 400,

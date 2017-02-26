@@ -4,7 +4,7 @@ new Creature
     Species = Species.Lich,
     SpeciesClass = SpeciesClass.Undead,
     MagicResistance = 30,
-    MovementRate = 6,
+    MovementDelay = 200,
     Weight = 600,
     Size = Size.Medium,
     Nutrition = 50,

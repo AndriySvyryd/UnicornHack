@@ -3,7 +3,7 @@ new Creature
     Name = "flesh golem",
     Species = Species.Golem,
     ArmorClass = 9,
-    MovementRate = 8,
+    MovementDelay = 150,
     Weight = 1400,
     Size = Size.Large,
     Nutrition = 600,
