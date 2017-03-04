@@ -39,7 +39,8 @@ namespace UnicornHack.Events
                     VictimSensed = victimSensed,
                     Ability = abilityContext.Ability,
                     Hit = abilityContext.Succeeded,
-                    EventOrder = eventOrder
+                    EventOrder = eventOrder,
+                    Tick = attacker.Level.CurrentTick
                 };
                 attacker.AddReference();
                 victim.AddReference();

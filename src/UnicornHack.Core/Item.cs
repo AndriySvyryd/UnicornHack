@@ -18,7 +18,6 @@ namespace UnicornHack
         private Size? _equipableSizes;
         private bool? _nameable;
         private int? _stackSize;
-        private Beatitude? _beatitude;
         private ISet<string> _simpleProperties;
         private IDictionary<string, object> _valuedProperties;
         private EquipmentSlot? _equipableSlots;
@@ -111,12 +110,6 @@ namespace UnicornHack
                 return _valuedProperties = new Dictionary<string, object>();
             }
             set { _valuedProperties = value; }
-        }
-
-        public virtual Beatitude Beatitude
-        {
-            get { return _beatitude ?? BaseItem?.Beatitude ?? Beatitude.Uncursed; }
-            set { _beatitude = value; }
         }
 
         public int? ActorId { get; set; }

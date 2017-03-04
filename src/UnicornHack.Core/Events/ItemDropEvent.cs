@@ -28,7 +28,8 @@ namespace UnicornHack.Events
                     DropperSensed = dropperSensed,
                     Item = item,
                     ItemSensed = itemSensed,
-                    EventOrder = eventOrder
+                    EventOrder = eventOrder,
+                    Tick = dropper.Level.CurrentTick
                 };
                 dropper.AddReference();
                 item.AddReference();

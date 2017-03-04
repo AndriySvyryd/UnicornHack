@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using UnicornHack.Effects;
 using UnicornHack.Events;
+using UnicornHack.Generation.Map;
 using UnicornHack.Hubs;
 using UnicornHack.Models;
 using UnicornHack.Models.GameViewModels;
@@ -48,6 +49,7 @@ namespace UnicornHack.Controllers
             {
                 return RedirectToAction(nameof(Index));
             }
+
             return View(FindOrCreateCharacter(model.Name));
         }
 
@@ -108,13 +110,13 @@ namespace UnicornHack.Controllers
                 _dbContext.Games.Add(game);
                 _dbContext.SaveChanges();
 
-                var initialLevel = Level.CreateLevel(game, Level.MainBranchName, depth: 1);
+                var initialLevel = Level.CreateLevel(game, "dungeon", depth: 1);
                 var upStairs = initialLevel.UpStairs.First();
                 character = (Player)Player.Get("player human")
                     .Instantiate(initialLevel, upStairs.DownLevelX, upStairs.DownLevelY);
                 character.Name = name;
 
-                character.WriteLog(game.Services.Language.Welcome(character));
+                character.WriteLog(game.Services.Language.Welcome(character), character.Level.CurrentTick);
 
                 _dbContext.Characters.Add(character);
                 _dbContext.SaveChanges();
@@ -160,6 +162,8 @@ namespace UnicornHack.Controllers
                 return character;
             }
 
+            Initialize(character.Game);
+
             var levelsToLoad = new List<int> {character.Level.Id};
 
             // Preload adjacent levels
@@ -174,7 +178,7 @@ namespace UnicornHack.Controllers
                 }
                 else
                 {
-                    Level.CreateUpLevel(upStairs);
+                    character.Level.CreateUpLevel(upStairs);
                 }
             }
 
@@ -189,7 +193,7 @@ namespace UnicornHack.Controllers
                 }
                 else
                 {
-                    Level.CreateDownLevel(downStairs);
+                    character.Level.CreateDownLevel(downStairs);
                 }
             }
 
@@ -220,8 +224,6 @@ namespace UnicornHack.Controllers
                     .Include(e => e.Weapon.Abilities).ThenInclude(a => a.Effects)
                     .Load();
             }
-
-            Initialize(character.Game);
 
             return character;
         }

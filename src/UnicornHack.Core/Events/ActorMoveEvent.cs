@@ -33,7 +33,8 @@ namespace UnicornHack.Events
                 {
                     Mover = mover,
                     MoverSensed = moverSensed,
-                    EventOrder = eventOrder
+                    EventOrder = eventOrder,
+                    Tick = mover.Level.CurrentTick
                 };
                 mover.AddReference();
 

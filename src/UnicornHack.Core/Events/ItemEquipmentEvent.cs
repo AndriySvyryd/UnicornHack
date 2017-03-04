@@ -28,7 +28,8 @@ namespace UnicornHack.Events
                     EquipperSensed = equipperSensed,
                     Item = item,
                     ItemSensed = itemSensed,
-                    EventOrder = eventOrder
+                    EventOrder = eventOrder,
+                    Tick = equipper.Level.CurrentTick
                 };
                 equipper.AddReference();
                 item.AddReference();

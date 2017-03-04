@@ -28,7 +28,8 @@ namespace UnicornHack.Events
                     PickerSensed = pickerSensed,
                     Item = item,
                     ItemSensed = itemSensed,
-                    EventOrder = eventOrder
+                    EventOrder = eventOrder,
+                    Tick = picker.Level.CurrentTick
                 };
                 picker.AddReference();
                 item.AddReference();

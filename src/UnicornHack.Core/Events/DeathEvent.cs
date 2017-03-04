@@ -30,7 +30,8 @@ namespace UnicornHack.Events
                     DeceasedSensed = deceasedSensed,
                     Corpse = corpse,
                     CorpseSensed = corpseSensed,
-                    EventOrder = eventOrder
+                    EventOrder = eventOrder,
+                    Tick = deceased.Level.CurrentTick
                 };
                 deceased.AddReference();
                 corpse?.AddReference();

@@ -28,7 +28,7 @@ namespace UnicornHack
             if (env.IsDevelopment())
             {
                 // For more details on using the user secret store see http://go.microsoft.com/fwlink/?LinkID=532709
-                builder.AddUserSecrets();
+                //builder.AddUserSecrets();
             }
 
             builder.AddEnvironmentVariables();
@@ -63,6 +63,7 @@ namespace UnicornHack
             services.AddTransient<ISmsSender, AuthMessageSender>();
             services.AddSingleton<ILanguageService, EnglishLanguageService>();
             services.AddSingleton<GameServices>();
+            services.AddMemoryCache();
         }
 
         private string ReplaceNewLines(string text)

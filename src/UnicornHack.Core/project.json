@@ -8,7 +8,8 @@
   },
 
   "dependencies": {
-    "CSharpScriptSerializer": "1.1.0-*"
+    "CSharpScriptSerializer": "1.1.*",
+    "Microsoft.Extensions.Caching.Abstractions": "1.2.0-*"
   },
 
   "frameworks": {

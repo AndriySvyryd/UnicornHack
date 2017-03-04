@@ -178,6 +178,7 @@ namespace UnicornHack
             // TODO: add option to stop here and display current state
             // even if user already provided the next action / cannot perform an action
 
+            var initialTick = NextActionTick;
             if (IsAlive)
             {
                 var action = NextAction;
@@ -255,13 +256,13 @@ namespace UnicornHack
                 var logEntry = GetLogEntry(@event);
                 if (logEntry != null)
                 {
-                    WriteLog(logEntry);
+                    WriteLog(logEntry, @event.Tick);
                 }
                 SensedEvents.Remove(@event);
                 @event.RemoveReference();
             }
 
-            return true;
+            return initialTick != NextActionTick;
         }
 
         public override void Sense(SensoryEvent @event)
@@ -278,12 +279,12 @@ namespace UnicornHack
 
         public virtual bool UseStairs(bool up)
         {
-            if (base.UseStairs(up, pretend: true))
+            if (UseStairs(up, pretend: true))
             {
-                return base.UseStairs(up, pretend: false);
+                return UseStairs(up, pretend: false);
             }
 
-            WriteLog(Game.Services.Language.UnableToMove(up ? Direction.Up : Direction.Down));
+            WriteLog(Game.Services.Language.UnableToMove(up ? Direction.Up : Direction.Down), Level.CurrentTick);
             return false;
         }
 
@@ -296,7 +297,7 @@ namespace UnicornHack
                 return base.Move(targetCell.Value);
             }
 
-            WriteLog(Game.Services.Language.UnableToMove(direction));
+            WriteLog(Game.Services.Language.UnableToMove(direction), Level.CurrentTick);
             return false;
         }
 
@@ -304,7 +305,7 @@ namespace UnicornHack
         {
             if (item == null)
             {
-                WriteLog(Game.Services.Language.InvalidTarget());
+                WriteLog(Game.Services.Language.InvalidTarget(), Level.CurrentTick);
                 return false;
             }
 
@@ -315,7 +316,7 @@ namespace UnicornHack
         {
             if (item == null)
             {
-                WriteLog(Game.Services.Language.InvalidTarget());
+                WriteLog(Game.Services.Language.InvalidTarget(), Level.CurrentTick);
                 return false;
             }
 
@@ -326,7 +327,7 @@ namespace UnicornHack
         {
             if (item == null)
             {
-                WriteLog(Game.Services.Language.InvalidTarget());
+                WriteLog(Game.Services.Language.InvalidTarget(), Level.CurrentTick);
                 return false;
             }
 
@@ -337,7 +338,7 @@ namespace UnicornHack
         {
             if (item == null)
             {
-                WriteLog(Game.Services.Language.InvalidTarget());
+                WriteLog(Game.Services.Language.InvalidTarget(), Level.CurrentTick);
                 return false;
             }
 
@@ -350,9 +351,9 @@ namespace UnicornHack
             return Inventory.SingleOrDefault(i => i.Id == id);
         }
 
-        public virtual void WriteLog(string format, params object[] arguments)
+        public virtual void WriteLog(string format, int tick, params object[] arguments)
         {
-            Log.Add(new LogEntry(this, string.Format(format, arguments)));
+            Log.Add(new LogEntry(this, string.Format(format, arguments), tick));
         }
 
         public virtual string GetLogEntry(SensoryEvent @event)

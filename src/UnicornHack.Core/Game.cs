@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using UnicornHack.Effects;
 using UnicornHack.Events;
+using UnicornHack.Generation.Map;
 using UnicornHack.Services;
 using UnicornHack.Utils;
 
@@ -12,9 +13,13 @@ namespace UnicornHack
     public class Game
     {
         public virtual int Id { get; private set; }
+
         public virtual int NextPlayerTick { get; set; }
         public virtual int EventOrder { get; set; }
         public virtual int RandomSeed { get; set; }
+        public virtual int WorldSeed { get; set; }
+        public virtual bool NonRandomSeed { get; set; }
+
         public virtual int NextActorId { get; set; }
         public virtual ICollection<Actor> Actors { get; set; } = new HashSet<Actor>();
         public virtual int NextItemId { get; set; }

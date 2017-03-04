@@ -6,7 +6,7 @@ namespace UnicornHack
         {
         }
 
-        public LogEntry(Player player, string message)
+        public LogEntry(Player player, string message, int tick)
         {
             unchecked
             {
@@ -14,7 +14,7 @@ namespace UnicornHack
             }
             Player = player;
             Message = message;
-            Tick = player.NextActionTick;
+            Tick = tick;
         }
 
         public int Id { get; set; }

@@ -1,104 +1,103 @@
 ﻿@using UnicornHack.Utils
-@using PlayerCharacter = UnicornHack.Player
-@model UnicornHack.Player
+@model Player
 @{
     ViewData["Title"] = "Game";
 }
 
-<div class="container">
-    <div class="col-md-9">
+<div class="col-md-9">
+    <div class="mapContainer">
         @{ Html.RenderPartial("MapPartial", Model); }
-        <pre>
+    </div>
+    <pre>
 @Model.Name the Adventurer Lvl:@Model.XPLevel XP:@(Model.XP)(@Model.NextLevelXP) St:@Model.Strength Dx:@Model.Dexterity Co:@Model.Constitution Sp:@Model.Speed In:@Model.Intelligence Wi:@Model.Willpower
-@Model.Level.Name:@Model.Level.Depth @Model.LevelX,@Model.LevelY $:@Model.Gold HP:@(Model.HP)(@Model.MaxHP) EP:@(Model.EP)(@Model.MaxEP) ArmorClass:@Model.GetEffectiveAC() AUT:@(Model.NextActionTick/100f)
+@Model.Level.Name:@Model.Level.Depth @Model.LevelX,@Model.LevelY $:@Model.Gold HP:@(Model.HP)(@Model.MaxHP) EP:@(Model.EP)(@Model.MaxEP) ArmorClass:@Model.GetEffectiveAC() AUT:@($"{Model.NextActionTick/100f:0000.00}")
 </pre>
+</div>
+
+<div class="col-md-1">
+    <div class="row">
+        <a class="btn-xs btn-nav" href="javascript:PerformAction('NW')">↖</a>
+        <a class="btn-xs btn-nav" href="javascript:PerformAction('N')">↑</a>
+        <a class="btn-xs btn-nav" href="javascript:PerformAction('NE')">↗</a>
     </div>
-
-    <div class="col-md-1">
-        <div class="row">
-            <a class="btn-xs btn-nav" href="javascript:PerformAction('NW')">↖</a>
-            <a class="btn-xs btn-nav" href="javascript:PerformAction('N')">↑</a>
-            <a class="btn-xs btn-nav" href="javascript:PerformAction('NE')">↗</a>
-        </div>
-        <div class="row">
-            <a class="btn-xs btn-nav" href="javascript:PerformAction('W')">←</a>
-            <a class="btn-xs btn-nav" href="javascript:PerformAction('H')">·</a>
-            <a class="btn-xs btn-nav" href="javascript:PerformAction('E')">→</a>
-        </div>
-        <div class="row">
-            <a class="btn-xs btn-nav" href="javascript:PerformAction('SW')">↙</a>
-            <a class="btn-xs btn-nav" href="javascript:PerformAction('S')">↓</a>
-            <a class="btn-xs btn-nav" href="javascript:PerformAction('SE')">↘</a>
-        </div>
-        <div class="row">
-            <a class="btn-xs btn-nav" href="javascript:PerformAction('U')">⇧</a>
-            <a class="btn-xs btn-nav transparent">&nbsp;</a>
-            <a class="btn-xs btn-nav" href="javascript:PerformAction('D')">⇩</a>
-        </div>
+    <div class="row">
+        <a class="btn-xs btn-nav" href="javascript:PerformAction('W')">←</a>
+        <a class="btn-xs btn-nav" href="javascript:PerformAction('H')">·</a>
+        <a class="btn-xs btn-nav" href="javascript:PerformAction('E')">→</a>
     </div>
+    <div class="row">
+        <a class="btn-xs btn-nav" href="javascript:PerformAction('SW')">↙</a>
+        <a class="btn-xs btn-nav" href="javascript:PerformAction('S')">↓</a>
+        <a class="btn-xs btn-nav" href="javascript:PerformAction('SE')">↘</a>
+    </div>
+    <div class="row">
+        <a class="btn-xs btn-nav" href="javascript:PerformAction('U')">⇧</a>
+        <a class="btn-xs btn-nav transparent">&nbsp;</a>
+        <a class="btn-xs btn-nav" href="javascript:PerformAction('D')">⇩</a>
+    </div>
+</div>
 
-    <div class="col-md-3" style="padding: 0px">
-        <h3></h3>
-        <div class="inventory">
-            @foreach (var item in Model.Inventory.OrderBy(i => i.Name))
-            {
-                <div>
-                    @Model.Game.Services.Language.ToString(item)
-                    @{
-                        if (item.EquippedSlot != null)
-                        {
-                            @: (@Model.Game.Services.Language.ToString(item.EquippedSlot.Value, @Model, abbreviate: false))
+<div class="col-md-3" style="padding: 0px">
+    <h3></h3>
+    <div class="inventory">
+        @foreach (var item in Model.Inventory.OrderBy(i => i.Name))
+        {
+            <div>
+                @Model.Game.Services.Language.ToString(item)
+                @{
+                    if (item.EquippedSlot != null)
+                    {
+                        @: (@Model.Game.Services.Language.ToString(item.EquippedSlot.Value, @Model, abbreviate: false))
 
-                            @: <a class="itemAction" href="javascript:PerformAction('UNEQUIP', @item.Id)">unequip</a>
-                        }
-                        else
+                        @: <a class="itemAction" href="javascript:PerformAction('UNEQUIP', @item.Id)">unequip</a>
+                    }
+                    else
+                    {
+                        var slots = item.GetEquipableSlots(Model.Size).GetNonRedundantFlags(removeComposites: true).ToList();
+                        if (slots.Any())
                         {
-                            var slots = item.GetEquipableSlots(Model.Size).GetNonRedundantFlags(removeComposites: true).ToList();
-                            if (slots.Any())
+                            if (slots.Count == 1)
                             {
-                                if (slots.Count == 1)
-                                {
-                                    @: <a class="itemAction" href="javascript:PerformAction('EQUIP', @item.Id, @((int)slots.Single()))">equip</a>
-                                }
-                                else
-                                {
-                                    var slotLinks = string.Join(" ", slots.Select(equipmentSlot =>
-                                        $"<a class=\"itemAction\" href=\"javascript: PerformAction('EQUIP', {item.Id}, {(int)equipmentSlot})\">{Model.Game.Services.Language.ToString(equipmentSlot, Model, abbreviate: true)}</a>"));
+                                @: <a class="itemAction" href="javascript:PerformAction('EQUIP', @item.Id, @((int)slots.Single()))">equip</a>
+                            }
+                            else
+                            {
+                                var slotLinks = string.Join(" ", slots.Select(equipmentSlot =>
+                                    $"<a class=\"itemAction\" href=\"javascript: PerformAction('EQUIP', {item.Id}, {(int)equipmentSlot})\">{Model.Game.Services.Language.ToString(equipmentSlot, Model, abbreviate: true)}</a>"));
 
-                                    @: equip (@Html.Raw(slotLinks))
-                                }
+                                @: equip (@Html.Raw(slotLinks))
                             }
                         }
-
-                        if (item.Type == ItemType.Food)
-                        {
-                            @: <a class="itemAction" href="javascript:PerformAction('EAT', @item.Id)">eat</a>
-                        }
-
-                        @: <a class="itemAction" href="javascript:PerformAction('DROP', @item.Id)">drop</a>
                     }
-                </div>
-                        }
-        </div>
-    </div>
 
-    <div class="col-md-3 chat" style="padding: 0px">
-        <h3></h3>
-        <input type="text" style="background-color: black;" id="message" />
-        <input type="button" id="sendmessage" style="background-color: gray" value="Send" />
-        <input type="hidden" id="displayname" />
-        <ul id="discussion"></ul>
-    </div>
+                    if (item.Type == ItemType.Food)
+                    {
+                        @: <a class="itemAction" href="javascript:PerformAction('EAT', @item.Id)">eat</a>
+                    }
 
-    <div class="col-md-9">
-        <div class="log">
-            @foreach (var entry in Model.Log.OrderBy(e => e.Id).Skip(Math.Max(0, Model.Log.Count() - 10)))
-            {
-                <div>
-                    @(entry.Tick/100f): @entry.Message
-                </div>
-            }
-        </div>
+                    @: <a class="itemAction" href="javascript:PerformAction('DROP', @item.Id)">drop</a>
+                }
+            </div>
+                    }
+    </div>
+</div>
+
+<div class="col-md-3 chat" style="padding: 0px">
+    <h3></h3>
+    <input type="text" style="background-color: black;" id="message" />
+    <input type="button" id="sendmessage" style="background-color: gray" value="Send" />
+    <input type="hidden" id="displayname" />
+    <ul id="discussion"></ul>
+</div>
+
+<div class="col-md-9">
+    <div class="log">
+        @foreach (var entry in Model.Log.OrderBy(e => e.Id).Skip(Math.Max(0, Model.Log.Count() - 10)))
+        {
+            <div>
+                @($"{entry.Tick/100f:0000.00}"): @entry.Message
+            </div>
+        }
     </div>
 </div>
 

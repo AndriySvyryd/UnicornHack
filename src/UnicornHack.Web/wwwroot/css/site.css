@@ -1,17 +1,22 @@
+@font-face {
+    font-family: DejaVuSansMono;
+    src: url('../fonts/DejaVuSansMono.ttf');
+}
+
 body {
     padding-top: 60px;
     padding-bottom: 20px;
     color: white;
     background-color: black;
-    font-family: "DejaVuSansMono", Menlo, "Lucida Console", monospace;
+    font-family: DejaVuSansMono, Menlo, Consolas, monospace;
 }
 
 pre {
     color: inherit;
     background-color: inherit;
     font-family: inherit;
-    line-height: 15px;
-    font-size: 15px;
+    line-height: 20px;
+    font-size: 20px;
     overflow: auto;
     word-wrap: normal;
     white-space: pre;
@@ -26,6 +31,29 @@ a {
 a:hover {
     border-bottom: 1px dotted gray;
 }
+
+.map {
+    transform: scale(1.0, 0.75);
+    transform-origin: 0 0;
+    height: 813px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mapContainer {
+    overflow: hidden;
+    height: 620px;
+}
+
+/*
+    Workaround for non-monospace characters
+.mapGlyph {
+    display: inline-block;
+    width: 0.607em;
+    text-align: center;
+}
+*/
 
 .log {
     border-width: 1px;

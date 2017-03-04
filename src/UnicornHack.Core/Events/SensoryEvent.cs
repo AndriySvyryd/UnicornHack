@@ -9,9 +9,10 @@ namespace UnicornHack.Events
         public virtual int SensorId { get; private set; }
         public virtual Player Sensor { get; set; }
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
-        public int GameId { get; private set; }
-        public Game Game { get; set; }
+        public virtual int GameId { get; private set; }
+        public virtual Game Game { get; set; }
         public virtual int EventOrder { get; set; }
+        public virtual int Tick { get; set; }
 
         private int _referenceCount;
 

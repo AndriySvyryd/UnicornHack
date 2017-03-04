@@ -436,16 +436,24 @@ namespace UnicornHack
                 return true;
             }
 
+            NextActionTick += MovementDelay;
+
             if (!moveToLevel.Players.Any())
             {
+                var previousNextPlayerTick = Game.NextPlayerTick;
+                Game.NextPlayerTick = NextActionTick;
+
                 // Catch up the level to current turn
+                // TODO: Instead of this put actor in 'traveling' state till its next action
                 var waitedFor = moveToLevel.Turn();
                 Debug.Assert(waitedFor == null);
+
+                Game.NextPlayerTick = previousNextPlayerTick;
             }
 
-            // TODO: Shove off any monsters standing on stairs
-
-            NextActionTick += MovementDelay;
+            var conflictingActor = moveToLevel.Actors
+                .SingleOrDefault(a => (a.LevelX == moveToLevelX.Value) && (a.LevelY == moveToLevelY.Value));
+            conflictingActor?.GetDisplaced();
 
             using (AddReference())
             {
@@ -485,7 +493,22 @@ namespace UnicornHack
                 return Attack(conflictingActor, pretend);
             }
 
-            if (!((MapFeature)Level.Layout[Level.PointToIndex[targetCell.X, targetCell.Y]]).CanMoveTo())
+            if (!Reposition(targetCell, pretend, safe))
+            {
+                return false;
+            }
+
+            ActorMoveEvent.New(this, movee: null, eventOrder: Game.EventOrder++);
+
+            // TODO: take terrain into account
+            NextActionTick += MovementDelay;
+
+            return true;
+        }
+
+        private bool Reposition(Point targetCell, bool pretend, bool safe)
+        {
+            if (!Level.CanMoveTo(targetCell))
             {
                 return false;
             }
@@ -495,21 +518,39 @@ namespace UnicornHack
                 return true;
             }
 
-            // TODO: take terrain into account
-            NextActionTick += MovementDelay;
-
             LevelX = targetCell.X;
             LevelY = targetCell.Y;
-            var itemsOnNewCell =
-                Level.Items.Where(i => (i.LevelX == targetCell.X) && (i.LevelY == targetCell.Y)).ToList();
+            var itemsOnNewCell = Level.Items.Where(i => (i.LevelX == targetCell.X) && (i.LevelY == targetCell.Y))
+                .ToList();
             foreach (var itemOnNewCell in itemsOnNewCell)
             {
                 PickUp(itemOnNewCell);
             }
 
-            ActorMoveEvent.New(this, movee: null, eventOrder: Game.EventOrder++);
-
             return true;
+        }
+
+        public virtual bool GetDisplaced()
+        {
+            // TODO: displace other actors
+            var possibleDirectionsToMove = Level.GetPossibleMovementDirections(
+                new Point(LevelX, LevelY), safe: true);
+            if (possibleDirectionsToMove.Count == 0)
+            {
+                NextActionTick += DefaultActionDelay;
+                return true;
+            }
+            var directionIndex = Game.NextRandom(minValue: 0, maxValue: possibleDirectionsToMove.Count);
+
+            var targetCell = ToLevelCell(possibleDirectionsToMove[directionIndex]);
+            if (targetCell != null)
+            {
+                return Reposition(targetCell.Value, pretend: false, safe: true);
+            }
+
+            // TODO: fire event
+
+            return false;
         }
 
         public virtual bool Attack(Actor victim, bool pretend = false)

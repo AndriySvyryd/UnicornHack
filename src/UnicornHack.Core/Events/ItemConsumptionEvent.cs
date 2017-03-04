@@ -28,7 +28,8 @@ namespace UnicornHack.Events
                     ConsumerSensed = consumerSensed,
                     Item = item,
                     ItemSensed = objectSensed,
-                    EventOrder = eventOrder
+                    EventOrder = eventOrder,
+                    Tick = consumer.Level.CurrentTick
                 };
                 consumer.AddReference();
                 item.AddReference();

@@ -1,4 +1,4 @@
 # UnicornHack
-A .NET variant of the roguelike NetHack
+A web-based traditional roguelike built on .NET Core 
 
 ![Screenshot](https://andriysvyryd.github.io/Screenshot1.jpg)

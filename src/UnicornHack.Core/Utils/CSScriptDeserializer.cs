@@ -3,6 +3,8 @@ using System.Linq;
 using System.Reflection;
 using CSharpScriptSerialization;
 using UnicornHack.Effects;
+using UnicornHack.Generation;
+using UnicornHack.Generation.Map;
 
 namespace UnicornHack.Utils
 {
@@ -17,7 +19,9 @@ namespace UnicornHack.Utils
                 new[]
                 {
                     typeof(Ability).GetTypeInfo().Namespace,
-                    typeof(Effect).GetTypeInfo().Namespace
+                    typeof(Effect).GetTypeInfo().Namespace,
+                    typeof(Weight).GetTypeInfo().Namespace,
+                    typeof(MapFragment).GetTypeInfo().Namespace
                 });
 
         public static T LoadFile<T>(string path)

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using CSharpScriptSerialization;
+using UnicornHack.Generation.Map;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Editor
@@ -15,6 +16,7 @@ namespace UnicornHack.Editor
             SerializeCreatures(verify: true);
             SerializePlayers(verify: true);
             SerializeItems(verify: true);
+            SerializeFragments(verify: true);
         }
 
         private static void SerializePlayers(bool verify = false)
@@ -62,6 +64,21 @@ namespace UnicornHack.Editor
             }
         }
 
+        private static void SerializeFragments(bool verify = false)
+        {
+            foreach (var fragment in MapFragment.GetAllMapFragmentVariants())
+            {
+                var script = CSScriptSerializer.Serialize(fragment);
+
+                File.WriteAllText(GetFilePath(fragment), script);
+
+                if (verify)
+                {
+                    Verify(script, fragment);
+                }
+            }
+        }
+
         private static void Verify(string script, Creature creature)
             => Verify<Creature>(script, c => c.Name == creature.Name,
                 c => c.SimpleProperties, c => c.ValuedProperties);
@@ -73,6 +90,36 @@ namespace UnicornHack.Editor
         private static void Verify(string script, Item item)
             => Verify<Item>(script, c => c.Name == item.Name,
                 c => c.SimpleProperties, c => c.ValuedProperties);
+
+        private static void Verify(string script, MapFragment fragment)
+            => Verify<MapFragment>(script, f => f.Name == fragment.Name && VerifyNoUnicode(fragment),
+                null, null);
+
+        private static bool VerifyNoUnicode(MapFragment fragment)
+        {
+            int x = 0, y = 0;
+            for (var i = 0; i < fragment.Map.Length; i++)
+            {
+                var character = fragment.Map[i];
+                switch (character)
+                {
+                    case '\r':
+                        continue;
+                    case '\n':
+                        x = 0;
+                        y++;
+                        continue;
+                }
+
+                if (character != (byte)character)
+                {
+                    throw new InvalidOperationException($"Invalid character '{character}' at {x},{y}");
+                }
+                x++;
+            }
+
+            return true;
+        }
 
         private static readonly Dictionary<string, CustomPropertyDescription> CustomProperties =
             GetCustomProperties();
@@ -88,7 +135,7 @@ namespace UnicornHack.Editor
                     Console.WriteLine(script);
                 }
 
-                var simpleProperties = getSimpleProperties(serializedVariant);
+                var simpleProperties = getSimpleProperties?.Invoke(serializedVariant);
                 if (simpleProperties != null)
                 {
                     foreach (var simpleProperty in simpleProperties)
@@ -107,7 +154,7 @@ namespace UnicornHack.Editor
                     }
                 }
 
-                var valuedProperties = getValuedProperties(serializedVariant);
+                var valuedProperties = getValuedProperties?.Invoke(serializedVariant);
                 if (valuedProperties != null)
                 {
                     foreach (var valuedProperty in valuedProperties)
@@ -126,7 +173,8 @@ namespace UnicornHack.Editor
                         if (((IComparable)description.MinValue)?.CompareTo(valuedProperty.Value) > 0)
                         {
                             throw new InvalidOperationException(
-                                $"Valued property {valuedProperty} should be lesser or equal to " + description.MinValue);
+                                $"Valued property {valuedProperty} should be lesser or equal to " +
+                                description.MinValue);
                         }
                         if (((IComparable)description.MaxValue)?.CompareTo(valuedProperty.Value) < 0)
                         {
@@ -171,6 +219,13 @@ namespace UnicornHack.Editor
             var directory = Path.Combine(Item.BasePath, "new");
             Directory.CreateDirectory(directory);
             return Path.Combine(directory, CSScriptDeserializer.GetFilename(item.Name));
+        }
+
+        private static string GetFilePath(MapFragment fragment)
+        {
+            var directory = Path.Combine(MapFragment.BasePath, "new");
+            Directory.CreateDirectory(directory);
+            return Path.Combine(directory, CSScriptDeserializer.GetFilename(fragment.Name));
         }
     }
 }
