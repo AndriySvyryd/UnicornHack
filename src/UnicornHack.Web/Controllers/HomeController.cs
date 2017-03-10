@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using UnicornHack.Effects;
 using UnicornHack.Events;
 using UnicornHack.Generation.Map;
-using UnicornHack.Hubs;
 using UnicornHack.Models;
 using UnicornHack.Models.GameViewModels;
 using UnicornHack.Services;
@@ -18,14 +16,12 @@ namespace UnicornHack.Controllers
     public class HomeController : Controller
     {
         private readonly GameDbContext _dbContext;
-        private readonly IHubContext<GameHub, IGameClient> _hubContext;
+        //private readonly IHubContext<GameHub, IGameClient> _hubContext;
         private readonly GameServices _gameServices;
 
-        public HomeController(GameDbContext dbContext, IHubContext<GameHub, IGameClient> hubContext,
-            GameServices gameServices)
+        public HomeController(GameDbContext dbContext, GameServices gameServices)
         {
             _dbContext = dbContext;
-            _hubContext = hubContext;
             _gameServices = gameServices;
         }
 

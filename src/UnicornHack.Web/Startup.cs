@@ -56,7 +56,7 @@ namespace UnicornHack
 
             services.AddMvc();
 
-            services.AddSignalR(options => options.Hubs.EnableDetailedErrors = true);
+            //services.AddSignalR(options => options.Hubs.EnableDetailedErrors = true);
 
             // Add application services.
             services.AddTransient<IEmailSender, AuthMessageSender>();
@@ -151,7 +151,7 @@ namespace UnicornHack
 
             app.UseIdentity();
 
-            app.UseSignalR();
+            //app.UseSignalR();
 
             // Add external authentication middleware below. To configure them please see http://go.microsoft.com/fwlink/?LinkID=532715
 

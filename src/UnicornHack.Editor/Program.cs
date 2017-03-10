@@ -21,6 +21,8 @@ namespace UnicornHack.Editor
 
         private static void SerializePlayers(bool verify = false)
         {
+            Directory.CreateDirectory(PlayerDirectory);
+
             foreach (var playerVariant in Player.GetAllPlayerVariants())
             {
                 var script = CSScriptSerializer.Serialize(playerVariant);
@@ -36,6 +38,8 @@ namespace UnicornHack.Editor
 
         private static void SerializeCreatures(bool verify = false)
         {
+            Directory.CreateDirectory(CreatureDirectory);
+
             foreach (var creatureVariant in Creature.GetAllCreatureVariants())
             {
                 var script = CSScriptSerializer.Serialize(creatureVariant);
@@ -51,6 +55,8 @@ namespace UnicornHack.Editor
 
         private static void SerializeItems(bool verify = false)
         {
+            Directory.CreateDirectory(ItemDirectory);
+
             foreach (var item in Item.GetAllItemVariants())
             {
                 var script = CSScriptSerializer.Serialize(item);
@@ -66,6 +72,8 @@ namespace UnicornHack.Editor
 
         private static void SerializeFragments(bool verify = false)
         {
+            Directory.CreateDirectory(MapFragmentDirectory);
+
             foreach (var fragment in MapFragment.GetAllMapFragmentVariants())
             {
                 var script = CSScriptSerializer.Serialize(fragment);
@@ -120,9 +128,6 @@ namespace UnicornHack.Editor
 
             return true;
         }
-
-        private static readonly Dictionary<string, CustomPropertyDescription> CustomProperties =
-            GetCustomProperties();
 
         private static void Verify<T>(string script, Func<T, bool> isValid, Func<T, ISet<string>> getSimpleProperties,
             Func<T, IDictionary<string, object>> getValuedProperties)
@@ -192,6 +197,9 @@ namespace UnicornHack.Editor
             }
         }
 
+        private static readonly Dictionary<string, CustomPropertyDescription> CustomProperties =
+            GetCustomProperties();
+
         private static Dictionary<string, CustomPropertyDescription> GetCustomProperties()
             => typeof(CustomPropertyDescription).GetProperties(
                 BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Static)
@@ -200,32 +208,62 @@ namespace UnicornHack.Editor
                     p => p.Name,
                     p => (CustomPropertyDescription)p.GetGetMethod().Invoke(null, null));
 
-        private static string GetFilePath(Creature creature)
+        public static readonly string BaseDirectory =
+            GetCommonPrefix(new[] {Player.BasePath, Creature.BasePath, Item.BasePath, MapFragment.BasePath});
+
+        public static readonly string PlayerDirectory =
+            Path.Combine(BaseDirectory, "new",
+                Player.BasePath.Substring(BaseDirectory.Length, Player.BasePath.Length - BaseDirectory.Length));
+
+        public static readonly string CreatureDirectory =
+            Path.Combine(BaseDirectory, "new",
+                Creature.BasePath.Substring(BaseDirectory.Length, Creature.BasePath.Length - BaseDirectory.Length));
+
+        public static readonly string ItemDirectory =
+            Path.Combine(BaseDirectory, "new",
+                Item.BasePath.Substring(BaseDirectory.Length, Item.BasePath.Length - BaseDirectory.Length));
+
+        public static readonly string MapFragmentDirectory =
+            Path.Combine(BaseDirectory, "new",
+                MapFragment.BasePath.Substring(BaseDirectory.Length, MapFragment.BasePath.Length - BaseDirectory.Length));
+
+        private static string GetCommonPrefix(IReadOnlyList<string> strings)
         {
-            var directory = Path.Combine(Creature.BasePath, "new");
-            Directory.CreateDirectory(directory);
-            return Path.Combine(directory, CSScriptDeserializer.GetFilename(creature.Name));
+            if (strings.Count == 0)
+            {
+                return null;
+            }
+
+            var firstString = strings[0];
+            var prefixLength = firstString.Length;
+
+            for (var y = 1; y < strings.Count; y++)
+            {
+                var s = strings[y];
+                for (var i = 0; i < firstString.Length && i < prefixLength; i++)
+                {
+                    var c = firstString[i];
+                    if (i == s.Length
+                        || s[i] != c)
+                    {
+                        prefixLength = i;
+                    }
+                }
+            }
+
+            return firstString.Substring(0, prefixLength);
         }
+
+        private static string GetFilePath(Creature creature)
+            => Path.Combine(CreatureDirectory, CSScriptDeserializer.GetFilename(creature.Name));
 
         private static string GetFilePath(Player player)
-        {
-            var directory = Path.Combine(Player.BasePath, "new");
-            Directory.CreateDirectory(directory);
-            return Path.Combine(directory, CSScriptDeserializer.GetFilename(player.Name));
-        }
+            => Path.Combine(PlayerDirectory, CSScriptDeserializer.GetFilename(player.Name));
 
         private static string GetFilePath(Item item)
-        {
-            var directory = Path.Combine(Item.BasePath, "new");
-            Directory.CreateDirectory(directory);
-            return Path.Combine(directory, CSScriptDeserializer.GetFilename(item.Name));
-        }
+            => Path.Combine(ItemDirectory, CSScriptDeserializer.GetFilename(item.Name));
 
         private static string GetFilePath(MapFragment fragment)
-        {
-            var directory = Path.Combine(MapFragment.BasePath, "new");
-            Directory.CreateDirectory(directory);
-            return Path.Combine(directory, CSScriptDeserializer.GetFilename(fragment.Name));
-        }
+            => Path.Combine(MapFragmentDirectory, CSScriptDeserializer.GetFilename(fragment.Name));
     }
 }

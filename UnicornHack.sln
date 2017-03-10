@@ -1,25 +1,24 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{DC92B3A8-5CB9-4514-9744-7E19CABDDF98}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A1D43057-B6B1-4DBD-814D-327AF7F7563F}"
 	ProjectSection(SolutionItems) = preProject
-		global.json = global.json
 		NuGet.config = NuGet.config
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "UnicornHack.Web", "src\UnicornHack.Web\UnicornHack.Web.xproj", "{4122F12D-85EE-46F2-A19F-92F3BB063BA3}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "UnicornHack.Core", "src\UnicornHack.Core\UnicornHack.Core.xproj", "{8F9BD3B7-296B-4700-BC06-908D1A119472}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{E1416F49-DAC9-4EAF-9689-C5B84EA5C604}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "UnicornHack.Core.Tests", "test\UnicornHack.Core.Tests\UnicornHack.Core.Tests.xproj", "{F554156D-8AD3-4366-9FF0-F7411E688577}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnicornHack.Web", "src\UnicornHack.Web\UnicornHack.Web.csproj", "{4122F12D-85EE-46F2-A19F-92F3BB063BA3}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "UnicornHack.Editor", "src\UnicornHack.Editor\UnicornHack.Editor.xproj", "{36C0D421-119D-40A1-BB88-F20029048199}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnicornHack.Core", "src\UnicornHack.Core\UnicornHack.Core.csproj", "{8F9BD3B7-296B-4700-BC06-908D1A119472}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnicornHack.Core.Tests", "test\UnicornHack.Core.Tests\UnicornHack.Core.Tests.csproj", "{F554156D-8AD3-4366-9FF0-F7411E688577}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnicornHack.Editor", "src\UnicornHack.Editor\UnicornHack.Editor.csproj", "{36C0D421-119D-40A1-BB88-F20029048199}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

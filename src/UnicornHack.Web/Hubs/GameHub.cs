@@ -1,3 +1,4 @@
+/*
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Hubs;
@@ -47,3 +48,4 @@ namespace UnicornHack.Hubs
         void UpdateGameState(Player player);
     }
 }
+*/

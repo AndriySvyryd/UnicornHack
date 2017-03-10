@@ -1,0 +1,60 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <PackageId>UnicornHack.Web</PackageId>
+    <AssemblyName>UnicornHack.Web</AssemblyName>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <RuntimeFrameworkVersion>1.1.1</RuntimeFrameworkVersion>
+    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <PackageTargetFallback>$(PackageTargetFallback);portable-net45+win8</PackageTargetFallback>
+    <OutputType>Exe</OutputType>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <PreserveCompilationContext>true</PreserveCompilationContext>
+    <UserSecretsId>aspnet-UnicornHack-fb43824c-0f51-4c8e-9170-252a1c885c83</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="..\UnicornHack.Core\Data\**">
+      <Link>Data/%(FileName)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="wwwroot\**\*;Views\**\*;Areas\**\Views">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UnicornHack.Core\UnicornHack.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics" Version="1.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="1.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="1.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="1.1.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Server.IISIntegration" Version="1.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="1.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="1.1.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.Design" Version="1.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="1.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="1.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="1.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="1.1.1" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.BrowserLink" Version="1.1.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="1.1.0" />
+  </ItemGroup>
+
+  <Target Name="PrepublishScript" BeforeTargets="PrepareForPublish">
+    <Exec Command="bower install" />
+    <Exec Command="dotnet bundle" />
+  </Target>
+
+  <ItemGroup>
+    <DotNetCliToolReference Include="BundlerMinifier.Core" Version="2.2.301" />
+    <DotNetCliToolReference Include="Microsoft.EntityFrameworkCore.Tools.DotNet" Version="1.0.0" />
+    <DotNetCliToolReference Include="Microsoft.Extensions.SecretManager.Tools" Version="1.0.0" />
+    <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="1.0.0" />
+  </ItemGroup>
+
+</Project>
