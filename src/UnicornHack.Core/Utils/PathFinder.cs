@@ -58,7 +58,7 @@ namespace UnicornHack.Utils
 
                 var currentLocation = _indexToPoint[currentLocationIndex];
 
-                Debug.Assert(currentLocation.Y*(_pointToIndex.GetUpperBound(dimension: 0) + 1) + currentLocation.X
+                Debug.Assert(currentLocation.Y * (_pointToIndex.GetUpperBound(dimension: 0) + 1) + currentLocation.X
                              == currentLocationIndex);
 
                 if (currentLocationIndex == targetLocation)
@@ -116,8 +116,8 @@ namespace UnicornHack.Utils
                 var pointY = target.Y;
                 var currentNode = _graph[_pointToIndex[pointX, pointY]];
 
-                while ((pointX != currentNode.PreviousX)
-                       || (pointY != currentNode.PreviousY))
+                while (pointX != currentNode.PreviousX
+                       || pointY != currentNode.PreviousY)
                 {
                     Point point;
                     point.X = pointX;
@@ -129,7 +129,7 @@ namespace UnicornHack.Utils
                     currentNode = _graph[_pointToIndex[pointX, pointY]];
                 }
 
-                Debug.Assert((pointX == start.X) && (pointY == start.Y));
+                Debug.Assert(pointX == start.X && pointY == start.Y);
 
                 return _shortestPath;
             }

@@ -45,10 +45,10 @@ namespace UnicornHack.Services.English
 
                 var proper = char.IsUpper(name[index: 0]);
                 return (definiteDeterminer == null || proper
-                    ? ""
-                    : definiteDeterminer.Value
-                        ? "the "
-                        : "a ")
+                           ? ""
+                           : definiteDeterminer.Value
+                               ? "the "
+                               : "a ")
                        + name;
             }
 

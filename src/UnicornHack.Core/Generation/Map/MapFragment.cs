@@ -8,6 +8,8 @@ namespace UnicornHack.Generation.Map
 {
     public class MapFragment : ICSScriptSerializable
     {
+        #region State
+
         public virtual string Name { get; set; }
         public virtual int Id { get; set; }
         public virtual int GameId { get; private set; }
@@ -28,6 +30,8 @@ namespace UnicornHack.Generation.Map
         public virtual bool ConditionalLastRow { get; set; }
         public virtual bool ConditionalFirstColumn { get; set; }
         public virtual bool ConditionalLastColumn { get; set; }
+
+        #endregion
 
         #region Creation
 
@@ -83,7 +87,7 @@ namespace UnicornHack.Generation.Map
 
             x = 0;
             y = 0;
-            ByteMap = new byte[Width*Height];
+            ByteMap = new byte[Width * Height];
             for (var i = 0; i < Map.Length; i++)
             {
                 var character = Map[i];
@@ -98,7 +102,7 @@ namespace UnicornHack.Generation.Map
                         }
                         while (x != Width)
                         {
-                            ByteMap[x + Width*y] = (byte)' ';
+                            ByteMap[x + Width * y] = (byte)' ';
                             x++;
                         }
                         x = 0;
@@ -128,11 +132,11 @@ namespace UnicornHack.Generation.Map
                             ConditionalLastRow = true;
                         }
 
-                        ByteMap[x + Width*y] = (byte)character;
+                        ByteMap[x + Width * y] = (byte)character;
                         x++;
                         break;
                     default:
-                        ByteMap[x + Width*y] = (byte)character;
+                        ByteMap[x + Width * y] = (byte)character;
                         x++;
                         break;
                 }
@@ -142,7 +146,7 @@ namespace UnicornHack.Generation.Map
             {
                 while (x != Width)
                 {
-                    ByteMap[x + Width*y] = (byte)' ';
+                    ByteMap[x + Width * y] = (byte)' ';
                     x++;
                 }
             }

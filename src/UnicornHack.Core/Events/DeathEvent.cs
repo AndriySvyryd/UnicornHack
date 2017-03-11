@@ -17,9 +17,9 @@ namespace UnicornHack.Events
                 var corpseSensed = corpse == null
                     ? (SenseType?)null
                     : sensor.CanSense(corpse);
-                if ((deceasedSensed == SenseType.None)
-                    && ((corpseSensed == null)
-                        || (corpseSensed == SenseType.None)))
+                if (deceasedSensed == SenseType.None
+                    && (corpseSensed == null
+                        || corpseSensed == SenseType.None))
                 {
                     continue;
                 }

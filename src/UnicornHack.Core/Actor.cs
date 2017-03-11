@@ -140,10 +140,12 @@ namespace UnicornHack
         public virtual int MaxHP { get; set; }
         public virtual int HP { get; set; }
         public virtual bool IsAlive => HP > 0;
+
         /// <summary>
         ///     Warning: this should only be updated when this actor is acting
         /// </summary>
         public virtual int NextActionTick { get; set; }
+
         public virtual int Gold { get; set; }
         IEnumerable<Item> IItemLocation.Items => Inventory;
         public virtual ICollection<Item> Inventory { get; } = new HashSet<Item>();
@@ -165,7 +167,7 @@ namespace UnicornHack
                 if (item.EquippedSlot != null)
                 {
                     effectiveAC += (int)item.ValuedProperties.GetValueOrDefault(
-                        nameof(CustomPropertyDescription.ArmorClass), maxAC) - maxAC;
+                                       nameof(CustomPropertyDescription.ArmorClass), maxAC) - maxAC;
                 }
             }
 
@@ -412,7 +414,7 @@ namespace UnicornHack
             if (up)
             {
                 var upStairs = Level.UpStairs.SingleOrDefault(s =>
-                    (s.DownLevelX == LevelX) && (s.DownLevelY == LevelY));
+                    s.DownLevelX == LevelX && s.DownLevelY == LevelY);
                 moveToLevel = upStairs?.Up;
                 moveToLevelX = upStairs?.UpLevelX;
                 moveToLevelY = upStairs?.UpLevelY;
@@ -420,7 +422,7 @@ namespace UnicornHack
             else
             {
                 var downStairs = Level.DownStairs.SingleOrDefault(s =>
-                    (s.UpLevelX == LevelX) && (s.UpLevelY == LevelY));
+                    s.UpLevelX == LevelX && s.UpLevelY == LevelY);
                 moveToLevel = downStairs?.Down;
                 moveToLevelX = downStairs?.DownLevelX;
                 moveToLevelY = downStairs?.DownLevelY;
@@ -452,7 +454,7 @@ namespace UnicornHack
             }
 
             var conflictingActor = moveToLevel.Actors
-                .SingleOrDefault(a => (a.LevelX == moveToLevelX.Value) && (a.LevelY == moveToLevelY.Value));
+                .SingleOrDefault(a => a.LevelX == moveToLevelX.Value && a.LevelY == moveToLevelY.Value);
             conflictingActor?.GetDisplaced();
 
             using (AddReference())
@@ -482,7 +484,7 @@ namespace UnicornHack
             }
 
             var conflictingActor = Level.Actors
-                .SingleOrDefault(a => (a.LevelX == targetCell.X) && (a.LevelY == targetCell.Y));
+                .SingleOrDefault(a => a.LevelX == targetCell.X && a.LevelY == targetCell.Y);
             if (conflictingActor != null)
             {
                 if (safe)
@@ -520,7 +522,7 @@ namespace UnicornHack
 
             LevelX = targetCell.X;
             LevelY = targetCell.Y;
-            var itemsOnNewCell = Level.Items.Where(i => (i.LevelX == targetCell.X) && (i.LevelY == targetCell.Y))
+            var itemsOnNewCell = Level.Items.Where(i => i.LevelX == targetCell.X && i.LevelY == targetCell.Y)
                 .ToList();
             foreach (var itemOnNewCell in itemsOnNewCell)
             {

@@ -10,7 +10,7 @@
     </div>
     <pre>
 @Model.Name the Adventurer Lvl:@Model.XPLevel XP:@(Model.XP)(@Model.NextLevelXP) St:@Model.Strength Dx:@Model.Dexterity Co:@Model.Constitution Sp:@Model.Speed In:@Model.Intelligence Wi:@Model.Willpower
-@Model.Level.Name:@Model.Level.Depth @Model.LevelX,@Model.LevelY $:@Model.Gold HP:@(Model.HP)(@Model.MaxHP) EP:@(Model.EP)(@Model.MaxEP) ArmorClass:@Model.GetEffectiveAC() AUT:@($"{Model.NextActionTick/100f:0000.00}")
+@Model.Level.Name:@Model.Level.Depth @Model.LevelX,@Model.LevelY $:@Model.Gold HP:@(Model.HP)(@Model.MaxHP) EP:@(Model.EP)(@Model.MaxEP) ArmorClass:@Model.GetEffectiveAC() AUT:@($"{Model.NextActionTick / 100f:0000.00}")
 </pre>
 </div>
 
@@ -47,7 +47,7 @@
                 @{
                     if (item.EquippedSlot != null)
                     {
-                        @: (@Model.Game.Services.Language.ToString(item.EquippedSlot.Value, @Model, abbreviate: false))
+                        @: (@Model.Game.Services.Language.ToString(item.EquippedSlot.Value, Model, abbreviate: false))
 
                         @: <a class="itemAction" href="javascript:PerformAction('UNEQUIP', @item.Id)">unequip</a>
                     }
@@ -78,7 +78,7 @@
                     @: <a class="itemAction" href="javascript:PerformAction('DROP', @item.Id)">drop</a>
                 }
             </div>
-                    }
+        }
     </div>
 </div>
 
@@ -95,7 +95,7 @@
         @foreach (var entry in Model.Log.OrderBy(e => e.Id).Skip(Math.Max(0, Model.Log.Count() - 10)))
         {
             <div>
-                @($"{entry.Tick/100f:0000.00}"): @entry.Message
+                @($"{entry.Tick / 100f:0000.00}"): @entry.Message
             </div>
         }
     </div>
@@ -112,26 +112,29 @@
     </environment>
     <script src="~/signalr/hubs"></script>
     <script>
-        $(function () {
+        $(function() {
             $.connection.hub.logging = true;
         });
     </script>
     <script>
-        $(function () {
+        $(function() {
             // Reference the auto-generated proxy for the hub.
             var chat = $.connection.gameHub;
             // Create a function that the hub can call back to display messages.
-            chat.client.addNewMessageToPage = function (name, message) {
+            chat.client.addNewMessageToPage = function(name, message) {
                 // Add the message to the page.
-                $('#discussion').append('<li><strong>' + htmlEncode(name)
-                    + '</strong>: ' + htmlEncode(message) + '</li>');
+                $('#discussion').append('<li><strong>' +
+                    htmlEncode(name) +
+                    '</strong>: ' +
+                    htmlEncode(message) +
+                    '</li>');
             };
             // Set initial focus to message input box.
             $('#message').focus();
             // Start the connection.
             //$.connection.hub.qs = { "userId": "123" };
-            $.connection.hub.start().done(function () {
-                $('#sendmessage').click(function () {
+            $.connection.hub.start().done(function() {
+                $('#sendmessage').click(function() {
                     // Call the Send method on the hub.
                     chat.server.send('@Model.Name', $('#message').val());
                     // Clear text box and reset focus for next comment.
@@ -139,9 +142,10 @@
                 });
             });
         });
+
         // This optional function html-encodes messages for display in the page.
         function htmlEncode(value) {
-            var encodedValue = $('<div />').text(value).html();
+            var encodedValue = $('<div/>').text(value).html();
             return encodedValue;
         }
     </script>
@@ -153,8 +157,8 @@
                 async: false,
                 cache: false,
                 data: { name: '@Model.Name', action: action, target: target, target2: target2 },
-                success: function (data) { $('#body-content').html(data); },
-                error: function (xml, status, error) { $('#body-content').html(error); }
+                success: function(data) { $('#body-content').html(data); },
+                error: function(xml, status, error) { $('#body-content').html(error); }
             });
         }
     </script>

@@ -6,7 +6,7 @@ namespace UnicornHack.Services.English
     public class EnglishMorphologicalProcessor
     {
         private static readonly string[] UninflectiveSuffixes =
-        {"fish", "ese", "ois", "sheep", "deer", "pos", "itis", "ism", "ness"};
+            {"fish", "ese", "ois", "sheep", "deer", "pos", "itis", "ism", "ness"};
 
         private static readonly string[] UninflectiveWords =
         {

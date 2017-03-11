@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UnicornHack.Effects;
 using UnicornHack.Events;
-using UnicornHack.Generation.Map;
 using UnicornHack.Models;
 using UnicornHack.Models.GameViewModels;
 using UnicornHack.Services;

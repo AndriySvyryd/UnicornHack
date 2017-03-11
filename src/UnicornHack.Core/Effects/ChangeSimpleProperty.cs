@@ -1,4 +1,5 @@
-﻿using UnicornHack.Events;
+﻿using System;
+using UnicornHack.Events;
 
 namespace UnicornHack.Effects
 {
@@ -25,7 +26,7 @@ namespace UnicornHack.Effects
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
     }
 }

@@ -229,7 +229,7 @@ namespace UnicornHack.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> ConfirmEmail(string userId, string code)
         {
-            if ((userId == null) || (code == null))
+            if (userId == null || code == null)
             {
                 return View(viewName: "Error");
             }
@@ -261,7 +261,7 @@ namespace UnicornHack.Controllers
             if (ModelState.IsValid)
             {
                 var user = await _userManager.FindByNameAsync(model.Email);
-                if ((user == null) || !await _userManager.IsEmailConfirmedAsync(user))
+                if (user == null || !await _userManager.IsEmailConfirmedAsync(user))
                 {
                     // Don't reveal that the user does not exist or is not confirmed
                     return View(viewName: "ForgotPasswordConfirmation");

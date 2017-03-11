@@ -42,8 +42,8 @@ namespace UnicornHack
         {
             // Add framework services.
             services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(Configuration.GetConnectionString(name: "DefaultConnection"))
-                    .EnableSensitiveDataLogging())
+                    options.UseSqlServer(Configuration.GetConnectionString(name: "DefaultConnection"))
+                        .EnableSensitiveDataLogging())
                 .AddDbContext<GameDbContext>(options =>
                     options.EnableSensitiveDataLogging()
                         .UseSqlServer(
@@ -70,9 +70,9 @@ namespace UnicornHack
         {
             var newLine = HtmlEncoder.Default.Encode(Environment.NewLine);
             return "<p>" + text
-                .Replace(newLine + newLine, "</p><p>")
-                .Replace(newLine, Environment.NewLine + "<br />" + Environment.NewLine)
-                .Replace("</p><p>", "</p>" + Environment.NewLine + "<p>") + "</p>";
+                       .Replace(newLine + newLine, "</p><p>")
+                       .Replace(newLine, Environment.NewLine + "<br />" + Environment.NewLine)
+                       .Replace("</p><p>", "</p>" + Environment.NewLine + "<p>") + "</p>";
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

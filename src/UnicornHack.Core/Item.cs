@@ -416,7 +416,10 @@ namespace UnicornHack
                 {nameof(Nameable), (o, v) => (bool)v != (o.BaseItem?.Nameable ?? true)},
                 {nameof(StackSize), (o, v) => (int)v != (o.BaseItem?.StackSize ?? 1)},
                 {nameof(EquipableSizes), (o, v) => (Size)v != (o.BaseItem?.EquipableSizes ?? Size.All)},
-                {nameof(EquipableSlots), (o, v) => (EquipmentSlot)v != (o.BaseItem?.EquipableSlots ?? EquipmentSlot.Default)},
+                {
+                    nameof(EquipableSlots),
+                    (o, v) => (EquipmentSlot)v != (o.BaseItem?.EquipableSlots ?? EquipmentSlot.Default)
+                },
                 {nameof(Abilities), (o, v) => ((ICollection<Ability>)v).Count != 0},
                 {nameof(SimpleProperties), (o, v) => ((ICollection<string>)v).Count != 0},
                 {nameof(ValuedProperties), (o, v) => ((IDictionary<string, object>)v).Keys.Count != 0}

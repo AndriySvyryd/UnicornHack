@@ -1,8 +1,5 @@
-@using System
 @model Player
-
-<pre class="map">
-    <span class="mapSpan">@{
+@{
     var level = Model.Level;
     var characters = new char[level.Width, level.Height];
     var classes = new string[level.Width, level.Height];
@@ -168,15 +165,17 @@
             default:
                 throw new NotSupportedException($"Actor type {actor.BaseActor.Name} not supported.");
         }
-        className += (actor is Player ? " playerCharacter" : "");
+        className += actor is Player ? " playerCharacter" : "";
         characters[actor.LevelX, actor.LevelY] = symbol;
         classes[actor.LevelX, actor.LevelY] = className;
     }
+}
+
+<pre class="map"><span>@{
     for (var y = 0; y < level.Height; y++)
     {
         for (var x = 0; x < level.Width; x++)
-        {<span class="mapGlyph @classes[x, y]">@characters[x, y]</span>}@:
+        {<span class="@classes[x, y]">@characters[x, y]</span>}@:
     }
 }
-</span>
-</pre>
+</span></pre>

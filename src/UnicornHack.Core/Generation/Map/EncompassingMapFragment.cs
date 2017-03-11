@@ -17,7 +17,8 @@ namespace UnicornHack.Generation.Map
         private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<EncompassingMapFragment>(
             GetPropertyConditions<EncompassingMapFragment>());
 
-        protected new static Dictionary<string, Func<TEncompassingMapFragment, object, bool>> GetPropertyConditions<TEncompassingMapFragment>()
+        protected new static Dictionary<string, Func<TEncompassingMapFragment, object, bool>> GetPropertyConditions
+            <TEncompassingMapFragment>()
             where TEncompassingMapFragment : EncompassingMapFragment
         {
             var propertyConditions = MapFragment.GetPropertyConditions<TEncompassingMapFragment>();

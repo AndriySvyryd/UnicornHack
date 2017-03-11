@@ -4,7 +4,7 @@ namespace UnicornHack.Utils
 {
     public class SimpleRandom
     {
-        private const float IntToFloat = 1.0f/Int32.MaxValue;
+        private const float IntToFloat = 1.0f / Int32.MaxValue;
 
         private uint _x;
 
@@ -41,13 +41,13 @@ namespace UnicornHack.Utils
             }
 
             var range = maxValue - lowerBound;
-            if ((range > 1 << 12) || (range < 0))
+            if (range > 1 << 12 || range < 0)
             {
                 throw new ArgumentOutOfRangeException("Don't use this implementation if the required range is over " +
                                                       (1 << 12));
             }
 
-            return lowerBound + (int)(IntToFloat*NextInt()*range);
+            return lowerBound + (int)(IntToFloat * NextInt() * range);
         }
 
         private uint NextUInt()

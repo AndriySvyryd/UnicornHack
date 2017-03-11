@@ -300,7 +300,7 @@ namespace UnicornHack.Controllers
                 _signInManager.GetExternalAuthenticationSchemes()
                     .Where(auth => userLogins.All(ul => auth.AuthenticationScheme != ul.LoginProvider))
                     .ToList();
-            ViewData[index: "ShowRemoveButton"] = (user.PasswordHash != null) || (userLogins.Count > 1);
+            ViewData[index: "ShowRemoveButton"] = user.PasswordHash != null || userLogins.Count > 1;
             return View(new ManageLoginsViewModel
             {
                 CurrentLogins = userLogins,

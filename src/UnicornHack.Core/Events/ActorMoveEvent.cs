@@ -22,9 +22,9 @@ namespace UnicornHack.Events
                     ? (SenseType?)null
                     : sensor.CanSense(movee);
 
-                if ((moverSensed == SenseType.None)
-                    && ((moveeSensed == null)
-                        || (moveeSensed.Value == SenseType.None)))
+                if (moverSensed == SenseType.None
+                    && (moveeSensed == null
+                        || moveeSensed.Value == SenseType.None))
                 {
                     continue;
                 }

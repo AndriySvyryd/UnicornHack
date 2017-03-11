@@ -117,13 +117,13 @@ namespace UnicornHack
             player.Intelligence = Intelligence;
             player.Willpower = Willpower;
 
-            player.MaxHP = 10 + player.XPLevel*player.Constitution/5;
+            player.MaxHP = 10 + player.XPLevel * player.Constitution / 5;
             player.HP = player.MaxHP;
 
-            player.MaxEP = 10 + player.XPLevel*player.Willpower/5;
+            player.MaxEP = 10 + player.XPLevel * player.Willpower / 5;
             player.EP = player.MaxEP;
 
-            player.NextLevelXP = player.XPLevel*100;
+            player.NextLevelXP = player.XPLevel * 100;
 
             player.Abilities.Add(new Ability(player.Game)
             {
@@ -169,7 +169,7 @@ namespace UnicornHack
 
         #region Actions
 
-        public override int MovementDelay => DefaultActionDelay*10/Speed;
+        public override int MovementDelay => DefaultActionDelay * 10 / Speed;
 
         public override bool Act()
         {

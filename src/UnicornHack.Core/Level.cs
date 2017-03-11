@@ -87,7 +87,7 @@ namespace UnicornHack
                 var lookupTables = Game.Services.SharedCache.GetOrCreate(Width << 8 + Height, e =>
                 {
                     var pointToIndex = new int[Width, Height];
-                    var indexToPoint = new Point[Width*Height];
+                    var indexToPoint = new Point[Width * Height];
                     var i = 0;
                     for (byte y = 0; y < Height; y++)
                     {
@@ -131,11 +131,13 @@ namespace UnicornHack
         {
             if (fragment.PayloadArea.Width > Width)
             {
-                throw new InvalidOperationException($"The fragment's width is {fragment.PayloadArea.Width}, but the level's is {Width}");
+                throw new InvalidOperationException(
+                    $"The fragment's width is {fragment.PayloadArea.Width}, but the level's is {Width}");
             }
             if (fragment.PayloadArea.Height > Height)
             {
-                throw new InvalidOperationException($"The fragment's height is {fragment.PayloadArea.Height}, but the level's is {Height}");
+                throw new InvalidOperationException(
+                    $"The fragment's height is {fragment.PayloadArea.Height}, but the level's is {Height}");
             }
 
             var layout = fragment.ByteMap;
@@ -197,7 +199,7 @@ namespace UnicornHack
                     default:
                         throw new InvalidOperationException($"Unsupported map character '{mapPoint}' at {x},{y}");
                 }
-                Layout[x + Width*y] = (byte)feature;
+                Layout[x + Width * y] = (byte)feature;
                 x++;
 
                 if (x == fragment.Width + originX)
@@ -210,13 +212,13 @@ namespace UnicornHack
 
         private void AddNeighbours(byte[] neighbours, byte x, byte y)
         {
-            for (int directionIndex = 0; directionIndex < 8; directionIndex++)
+            for (var directionIndex = 0; directionIndex < 8; directionIndex++)
             {
                 var direction = MovementDirections[directionIndex];
                 var newLocationX = (byte)(x + direction.X);
                 var newLocationY = (byte)(y + direction.Y);
 
-                if ((newLocationX >= Width) || (newLocationY >= Height))
+                if (newLocationX >= Width || newLocationY >= Height)
                 {
                     continue;
                 }
@@ -253,8 +255,6 @@ namespace UnicornHack
         #endregion
 
         #region Actions
-
-
 
         public virtual Actor Turn()
         {
@@ -346,7 +346,7 @@ namespace UnicornHack
             var newLocationX = (byte)(currentLocation.X + direction.X);
             var newLocationY = (byte)(currentLocation.Y + direction.Y);
 
-            if ((newLocationX >= Width) || (newLocationY >= Height))
+            if (newLocationX >= Width || newLocationY >= Height)
             {
                 return null;
             }
@@ -358,7 +358,7 @@ namespace UnicornHack
         public bool CanMoveTo(Point newLocation)
         {
             // Since byte is unsigned there is no need to compare with 0
-            if ((newLocation.X >= Width) || (newLocation.Y >= Height))
+            if (newLocation.X >= Width || newLocation.Y >= Height)
             {
                 return false;
             }
@@ -387,8 +387,8 @@ namespace UnicornHack
 
                 var direction = MovementDirections[i];
                 if (Actors.Any(a =>
-                    (a.LevelX == currentLocation.X + direction.X) &&
-                    (a.LevelY == currentLocation.Y + direction.Y)))
+                    a.LevelX == currentLocation.X + direction.X &&
+                    a.LevelY == currentLocation.Y + direction.Y))
                 {
                     continue;
                 }

@@ -97,7 +97,7 @@ namespace UnicornHack.Services.English
                 AttackerSensed = attackerSensed,
                 VictimSensed = victimSensed,
                 Ability = ability,
-                Hit = damage.HasValue,
+                Hit = damage.HasValue
             };
 
             if (damage.HasValue)
@@ -107,7 +107,7 @@ namespace UnicornHack.Services.English
 
             if (weapon != null)
             {
-                ability.Effects.Add(new MeleeAttack { Weapon = weapon });
+                ability.Effects.Add(new MeleeAttack {Weapon = weapon});
             }
 
             Assert.Equal(expectedMessage, languageService.ToString(attackEvent));
@@ -145,14 +145,15 @@ namespace UnicornHack.Services.English
 
             var languageService = CreateLanguageService();
 
-            Assert.Equal("The water nymph equips something on the body.", languageService.ToString(new ItemEquipmentEvent
-            {
-                Item = armor,
-                ItemSensed = SenseType.Sound,
-                Equipper = nymph,
-                EquipperSensed = SenseType.Sight,
-                Sensor = player
-            }));
+            Assert.Equal("The water nymph equips something on the body.",
+                languageService.ToString(new ItemEquipmentEvent
+                {
+                    Item = armor,
+                    ItemSensed = SenseType.Sound,
+                    Equipper = nymph,
+                    EquipperSensed = SenseType.Sight,
+                    Sensor = player
+                }));
 
             Assert.Equal("Something equips a mail armor.", languageService.ToString(new ItemEquipmentEvent
             {
@@ -172,7 +173,7 @@ namespace UnicornHack.Services.English
                 Sensor = player
             }));
 
-            var sword = new Item { BaseName = "long sword", EquippedSlot = EquipmentSlot.GraspMainExtremity };
+            var sword = new Item {BaseName = "long sword", EquippedSlot = EquipmentSlot.GraspMainExtremity};
             Assert.Equal("You equip a long sword in the main hand.", languageService.ToString(new ItemEquipmentEvent
             {
                 Item = sword,

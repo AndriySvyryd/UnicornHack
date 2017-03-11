@@ -202,7 +202,7 @@ namespace UnicornHack.Editor
 
         private static Dictionary<string, CustomPropertyDescription> GetCustomProperties()
             => typeof(CustomPropertyDescription).GetProperties(
-                BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Static)
+                    BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Static)
                 .Where(p => !p.CanWrite)
                 .ToDictionary(
                     p => p.Name,

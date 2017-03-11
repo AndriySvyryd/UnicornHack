@@ -65,7 +65,7 @@ namespace UnicornHack
             creature.InitialLevel = InitialLevel;
             creature.XPLevel = InitialLevel;
 
-            creature.MaxHP = 1 + creature.XPLevel*4;
+            creature.MaxHP = 1 + creature.XPLevel * 4;
             creature.MaxHP = creature.MaxHP < 1 ? 1 : creature.MaxHP;
             creature.HP = creature.MaxHP;
 
@@ -223,7 +223,8 @@ namespace UnicornHack
             propertyConditions.Add(nameof(GenerationFrequency), (o, v) => (Frequency)v != Frequency.Never);
             propertyConditions.Add(nameof(Behavior), (o, v) => (MonsterBehavior)v != MonsterBehavior.None);
             propertyConditions.Add(nameof(Alignment), (o, v) => (short)v != 0);
-            propertyConditions.Add(nameof(Noise), (o, v) => (ActorNoiseType)v != ((o.BaseActor as Creature)?.Noise ?? ActorNoiseType.Silent));
+            propertyConditions.Add(nameof(Noise),
+                (o, v) => (ActorNoiseType)v != ((o.BaseActor as Creature)?.Noise ?? ActorNoiseType.Silent));
             return propertyConditions;
         }
 
