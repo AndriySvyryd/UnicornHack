@@ -17,8 +17,8 @@ namespace UnicornHack
         private PathFinder _pathFinder;
         private readonly Func<Point, int, int?> _canMoveDelegate;
 
-        public virtual int Id { get; private set; }
-        public virtual string Name { get; set; }
+        public virtual string BranchName { get; private set; }
+        public virtual Branch Branch { get; set; }
         public virtual byte Depth { get; set; }
         public byte Height { get; set; }
         public byte Width { get; set; }
@@ -35,8 +35,8 @@ namespace UnicornHack
         public virtual PriorityQueue<Actor> Actors { get; private set; } =
             new PriorityQueue<Actor>(Actor.TickComparer.Instance);
 
-        public virtual ICollection<Stairs> UpStairs { get; private set; } = new HashSet<Stairs>();
-        public virtual ICollection<Stairs> DownStairs { get; private set; } = new HashSet<Stairs>();
+        public virtual ICollection<Stairs> Stairs { get; private set; } = new HashSet<Stairs>();
+        public virtual ICollection<Stairs> IncomingStairs { get; private set; } = new HashSet<Stairs>();
         public virtual IEnumerable<Player> Players => Actors.OfType<Player>();
 
         // Order matters
@@ -65,41 +65,40 @@ namespace UnicornHack
             _canMoveDelegate = CanMove;
         }
 
-        public Level(Game game, string branchName, byte depth, byte height, byte width)
+        public Level(Branch branch, byte depth)
             : this()
         {
-            Id = game.NextLevelId++;
-            Game = game;
-            Name = branchName;
+            BranchName = branch.Name;
+            Game = branch.Game;
+            Game.Levels.Add(this);
+            Branch = branch;
+            branch.Levels.Add(this);
             Depth = depth;
-            Height = height;
-            Width = width;
-            Layout = new byte[height * width];
-            WallNeighbours = new byte[height * width];
-
-            EnsureInitialized();
+            Layout = new byte[0];
+            WallNeighbours = new byte[0];
         }
 
         private void EnsureInitialized()
         {
             if (_pathFinder == null)
             {
-                var lookupTables = Game.Services.SharedCache.GetOrCreate(Width << 8 + Height, e =>
-                {
-                    var pointToIndex = new int[Width, Height];
-                    var indexToPoint = new Point[Width * Height];
-                    var i = 0;
-                    for (byte y = 0; y < Height; y++)
+                var lookupTables = Game.Services.SharedCache.GetOrCreate(
+                    typeof(Level).GetHashCode() ^ (Width << 8 + Height), e =>
                     {
-                        for (byte x = 0; x < Width; x++)
+                        var pointToIndex = new int[Width, Height];
+                        var indexToPoint = new Point[Width * Height];
+                        var i = 0;
+                        for (byte y = 0; y < Height; y++)
                         {
-                            pointToIndex[x, y] = i;
-                            indexToPoint[i++] = new Point(x, y);
+                            for (byte x = 0; x < Width; x++)
+                            {
+                                pointToIndex[x, y] = i;
+                                indexToPoint[i++] = new Point(x, y);
+                            }
                         }
-                    }
 
-                    return Tuple.Create(pointToIndex, indexToPoint);
-                });
+                        return Tuple.Create(pointToIndex, indexToPoint);
+                    });
 
                 _pointToIndex = lookupTables.Item1;
                 _indexToPoint = lookupTables.Item2;
@@ -115,16 +114,28 @@ namespace UnicornHack
         // 4. Fill the layout cells depending on specified size, tag, number of connections, position on the map
         // 5. Fill the empty space with snapping fragments and connect them to ovewritable fragments
 
-        public static Level CreateLevel(Game game, string branchName, byte depth)
+        public bool EnsureGenerated()
         {
-            var fragment = (EncompassingMapFragment)MapFragment.Get("D" + depth);
-            var height = fragment.LevelHeight;
-            var width = fragment.LevelWidth;
-            var level = new Level(game, branchName, depth, height, width);
-            game.Levels.Add(level);
-            level.PlaceFragment(fragment);
+            if (Width != 0
+                || Depth == 0)
+            {
+                return false;
+            }
 
-            return level;
+            var fragment = Game.Pick(
+                EncompassingMapFragment.GetAllEncompassingMapFragments().ToList(),
+                f => f.GetWeight(BranchName, Depth));
+
+            Height = fragment.LevelHeight;
+            Width = fragment.LevelWidth;
+            Layout = new byte[Height * Width];
+            WallNeighbours = new byte[Height * Width];
+
+            EnsureInitialized();
+
+            PlaceFragment(fragment);
+
+            return true;
         }
 
         private void PlaceFragment(MapFragment fragment)
@@ -167,11 +178,11 @@ namespace UnicornHack
                         break;
                     case '<':
                         feature = MapFeature.Floor;
-                        UpStairs.Add(Stairs.CreateUpStairs(Game, this, x, y));
+                        Stairs.Add(UnicornHack.Stairs.CreateUpStairs(Game, this, x, y));
                         break;
                     case '>':
                         feature = MapFeature.Floor;
-                        DownStairs.Add(Stairs.CreateDownStairs(Game, this, x, y));
+                        Stairs.Add(UnicornHack.Stairs.CreateDownStairs(Game, this, x, y));
                         break;
                     case '$':
                         feature = MapFeature.Floor;
@@ -208,6 +219,14 @@ namespace UnicornHack
                     y++;
                 }
             }
+
+            IncrementInstanceCounts(fragment);
+        }
+
+        private void IncrementInstanceCounts(MapFragment fragment)
+        {
+            // Increment fragment instance count on level, branch, game
+            // Increment each tag instance count on level, branch, game
         }
 
         private void AddNeighbours(byte[] neighbours, byte x, byte y)
@@ -226,30 +245,6 @@ namespace UnicornHack
                 var newLocationIndex = _pointToIndex[newLocationX, newLocationY];
                 neighbours[newLocationIndex] |= (byte)(1 << OppositeDirectionIndexes[directionIndex]);
             }
-        }
-
-        public Level CreateUpLevel(Stairs stairs)
-        {
-            var level = CreateLevel(Game, stairs.BranchName, (byte)(stairs.Down.Depth - 1));
-            var connectingStairs = level.DownStairs.Single(s => s.BranchName == stairs.Down.Name);
-            stairs.Up = level;
-            stairs.UpLevelX = connectingStairs.UpLevelX;
-            stairs.UpLevelY = connectingStairs.UpLevelY;
-            level.DownStairs.Add(stairs);
-            level.DownStairs.Remove(connectingStairs);
-            return level;
-        }
-
-        public Level CreateDownLevel(Stairs stairs)
-        {
-            var level = CreateLevel(Game, stairs.BranchName, (byte)(stairs.Up.Depth + 1));
-            var connectingStairs = level.UpStairs.Single(s => s.BranchName == stairs.Up.Name);
-            stairs.Down = level;
-            stairs.DownLevelX = connectingStairs.DownLevelX;
-            stairs.DownLevelY = connectingStairs.DownLevelY;
-            level.UpStairs.Add(stairs);
-            level.UpStairs.Remove(connectingStairs);
-            return level;
         }
 
         #endregion
@@ -409,7 +404,8 @@ namespace UnicornHack
             var itemOrStack = item.StackWith(Items.Where(i => i.LevelX == x && i.LevelY == y));
             if (itemOrStack != null)
             {
-                itemOrStack.LevelId = Id;
+                itemOrStack.LevelName = BranchName;
+                itemOrStack.LevelDepth = Depth;
                 itemOrStack.Level = this;
                 itemOrStack.LevelX = x;
                 itemOrStack.LevelY = y;
@@ -425,7 +421,8 @@ namespace UnicornHack
 
         public virtual bool Remove(Item item)
         {
-            item.LevelId = null;
+            item.LevelName = null;
+            item.LevelDepth = null;
             item.Level = null;
             item.LevelX = null;
             item.LevelY = null;

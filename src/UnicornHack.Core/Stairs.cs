@@ -1,3 +1,6 @@
+using System.Linq;
+using UnicornHack.Generation.Map;
+
 namespace UnicornHack
 {
     public class Stairs
@@ -6,44 +9,59 @@ namespace UnicornHack
         {
         }
 
-        protected Stairs(Game game, string branchName)
+        protected Stairs(Level level, byte x, byte y, Branch targetLevelBranch, byte targetLevelDepth)
         {
-            Id = game.NextStairsId++;
-            Game = game;
-            BranchName = branchName;
+            Game = level.Game;
+            Id = Game.NextStairsId++;
+            Level = level;
+            LevelName = level.BranchName;
+            LevelDepth = level.Depth;
+            LevelX = x;
+            LevelY = y;
+
+            TargetLevel = targetLevelBranch.Levels.FirstOrDefault(l => l.Depth == targetLevelDepth)
+                          ?? new Level(targetLevelBranch, targetLevelDepth);
+            TargetLevelName = targetLevelBranch.Name;
+            TargetLevelDepth = targetLevelDepth;
+
+            if (TargetLevel.Width != 0)
+            {
+                var connectingStairs = TargetLevel.Stairs.FirstOrDefault(s =>
+                    s.TargetLevelName == LevelName
+                    && s.TargetLevelDepth == LevelDepth
+                    && s.TargetLevelX == null);
+                if (connectingStairs != null)
+                {
+                    TargetLevelX = connectingStairs.LevelX;
+                    TargetLevelY = connectingStairs.LevelY;
+                    connectingStairs.TargetLevelX = LevelX;
+                    connectingStairs.TargetLevelY = LevelY;
+                }
+            }
         }
 
         public int Id { get; private set; }
-        public string BranchName { get; set; }
 
-        public byte UpLevelX { get; set; }
-        public byte UpLevelY { get; set; }
-        public int? UpId { get; set; }
-        public Level Up { get; set; }
+        public byte LevelX { get; set; }
+        public byte LevelY { get; set; }
+        public string LevelName { get; set; }
+        public byte LevelDepth { get; set; }
+        public Level Level { get; set; }
 
-        public byte DownLevelX { get; set; }
-        public byte DownLevelY { get; set; }
-        public int? DownId { get; set; }
-        public Level Down { get; set; }
+        public byte? TargetLevelX { get; set; }
+        public byte? TargetLevelY { get; set; }
+        public string TargetLevelName { get; set; }
+        public byte TargetLevelDepth { get; set; }
+        public Level TargetLevel { get; set; }
 
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public int GameId { get; private set; }
         public Game Game { get; set; }
 
         public static Stairs CreateUpStairs(Game game, Level level, byte x, byte y)
-            => new Stairs(game, level.Name)
-            {
-                Down = level,
-                DownLevelX = x,
-                DownLevelY = y
-            };
+            => new Stairs(level, x, y, level.Branch, (byte)(level.Depth - 1));
 
         public static Stairs CreateDownStairs(Game game, Level level, byte x, byte y)
-            => new Stairs(game, level.Name)
-            {
-                Up = level,
-                UpLevelX = x,
-                UpLevelY = y
-            };
+            => new Stairs(level, x, y, level.Branch, (byte)(level.Depth + 1));
     }
 }

@@ -16,7 +16,9 @@ namespace UnicornHack.Editor
             SerializeCreatures(verify: true);
             SerializePlayers(verify: true);
             SerializeItems(verify: true);
-            SerializeFragments(verify: true);
+            SerializeBranches(verify: true);
+            SerializeNormalFragments(verify: true);
+            SerializeEncompassingFragments(verify: true);
         }
 
         private static void SerializePlayers(bool verify = false)
@@ -27,7 +29,9 @@ namespace UnicornHack.Editor
             {
                 var script = CSScriptSerializer.Serialize(playerVariant);
 
-                File.WriteAllText(GetFilePath(playerVariant), script);
+                File.WriteAllText(
+                    Path.Combine(PlayerDirectory, CSScriptDeserializer.GetFilename(playerVariant.Name)),
+                    script);
 
                 if (verify)
                 {
@@ -44,7 +48,9 @@ namespace UnicornHack.Editor
             {
                 var script = CSScriptSerializer.Serialize(creatureVariant);
 
-                File.WriteAllText(GetFilePath(creatureVariant), script);
+                File.WriteAllText(
+                    Path.Combine(CreatureDirectory, CSScriptDeserializer.GetFilename(creatureVariant.Name)),
+                    script);
 
                 if (verify)
                 {
@@ -61,7 +67,9 @@ namespace UnicornHack.Editor
             {
                 var script = CSScriptSerializer.Serialize(item);
 
-                File.WriteAllText(GetFilePath(item), script);
+                File.WriteAllText(
+                    Path.Combine(ItemDirectory, CSScriptDeserializer.GetFilename(item.Name)),
+                    script);
 
                 if (verify)
                 {
@@ -70,15 +78,55 @@ namespace UnicornHack.Editor
             }
         }
 
-        private static void SerializeFragments(bool verify = false)
+        private static void SerializeBranches(bool verify = false)
+        {
+            Directory.CreateDirectory(BranchDirectory);
+
+            foreach (var branch in Branch.GetAllBranches())
+            {
+                var script = CSScriptSerializer.Serialize(branch);
+
+                File.WriteAllText(
+                    Path.Combine(BranchDirectory, CSScriptDeserializer.GetFilename(branch.Name)),
+                    script);
+
+                if (verify)
+                {
+                    Verify(script, branch);
+                }
+            }
+        }
+
+        private static void SerializeNormalFragments(bool verify = false)
         {
             Directory.CreateDirectory(MapFragmentDirectory);
 
-            foreach (var fragment in MapFragment.GetAllMapFragmentVariants())
+            foreach (var fragment in MapFragment.GetAllMapFragments())
             {
                 var script = CSScriptSerializer.Serialize(fragment);
 
-                File.WriteAllText(GetFilePath(fragment), script);
+                File.WriteAllText(
+                    Path.Combine(MapFragmentDirectory, CSScriptDeserializer.GetFilename(fragment.Name)),
+                    script);
+
+                if (verify)
+                {
+                    Verify(script, fragment);
+                }
+            }
+        }
+
+        private static void SerializeEncompassingFragments(bool verify = false)
+        {
+            Directory.CreateDirectory(EncompassingMapFragmentDirectory);
+
+            foreach (var fragment in EncompassingMapFragment.GetAllEncompassingMapFragments())
+            {
+                var script = CSScriptSerializer.Serialize(fragment);
+
+                File.WriteAllText(
+                    Path.Combine(EncompassingMapFragmentDirectory, CSScriptDeserializer.GetFilename(fragment.Name)),
+                    script);
 
                 if (verify)
                 {
@@ -98,6 +146,10 @@ namespace UnicornHack.Editor
         private static void Verify(string script, Item item)
             => Verify<Item>(script, c => c.Name == item.Name,
                 c => c.SimpleProperties, c => c.ValuedProperties);
+
+        private static void Verify(string script, Branch branch)
+            => Verify<Branch>(script, f => f.Name == branch.Name,
+                null, null);
 
         private static void Verify(string script, MapFragment fragment)
             => Verify<MapFragment>(script, f => f.Name == fragment.Name && VerifyNoUnicode(fragment),
@@ -145,8 +197,7 @@ namespace UnicornHack.Editor
                 {
                     foreach (var simpleProperty in simpleProperties)
                     {
-                        CustomPropertyDescription description;
-                        if (!CustomProperties.TryGetValue(simpleProperty, out description))
+                        if (!CustomProperties.TryGetValue(simpleProperty, out CustomPropertyDescription description))
                         {
                             throw new InvalidOperationException(
                                 "Invalid simple property: " + simpleProperty);
@@ -164,8 +215,7 @@ namespace UnicornHack.Editor
                 {
                     foreach (var valuedProperty in valuedProperties)
                     {
-                        CustomPropertyDescription description;
-                        if (!CustomProperties.TryGetValue(valuedProperty.Key, out description))
+                        if (!CustomProperties.TryGetValue(valuedProperty.Key, out CustomPropertyDescription description))
                         {
                             throw new InvalidOperationException("Invalid valued property: " + valuedProperty);
                         }
@@ -197,8 +247,7 @@ namespace UnicornHack.Editor
             }
         }
 
-        private static readonly Dictionary<string, CustomPropertyDescription> CustomProperties =
-            GetCustomProperties();
+        private static readonly Dictionary<string, CustomPropertyDescription> CustomProperties = GetCustomProperties();
 
         private static Dictionary<string, CustomPropertyDescription> GetCustomProperties()
             => typeof(CustomPropertyDescription).GetProperties(
@@ -209,23 +258,44 @@ namespace UnicornHack.Editor
                     p => (CustomPropertyDescription)p.GetGetMethod().Invoke(null, null));
 
         public static readonly string BaseDirectory =
-            GetCommonPrefix(new[] {Player.BasePath, Creature.BasePath, Item.BasePath, MapFragment.BasePath});
+            GetCommonPrefix(new[]
+            {
+                Player.BasePath,
+                Creature.BasePath,
+                Item.BasePath,
+                Branch.Loader.BasePath,
+                MapFragment.Loader.BasePath,
+                EncompassingMapFragment.Loader.BasePath
+            });
 
         public static readonly string PlayerDirectory =
             Path.Combine(BaseDirectory, "new",
-                Player.BasePath.Substring(BaseDirectory.Length, Player.BasePath.Length - BaseDirectory.Length));
+                Player.BasePath.Substring(BaseDirectory.Length,
+                    Player.BasePath.Length - BaseDirectory.Length));
 
         public static readonly string CreatureDirectory =
             Path.Combine(BaseDirectory, "new",
-                Creature.BasePath.Substring(BaseDirectory.Length, Creature.BasePath.Length - BaseDirectory.Length));
+                Creature.BasePath.Substring(BaseDirectory.Length,
+                    Creature.BasePath.Length - BaseDirectory.Length));
 
         public static readonly string ItemDirectory =
             Path.Combine(BaseDirectory, "new",
                 Item.BasePath.Substring(BaseDirectory.Length, Item.BasePath.Length - BaseDirectory.Length));
 
+        public static readonly string BranchDirectory =
+            Path.Combine(BaseDirectory, "new",
+                Branch.Loader.BasePath.Substring(BaseDirectory.Length,
+                    Branch.Loader.BasePath.Length - BaseDirectory.Length));
+
         public static readonly string MapFragmentDirectory =
             Path.Combine(BaseDirectory, "new",
-                MapFragment.BasePath.Substring(BaseDirectory.Length, MapFragment.BasePath.Length - BaseDirectory.Length));
+                MapFragment.Loader.BasePath.Substring(BaseDirectory.Length,
+                    MapFragment.Loader.BasePath.Length - BaseDirectory.Length));
+
+        public static readonly string EncompassingMapFragmentDirectory =
+            Path.Combine(BaseDirectory, "new",
+                EncompassingMapFragment.Loader.BasePath.Substring(BaseDirectory.Length,
+                    EncompassingMapFragment.Loader.BasePath.Length - BaseDirectory.Length));
 
         private static string GetCommonPrefix(IReadOnlyList<string> strings)
         {
@@ -253,17 +323,5 @@ namespace UnicornHack.Editor
 
             return firstString.Substring(0, prefixLength);
         }
-
-        private static string GetFilePath(Creature creature)
-            => Path.Combine(CreatureDirectory, CSScriptDeserializer.GetFilename(creature.Name));
-
-        private static string GetFilePath(Player player)
-            => Path.Combine(PlayerDirectory, CSScriptDeserializer.GetFilename(player.Name));
-
-        private static string GetFilePath(Item item)
-            => Path.Combine(ItemDirectory, CSScriptDeserializer.GetFilename(item.Name));
-
-        private static string GetFilePath(MapFragment fragment)
-            => Path.Combine(MapFragmentDirectory, CSScriptDeserializer.GetFilename(fragment.Name));
     }
 }

@@ -11,6 +11,7 @@ namespace UnicornHack.Utils
     public class CSScriptDeserializer
     {
         public static readonly string Extension = ".csx";
+        public static readonly string FilePattern = "*" + Extension;
 
         public static T Load<T>(string script)
             => CSScriptSerializer.Deserialize<T>(

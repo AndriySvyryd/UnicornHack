@@ -117,7 +117,8 @@ namespace UnicornHack
         public EquipmentSlot? EquippedSlot { get; set; }
         public int? ContainerId { get; set; }
         public Container Container { get; set; }
-        public int? LevelId { get; set; }
+        public string LevelName { get; set; }
+        public byte? LevelDepth { get; set; }
         public Level Level { get; set; }
         public byte? LevelX { get; set; }
         public byte? LevelY { get; set; }

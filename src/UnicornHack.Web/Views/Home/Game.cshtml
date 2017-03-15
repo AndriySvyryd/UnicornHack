@@ -10,7 +10,7 @@
     </div>
     <pre>
 @Model.Name the Adventurer Lvl:@Model.XPLevel XP:@(Model.XP)(@Model.NextLevelXP) St:@Model.Strength Dx:@Model.Dexterity Co:@Model.Constitution Sp:@Model.Speed In:@Model.Intelligence Wi:@Model.Willpower
-@Model.Level.Name:@Model.Level.Depth @Model.LevelX,@Model.LevelY $:@Model.Gold HP:@(Model.HP)(@Model.MaxHP) EP:@(Model.EP)(@Model.MaxEP) ArmorClass:@Model.GetEffectiveAC() AUT:@($"{Model.NextActionTick / 100f:0000.00}")
+@Model.Level.BranchName:@Model.Level.Depth @Model.LevelX,@Model.LevelY $:@Model.Gold HP:@(Model.HP)(@Model.MaxHP) EP:@(Model.EP)(@Model.MaxEP) AC:@Model.GetEffectiveAC() AUT:@($"{Model.NextActionTick / 100f:0000.00}")
 </pre>
 </div>
 

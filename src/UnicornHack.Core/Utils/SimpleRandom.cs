@@ -4,36 +4,33 @@ namespace UnicornHack.Utils
 {
     public class SimpleRandom
     {
-        private const float IntToFloat = 1.0f / Int32.MaxValue;
+        private const float IntToFloat = 1.0f / 0x7FFFFFFF;
 
         private uint _x;
 
         public SimpleRandom()
         {
-            Reseed(Environment.TickCount);
+            Seed = Environment.TickCount;
         }
 
         public SimpleRandom(int seed)
         {
-            Reseed(seed);
+            Seed = seed;
         }
 
-        public int GetSeed()
+        public int Seed
         {
-            return (int)_x;
-        }
-
-        public void Reseed(int seed)
-        {
-            _x = (uint)seed;
+            get { return (int)_x; }
+            set { _x = (uint)value; }
         }
 
         public int Next(int maxValue)
-        {
-            return Next(lowerBound: 0, maxValue: maxValue);
-        }
+            => Next(lowerBound: 0, maxValue: maxValue);
 
         public int Next(int lowerBound, int maxValue)
+            => (int)Next(lowerBound, (float)maxValue);
+
+        public float Next(float lowerBound, float maxValue)
         {
             if (lowerBound > maxValue)
             {
@@ -47,8 +44,12 @@ namespace UnicornHack.Utils
                                                       (1 << 12));
             }
 
-            return lowerBound + (int)(IntToFloat * NextInt() * range);
+            return lowerBound + IntToFloat * NextInt() * range;
         }
+
+        public bool NextBool() => (0x80000000 & NextUInt()) == 0;
+
+        private int NextInt() => (int)(0x7FFFFFFF & NextUInt());
 
         private uint NextUInt()
         {
@@ -58,16 +59,6 @@ namespace UnicornHack.Utils
             }
             var t = _x ^ (_x << 11);
             return _x = _x ^ (_x >> 19) ^ t ^ (t >> 8);
-        }
-
-        private int NextInt()
-        {
-            return (int)(0x7FFFFFFF & NextUInt());
-        }
-
-        public bool NextBool()
-        {
-            return (0x80000000 & NextUInt()) == 0;
         }
     }
 }

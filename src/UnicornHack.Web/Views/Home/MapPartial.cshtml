@@ -92,15 +92,10 @@
             classes[x, y] = className;
         }
     }
-    foreach (var upStairs in level.UpStairs)
+    foreach (var stairs in level.Stairs)
     {
-        characters[upStairs.DownLevelX, upStairs.DownLevelY] = '<';
-        classes[upStairs.DownLevelX, upStairs.DownLevelY] = "featureUpStairs";
-    }
-    foreach (var downStairs in level.DownStairs)
-    {
-        characters[downStairs.UpLevelX, downStairs.UpLevelY] = '>';
-        classes[downStairs.UpLevelX, downStairs.UpLevelY] = "featureDownStairs";
+        characters[stairs.LevelX, stairs.LevelY] = stairs.TargetLevelDepth > stairs.LevelDepth ? '>' : '<';
+        classes[stairs.LevelX, stairs.LevelY] = "featureStairs";
     }
     foreach (var item in level.Items)
     {

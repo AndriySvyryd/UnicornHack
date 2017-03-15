@@ -6,7 +6,7 @@ using UnicornHack.Utils;
 
 namespace UnicornHack.Generation.Map
 {
-    public class MapFragment : ICSScriptSerializable
+    public class MapFragment : ICSScriptSerializable, ILoadable
     {
         #region State
 
@@ -40,7 +40,7 @@ namespace UnicornHack.Generation.Map
         // X - should be outside the level
         // # - wall or other unpassable terrain
         // . - floor or other passable terrain
-        private void Initialize()
+        void ILoadable.OnLoad()
         {
             byte x = 0, y = 0;
             // ReSharper disable once ForCanBeConvertedToForeach
@@ -166,58 +166,36 @@ namespace UnicornHack.Generation.Map
 
         #endregion
 
+        #region Actions
+
+        private Func<string, byte, int, int, float> _weightFunction;
+
+        public virtual float GetWeight(Level level, Rectangle boundingRectangle)
+        {
+            // TODO: take transformations into account
+            if (PayloadArea.Width > boundingRectangle.Width
+                || PayloadArea.Height > boundingRectangle.Height)
+            {
+                return 0;
+            }
+
+            if (_weightFunction == null)
+            {
+                _weightFunction = GenerationWeight.CreateFragmentWeightFunction();
+            }
+
+            return _weightFunction(level.Branch.Name, level.Depth, 0, 0);
+        }
+
+        #endregion
+
         #region Serialization
 
-        public static readonly string BasePath = Path.Combine(AppContext.BaseDirectory, @"data\fragments\");
-        private static bool _allLoaded;
+        public static readonly CSScriptLoader<MapFragment> Loader = new CSScriptLoader<MapFragment>(@"data\fragments\normal\");
 
-        public static Dictionary<string, MapFragment> NameLookup { get; } =
-            new Dictionary<string, MapFragment>(StringComparer.Ordinal);
+        public static MapFragment Get(string name) => Loader.Get(name);
 
-        public static IEnumerable<MapFragment> GetAllMapFragmentVariants()
-        {
-            if (!_allLoaded)
-            {
-                foreach (var file in
-                    Directory.EnumerateFiles(BasePath, "*" + CSScriptDeserializer.Extension,
-                        SearchOption.AllDirectories))
-                {
-                    if (!NameLookup.ContainsKey(
-                        CSScriptDeserializer.GetNameFromFilename(Path.GetFileNameWithoutExtension(file))))
-                    {
-                        Load(file);
-                    }
-                }
-                _allLoaded = true;
-            }
-
-            return NameLookup.Values;
-        }
-
-        public static MapFragment Get(string name)
-        {
-            MapFragment variant;
-            if (NameLookup.TryGetValue(name, out variant))
-            {
-                return variant;
-            }
-
-            var path = Path.Combine(BasePath, CSScriptDeserializer.GetFilename(name));
-            if (!File.Exists(path))
-            {
-                return null;
-            }
-
-            return Load(path);
-        }
-
-        private static MapFragment Load(string path)
-        {
-            var variant = CSScriptDeserializer.LoadFile<MapFragment>(path);
-            variant.Initialize();
-            NameLookup[variant.Name] = variant;
-            return variant;
-        }
+        public static IEnumerable<MapFragment> GetAllMapFragments() => Loader.GetAll();
 
         private static readonly CSScriptSerializer Serializer =
             new PropertyCSScriptSerializer<MapFragment>(GetPropertyConditions<MapFragment>());

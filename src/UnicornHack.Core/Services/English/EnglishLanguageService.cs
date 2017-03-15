@@ -405,7 +405,7 @@ namespace UnicornHack.Services.English
 
         public virtual string Welcome(Player character)
         {
-            return Format("Welcome to the {0}, {1}!", character.Level.Name,
+            return Format("Welcome to the {0}, {1}!", character.Level.Branch.Name,
                 ToString(character, EnglishPerson.Third, variantKnown: true));
         }
 

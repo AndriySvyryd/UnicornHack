@@ -150,7 +150,8 @@ namespace UnicornHack
         IEnumerable<Item> IItemLocation.Items => Inventory;
         public virtual ICollection<Item> Inventory { get; } = new HashSet<Item>();
 
-        public virtual int? LevelId { get; set; }
+        public virtual string LevelName { get; set; }
+        public virtual byte? LevelDepth { get; set; }
         public virtual Level Level { get; set; }
         public virtual byte LevelX { get; set; }
         public virtual byte LevelY { get; set; }
@@ -409,26 +410,15 @@ namespace UnicornHack
 
         public virtual bool UseStairs(bool up, bool pretend = false)
         {
-            Level moveToLevel;
-            byte? moveToLevelX, moveToLevelY;
-            if (up)
-            {
-                var upStairs = Level.UpStairs.SingleOrDefault(s =>
-                    s.DownLevelX == LevelX && s.DownLevelY == LevelY);
-                moveToLevel = upStairs?.Up;
-                moveToLevelX = upStairs?.UpLevelX;
-                moveToLevelY = upStairs?.UpLevelY;
-            }
-            else
-            {
-                var downStairs = Level.DownStairs.SingleOrDefault(s =>
-                    s.UpLevelX == LevelX && s.UpLevelY == LevelY);
-                moveToLevel = downStairs?.Down;
-                moveToLevelX = downStairs?.DownLevelX;
-                moveToLevelY = downStairs?.DownLevelY;
-            }
+            var stairs = Level.Stairs.SingleOrDefault(s =>
+                s.LevelX == LevelX && s.LevelY == LevelY);
 
-            if (moveToLevel == null)
+            var moveToLevel = stairs?.TargetLevel;
+            var moveToLevelX = stairs?.TargetLevelX;
+            var moveToLevelY = stairs?.TargetLevelY;
+
+            if (moveToLevel == null
+                || (moveToLevel.Depth > LevelDepth == up))
             {
                 return false;
             }
@@ -456,6 +446,12 @@ namespace UnicornHack
             var conflictingActor = moveToLevel.Actors
                 .SingleOrDefault(a => a.LevelX == moveToLevelX.Value && a.LevelY == moveToLevelY.Value);
             conflictingActor?.GetDisplaced();
+
+            if (moveToLevel.Depth == 0)
+            {
+                ChangeCurrentHP(-1 * HP);
+                return true;
+            }
 
             using (AddReference())
             {

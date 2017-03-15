@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using UnicornHack.Effects;
 using UnicornHack.Events;
+using UnicornHack.Generation.Map;
 
 namespace UnicornHack.Models
 {
@@ -14,6 +15,7 @@ namespace UnicornHack.Models
         }
 
         public DbSet<Game> Games { get; set; }
+        public DbSet<Branch> Branches { get; set; }
         public DbSet<Level> Levels { get; set; }
         public DbSet<Stairs> Stairs { get; set; }
         public DbSet<Player> Characters { get; set; }
@@ -26,18 +28,26 @@ namespace UnicornHack.Models
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Branch>(eb =>
+            {
+                eb.Ignore(b => b.GenerationWeight);
+                eb.HasKey(b => new {b.GameId, b.Name});
+                eb.HasMany(b => b.Levels)
+                    .WithOne(l => l.Branch)
+                    .HasForeignKey(l => new {l.GameId, l.BranchName});
+            });
+
             modelBuilder.Entity<Level>(eb =>
             {
                 eb.Ignore(l => l.Players);
                 eb.Property(l => l.Layout).IsRequired();
-                eb.Property(l => l.Name).IsRequired();
-                eb.HasKey(l => new {l.GameId, l.Id});
-                eb.HasMany(l => l.UpStairs)
-                    .WithOne(s => s.Down)
-                    .HasForeignKey(s => new {s.GameId, s.DownId});
-                eb.HasMany(l => l.DownStairs)
-                    .WithOne(s => s.Up)
-                    .HasForeignKey(s => new {s.GameId, s.UpId});
+                eb.HasKey(l => new {l.GameId, l.BranchName, l.Depth});
+                eb.HasMany(l => l.Stairs)
+                    .WithOne(s => s.Level)
+                    .HasForeignKey(s => new {s.GameId, s.LevelName, s.LevelDepth});
+                eb.HasMany(l => l.IncomingStairs)
+                    .WithOne(s => s.TargetLevel)
+                    .HasForeignKey(s => new {s.GameId, s.TargetLevelName, s.TargetLevelDepth});
             });
 
             modelBuilder.Entity<Actor>(eb =>
@@ -51,7 +61,7 @@ namespace UnicornHack.Models
                 eb.HasIndex(a => a.Name).IsUnique();
                 eb.HasOne(a => a.Level)
                     .WithMany(l => l.Actors)
-                    .HasForeignKey(a => new {a.GameId, a.LevelId});
+                    .HasForeignKey(a => new {a.GameId, a.LevelName, a.LevelDepth});
                 eb.HasMany(a => a.Abilities)
                     .WithOne()
                     .HasForeignKey(nameof(Ability.GameId), "ActorId")
@@ -77,9 +87,14 @@ namespace UnicornHack.Models
                 eb.Ignore(g => g.Players);
                 eb.Property(g => g.Id)
                     .ValueGeneratedOnAdd();
-                eb.HasMany(g => g.Levels)
+
+                eb.HasMany(g => g.Branches)
                     .WithOne(l => l.Game)
                     .HasForeignKey(l => l.GameId);
+                eb.HasMany(g => g.Levels)
+                    .WithOne(l => l.Game)
+                    .HasForeignKey(l => l.GameId)
+                    .OnDelete(DeleteBehavior.Restrict);
                 eb.HasMany(g => g.Actors)
                     .WithOne(a => a.Game)
                     .HasForeignKey(a => a.GameId)
@@ -89,7 +104,8 @@ namespace UnicornHack.Models
                     .HasForeignKey(i => i.GameId);
                 eb.HasMany(g => g.Stairs)
                     .WithOne(s => s.Game)
-                    .HasForeignKey(s => s.GameId);
+                    .HasForeignKey(s => s.GameId)
+                    .OnDelete(DeleteBehavior.Restrict);
                 eb.HasMany(g => g.Abilities)
                     .WithOne(a => a.Game)
                     .HasForeignKey(a => a.GameId);
@@ -109,7 +125,7 @@ namespace UnicornHack.Models
                 eb.HasKey(i => new {i.GameId, i.Id});
                 eb.HasOne(i => i.Level)
                     .WithMany(l => l.Items)
-                    .HasForeignKey(i => new {i.GameId, i.LevelId});
+                    .HasForeignKey(i => new {i.GameId, i.LevelName, i.LevelDepth});
                 eb.HasOne(i => i.Actor)
                     .WithMany(a => a.Inventory)
                     .HasForeignKey(i => new {i.GameId, i.ActorId});

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using UnicornHack.Effects;
 using UnicornHack.Events;
+using UnicornHack.Generation.Map;
 using UnicornHack.Services;
 using UnicornHack.Utils;
 
@@ -23,7 +24,7 @@ namespace UnicornHack
         public virtual ICollection<Actor> Actors { get; set; } = new HashSet<Actor>();
         public virtual int NextItemId { get; set; }
         public virtual ICollection<Item> Items { get; set; } = new HashSet<Item>();
-        public virtual int NextLevelId { get; set; }
+        public virtual ICollection<Branch> Branches { get; set; } = new HashSet<Branch>();
         public virtual ICollection<Level> Levels { get; set; } = new HashSet<Level>();
         public virtual int NextStairsId { get; set; }
         public virtual ICollection<Stairs> Stairs { get; set; } = new HashSet<Stairs>();
@@ -58,14 +59,13 @@ namespace UnicornHack
             return null;
         }
 
-        public virtual int NextRandom(int maxValue)
-            => GetRandom().Next(maxValue);
+        public virtual int NextRandom(int maxValue) => GetRandom().Next(maxValue);
 
         public virtual int NextRandom(int minValue, int maxValue)
         {
             var random = GetRandom();
             var result = random.Next(minValue, maxValue);
-            RandomSeed = random.GetSeed();
+            RandomSeed = random.Seed;
             return result;
         }
 
@@ -78,15 +78,79 @@ namespace UnicornHack
                 result += random.Next(lowerBound: 0, maxValue: diceSides) + 1;
             }
 
-            RandomSeed = random.GetSeed();
+            RandomSeed = random.Seed;
             return result;
+        }
+
+        public virtual T Pick<T>(IReadOnlyList<T> items, Func<T, float> getWeight)
+        {
+            if (items == null
+                || items.Count == 0)
+            {
+                throw new InvalidOperationException();
+            }
+
+            var cumulativeWeights = new float[items.Count];
+            var sum = 0f;
+            for (var i = 0; i < items.Count; i++)
+            {
+                var item = items[i];
+                var weight = getWeight(item);
+                if (float.IsPositiveInfinity(weight))
+                {
+                    return item;
+                }
+                if (weight < 0)
+                {
+                    weight = 0;
+                }
+
+                sum += weight;
+                cumulativeWeights[i] = sum;
+            }
+
+            return items[BinarySearch(cumulativeWeights, _random.Next(0, sum))];
+        }
+
+        private static int BinarySearch(float[] mynumbers, float target)
+        {
+            Debug.Assert(mynumbers.Length > 0);
+
+            var first = 0;
+            var last = mynumbers.Length - 1;
+            var midPoint = 0;
+            while (first <= last)
+            {
+                midPoint = (first + last) / 2;
+                var midValue = mynumbers[midPoint];
+
+                // ReSharper disable once CompareOfFloatsByEqualityOperator
+                if (target == midValue)
+                {
+                    // ReSharper disable once CompareOfFloatsByEqualityOperator
+                    while (midPoint > 0 && target == mynumbers[midPoint - 1])
+                    {
+                        midPoint--;
+                    }
+                    return midPoint;
+                }
+
+                if (target > midValue)
+                {
+                    first = midPoint + 1;
+                }
+
+                if (target < midValue)
+                {
+                    last = midPoint - 1;
+                }
+            }
+
+            return midPoint == mynumbers.Length ? midPoint - 1 : midPoint;
         }
 
         private SimpleRandom _random;
 
-        private SimpleRandom GetRandom()
-        {
-            return _random ?? (_random = new SimpleRandom(RandomSeed));
-        }
+        private SimpleRandom GetRandom() => _random ?? (_random = new SimpleRandom(RandomSeed));
     }
 }

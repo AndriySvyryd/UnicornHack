@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnicornHack.Effects;
 using UnicornHack.Events;
+using UnicornHack.Generation.Map;
 using Xunit;
 
 namespace UnicornHack.Services.English
@@ -326,7 +327,7 @@ namespace UnicornHack.Services.English
                 {
                     BaseName = "human",
                     Name = "Conan the Barbarian",
-                    Level = new Level {Name = "Dungeon of Fun"}
+                    Level = new Level {Branch = new Branch{Name = "Dungeon of Fun" } }
                 });
 
             Assert.Equal("Welcome to the Dungeon of Fun, Conan the Barbarian!", message);
