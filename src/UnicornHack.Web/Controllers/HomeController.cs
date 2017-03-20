@@ -10,6 +10,7 @@ using UnicornHack.Generation.Map;
 using UnicornHack.Models;
 using UnicornHack.Models.GameViewModels;
 using UnicornHack.Services;
+using UnicornHack.Utils;
 
 namespace UnicornHack.Controllers
 {
@@ -98,17 +99,22 @@ namespace UnicornHack.Controllers
             var character = FindCharacter(name);
             if (character == null)
             {
+                var seed = Environment.TickCount;
                 var game = new Game
                 {
-                    RandomSeed = Environment.TickCount
+                    Random = new SimpleRandom {Seed = seed},
+                    NonRandomSeed = seed
                 };
                 Initialize(game);
                 _dbContext.Games.Add(game);
                 _dbContext.SaveChanges();
 
-                var initialLevel = new Level(Branch.Get("dungeon").Instantiate(game), depth: 1);
+                var surfaceBranch = Branch.Get("surface").Instantiate(game);
+                var surfaceLevel = new Level(surfaceBranch, depth: 1, seed: seed);
+                surfaceLevel.EnsureGenerated();
+                var initialLevel = surfaceLevel.Connections.Single().TargetLevel;
                 initialLevel.EnsureGenerated();
-                var upStairs = initialLevel.Stairs.First(s => s.TargetLevelDepth < s.LevelDepth);
+                var upStairs = initialLevel.Connections.First(c => c.TargetBranchName == surfaceBranch.Name);
                 character = (Player)Player.Get("player human")
                     .Instantiate(initialLevel, upStairs.LevelX, upStairs.LevelY);
                 character.Name = name;
@@ -144,13 +150,14 @@ namespace UnicornHack.Controllers
             }
 
             _dbContext.Characters
-                .Include(c => c.Game)
+                .Include(c => c.Game.Random)
                 .Include(c => c.Log)
                 .Include(c => c.Skills)
                 //.Include(c => c.SensedEvents)
-                .Include(c => c.Level.Stairs)
-                .Include(c => c.Level.IncomingStairs)
+                .Include(c => c.Level.Connections)
+                .Include(c => c.Level.IncomingConnections)
                 .Include(c => c.Level.Game)
+                .Include(c => c.Level.GenerationRandom)
                 .Where(c => c.GameId == character.GameId)
                 .Load();
 
@@ -167,12 +174,12 @@ namespace UnicornHack.Controllers
             };
 
             // Preload adjacent levels
-            var stairs = character.Level.Stairs.SingleOrDefault(s =>
+            var connection = character.Level.Connections.SingleOrDefault(s =>
                 s.LevelX == character.LevelX
                 && s.LevelY == character.LevelY);
-            if (stairs != null)
+            if (connection != null)
             {
-                levelsToLoad.Add(Tuple.Create(stairs.TargetLevelName, stairs.TargetLevelDepth));
+                levelsToLoad.Add(Tuple.Create(connection.TargetBranchName, connection.TargetLevelDepth));
             }
 
             _dbContext.Levels
@@ -182,14 +189,17 @@ namespace UnicornHack.Controllers
                 .ThenInclude(i => i.Abilities)
                 .ThenInclude(a => a.Effects)
                 .Include(l => l.Actors).ThenInclude(a => a.Abilities).ThenInclude(a => a.Effects)
-                .Include(l => l.Stairs)
+                .Include(l => l.Connections).ThenInclude(c => c.TargetBranch)
+                .Include(l => l.IncomingConnections).ThenInclude(c => c.Level)
                 .Include(l => l.Branch)
                 .Include(l => l.Game)
+                .Include(l => l.GenerationRandom)
                 .Where(l => l.GameId == character.GameId)
                 .Where(l => levelsToLoad.Contains(new Tuple<string, byte>(l.BranchName, l.Depth)))
                 .Load();
 
-            stairs?.TargetLevel.EnsureGenerated();
+            // TODO: Pregenerate all connected levels to ensure the order
+            connection?.TargetLevel.EnsureGenerated();
 
             LoadEvents(character);
 
@@ -258,43 +268,16 @@ namespace UnicornHack.Controllers
         private void Initialize(Game game)
         {
             game.Services = _gameServices;
-            game.Delete = Delete;
-        }
-
-        // ReSharper disable once InconsistentNaming
-        private static readonly MethodInfo _genericDelete = typeof(HomeController).GetMethod(nameof(GenericDelete),
-            BindingFlags.Instance | BindingFlags.NonPublic);
-
-        private static readonly Dictionary<Type, MethodInfo> DeleteDelegates = new Dictionary<Type, MethodInfo>();
-
-        private void Delete(object entity)
-        {
-            var type = entity.GetType();
-            if (!DeleteDelegates.TryGetValue(type, out MethodInfo delete))
-            {
-                delete = _genericDelete.MakeGenericMethod(type);
-                DeleteDelegates.Add(type, delete);
-            }
-
-            delete.Invoke(this, new[] {entity});
-        }
-
-        private void GenericDelete<TEntity>(TEntity entity)
-            where TEntity : class
-        {
-            var local = _dbContext.Set<TEntity>().Local;
-            if (local.Contains(entity))
-            {
-                local.Remove(entity);
-            }
+            game.Repository = new Repository(_dbContext);
         }
 
         private void Clean(Game game)
         {
             game = _dbContext.Games
+                .Include(g => g.Random)
                 .Include(g => g.Branches)
-                .Include(g => g.Levels)
-                .Include(g => g.Stairs)
+                .Include(g => g.Levels).ThenInclude(l => l.GenerationRandom)
+                .Include(g => g.Connections)
                 .Include(g => g.Actors)
                 .Include(g => g.Items)
                 .Include(g => g.Abilities)
@@ -306,6 +289,8 @@ namespace UnicornHack.Controllers
                 .Where(e => e.GameId == game.Id)
                 .Include(e => e.Weapon.Abilities).ThenInclude(a => a.Effects)
                 .Load();
+
+            _dbContext.Set<SimpleRandom>().Remove(game.Random);
 
             foreach (var playerCharacter in game.Players)
             {
@@ -336,12 +321,13 @@ namespace UnicornHack.Controllers
             {
                 _dbContext.Actors.Remove(actor);
             }
-            foreach (var stairs in game.Stairs.ToList())
+            foreach (var stairs in game.Connections.ToList())
             {
-                _dbContext.Stairs.Remove(stairs);
+                _dbContext.Connections.Remove(stairs);
             }
             foreach (var level in game.Levels.ToList())
             {
+                _dbContext.Set<SimpleRandom>().Remove(level.GenerationRandom);
                 _dbContext.Levels.Remove(level);
             }
             foreach (var branch in game.Branches.ToList())

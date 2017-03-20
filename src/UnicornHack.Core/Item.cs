@@ -117,13 +117,15 @@ namespace UnicornHack
         public EquipmentSlot? EquippedSlot { get; set; }
         public int? ContainerId { get; set; }
         public Container Container { get; set; }
-        public string LevelName { get; set; }
+        public string BranchName { get; set; }
         public byte? LevelDepth { get; set; }
         public Level Level { get; set; }
         public byte? LevelX { get; set; }
         public byte? LevelY { get; set; }
+
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public int GameId { get; private set; }
+
         public Game Game { get; set; }
 
         public EquipmentSlot GetEquipableSlots(Size size)
@@ -238,7 +240,7 @@ namespace UnicornHack
                 {
                     ability.RemoveReference();
                 }
-                Game.Delete(this);
+                Game.Repository.Delete(this);
             }
         }
 

@@ -1,7 +1,8 @@
 new EncompassingMapFragment
 {
-    Name = "D1",
-    GenerationWeight = new BranchWeight { W = new InfiniteWeight(), Name = "dungeon", MinDepth = 1, MaxDepth = 1 },
+    Name = "d1",
+    GenerationWeight = new BranchWeight { W = new ConstantWeight { }, Name = "dungeon", MinDepth = 1, MaxDepth = 1 },
+    NoRandomDoorways = true,
     LevelHeight = 40,
     LevelWidth = 80,
     Map = @"
@@ -13,7 +14,7 @@ new EncompassingMapFragment
  #......#  ,         ########.##,  ,,....#,,,,,,,,,,,,,,,,,,,,,,..........#
  #......., ,,,,,,,,,,,,,,,,,,,,,,   ,#####,        ,,,       ,  #......b..#
  #...b..#,                   ,      ,,,,  ,          ,       ,,,#.........#
- #.$....#,                   ,         ,  ,          ,,,       ,.......[..#
+ #.$....#,                   ,         ,  ,          ,,,       ,.......(..#
  ######.#,,,                 ,         ,,,,            ,        #.........#
        ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,#    ###########
            ,,, ##############.#           , ###########.#####

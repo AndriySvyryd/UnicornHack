@@ -5,13 +5,15 @@ using UnicornHack.Utils;
 
 namespace UnicornHack.Generation.Map
 {
-    public class EncompassingMapFragment : MapFragment
+    public class EncompassingMapFragment : ConnectingMapFragment
     {
-        public override MapFragmentType Type => MapFragmentType.Encompassing;
         public virtual byte LevelHeight { get; set; }
         public virtual byte LevelWidth { get; set; }
+        public virtual Layout Layout { get; set; }
+        public virtual MapFeature DefaultTerrain { get; set; }
+        public virtual MapFeature DefaultPathTerrain { get; set; }
+
         // TODO: Subfragment, item and creature generation weight and distribution modifiers
-        // TODO: default terrain type for floor/wall/empty space
 
         #region Actions
 
@@ -37,12 +39,13 @@ namespace UnicornHack.Generation.Map
 
         #region Serialization
 
-        public new static readonly CSScriptLoader<EncompassingMapFragment> Loader =
+        public static readonly CSScriptLoader<EncompassingMapFragment> EncompassingLoader =
             new CSScriptLoader<EncompassingMapFragment>(@"data\fragments\encompassing\");
 
-        public new static EncompassingMapFragment Get(string name) => Loader.Get(name);
+        public static EncompassingMapFragment GetEncompassingMapFragment(string name) => EncompassingLoader.Get(name);
 
-        public static IEnumerable<EncompassingMapFragment> GetAllEncompassingMapFragments() => Loader.GetAll();
+        public static IReadOnlyList<EncompassingMapFragment> GetAllEncompassingMapFragments() => EncompassingLoader
+            .GetAll();
 
         private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<EncompassingMapFragment>(
             GetPropertyConditions<EncompassingMapFragment>());
@@ -51,10 +54,15 @@ namespace UnicornHack.Generation.Map
             <TEncompassingMapFragment>()
             where TEncompassingMapFragment : EncompassingMapFragment
         {
-            var propertyConditions = MapFragment.GetPropertyConditions<TEncompassingMapFragment>();
-            propertyConditions[nameof(Type)] = (o, v) => false;
+            var propertyConditions = ConnectingMapFragment.GetPropertyConditions<TEncompassingMapFragment>();
+            var mapCondition = propertyConditions[nameof(Map)];
+            propertyConditions.Remove(nameof(Map));
+
+            propertyConditions.Add(nameof(NoRandomDoorways), (o, v) => (bool)v);
             propertyConditions.Add(nameof(LevelHeight), (o, v) => (byte)v != 0);
             propertyConditions.Add(nameof(LevelWidth), (o, v) => (byte)v != 0);
+            propertyConditions.Add(nameof(Layout), (o, v) => v != null && !(v is EmptyLayout));
+            propertyConditions.Add(nameof(Map), mapCondition);
             return propertyConditions;
         }
 

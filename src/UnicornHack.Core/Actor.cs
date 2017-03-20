@@ -32,6 +32,7 @@ namespace UnicornHack
 
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public virtual int Id { get; private set; }
+
         public virtual string Name { get; set; }
         public virtual string BaseName { get; set; }
 
@@ -150,13 +151,15 @@ namespace UnicornHack
         IEnumerable<Item> IItemLocation.Items => Inventory;
         public virtual ICollection<Item> Inventory { get; } = new HashSet<Item>();
 
-        public virtual string LevelName { get; set; }
+        public virtual string BranchName { get; set; }
         public virtual byte? LevelDepth { get; set; }
         public virtual Level Level { get; set; }
         public virtual byte LevelX { get; set; }
         public virtual byte LevelY { get; set; }
+
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public virtual int GameId { get; private set; }
+
         public virtual Game Game { get; set; }
 
         public virtual int GetEffectiveAC()
@@ -333,7 +336,7 @@ namespace UnicornHack
             }
             else
             {
-                actorInstance.Sex = level.Game.Roll(1, 2) > 1 ? Sex.Female : Sex.Male;
+                actorInstance.Sex = level.Game.Random.Roll(1, 2) > 1 ? Sex.Female : Sex.Male;
             }
 
             foreach (var ability in Abilities)
@@ -370,7 +373,7 @@ namespace UnicornHack
                 {
                     ability.RemoveReference();
                 }
-                Game.Delete(this);
+                Game.Repository.Delete(this);
             }
         }
 
@@ -410,7 +413,7 @@ namespace UnicornHack
 
         public virtual bool UseStairs(bool up, bool pretend = false)
         {
-            var stairs = Level.Stairs.SingleOrDefault(s =>
+            var stairs = Level.Connections.SingleOrDefault(s =>
                 s.LevelX == LevelX && s.LevelY == LevelY);
 
             var moveToLevel = stairs?.TargetLevel;
@@ -496,6 +499,11 @@ namespace UnicornHack
                 return false;
             }
 
+            if (pretend)
+            {
+                return true;
+            }
+
             ActorMoveEvent.New(this, movee: null, eventOrder: Game.EventOrder++);
 
             // TODO: take terrain into account
@@ -538,7 +546,7 @@ namespace UnicornHack
                 NextActionTick += DefaultActionDelay;
                 return true;
             }
-            var directionIndex = Game.NextRandom(minValue: 0, maxValue: possibleDirectionsToMove.Count);
+            var directionIndex = Game.Random.Next(minValue: 0, maxValue: possibleDirectionsToMove.Count);
 
             var targetCell = ToLevelCell(possibleDirectionsToMove[directionIndex]);
             if (targetCell != null)

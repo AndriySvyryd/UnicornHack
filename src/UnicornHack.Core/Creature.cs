@@ -104,7 +104,7 @@ namespace UnicornHack
                 NextActionTick += DefaultActionDelay;
                 return true;
             }
-            var directionIndex = Game.NextRandom(minValue: 0, maxValue: possibleDirectionsToMove.Count);
+            var directionIndex = Game.Random.Next(minValue: 0, maxValue: possibleDirectionsToMove.Count);
 
             var targetCell = ToLevelCell(possibleDirectionsToMove[directionIndex]);
             if (targetCell != null)

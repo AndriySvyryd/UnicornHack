@@ -22,7 +22,8 @@ namespace UnicornHack.Utils
                     typeof(Ability).GetTypeInfo().Namespace,
                     typeof(Effect).GetTypeInfo().Namespace,
                     typeof(Weight).GetTypeInfo().Namespace,
-                    typeof(MapFragment).GetTypeInfo().Namespace
+                    typeof(MapFragment).GetTypeInfo().Namespace,
+                    typeof(Dimensions).GetTypeInfo().Namespace
                 });
 
         public static T LoadFile<T>(string path)

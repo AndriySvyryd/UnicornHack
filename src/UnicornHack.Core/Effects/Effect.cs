@@ -44,7 +44,7 @@ namespace UnicornHack.Effects
 
         protected virtual void Delete()
         {
-            Game.Delete(this);
+            Game.Repository.Delete(this);
         }
 
         public abstract void Apply(AbilityActivationContext abilityContext);

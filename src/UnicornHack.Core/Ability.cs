@@ -21,15 +21,16 @@ namespace UnicornHack
         public virtual int TimeoutTurnsLeft { get; set; }
         public virtual EquipmentSlot FreeSlotsRequired { get; set; }
         public virtual bool IsActive { get; set; }
-        // If more than one turn - can be interrupted
-        public virtual int DelayTicks { get; set; }
-        public virtual int EnergyPointCost { get; set; }
-        // Targeting mode
-        // Success condition
-        public virtual int EffectDuration { get; set; }
-        public virtual ISet<Effect> Effects { get; set; }
-
         public virtual bool IsUsable { get; set; }
+        public virtual int EnergyPointCost { get; set; }
+        public virtual int DelayTicks { get; set; }
+
+        // TODO: Whether it can be interrupted
+        // TODO: Targeting mode
+        // TODO: Success condition
+        public virtual int EffectDuration { get; set; }
+
+        public virtual ISet<Effect> Effects { get; set; }
 
         #endregion
 
@@ -94,7 +95,7 @@ namespace UnicornHack
                 {
                     effect.RemoveReference();
                 }
-                Game.Delete(this);
+                Game.Repository.Delete(this);
             }
         }
 
@@ -138,7 +139,7 @@ namespace UnicornHack
                     }
                 }
 
-                abilityContext.Succeeded = Game.NextRandom(maxValue: 3) != 0;
+                abilityContext.Succeeded = Game.Random.Next(maxValue: 3) != 0;
                 abilityContext.Ability = new Ability(Game) {Action = Action};
                 eventOrder = Game.EventOrder++;
             }

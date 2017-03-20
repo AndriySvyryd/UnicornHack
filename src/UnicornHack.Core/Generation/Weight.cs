@@ -24,11 +24,24 @@ namespace UnicornHack.Generation
         protected static readonly ParameterExpression TagInstancesParameter =
             Expression.Parameter(typeof(int), name: "tagInstances");
 
+        protected static readonly ParameterExpression ConnectionParameter =
+            Expression.Parameter(typeof(Connection), name: "connection");
+
         public virtual Func<string, byte, int, int, float> CreateFragmentWeightFunction()
         {
             var parameters = new[] {BranchParameter, DepthParameter, InstancesParameter, TagInstancesParameter};
 
             return Expression.Lambda<Func<string, byte, int, int, float>>(GetExpression(parameters), parameters)
+                .Compile();
+        }
+
+        public virtual Func<string, byte, int, int, Connection, float> CreateConnectingFragmentWeightFunction()
+        {
+            var parameters = new[]
+                {BranchParameter, DepthParameter, InstancesParameter, TagInstancesParameter, ConnectionParameter};
+
+            return Expression
+                .Lambda<Func<string, byte, int, int, Connection, float>>(GetExpression(parameters), parameters)
                 .Compile();
         }
 
@@ -64,21 +77,29 @@ namespace UnicornHack.Generation
             => Expression.Constant((float)W);
     }
 
-    public class DefaultWeight : Weight
+    public class DefaultWeight : Weight, ICSScriptSerializable
     {
-        public virtual float Multiplier { get; set; }
+        public virtual float Multiplier { get; set; } = 1;
 
         public override Expression GetExpression(IReadOnlyDictionary<string, ParameterExpression> parameters)
             => Expression.Multiply(Expression.Constant(Multiplier), Expression.Constant((float)DefaultWeight));
+
+        private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<DefaultWeight>(
+            new Dictionary<string, Func<DefaultWeight, object, bool>>
+            {
+                {nameof(Multiplier), (o, v) => (float)v != 1}
+            });
+
+        public ICSScriptSerializer GetSerializer() => Serializer;
     }
 
     public class InfiniteWeight : Weight, ICSScriptSerializable
     {
-        private static readonly CSScriptSerializer Serializer = new ConstructorCSScriptSerializer<InfiniteWeight>();
-        public ICSScriptSerializer GetSerializer() => Serializer;
-
         public override Expression GetExpression(IReadOnlyDictionary<string, ParameterExpression> parameters)
             => Expression.Constant(float.PositiveInfinity);
+
+        private static readonly CSScriptSerializer Serializer = new ConstructorCSScriptSerializer<InfiniteWeight>();
+        public ICSScriptSerializer GetSerializer() => Serializer;
     }
 
     public class NotBranchWeight : Weight
@@ -113,6 +134,7 @@ namespace UnicornHack.Generation
 
             var condition = Expression.Equal(Expression.Constant(Name), BranchParameter);
 
+            // TODO: Negative depth
             if (MinDepth > 1)
             {
                 condition = Expression.AndAlso(condition,
@@ -186,8 +208,8 @@ namespace UnicornHack.Generation
         int ICollection<Weight>.Count => W.Count;
         bool ICollection<Weight>.IsReadOnly => W.IsReadOnly;
 
-        private static readonly MethodInfo MaxMethod = typeof(Math).GetRuntimeMethods().Single(
-            m => m.Name == nameof(Math.Max) && m.ReturnParameter.ParameterType == typeof(float));
+        private static readonly MethodInfo MaxMethod = typeof(Math).GetRuntimeMethods()
+            .Single(m => m.Name == nameof(Math.Max) && m.ReturnParameter.ParameterType == typeof(float));
 
         public override Expression GetExpression(IReadOnlyDictionary<string, ParameterExpression> parameters)
         {
@@ -220,8 +242,8 @@ namespace UnicornHack.Generation
         int ICollection<Weight>.Count => W.Count;
         bool ICollection<Weight>.IsReadOnly => W.IsReadOnly;
 
-        private static readonly MethodInfo MinMethod = typeof(Math).GetRuntimeMethods().Single(
-            m => m.Name == nameof(Math.Min) && m.ReturnParameter.ParameterType == typeof(float));
+        private static readonly MethodInfo MinMethod = typeof(Math).GetRuntimeMethods()
+            .Single(m => m.Name == nameof(Math.Min) && m.ReturnParameter.ParameterType == typeof(float));
 
         public override Expression GetExpression(IReadOnlyDictionary<string, ParameterExpression> parameters)
         {

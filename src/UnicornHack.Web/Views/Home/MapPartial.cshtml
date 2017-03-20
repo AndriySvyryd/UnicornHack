@@ -8,22 +8,22 @@
     {
         for (var x = 0; x < level.Width; x++)
         {
-            var feature = (MapFeature)level.Layout[i];
+            var feature = (MapFeature)level.Terrain[i];
             var symbol = ' ';
             var className = "inherit";
             switch (feature)
             {
                 case MapFeature.Default:
                     break;
-                case MapFeature.Floor:
+                case MapFeature.StoneFloor:
                     symbol = '·';
                     className = "mapFloor";
                     break;
-                case MapFeature.Corridor:
+                case MapFeature.RockFloor:
                     symbol = '█';
                     className = "mapCorridor";
                     break;
-                case MapFeature.Wall:
+                case MapFeature.StoneWall:
                     var neighbour = level.WallNeighbours[i] & 0xF;
                     switch (neighbour)
                     {
@@ -92,7 +92,7 @@
             classes[x, y] = className;
         }
     }
-    foreach (var stairs in level.Stairs)
+    foreach (var stairs in level.Connections)
     {
         characters[stairs.LevelX, stairs.LevelY] = stairs.TargetLevelDepth > stairs.LevelDepth ? '>' : '<';
         classes[stairs.LevelX, stairs.LevelY] = "featureStairs";
@@ -112,7 +112,7 @@
                 className = "itemFood";
                 break;
             case ItemType.Armor:
-                symbol = '[';
+                symbol = '(';
                 className = "itemArmor";
                 break;
             case ItemType.WeaponMeleeShort:

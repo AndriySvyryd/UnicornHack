@@ -1,15 +1,17 @@
 using System;
 using System.Collections.Generic;
+using UnicornHack.Generation;
 using UnicornHack.Utils;
 
-namespace UnicornHack.Generation.Map
+namespace UnicornHack
 {
     public class Branch : ILoadable
     {
         public virtual string Name { get; set; }
-        public virtual int Length { get; set; }
+        public virtual byte Length { get; set; }
         public virtual int GameId { get; private set; }
         public virtual Game Game { get; set; }
+
         public virtual Weight GenerationWeight { get; set; }
         // TODO: Fragment, item and creature generation weight and distribution modifiers
         // TODO: default terrain type for floor/wall/empty space
@@ -22,11 +24,14 @@ namespace UnicornHack.Generation.Map
         {
         }
 
-        protected Branch(Game game)
+        protected Branch(Game game, string name, byte length)
             : this()
         {
             Game = game;
+            Name = name;
+            Length = length;
             Game.Branches.Add(this);
+            Game.Repository.Add(this);
         }
 
         public virtual Branch Instantiate(Game game)
@@ -36,12 +41,7 @@ namespace UnicornHack.Generation.Map
                 throw new InvalidOperationException("This branch is already part of a game.");
             }
 
-            var branchInstance = new Branch(game)
-            {
-                Name = Name
-            };
-
-            return branchInstance;
+            return new Branch(game, Name, Length);
         }
 
         void ILoadable.OnLoad()
@@ -56,7 +56,7 @@ namespace UnicornHack.Generation.Map
 
         public static Branch Get(string name) => Loader.Get(name);
 
-        public static IEnumerable<Branch> GetAllBranches() => Loader.GetAll();
+        public static IReadOnlyList<Branch> GetAllBranches() => Loader.GetAll();
 
         #endregion
     }

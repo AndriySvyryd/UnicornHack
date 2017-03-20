@@ -5,11 +5,15 @@ namespace UnicornHack.Events
     public abstract class SensoryEvent : IReferenceable
     {
         public virtual int Id { get; set; }
+
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public virtual int SensorId { get; private set; }
+
         public virtual Player Sensor { get; set; }
+
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public virtual int GameId { get; private set; }
+
         public virtual Game Game { get; set; }
         public virtual int EventOrder { get; set; }
         public virtual int Tick { get; set; }
@@ -36,7 +40,7 @@ namespace UnicornHack.Events
 
         protected virtual void Delete()
         {
-            Game.Delete(this);
+            Game.Repository.Delete(this);
         }
     }
 }

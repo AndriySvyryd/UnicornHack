@@ -66,6 +66,29 @@ namespace UnicornHack.Utils
             return list;
         }
 
+        public static IEnumerable<Point> AsPoints(this IEnumerable<byte> bytes)
+        {
+            using (var enumerable = bytes.GetEnumerator())
+            {
+                while (enumerable.MoveNext())
+                {
+                    var x = enumerable.Current;
+                    enumerable.MoveNext();
+                    var y = enumerable.Current;
+                    yield return new Point(x, y);
+                }
+            }
+        }
+
+        public static IEnumerable<byte> AsBytes(this IEnumerable<Point> points)
+        {
+            foreach (var point in points)
+            {
+                yield return point.X;
+                yield return point.Y;
+            }
+        }
+
         public static TValue GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
             => dictionary.GetValueOrDefault(key, default(TValue));
 

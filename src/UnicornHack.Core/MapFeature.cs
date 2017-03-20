@@ -5,9 +5,10 @@ namespace UnicornHack
     public enum MapFeature : byte
     {
         Default = 0,
-        Corridor = 1,
-        Floor = 2,
-        Wall = 3,
+        RockFloor = 1,
+        StoneFloor = 2,
+        RockWall = 3,
+        StoneWall = 4,
         Pool = 14
     }
 
@@ -19,10 +20,11 @@ namespace UnicornHack
             switch (feature)
             {
                 case MapFeature.Default:
-                case MapFeature.Wall:
+                case MapFeature.StoneWall:
+                case MapFeature.RockWall:
                     return false;
-                case MapFeature.Floor:
-                case MapFeature.Corridor:
+                case MapFeature.StoneFloor:
+                case MapFeature.RockFloor:
                 case MapFeature.Pool:
                     return true;
                 default:

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using UnicornHack.Effects;
 using UnicornHack.Events;
 using UnicornHack.Generation.Map;
+using UnicornHack.Utils;
 
 namespace UnicornHack.Models
 {
@@ -17,7 +18,7 @@ namespace UnicornHack.Models
         public DbSet<Game> Games { get; set; }
         public DbSet<Branch> Branches { get; set; }
         public DbSet<Level> Levels { get; set; }
-        public DbSet<Stairs> Stairs { get; set; }
+        public DbSet<Connection> Connections { get; set; }
         public DbSet<Player> Characters { get; set; }
         public DbSet<Actor> Actors { get; set; }
         public DbSet<Item> Items { get; set; }
@@ -40,14 +41,32 @@ namespace UnicornHack.Models
             modelBuilder.Entity<Level>(eb =>
             {
                 eb.Ignore(l => l.Players);
-                eb.Property(l => l.Layout).IsRequired();
+                eb.Ignore(l => l.IndexToPoint);
+                eb.Ignore(l => l.PointToIndex);
+                eb.Property(l => l.Terrain).IsRequired();
                 eb.HasKey(l => new {l.GameId, l.BranchName, l.Depth});
-                eb.HasMany(l => l.Stairs)
+                eb.HasMany(l => l.Connections)
                     .WithOne(s => s.Level)
-                    .HasForeignKey(s => new {s.GameId, s.LevelName, s.LevelDepth});
-                eb.HasMany(l => l.IncomingStairs)
+                    .HasForeignKey(s => new {s.GameId, s.BranchName, s.LevelDepth});
+                eb.HasMany(l => l.IncomingConnections)
                     .WithOne(s => s.TargetLevel)
-                    .HasForeignKey(s => new {s.GameId, s.TargetLevelName, s.TargetLevelDepth});
+                    .HasForeignKey(s => new {s.GameId, s.TargetBranchName, s.TargetLevelDepth});
+                eb.HasMany(l => l.Rooms)
+                    .WithOne(r => r.Level)
+                    .HasForeignKey(r => new {r.GameId, r.BranchName, r.LevelDepth});
+            });
+
+            modelBuilder.Entity<Room>(eb =>
+            {
+                eb.Ignore(l => l.BoundingRectangle);
+                eb.Ignore(l => l.DoorwayPoints);
+
+                eb.Property<byte>("_x1");
+                eb.Property<byte>("_x2");
+                eb.Property<byte>("_y1");
+                eb.Property<byte>("_y2");
+
+                eb.HasKey(b => new { b.GameId, b.BranchName, b.LevelDepth, b.Id });
             });
 
             modelBuilder.Entity<Actor>(eb =>
@@ -61,7 +80,7 @@ namespace UnicornHack.Models
                 eb.HasIndex(a => a.Name).IsUnique();
                 eb.HasOne(a => a.Level)
                     .WithMany(l => l.Actors)
-                    .HasForeignKey(a => new {a.GameId, a.LevelName, a.LevelDepth});
+                    .HasForeignKey(a => new {a.GameId, a.BranchName, a.LevelDepth});
                 eb.HasMany(a => a.Abilities)
                     .WithOne()
                     .HasForeignKey(nameof(Ability.GameId), "ActorId")
@@ -83,7 +102,7 @@ namespace UnicornHack.Models
             modelBuilder.Entity<Game>(eb =>
             {
                 eb.Ignore(g => g.Services);
-                eb.Ignore(g => g.Delete);
+                eb.Ignore(g => g.Repository);
                 eb.Ignore(g => g.Players);
                 eb.Property(g => g.Id)
                     .ValueGeneratedOnAdd();
@@ -95,6 +114,10 @@ namespace UnicornHack.Models
                     .WithOne(l => l.Game)
                     .HasForeignKey(l => l.GameId)
                     .OnDelete(DeleteBehavior.Restrict);
+                eb.HasMany(g => g.Rooms)
+                    .WithOne(l => l.Game)
+                    .HasForeignKey(l => l.GameId)
+                    .OnDelete(DeleteBehavior.Restrict);
                 eb.HasMany(g => g.Actors)
                     .WithOne(a => a.Game)
                     .HasForeignKey(a => a.GameId)
@@ -102,7 +125,7 @@ namespace UnicornHack.Models
                 eb.HasMany(g => g.Items)
                     .WithOne(i => i.Game)
                     .HasForeignKey(i => i.GameId);
-                eb.HasMany(g => g.Stairs)
+                eb.HasMany(g => g.Connections)
                     .WithOne(s => s.Game)
                     .HasForeignKey(s => s.GameId)
                     .OnDelete(DeleteBehavior.Restrict);
@@ -117,6 +140,17 @@ namespace UnicornHack.Models
                     .HasForeignKey(e => e.GameId);
             });
 
+            // TODO: Owned type
+            modelBuilder.Entity<SimpleRandom>(eb =>
+            {
+                eb.HasOne<Game>()
+                    .WithOne(g => g.Random)
+                    .HasForeignKey<Game>("RandomId");
+                eb.HasOne<Level>()
+                    .WithOne(l => l.GenerationRandom)
+                    .HasForeignKey<Level>("RandomId");
+            });
+
             modelBuilder.Entity<Item>(eb =>
             {
                 eb.Ignore(i => i.SimpleProperties);
@@ -125,7 +159,7 @@ namespace UnicornHack.Models
                 eb.HasKey(i => new {i.GameId, i.Id});
                 eb.HasOne(i => i.Level)
                     .WithMany(l => l.Items)
-                    .HasForeignKey(i => new {i.GameId, i.LevelName, i.LevelDepth});
+                    .HasForeignKey(i => new {i.GameId, i.BranchName, i.LevelDepth});
                 eb.HasOne(i => i.Actor)
                     .WithMany(a => a.Inventory)
                     .HasForeignKey(i => new {i.GameId, i.ActorId});
@@ -136,10 +170,17 @@ namespace UnicornHack.Models
                     .WithOne()
                     .HasForeignKey(nameof(Ability.GameId), "ItemId");
             });
+
             modelBuilder.Entity<ItemStack>();
             modelBuilder.Entity<Gold>();
 
-            modelBuilder.Entity<Stairs>(eb => { eb.HasKey(s => new {s.GameId, s.Id}); });
+            modelBuilder.Entity<Connection>(eb =>
+            {
+                eb.HasKey(c => new {c.GameId, c.Id});
+                eb.HasOne(c => c.TargetBranch)
+                    .WithMany()
+                    .HasForeignKey(c => new {c.GameId, c.TargetBranchName});
+            });
 
             modelBuilder.Entity<LogEntry>(eb =>
             {

@@ -1,13 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace UnicornHack.Utils
 {
     public class CSScriptLoader<T>
         where T : ILoadable
     {
-        private bool _allLoaded;
+        private IReadOnlyList<T> _objects;
+        private readonly Dictionary<string, T> _nameLookup = new Dictionary<string, T>(StringComparer.Ordinal);
 
         public CSScriptLoader(string relativePath)
         {
@@ -15,30 +17,29 @@ namespace UnicornHack.Utils
         }
 
         public string BasePath { get; }
-        private Dictionary<string, T> NameLookup { get; } = new Dictionary<string, T>(StringComparer.Ordinal);
 
-        public IEnumerable<T> GetAll()
+        public IReadOnlyList<T> GetAll()
         {
-            if (!_allLoaded)
+            if (_objects == null)
             {
                 foreach (var file in
                     Directory.EnumerateFiles(BasePath, CSScriptDeserializer.FilePattern, SearchOption.AllDirectories))
                 {
-                    if (!NameLookup.ContainsKey(
+                    if (!_nameLookup.ContainsKey(
                         CSScriptDeserializer.GetNameFromFilename(Path.GetFileNameWithoutExtension(file))))
                     {
                         Load(file);
                     }
                 }
-                _allLoaded = true;
+                _objects = _nameLookup.Values.ToList();
             }
 
-            return NameLookup.Values;
+            return _objects;
         }
 
         public T Get(string name)
         {
-            if (NameLookup.TryGetValue(name, out T variant))
+            if (_nameLookup.TryGetValue(name, out T variant))
             {
                 return variant;
             }
@@ -49,10 +50,10 @@ namespace UnicornHack.Utils
 
         private T Load(string path)
         {
-            var variant = CSScriptDeserializer.LoadFile<T>(path);
-            variant.OnLoad();
-            NameLookup[variant.Name] = variant;
-            return variant;
+            var instance = CSScriptDeserializer.LoadFile<T>(path);
+            instance.OnLoad();
+            _nameLookup[instance.Name] = instance;
+            return instance;
         }
     }
 }

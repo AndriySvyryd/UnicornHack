@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Microsoft.Extensions.Caching.Memory;
 using UnicornHack.Generation.Map;
 using UnicornHack.Utils;
 
@@ -12,48 +11,49 @@ namespace UnicornHack
     {
         #region State
 
-        private int[,] _pointToIndex;
-        private Point[] _indexToPoint;
         private PathFinder _pathFinder;
         private readonly Func<Point, int, int?> _canMoveDelegate;
 
         public virtual string BranchName { get; private set; }
         public virtual Branch Branch { get; set; }
         public virtual byte Depth { get; set; }
-        public byte Height { get; set; }
-        public byte Width { get; set; }
-        public virtual byte[] Layout { get; set; }
+        public virtual byte Height { get; set; }
+        public virtual byte Width { get; set; }
+        public virtual Rectangle BoundingRectangle => new Rectangle(new Point(0, 0), Width, Height);
+        public virtual byte[] Terrain { get; set; }
         public virtual byte[] WallNeighbours { get; set; }
-
+        public virtual int NextRoomId { get; set; }
         public virtual int CurrentTick { get; set; }
+        public virtual SimpleRandom GenerationRandom { get; set; }
 
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public virtual int GameId { get; private set; }
+
         public virtual Game Game { get; set; }
+        public virtual ICollection<Room> Rooms { get; private set; } = new HashSet<Room>();
         public virtual ICollection<Item> Items { get; private set; } = new HashSet<Item>();
 
         public virtual PriorityQueue<Actor> Actors { get; private set; } =
             new PriorityQueue<Actor>(Actor.TickComparer.Instance);
 
-        public virtual ICollection<Stairs> Stairs { get; private set; } = new HashSet<Stairs>();
-        public virtual ICollection<Stairs> IncomingStairs { get; private set; } = new HashSet<Stairs>();
+        public virtual ICollection<Connection> Connections { get; private set; } = new HashSet<Connection>();
+        public virtual ICollection<Connection> IncomingConnections { get; private set; } = new HashSet<Connection>();
         public virtual IEnumerable<Player> Players => Actors.OfType<Player>();
 
-        // Order matters
+        public int[,] PointToIndex { get; private set; }
+        public Point[] IndexToPoint { get; private set; }
+
+        // Order matters, see Direction.cs
         public static readonly Vector[] MovementDirections =
         {
-            new Vector(x: 0, y: -1), new Vector(x: 1, y: 0),
-            new Vector(x: 0, y: 1), new Vector(-1, y: 0),
-            new Vector(x: -1, y: -1), new Vector(x: 1, y: -1),
-            new Vector(x: 1, y: 1), new Vector(-1, y: 1)
+            new Vector(x: 0, y: -1), new Vector(x: 1, y: 0), new Vector(x: 0, y: 1), new Vector(-1, y: 0),
+            new Vector(x: -1, y: -1), new Vector(x: 1, y: -1), new Vector(x: 1, y: 1), new Vector(-1, y: 1)
         };
 
         public static readonly byte[] OppositeDirectionIndexes =
         {
-            2, 3,
-            0, 1,
-            6, 7,
-            4, 5
+            2, 3, 0, 1,
+            6, 7, 4, 5
         };
 
         #endregion
@@ -65,171 +65,91 @@ namespace UnicornHack
             _canMoveDelegate = CanMove;
         }
 
-        public Level(Branch branch, byte depth)
+        public Level(Branch branch, byte depth, int seed)
             : this()
         {
-            BranchName = branch.Name;
             Game = branch.Game;
             Game.Levels.Add(this);
             Branch = branch;
             branch.Levels.Add(this);
             Depth = depth;
-            Layout = new byte[0];
+            if (branch.Length < depth)
+            {
+                throw new InvalidOperationException("Level created beyond branch length");
+            }
+            Game.Repository.Add(this);
+            Terrain = new byte[0];
             WallNeighbours = new byte[0];
+            GenerationRandom = new SimpleRandom {Seed = seed};
         }
 
-        private void EnsureInitialized()
+        public void EnsureInitialized()
         {
             if (_pathFinder == null)
             {
-                var lookupTables = Game.Services.SharedCache.GetOrCreate(
-                    typeof(Level).GetHashCode() ^ (Width << 8 + Height), e =>
-                    {
-                        var pointToIndex = new int[Width, Height];
-                        var indexToPoint = new Point[Width * Height];
-                        var i = 0;
-                        for (byte y = 0; y < Height; y++)
-                        {
-                            for (byte x = 0; x < Width; x++)
-                            {
-                                pointToIndex[x, y] = i;
-                                indexToPoint[i++] = new Point(x, y);
-                            }
-                        }
-
-                        return Tuple.Create(pointToIndex, indexToPoint);
-                    });
-
-                _pointToIndex = lookupTables.Item1;
-                _indexToPoint = lookupTables.Item2;
-                _pathFinder = new PathFinder(_canMoveDelegate, _pointToIndex, _indexToPoint);
+                (PointToIndex, IndexToPoint) = Game.GetPointIndex(Width, Height);
+                _pathFinder = new PathFinder(_canMoveDelegate, PointToIndex, IndexToPoint);
             }
         }
 
-        // 1. Choose an encompassing fragment
-        // 2. For every existing connection to this level generate a destination fragment.
-        // 3. Choose up to 3 source fragments, depending on amount of space left to fill.
-        //     At least 1 to the next branch level if not final or another branch if final.
-        //     At most 1 per branch if it's not the current branch.
-        // 4. Fill the layout cells depending on specified size, tag, number of connections, position on the map
-        // 5. Fill the empty space with snapping fragments and connect them to ovewritable fragments
-
         public bool EnsureGenerated()
         {
-            if (Width != 0
-                || Depth == 0)
+            if (Width != 0)
             {
                 return false;
             }
 
-            var fragment = Game.Pick(
-                EncompassingMapFragment.GetAllEncompassingMapFragments().ToList(),
-                f => f.GetWeight(BranchName, Depth));
+            // TODO: Log parameters if failed
+            var fragment = GenerationRandom.Pick(
+                EncompassingMapFragment.GetAllEncompassingMapFragments(), f => f.GetWeight(BranchName, Depth));
 
             Height = fragment.LevelHeight;
             Width = fragment.LevelWidth;
-            Layout = new byte[Height * Width];
+
+            Terrain = new byte[Height * Width];
             WallNeighbours = new byte[Height * Width];
 
             EnsureInitialized();
 
-            PlaceFragment(fragment);
+            (fragment.Layout ?? new EmptyLayout()).Fill(this, fragment);
+
+            // TODO: Generate monsters and items
 
             return true;
         }
 
-        private void PlaceFragment(MapFragment fragment)
-        {
-            if (fragment.PayloadArea.Width > Width)
-            {
-                throw new InvalidOperationException(
-                    $"The fragment's width is {fragment.PayloadArea.Width}, but the level's is {Width}");
-            }
-            if (fragment.PayloadArea.Height > Height)
-            {
-                throw new InvalidOperationException(
-                    $"The fragment's height is {fragment.PayloadArea.Height}, but the level's is {Height}");
-            }
 
-            var layout = fragment.ByteMap;
-            byte originX = 0, originY = 0;
-            byte x = originX, y = originY;
-            // ReSharper disable once ForCanBeConvertedToForeach
-            for (var i = 0; i < layout.Length; i++)
-            {
-                var mapPoint = (char)layout[i];
-                var feature = MapFeature.Default;
-                switch (mapPoint)
-                {
-                    case ' ':
-                        break;
-                    case '.':
-                        feature = MapFeature.Floor;
-                        break;
-                    case ',':
-                        feature = MapFeature.Corridor;
-                        break;
-                    case '#':
-                        feature = MapFeature.Wall;
-                        AddNeighbours(WallNeighbours, x, y);
-                        break;
-                    case '=':
-                        feature = MapFeature.Pool;
-                        break;
-                    case '<':
-                        feature = MapFeature.Floor;
-                        Stairs.Add(UnicornHack.Stairs.CreateUpStairs(Game, this, x, y));
-                        break;
-                    case '>':
-                        feature = MapFeature.Floor;
-                        Stairs.Add(UnicornHack.Stairs.CreateDownStairs(Game, this, x, y));
-                        break;
-                    case '$':
-                        feature = MapFeature.Floor;
-                        Item.Get("gold coin").Instantiate(new LevelCell(this, x, y), quantity: 9);
-                        break;
-                    case '%':
-                        feature = MapFeature.Floor;
-                        Item.Get("carrot").Instantiate(new LevelCell(this, x, y));
-                        break;
-                    case ')':
-                        feature = MapFeature.Floor;
-                        break;
-                    case '[':
-                        feature = MapFeature.Floor;
-                        break;
-                    case 'b':
-                        feature = MapFeature.Floor;
-                        Creature.Get("lightning bug").Instantiate(this, x, y);
-                        break;
-                    case 'B':
-                        feature = MapFeature.Floor;
-                        Creature.Get("firefly").Instantiate(this, x, y);
-                        break;
-                    case '~':
-                    default:
-                        throw new InvalidOperationException($"Unsupported map character '{mapPoint}' at {x},{y}");
-                }
-                Layout[x + Width * y] = (byte)feature;
-                x++;
-
-                if (x == fragment.Width + originX)
-                {
-                    x = 0;
-                    y++;
-                }
-            }
-
-            IncrementInstanceCounts(fragment);
-        }
-
-        private void IncrementInstanceCounts(MapFragment fragment)
+        public void IncrementInstanceCounts(MapFragment fragment)
         {
             // Increment fragment instance count on level, branch, game
             // Increment each tag instance count on level, branch, game
         }
 
-        private void AddNeighbours(byte[] neighbours, byte x, byte y)
+        public void AddNeighbours(MapFeature feature, byte x, byte y)
+        {
+            switch (feature)
+            {
+                case MapFeature.StoneWall:
+                    ModifyNeighbours(WallNeighbours, x, y, add: true);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unsupported feature for neighbour tracking: {feature}");
+            }
+        }
+
+        public void RemoveNeighbours(MapFeature feature, byte x, byte y)
+        {
+            switch (feature)
+            {
+                case MapFeature.StoneWall:
+                    ModifyNeighbours(WallNeighbours, x, y, add: false);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unsupported feature for neighbour tracking: {feature}");
+            }
+        }
+
+        private void ModifyNeighbours(byte[] neighbours, byte x, byte y, bool add)
         {
             for (var directionIndex = 0; directionIndex < 8; directionIndex++)
             {
@@ -242,8 +162,16 @@ namespace UnicornHack
                     continue;
                 }
 
-                var newLocationIndex = _pointToIndex[newLocationX, newLocationY];
-                neighbours[newLocationIndex] |= (byte)(1 << OppositeDirectionIndexes[directionIndex]);
+                var newLocationIndex = PointToIndex[newLocationX, newLocationY];
+                var neighbourBit = (byte)(1 << OppositeDirectionIndexes[directionIndex]);
+                if (add)
+                {
+                    neighbours[newLocationIndex] |= neighbourBit;
+                }
+                else
+                {
+                    neighbours[newLocationIndex] &= (byte)~neighbourBit;
+                }
             }
         }
 
@@ -346,28 +274,38 @@ namespace UnicornHack
                 return null;
             }
 
-            var newLocationIndex = _pointToIndex[newLocationX, newLocationY];
+            var newLocationIndex = PointToIndex[newLocationX, newLocationY];
             return CanMoveTo(newLocationIndex) ? (int?)newLocationIndex : null;
         }
 
-        public bool CanMoveTo(Point newLocation)
-        {
-            // Since byte is unsigned there is no need to compare with 0
-            if (newLocation.X >= Width || newLocation.Y >= Height)
-            {
-                return false;
-            }
+        public bool IsValid(Point point)
+            => point.X < Width && point.Y < Height; // Since byte is unsigned there is no need to compare with 0
 
-            var newLocationIndex = _pointToIndex[newLocation.X, newLocation.Y];
-            return CanMoveTo(newLocationIndex);
-        }
+        public bool CanMoveTo(Point location)
+            => IsValid(location)
+               && CanMoveTo(PointToIndex[location.X, location.Y]);
 
-        private bool CanMoveTo(int newLocationIndex)
+        private bool CanMoveTo(int locationIndex)
         {
             // TODO: Use locomotion type
             // TODO: block if directionIndex > 3 (diagonal) and path is too narrow to squeeze through
             // TODO: Also avoid actors (at least adjacent ones)
-            return ((MapFeature)Layout[newLocationIndex]).CanMoveTo();
+            return ((MapFeature)Terrain[locationIndex]).CanMoveTo();
+        }
+
+        public bool CanPlaceCorridor(Point location)
+        {
+            var feature = (MapFeature)Terrain[PointToIndex[location.X, location.Y]];
+            switch (feature)
+            {
+                case MapFeature.Default:
+                case MapFeature.RockFloor:
+                case MapFeature.StoneFloor:
+                case MapFeature.RockWall:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         public virtual IReadOnlyList<Vector> GetPossibleMovementDirections(Point currentLocation, bool safe)
@@ -404,7 +342,7 @@ namespace UnicornHack
             var itemOrStack = item.StackWith(Items.Where(i => i.LevelX == x && i.LevelY == y));
             if (itemOrStack != null)
             {
-                itemOrStack.LevelName = BranchName;
+                itemOrStack.BranchName = BranchName;
                 itemOrStack.LevelDepth = Depth;
                 itemOrStack.Level = this;
                 itemOrStack.LevelX = x;
@@ -421,7 +359,7 @@ namespace UnicornHack
 
         public virtual bool Remove(Item item)
         {
-            item.LevelName = null;
+            item.BranchName = null;
             item.LevelDepth = null;
             item.Level = null;
             item.LevelX = null;

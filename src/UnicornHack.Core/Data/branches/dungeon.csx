@@ -1,1 +1,1 @@
-new Branch { Name = "dungeon" }
+new Branch { Name = "dungeon", Length = 10 }

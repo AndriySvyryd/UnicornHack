@@ -119,9 +119,7 @@ namespace UnicornHack.Utils
                 while (pointX != currentNode.PreviousX
                        || pointY != currentNode.PreviousY)
                 {
-                    Point point;
-                    point.X = pointX;
-                    point.Y = pointY;
+                    var point = new Point(pointX, pointY);
                     pointX = currentNode.PreviousX;
                     pointY = currentNode.PreviousY;
 

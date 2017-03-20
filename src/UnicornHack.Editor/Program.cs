@@ -18,11 +18,14 @@ namespace UnicornHack.Editor
             SerializeItems(verify: true);
             SerializeBranches(verify: true);
             SerializeNormalFragments(verify: true);
+            SerializeConnectingFragments(verify: true);
             SerializeEncompassingFragments(verify: true);
         }
 
         private static void SerializePlayers(bool verify = false)
         {
+            Console.WriteLine("Serializing players...");
+
             Directory.CreateDirectory(PlayerDirectory);
 
             foreach (var playerVariant in Player.GetAllPlayerVariants())
@@ -42,6 +45,8 @@ namespace UnicornHack.Editor
 
         private static void SerializeCreatures(bool verify = false)
         {
+            Console.WriteLine("Serializing creatures...");
+
             Directory.CreateDirectory(CreatureDirectory);
 
             foreach (var creatureVariant in Creature.GetAllCreatureVariants())
@@ -61,6 +66,8 @@ namespace UnicornHack.Editor
 
         private static void SerializeItems(bool verify = false)
         {
+            Console.WriteLine("Serializing items...");
+
             Directory.CreateDirectory(ItemDirectory);
 
             foreach (var item in Item.GetAllItemVariants())
@@ -80,6 +87,8 @@ namespace UnicornHack.Editor
 
         private static void SerializeBranches(bool verify = false)
         {
+            Console.WriteLine("Serializing branches...");
+
             Directory.CreateDirectory(BranchDirectory);
 
             foreach (var branch in Branch.GetAllBranches())
@@ -99,9 +108,11 @@ namespace UnicornHack.Editor
 
         private static void SerializeNormalFragments(bool verify = false)
         {
+            Console.WriteLine("Serializing normal fragments...");
+
             Directory.CreateDirectory(MapFragmentDirectory);
 
-            foreach (var fragment in MapFragment.GetAllMapFragments())
+            foreach (var fragment in MapFragment.GetAllNormalMapFragments())
             {
                 var script = CSScriptSerializer.Serialize(fragment);
 
@@ -116,8 +127,31 @@ namespace UnicornHack.Editor
             }
         }
 
+        private static void SerializeConnectingFragments(bool verify = false)
+        {
+            Console.WriteLine("Serializing connecting fragments...");
+
+            Directory.CreateDirectory(ConnectingMapFragmentDirectory);
+
+            foreach (var fragment in ConnectingMapFragment.GetAllConnectingMapFragments())
+            {
+                var script = CSScriptSerializer.Serialize(fragment);
+
+                File.WriteAllText(
+                    Path.Combine(ConnectingMapFragmentDirectory, CSScriptDeserializer.GetFilename(fragment.Name)),
+                    script);
+
+                if (verify)
+                {
+                    Verify(script, fragment);
+                }
+            }
+        }
+
         private static void SerializeEncompassingFragments(bool verify = false)
         {
+            Console.WriteLine("Serializing encompassing fragments...");
+
             Directory.CreateDirectory(EncompassingMapFragmentDirectory);
 
             foreach (var fragment in EncompassingMapFragment.GetAllEncompassingMapFragments())
@@ -152,6 +186,14 @@ namespace UnicornHack.Editor
                 null, null);
 
         private static void Verify(string script, MapFragment fragment)
+            => Verify<MapFragment>(script, f => f.Name == fragment.Name && VerifyNoUnicode(fragment),
+                null, null);
+
+        private static void Verify(string script, ConnectingMapFragment fragment)
+            => Verify<MapFragment>(script, f => f.Name == fragment.Name && VerifyNoUnicode(fragment),
+                null, null);
+
+        private static void Verify(string script, EncompassingMapFragment fragment)
             => Verify<MapFragment>(script, f => f.Name == fragment.Name && VerifyNoUnicode(fragment),
                 null, null);
 
@@ -215,7 +257,8 @@ namespace UnicornHack.Editor
                 {
                     foreach (var valuedProperty in valuedProperties)
                     {
-                        if (!CustomProperties.TryGetValue(valuedProperty.Key, out CustomPropertyDescription description))
+                        if (!CustomProperties.TryGetValue(valuedProperty.Key,
+                            out CustomPropertyDescription description))
                         {
                             throw new InvalidOperationException("Invalid valued property: " + valuedProperty);
                         }
@@ -264,8 +307,8 @@ namespace UnicornHack.Editor
                 Creature.BasePath,
                 Item.BasePath,
                 Branch.Loader.BasePath,
-                MapFragment.Loader.BasePath,
-                EncompassingMapFragment.Loader.BasePath
+                MapFragment.NormalLoader.BasePath,
+                EncompassingMapFragment.EncompassingLoader.BasePath
             });
 
         public static readonly string PlayerDirectory =
@@ -289,13 +332,18 @@ namespace UnicornHack.Editor
 
         public static readonly string MapFragmentDirectory =
             Path.Combine(BaseDirectory, "new",
-                MapFragment.Loader.BasePath.Substring(BaseDirectory.Length,
-                    MapFragment.Loader.BasePath.Length - BaseDirectory.Length));
+                MapFragment.NormalLoader.BasePath.Substring(BaseDirectory.Length,
+                    MapFragment.NormalLoader.BasePath.Length - BaseDirectory.Length));
+
+        public static readonly string ConnectingMapFragmentDirectory =
+            Path.Combine(BaseDirectory, "new",
+                ConnectingMapFragment.ConnectingLoader.BasePath.Substring(BaseDirectory.Length,
+                    ConnectingMapFragment.ConnectingLoader.BasePath.Length - BaseDirectory.Length));
 
         public static readonly string EncompassingMapFragmentDirectory =
             Path.Combine(BaseDirectory, "new",
-                EncompassingMapFragment.Loader.BasePath.Substring(BaseDirectory.Length,
-                    EncompassingMapFragment.Loader.BasePath.Length - BaseDirectory.Length));
+                EncompassingMapFragment.EncompassingLoader.BasePath.Substring(BaseDirectory.Length,
+                    EncompassingMapFragment.EncompassingLoader.BasePath.Length - BaseDirectory.Length));
 
         private static string GetCommonPrefix(IReadOnlyList<string> strings)
         {
