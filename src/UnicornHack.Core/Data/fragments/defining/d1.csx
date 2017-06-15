@@ -1,10 +1,8 @@
-new EncompassingMapFragment
+new DefiningMapFragment
 {
     Name = "d1",
     GenerationWeight = new BranchWeight { W = new ConstantWeight { }, Name = "dungeon", MinDepth = 1, MaxDepth = 1 },
     NoRandomDoorways = true,
-    LevelHeight = 40,
-    LevelWidth = 80,
     Map = @"
                      ###########                 #######
                      #..........,,,,,,,,,,,,,,,,,....%..,,

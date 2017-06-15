@@ -115,7 +115,8 @@ a:hover {
 }
 
 .mapFloor,
-.mapWall {
+.mapWall,
+.mapArchway {
     color: grey;
 }
 

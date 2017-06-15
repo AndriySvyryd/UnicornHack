@@ -1,4 +1,4 @@
-new EncompassingMapFragment
+new DefiningMapFragment
 {
     Name = "d2",
     GenerationWeight = new BranchWeight { W = new ConstantWeight { }, Name = "dungeon", MinDepth = 2, MaxDepth = 2 },

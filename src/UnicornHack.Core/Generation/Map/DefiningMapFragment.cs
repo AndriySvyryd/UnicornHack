@@ -5,10 +5,10 @@ using UnicornHack.Utils;
 
 namespace UnicornHack.Generation.Map
 {
-    public class EncompassingMapFragment : ConnectingMapFragment
+    public class DefiningMapFragment : ConnectingMapFragment
     {
-        public virtual byte LevelHeight { get; set; }
-        public virtual byte LevelWidth { get; set; }
+        public virtual byte LevelHeight { get; set; } = 40;
+        public virtual byte LevelWidth { get; set; } = 80;
         public virtual Layout Layout { get; set; }
         public virtual MapFeature DefaultTerrain { get; set; }
         public virtual MapFeature DefaultPathTerrain { get; set; }
@@ -39,28 +39,28 @@ namespace UnicornHack.Generation.Map
 
         #region Serialization
 
-        public static readonly CSScriptLoader<EncompassingMapFragment> EncompassingLoader =
-            new CSScriptLoader<EncompassingMapFragment>(@"data\fragments\encompassing\");
+        public static readonly CSScriptLoader<DefiningMapFragment> DefiningLoader =
+            new CSScriptLoader<DefiningMapFragment>(@"data\fragments\defining\");
 
-        public static EncompassingMapFragment GetEncompassingMapFragment(string name) => EncompassingLoader.Get(name);
+        public static DefiningMapFragment GetDefiningMapFragment(string name) => DefiningLoader.Get(name);
 
-        public static IReadOnlyList<EncompassingMapFragment> GetAllEncompassingMapFragments() => EncompassingLoader
+        public static IReadOnlyList<DefiningMapFragment> GetAllDefiningMapFragments() => DefiningLoader
             .GetAll();
 
-        private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<EncompassingMapFragment>(
-            GetPropertyConditions<EncompassingMapFragment>());
+        private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<DefiningMapFragment>(
+            GetPropertyConditions<DefiningMapFragment>());
 
-        protected new static Dictionary<string, Func<TEncompassingMapFragment, object, bool>> GetPropertyConditions
-            <TEncompassingMapFragment>()
-            where TEncompassingMapFragment : EncompassingMapFragment
+        protected new static Dictionary<string, Func<TDefiningMapFragment, object, bool>> GetPropertyConditions
+            <TDefiningMapFragment>()
+            where TDefiningMapFragment : DefiningMapFragment
         {
-            var propertyConditions = ConnectingMapFragment.GetPropertyConditions<TEncompassingMapFragment>();
+            var propertyConditions = ConnectingMapFragment.GetPropertyConditions<TDefiningMapFragment>();
             var mapCondition = propertyConditions[nameof(Map)];
             propertyConditions.Remove(nameof(Map));
 
             propertyConditions.Add(nameof(NoRandomDoorways), (o, v) => (bool)v);
-            propertyConditions.Add(nameof(LevelHeight), (o, v) => (byte)v != 0);
-            propertyConditions.Add(nameof(LevelWidth), (o, v) => (byte)v != 0);
+            propertyConditions.Add(nameof(LevelHeight), (o, v) => (byte)v != 40);
+            propertyConditions.Add(nameof(LevelWidth), (o, v) => (byte)v != 80);
             propertyConditions.Add(nameof(Layout), (o, v) => v != null && !(v is EmptyLayout));
             propertyConditions.Add(nameof(Map), mapCondition);
             return propertyConditions;

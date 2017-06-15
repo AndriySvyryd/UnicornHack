@@ -19,7 +19,7 @@ namespace UnicornHack.Editor
             SerializeBranches(verify: true);
             SerializeNormalFragments(verify: true);
             SerializeConnectingFragments(verify: true);
-            SerializeEncompassingFragments(verify: true);
+            SerializeDefiningFragments(verify: true);
         }
 
         private static void SerializePlayers(bool verify = false)
@@ -148,18 +148,18 @@ namespace UnicornHack.Editor
             }
         }
 
-        private static void SerializeEncompassingFragments(bool verify = false)
+        private static void SerializeDefiningFragments(bool verify = false)
         {
-            Console.WriteLine("Serializing encompassing fragments...");
+            Console.WriteLine("Serializing defining fragments...");
 
-            Directory.CreateDirectory(EncompassingMapFragmentDirectory);
+            Directory.CreateDirectory(DefiningMapFragmentDirectory);
 
-            foreach (var fragment in EncompassingMapFragment.GetAllEncompassingMapFragments())
+            foreach (var fragment in DefiningMapFragment.GetAllDefiningMapFragments())
             {
                 var script = CSScriptSerializer.Serialize(fragment);
 
                 File.WriteAllText(
-                    Path.Combine(EncompassingMapFragmentDirectory, CSScriptDeserializer.GetFilename(fragment.Name)),
+                    Path.Combine(DefiningMapFragmentDirectory, CSScriptDeserializer.GetFilename(fragment.Name)),
                     script);
 
                 if (verify)
@@ -190,11 +190,11 @@ namespace UnicornHack.Editor
                 null, null);
 
         private static void Verify(string script, ConnectingMapFragment fragment)
-            => Verify<MapFragment>(script, f => f.Name == fragment.Name && VerifyNoUnicode(fragment),
+            => Verify<ConnectingMapFragment>(script, f => f.Name == fragment.Name && VerifyNoUnicode(fragment),
                 null, null);
 
-        private static void Verify(string script, EncompassingMapFragment fragment)
-            => Verify<MapFragment>(script, f => f.Name == fragment.Name && VerifyNoUnicode(fragment),
+        private static void Verify(string script, DefiningMapFragment fragment)
+            => Verify<DefiningMapFragment>(script, f => f.Name == fragment.Name && VerifyNoUnicode(fragment),
                 null, null);
 
         private static bool VerifyNoUnicode(MapFragment fragment)
@@ -308,7 +308,7 @@ namespace UnicornHack.Editor
                 Item.BasePath,
                 Branch.Loader.BasePath,
                 MapFragment.NormalLoader.BasePath,
-                EncompassingMapFragment.EncompassingLoader.BasePath
+                DefiningMapFragment.DefiningLoader.BasePath
             });
 
         public static readonly string PlayerDirectory =
@@ -340,10 +340,10 @@ namespace UnicornHack.Editor
                 ConnectingMapFragment.ConnectingLoader.BasePath.Substring(BaseDirectory.Length,
                     ConnectingMapFragment.ConnectingLoader.BasePath.Length - BaseDirectory.Length));
 
-        public static readonly string EncompassingMapFragmentDirectory =
+        public static readonly string DefiningMapFragmentDirectory =
             Path.Combine(BaseDirectory, "new",
-                EncompassingMapFragment.EncompassingLoader.BasePath.Substring(BaseDirectory.Length,
-                    EncompassingMapFragment.EncompassingLoader.BasePath.Length - BaseDirectory.Length));
+                DefiningMapFragment.DefiningLoader.BasePath.Substring(BaseDirectory.Length,
+                    DefiningMapFragment.DefiningLoader.BasePath.Length - BaseDirectory.Length));
 
         private static string GetCommonPrefix(IReadOnlyList<string> strings)
         {

@@ -60,6 +60,7 @@ namespace UnicornHack.Models
             {
                 eb.Ignore(l => l.BoundingRectangle);
                 eb.Ignore(l => l.DoorwayPoints);
+                eb.Ignore(l => l.InsidePoints);
 
                 eb.Property<byte>("_x1");
                 eb.Property<byte>("_x2");

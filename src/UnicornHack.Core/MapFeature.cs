@@ -9,6 +9,7 @@ namespace UnicornHack
         StoneFloor = 2,
         RockWall = 3,
         StoneWall = 4,
+        StoneArchway = 5,
         Pool = 14
     }
 
@@ -25,6 +26,7 @@ namespace UnicornHack
                     return false;
                 case MapFeature.StoneFloor:
                 case MapFeature.RockFloor:
+                case MapFeature.StoneArchway:
                 case MapFeature.Pool:
                     return true;
                 default:

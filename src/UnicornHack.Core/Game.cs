@@ -15,7 +15,7 @@ namespace UnicornHack
 
         public virtual int NextPlayerTick { get; set; }
         public virtual int EventOrder { get; set; }
-        public virtual int? NonRandomSeed { get; set; }
+        public virtual int? InitialSeed { get; set; }
         public virtual SimpleRandom Random { get; set; }
 
         public virtual int NextActorId { get; set; }

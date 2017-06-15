@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UnicornHack.Effects;
 using UnicornHack.Events;
-using UnicornHack.Generation.Map;
 using UnicornHack.Models;
 using UnicornHack.Models.GameViewModels;
 using UnicornHack.Services;
@@ -103,7 +101,7 @@ namespace UnicornHack.Controllers
                 var game = new Game
                 {
                     Random = new SimpleRandom {Seed = seed},
-                    NonRandomSeed = seed
+                    InitialSeed = seed
                 };
                 Initialize(game);
                 _dbContext.Games.Add(game);

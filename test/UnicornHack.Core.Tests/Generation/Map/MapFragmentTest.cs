@@ -135,9 +135,9 @@ PP
             var seed = Environment.TickCount;
             fragment.WriteMap(
                 level.BoundingRectangle.PlaceInside(fragment.PayloadArea, new SimpleRandom {Seed = seed}).Value,
-                (c, x, y) =>
+                level,
+                (c, point, l, s) =>
                 {
-                    var point = new Point(x, y);
                     if (c != ' ')
                     {
                         input.Add(point);
@@ -145,16 +145,17 @@ PP
                     switch (c)
                     {
                         case 'I':
-                            expectedInside.Add(point);
+                            s.Item1.Add(point);
                             break;
                         case 'P':
-                            expectedPerimeter.Add(point);
+                            s.Item2.Add(point);
                             break;
                         case 'O':
-                            expectedOutside.Add(point);
+                            s.Item3.Add(point);
                             break;
                     }
-                });
+                },
+                (expectedInside, expectedPerimeter, expectedOutside));
 
             var inside = new List<Point>();
             var perimeter = new List<Point>();

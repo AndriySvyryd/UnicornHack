@@ -32,12 +32,13 @@ namespace UnicornHack
         private byte _y2;
 
         public IReadOnlyList<Point> DoorwayPoints { get; }
+        public IReadOnlyList<Point> InsidePoints { get; }
 
         public Room()
         {
         }
 
-        public Room(Level level, Rectangle boundingRectangle, IReadOnlyList<Point> doorwayPoints)
+        public Room(Level level, Rectangle boundingRectangle, IReadOnlyList<Point> doorwayPoints, IReadOnlyList<Point> insidePoints)
         {
             Game = level.Game;
             Level = level;
@@ -46,6 +47,7 @@ namespace UnicornHack
 
             BoundingRectangle = boundingRectangle;
             DoorwayPoints = doorwayPoints ?? new Point[0];
+            InsidePoints = insidePoints ?? new Point[0];
         }
 
         public Room GetClosest(IEnumerable<Room> rooms)

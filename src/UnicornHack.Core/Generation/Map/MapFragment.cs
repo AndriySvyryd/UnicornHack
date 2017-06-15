@@ -226,80 +226,62 @@ namespace UnicornHack.Generation.Map
             }
 
             var doorwayPoints = new List<Point>();
+            var perimeterPoints = new List<Point>();
+            var insidePoints = new List<Point>();
             var points = new List<Point>();
-            WriteMap(target.Value, (c, x, y) =>
+            WriteMap(target.Value, level, Write, (doorwayPoints, perimeterPoints, insidePoints, points));
+
+            if (!NoRandomDoorways
+                && doorwayPoints.Count == 0)
             {
-                var feature = MapFeature.Default;
-                switch (c)
-                {
-                    case '.':
-                        feature = MapFeature.StoneFloor;
-                        goto case 'X';
-                    case ',':
-                        feature = MapFeature.RockFloor;
-                        goto case 'X';
-                    case '?':
-                        feature = MapFeature.StoneFloor;
-                        doorwayPoints.Add(new Point(x, y));
-                        goto case 'X';
-                    case '#':
-                        feature = MapFeature.StoneWall;
-                        level.AddNeighbours(feature, x, y);
-                        goto case 'X';
-                    case '=':
-                        feature = MapFeature.Pool;
-                        goto case 'X';
-                    case '<':
-                    case '{':
-                    case '[':
-                    case '>':
-                    case '}':
-                    case ']':
-                        feature = MapFeature.StoneFloor;
-                        CreateConnection(level, new Point(x, y), c);
-                        goto case 'X';
-                    case '$':
-                        feature = MapFeature.StoneFloor;
-                        Item.Get("gold coin").Instantiate(new LevelCell(level, x, y), quantity: 9);
-                        goto case 'X';
-                    case '%':
-                        feature = MapFeature.StoneFloor;
-                        Item.Get("carrot").Instantiate(new LevelCell(level, x, y));
-                        goto case 'X';
-                    case ')':
-                        feature = MapFeature.StoneFloor;
-                        goto case 'X';
-                    case '(':
-                        feature = MapFeature.StoneFloor;
-                        goto case 'X';
-                    case 'b':
-                        feature = MapFeature.StoneFloor;
-                        Creature.Get("lightning bug").Instantiate(level, x, y);
-                        goto case 'X';
-                    case 'B':
-                        feature = MapFeature.StoneFloor;
-                        Creature.Get("firefly").Instantiate(level, x, y);
-                        goto case 'X';
-                    case 'X':
-                        points.Add(new Point(x, y));
-                        break;
-                    case ' ':
-                        break;
-                    default:
-                        throw new InvalidOperationException($"Unsupported map character '{c}' at {x},{y}");
-                }
+                // TODO: find doorway candidates in the perimeter walls
+            }
 
-                level.Terrain[level.PointToIndex[x, y]] = (byte)feature;
-            });
-
-            return BuildRoom(level, points,
-                NoRandomDoorways ? null : doorwayPoints,
-                new Rectangle(target.Value, PayloadArea.Width, PayloadArea.Height), null, null, null);
+            return new Room(level, new Rectangle(target.Value, PayloadArea.Width, PayloadArea.Height), doorwayPoints,
+                insidePoints);
         }
 
-        protected virtual void CreateConnection(Level level, Point point, char? glyph)
-            => throw new InvalidOperationException("Only " + nameof(ConnectingMapFragment) + " or "
-                                                   + nameof(EncompassingMapFragment) + " can have a connection.");
+        protected virtual void Write(char c, Point point, Level level,
+            (List<Point> doorwayPoints, List<Point> perimeterPoints, List<Point> insidePoints, List<Point> points) state)
+        {
+            (List<Point> doorwayPoints, List<Point> perimeterPoints, List<Point> insidePoints, List<Point> points) = state;
+            var feature = MapFeature.Default;
+            switch (c)
+            {
+                case '.':
+                    feature = MapFeature.StoneFloor;
+                    insidePoints.Add(point);
+                    goto case '\u0001';
+                case ',':
+                    feature = MapFeature.RockFloor;
+                    insidePoints.Add(point);
+                    goto case '\u0001';
+                case '?':
+                    feature = MapFeature.StoneFloor;
+                    doorwayPoints.Add(point);
+                    goto case '\u0001';
+                case '#':
+                    feature = MapFeature.StoneWall;
+                    level.AddNeighbours(feature, point);
+                    goto case '\u0001';
+                case 'A':
+                    feature = MapFeature.StoneArchway;
+                    level.AddNeighbours(feature, point);
+                    goto case '\u0001';
+                case '=':
+                    feature = MapFeature.Pool;
+                    goto case '\u0001';
+                case '\u0001':
+                    points.Add(point);
+                    break;
+                case ' ':
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unsupported map character '{c}' at {point.X},{point.Y}");
+            }
+
+            level.Terrain[level.PointToIndex[point.X, point.Y]] = (byte)feature;
+        }
 
         protected virtual Room TryPlace(Level level, Rectangle boundingRectangle, DynamicMap map)
         {
@@ -309,20 +291,20 @@ namespace UnicornHack.Generation.Map
                 return null;
             }
 
-            // TODO: Read the defaults from the encompassing fragment
+            // TODO: Read the defaults from the defining fragment
             var room = BuildRoom(level, map.GetRoomPoints(level, boundingRectangle),
                 p => { level.Terrain[level.PointToIndex[p.X, p.Y]] = (byte)MapFeature.StoneFloor; },
                 p =>
                 {
                     level.Terrain[level.PointToIndex[p.X, p.Y]] = (byte)MapFeature.StoneWall;
-                    level.AddNeighbours(MapFeature.StoneWall, p.X, p.Y);
+                    level.AddNeighbours(MapFeature.StoneWall, p);
                 },
                 p => { });
 
             return room;
         }
 
-        public void WriteMap(Point target, Action<char, byte, byte> write)
+        public void WriteMap<TState>(Point target, Level level, Action<char, Point, Level, TState> write, TState state)
         {
             var map = ByteMap;
             var x = target.X;
@@ -339,23 +321,19 @@ namespace UnicornHack.Generation.Map
                     y++;
                 }
 
-                write(mapPoint, x, y);
+                write(mapPoint, new Point(x, y), level, state);
                 x++;
             }
         }
 
         public virtual Room BuildRoom(Level level, IEnumerable<Point> points,
             Action<Point> insideAction, Action<Point> perimeterAction, Action<Point> outsideAction)
-            => BuildRoom(level, points, new List<Point>(), null, insideAction, perimeterAction, outsideAction);
-
-        public virtual Room BuildRoom(Level level, IEnumerable<Point> points, List<Point> doorwayPoints,
-            Rectangle? boundingRectangle,
-            Action<Point> insideAction, Action<Point> perimeterAction, Action<Point> outsideAction)
         {
             void Noop(Point p)
             {
             }
 
+            var insidePoints = new List<Point>();
             insideAction = insideAction ?? Noop;
             perimeterAction = perimeterAction ?? Noop;
             outsideAction = outsideAction ?? Noop;
@@ -397,7 +375,9 @@ namespace UnicornHack.Generation.Map
                     if (newNeighbours == Byte.MaxValue
                         && (neighbours[level.PointToIndex[roomPoint.X, roomPoint.Y]] & 1 << directionIndex) != 0)
                     {
-                        insideAction.Invoke(new Point(newLocationX, newLocationY));
+                        var insidePoint = new Point(newLocationX, newLocationY);
+                        insideAction.Invoke(insidePoint);
+                        insidePoints.Add(insidePoint);
                     }
 
                     neighbours[newLocationIndex] = newNeighbours;
@@ -410,30 +390,36 @@ namespace UnicornHack.Generation.Map
                 return null;
             }
 
-            if (doorwayPoints != null && doorwayPoints.Count == 0)
-            {
-                var perimeter = WalkPerimeter(
-                    firstPoint, neighbours, level.PointToIndex, perimeterAction, outsideAction);
+            var perimeter = WalkPerimeter(firstPoint, neighbours, level.PointToIndex, perimeterAction, outsideAction);
 
-                if (perimeter.Count > 7)
-                {
-                    doorwayPoints = FindDoorwayPoints(perimeter, level);
-                }
-            }
+            var doorwayPoints = perimeter.Count > 7
+                ? FindDoorwayPoints(perimeter, level)
+                : null;
 
-            return new Room(level,
-                boundingRectangle ?? new Rectangle(new Point(left, firstPoint.Y), new Point(right, lastPoint.Y)),
-                doorwayPoints);
+            return new Room(level, new Rectangle(new Point(left, firstPoint.Y), new Point(right, lastPoint.Y)),
+                doorwayPoints, insidePoints);
         }
 
-        public static List<Point> FindDoorwayPoints(IReadOnlyList<Point> perimeter, Level level,
+        private static List<Point> FindDoorwayPoints(IReadOnlyList<Point> perimeter, Level level,
             bool allowCorners = false)
         {
             var doorwayPoints = new List<Point>();
             for (var i = 0; i < perimeter.Count; i++)
             {
-                var previousPoint = perimeter[i == 0 ? perimeter.Count - 1 : i - 1];
+                var point = perimeter[i];
                 var nextPoint = perimeter[i == perimeter.Count - 1 ? 0 : i + 1];
+                if (point.DistanceTo(nextPoint) > 1)
+                {
+                    i++;
+                    continue;
+                }
+
+                var previousPoint = perimeter[i == 0 ? perimeter.Count - 1 : i - 1];
+                if (point.DistanceTo(previousPoint) > 1)
+                {
+                    continue;
+                }
+
                 var direction = previousPoint.DirectionTo(nextPoint).GetUnit();
                 if (!allowCorners
                     && direction.X != 0
@@ -444,7 +430,6 @@ namespace UnicornHack.Generation.Map
 
                 var firstOrthogonal = direction.GetOrthogonal();
                 var secondOrthogonal = firstOrthogonal.GetInverse();
-                var point = perimeter[i];
 
                 var corridorCandidatePoint = point.Translate(firstOrthogonal);
                 if (!level.IsValid(corridorCandidatePoint)

@@ -1,4 +1,4 @@
-new EncompassingMapFragment
+new DefiningMapFragment
 {
     Name = "surface",
     GenerationWeight = new BranchWeight { W = new InfiniteWeight(), Name = "surface" },

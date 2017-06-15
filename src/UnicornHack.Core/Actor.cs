@@ -413,15 +413,10 @@ namespace UnicornHack
 
         public virtual bool UseStairs(bool up, bool pretend = false)
         {
-            var stairs = Level.Connections.SingleOrDefault(s =>
-                s.LevelX == LevelX && s.LevelY == LevelY);
+            var stairs = Level.Connections.SingleOrDefault(s => s.LevelX == LevelX && s.LevelY == LevelY);
 
             var moveToLevel = stairs?.TargetLevel;
-            var moveToLevelX = stairs?.TargetLevelX;
-            var moveToLevelY = stairs?.TargetLevelY;
-
-            if (moveToLevel == null
-                || (moveToLevel.Depth > LevelDepth == up))
+            if (moveToLevel == null)
             {
                 return false;
             }
@@ -432,6 +427,8 @@ namespace UnicornHack
             }
 
             NextActionTick += MovementDelay;
+            var moveToLevelX = stairs.TargetLevelX;
+            var moveToLevelY = stairs.TargetLevelY;
 
             if (!moveToLevel.Players.Any())
             {
@@ -447,10 +444,10 @@ namespace UnicornHack
             }
 
             var conflictingActor = moveToLevel.Actors
-                .SingleOrDefault(a => a.LevelX == moveToLevelX.Value && a.LevelY == moveToLevelY.Value);
+                .SingleOrDefault(a => a.LevelX == moveToLevelX && a.LevelY == moveToLevelY);
             conflictingActor?.GetDisplaced();
 
-            if (moveToLevel.Depth == 0)
+            if (moveToLevel.BranchName == "surface")
             {
                 ChangeCurrentHP(-1 * HP);
                 return true;

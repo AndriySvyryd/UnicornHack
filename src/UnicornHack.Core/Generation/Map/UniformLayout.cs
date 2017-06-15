@@ -9,9 +9,9 @@ namespace UnicornHack.Generation.Map
 
         public virtual Dimensions MaxLotSize { get; set; } = new Dimensions(20, 20);
         public virtual Dimensions MinLotSize { get; set; } = new Dimensions(6, 6);
-        protected virtual int LotPlacementAttempts { get; set; } = 10;
+        protected virtual int LotPlacementAttempts { get; set; } = 16;
 
-        public override void Fill(Level level, EncompassingMapFragment fragment)
+        public override void Fill(Level level, DefiningMapFragment fragment)
         {
             _lotSize = MaxLotSize;
             base.Fill(level, fragment);

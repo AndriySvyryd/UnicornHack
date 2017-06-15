@@ -36,21 +36,10 @@ namespace UnicornHack.Generation.Map
             throw new InvalidOperationException();
         }
 
-        public override Room BuildRoom(Level level, IEnumerable<Point> points, List<Point> doorwayPoints,
-            Rectangle? boundingRectangle, Action<Point> insideAction, Action<Point> perimeterAction,
-            Action<Point> outsideAction)
+        public override Room BuildRoom(Level level, IEnumerable<Point> points,
+            Action<Point> insideAction, Action<Point> perimeterAction, Action<Point> outsideAction)
         {
-            var insidePoints = new List<Point>();
-            var room = base.BuildRoom(level, points, doorwayPoints, boundingRectangle,
-                insideAction == null
-                    ? (Action<Point>)(p => insidePoints.Add(p))
-                    : p =>
-                    {
-                        insideAction(p);
-                        insidePoints.Add(p);
-                    },
-                perimeterAction,
-                outsideAction);
+            var room = base.BuildRoom(level, points, insideAction, perimeterAction, outsideAction);
 
             var connectionDefinitions = Connections;
             if (connectionDefinitions.Count == 0)
@@ -61,7 +50,7 @@ namespace UnicornHack.Generation.Map
             foreach (var levelConnection in connectionDefinitions.Where(c => c.Glyph == null))
             {
                 CreateConnection(level,
-                    level.GenerationRandom.Pick(insidePoints,
+                    level.GenerationRandom.Pick(room.InsidePoints,
                         p => !level.Connections.Any(c => c.LevelX == p.X && c.LevelY == p.Y)),
                     levelConnection);
             }
@@ -69,7 +58,34 @@ namespace UnicornHack.Generation.Map
             return room;
         }
 
-        protected override void CreateConnection(Level level, Point point, char? glyph)
+        protected override void Write(char c, Point point, Level level,
+            (List<Point> doorwayPoints, List<Point> perimeterPoints, List<Point> insidePoints, List<Point> points)
+                state)
+        {
+            (List<Point> doorwayPoints, List<Point> perimeterPoints, List<Point> insidePoints, List<Point> points) =
+                state;
+            var feature = MapFeature.Default;
+            switch (c)
+            {
+                case '<':
+                case '{':
+                case '[':
+                case '>':
+                case '}':
+                case ']':
+                    feature = MapFeature.StoneFloor;
+                    points.Add(point);
+                    CreateConnection(level, point, c);
+                    break;
+                default:
+                    base.Write(c, point, level, state);
+                    return;
+            }
+
+            level.Terrain[level.PointToIndex[point.X, point.Y]] = (byte)feature;
+        }
+
+        protected virtual void CreateConnection(Level level, Point point, char? glyph)
             => CreateConnection(level, point, Connections.FirstOrDefault(c => c.Glyph == glyph));
 
         protected virtual Connection CreateConnection(Level level, Point point, LevelConnection connectionDefinition)

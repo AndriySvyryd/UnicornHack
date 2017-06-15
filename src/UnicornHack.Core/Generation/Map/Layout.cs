@@ -7,21 +7,21 @@ namespace UnicornHack.Generation.Map
 {
     public abstract class Layout
     {
-        public virtual float Coverage { get; set; } = 0.33f;
+        public virtual float Coverage { get; set; } = 0.4f;
         public virtual byte MaxRoomCount { get; set; } = 16;
 
         public virtual void OnLoad()
         {
         }
 
-        public virtual void Fill(Level level, EncompassingMapFragment fragment)
+        public virtual void Fill(Level level, DefiningMapFragment fragment)
         {
             InitializeTerrain(level, fragment);
-            PlaceEncompassingMapFragment(level, fragment);
+            PlaceDefiningMapFragment(level, fragment);
             PlaceSurroundingFragments(level);
         }
 
-        protected virtual void InitializeTerrain(Level level, EncompassingMapFragment fragment)
+        protected virtual void InitializeTerrain(Level level, DefiningMapFragment fragment)
         {
             if (fragment.DefaultTerrain != MapFeature.Default)
             {
@@ -32,7 +32,7 @@ namespace UnicornHack.Generation.Map
             }
         }
 
-        protected virtual void PlaceEncompassingMapFragment(Level level, EncompassingMapFragment fragment)
+        protected virtual void PlaceDefiningMapFragment(Level level, DefiningMapFragment fragment)
         {
             fragment.TryPlace(level, level.BoundingRectangle);
             // TODO: place nested fragments if needed
@@ -67,7 +67,7 @@ namespace UnicornHack.Generation.Map
                 var danglingConnection = level.IncomingConnections.FirstOrDefault(c => c.TargetLevelX == null);
                 placingConnections = placingConnections
                                      && (danglingConnection != null
-                                         || level.Connections.Count < 4
+                                         || level.Connections.Count(c => c.TargetLevelX == null) < 3
                                          || (level.Branch.Length > level.Depth
                                              && level.Connections.Count(c =>
                                                  c.TargetBranchName == level.BranchName &&
@@ -147,7 +147,7 @@ namespace UnicornHack.Generation.Map
                 ? alternativePath.Path
                 : path.Path;
 
-            PaintCorridor(corridor, source.Level, width, addColumns);
+            WriteCorridor(corridor, source.Level, width, addColumns);
 
             return true;
         }
@@ -257,7 +257,7 @@ namespace UnicornHack.Generation.Map
             return new Corridor(path, fragmentFeaturesHit, fragmentFeaturesAlmostHit);
         }
 
-        private void PaintCorridor(IReadOnlyList<Point> path, Level level, int width, bool addColumns)
+        private void WriteCorridor(IReadOnlyList<Point> path, Level level, int width, bool addColumns)
         {
             // TODO: Try to place connecting fragments instead of plain corridors
             foreach (var point in path)
@@ -269,9 +269,12 @@ namespace UnicornHack.Generation.Map
                     var index = level.PointToIndex[point.X, point.Y];
                     if (level.Terrain[index] == (byte)MapFeature.StoneWall)
                     {
-                        level.RemoveNeighbours(MapFeature.StoneWall, point.X, point.Y);
+                        level.Terrain[index] = (byte)MapFeature.StoneArchway;
                     }
-                    level.Terrain[index] = (byte)MapFeature.RockFloor;
+                    else
+                    {
+                        level.Terrain[index] = (byte)MapFeature.RockFloor;
+                    }
                 }
             }
         }

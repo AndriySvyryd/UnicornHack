@@ -99,25 +99,35 @@ namespace UnicornHack
                 return false;
             }
 
-            // TODO: Log parameters if failed
-            var fragment = GenerationRandom.Pick(
-                EncompassingMapFragment.GetAllEncompassingMapFragments(), f => f.GetWeight(BranchName, Depth));
+            try
+            {
+                // TODO: Log parameters if failed
+                var fragment = GenerationRandom.Pick(
+                    DefiningMapFragment.GetAllDefiningMapFragments(), f => f.GetWeight(BranchName, Depth));
 
-            Height = fragment.LevelHeight;
-            Width = fragment.LevelWidth;
+                Height = fragment.LevelHeight;
+                Width = fragment.LevelWidth;
 
-            Terrain = new byte[Height * Width];
-            WallNeighbours = new byte[Height * Width];
+                Terrain = new byte[Height * Width];
+                WallNeighbours = new byte[Height * Width];
 
-            EnsureInitialized();
+                EnsureInitialized();
 
-            (fragment.Layout ?? new EmptyLayout()).Fill(this, fragment);
+                (fragment.Layout ?? new EmptyLayout()).Fill(this, fragment);
 
-            // TODO: Generate monsters and items
+                // TODO: Generate monsters and items
 
-            return true;
+                return true;
+            }
+            catch (Exception e)
+            {
+                var msg = $"Error while generating level, initial seed {Game.InitialSeed}";
+
+                Console.WriteLine(msg);
+                Console.WriteLine(e);
+                throw new Exception(msg, e);
+            }
         }
-
 
         public void IncrementInstanceCounts(MapFragment fragment)
         {
@@ -125,44 +135,43 @@ namespace UnicornHack
             // Increment each tag instance count on level, branch, game
         }
 
-        public void AddNeighbours(MapFeature feature, byte x, byte y)
+        public void AddNeighbours(MapFeature feature, Point point)
         {
             switch (feature)
             {
                 case MapFeature.StoneWall:
-                    ModifyNeighbours(WallNeighbours, x, y, add: true);
+                    ModifyNeighbours(WallNeighbours, point, add: true);
                     break;
                 default:
                     throw new InvalidOperationException($"Unsupported feature for neighbour tracking: {feature}");
             }
         }
 
-        public void RemoveNeighbours(MapFeature feature, byte x, byte y)
+        public void RemoveNeighbours(MapFeature feature, Point point)
         {
             switch (feature)
             {
                 case MapFeature.StoneWall:
-                    ModifyNeighbours(WallNeighbours, x, y, add: false);
+                    ModifyNeighbours(WallNeighbours, point, add: false);
                     break;
                 default:
                     throw new InvalidOperationException($"Unsupported feature for neighbour tracking: {feature}");
             }
         }
 
-        private void ModifyNeighbours(byte[] neighbours, byte x, byte y, bool add)
+        private void ModifyNeighbours(byte[] neighbours, Point point, bool add)
         {
             for (var directionIndex = 0; directionIndex < 8; directionIndex++)
             {
                 var direction = MovementDirections[directionIndex];
-                var newLocationX = (byte)(x + direction.X);
-                var newLocationY = (byte)(y + direction.Y);
+                var newLocation = point.Translate(direction);
 
-                if (newLocationX >= Width || newLocationY >= Height)
+                if (!IsValid(newLocation))
                 {
                     continue;
                 }
 
-                var newLocationIndex = PointToIndex[newLocationX, newLocationY];
+                var newLocationIndex = PointToIndex[newLocation.X, newLocation.Y];
                 var neighbourBit = (byte)(1 << OppositeDirectionIndexes[directionIndex]);
                 if (add)
                 {
