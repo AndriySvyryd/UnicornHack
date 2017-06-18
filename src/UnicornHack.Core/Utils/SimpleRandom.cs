@@ -5,17 +5,20 @@ using System.Linq;
 
 namespace UnicornHack.Utils
 {
+    /// <summary>
+    ///     Implementation of a xorshift pseudo-random number generator with period 2^32-1.
+    /// </summary>
     public class SimpleRandom
     {
-        private const float IntToFloat = 1.0f / 0x7FFFFFFF;
-        private uint _x;
+        private const float IntToFloat = 1.0f / int.MaxValue;
+        private uint _x = 1;
 
         public int Id { get; set; }
 
         public int Seed
         {
-            get { return (int)_x; }
-            set { _x = (uint)value; }
+            get => (int)_x;
+            set => _x = (uint)value;
         }
 
         public virtual int Roll(int diceCount, int diceSides)
@@ -29,32 +32,43 @@ namespace UnicornHack.Utils
             return result;
         }
 
-        public virtual TInput Pick<TInput>(
-            IReadOnlyList<TInput> items)
+        public virtual TInput Pick<TInput>(IReadOnlyList<TInput> items)
             => items[Next(0, items.Count)];
 
         public virtual TInput Pick<TInput>(
             IReadOnlyList<TInput> items,
             Func<TInput, bool> condition)
+            => !TryPick(items, condition, out var item)
+                ? throw new InvalidOperationException("No elements meet the condition")
+                : item;
+
+        public virtual TInput TryPick<TInput>(IReadOnlyList<TInput> items)
+            => items[Next(0, items.Count)];
+
+        public virtual bool TryPick<TInput>(
+            IReadOnlyList<TInput> items,
+            Func<TInput, bool> condition,
+            out TInput item)
         {
             var index = Next(0, items.Count);
             for (var i = index; i < items.Count; i++)
             {
-                var item = items[i];
+                item = items[i];
                 if (condition(item))
                 {
-                    return item;
+                    return true;
                 }
             }
             for (var i = 0; i < index; i++)
             {
-                var item = items[i];
+                item = items[i];
                 if (condition(item))
                 {
-                    return item;
+                    return true;
                 }
             }
-            throw new InvalidOperationException("No elements meet the condition");
+            item = default(TInput);
+            return false;
         }
 
         public virtual TInput Pick<TInput>(
@@ -110,6 +124,7 @@ namespace UnicornHack.Utils
 
                 if (selectedIndex == -1)
                 {
+                    // ReSharper disable once CompareOfFloatsByEqualityOperator
                     if (sum == 0)
                     {
                         yield break;
@@ -169,6 +184,7 @@ namespace UnicornHack.Utils
                 }
             }
 
+            // ReSharper disable once CompareOfFloatsByEqualityOperator
             while (first < numbers.Length && numbers[first] == 0)
             {
                 first++;
@@ -183,11 +199,8 @@ namespace UnicornHack.Utils
             return first == numbers.Length ? first - 1 : first;
         }
 
-        public int Next(int maxValue)
-            => Next(minValue: 0, maxValue: maxValue);
-
-        public int Next(int minValue, int maxValue)
-            => (int)Next(minValue, (float)maxValue);
+        public int Next(int maxValue) => Next(minValue: 0, maxValue: maxValue);
+        public int Next(int minValue, int maxValue) => (int)Next(minValue, (float)maxValue);
 
         public float Next(float minValue, float maxValue)
         {
@@ -197,27 +210,43 @@ namespace UnicornHack.Utils
             }
 
             var range = maxValue - minValue;
-            if (range > 1 << 12 || range < 0)
+            if (range > int.MaxValue || range < 0)
             {
-                throw new ArgumentOutOfRangeException($"Don't use this generator for ranges over {1 << 12}");
+                throw new ArgumentOutOfRangeException($"Don't use this generator for ranges over {int.MaxValue}");
             }
 
             return minValue + IntToFloat * NextInt() * range;
         }
 
         public bool NextBool() => (0x80000000 & NextUInt()) == 0;
+        private int NextInt() => (int)(int.MaxValue & NextUInt());
 
-        private int NextInt()
-            => (int)(0x7FFFFFFF & NextUInt());
+        /// <summary>
+        /// Generates <paramref name="n"/> random numbers and returns how many of them were smaller than <paramref name="p"/>
+        /// </summary>
+        /// <param name="p"> A number between 0 and 1 </param>
+        /// <param name="n"> The number of numbers to generate </param>
+        /// <returns></returns>
+        public int NextBinomial(float p, int n)
+        {
+            var successes = 0;
+            for (var i = 0; i < n; i++)
+            {
+                if (Next(0, 1f) < p)
+                {
+                    successes++;
+                }
+            }
+
+            return successes;
+        }
 
         private uint NextUInt()
         {
-            if (_x == 0)
-            {
-                _x = 1;
-            }
-            var t = _x ^ (_x << 11);
-            return _x = _x ^ (_x >> 19) ^ t ^ (t >> 8);
+            _x ^= _x << 13;
+            _x ^= _x >> 17;
+            _x ^= _x << 5;
+            return _x;
         }
     }
 }

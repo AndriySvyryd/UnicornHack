@@ -55,7 +55,7 @@ new Creature
 ,
     SimpleProperties = new HashSet<string> { "Infravision", "InvisibilityDetection", "Infravisibility", "Maleness", "SicknessResistance" },
     ValuedProperties = new Dictionary<string, Object> { { "FireResistance", 3 }, { "PoisonResistance", 3 } },
-    InitialLevel = 56,
+    InitialLevel = 30,
     CorpseName = "",
     GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable | GenerationFlags.HellOnly,
     Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser | MonsterBehavior.Covetous,

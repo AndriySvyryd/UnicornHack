@@ -405,56 +405,9 @@ namespace UnicornHack
 
         #region Serialization
 
-        public static readonly string BasePath = Path.Combine(AppContext.BaseDirectory, @"data\players\");
-        private static bool _allLoaded;
         public static readonly int StartingAttributeValue = 10;
 
-        public static Dictionary<string, Player> NameLookup { get; } =
-            new Dictionary<string, Player>(StringComparer.Ordinal);
-
-        public static IEnumerable<Player> GetAllPlayerVariants()
-        {
-            if (!_allLoaded)
-            {
-                foreach (var file in
-                    Directory.EnumerateFiles(BasePath, "*" + CSScriptDeserializer.Extension,
-                        SearchOption.AllDirectories))
-                {
-                    if (!NameLookup.ContainsKey(
-                        CSScriptDeserializer.GetNameFromFilename(Path.GetFileNameWithoutExtension(file))))
-                    {
-                        Load(file);
-                    }
-                }
-                _allLoaded = true;
-            }
-
-            return NameLookup.Values;
-        }
-
-        public new static Player Get(string name)
-        {
-            Player definition;
-            if (NameLookup.TryGetValue(name, out definition))
-            {
-                return definition;
-            }
-
-            var path = Path.Combine(BasePath, CSScriptDeserializer.GetFilename(name));
-            if (!File.Exists(path))
-            {
-                return null;
-            }
-
-            return Load(path);
-        }
-
-        private static Player Load(string path)
-        {
-            var player = CSScriptDeserializer.LoadFile<Player>(path);
-            NameLookup[player.Name] = player;
-            return player;
-        }
+        public static readonly CSScriptLoader<Player> Loader = new CSScriptLoader<Player>(@"data\players\");
 
         private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<Player>(
             GetPropertyConditions<Player>());

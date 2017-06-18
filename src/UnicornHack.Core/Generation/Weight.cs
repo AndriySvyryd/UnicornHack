@@ -45,6 +45,14 @@ namespace UnicornHack.Generation
                 .Compile();
         }
 
+        public virtual Func<string, byte, int, float> CreateCreatureWeightFunction()
+        {
+            var parameters = new[] { BranchParameter, DepthParameter, InstancesParameter };
+
+            return Expression.Lambda<Func<string, byte, int, float>>(GetExpression(parameters), parameters)
+                .Compile();
+        }
+
         protected static void Check(ParameterExpression requiredParameter,
             IReadOnlyDictionary<string, ParameterExpression> parameters)
         {

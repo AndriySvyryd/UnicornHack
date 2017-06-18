@@ -17,6 +17,7 @@ namespace UnicornHack
         public virtual string BranchName { get; private set; }
         public virtual Branch Branch { get; set; }
         public virtual byte Depth { get; set; }
+        public virtual int Difficulty { get; set; }
         public virtual byte Height { get; set; }
         public virtual byte Width { get; set; }
         public virtual Rectangle BoundingRectangle => new Rectangle(new Point(0, 0), Width, Height);
@@ -42,6 +43,8 @@ namespace UnicornHack
 
         public int[,] PointToIndex { get; private set; }
         public Point[] IndexToPoint { get; private set; }
+
+        public static readonly byte MaxDifficulty = 30;
 
         // Order matters, see Direction.cs
         public static readonly Vector[] MovementDirections =
@@ -81,6 +84,11 @@ namespace UnicornHack
             Terrain = new byte[0];
             WallNeighbours = new byte[0];
             GenerationRandom = new SimpleRandom {Seed = seed};
+            Difficulty = branch.Difficulty + depth;
+            if (Difficulty > MaxDifficulty)
+            {
+                throw new InvalidOperationException($"Difficulty {Difficulty} greater than max {MaxDifficulty}");
+            }
         }
 
         public void EnsureInitialized()
@@ -113,9 +121,8 @@ namespace UnicornHack
 
                 EnsureInitialized();
 
-                (fragment.Layout ?? new EmptyLayout()).Fill(this, fragment);
-
-                // TODO: Generate monsters and items
+                fragment.Layout.Fill(this, fragment);
+                fragment.CreatureGenerator.Fill(this);
 
                 return true;
             }

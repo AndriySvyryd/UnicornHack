@@ -11,88 +11,125 @@ namespace UnicornHack.Utils
         public void Pick_uniform()
         {
             var weightSum = 0f;
-            var items = new float[10];
-            for (var i = 0; i < items.Length; i++)
+            var itemWeights = new float[10];
+            for (var i = 0; i < itemWeights.Length; i++)
             {
-                items[i] = 1;
-                weightSum += items[i];
+                itemWeights[i] = 1;
+                weightSum += itemWeights[i];
             }
 
-            Test(items, weightSum);
+            TestPick(itemWeights, weightSum);
         }
 
         [Fact]
         public void Pick_clustered()
         {
             var weightSum = 0f;
-            var items = new float[10];
-            for (var i = 0; i < items.Length; i++)
+            var itemWeights = new float[10];
+            for (var i = 0; i < itemWeights.Length; i++)
             {
-                items[i] = i < 5 ? 0 : 1;
-                weightSum += items[i];
+                itemWeights[i] = i < 5 ? 0 : 1;
+                weightSum += itemWeights[i];
             }
 
-            Test(items, weightSum);
+            TestPick(itemWeights, weightSum);
         }
 
         [Fact]
         public void Pick_alternating()
         {
             var weightSum = 0f;
-            var items = new float[10];
-            for (var i = 0; i < items.Length; i++)
+            var itemWeights = new float[10];
+            for (var i = 0; i < itemWeights.Length; i++)
             {
-                items[i] = i % 2;
-                weightSum += items[i];
+                itemWeights[i] = i % 2;
+                weightSum += itemWeights[i];
             }
 
-            Test(items, weightSum);
+            TestPick(itemWeights, weightSum);
         }
 
         [Fact]
         public void Pick_increasing()
         {
             var weightSum = 1f;
-            var items = new float[10];
-            for (var i = 0; i < items.Length; i++)
+            var itemWeights = new float[10];
+            for (var i = 0; i < itemWeights.Length; i++)
             {
-                items[i] = weightSum;
-                weightSum += items[i];
+                itemWeights[i] = weightSum;
+                weightSum += itemWeights[i];
             }
 
-            Test(items, weightSum);
+            TestPick(itemWeights, weightSum);
         }
 
-        private void Test(float[] items, float weightSum)
+        private void TestPick(float[] itemWeights, float weightSum)
         {
             var seed = Environment.TickCount;
             var random = new SimpleRandom {Seed = seed};
-            var selectedCounts = new int[items.Length];
-            var selectionCount = 10000;
+            var selectedCounts = new int[itemWeights.Length];
+            var selectionCount = 100000;
             for (var i = 0; i < selectionCount; i++)
             {
-                var selectedIndex = random.Pick(items, f => f, (f, index) => index);
+                var selectedIndex = random.Pick(itemWeights, f => f, (f, index) => index);
                 selectedCounts[selectedIndex]++;
             }
 
-            var toleranceFraction = items.Length / Math.Sqrt(selectionCount);
-            var uniformTolerance = toleranceFraction / (items.Length * 10);
-            for (var i = 0; i < items.Length; i++)
+            AssertDistribution(itemWeights, weightSum, selectedCounts, selectionCount, seed);
+        }
+
+        [Theory]
+        [InlineData(0.0f)]
+        [InlineData(0.2f)]
+        [InlineData(0.5f)]
+        [InlineData(0.7f)]
+        [InlineData(1.0f)]
+        public void Binomial(float p)
+        {
+            var weightSum = 0f;
+            var itemWeights = new float[10];
+            var n = itemWeights.Length - 1;
+            for (var i = 0; i < itemWeights.Length; i++)
             {
-                var expected = (double)items[i] / weightSum;
+                itemWeights[i] = (float)Stat.BinomialDistributionMass(i, n, p);
+                weightSum += itemWeights[i];
+            }
+
+            var seed = Environment.TickCount;
+            var random = new SimpleRandom { Seed = seed };
+            var selectedCounts = new int[itemWeights.Length];
+            var selectionCount = 10000;
+            for (var i = 0; i < selectionCount; i++)
+            {
+                var selectedIndex = random.NextBinomial(p, n);
+                selectedCounts[selectedIndex]++;
+            }
+
+            AssertDistribution(itemWeights, weightSum, selectedCounts, selectionCount, seed);
+        }
+
+        private static void AssertDistribution(
+            float[] itemWeights, float weightSum, int[] selectedCounts, int selectionCount, int seed)
+        {
+            var toleranceFraction = itemWeights.Length / Math.Sqrt(selectionCount);
+            var uniformTolerance = toleranceFraction / (itemWeights.Length * 10);
+            for (var i = 0; i < itemWeights.Length; i++)
+            {
+                var expected = (double)itemWeights[i] / weightSum;
                 var actual = (double)selectedCounts[i] / selectionCount;
 
-                if (!(Math.Abs(expected - actual) <= toleranceFraction * expected + uniformTolerance))
+                if (!(Math.Abs(expected - actual) <= toleranceFraction * expected + uniformTolerance)) //
                 {
                     var builder = new StringBuilder();
+                    builder.AppendLine(
+                        $"Error at index {i}: expected {expected * selectionCount:N4}, "
+                        + $"actual {actual * selectionCount:N4}\r\n"
+                        + $"tolerance {(toleranceFraction * expected + uniformTolerance) * selectionCount:N4}, seed {seed}");
 
-                    builder.Append(
-                        $"Expected {expected}, actual {actual}, tolerance {toleranceFraction * expected} at index {i}, seed {seed}");
-
-                    builder.AppendLine("\tIndex:\tfrequency,\tweight:");
-                    for (var j = 0; j < items.Length; j++)
+                    builder.AppendLine("\tIndex\tFrequency\tAdjusted weight");
+                    for (var j = 0; j < itemWeights.Length; j++)
                     {
-                        builder.AppendLine($"\t{j}:\t{selectedCounts[j]},\t{items[j]}");
+                        builder.AppendLine($"\t{j,4:N0}\t{selectedCounts[j],9:D} {(itemWeights[j] / weightSum) * selectionCount,12:N4}");
                     }
 
                     Assert.False(true, builder.ToString());

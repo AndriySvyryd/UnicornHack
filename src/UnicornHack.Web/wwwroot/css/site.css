@@ -105,11 +105,6 @@ a:hover {
 }
 
 /*Map features*/
-.playerCharacter {
-    color: black;
-    background-color: lightgrey;
-}
-
 .mapPool {
     color: aqua;
 }
@@ -124,6 +119,7 @@ a:hover {
     color: dimgrey;
 }
 
+/*Items*/
 .itemGold {
     color: gold;
 }
@@ -140,12 +136,30 @@ a:hover {
     color: chocolate;
 }
 
-.monsterBug {
-    color: green;
+/* Actors */
+.playerCharacter {
+    color: black;
+    background-color: lightgrey;
 }
 
-.monsterNastyBug {
-    color: greenyellow;
+.creatureLightningBug {
+    color:aqua;
+}
+
+.creatureFirefly {
+    color: darkorange;
+}
+
+.creatureGiantAnt {
+    color: gray;
+}
+
+.creatureJaguar {
+    color: orange;
+}
+
+.creatureUnknown {
+    color: red;
 }
 
 /* Wrapping element */

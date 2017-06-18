@@ -28,7 +28,7 @@ namespace UnicornHack.Editor
 
             Directory.CreateDirectory(PlayerDirectory);
 
-            foreach (var playerVariant in Player.GetAllPlayerVariants())
+            foreach (var playerVariant in Player.Loader.GetAll())
             {
                 var script = CSScriptSerializer.Serialize(playerVariant);
 
@@ -49,7 +49,7 @@ namespace UnicornHack.Editor
 
             Directory.CreateDirectory(CreatureDirectory);
 
-            foreach (var creatureVariant in Creature.GetAllCreatureVariants())
+            foreach (var creatureVariant in Creature.Loader.GetAll())
             {
                 var script = CSScriptSerializer.Serialize(creatureVariant);
 
@@ -303,8 +303,8 @@ namespace UnicornHack.Editor
         public static readonly string BaseDirectory =
             GetCommonPrefix(new[]
             {
-                Player.BasePath,
-                Creature.BasePath,
+                Player.Loader.BasePath,
+                Creature.Loader.BasePath,
                 Item.BasePath,
                 Branch.Loader.BasePath,
                 MapFragment.NormalLoader.BasePath,
@@ -313,13 +313,13 @@ namespace UnicornHack.Editor
 
         public static readonly string PlayerDirectory =
             Path.Combine(BaseDirectory, "new",
-                Player.BasePath.Substring(BaseDirectory.Length,
-                    Player.BasePath.Length - BaseDirectory.Length));
+                Player.Loader.BasePath.Substring(BaseDirectory.Length,
+                    Player.Loader.BasePath.Length - BaseDirectory.Length));
 
         public static readonly string CreatureDirectory =
             Path.Combine(BaseDirectory, "new",
-                Creature.BasePath.Substring(BaseDirectory.Length,
-                    Creature.BasePath.Length - BaseDirectory.Length));
+                Creature.Loader.BasePath.Substring(BaseDirectory.Length,
+                    Creature.Loader.BasePath.Length - BaseDirectory.Length));
 
         public static readonly string ItemDirectory =
             Path.Combine(BaseDirectory, "new",

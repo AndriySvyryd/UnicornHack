@@ -11,6 +11,7 @@ namespace UnicornHack
         public virtual byte Length { get; set; }
         public virtual int GameId { get; private set; }
         public virtual Game Game { get; set; }
+        public virtual int Difficulty { get; set; }
 
         public virtual Weight GenerationWeight { get; set; }
         // TODO: Fragment, item and creature generation weight and distribution modifiers

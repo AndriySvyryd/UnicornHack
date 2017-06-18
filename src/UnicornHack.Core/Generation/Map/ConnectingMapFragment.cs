@@ -62,9 +62,7 @@ namespace UnicornHack.Generation.Map
             (List<Point> doorwayPoints, List<Point> perimeterPoints, List<Point> insidePoints, List<Point> points)
                 state)
         {
-            (List<Point> doorwayPoints, List<Point> perimeterPoints, List<Point> insidePoints, List<Point> points) =
-                state;
-            var feature = MapFeature.Default;
+            MapFeature feature;
             switch (c)
             {
                 case '<':
@@ -74,7 +72,7 @@ namespace UnicornHack.Generation.Map
                 case '}':
                 case ']':
                     feature = MapFeature.StoneFloor;
-                    points.Add(point);
+                    state.points.Add(point);
                     CreateConnection(level, point, c);
                     break;
                 default:

@@ -155,14 +155,26 @@
                 break;
             case "lightning bug":
                 symbol = 'b';
-                className = "monsterBug";
+                className = "creatureLightningBug";
                 break;
             case "firefly":
                 symbol = 'B';
-                className = "monsterNastyBug";
+                className = "creatureFirefly";
+                break;
+            case "giant ant":
+                symbol = 'a';
+                className = "creatureGiantAnt";
+                break;
+            case "jaguar":
+                symbol = 'j';
+                className = "creatureJaguar";
                 break;
             default:
-                throw new NotSupportedException($"Actor type {actor.BaseActor.Name} not supported.");
+                symbol = actor.BaseActor.Name[0];
+                className = "creatureUnknown";
+                break;
+                // TODO: Add more creatures
+                //throw new NotSupportedException($"Actor type {actor.BaseActor.Name} not supported.");
         }
         className += actor is Player ? " playerCharacter" : "";
         characters[actor.LevelX, actor.LevelY] = symbol;

@@ -113,7 +113,7 @@ namespace UnicornHack.Controllers
                 var initialLevel = surfaceLevel.Connections.Single().TargetLevel;
                 initialLevel.EnsureGenerated();
                 var upStairs = initialLevel.Connections.First(c => c.TargetBranchName == surfaceBranch.Name);
-                character = (Player)Player.Get("player human")
+                character = (Player)Player.Loader.Get("player human")
                     .Instantiate(initialLevel, upStairs.LevelX, upStairs.LevelY);
                 character.Name = name;
 

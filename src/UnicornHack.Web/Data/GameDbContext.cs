@@ -89,7 +89,11 @@ namespace UnicornHack.Models
             });
 
             modelBuilder.Entity<Player>();
-            modelBuilder.Entity<Creature>();
+            modelBuilder.Entity<Creature>(cb =>
+            {
+                cb.Ignore(c => c.GenerationWeight);
+            });
+
             // TODO: Complex type
             modelBuilder.Entity<Skills>(eb =>
             {
@@ -279,6 +283,7 @@ namespace UnicornHack.Models
             modelBuilder.Entity<Suffocate>();
             modelBuilder.Entity<Teleport>();
             modelBuilder.Entity<VenomDamage>();
+            modelBuilder.Entity<WaterDamage>();
         }
 
         private void OnModelCreatingToDo(ModelBuilder modelBuilder)

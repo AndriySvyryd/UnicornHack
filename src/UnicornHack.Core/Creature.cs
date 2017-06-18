@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using CSharpScriptSerialization;
+using UnicornHack.Generation;
 using UnicornHack.Utils;
 
 namespace UnicornHack
@@ -15,6 +15,7 @@ namespace UnicornHack
         private ActorNoiseType? _noise;
 
         public byte InitialLevel { get; set; }
+        public virtual Weight GenerationWeight { get; set; }
         public GenerationFlags GenerationFlags { get; set; }
         public Frequency GenerationFrequency { get; set; }
         public MonsterBehavior Behavior { get; set; }
@@ -22,23 +23,23 @@ namespace UnicornHack
 
         public ActorNoiseType Noise
         {
-            get { return _noise ?? (BaseActor as Creature)?.Noise ?? ActorNoiseType.Silent; }
-            set { _noise = value; }
+            get => _noise ?? (BaseActor as Creature)?.Noise ?? ActorNoiseType.Silent;
+            set => _noise = value;
         }
 
         public string CorpseName
         {
-            get { return _corpseVariantName ?? (BaseActor as Creature)?.CorpseName ?? null; }
-            set { _corpseVariantName = value; }
+            get => _corpseVariantName ?? (BaseActor as Creature)?.CorpseName;
+            set => _corpseVariantName = value;
         }
 
-        public Creature Corpse => CorpseName == null ? null : Get(CorpseName);
+        public Creature Corpse => CorpseName == null ? null : Loader.Get(CorpseName);
 
         public string PreviousStageName { get; set; }
-        public Creature PreviousStage => PreviousStageName == null ? null : Get(PreviousStageName);
+        public Creature PreviousStage => PreviousStageName == null ? null : Loader.Get(PreviousStageName);
 
         public string NextStageName { get; set; }
-        public Creature NextStage => NextStageName == null ? null : Get(NextStageName);
+        public Creature NextStage => NextStageName == null ? null : Loader.Get(NextStageName);
 
         #endregion
 
@@ -153,63 +154,42 @@ namespace UnicornHack
             return false;
         }
 
+        private Func<string, byte, int, float> _weightFunction;
+
+        public virtual float GetWeight(Level level)
+        {
+            if (_weightFunction == null)
+            {
+                _weightFunction = (GenerationWeight ?? new DefaultWeight()).CreateCreatureWeightFunction();
+            }
+
+            return _weightFunction(level.Branch.Name, level.Depth, 0);
+        }
+
         #endregion
 
         #region Serialization
 
-        public static readonly string BasePath = Path.Combine(AppContext.BaseDirectory, @"data\creatures\");
+        public static readonly GroupedCSScriptLoader<byte, Creature> Loader =
+            new GroupedCSScriptLoader<byte, Creature>(@"data\creatures\", c => c.InitialLevel);
 
-        protected static Dictionary<string, Creature> NameLookup { get; } =
-            new Dictionary<string, Creature>(StringComparer.Ordinal);
+        private static byte? _maxLevel;
 
-        private static bool _allLoaded;
-
-        public static IEnumerable<Creature> GetAllCreatureVariants()
+        public static byte MaxLevel
         {
-            if (!_allLoaded)
+            get
             {
-                foreach (var file in
-                    Directory.EnumerateFiles(BasePath, "*" + CSScriptDeserializer.Extension,
-                        SearchOption.AllDirectories))
+                if (_maxLevel == null)
                 {
-                    if (!NameLookup.ContainsKey(
-                        CSScriptDeserializer.GetNameFromFilename(Path.GetFileNameWithoutExtension(file))))
-                    {
-                        Load(file);
-                    }
+                    _maxLevel = Loader.GetAllKeys().Max();
                 }
-                _allLoaded = true;
+                return _maxLevel.Value;
             }
-
-            return NameLookup.Values;
-        }
-
-        public new static Creature Get(string name)
-        {
-            Creature variant;
-            if (NameLookup.TryGetValue(name, out variant))
-            {
-                return variant;
-            }
-
-            var path = Path.Combine(BasePath, CSScriptDeserializer.GetFilename(name));
-            if (!File.Exists(path))
-            {
-                return null;
-            }
-
-            return Load(path);
-        }
-
-        private static Creature Load(string path)
-        {
-            var creature = CSScriptDeserializer.LoadFile<Creature>(path);
-            NameLookup[creature.Name] = creature;
-            return creature;
         }
 
         private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<Creature>(
             GetPropertyConditions<Creature>());
+
 
         protected new static Dictionary<string, Func<TCreature, object, bool>> GetPropertyConditions<TCreature>()
             where TCreature : Creature

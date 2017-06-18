@@ -9,7 +9,7 @@ using UnicornHack.Utils;
 
 namespace UnicornHack
 {
-    public abstract class Actor : IItemLocation, ICSScriptSerializable, IReferenceable
+    public abstract class Actor : IItemLocation, ICSScriptSerializable, IReferenceable, ILoadable
     {
         #region State
 
@@ -34,6 +34,7 @@ namespace UnicornHack
         public virtual int Id { get; private set; }
 
         public virtual string Name { get; set; }
+
         public virtual string BaseName { get; set; }
 
         public Actor BaseActor
@@ -844,8 +845,12 @@ namespace UnicornHack
 
         #region Serialization
 
+        void ILoadable.OnLoad()
+        {
+        }
+
         public static Actor Get(string name)
-            => (Actor)Player.Get(name) ?? Creature.Get(name);
+            => (Actor)Player.Loader.Get(name) ?? Creature.Loader.Get(name);
 
         protected static Dictionary<string, Func<TActor, object, bool>> GetPropertyConditions<TActor>()
             where TActor : Actor
