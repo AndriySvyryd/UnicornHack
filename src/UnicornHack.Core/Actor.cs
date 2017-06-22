@@ -37,8 +37,7 @@ namespace UnicornHack
 
         public virtual string BaseName { get; set; }
 
-        public Actor BaseActor
-            => BaseName == null ? null : Get(BaseName);
+        public abstract Actor BaseActor { get; }
 
         public virtual Species Species
         {
@@ -573,32 +572,6 @@ namespace UnicornHack
             return ability.Activate(new AbilityActivationContext {Activator = this, Target = victim}, pretend);
         }
 
-        public virtual bool Eat(Item item, bool pretend = false)
-        {
-            if (item.Type != ItemType.Food)
-            {
-                return false;
-            }
-
-            if (pretend)
-            {
-                return true;
-            }
-
-            // TODO: Calculate delay
-            NextActionTick += DefaultActionDelay;
-
-            using (var reference = item.Split(1))
-            {
-                var splitItem = reference.Referenced;
-                ChangeCurrentHP(splitItem.Nutrition);
-
-                ItemConsumptionEvent.New(this, splitItem, Game.EventOrder++);
-
-                return true;
-            }
-        }
-
         public virtual bool Equip(Item item, EquipmentSlot slot, bool pretend = false)
         {
             var equipped = GetEquippedItem(slot);
@@ -848,9 +821,6 @@ namespace UnicornHack
         void ILoadable.OnLoad()
         {
         }
-
-        public static Actor Get(string name)
-            => (Actor)Player.Loader.Get(name) ?? Creature.Loader.Get(name);
 
         protected static Dictionary<string, Func<TActor, object, bool>> GetPropertyConditions<TActor>()
             where TActor : Actor

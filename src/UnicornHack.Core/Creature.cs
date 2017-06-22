@@ -35,6 +35,9 @@ namespace UnicornHack
 
         public Creature Corpse => CorpseName == null ? null : Loader.Get(CorpseName);
 
+        public override Actor BaseActor
+            => BaseName == null ? null : Loader.Get(BaseName);
+
         public string PreviousStageName { get; set; }
         public Creature PreviousStage => PreviousStageName == null ? null : Loader.Get(PreviousStageName);
 
@@ -196,6 +199,7 @@ namespace UnicornHack
         {
             var propertyConditions = Actor.GetPropertyConditions<TCreature>();
             propertyConditions.Add(nameof(InitialLevel), (o, v) => (byte)v != 0);
+            propertyConditions.Add(nameof(GenerationWeight), (o, v) => (Weight)v != null);
             propertyConditions.Add(nameof(PreviousStageName), (o, v) => v != null);
             propertyConditions.Add(nameof(NextStageName), (o, v) => v != null);
             propertyConditions.Add(nameof(CorpseName), (o, v) => (string)v != (o.BaseActor as Creature)?.CorpseName);

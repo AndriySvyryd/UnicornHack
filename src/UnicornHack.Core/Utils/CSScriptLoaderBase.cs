@@ -16,14 +16,24 @@ namespace UnicornHack.Utils
         }
 
         public T Get(string name)
+            => !TryGet(name, out var variant)
+            ? throw new InvalidOperationException($"'{name}' not found")
+            : variant;
+
+        public bool TryGet(string name, out T variant)
         {
-            if (NameLookup.TryGetValue(name, out T variant))
+            if (NameLookup.TryGetValue(name, out variant))
             {
-                return variant;
+                return true;
             }
 
             var path = Path.Combine(BasePath, CSScriptDeserializer.GetFilename(name));
-            return !File.Exists(path) ? default(T) : Load(path);
+            if (File.Exists(path))
+            {
+                variant = Load(path);
+                return true;
+            }
+            return false;
         }
 
         protected void LoadAll()

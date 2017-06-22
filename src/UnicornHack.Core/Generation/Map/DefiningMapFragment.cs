@@ -11,6 +11,7 @@ namespace UnicornHack.Generation.Map
         public virtual byte LevelWidth { get; set; } = 80;
         public virtual Layout Layout { get; set; } = new EmptyLayout();
         public virtual CreatureGenerator CreatureGenerator { get; set; } = new CreatureGenerator();
+        public virtual ItemGenerator ItemGenerator { get; set; } = new ItemGenerator();
         public virtual MapFeature DefaultTerrain { get; set; }
         public virtual MapFeature DefaultPathTerrain { get; set; }
 

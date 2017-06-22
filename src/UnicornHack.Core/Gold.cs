@@ -18,10 +18,10 @@ namespace UnicornHack
 
         public int Quantity { get; set; }
 
-        public override IReadOnlyList<Item> Instantiate(IItemLocation location, int quantity = 1)
+        public override IReadOnlyList<Item> Instantiate(IItemLocation location, int? quantity = null)
         {
             var item = (Gold)Instantiate(location.Game);
-            item.Quantity = quantity;
+            item.Quantity = quantity ?? 1;
 
             if (!item.MoveTo(location))
             {
@@ -32,7 +32,7 @@ namespace UnicornHack
             return new List<Item> {item};
         }
 
-        public static Gold Get() => (Gold)Get("gold coin");
+        public static Gold Get() => (Gold)Loader.Get("gold coin");
 
         protected override Item CreateInstance(Game game) => new Gold(game);
 

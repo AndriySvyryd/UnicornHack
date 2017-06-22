@@ -123,6 +123,7 @@ namespace UnicornHack
 
                 fragment.Layout.Fill(this, fragment);
                 fragment.CreatureGenerator.Fill(this);
+                fragment.ItemGenerator.Fill(this);
 
                 return true;
             }

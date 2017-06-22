@@ -1,7 +1,7 @@
 new Item
 {
     Name = "mail armor",
-    Type = ItemType.Armor,
+    Type = ItemType.ArmorBody,
     Weight = 40,
     Material = Material.Steel,
     EquipableSlots = EquipmentSlot.Body,

@@ -95,7 +95,7 @@ namespace UnicornHack.Utils
             if (items == null
                 || items.Count == 0)
             {
-                throw new InvalidOperationException("Null or empty list of items");
+                yield break;
             }
 
             var cumulativeWeights = new float[items.Count];

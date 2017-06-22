@@ -1,19 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using CSharpScriptSerialization;
+using UnicornHack.Generation;
 using UnicornHack.Utils;
 
 namespace UnicornHack
 {
-    public class Item : IReferenceable, ICSScriptSerializable
+    public class Item : IReferenceable, ICSScriptSerializable, ILoadable
     {
         #region State
 
         private ItemType? _itemType;
         private int? _weight;
-        private int? _nutrition;
         private Material? _material;
         private Size? _equipableSizes;
         private bool? _nameable;
@@ -24,8 +23,9 @@ namespace UnicornHack
 
         public virtual int Id { get; private set; }
         public virtual string Name { get; set; }
+
         public virtual string BaseName { get; set; }
-        public Item BaseItem => BaseName == null ? null : Get(BaseName);
+        public Item BaseItem => BaseName == null ? null : Loader.Get(BaseName);
 
         public virtual ItemType Type
         {
@@ -33,17 +33,13 @@ namespace UnicornHack
             set { _itemType = value; }
         }
 
+        public virtual Weight GenerationWeight { get; set; }
+
         /// <summary> 100g units </summary>
         public virtual int Weight
         {
             get { return _weight ?? BaseItem?.Weight ?? 0; }
             set { _weight = value; }
-        }
-
-        public virtual int Nutrition
-        {
-            get { return _nutrition ?? BaseItem?.Nutrition ?? Weight; }
-            set { _nutrition = value; }
         }
 
         public virtual Material Material
@@ -188,7 +184,6 @@ namespace UnicornHack
             itemInstance.BaseName = Name;
             itemInstance.Type = Type;
             itemInstance.Weight = Weight;
-            itemInstance.Nutrition = Nutrition;
             itemInstance.Material = Material;
             itemInstance.Nameable = Nameable;
             itemInstance.StackSize = StackSize;
@@ -202,9 +197,10 @@ namespace UnicornHack
             return itemInstance;
         }
 
-        public virtual IReadOnlyList<Item> Instantiate(IItemLocation location, int quantity = 1)
+        public virtual IReadOnlyList<Item> Instantiate(IItemLocation location, int? quantity = null)
         {
             var items = new List<Item>();
+            quantity = quantity ?? 1;
             for (var i = 0; i < quantity; i++)
             {
                 var item = Instantiate(location.Game);
@@ -297,9 +293,14 @@ namespace UnicornHack
 
         public virtual Item StackWith(IEnumerable<Item> existingItems)
         {
+            if (StackSize <= 1)
+            {
+                return this;
+            }
+
             foreach (var existingItem in existingItems)
             {
-                if (existingItem.BaseItem == BaseItem)
+                if (existingItem.BaseName == BaseName)
                 {
                     var stack = existingItem as ItemStack;
                     if (stack == null)
@@ -348,59 +349,28 @@ namespace UnicornHack
             return result;
         }
 
+        private Func<string, byte, int, float> _weightFunction;
+
+        public virtual float GetWeight(Level level)
+        {
+            if (_weightFunction == null)
+            {
+                _weightFunction = (GenerationWeight ?? new DefaultWeight()).CreateItemWeightFunction();
+            }
+
+            return _weightFunction(level.Branch.Name, level.Depth, 0);
+        }
+
         #endregion
 
         #region Serialization
 
-        public static readonly string BasePath = Path.Combine(AppContext.BaseDirectory, @"data\items\");
-        private static bool _allLoaded;
-
-        public static Dictionary<string, Item> NameLookup { get; } =
-            new Dictionary<string, Item>(StringComparer.Ordinal);
-
-        public static IEnumerable<Item> GetAllItemVariants()
+        public void OnLoad()
         {
-            if (!_allLoaded)
-            {
-                foreach (var file in
-                    Directory.EnumerateFiles(BasePath, "*" + CSScriptDeserializer.Extension,
-                        SearchOption.AllDirectories))
-                {
-                    if (!NameLookup.ContainsKey(
-                        CSScriptDeserializer.GetNameFromFilename(Path.GetFileNameWithoutExtension(file))))
-                    {
-                        Load(file);
-                    }
-                }
-                _allLoaded = true;
-            }
-
-            return NameLookup.Values;
         }
 
-        public static Item Get(string name)
-        {
-            Item variant;
-            if (NameLookup.TryGetValue(name, out variant))
-            {
-                return variant;
-            }
-
-            var path = Path.Combine(BasePath, CSScriptDeserializer.GetFilename(name));
-            if (!File.Exists(path))
-            {
-                return null;
-            }
-
-            return Load(path);
-        }
-
-        private static Item Load(string path)
-        {
-            var variant = CSScriptDeserializer.LoadFile<Item>(path);
-            NameLookup[variant.Name] = variant;
-            return variant;
-        }
+        public static readonly GroupedCSScriptLoader<ItemType, Item> Loader =
+            new GroupedCSScriptLoader<ItemType, Item>(@"data\items\", c => c.Type.GetFlags());
 
         private static readonly CSScriptSerializer Serializer =
             new PropertyCSScriptSerializer<Item>(GetPropertyConditions<Item>());
@@ -414,7 +384,7 @@ namespace UnicornHack
                 {nameof(BaseName), (o, v) => v != null},
                 {nameof(Type), (o, v) => (ItemType)v != (o.BaseItem?.Type ?? ItemType.None)},
                 {nameof(Weight), (o, v) => (int)v != (o.BaseItem?.Weight ?? 0)},
-                {nameof(Nutrition), (o, v) => (int)v != (o.BaseItem?.Nutrition ?? o.Weight)},
+                {nameof(GenerationWeight), (o, v) => (Weight)v != o.BaseItem?.GenerationWeight},
                 {nameof(Material), (o, v) => (Material)v != (o.BaseItem?.Material ?? Material.Default)},
                 {nameof(Nameable), (o, v) => (bool)v != (o.BaseItem?.Nameable ?? true)},
                 {nameof(StackSize), (o, v) => (int)v != (o.BaseItem?.StackSize ?? 1)},

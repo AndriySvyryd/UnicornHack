@@ -1,1 +1,0 @@
-new Item { Name = "carrot", Type = ItemType.Food, Weight = 5, StackSize = 20 }

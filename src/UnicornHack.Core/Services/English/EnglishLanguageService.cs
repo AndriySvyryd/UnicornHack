@@ -97,8 +97,6 @@ namespace UnicornHack.Services.English
                     return abbreviate ? "M" : "mouth";
                 case EquipmentSlot.Feet:
                     return abbreviate ? "F" : "feet";
-                case EquipmentSlot.Legs:
-                    return abbreviate ? "L" : "legs";
                 case EquipmentSlot.Body:
                     return abbreviate ? "B" : "body";
                 case EquipmentSlot.Head:
@@ -111,8 +109,6 @@ namespace UnicornHack.Services.English
                     return abbreviate ? "LF" : "left finger";
                 case EquipmentSlot.RingRight:
                     return abbreviate ? "RF" : "right finger";
-                case EquipmentSlot.Belt:
-                    return abbreviate ? "W" : "waist";
                 case EquipmentSlot.Back:
                     return abbreviate ? "C" : "back";
                 default:
@@ -131,14 +127,12 @@ namespace UnicornHack.Services.English
                 case EquipmentSlot.GraspBothExtremities:
                     return "in";
                 case EquipmentSlot.Feet:
-                case EquipmentSlot.Legs:
                 case EquipmentSlot.Body:
                 case EquipmentSlot.Head:
                 case EquipmentSlot.Hands:
                 case EquipmentSlot.Necklace:
                 case EquipmentSlot.RingLeft:
                 case EquipmentSlot.RingRight:
-                case EquipmentSlot.Belt:
                 case EquipmentSlot.Back:
                     return "on the";
                 default:

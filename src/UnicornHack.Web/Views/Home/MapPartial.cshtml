@@ -111,21 +111,26 @@
                 symbol = '$';
                 className = "itemGold";
                 break;
-            case ItemType.Food:
-                symbol = '%';
-                className = "itemFood";
-                break;
-            case ItemType.Armor:
+            case ItemType.Shield:
+            case ItemType.ArmorBack:
+            case ItemType.ArmorBody:
+            case ItemType.ArmorFeet:
+            case ItemType.ArmorHands:
+            case ItemType.ArmorHead:
                 symbol = '(';
                 className = "itemArmor";
                 break;
+            case ItemType.WeaponMeleeFist:
             case ItemType.WeaponMeleeShort:
             case ItemType.WeaponMeleeMedium:
             case ItemType.WeaponMeleeLong:
-            case ItemType.WeaponRangedBows:
-            case ItemType.WeaponRangedCrossbows:
-            case ItemType.WeaponRangedSlingshots:
+            case ItemType.WeaponMagicFocus:
+            case ItemType.WeaponMagicStaff:
+            case ItemType.WeaponRangedBow:
+            case ItemType.WeaponRangedCrossbow:
+            case ItemType.WeaponRangedSlingshot:
             case ItemType.WeaponRangedThrown:
+            case ItemType.WeaponAmmoContainer:
                 symbol = ')';
                 className = "itemWeapon";
                 break;

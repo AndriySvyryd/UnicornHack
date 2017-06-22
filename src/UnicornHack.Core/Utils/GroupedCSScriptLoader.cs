@@ -7,9 +7,15 @@ namespace UnicornHack.Utils
         where T : ILoadable
     {
         private Dictionary<TKey, List<T>> _objects;
-        private readonly Func<T, TKey> _keySelector;
+        private readonly Func<T, IEnumerable<TKey>> _keySelector;
 
         public GroupedCSScriptLoader(string relativePath, Func<T, TKey> keySelector)
+            : base(relativePath)
+        {
+            _keySelector = i => Sequence.Single(keySelector(i));
+        }
+
+        public GroupedCSScriptLoader(string relativePath, Func<T, IEnumerable<TKey>> keySelector)
             : base(relativePath)
         {
             _keySelector = keySelector;
@@ -23,14 +29,16 @@ namespace UnicornHack.Utils
                 _objects = new Dictionary<TKey, List<T>>();
                 foreach (var value in NameLookup.Values)
                 {
-                    var key = _keySelector(value);
-                    if (!_objects.TryGetValue(key, out var list))
+                    foreach (var key in _keySelector(value))
                     {
-                        list = new List<T>();
-                        _objects[key] = list;
-                    }
+                        if (!_objects.TryGetValue(key, out var list))
+                        {
+                            list = new List<T>();
+                            _objects[key] = list;
+                        }
 
-                    list.Add(value);
+                        list.Add(value);
+                    }
                 }
             }
 

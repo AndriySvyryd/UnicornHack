@@ -70,11 +70,6 @@
                         }
                     }
 
-                    if (item.Type == ItemType.Food)
-                    {
-                        @: <a class="itemAction" href="javascript:PerformAction('EAT', @item.Id)">eat</a>
-                    }
-
                     @: <a class="itemAction" href="javascript:PerformAction('DROP', @item.Id)">drop</a>
                 }
             </div>

@@ -21,6 +21,23 @@ namespace UnicornHack
         public virtual int Intelligence { get; set; }
         public virtual int Willpower { get; set; }
 
+        public override Actor BaseActor
+        {
+            get
+            {
+                if (BaseName == null)
+                {
+                    return null;
+                }
+                if (Player.Loader.TryGet(BaseName, out var baseVariant))
+                {
+                    return baseVariant;
+                }
+
+                return Creature.Loader.Get(BaseName);
+            }
+        }
+
         public virtual Skills Skills { get; set; }
 
         public virtual int MaxEP { get; set; }
@@ -155,10 +172,9 @@ namespace UnicornHack
             player.Skills = Skills != null ? new Skills(Skills) : new Skills();
             player.RecalculateEffectsAndAbilities();
 
-            Item.Get("carrot").Instantiate(player, quantity: 3);
-            Item.Get("mail armor").Instantiate(player);
-            Item.Get("long sword").Instantiate(player);
-            Item.Get("dagger").Instantiate(player);
+            Item.Loader.Get("mail armor").Instantiate(player);
+            Item.Loader.Get("long sword").Instantiate(player);
+            Item.Loader.Get("dagger").Instantiate(player);
 
             return player;
         }
@@ -229,9 +245,6 @@ namespace UnicornHack
                     case "H":
                         NextActionTick += DefaultActionDelay;
                         break;
-                    case "EAT":
-                        Eat(GetItem(target.Value));
-                        break;
                     case "DROP":
                         Drop(GetItem(target.Value));
                         break;
@@ -299,17 +312,6 @@ namespace UnicornHack
 
             WriteLog(Game.Services.Language.UnableToMove(direction), Level.CurrentTick);
             return false;
-        }
-
-        public virtual bool Eat(Item item)
-        {
-            if (item == null)
-            {
-                WriteLog(Game.Services.Language.InvalidTarget(), Level.CurrentTick);
-                return false;
-            }
-
-            return Eat(item, pretend: false);
         }
 
         public virtual bool Drop(Item item)

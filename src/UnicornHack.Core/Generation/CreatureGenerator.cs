@@ -6,11 +6,12 @@ namespace UnicornHack.Generation
 {
     public class CreatureGenerator
     {
-        public virtual byte ExpectedInitialCount { get; set; } = 6;
+        public virtual byte ExpectedInitialCount { get; set; } = 8;
 
         public virtual void Fill(Level level)
         {
-            var creaturesToPlace = level.GenerationRandom.NextBinomial(0.5f, ExpectedInitialCount * 2);
+            var creaturesToPlace =
+                level.GenerationRandom.NextBinomial(0.5f, (ExpectedInitialCount - level.Actors.Count) * 2);
             var roomsToFill = level.Rooms.Count;
             var difficultyFraction = (float)(level.Difficulty - 1) / Level.MaxDifficulty;
             foreach (var room in level.GenerationRandom.WeightedOrder(level.Rooms.ToList(), r => r.InsidePoints.Count))

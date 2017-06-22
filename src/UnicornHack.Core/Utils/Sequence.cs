@@ -4,6 +4,11 @@ namespace UnicornHack.Utils
 {
     public static class Sequence
     {
+        public static IEnumerable<T> Single<T>(T item)
+        {
+            yield return item;
+        }
+
         public static IEnumerable<int> GetAlternating(int initial, int min, int max)
         {
             yield return initial;

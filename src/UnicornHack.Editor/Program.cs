@@ -70,7 +70,7 @@ namespace UnicornHack.Editor
 
             Directory.CreateDirectory(ItemDirectory);
 
-            foreach (var item in Item.GetAllItemVariants())
+            foreach (var item in Item.Loader.GetAll())
             {
                 var script = CSScriptSerializer.Serialize(item);
 
@@ -305,7 +305,7 @@ namespace UnicornHack.Editor
             {
                 Player.Loader.BasePath,
                 Creature.Loader.BasePath,
-                Item.BasePath,
+                Item.Loader.BasePath,
                 Branch.Loader.BasePath,
                 MapFragment.NormalLoader.BasePath,
                 DefiningMapFragment.DefiningLoader.BasePath
@@ -323,7 +323,7 @@ namespace UnicornHack.Editor
 
         public static readonly string ItemDirectory =
             Path.Combine(BaseDirectory, "new",
-                Item.BasePath.Substring(BaseDirectory.Length, Item.BasePath.Length - BaseDirectory.Length));
+                Item.Loader.BasePath.Substring(BaseDirectory.Length, Item.Loader.BasePath.Length - BaseDirectory.Length));
 
         public static readonly string BranchDirectory =
             Path.Combine(BaseDirectory, "new",

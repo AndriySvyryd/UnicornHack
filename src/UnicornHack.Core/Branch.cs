@@ -9,7 +9,7 @@ namespace UnicornHack
     {
         public virtual string Name { get; set; }
         public virtual byte Length { get; set; }
-        public virtual int GameId { get; private set; }
+        public virtual int GameId { get; set; }
         public virtual Game Game { get; set; }
         public virtual int Difficulty { get; set; }
 
@@ -17,7 +17,7 @@ namespace UnicornHack
         // TODO: Fragment, item and creature generation weight and distribution modifiers
         // TODO: default terrain type for floor/wall/empty space
 
-        public virtual ICollection<Level> Levels { get; private set; } = new HashSet<Level>();
+        public virtual ICollection<Level> Levels { get; } = new HashSet<Level>();
 
         #region Creation
 
