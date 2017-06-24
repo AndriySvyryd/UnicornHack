@@ -12,7 +12,7 @@ new Item
         {
             Activation = AbilityActivation.OnMeleeAttack,
             Action = AbilityAction.Slash,
-            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 5 } }
+            Effects = new HashSet<Effect> { new PhysicalDamage { Damage = 20 } }
         }
     }
 }

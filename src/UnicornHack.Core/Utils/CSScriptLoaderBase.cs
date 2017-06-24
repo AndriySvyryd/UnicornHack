@@ -44,7 +44,14 @@ namespace UnicornHack.Utils
                 if (!NameLookup.ContainsKey(
                     CSScriptDeserializer.GetNameFromFilename(Path.GetFileNameWithoutExtension(file))))
                 {
-                    Load(file);
+                    try
+                    {
+                        Load(file);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new InvalidOperationException($"Error while loading {typeof(T).Name} '{Path.GetFileName(file)}'\r\n", e);
+                    }
                 }
             }
         }

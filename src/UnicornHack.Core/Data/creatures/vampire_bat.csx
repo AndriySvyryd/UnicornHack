@@ -23,7 +23,7 @@ new Creature
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Bite,
             Timeout = 1,
-            Effects = new HashSet<Effect> { new DrainStrength { Amount = 1 } }
+            Effects = new HashSet<Effect> { new ChangeValuedProperty<int> { PropertyName = "Strength", Value = -1, Duration = 5 } }
         }
     }
 ,

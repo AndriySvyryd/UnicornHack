@@ -53,7 +53,7 @@ namespace UnicornHack
 
         public virtual int ArmorClass
         {
-            get { return _armorClass ?? BaseActor?.ArmorClass ?? (int)CustomPropertyDescription.ArmorClass.MaxValue; }
+            get { return _armorClass ?? BaseActor?.ArmorClass ?? (int)PropertyDescription.ArmorClass.MaxValue; }
             set { _armorClass = value; }
         }
 
@@ -62,7 +62,7 @@ namespace UnicornHack
             get
             {
                 return _magicResistance ??
-                       BaseActor?.MagicResistance ?? (int)CustomPropertyDescription.MagicResistance.MinValue;
+                       BaseActor?.MagicResistance ?? (int)PropertyDescription.MagicResistance.MinValue;
             }
             set { _magicResistance = value; }
         }
@@ -86,6 +86,7 @@ namespace UnicornHack
             set { _weight = value; }
         }
 
+        // TODO: Remove
         public virtual int Nutrition
         {
             get { return _nutrition ?? BaseActor?.Nutrition ?? 0; }
@@ -135,9 +136,6 @@ namespace UnicornHack
         public virtual ISet<Ability> Abilities { get; set; } = new HashSet<Ability>();
 
         public virtual Sex Sex { get; set; }
-        public virtual byte XPLevel { get; set; }
-        public virtual int XP { get; set; }
-        public virtual int NextLevelXP { get; set; }
         public virtual int MaxHP { get; set; }
         public virtual int HP { get; set; }
         public virtual bool IsAlive => HP > 0;
@@ -162,16 +160,71 @@ namespace UnicornHack
 
         public virtual Game Game { get; set; }
 
+        #endregion
+
+        #region Creation
+
+        protected Actor()
+        {
+        }
+
+        protected Actor(Level level, byte x, byte y)
+            : this()
+        {
+            Game = level.Game;
+            Id = level.Game.NextActorId++;
+            Game.Actors.Add(this);
+            LevelX = x;
+            LevelY = y;
+            Level = level;
+            NextActionTick = level.Game.NextPlayerTick;
+            level.Actors.Push(this);
+            AddReference();
+        }
+
+        private int _referenceCount;
+
+        void IReferenceable.AddReference()
+        {
+            _referenceCount++;
+        }
+
+        public TransientReference<Actor> AddReference()
+        {
+            return new TransientReference<Actor>(this);
+        }
+
+        public void RemoveReference()
+        {
+            if (--_referenceCount <= 0)
+            {
+                foreach (var item in Inventory)
+                {
+                    item.RemoveReference();
+                }
+                foreach (var ability in Abilities)
+                {
+                    ability.RemoveReference();
+                }
+                Game.Repository.Delete(this);
+            }
+        }
+
+        #endregion
+
+        #region Actions
+
+
         public virtual int GetEffectiveAC()
         {
             var effectiveAC = ArmorClass;
-            var maxAC = (int)CustomPropertyDescription.ArmorClass.MaxValue;
+            var maxAC = (int)PropertyDescription.ArmorClass.MaxValue;
             foreach (var item in Inventory)
             {
                 if (item.EquippedSlot != null)
                 {
                     effectiveAC += (int)item.ValuedProperties.GetValueOrDefault(
-                                       nameof(CustomPropertyDescription.ArmorClass), maxAC) - maxAC;
+                                       nameof(PropertyDescription.ArmorClass), maxAC) - maxAC;
                 }
             }
 
@@ -228,7 +281,7 @@ namespace UnicornHack
                         Name = MeleeAttackName,
                         Activation = AbilityActivation.OnTarget,
                         DelayTicks = 100,
-                        Effects = new HashSet<Effect> {new MeleeAttack(Game), new PhysicalDamage(Game)},
+                        Effects = new HashSet<Effect> { new MeleeAttack(Game), new PhysicalDamage(Game) },
                         IsUsable = false
                     };
 
@@ -240,7 +293,7 @@ namespace UnicornHack
                     {
                         Name = SecondaryMeleeAttackName,
                         Activation = AbilityActivation.OnMeleeAttack,
-                        Effects = new HashSet<Effect> {new MeleeAttack(Game), new PhysicalDamage(Game)},
+                        Effects = new HashSet<Effect> { new MeleeAttack(Game), new PhysicalDamage(Game) },
                         IsUsable = false
                     };
 
@@ -280,110 +333,8 @@ namespace UnicornHack
             //Check innate properties
         }
 
-        #endregion
-
-        #region Creation
-
-        protected Actor()
-        {
-        }
-
-        protected Actor(Game game)
-            : this()
-        {
-            Game = game;
-            Id = game.NextActorId++;
-            Game.Actors.Add(this);
-        }
-
-        public virtual Actor Instantiate(Level level, byte x, byte y)
-        {
-            if (Game != null)
-            {
-                throw new InvalidOperationException("This actor is already part of a game.");
-            }
-
-            var actorInstance = CreateInstance(level.Game);
-            actorInstance.LevelX = x;
-            actorInstance.LevelY = y;
-            actorInstance.Level = level;
-            actorInstance.NextActionTick = level.Game.NextPlayerTick;
-            level.Actors.Push(actorInstance);
-            actorInstance.AddReference();
-
-            actorInstance.BaseName = Name;
-            actorInstance.Species = Species;
-            actorInstance.SpeciesClass = SpeciesClass;
-            actorInstance.ArmorClass = ArmorClass;
-            actorInstance.MagicResistance = MagicResistance;
-            actorInstance.MovementDelay = MovementDelay;
-            actorInstance.Size = Size;
-            actorInstance.Weight = Weight;
-            actorInstance.Nutrition = Nutrition;
-            actorInstance.Material = Material;
-
-            if (actorInstance.SimpleProperties.Contains(nameof(CustomPropertyDescription.Asexuality)))
-            {
-                actorInstance.Sex = Sex.None;
-            }
-            else if (actorInstance.SimpleProperties.Contains(nameof(CustomPropertyDescription.Maleness)))
-            {
-                actorInstance.Sex = Sex.Male;
-            }
-            else if (actorInstance.SimpleProperties.Contains(nameof(CustomPropertyDescription.Femaleness)))
-            {
-                actorInstance.Sex = Sex.Female;
-            }
-            else
-            {
-                actorInstance.Sex = level.Game.Random.Roll(1, 2) > 1 ? Sex.Female : Sex.Male;
-            }
-
-            foreach (var ability in Abilities)
-            {
-                actorInstance.Abilities.Add(ability.Instantiate(level.Game));
-            }
-
-            return actorInstance;
-        }
-
-        protected abstract Actor CreateInstance(Game game);
-
-        private int _referenceCount;
-
-        void IReferenceable.AddReference()
-        {
-            _referenceCount++;
-        }
-
-        public TransientReference<Actor> AddReference()
-        {
-            return new TransientReference<Actor>(this);
-        }
-
-        public void RemoveReference()
-        {
-            if (--_referenceCount <= 0)
-            {
-                foreach (var item in Inventory)
-                {
-                    item.RemoveReference();
-                }
-                foreach (var ability in Abilities)
-                {
-                    ability.RemoveReference();
-                }
-                Game.Repository.Delete(this);
-            }
-        }
-
-        #endregion
-
-        #region Actions
-
         /// <summary></summary>
         /// <returns>Returns <c>false</c> if the actor hasn't finished their turn.</returns>
-        // TODO: return Task
         public abstract bool Act();
 
         public virtual void Sense(SensoryEvent @event)
@@ -824,8 +775,7 @@ namespace UnicornHack
 
         protected static Dictionary<string, Func<TActor, object, bool>> GetPropertyConditions<TActor>()
             where TActor : Actor
-        {
-            return new Dictionary<string, Func<TActor, object, bool>>
+            => new Dictionary<string, Func<TActor, object, bool>>
             {
                 {nameof(Name), (o, v) => v != null},
                 {nameof(BaseName), (o, v) => v != null},
@@ -833,7 +783,7 @@ namespace UnicornHack
                 {nameof(SpeciesClass), (o, v) => (SpeciesClass)v != (o.BaseActor?.SpeciesClass ?? SpeciesClass.None)},
                 {
                     nameof(ArmorClass),
-                    (o, v) => (int)v != (o.BaseActor?.ArmorClass ?? (int)CustomPropertyDescription.ArmorClass.MaxValue)
+                    (o, v) => (int)v != (o.BaseActor?.ArmorClass ?? (int)PropertyDescription.ArmorClass.MaxValue)
                 },
                 {nameof(MagicResistance), (o, v) => (int)v != (o.BaseActor?.MagicResistance ?? 0)},
                 {nameof(MovementDelay), (o, v) => (int)v != (o.BaseActor?.MovementDelay ?? 0)},
@@ -845,7 +795,6 @@ namespace UnicornHack
                 {nameof(SimpleProperties), (o, v) => ((ICollection<string>)v).Count != 0},
                 {nameof(ValuedProperties), (o, v) => ((IDictionary<string, object>)v).Keys.Count != 0}
             };
-        }
 
         public abstract ICSScriptSerializer GetSerializer();
 

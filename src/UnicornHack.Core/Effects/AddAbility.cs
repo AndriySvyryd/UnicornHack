@@ -15,9 +15,10 @@ namespace UnicornHack.Effects
         }
 
         public Ability Ability { get; set; }
+        public int Duration { get; set; }
 
         public override Effect Instantiate(Game game)
-            => new AddAbility(game) {Ability = Ability};
+            => new AddAbility(game) {Ability = Ability, Duration = Duration};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {

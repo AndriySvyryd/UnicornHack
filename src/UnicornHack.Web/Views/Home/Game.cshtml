@@ -9,8 +9,9 @@
         @{ Html.RenderPartial("MapPartial", Model); }
     </div>
     <pre>
-@Model.Name the Adventurer Lvl:@Model.XPLevel XP:@(Model.XP)(@Model.NextLevelXP) St:@Model.Strength Dx:@Model.Dexterity Co:@Model.Constitution Sp:@Model.Speed In:@Model.Intelligence Wi:@Model.Willpower
-@Model.Level.BranchName:@Model.Level.Depth @Model.LevelX,@Model.LevelY $:@Model.Gold HP:@(Model.HP)(@Model.MaxHP) EP:@(Model.EP)(@Model.MaxEP) AC:@Model.GetEffectiveAC() AUT:@($"{Model.NextActionTick / 100f:0000.00}")
+@{ var races = string.Join(" ", Model.Races.OrderBy(r => r.Id).Select(r => $"{r.Name}({r.XPLevel})")); }
+@(Model.Name)(@Model.XPLevel) @races XP:@Model.XP/@Model.NextLevelXP St:@Model.Strength Dx:@Model.Agility Co:@Model.Constitution Sp:@Model.Quickness In:@Model.Intelligence Wi:@Model.Willpower
+@Model.Level.BranchName:@Model.Level.Depth @Model.LevelX,@Model.LevelY $:@Model.Gold HP:@Model.HP/@Model.MaxHP EP:@Model.EP/@Model.MaxEP AC:@Model.GetEffectiveAC() AUT:@($"{Model.NextActionTick / 100f:0000.00}")
 </pre>
 </div>
 

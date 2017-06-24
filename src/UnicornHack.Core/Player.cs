@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using CSharpScriptSerialization;
+using UnicornHack.Definitions;
 using UnicornHack.Effects;
 using UnicornHack.Events;
 using UnicornHack.Utils;
@@ -14,31 +14,24 @@ namespace UnicornHack
     {
         #region State
 
-        public virtual int Strength { get; set; }
-        public virtual int Dexterity { get; set; }
-        public virtual int Speed { get; set; }
-        public virtual int Constitution { get; set; }
-        public virtual int Intelligence { get; set; }
-        public virtual int Willpower { get; set; }
+        public virtual byte Strength { get; set; }
+        public virtual byte Agility { get; set; }
+        public virtual byte Quickness { get; set; }
+        public virtual byte Constitution { get; set; }
+        public virtual byte Intelligence { get; set; }
+        public virtual byte Willpower { get; set; }
 
-        public override Actor BaseActor
-        {
-            get
-            {
-                if (BaseName == null)
-                {
-                    return null;
-                }
-                if (Player.Loader.TryGet(BaseName, out var baseVariant))
-                {
-                    return baseVariant;
-                }
+        public virtual int NextRaceId { get; set; }
+        public virtual ICollection<ActivePlayerRace> Races { get; set; } = new HashSet<ActivePlayerRace>();
+        public virtual ActivePlayerRace LearningRace => Races.OrderBy(r => XPLevel).ThenBy(r => r.Id).First();
 
-                return Creature.Loader.Get(BaseName);
-            }
-        }
+        public virtual int MaxXPLevel { get; set; }
+        public virtual byte XPLevel => (byte)Races.Sum(r => r.XPLevel);
+        public virtual int XP => LearningRace.XP;
+        public virtual int NextLevelXP => LearningRace.NextLevelXP;
 
         public virtual Skills Skills { get; set; }
+        public virtual int UnspentSkillPoints { get; set; }
 
         public virtual int MaxEP { get; set; }
         public virtual int EP { get; set; }
@@ -53,13 +46,101 @@ namespace UnicornHack
         public virtual int? NextActionTarget { get; set; }
         public virtual int? NextActionTarget2 { get; set; }
 
+        public override Actor BaseActor { get; }
+        public override int MovementDelay => DefaultActionDelay * 10 / Quickness;
+
+        #endregion
+
+        #region Creation
+
+        public Player()
+        {
+        }
+
+        public Player(Level level, byte x, byte y)
+            : base(level, x, y)
+        {
+            BaseName = "player";
+
+            UpdateNextLevelXP(PlayerRace.Loader.Get("human").Instantiate(this));
+
+            Abilities.Add(new Ability(Game)
+            {
+                Name = UnarmedAttackName,
+                Activation = AbilityActivation.OnTarget,
+                Action = AbilityAction.Punch,
+                FreeSlotsRequired = EquipmentSlot.GraspBothExtremities | EquipmentSlot.GraspSingleExtremity,
+                DelayTicks = 100,
+                Effects = new HashSet<Effect>
+                {
+                    new MeleeAttack(Game),
+                    new PhysicalDamage(Game) {Damage = 2}
+                }
+            });
+
+            Abilities.Add(new Ability(Game)
+            {
+                Name = UnarmedAttackName,
+                Activation = AbilityActivation.OnMeleeAttack,
+                Action = AbilityAction.Punch,
+                FreeSlotsRequired = EquipmentSlot.GraspBothExtremities | EquipmentSlot.GraspSingleExtremity,
+                Effects = new HashSet<Effect>
+                {
+                    new MeleeAttack(Game),
+                    new PhysicalDamage(Game) {Damage = 2}
+                }
+            });
+
+            Skills = new Skills();
+            RecalculateEffectsAndAbilities();
+
+
+            MaxHP = 100 + Constitution * 10;
+            HP = MaxHP;
+
+            MaxEP = 100 + Willpower * 10;
+            EP = MaxEP;
+
+            Item.Loader.Get("mail armor").Instantiate(this);
+            Item.Loader.Get("long sword").Instantiate(this);
+            Item.Loader.Get("dagger").Instantiate(this);
+        }
+
+        #endregion
+
+        #region Actions
+
+        private void UpdateNextLevelXP(ActivePlayerRace race)
+        {
+            var currentLevel = MaxXPLevel > XPLevel ? race.XPLevel : XPLevel;
+            race.NextLevelXP = (int)(75 + (1 + currentLevel) * 25);
+        }
+
+        public void AddXP(int xp)
+        {
+            ChangeCurrentHP(xp);
+            var race = LearningRace;
+            race.XP += xp;
+            if (race.XP >= race.NextLevelXP)
+            {
+                race.XP -= race.NextLevelXP;
+                race.XPLevel++;
+                // TODO: Trigger abilities
+                if (XPLevel > MaxXPLevel)
+                {
+                    MaxXPLevel = XPLevel;
+                }
+                UpdateNextLevelXP(race);
+            }
+        }
+
         protected override void RecalculateEffectsAndAbilities()
         {
             base.RecalculateEffectsAndAbilities();
 
             foreach (var unarmedAbility in Abilities.Where(a => a.Name == UnarmedAttackName && a.IsUsable))
             {
-                unarmedAbility.Effects.OfType<PhysicalDamage>().Single().Damage = 1 + Skills.Unarmed;
+                unarmedAbility.Effects.OfType<PhysicalDamage>().Single().Damage = 1 + Skills.FistWeapons;
             }
 
             var mainMeleeAttack = Abilities.FirstOrDefault(a => a.Name == MeleeAttackName);
@@ -108,84 +189,15 @@ namespace UnicornHack
                 mainMeleeAttack.Effects.OfType<PhysicalDamage>().Single().Damage =
                     meleeSkill + mainWeaponSkill;
             }
+
+            // TODO: Calculate attributes, size and other properties
+            Strength = StartingAttributeValue;
+            Agility = StartingAttributeValue;
+            Quickness = StartingAttributeValue;
+            Constitution = StartingAttributeValue;
+            Intelligence = StartingAttributeValue;
+            Willpower = StartingAttributeValue;
         }
-
-        #endregion
-
-        #region Creation
-
-        public Player()
-        {
-        }
-
-        public Player(Game game)
-            : base(game)
-        {
-        }
-
-        public override Actor Instantiate(Level level, byte x, byte y)
-        {
-            var player = (Player)base.Instantiate(level, x, y);
-            player.XPLevel = 1;
-            player.Strength = Strength;
-            player.Dexterity = Dexterity;
-            player.Speed = Speed;
-            player.Constitution = Constitution;
-            player.Intelligence = Intelligence;
-            player.Willpower = Willpower;
-
-            player.MaxHP = 10 + player.XPLevel * player.Constitution / 5;
-            player.HP = player.MaxHP;
-
-            player.MaxEP = 10 + player.XPLevel * player.Willpower / 5;
-            player.EP = player.MaxEP;
-
-            player.NextLevelXP = player.XPLevel * 100;
-
-            player.Abilities.Add(new Ability(player.Game)
-            {
-                Name = UnarmedAttackName,
-                Activation = AbilityActivation.OnTarget,
-                Action = AbilityAction.Punch,
-                FreeSlotsRequired = EquipmentSlot.GraspBothExtremities | EquipmentSlot.GraspSingleExtremity,
-                DelayTicks = 100,
-                Effects = new HashSet<Effect>
-                {
-                    new MeleeAttack(player.Game),
-                    new PhysicalDamage(player.Game) {Damage = 2}
-                }
-            });
-
-            player.Abilities.Add(new Ability(player.Game)
-            {
-                Name = UnarmedAttackName,
-                Activation = AbilityActivation.OnMeleeAttack,
-                Action = AbilityAction.Punch,
-                FreeSlotsRequired = EquipmentSlot.GraspBothExtremities | EquipmentSlot.GraspSingleExtremity,
-                Effects = new HashSet<Effect>
-                {
-                    new MeleeAttack(player.Game),
-                    new PhysicalDamage(player.Game) {Damage = 2}
-                }
-            });
-
-            player.Skills = Skills != null ? new Skills(Skills) : new Skills();
-            player.RecalculateEffectsAndAbilities();
-
-            Item.Loader.Get("mail armor").Instantiate(player);
-            Item.Loader.Get("long sword").Instantiate(player);
-            Item.Loader.Get("dagger").Instantiate(player);
-
-            return player;
-        }
-
-        protected override Actor CreateInstance(Game game) => new Player(game);
-
-        #endregion
-
-        #region Actions
-
-        public override int MovementDelay => DefaultActionDelay * 10 / Speed;
 
         public override bool Act()
         {
@@ -288,6 +300,11 @@ namespace UnicornHack
             }
             @event.AddReference();
             SensedEvents.Add(@event);
+        }
+
+        public override ICSScriptSerializer GetSerializer()
+        {
+            throw new NotImplementedException();
         }
 
         public virtual bool UseStairs(bool up)
@@ -407,32 +424,7 @@ namespace UnicornHack
 
         #region Serialization
 
-        public static readonly int StartingAttributeValue = 10;
-
-        public static readonly CSScriptLoader<Player> Loader = new CSScriptLoader<Player>(@"data\players\");
-
-        private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<Player>(
-            GetPropertyConditions<Player>());
-
-        protected new static Dictionary<string, Func<TPlayerCharacter, object, bool>> GetPropertyConditions
-            <TPlayerCharacter>()
-            where TPlayerCharacter : Player
-        {
-            var propertyConditions = Actor.GetPropertyConditions<TPlayerCharacter>();
-            propertyConditions[nameof(MovementDelay)] = (o, v) => false;
-            propertyConditions.Add(nameof(Strength), (o, v) => (int)v != 0);
-            propertyConditions.Add(nameof(Dexterity), (o, v) => (int)v != 0);
-            propertyConditions.Add(nameof(Constitution), (o, v) => (int)v != 0);
-            propertyConditions.Add(nameof(Intelligence), (o, v) => (int)v != 0);
-            propertyConditions.Add(nameof(Willpower), (o, v) => (int)v != 0);
-            propertyConditions.Add(nameof(Speed), (o, v) => (int)v != 0);
-            propertyConditions.Add(nameof(Skills), (o, v) => v != null);
-            propertyConditions.Add(nameof(SensedEvents), (o, v) => false);
-            propertyConditions.Add(nameof(Log), (o, v) => false);
-            return propertyConditions;
-        }
-
-        public override ICSScriptSerializer GetSerializer() => Serializer;
+        public static readonly byte StartingAttributeValue = 10;
 
         #endregion
     }

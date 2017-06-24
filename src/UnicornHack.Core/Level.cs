@@ -129,7 +129,7 @@ namespace UnicornHack
             }
             catch (Exception e)
             {
-                var msg = $"Error while generating level, initial seed {Game.InitialSeed}";
+                var msg = $"Error while generating level '{BranchName}:{Depth}', initial seed {Game.InitialSeed}:\r\n";
 
                 Console.WriteLine(msg);
                 Console.WriteLine(e);

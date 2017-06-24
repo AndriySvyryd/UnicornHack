@@ -113,9 +113,7 @@ namespace UnicornHack.Controllers
                 var initialLevel = surfaceLevel.Connections.Single().TargetLevel;
                 initialLevel.EnsureGenerated();
                 var upStairs = initialLevel.Connections.First(c => c.TargetBranchName == surfaceBranch.Name);
-                character = (Player)Player.Loader.Get("player human")
-                    .Instantiate(initialLevel, upStairs.LevelX, upStairs.LevelY);
-                character.Name = name;
+                character = new Player(initialLevel, upStairs.LevelX, upStairs.LevelY) {Name = name};
 
                 character.WriteLog(game.Services.Language.Welcome(character), character.Level.CurrentTick);
 
@@ -150,6 +148,7 @@ namespace UnicornHack.Controllers
             _dbContext.Characters
                 .Include(c => c.Game.Random)
                 .Include(c => c.Log)
+                .Include(c => c.Races).ThenInclude(r => r.Abilities).ThenInclude(a => a.Effects)
                 .Include(c => c.Skills)
                 //.Include(c => c.SensedEvents)
                 .Include(c => c.Level.Connections)
@@ -182,10 +181,7 @@ namespace UnicornHack.Controllers
 
             _dbContext.Levels
                 .Include(l => l.Items).ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
-                .Include(l => l.Actors)
-                .ThenInclude(a => a.Inventory)
-                .ThenInclude(i => i.Abilities)
-                .ThenInclude(a => a.Effects)
+                .Include(l => l.Actors).ThenInclude(a => a.Inventory).ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
                 .Include(l => l.Actors).ThenInclude(a => a.Abilities).ThenInclude(a => a.Effects)
                 .Include(l => l.Connections).ThenInclude(c => c.TargetBranch)
                 .Include(l => l.IncomingConnections).ThenInclude(c => c.Level)

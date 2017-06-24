@@ -1,5 +1,4 @@
-﻿using System;
-using UnicornHack.Events;
+﻿using UnicornHack.Events;
 
 namespace UnicornHack.Effects
 {
@@ -15,18 +14,19 @@ namespace UnicornHack.Effects
         }
 
         public string PropertyName { get; set; }
-        public bool IsAdded { get; set; }
+        public bool Remove { get; set; }
+        public int Duration { get; set; }
 
         public override Effect Instantiate(Game game)
             => new ChangeSimpleProperty(game)
             {
                 PropertyName = PropertyName,
-                IsAdded = IsAdded
+                Remove = Remove,
+                Duration = Duration
             };
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            throw new NotImplementedException();
         }
     }
 }

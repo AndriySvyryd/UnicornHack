@@ -24,7 +24,7 @@ new Creature
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Claw,
             Timeout = 1,
-            Effects = new HashSet<Effect> { new DrainDexterity { Amount = 1 } }
+            Effects = new HashSet<Effect> { new ChangeValuedProperty<int> { PropertyName = "Agility", Value = -1, Duration = 5 } }
         }
 ,
         new Ability { Activation = AbilityActivation.OnConsumption, Effects = new HashSet<Effect> { new PoisonDamage { Damage = 3 } } }

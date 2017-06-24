@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using CSharpScriptSerialization;
+using UnicornHack.Definitions;
 using UnicornHack.Generation.Map;
 using UnicornHack.Utils;
 
@@ -28,7 +29,7 @@ namespace UnicornHack.Editor
 
             Directory.CreateDirectory(PlayerDirectory);
 
-            foreach (var playerVariant in Player.Loader.GetAll())
+            foreach (var playerVariant in PlayerRace.Loader.GetAll())
             {
                 var script = CSScriptSerializer.Serialize(playerVariant);
 
@@ -173,29 +174,26 @@ namespace UnicornHack.Editor
             => Verify<Creature>(script, c => c.Name == creature.Name,
                 c => c.SimpleProperties, c => c.ValuedProperties);
 
-        private static void Verify(string script, Player player)
-            => Verify<Player>(script, c => c.Name == player.Name,
-                c => c.SimpleProperties, c => c.ValuedProperties);
+        private static void Verify(string script, PlayerRace player)
+            => Verify<PlayerRace>(script, c => c.Name == player.Name, null, null);
 
         private static void Verify(string script, Item item)
             => Verify<Item>(script, c => c.Name == item.Name,
                 c => c.SimpleProperties, c => c.ValuedProperties);
 
         private static void Verify(string script, Branch branch)
-            => Verify<Branch>(script, f => f.Name == branch.Name,
-                null, null);
+            => Verify<Branch>(script, f => f.Name == branch.Name, null, null);
 
         private static void Verify(string script, MapFragment fragment)
-            => Verify<MapFragment>(script, f => f.Name == fragment.Name && VerifyNoUnicode(fragment),
-                null, null);
+            => Verify<MapFragment>(script, f => f.Name == fragment.Name && VerifyNoUnicode(fragment), null, null);
 
         private static void Verify(string script, ConnectingMapFragment fragment)
-            => Verify<ConnectingMapFragment>(script, f => f.Name == fragment.Name && VerifyNoUnicode(fragment),
-                null, null);
+            => Verify<ConnectingMapFragment>(script, f => f.Name == fragment.Name && VerifyNoUnicode(fragment), null,
+                null);
 
         private static void Verify(string script, DefiningMapFragment fragment)
-            => Verify<DefiningMapFragment>(script, f => f.Name == fragment.Name && VerifyNoUnicode(fragment),
-                null, null);
+            => Verify<DefiningMapFragment>(script, f => f.Name == fragment.Name && VerifyNoUnicode(fragment), null,
+                null);
 
         private static bool VerifyNoUnicode(MapFragment fragment)
         {
@@ -239,7 +237,7 @@ namespace UnicornHack.Editor
                 {
                     foreach (var simpleProperty in simpleProperties)
                     {
-                        if (!CustomProperties.TryGetValue(simpleProperty, out CustomPropertyDescription description))
+                        if (!CustomProperties.TryGetValue(simpleProperty, out PropertyDescription description))
                         {
                             throw new InvalidOperationException(
                                 "Invalid simple property: " + simpleProperty);
@@ -258,7 +256,7 @@ namespace UnicornHack.Editor
                     foreach (var valuedProperty in valuedProperties)
                     {
                         if (!CustomProperties.TryGetValue(valuedProperty.Key,
-                            out CustomPropertyDescription description))
+                            out PropertyDescription description))
                         {
                             throw new InvalidOperationException("Invalid valued property: " + valuedProperty);
                         }
@@ -290,31 +288,28 @@ namespace UnicornHack.Editor
             }
         }
 
-        private static readonly Dictionary<string, CustomPropertyDescription> CustomProperties = GetCustomProperties();
+        private static readonly Dictionary<string, PropertyDescription> CustomProperties = GetCustomProperties();
 
-        private static Dictionary<string, CustomPropertyDescription> GetCustomProperties()
-            => typeof(CustomPropertyDescription).GetProperties(
+        private static Dictionary<string, PropertyDescription> GetCustomProperties()
+            => typeof(PropertyDescription).GetProperties(
                     BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Static)
                 .Where(p => !p.CanWrite)
                 .ToDictionary(
                     p => p.Name,
-                    p => (CustomPropertyDescription)p.GetGetMethod().Invoke(null, null));
+                    p => (PropertyDescription)p.GetGetMethod().Invoke(null, null));
 
         public static readonly string BaseDirectory =
             GetCommonPrefix(new[]
             {
-                Player.Loader.BasePath,
                 Creature.Loader.BasePath,
                 Item.Loader.BasePath,
-                Branch.Loader.BasePath,
-                MapFragment.NormalLoader.BasePath,
-                DefiningMapFragment.DefiningLoader.BasePath
+                MapFragment.NormalLoader.BasePath
             });
 
         public static readonly string PlayerDirectory =
             Path.Combine(BaseDirectory, "new",
-                Player.Loader.BasePath.Substring(BaseDirectory.Length,
-                    Player.Loader.BasePath.Length - BaseDirectory.Length));
+                PlayerRace.Loader.BasePath.Substring(BaseDirectory.Length,
+                    PlayerRace.Loader.BasePath.Length - BaseDirectory.Length));
 
         public static readonly string CreatureDirectory =
             Path.Combine(BaseDirectory, "new",
@@ -323,7 +318,8 @@ namespace UnicornHack.Editor
 
         public static readonly string ItemDirectory =
             Path.Combine(BaseDirectory, "new",
-                Item.Loader.BasePath.Substring(BaseDirectory.Length, Item.Loader.BasePath.Length - BaseDirectory.Length));
+                Item.Loader.BasePath.Substring(BaseDirectory.Length,
+                    Item.Loader.BasePath.Length - BaseDirectory.Length));
 
         public static readonly string BranchDirectory =
             Path.Combine(BaseDirectory, "new",

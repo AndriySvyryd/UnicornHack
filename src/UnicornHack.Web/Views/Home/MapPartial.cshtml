@@ -144,15 +144,15 @@
     {
         var symbol = ' ';
         var className = "inherit";
-        switch (actor.BaseActor.Name)
+        switch (actor.BaseName)
         {
+            case "player":
+                symbol = '@';
+                className = "playerCharacter";
+                break;
             case "human":
                 symbol = 'H';
                 className = "monsterHuman";
-                break;
-            case "player human":
-                symbol = '@';
-                className = "monsterHuman playerCharacter";
                 break;
             case "unicorn":
                 symbol = 'U';

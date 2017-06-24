@@ -88,7 +88,13 @@ namespace UnicornHack.Models
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            modelBuilder.Entity<Player>();
+            modelBuilder.Entity<Player>(pb =>
+            {
+                pb.Ignore(p => p.XP);
+                pb.Ignore(p => p.XPLevel);
+                pb.Ignore(p => p.NextLevelXP);
+            });
+
             modelBuilder.Entity<Creature>(cb =>
             {
                 cb.Ignore(c => c.GenerationWeight);
@@ -236,7 +242,7 @@ namespace UnicornHack.Models
             modelBuilder.Entity<Blind>();
             modelBuilder.Entity<Bind>();
             modelBuilder.Entity<ChangeSimpleProperty>();
-            modelBuilder.Entity<ChangeValuedProperty>();
+            modelBuilder.Entity<ChangeValuedProperty<int>>();
             modelBuilder.Entity<ColdDamage>();
             modelBuilder.Entity<ConferLycanthropy>();
             modelBuilder.Entity<Confuse>();
@@ -246,14 +252,8 @@ namespace UnicornHack.Models
             modelBuilder.Entity<Disarm>();
             modelBuilder.Entity<Disenchant>();
             modelBuilder.Entity<Disintegrate>();
-            modelBuilder.Entity<DrainConstitution>();
-            modelBuilder.Entity<DrainDexterity>();
             modelBuilder.Entity<DrainEnergy>();
-            modelBuilder.Entity<DrainIntelligence>();
             modelBuilder.Entity<DrainLife>();
-            modelBuilder.Entity<DrainSpeed>();
-            modelBuilder.Entity<DrainStrength>();
-            modelBuilder.Entity<DrainWillpower>();
             modelBuilder.Entity<ElectricityDamage>();
             modelBuilder.Entity<Engulf>();
             modelBuilder.Entity<FireDamage>();

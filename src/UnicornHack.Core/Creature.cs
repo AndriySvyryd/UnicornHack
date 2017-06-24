@@ -15,6 +15,7 @@ namespace UnicornHack
         private ActorNoiseType? _noise;
 
         public byte InitialLevel { get; set; }
+        public virtual int XP { get; set; }
         public virtual Weight GenerationWeight { get; set; }
         public GenerationFlags GenerationFlags { get; set; }
         public Frequency GenerationFrequency { get; set; }
@@ -38,6 +39,8 @@ namespace UnicornHack
         public override Actor BaseActor
             => BaseName == null ? null : Loader.Get(BaseName);
 
+        public virtual byte DifficultyLevel { get; set; }
+
         public string PreviousStageName { get; set; }
         public Creature PreviousStage => PreviousStageName == null ? null : Loader.Get(PreviousStageName);
 
@@ -52,14 +55,49 @@ namespace UnicornHack
         {
         }
 
-        public Creature(Game game)
-            : base(game)
+        public Creature(Level level, byte x, byte y)
+            : base(level, x, y)
         {
         }
 
-        public override Actor Instantiate(Level level, byte x, byte y)
+        public virtual Creature Instantiate(Level level, byte x, byte y)
         {
-            var creature = (Creature)base.Instantiate(level, x, y);
+            var creature = new Creature(level, x, y)
+            {
+                BaseName = Name,
+                Species = Species,
+                SpeciesClass = SpeciesClass,
+                ArmorClass = ArmorClass,
+                MagicResistance = MagicResistance,
+                MovementDelay = MovementDelay,
+                Size = Size,
+                Weight = Weight,
+                Nutrition = Nutrition,
+                Material = Material
+            };
+
+            if (creature.SimpleProperties.Contains(nameof(PropertyDescription.Asexuality)))
+            {
+                creature.Sex = Sex.None;
+            }
+            else if (creature.SimpleProperties.Contains(nameof(PropertyDescription.Maleness)))
+            {
+                creature.Sex = Sex.Male;
+            }
+            else if (creature.SimpleProperties.Contains(nameof(PropertyDescription.Femaleness)))
+            {
+                creature.Sex = Sex.Female;
+            }
+            else
+            {
+                creature.Sex = level.Game.Random.Roll(1, 2) > 1 ? Sex.Female : Sex.Male;
+            }
+
+            foreach (var ability in Abilities)
+            {
+                creature.Abilities.Add(ability.Instantiate(level.Game));
+            }
+
             creature.Noise = Noise;
             creature.Alignment = Alignment;
             creature.Behavior = Behavior;
@@ -67,17 +105,15 @@ namespace UnicornHack
             creature.PreviousStageName = PreviousStageName;
             creature.NextStageName = NextStageName;
             creature.InitialLevel = InitialLevel;
-            creature.XPLevel = InitialLevel;
+            creature.DifficultyLevel = InitialLevel;
 
-            creature.MaxHP = 1 + creature.XPLevel * 4;
+            creature.MaxHP = 50 + creature.DifficultyLevel*5;
             creature.MaxHP = creature.MaxHP < 1 ? 1 : creature.MaxHP;
             creature.HP = creature.MaxHP;
 
             creature.RecalculateEffectsAndAbilities();
             return creature;
         }
-
-        protected override Actor CreateInstance(Game game) => new Creature(game);
 
         #endregion
 
@@ -155,6 +191,24 @@ namespace UnicornHack
             }
 
             return false;
+        }
+
+        public override bool ChangeCurrentHP(int hp)
+        {
+            var wasAlive = IsAlive;
+            var isAlive = base.ChangeCurrentHP(hp);
+            if (wasAlive && !isAlive)
+            {
+                // TODO: Track the last interacted player
+                var playerCharacter = Level.Players.Where(pc => pc.IsAlive)
+                    .OrderBy(pc => Level.GridDistance(this, pc))
+                    .FirstOrDefault();
+
+                // TODO: Calculate diminishing XP
+                playerCharacter?.AddXP(XP + DifficultyLevel * 10);
+            }
+
+            return isAlive;
         }
 
         private Func<string, byte, int, float> _weightFunction;

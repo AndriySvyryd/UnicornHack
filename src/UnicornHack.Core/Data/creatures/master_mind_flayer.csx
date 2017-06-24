@@ -29,7 +29,7 @@ new Creature
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Suck,
             Timeout = 1,
-            Effects = new HashSet<Effect> { new DrainIntelligence { Amount = 2 } }
+            Effects = new HashSet<Effect> { new ChangeValuedProperty<int> { PropertyName = "Intelligence", Value = -2, Duration = 10 } }
         }
 ,
         new Ability
@@ -37,7 +37,7 @@ new Creature
             Activation = AbilityActivation.OnTarget,
             Action = AbilityAction.Suck,
             Timeout = 1,
-            Effects = new HashSet<Effect> { new DrainIntelligence { Amount = 2 } }
+            Effects = new HashSet<Effect> { new ChangeValuedProperty<int> { PropertyName = "Intelligence", Value = -2, Duration = 10 } }
         }
     }
 ,

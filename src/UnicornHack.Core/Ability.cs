@@ -18,7 +18,7 @@ namespace UnicornHack
         public virtual AbilityActivation Activation { get; set; }
         public virtual AbilityAction Action { get; set; }
         public virtual int Timeout { get; set; }
-        public virtual int TimeoutTurnsLeft { get; set; }
+        public virtual int TimeoutLeft { get; set; }
         public virtual EquipmentSlot FreeSlotsRequired { get; set; }
         public virtual bool IsActive { get; set; }
         public virtual bool IsUsable { get; set; }
@@ -28,7 +28,7 @@ namespace UnicornHack
         // TODO: Whether it can be interrupted
         // TODO: Targeting mode
         // TODO: Success condition
-        public virtual int EffectDuration { get; set; }
+        // TODO: Activation condition
 
         public virtual ISet<Effect> Effects { get; set; }
 
@@ -63,8 +63,7 @@ namespace UnicornHack
                 Action = Action,
                 DelayTicks = DelayTicks,
                 EnergyPointCost = EnergyPointCost,
-                Timeout = Timeout,
-                EffectDuration = EffectDuration
+                Timeout = Timeout
             };
 
             foreach (var effect in Effects)
@@ -152,10 +151,6 @@ namespace UnicornHack
             if (firstAbility)
             {
                 AttackEvent.New(abilityContext, eventOrder);
-                if (!target.IsAlive)
-                {
-                    activator.XP += target.XP;
-                }
             }
 
             if (Activation == AbilityActivation.OnTarget

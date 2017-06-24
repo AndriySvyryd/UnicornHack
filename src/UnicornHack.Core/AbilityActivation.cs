@@ -7,7 +7,7 @@ namespace UnicornHack
     {
         Default = 0,
         Always = 1 << 0,
-        WhileActivated = 1 << 1,
+        WhileToggled = 1 << 1,
         WhileEquipped = 1 << 2,
         OnActivation = 1 << 3,
         OnTarget = 1 << 4,
@@ -20,6 +20,8 @@ namespace UnicornHack
         OnDigestion = 1 << 11,
         OnConsumption = 1 << 12,
         OnDeath = 1 << 13,
-        OnPickup = 1 << 14
+        OnPickup = 1 << 14,
+        OnTimeout = 1 << 15,
+        OnLevelUp = 1 << 16
     }
 }

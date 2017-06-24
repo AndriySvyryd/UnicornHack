@@ -25,7 +25,7 @@ new Creature
         }
     }
 ,
-    SimpleProperties = new HashSet<string> { "Infravision", "Infravisibility", "Humanoidness", "Carnivorism" },
+    SimpleProperties = new HashSet<string> { "Infravisibility", "Humanoidness", "Carnivorism" },
     InitialLevel = 5,
     NextStageName = "ogre lord",
     GenerationFlags = GenerationFlags.SmallGroup,

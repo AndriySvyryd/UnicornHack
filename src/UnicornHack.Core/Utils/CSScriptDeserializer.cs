@@ -2,6 +2,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using CSharpScriptSerialization;
+using UnicornHack.Definitions;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 using UnicornHack.Generation.Map;
@@ -19,6 +20,7 @@ namespace UnicornHack.Utils
                 Enumerable.Empty<Assembly>(),
                 new[]
                 {
+                    typeof(PlayerRace).GetTypeInfo().Namespace,
                     typeof(Ability).GetTypeInfo().Namespace,
                     typeof(Effect).GetTypeInfo().Namespace,
                     typeof(Weight).GetTypeInfo().Namespace,
