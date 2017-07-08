@@ -23,12 +23,13 @@ namespace UnicornHack
 
         public virtual int NextRaceId { get; set; }
         public virtual ICollection<ActivePlayerRace> Races { get; set; } = new HashSet<ActivePlayerRace>();
-        public virtual ActivePlayerRace LearningRace => Races.OrderBy(r => XPLevel).ThenBy(r => r.Id).First();
+        public virtual ActivePlayerRace LearningRace => Races.OrderBy(r => r.XPLevel).ThenBy(r => r.Id).First();
 
         public virtual int MaxXPLevel { get; set; }
         public virtual byte XPLevel => (byte)Races.Sum(r => r.XPLevel);
         public virtual int XP => LearningRace.XP;
         public virtual int NextLevelXP => LearningRace.NextLevelXP;
+        public virtual float LeftoverRegenerationXP { get; set; }
 
         public virtual Skills Skills { get; set; }
         public virtual int UnspentSkillPoints { get; set; }
@@ -101,6 +102,7 @@ namespace UnicornHack
             MaxEP = 100 + Willpower * 10;
             EP = MaxEP;
 
+            Item.Loader.Get("potion of healing").Instantiate(this, quantity:3);
             Item.Loader.Get("mail armor").Instantiate(this);
             Item.Loader.Get("long sword").Instantiate(this);
             Item.Loader.Get("dagger").Instantiate(this);
@@ -110,15 +112,26 @@ namespace UnicornHack
 
         #region Actions
 
+        public void Add(ActivePlayerRace race)
+        {
+            Races.Add(race);
+            race.XPLevel = 1;
+            UpdateNextLevelXP(race);
+        }
+
         private void UpdateNextLevelXP(ActivePlayerRace race)
         {
             var currentLevel = MaxXPLevel > XPLevel ? race.XPLevel : XPLevel;
-            race.NextLevelXP = (int)(75 + (1 + currentLevel) * 25);
+            race.NextLevelXP = (int)((1 + Math.Ceiling(Math.Pow(currentLevel, 1.5))) * 50);
         }
 
         public void AddXP(int xp)
         {
-            ChangeCurrentHP(xp);
+            var regenerationRate =  (float)NextLevelXP / (MaxHP * 5);
+            var regeneratingXp = xp + LeftoverRegenerationXP;
+            var hpRegenerated = (int)Math.Floor(regeneratingXp / regenerationRate);
+            LeftoverRegenerationXP = regeneratingXp % regenerationRate;
+            ChangeCurrentHP(hpRegenerated);
             var race = LearningRace;
             race.XP += xp;
             if (race.XP >= race.NextLevelXP)
@@ -266,6 +279,9 @@ namespace UnicornHack
                     case "UNEQUIP":
                         Unequip(GetItem(target.Value));
                         break;
+                    case "QUAFF":
+                        Quaff(GetItem(target.Value));
+                        break;
                     default:
                         throw new InvalidOperationException($"Action {action} on character {Name} is invalid.");
                 }
@@ -362,6 +378,17 @@ namespace UnicornHack
             }
 
             return Unequip(item, pretend: false);
+        }
+
+        public virtual bool Quaff(Item item)
+        {
+            if (item == null)
+            {
+                WriteLog(Game.Services.Language.InvalidTarget(), Level.CurrentTick);
+                return false;
+            }
+
+            return Quaff(item, pretend: false);
         }
 
         private Item GetItem(int id)

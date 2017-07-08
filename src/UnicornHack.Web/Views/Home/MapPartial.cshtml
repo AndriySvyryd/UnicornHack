@@ -105,7 +105,7 @@
     {
         var symbol = ' ';
         var className = "inherit";
-        switch (item.Type)
+        switch (item.Type & ~ItemType.Intricate & ~ItemType.Exotic)
         {
             case ItemType.Coin:
                 symbol = '$';
@@ -133,6 +133,10 @@
             case ItemType.WeaponAmmoContainer:
                 symbol = ')';
                 className = "itemWeapon";
+                break;
+            case ItemType.Potion:
+                symbol = '!';
+                className = "itemPotion";
                 break;
             default:
                 throw new NotSupportedException($"Item type {item.Type} not supported.");

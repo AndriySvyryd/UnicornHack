@@ -124,16 +124,16 @@ a:hover {
     color: gold;
 }
 
-.itemFood {
-    color: orange;
-}
-
 .itemArmor {
     color: teal;
 }
 
 .itemWeapon{
     color: chocolate;
+}
+
+.itemPotion {
+    color: yellow;
 }
 
 /* Actors */
@@ -143,7 +143,7 @@ a:hover {
 }
 
 .creatureLightningBug {
-    color:aqua;
+    color: aqua;
 }
 
 .creatureFirefly {

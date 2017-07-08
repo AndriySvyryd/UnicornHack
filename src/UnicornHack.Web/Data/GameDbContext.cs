@@ -88,6 +88,11 @@ namespace UnicornHack.Models
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
+            modelBuilder.Entity<Creature>(cb =>
+            {
+                cb.Ignore(c => c.GenerationWeight);
+            });
+
             modelBuilder.Entity<Player>(pb =>
             {
                 pb.Ignore(p => p.XP);
@@ -95,12 +100,19 @@ namespace UnicornHack.Models
                 pb.Ignore(p => p.NextLevelXP);
             });
 
-            modelBuilder.Entity<Creature>(cb =>
+            modelBuilder.Entity<ActivePlayerRace>(rb =>
             {
-                cb.Ignore(c => c.GenerationWeight);
+                rb.HasKey(r => new {r.GameId, r.PlayerId, r.Id});
+                rb.HasOne(r => r.Player)
+                    .WithMany(p => p.Races)
+                    .IsRequired()
+                    .HasForeignKey(r => new {r.GameId, r.PlayerId});
+                rb.HasMany(i => i.Abilities)
+                    .WithOne()
+                    .HasForeignKey(nameof(Ability.GameId), "ActivePlayerId", "ActivePlayerRaceId");
             });
 
-            // TODO: Complex type
+            // TODO: Owned type
             modelBuilder.Entity<Skills>(eb =>
             {
                 eb.Property<int>("GameId");
@@ -180,7 +192,7 @@ namespace UnicornHack.Models
                     .HasForeignKey(i => new {i.GameId, i.ContainerId});
                 eb.HasMany(i => i.Abilities)
                     .WithOne()
-                    .HasForeignKey(nameof(Ability.GameId), "ItemId");
+                    .HasForeignKey(a => new { a.GameId, a.ItemId });
             });
 
             modelBuilder.Entity<ItemStack>();
@@ -241,8 +253,10 @@ namespace UnicornHack.Models
             modelBuilder.Entity<AddAbility>();
             modelBuilder.Entity<Blind>();
             modelBuilder.Entity<Bind>();
+            modelBuilder.Entity<ChangeRace>();
             modelBuilder.Entity<ChangeSimpleProperty>();
             modelBuilder.Entity<ChangeValuedProperty<int>>();
+            modelBuilder.Entity<ChangeValuedProperty<Size>>();
             modelBuilder.Entity<ColdDamage>();
             modelBuilder.Entity<ConferLycanthropy>();
             modelBuilder.Entity<Confuse>();

@@ -234,9 +234,11 @@ namespace UnicornHack
             {
                 foreach (var ability in Abilities)
                 {
+                    ability.ItemId = null;
                     ability.RemoveReference();
                 }
-                Game.Repository.Delete(this);
+                // TODO: uncomment when bug fixed
+                //Game.Repository.Delete(this);
             }
         }
 

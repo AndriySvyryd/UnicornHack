@@ -30,7 +30,7 @@ namespace UnicornHack.Definitions
                 race.Abilities.Add(ability.Instantiate(player.Game).AddReference().Referenced);
             }
 
-            player.Races.Add(race);
+            player.Add(race);
 
             return race;
         }

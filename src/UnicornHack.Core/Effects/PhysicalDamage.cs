@@ -18,7 +18,7 @@ namespace UnicornHack.Effects
             base.Apply(abilityContext);
             if (abilityContext.Succeeded)
             {
-                abilityContext.Ability.Effects.Add(Instantiate(Game));
+                abilityContext.AbilityResult.Effects.Add(Instantiate(Game));
             }
         }
 

@@ -1,4 +1,3 @@
-using System;
 using UnicornHack.Events;
 
 namespace UnicornHack.Effects
@@ -21,7 +20,7 @@ namespace UnicornHack.Effects
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            throw new NotImplementedException();
+            abilityContext.Target.ChangeCurrentHP(Amount);
         }
     }
 }

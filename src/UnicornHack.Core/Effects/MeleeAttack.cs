@@ -34,9 +34,9 @@ namespace UnicornHack.Effects
             {
                 foreach (var weaponAbility in Weapon.Abilities)
                 {
-                    if (abilityContext.Ability.Action == AbilityAction.Default)
+                    if (abilityContext.AbilityResult.Action == AbilityAction.Default)
                     {
-                        abilityContext.Ability.Action = weaponAbility.Action;
+                        abilityContext.AbilityResult.Action = weaponAbility.Action;
                     }
 
                     if (abilityContext.Succeeded
@@ -49,7 +49,7 @@ namespace UnicornHack.Effects
 
             if (abilityContext.Succeeded)
             {
-                abilityContext.Ability.Effects.Add(Instantiate(Game));
+                abilityContext.AbilityResult.Effects.Add(Instantiate(Game));
             }
         }
 

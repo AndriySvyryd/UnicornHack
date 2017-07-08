@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -318,8 +319,7 @@ namespace UnicornHack.Services.English
                 case EnglishVerbForm.Infinitive:
                     return "to " + verbPhrase;
                 case EnglishVerbForm.ThirdPersonSingularPresent:
-                    string lastPart;
-                    var verb = GetFirstWord(verbPhrase, out lastPart);
+                    var verb = GetFirstWord(verbPhrase, out var lastPart);
                     return _verbSFormMachine.Process(verb) + lastPart;
                 default:
                     return verbPhrase;
@@ -331,9 +331,15 @@ namespace UnicornHack.Services.English
             switch (form)
             {
                 case EnglishNounForm.Plural:
-                    string firstPart;
-                    var lastWord = GetLastWord(nounPhrase, out firstPart);
-                    return firstPart + _nounPluralizationMachine.Process(lastWord);
+                    var words = nounPhrase.Split(' ');
+                    var indexToPluralize = words.Length - 1;
+                    if (words.Length > 2
+                        && string.Equals("of", words[1], StringComparison.OrdinalIgnoreCase))
+                    {
+                        indexToPluralize = 0;
+                    }
+                    words[indexToPluralize] = _nounPluralizationMachine.Process(words[indexToPluralize]);
+                    return string.Join(" ", words);
                 default:
                     return nounPhrase;
             }
@@ -390,7 +396,7 @@ namespace UnicornHack.Services.English
                 }
 
                 Debug.Assert(state.Replacement == null, "Repeated suffix " + suffix);
-                state.Replacement = new Replacement
+                state.Replacement = new ReplacementSuffix
                 {
                     ReplacementString = replacement,
                     CharactersToReplace = charactersToReplace
@@ -400,6 +406,7 @@ namespace UnicornHack.Services.English
             public string Process(string word)
             {
                 var state = _initialState;
+                Debug.Assert(state.Replacement.HasValue);
                 var replacement = state.Replacement.Value;
                 var reachedEnd = true;
                 for (var i = word.Length - 1; i >= 0; i--)
@@ -422,6 +429,7 @@ namespace UnicornHack.Services.English
                     var nextState = state.Next(character: '^');
                     if (nextState != null)
                     {
+                        Debug.Assert(nextState.Replacement.HasValue);
                         replacement = nextState.Replacement.Value;
                     }
                 }
@@ -434,19 +442,18 @@ namespace UnicornHack.Services.English
             {
                 private readonly Dictionary<char, State> _nextStates = new Dictionary<char, State>();
 
-                public Replacement? Replacement { get; set; }
+                public ReplacementSuffix? Replacement { get; set; }
 
                 public void AddNext(char character, State state)
                     => _nextStates.Add(character, state);
 
                 public State Next(char character)
                 {
-                    State nextState;
-                    return _nextStates.TryGetValue(character, out nextState) ? nextState : null;
+                    return _nextStates.TryGetValue(character, out var nextState) ? nextState : null;
                 }
             }
 
-            private struct Replacement
+            private struct ReplacementSuffix
             {
                 public string ReplacementString { get; set; }
                 public int CharactersToReplace { get; set; }

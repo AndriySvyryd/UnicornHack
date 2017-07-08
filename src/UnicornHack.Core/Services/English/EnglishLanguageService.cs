@@ -338,9 +338,10 @@ namespace UnicornHack.Services.English
         public virtual string ToString(ItemConsumptionEvent @event)
         {
             var consumerPerson = @event.Sensor == @event.Consumer ? EnglishPerson.Second : EnglishPerson.Third;
+            var verb = @event.Item.Type.HasFlag(ItemType.Potion) ? "drink" : "eat";
             return ToSentence(
                 ToString(@event.Consumer, consumerPerson, @event.ConsumerSensed),
-                EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "eat", person: consumerPerson),
+                EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: verb, person: consumerPerson),
                 ToString(@event.Item, @event.ItemSensed));
         }
 

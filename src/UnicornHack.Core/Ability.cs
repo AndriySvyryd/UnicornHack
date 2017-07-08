@@ -25,6 +25,8 @@ namespace UnicornHack
         public virtual int EnergyPointCost { get; set; }
         public virtual int DelayTicks { get; set; }
 
+        public int? ItemId { get; set; }
+
         // TODO: Whether it can be interrupted
         // TODO: Targeting mode
         // TODO: Success condition
@@ -122,7 +124,7 @@ namespace UnicornHack
             }
 
             var eventOrder = 0;
-            var firstAbility = abilityContext.Ability == null;
+            var firstAbility = abilityContext.AbilityResult == null;
             if (firstAbility)
             {
                 if (Activation == AbilityActivation.OnTarget)
@@ -139,7 +141,7 @@ namespace UnicornHack
                 }
 
                 abilityContext.Succeeded = Game.Random.Next(maxValue: 3) != 0;
-                abilityContext.Ability = new Ability(Game) {Action = Action};
+                abilityContext.AbilityResult = new Ability(Game) {Action = Action};
                 eventOrder = Game.EventOrder++;
             }
 
@@ -148,7 +150,8 @@ namespace UnicornHack
                 effect.Apply(abilityContext);
             }
 
-            if (firstAbility)
+            if (firstAbility
+                && abilityContext.IsAttack)
             {
                 AttackEvent.New(abilityContext, eventOrder);
             }

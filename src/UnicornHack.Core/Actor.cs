@@ -520,7 +520,7 @@ namespace UnicornHack
                 return true;
             }
 
-            return ability.Activate(new AbilityActivationContext {Activator = this, Target = victim}, pretend);
+            return ability.Activate(new AbilityActivationContext {Activator = this, Target = victim, IsAttack = true}, pretend);
         }
 
         public virtual bool Equip(Item item, EquipmentSlot slot, bool pretend = false)
@@ -588,7 +588,37 @@ namespace UnicornHack
             item.EquippedSlot = null;
             ItemUnequipmentEvent.New(this, item, Game.EventOrder++);
 
+            // TODO: Just invalidate
             RecalculateEffectsAndAbilities();
+
+            return true;
+        }
+
+        public virtual bool Quaff(Item item, bool pretend = false)
+        {
+            if (item.Type != ItemType.Potion)
+            {
+                return false;
+            }
+
+            if (pretend)
+            {
+                return true;
+            }
+
+            // TODO: Calculate delay
+            NextActionTick += DefaultActionDelay;
+
+            using (var reference = item.Split(1))
+            {
+                var splitItem = reference.Referenced;
+                foreach (var ability in splitItem.Abilities.Where(a => a.Activation == AbilityActivation.OnConsumption))
+                {
+                    ability.Activate(new AbilityActivationContext {Activator = this, Target = this}, pretend);
+                }
+
+                ItemConsumptionEvent.New(this, splitItem, Game.EventOrder++);
+            }
 
             return true;
         }

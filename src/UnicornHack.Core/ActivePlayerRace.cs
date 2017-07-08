@@ -18,5 +18,17 @@ namespace UnicornHack
         public virtual ISet<Ability> Abilities { get; set; } = new HashSet<Ability>();
         public virtual Game Game { get; set; }
         public virtual Player Player { get; set; }
+
+        public bool IsLearning => Player.LearningRace == this;
+
+        public void Remove()
+        {
+            Player.Races.Remove(this);
+            foreach (var ability in Abilities)
+            {
+                ability.RemoveReference();
+            }
+            Game.Repository.Delete(this);
+        }
     }
 }

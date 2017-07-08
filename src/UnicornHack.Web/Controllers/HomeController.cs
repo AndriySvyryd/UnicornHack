@@ -198,15 +198,17 @@ namespace UnicornHack.Controllers
             LoadEvents(character);
 
             var loadedContainerIds = _dbContext.Items.Local.OfType<Container>().Select(c => c.Id).ToList();
-            _dbContext.Items
-                .Where(i => i.ContainerId.HasValue && loadedContainerIds.Contains(i.ContainerId.Value))
+            _dbContext.Set<Container>()
+                .Include(c => c.Items).ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
+                .Where(i => loadedContainerIds.Contains(i.Id))
                 .Load();
 
             var meleeAttacks = _dbContext.Set<MeleeAttack>().Local.Select(c => c.Id).ToList();
             if (meleeAttacks.Any())
             {
-                _dbContext.Set<MeleeAttack>().Where(e => meleeAttacks.Contains(e.Id))
+                _dbContext.Set<MeleeAttack>()
                     .Include(e => e.Weapon.Abilities).ThenInclude(a => a.Effects)
+                    .Where(e => meleeAttacks.Contains(e.Id))
                     .Load();
             }
 
