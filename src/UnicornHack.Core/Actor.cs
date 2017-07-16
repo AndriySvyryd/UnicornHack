@@ -425,11 +425,6 @@ namespace UnicornHack
                 return true;
             }
 
-            if (MovementDelay == 0)
-            {
-                return false;
-            }
-
             var conflictingActor = Level.Actors
                 .SingleOrDefault(a => a.LevelX == targetCell.X && a.LevelY == targetCell.Y);
             if (conflictingActor != null)
@@ -440,6 +435,11 @@ namespace UnicornHack
                 }
 
                 return Attack(conflictingActor, pretend);
+            }
+
+            if (MovementDelay == 0)
+            {
+                return false;
             }
 
             if (!Reposition(targetCell, pretend, safe))
@@ -656,7 +656,7 @@ namespace UnicornHack
                 return true;
             }
 
-            NextActionTick += MovementDelay;
+            NextActionTick += DefaultActionDelay;
 
             Gold -= quantity;
             var item = UnicornHack.Gold.Get().Instantiate(new LevelCell(Level, LevelX, LevelY), quantity).Single();

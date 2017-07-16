@@ -127,6 +127,7 @@ namespace UnicornHack
             var firstAbility = abilityContext.AbilityResult == null;
             if (firstAbility)
             {
+                // TODO: Also apply delay for secondary attacks
                 if (Activation == AbilityActivation.OnTarget)
                 {
                     if (DelayTicks == 0)
@@ -150,7 +151,7 @@ namespace UnicornHack
                 effect.Apply(abilityContext);
             }
 
-            if (firstAbility
+            if (eventOrder != 0
                 && abilityContext.IsAttack)
             {
                 AttackEvent.New(abilityContext, eventOrder);
@@ -166,7 +167,8 @@ namespace UnicornHack
                         new AbilityActivationContext
                         {
                             Activator = abilityContext.Activator,
-                            Target = abilityContext.Target
+                            Target = abilityContext.Target,
+                            IsAttack =  abilityContext.IsAttack
                         });
                 }
             }

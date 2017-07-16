@@ -13,13 +13,13 @@ namespace UnicornHack
         /// <summary> 2-4' </summary>
         Small = 1 << 1,
 
-        /// <summary> 4-7' </summary>
+        /// <summary> 4-8' </summary>
         Medium = 1 << 2,
 
-        /// <summary> 7-12' </summary>
+        /// <summary> 8-13' </summary>
         Large = 1 << 3,
 
-        /// <summary> 12-25' </summary>
+        /// <summary> 13-25' </summary>
         Huge = 1 << 4,
 
         /// <summary> &gt; 25' </summary>

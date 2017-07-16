@@ -371,8 +371,11 @@ namespace UnicornHack
         {
         }
 
-        public static readonly GroupedCSScriptLoader<ItemType, Item> Loader =
-            new GroupedCSScriptLoader<ItemType, Item>(@"data\items\", c => c.Type.GetFlags());
+        public static readonly SingleCSScriptLoader<ItemGroup> ItemGroupLoader =
+            new SingleCSScriptLoader<ItemGroup>(@"data\item_groups.csx");
+
+        public static readonly GroupedCSScriptLoader<ItemGroup, Item> Loader =
+            new GroupedCSScriptLoader<ItemGroup, Item>(@"data\items\", i => ItemGroupLoader.Object.GetGroups(i));
 
         private static readonly CSScriptSerializer Serializer =
             new PropertyCSScriptSerializer<Item>(GetPropertyConditions<Item>());

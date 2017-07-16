@@ -149,7 +149,7 @@ namespace UnicornHack
             new PropertyDescription {PropertyType = typeof(int), MinValue = 0, MaxValue = 3};
 
         public static PropertyDescription Concealment { get; } =
-            new PropertyDescription {PropertyType = typeof(bool)};
+            new PropertyDescription {PropertyType = typeof(bool)}; // Ability to completely hide behind or under objects
 
         public static PropertyDescription Camouflage { get; } =
             new PropertyDescription {PropertyType = typeof(bool)};

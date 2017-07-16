@@ -95,7 +95,6 @@ namespace UnicornHack
             Skills = new Skills();
             RecalculateEffectsAndAbilities();
 
-
             MaxHP = 100 + Constitution * 10;
             HP = MaxHP;
 

@@ -8,71 +8,6 @@ namespace UnicornHack.Generation
     {
         public virtual byte ExpectedInitialCount { get; set; } = 6;
 
-        private static readonly IReadOnlyList<(ItemType, float)> TypeWeights = new List<(ItemType, float)>
-        {
-            (ItemType.Coin, 40 ),
-            (ItemType.WeaponMeleeFist, 15 ),
-            (ItemType.WeaponMeleeShort, 15 ),
-            (ItemType.WeaponMeleeMedium, 15 ),
-            (ItemType.WeaponMeleeLong, 15 ),
-            (ItemType.WeaponMagicFocus, 25 ),
-            (ItemType.WeaponMagicStaff, 25 ),
-            (ItemType.WeaponRangedThrown, 20 ),
-            (ItemType.WeaponRangedSlingshot, 15 ),
-            (ItemType.WeaponRangedBow, 15 ),
-            (ItemType.WeaponRangedCrossbow, 15 ),
-            (ItemType.WeaponAmmoContainer, 15 ),
-            (ItemType.Shield, 20 ),
-            (ItemType.ArmorBody, 25 ),
-            (ItemType.ArmorHead, 25 ),
-            (ItemType.ArmorFeet, 25 ),
-            (ItemType.ArmorHands, 25 ),
-            (ItemType.ArmorBack, 25 ),
-            (ItemType.Accessory, 25 ),
-            (ItemType.Container, 10 ),
-            (ItemType.Potion, 100 ),
-            (ItemType.Wand, 25 ),
-            (ItemType.Figurine, 20 ),
-            (ItemType.Trinket, 15 ),
-            (ItemType.SkillBook, 50 )
-        };
-
-        private static readonly IReadOnlyList<ItemType> NoQuality =
-            new[] {ItemType.None};
-
-        private static readonly IReadOnlyList<ItemType> Qualities =
-            new[] {ItemType.None, ItemType.Intricate, ItemType.Exotic};
-
-        private static readonly IReadOnlyDictionary<ItemType, IReadOnlyList<ItemType>> TypeQualities =
-            new Dictionary<ItemType, IReadOnlyList<ItemType>>
-            {
-                {ItemType.Coin, NoQuality},
-                {ItemType.WeaponMeleeFist, Qualities},
-                {ItemType.WeaponMeleeShort, Qualities},
-                {ItemType.WeaponMeleeMedium, Qualities},
-                {ItemType.WeaponMeleeLong, Qualities},
-                {ItemType.WeaponMagicFocus, Qualities},
-                {ItemType.WeaponMagicStaff, Qualities},
-                {ItemType.WeaponRangedThrown, Qualities},
-                {ItemType.WeaponRangedSlingshot, Qualities},
-                {ItemType.WeaponRangedBow, Qualities},
-                {ItemType.WeaponRangedCrossbow, Qualities},
-                {ItemType.WeaponAmmoContainer, Qualities},
-                {ItemType.Shield, Qualities},
-                {ItemType.ArmorBody, Qualities},
-                {ItemType.ArmorHead, Qualities},
-                {ItemType.ArmorFeet, Qualities},
-                {ItemType.ArmorHands, Qualities},
-                {ItemType.ArmorBack, Qualities},
-                {ItemType.Accessory, Qualities},
-                {ItemType.Container, Qualities},
-                {ItemType.Potion, NoQuality},
-                {ItemType.Wand, Qualities},
-                {ItemType.Figurine, Qualities},
-                {ItemType.Trinket, Qualities},
-                {ItemType.SkillBook, NoQuality}
-            };
-
         public virtual void Fill(Level level)
         {
             var itemsToPlace =
@@ -91,29 +26,65 @@ namespace UnicornHack.Generation
                         goto NextRoom;
                     }
 
-                    foreach (var typeTuple in level.GenerationRandom.WeightedOrder(TypeWeights, w => w.Item2))
+                    var enumeratorsStack = new Stack<IEnumerator<ItemGroup>>();
+                    var currentGroup = Item.ItemGroupLoader.Object;
+                    var itemPlaced = false;
+                    do
                     {
-                        var itemType = typeTuple.Item1;
-                        var qualityList = TypeQualities[itemType];
-                        var qualityIndex =
-                            level.GenerationRandom.NextBinomial(difficultyFraction, qualityList.Count - 1);
-                        var quality = qualityList[qualityIndex];
-                        foreach (var itemVariant in level.GenerationRandom.WeightedOrder(
-                            Item.Loader.GetAllValues(itemType),
-                            c => c.Type.HasFlag(quality) ? c.GetWeight(level) : 0))
+                        if (currentGroup.SubGroups == null)
                         {
-                            var quantity = itemType == ItemType.Coin
-                                ? level.GenerationRandom.NextBinomial(difficultyFraction, 49) + 1
-                                : 1;
-                            if (itemVariant.Instantiate(new LevelCell(level, point.X, point.Y), quantity) != null)
+                            //var quality = level.GenerationRandom.NextBinomial(difficultyFraction, qualityList.Count - 1);
+                            foreach (var itemVariant in level.GenerationRandom.WeightedOrder(
+                                Item.Loader.GetAllValues(currentGroup), c => c.GetWeight(level)))
                             {
-                                goto ItemPlaced;
+                                var quantity = currentGroup.Type == ItemType.Coin
+                                    ? level.GenerationRandom.NextBinomial(difficultyFraction, 49) + 1
+                                    : 1;
+                                if (itemVariant.Instantiate(new LevelCell(level, point.X, point.Y), quantity) !=
+                                    null)
+                                {
+                                    itemPlaced = true;
+                                    break;
+                                }
                             }
+                            if (itemPlaced)
+                            {
+                                break;
+                            }
+                            // TODO: Log no item of the chosen type/rarity
                         }
-                        // TODO: Log no item of the chosen type/rarity
+                        else
+                        {
+                            enumeratorsStack.Push(level.GenerationRandom
+                                .WeightedOrder(currentGroup.SubGroups, g => g.Weight)
+                                .GetEnumerator());
+                        }
+
+                        currentGroup = null;
+                        while (enumeratorsStack.Count > 0)
+                        {
+                            var subgroups = enumeratorsStack.Peek();
+                            if (subgroups.MoveNext())
+                            {
+                                currentGroup = subgroups.Current;
+                                break;
+                            }
+                            enumeratorsStack.Pop();
+                            subgroups.Dispose();
+                        }
+                    } while (currentGroup != null);
+
+                    if (!itemPlaced)
+                    {
+                        throw new InvalidOperationException("No item could be placed");
                     }
 
-                    ItemPlaced:
+                    while (enumeratorsStack.Count > 0)
+                    {
+                        var subgroups = enumeratorsStack.Pop();
+                        subgroups.Dispose();
+                    }
+
                     itemsToPlace--;
                 }
 

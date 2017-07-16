@@ -165,8 +165,7 @@ namespace UnicornHack
                 return false;
             }
 
-            Attack(playerCharacter);
-            return true;
+            return Attack(playerCharacter);
         }
 
         private bool TryMoveToPlayerCharacter()

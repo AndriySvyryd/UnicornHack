@@ -17,6 +17,7 @@ namespace UnicornHack.Editor
             SerializeCreatures(verify: true);
             SerializePlayers(verify: true);
             SerializeItems(verify: true);
+            SerializeItemGroups();
             SerializeBranches(verify: true);
             SerializeNormalFragments(verify: true);
             SerializeConnectingFragments(verify: true);
@@ -84,6 +85,15 @@ namespace UnicornHack.Editor
                     Verify(script, item);
                 }
             }
+        }
+
+        private static void SerializeItemGroups()
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(ItemGroupsFile));
+
+            var script = CSScriptSerializer.Serialize(Item.ItemGroupLoader.Object);
+
+            File.WriteAllText(ItemGroupsFile, script);
         }
 
         private static void SerializeBranches(bool verify = false)
@@ -198,9 +208,8 @@ namespace UnicornHack.Editor
         private static bool VerifyNoUnicode(MapFragment fragment)
         {
             int x = 0, y = 0;
-            for (var i = 0; i < fragment.Map.Length; i++)
+            foreach (var character in fragment.Map)
             {
-                var character = fragment.Map[i];
                 switch (character)
                 {
                     case '\r':
@@ -320,6 +329,9 @@ namespace UnicornHack.Editor
             Path.Combine(BaseDirectory, "new",
                 Item.Loader.BasePath.Substring(BaseDirectory.Length,
                     Item.Loader.BasePath.Length - BaseDirectory.Length));
+
+        public static readonly string ItemGroupsFile =
+            Path.Combine(BaseDirectory, "new", Path.GetFileName(Item.ItemGroupLoader.ScriptPath));
 
         public static readonly string BranchDirectory =
             Path.Combine(BaseDirectory, "new",
