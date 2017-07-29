@@ -203,12 +203,16 @@ namespace UnicornHack.Generation.Map
             {
                 EnsureInitialized(level.Game);
 
-                if (ByteMap.Length != 0)
+                var room = ByteMap.Length != 0
+                    ? TryPlaceStaticMap(level, boundingRectangle)
+                    : TryPlace(level, boundingRectangle, DynamicMap);
+
+                if (room != null)
                 {
-                    return TryPlaceImplementation(level, boundingRectangle);
+                    level.Rooms.Add(room);
                 }
 
-                return TryPlace(level, boundingRectangle, DynamicMap);
+                return room;
             }
             catch (Exception ex)
             {
@@ -216,13 +220,13 @@ namespace UnicornHack.Generation.Map
             }
         }
 
-        protected virtual Room TryPlaceImplementation(Level level, Rectangle boundingRectangle)
+        protected virtual Room TryPlaceStaticMap(Level level, Rectangle boundingRectangle)
         {
             // TODO: take transformations into account
             var target = boundingRectangle.PlaceInside(PayloadArea, level.GenerationRandom);
             if (!target.HasValue)
             {
-                return null;
+                throw new InvalidOperationException($"Couldn't fit fragment {Name} into {boundingRectangle}");
             }
 
             var doorwayPoints = new List<Point>();

@@ -147,6 +147,7 @@ namespace UnicornHack
         {
             switch (feature)
             {
+                case MapFeature.StoneArchway:
                 case MapFeature.StoneWall:
                     ModifyNeighbours(WallNeighbours, point, add: true);
                     break;

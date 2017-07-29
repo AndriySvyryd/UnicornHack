@@ -87,10 +87,10 @@ namespace UnicornHack.Generation
 
     public class ConstantWeight : Weight
     {
-        public virtual int W { get; set; }
+        public virtual float W { get; set; }
 
         public override Expression GetExpression(IReadOnlyDictionary<string, ParameterExpression> parameters)
-            => Expression.Constant((float)W);
+            => Expression.Constant(W);
     }
 
     public class DefaultWeight : Weight, ICSScriptSerializable
@@ -103,6 +103,7 @@ namespace UnicornHack.Generation
         private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<DefaultWeight>(
             new Dictionary<string, Func<DefaultWeight, object, bool>>
             {
+                // ReSharper disable once CompareOfFloatsByEqualityOperator
                 {nameof(Multiplier), (o, v) => (float)v != 1}
             });
 

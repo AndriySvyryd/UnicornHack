@@ -18,31 +18,7 @@
 </pre>
 </div>
 
-<div class="col-md-1">
-    <div class="row">
-        <a class="btn-xs btn-nav" href="javascript:PerformAction('NW')">↖</a>
-        <a class="btn-xs btn-nav" href="javascript:PerformAction('N')">↑</a>
-        <a class="btn-xs btn-nav" href="javascript:PerformAction('NE')">↗</a>
-    </div>
-    <div class="row">
-        <a class="btn-xs btn-nav" href="javascript:PerformAction('W')">←</a>
-        <a class="btn-xs btn-nav" href="javascript:PerformAction('H')">·</a>
-        <a class="btn-xs btn-nav" href="javascript:PerformAction('E')">→</a>
-    </div>
-    <div class="row">
-        <a class="btn-xs btn-nav" href="javascript:PerformAction('SW')">↙</a>
-        <a class="btn-xs btn-nav" href="javascript:PerformAction('S')">↓</a>
-        <a class="btn-xs btn-nav" href="javascript:PerformAction('SE')">↘</a>
-    </div>
-    <div class="row">
-        <a class="btn-xs btn-nav" href="javascript:PerformAction('U')">⇧</a>
-        <a class="btn-xs btn-nav transparent">&nbsp;</a>
-        <a class="btn-xs btn-nav" href="javascript:PerformAction('D')">⇩</a>
-    </div>
-</div>
-
-<div class="col-md-3" style="padding: 0px">
-    <h3></h3>
+<div class="col-md-3" style="padding: 0">
     <div class="inventory">
         @foreach (var item in Model.Inventory.OrderBy(i => i.Name))
         {
@@ -108,12 +84,13 @@
 @section Scripts {
     <environment names="Development">
         <script src="~/js/ts/game.js"></script>
-        <script src="~/lib/signalr/jquery.signalR.js"></script>
+        <!--<script src="~/lib/signalr/jquery.signalR.js"></script>-->
     </environment>
     <environment names="Staging,Production">
         <script src="~/js/ts/game.min.js"></script>
-        <script src="~/lib/signalr/jquery.signalR.min.js"></script>
+        <!--<script src="~/lib/signalr/jquery.signalR.min.js"></script>-->
     </environment>
+    <!--
     <script src="~/signalr/hubs"></script>
     <script>
         $(function() {
@@ -153,7 +130,70 @@
             return encodedValue;
         }
     </script>
+    -->
     <script type="text/javascript">
+        $(document).ready(function() {
+            var lastKeyTime = Date.now();
+            var minTimeBetweenKeys = 100;
+            $(document).keydown(function(e) {
+                var now = Date.now();
+                if (now - lastKeyTime >= minTimeBetweenKeys) {
+                    lastKeyTime = now;
+                    var action = '';
+                    switch (e.keyCode) {
+                    case 36:
+                    case 103:
+                        action = 'NW';
+                        break;
+                    case 38:
+                    case 104:
+                        action = 'N';
+                        break;
+                    case 33:
+                    case 105:
+                        action = 'NE';
+                        break;
+                    case 37:
+                    case 100:
+                        action = 'W';
+                        break;
+                    case 39:
+                    case 102:
+                        action = 'E';
+                        break;
+                    case 35:
+                    case 97:
+                        action = 'SW';
+                        break;
+                    case 40:
+                    case 98:
+                        action = 'S';
+                        break;
+                    case 34:
+                    case 99:
+                        action = 'SE';
+                        break;
+                    case 12:
+                    case 101:
+                        action = 'H';
+                        break;
+                    case 188:
+                        action = 'U';
+                        break;
+                    case 190:
+                        action = 'D';
+                        break;
+                    default:
+                        //console.log(e.keyCode);
+                        break;
+                    }
+                    if (action !== '') {
+                        PerformAction(action);
+                    }
+                }
+            });
+        });
+
         function PerformAction(action, target, target2) {
             $.ajax({
                 url: '@Url.Action("PerformAction")',

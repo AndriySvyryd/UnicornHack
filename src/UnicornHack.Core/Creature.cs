@@ -210,6 +210,18 @@ namespace UnicornHack
             return isAlive;
         }
 
+        protected override void Die()
+        {
+            DropGold(Gold);
+            foreach (var item in Inventory.ToList())
+            {
+                Drop(item);
+            }
+            base.Die();
+            Level.Actors.Remove(this);
+            RemoveReference();
+        }
+
         private Func<string, byte, int, float> _weightFunction;
 
         public virtual float GetWeight(Level level)

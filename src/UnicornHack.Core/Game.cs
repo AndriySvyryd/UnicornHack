@@ -25,7 +25,7 @@ namespace UnicornHack
         public virtual ICollection<Branch> Branches { get; set; } = new HashSet<Branch>();
         public virtual ICollection<Level> Levels { get; set; } = new HashSet<Level>();
         public virtual ICollection<Room> Rooms { get; set; } = new HashSet<Room>();
-        public virtual int NextStairsId { get; set; }
+        public virtual int NextConnectionId { get; set; }
         public virtual ICollection<Connection> Connections { get; set; } = new HashSet<Connection>();
         public virtual int NextAbilityId { get; set; }
         public virtual ICollection<Ability> Abilities { get; set; } = new HashSet<Ability>();

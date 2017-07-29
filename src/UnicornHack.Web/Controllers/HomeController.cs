@@ -100,9 +100,9 @@ namespace UnicornHack.Controllers
                 var seed = Environment.TickCount;
                 var game = new Game
                 {
-                    Random = new SimpleRandom {Seed = seed},
                     InitialSeed = seed
                 };
+                game.Random = new SimpleRandom {Seed = seed};
                 Initialize(game);
                 _dbContext.Games.Add(game);
                 _dbContext.SaveChanges();
@@ -317,14 +317,14 @@ namespace UnicornHack.Controllers
             {
                 _dbContext.Actors.Remove(actor);
             }
+            foreach (var level in game.Levels.ToList())
+            {
+                game.Repository.Delete(level);
+                game.Repository.Delete(level.GenerationRandom);
+            }
             foreach (var stairs in game.Connections.ToList())
             {
                 _dbContext.Connections.Remove(stairs);
-            }
-            foreach (var level in game.Levels.ToList())
-            {
-                _dbContext.Set<SimpleRandom>().Remove(level.GenerationRandom);
-                _dbContext.Levels.Remove(level);
             }
             foreach (var branch in game.Branches.ToList())
             {

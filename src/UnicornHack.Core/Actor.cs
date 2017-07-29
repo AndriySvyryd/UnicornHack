@@ -214,7 +214,6 @@ namespace UnicornHack
 
         #region Actions
 
-
         public virtual int GetEffectiveAC()
         {
             var effectiveAC = ArmorClass;
@@ -746,14 +745,7 @@ namespace UnicornHack
             HP += hp;
             if (!IsAlive)
             {
-                DropGold(Gold);
-                foreach (var item in Inventory.ToList())
-                {
-                    Drop(item);
-                }
-                DeathEvent.New(this, corpse: null, eventOrder: Game.EventOrder++);
-                Level.Actors.Remove(this);
-                RemoveReference();
+                Die();
                 return false;
             }
 
@@ -763,6 +755,11 @@ namespace UnicornHack
             }
 
             return true;
+        }
+
+        protected virtual void Die()
+        {
+            DeathEvent.New(this, corpse: null, eventOrder: Game.EventOrder++);
         }
 
         public virtual Item GetEquippedItem(EquipmentSlot slot)
