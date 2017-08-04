@@ -234,24 +234,24 @@ namespace UnicornHack.Services.English
         [Fact]
         public void ItemConsumptionEvent()
         {
-            var carrot = new Item {BaseName = "carrot"};
+            var potion = new Item {BaseName = "potion of healing" };
             var newt = new Creature {BaseName = "newt"};
             var player = new Player {BaseName = "human", Name = "Dudley", Sex = Sex.Male};
 
             var languageService = CreateLanguageService();
 
-            Assert.Equal("The newt eats a carrot.", languageService.ToString(new ItemConsumptionEvent
+            Assert.Equal("The newt drinks a potion of healing.", languageService.ToString(new ItemConsumptionEvent
             {
-                Item = carrot,
+                Item = potion,
                 ItemSensed = SenseType.Sight | SenseType.Sound,
                 Consumer = newt,
                 ConsumerSensed = SenseType.Sight | SenseType.Sound,
                 Sensor = player
             }));
 
-            Assert.Equal("You eat a carrot.", languageService.ToString(new ItemConsumptionEvent
+            Assert.Equal("You drink a potion of healing.", languageService.ToString(new ItemConsumptionEvent
             {
-                Item = carrot,
+                Item = potion,
                 ItemSensed = SenseType.Sight | SenseType.Touch,
                 Consumer = player,
                 ConsumerSensed = SenseType.Sight | SenseType.Touch,

@@ -104,6 +104,31 @@ a:hover {
     border-color: transparent;
 }
 
+.lit7 {
+    color: #AAA;
+}
+.lit6 {
+    color: #999;
+}
+.lit5 {
+    color: #888;
+}
+.lit4 {
+    color: #777;
+}
+.lit3 {
+    color: #666;
+}
+.lit2 {
+    color: #555;
+}
+.lit1 {
+    color: #444;
+}
+.unlit {
+    color: #333;
+}
+
 /*Map features*/
 .mapPool {
     color: aqua;

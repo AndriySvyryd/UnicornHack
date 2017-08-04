@@ -78,6 +78,9 @@ namespace UnicornHack.Controllers
                 character.Act();
             }
 
+            // TODO: Move this
+            _dbContext.Entry(level).Property(l => l.VisibleTerrain).IsModified = true;
+
             _dbContext.SaveChanges();
 
             // Level is null if the character is dead
@@ -100,9 +103,9 @@ namespace UnicornHack.Controllers
                 var seed = Environment.TickCount;
                 var game = new Game
                 {
-                    InitialSeed = seed
+                    InitialSeed = seed,
+                    Random = new SimpleRandom {Seed = seed}
                 };
-                game.Random = new SimpleRandom {Seed = seed};
                 Initialize(game);
                 _dbContext.Games.Add(game);
                 _dbContext.SaveChanges();

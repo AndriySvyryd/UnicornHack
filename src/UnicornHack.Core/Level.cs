@@ -12,20 +12,22 @@ namespace UnicornHack
         #region State
 
         private PathFinder _pathFinder;
-        private readonly Func<Point, int, int?> _canMoveDelegate;
+        private BeveledFOV _fov;
 
-        public virtual string BranchName { get; private set; }
-        public virtual Branch Branch { get; set; }
-        public virtual byte Depth { get; set; }
-        public virtual int Difficulty { get; set; }
-        public virtual byte Height { get; set; }
-        public virtual byte Width { get; set; }
-        public virtual Rectangle BoundingRectangle => new Rectangle(new Point(0, 0), Width, Height);
-        public virtual byte[] Terrain { get; set; }
-        public virtual byte[] WallNeighbours { get; set; }
-        public virtual int NextRoomId { get; set; }
-        public virtual int CurrentTick { get; set; }
-        public virtual SimpleRandom GenerationRandom { get; set; }
+        public string BranchName { get; private set; }
+        public Branch Branch { get; set; }
+        public byte Depth { get; set; }
+        public int Difficulty { get; set; }
+        public byte Height { get; set; }
+        public byte Width { get; set; }
+        public Rectangle BoundingRectangle => new Rectangle(new Point(0, 0), Width, Height);
+        public byte[] VisibleTerrain { get; set; }
+        public byte[] VisibleNeighbours { get; set; }
+        public byte[] Terrain { get; set; }
+        public byte[] WallNeighbours { get; set; }
+        public int NextRoomId { get; set; }
+        public int CurrentTick { get; set; }
+        public SimpleRandom GenerationRandom { get; set; }
 
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public virtual int GameId { get; private set; }
@@ -65,7 +67,6 @@ namespace UnicornHack
 
         public Level()
         {
-            _canMoveDelegate = CanMove;
         }
 
         public Level(Branch branch, byte depth, int seed)
@@ -83,6 +84,8 @@ namespace UnicornHack
             Game.Repository.Add(this);
             Terrain = new byte[0];
             WallNeighbours = new byte[0];
+            VisibleTerrain = new byte[0];
+            VisibleNeighbours = new byte[0];
             GenerationRandom = new SimpleRandom {Seed = seed};
             Difficulty = branch.Difficulty + depth;
             if (Difficulty > MaxDifficulty)
@@ -96,7 +99,8 @@ namespace UnicornHack
             if (_pathFinder == null)
             {
                 (PointToIndex, IndexToPoint) = Game.GetPointIndex(Width, Height);
-                _pathFinder = new PathFinder(_canMoveDelegate, PointToIndex, IndexToPoint);
+                _pathFinder = new PathFinder(CanMove, PointToIndex, IndexToPoint);
+                _fov = new BeveledFOV(BlocksLight, GetVisibleNeighbours);
             }
         }
 
@@ -118,6 +122,8 @@ namespace UnicornHack
 
                 Terrain = new byte[Height * Width];
                 WallNeighbours = new byte[Height * Width];
+                VisibleTerrain = new byte[Height * Width];
+                VisibleNeighbours = new byte[Height * Width];
 
                 EnsureInitialized();
 
@@ -147,24 +153,15 @@ namespace UnicornHack
         {
             switch (feature)
             {
+                case MapFeature.Pool:
+                case MapFeature.RockFloor:
+                case MapFeature.StoneFloor:
+                    ModifyNeighbours(VisibleNeighbours, point, add: true);
+                    break;
                 case MapFeature.StoneArchway:
                 case MapFeature.StoneWall:
                     ModifyNeighbours(WallNeighbours, point, add: true);
                     break;
-                default:
-                    throw new InvalidOperationException($"Unsupported feature for neighbour tracking: {feature}");
-            }
-        }
-
-        public void RemoveNeighbours(MapFeature feature, Point point)
-        {
-            switch (feature)
-            {
-                case MapFeature.StoneWall:
-                    ModifyNeighbours(WallNeighbours, point, add: false);
-                    break;
-                default:
-                    throw new InvalidOperationException($"Unsupported feature for neighbour tracking: {feature}");
             }
         }
 
@@ -310,6 +307,41 @@ namespace UnicornHack
             // TODO: Also avoid actors (at least adjacent ones)
             return ((MapFeature)Terrain[locationIndex]).CanMoveTo();
         }
+
+        public void RecomputeVisibility(Point location, byte visibilityFalloff)
+        {
+            Array.Clear(VisibleTerrain, 0, VisibleTerrain.Length);
+            _fov.Compute(location, 24, visibilityFalloff);
+        }
+
+        private bool BlocksLight(byte x, byte y, byte visibility, int rangeFalloff)
+        {
+            if (x < Width && y < Height)
+            {
+                switch ((MapFeature)Terrain[PointToIndex[x, y]])
+                {
+                    // This is inlined for perf
+                    case MapFeature.Default:
+                    case MapFeature.StoneWall:
+                    case MapFeature.RockWall:
+                        visibility = byte.MaxValue;
+                        visibility = visibility < rangeFalloff ? (byte)0 : (byte)(visibility - rangeFalloff);
+                        VisibleTerrain[PointToIndex[x, y]] = visibility;
+                        return true;
+                    default:
+                        visibility = visibility < rangeFalloff ? (byte)0 : (byte)(visibility - rangeFalloff);
+                        VisibleTerrain[PointToIndex[x, y]] = visibility;
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        private DirectionFlags GetVisibleNeighbours(byte x, byte y)
+            => x < Width && y < Height
+                ? (DirectionFlags)VisibleNeighbours[PointToIndex[x, y]]
+                : DirectionFlags.None;
 
         public bool CanPlaceCorridor(Point location)
         {

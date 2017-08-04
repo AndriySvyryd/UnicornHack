@@ -75,7 +75,7 @@ namespace UnicornHack
                 Effects = new HashSet<Effect>
                 {
                     new MeleeAttack(Game),
-                    new PhysicalDamage(Game) {Damage = 2}
+                    new PhysicalDamage(Game)
                 }
             });
 
@@ -88,7 +88,7 @@ namespace UnicornHack
                 Effects = new HashSet<Effect>
                 {
                     new MeleeAttack(Game),
-                    new PhysicalDamage(Game) {Damage = 2}
+                    new PhysicalDamage(Game)
                 }
             });
 
@@ -152,7 +152,7 @@ namespace UnicornHack
 
             foreach (var unarmedAbility in Abilities.Where(a => a.Name == UnarmedAttackName && a.IsUsable))
             {
-                unarmedAbility.Effects.OfType<PhysicalDamage>().Single().Damage = 1 + Skills.FistWeapons;
+                unarmedAbility.Effects.OfType<PhysicalDamage>().Single().Damage = 5 + 2*Skills.FistWeapons;
             }
 
             var mainMeleeAttack = Abilities.FirstOrDefault(a => a.Name == MeleeAttackName);
@@ -226,6 +226,7 @@ namespace UnicornHack
                 var target2 = NextActionTarget2;
                 if (action == null)
                 {
+                    Level.RecomputeVisibility(new Point(LevelX, LevelY), visibilityFalloff: 16);
                     return false;
                 }
 

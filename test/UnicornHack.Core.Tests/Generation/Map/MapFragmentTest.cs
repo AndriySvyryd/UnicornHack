@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Extensions.Caching.Memory;
-using UnicornHack.Services;
-using UnicornHack.Services.English;
 using UnicornHack.Utils;
 using Xunit;
 
@@ -119,7 +116,7 @@ PP
 
         private void BuildRoomTest(string map)
         {
-            var level = CreateLevel();
+            var level = TestHelper.CreateLevel();
 
             var fragment = new MapFragment
             {
@@ -195,21 +192,6 @@ PP
             {
                 throw new InvalidOperationException("Seed: " + seed, e);
             }
-        }
-
-        private static Level CreateLevel()
-        {
-            var level = new Level
-            {
-                Height = 10,
-                Width = 10,
-                Game = new Game {Services = new GameServices(new EnglishLanguageService(), new MemoryCache(new MemoryCacheOptions()))}
-            };
-            level.Terrain = new byte[level.Height * level.Width];
-            level.WallNeighbours = new byte[level.Height * level.Width];
-            level.EnsureInitialized();
-
-            return level;
         }
     }
 }

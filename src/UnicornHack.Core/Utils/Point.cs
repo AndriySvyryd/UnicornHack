@@ -1,10 +1,12 @@
 using System;
+using System.Diagnostics;
 
 namespace UnicornHack.Utils
 {
     //[StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct Point
     {
+        [DebuggerStepThrough]
         public Point(byte x, byte y)
         {
             X = x;

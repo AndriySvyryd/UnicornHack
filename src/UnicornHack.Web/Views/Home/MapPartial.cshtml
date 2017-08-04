@@ -91,6 +91,36 @@
                 default:
                     throw new NotSupportedException($"Map feature {feature} not supported.");
             }
+            var vis1 = level.VisibleTerrain[i];
+            var visibility = vis1 >> 5;
+            switch (visibility)
+            {
+                case 7:
+                    className = "lit7";
+                    break;
+                case 6:
+                    className = "lit6";
+                    break;
+                case 5:
+                    className = "lit5";
+                    break;
+                case 4:
+                    className = "lit4";
+                    break;
+                case 3:
+                    className = "lit3";
+                    break;
+                case 2:
+                    className = "lit2";
+                    break;
+                case 1:
+                    className = "lit1";
+                    break;
+                default:
+                    className = "unlit";
+                    break;
+            }
+
             i++;
             characters[x, y] = symbol;
             classes[x, y] = className;

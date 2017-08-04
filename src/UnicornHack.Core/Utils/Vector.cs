@@ -22,6 +22,12 @@ namespace UnicornHack.Utils
         public Vector GetUnit()
             => new Vector(X == 0 ? X : (sbyte)(X / Math.Abs(X)), Y == 0 ? Y : (sbyte)(Y / Math.Abs(Y)));
 
+        public byte Length()
+            => (byte)Math.Max(Math.Abs(X), Math.Abs(Y));
+
+        public byte OrthogonalLength()
+            => (byte)(Math.Abs(X) + Math.Abs(Y));
+
         public override string ToString() => $"{{{X}, {Y}}}";
 
         public static Vector Convert(Direction direction)

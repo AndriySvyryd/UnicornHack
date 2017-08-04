@@ -266,11 +266,9 @@ namespace UnicornHack.Generation.Map
                     goto case '\u0001';
                 case '#':
                     feature = MapFeature.StoneWall;
-                    level.AddNeighbours(feature, point);
                     goto case '\u0001';
                 case 'A':
                     feature = MapFeature.StoneArchway;
-                    level.AddNeighbours(feature, point);
                     goto case '\u0001';
                 case '=':
                     feature = MapFeature.Pool;
@@ -285,6 +283,7 @@ namespace UnicornHack.Generation.Map
             }
 
             level.Terrain[level.PointToIndex[point.X, point.Y]] = (byte)feature;
+            level.AddNeighbours(feature, point);
         }
 
         protected virtual Room TryPlace(Level level, Rectangle boundingRectangle, DynamicMap map)
