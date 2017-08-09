@@ -38,7 +38,53 @@ namespace UnicornHack.Utils
             _blocksLight(origin.X, origin.Y, MaxVisibility, 0);
             for (byte octant = 0; octant < 8; octant++)
             {
-                Compute(octant, origin, rangeLimit, visibilityFalloff, 1, new Slope(1, 1), new Slope(0, 1));
+                Compute(octant, origin, rangeLimit, visibilityFalloff, x: 1, top: new Slope(1, 1), bottom: new Slope(0, 1));
+            }
+        }
+
+        public void Compute(Point origin, Direction heading,
+            byte primaryFOV, byte primaryRange,
+            byte secondaryFOV, byte secondaryRange)
+        {
+            if (primaryFOV > secondaryFOV)
+            {
+                throw new ArgumentOutOfRangeException(nameof(primaryFOV));
+            }
+
+            _blocksLight(origin.X, origin.Y, MaxVisibility, 0);
+            var octantShift = Direction.East.OctantsTo(heading);
+            if (octantShift == -1)
+            {
+                return;
+            }
+
+            octantShift = (byte)(8 + octantShift - secondaryFOV);
+            var visibilityFalloff = (byte)(Byte.MaxValue / secondaryRange);
+            for (var octant = 0; octant < secondaryFOV - primaryFOV; octant++)
+            {
+                Compute((byte)((octant + octantShift) % 8),
+                    origin,
+                    secondaryRange,
+                    visibilityFalloff,
+                    x: 1, top: new Slope(1, 1), bottom: new Slope(0, 1));
+            }
+            for (var octant = secondaryFOV + primaryFOV; octant < secondaryFOV * 2; octant++)
+            {
+                Compute((byte)((octant + octantShift) % 8),
+                    origin,
+                    secondaryRange,
+                    visibilityFalloff,
+                    x: 1, top: new Slope(1, 1), bottom: new Slope(0, 1));
+            }
+
+            visibilityFalloff = (byte)(Byte.MaxValue / primaryRange);
+            for (var octant = secondaryFOV - primaryFOV; octant < secondaryFOV + primaryFOV; octant++)
+            {
+                Compute((byte)((octant + octantShift) % 8),
+                    origin,
+                    primaryRange,
+                    visibilityFalloff,
+                    x: 1, top: new Slope(1, 1), bottom: new Slope(0, 1));
             }
         }
 

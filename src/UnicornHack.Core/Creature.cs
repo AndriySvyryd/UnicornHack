@@ -144,15 +144,15 @@ namespace UnicornHack
                 NextActionTick += DefaultActionDelay;
                 return true;
             }
-            var directionIndex = Game.Random.Next(minValue: 0, maxValue: possibleDirectionsToMove.Count);
 
-            var targetCell = ToLevelCell(possibleDirectionsToMove[directionIndex]);
-            if (targetCell != null)
+            if (possibleDirectionsToMove.Contains(Heading)
+                && Game.Random.NextBool())
             {
-                return Move(targetCell.Value, safe: true);
+                return Move(Heading, safe: true);
             }
 
-            return true;
+            var directionIndex = Game.Random.Next(minValue: 0, maxValue: possibleDirectionsToMove.Count);
+            return Move(possibleDirectionsToMove[directionIndex], safe: true);
         }
 
         private bool TryAttackPlayerCharacter()
@@ -179,14 +179,10 @@ namespace UnicornHack
             }
 
             var direction = Level.GetFirstStepFromShortestPath(this, playerCharacter);
-            if (direction != null)
+            if (direction != null
+                && Move(direction.Value, pretend: true, safe: true))
             {
-                var targetCell = ToLevelCell(direction.Value);
-                if (targetCell != null
-                    && Move(targetCell.Value, pretend: true, safe: true))
-                {
-                    return Move(targetCell.Value, safe: true);
-                }
+                return Move(direction.Value, safe: true);
             }
 
             return false;

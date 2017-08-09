@@ -249,7 +249,7 @@ namespace UnicornHack
             return (byte)Math.Max(Math.Abs(xDelta), Math.Abs(yDelta));
         }
 
-        public virtual Vector? GetFirstStepFromShortestPath(Actor origin, Actor target)
+        public virtual Direction? GetFirstStepFromShortestPath(Actor origin, Actor target)
         {
             var firstPoint = new Point(origin.LevelX, origin.LevelY);
             var nextPoint = new Point(target.LevelX, target.LevelY);
@@ -267,7 +267,7 @@ namespace UnicornHack
 
             Debug.Assert(firstPoint.DistanceTo(nextPoint) <= 1);
 
-            return firstPoint.DirectionTo(nextPoint);
+            return firstPoint.DirectionTo(nextPoint).AsDirection();
         }
 
         public virtual List<Point> GetShortestPath(Actor origin, Actor target)
@@ -314,6 +314,16 @@ namespace UnicornHack
             _fov.Compute(location, 24, visibilityFalloff);
         }
 
+        public void RecomputeVisibility(
+            Point location,
+            Direction heading,
+            byte primaryFOV,
+            byte secondaryFOV)
+        {
+            Array.Clear(VisibleTerrain, 0, VisibleTerrain.Length);
+            _fov.Compute(location, heading, primaryFOV, 16, secondaryFOV, 8);
+        }
+
         private bool BlocksLight(byte x, byte y, byte visibility, int rangeFalloff)
         {
             if (x < Width && y < Height)
@@ -358,9 +368,9 @@ namespace UnicornHack
             }
         }
 
-        public virtual IReadOnlyList<Vector> GetPossibleMovementDirections(Point currentLocation, bool safe)
+        public virtual IReadOnlyList<Direction> GetPossibleMovementDirections(Point currentLocation, bool safe)
         {
-            var availableDirections = new List<Vector>();
+            var availableDirections = new List<Direction>();
             for (var i = 0; i < 8; i++)
             {
                 if (CanMove(currentLocation, i) == null)
@@ -376,7 +386,7 @@ namespace UnicornHack
                     continue;
                 }
 
-                availableDirections.Add(MovementDirections[i]);
+                availableDirections.Add((Direction)i);
             }
 
             return availableDirections;

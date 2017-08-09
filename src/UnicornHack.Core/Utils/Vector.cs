@@ -30,6 +30,48 @@ namespace UnicornHack.Utils
 
         public override string ToString() => $"{{{X}, {Y}}}";
 
+        public Direction AsDirection()
+        {
+            switch (X)
+            {
+                case -1:
+                    switch (Y)
+                    {
+                        case -1:
+                            return Direction.Northwest;
+                        case 0:
+                            return Direction.West;
+                        case 1:
+                            return Direction.Southwest;
+                    }
+                    break;
+                case 0:
+                    switch (Y)
+                    {
+                        case -1:
+                            return Direction.North;
+                        case 0:
+                            return Direction.None;
+                        case 1:
+                            return Direction.South;
+                    }
+                    break;
+                case 1:
+                    switch (Y)
+                    {
+                        case -1:
+                            return Direction.Northeast;
+                        case 0:
+                            return Direction.East;
+                        case 1:
+                            return Direction.Southeast;
+                    }
+                    break;
+            }
+
+            throw new InvalidOperationException("Not a cardinal direction: " + this);
+        }
+
         public static Vector Convert(Direction direction)
         {
             switch (direction)

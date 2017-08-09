@@ -226,7 +226,7 @@ namespace UnicornHack
                 var target2 = NextActionTarget2;
                 if (action == null)
                 {
-                    Level.RecomputeVisibility(new Point(LevelX, LevelY), visibilityFalloff: 16);
+                    Level.RecomputeVisibility(new Point(LevelX, LevelY), Heading, primaryFOV: 1, secondaryFOV: 2);
                     return false;
                 }
 
@@ -336,11 +336,9 @@ namespace UnicornHack
 
         public virtual bool Move(Direction direction)
         {
-            var targetCell = ToLevelCell(Vector.Convert(direction));
-            if (targetCell != null
-                && base.Move(targetCell.Value, pretend: true))
+            if (base.Move(direction, pretend: true))
             {
-                return base.Move(targetCell.Value);
+                return base.Move(direction);
             }
 
             WriteLog(Game.Services.Language.UnableToMove(direction), Level.CurrentTick);

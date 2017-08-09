@@ -154,6 +154,7 @@ namespace UnicornHack
         public virtual Level Level { get; set; }
         public virtual byte LevelX { get; set; }
         public virtual byte LevelY { get; set; }
+        public virtual Direction Heading { get; set; }
 
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public virtual int GameId { get; private set; }
@@ -417,15 +418,34 @@ namespace UnicornHack
             return true;
         }
 
-        public virtual bool Move(Point targetCell, bool pretend = false, bool safe = false)
+        public virtual bool Move(Direction direction, bool pretend = false, bool safe = false)
         {
-            if (LevelX == targetCell.X && LevelY == targetCell.Y)
+            if (Heading != direction)
             {
+                if (pretend)
+                {
+                    return true;
+                }
+
+                var octants = direction.ClosestOctantsTo(Heading);
+
+                NextActionTick += (MovementDelay * octants) / 4;
+
+                Heading = direction;
+
+                // TODO: Fire event
+
                 return true;
             }
 
+            var targetCell = ToLevelCell(Vector.Convert(direction));
+            if (!targetCell.HasValue)
+            {
+                return false;
+            }
+
             var conflictingActor = Level.Actors
-                .SingleOrDefault(a => a.LevelX == targetCell.X && a.LevelY == targetCell.Y);
+                .SingleOrDefault(a => a.LevelX == targetCell.Value.X && a.LevelY == targetCell.Value.Y);
             if (conflictingActor != null)
             {
                 if (safe)
@@ -441,7 +461,7 @@ namespace UnicornHack
                 return false;
             }
 
-            if (!Reposition(targetCell, pretend, safe))
+            if (!Reposition(targetCell.Value, pretend, safe))
             {
                 return false;
             }
@@ -495,7 +515,7 @@ namespace UnicornHack
             }
             var directionIndex = Game.Random.Next(minValue: 0, maxValue: possibleDirectionsToMove.Count);
 
-            var targetCell = ToLevelCell(possibleDirectionsToMove[directionIndex]);
+            var targetCell = ToLevelCell(Vector.Convert(possibleDirectionsToMove[directionIndex]));
             if (targetCell != null)
             {
                 return Reposition(targetCell.Value, pretend: false, safe: true);
