@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Text;
 using Microsoft.Extensions.Caching.Memory;
+using UnicornHack.Generation.Map;
 using UnicornHack.Services;
 using UnicornHack.Services.English;
+using UnicornHack.Utils;
 
 namespace UnicornHack
 {
@@ -30,6 +32,23 @@ namespace UnicornHack
             {
                 Services = new GameServices(new EnglishLanguageService(), new MemoryCache(new MemoryCacheOptions()))
             };
+
+        public static Level BuildLevel(string map, int seed)
+        {
+            var game = CreateGame();
+
+            var fragment = new MapFragment
+            {
+                Map = map
+            };
+            fragment.EnsureInitialized(game);
+
+            var level = CreateLevel(fragment.Height, fragment.Width, game);
+            level.GenerationRandom = new SimpleRandom { Seed = seed };
+
+            fragment.TryPlace(level, level.BoundingRectangle);
+            return level;
+        }
 
         public static string PrintMap(Level level, byte[] visibleTerrain = null)
         {
@@ -60,59 +79,59 @@ namespace UnicornHack
                                 symbol = '█';
                                 break;
                             case MapFeature.StoneWall:
-                                var neighbour = level.WallNeighbours[i] & 0xF;
-                                switch (neighbour)
+                                var neighbours = (DirectionFlags)level.WallNeighbours[i] & DirectionFlags.Cross;
+                                switch (neighbours)
                                 {
-                                    case 0:
+                                    case DirectionFlags.None:
                                         symbol = '●';
                                         break;
-                                    case 1:
+                                    case DirectionFlags.North:
                                         symbol = '╹';
                                         break;
-                                    case 2:
+                                    case DirectionFlags.East:
                                         symbol = '╺';
                                         break;
-                                    case 3:
+                                    case DirectionFlags.NorthAndEast:
                                         symbol = '┗';
                                         break;
-                                    case 4:
+                                    case DirectionFlags.South:
                                         symbol = '╻';
                                         break;
-                                    case 5:
+                                    case DirectionFlags.Longitudinal:
                                         symbol = '┃';
                                         break;
-                                    case 6:
+                                    case DirectionFlags.SouthAndEast:
                                         symbol = '┏';
                                         break;
-                                    case 7:
+                                    case DirectionFlags.NorthEastSouth:
                                         symbol = '┣';
                                         break;
-                                    case 8:
+                                    case DirectionFlags.West:
                                         symbol = '╸';
                                         break;
-                                    case 9:
+                                    case DirectionFlags.NorthAndWest:
                                         symbol = '┛';
                                         break;
-                                    case 10:
+                                    case DirectionFlags.Latitudinal:
                                         symbol = '━';
                                         break;
-                                    case 11:
+                                    case DirectionFlags.NorthEastWest:
                                         symbol = '┻';
                                         break;
-                                    case 12:
+                                    case DirectionFlags.SouthAndWest:
                                         symbol = '┓';
                                         break;
-                                    case 13:
+                                    case DirectionFlags.NorthWestSouth:
                                         symbol = '┫';
                                         break;
-                                    case 14:
+                                    case DirectionFlags.SouthEastWest:
                                         symbol = '┳';
                                         break;
-                                    case 15:
+                                    case DirectionFlags.Cross:
                                         symbol = '╋';
                                         break;
                                     default:
-                                        throw new InvalidOperationException($"Invalid wall neighbours: {neighbour}");
+                                        throw new InvalidOperationException("Invalid wall neighbours: " + neighbours);
                                 }
                                 break;
                             case MapFeature.StoneArchway:

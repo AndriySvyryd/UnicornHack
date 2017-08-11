@@ -20,17 +20,13 @@ namespace UnicornHack
         {
             switch (feature)
             {
-                case MapFeature.Default:
-                case MapFeature.StoneWall:
-                case MapFeature.RockWall:
-                    return false;
                 case MapFeature.StoneFloor:
                 case MapFeature.RockFloor:
                 case MapFeature.StoneArchway:
                 case MapFeature.Pool:
                     return true;
                 default:
-                    throw new NotSupportedException($"Map feature {feature} not supported.");
+                    return false;
             }
         }
     }

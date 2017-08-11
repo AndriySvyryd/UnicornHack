@@ -51,14 +51,14 @@ namespace UnicornHack
         // Order matters, see Direction.cs
         public static readonly Vector[] MovementDirections =
         {
-            new Vector(x: 0, y: -1), new Vector(x: 1, y: 0), new Vector(x: 0, y: 1), new Vector(-1, y: 0),
-            new Vector(x: -1, y: -1), new Vector(x: 1, y: -1), new Vector(x: 1, y: 1), new Vector(-1, y: 1)
+            new Vector(x: 1, y: 0), new Vector(x: 1, y: -1), new Vector(x: 0, y: -1), new Vector(x: -1, y: -1),
+            new Vector(x: -1, y: 0), new Vector(x: -1, y: 1), new Vector(x: 0, y: 1), new Vector(x: 1, y: 1)
         };
 
         public static readonly byte[] OppositeDirectionIndexes =
         {
-            2, 3, 0, 1,
-            6, 7, 4, 5
+            4, 5, 6, 7,
+            0, 1, 2, 3
         };
 
         #endregion
@@ -99,7 +99,7 @@ namespace UnicornHack
             if (_pathFinder == null)
             {
                 (PointToIndex, IndexToPoint) = Game.GetPointIndex(Width, Height);
-                _pathFinder = new PathFinder(CanMove, PointToIndex, IndexToPoint);
+                _pathFinder = new PathFinder(CanMoveTo, PointToIndex, IndexToPoint);
                 _fov = new BeveledFOV(BlocksLight, GetVisibleNeighbours);
             }
         }
@@ -270,19 +270,24 @@ namespace UnicornHack
             return firstPoint.DirectionTo(nextPoint).AsDirection();
         }
 
-        public virtual List<Point> GetShortestPath(Actor origin, Actor target)
+        public List<Point> GetShortestPath(Actor origin, Actor target)
         {
             var firstPoint = new Point(origin.LevelX, origin.LevelY);
-            var nextPoint = new Point(target.LevelX, target.LevelY);
+            var lastPoint = new Point(target.LevelX, target.LevelY);
 
-            return _pathFinder.FindPath(firstPoint, nextPoint);
+            return GetShortestPath(firstPoint, lastPoint, origin.Heading);
         }
 
-        private int? CanMove(Point currentLocation, int directionIndex)
+        public List<Point> GetShortestPath(Point start, Point target, Direction initialDirection)
+        {
+            return _pathFinder.FindPath(start, target, initialDirection);
+        }
+
+        private int? CanMoveTo(byte currentLocationX, byte currentLocationY, int directionIndex)
         {
             var direction = MovementDirections[directionIndex];
-            var newLocationX = (byte)(currentLocation.X + direction.X);
-            var newLocationY = (byte)(currentLocation.Y + direction.Y);
+            var newLocationX = (byte)(currentLocationX + direction.X);
+            var newLocationY = (byte)(currentLocationY + direction.Y);
 
             if (newLocationX >= Width || newLocationY >= Height)
             {
@@ -290,22 +295,28 @@ namespace UnicornHack
             }
 
             var newLocationIndex = PointToIndex[newLocationX, newLocationY];
-            return CanMoveTo(newLocationIndex) ? (int?)newLocationIndex : null;
+            return ((MapFeature)Terrain[newLocationIndex]).CanMoveTo() ? (int?)newLocationIndex : null;
         }
 
         public bool IsValid(Point point)
             => point.X < Width && point.Y < Height; // Since byte is unsigned there is no need to compare with 0
 
+        // TODO: Use locomotion type
+        // TODO: block if directionIndex > 3 (diagonal) and path is too narrow to squeeze through
+        // TODO: Also avoid actors (at least adjacent ones)
         public bool CanMoveTo(Point location)
             => IsValid(location)
-               && CanMoveTo(PointToIndex[location.X, location.Y]);
+               && ((MapFeature)Terrain[PointToIndex[location.X, location.Y]]).CanMoveTo();
 
-        private bool CanMoveTo(int locationIndex)
+        public int? CanMoveTo(byte locationX, byte locationY)
         {
-            // TODO: Use locomotion type
-            // TODO: block if directionIndex > 3 (diagonal) and path is too narrow to squeeze through
-            // TODO: Also avoid actors (at least adjacent ones)
-            return ((MapFeature)Terrain[locationIndex]).CanMoveTo();
+            if (locationX >= Width || locationY >= Height)
+            {
+                return null;
+            }
+
+            var index = PointToIndex[locationX, locationY];
+            return ((MapFeature)Terrain[index]).CanMoveTo() ? (int?)index : null;
         }
 
         public void RecomputeVisibility(Point location, byte visibilityFalloff)
@@ -373,7 +384,7 @@ namespace UnicornHack
             var availableDirections = new List<Direction>();
             for (var i = 0; i < 8; i++)
             {
-                if (CanMove(currentLocation, i) == null)
+                if (CanMoveTo(currentLocation.X, currentLocation.Y, i) == null)
                 {
                     continue;
                 }

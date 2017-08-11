@@ -162,7 +162,7 @@ A#
 ..#####................";
 
             var seed = Environment.TickCount;
-            var level = BuildLevel(map, seed);
+            var level = TestHelper.BuildLevel(map, seed);
 
             for (var i = 0; i < 10000; i++)
             {
@@ -176,7 +176,7 @@ A#
         private void TestFOV(string map, string expectedFOV)
         {
             var seed = Environment.TickCount;
-            var level = BuildLevel(map, seed);
+            var level = TestHelper.BuildLevel(map, seed);
 
             level.RecomputeVisibility(new Point(0, 0), visibilityFalloff: 0);
 
@@ -204,23 +204,6 @@ A#
 Actual:
 " + TestHelper.PrintMap(level) + @"
 Seed: " + seed);
-        }
-
-        private Level BuildLevel(string map, int seed)
-        {
-            var game = TestHelper.CreateGame();
-
-            var fragment = new MapFragment
-            {
-                Map = map
-            };
-            fragment.EnsureInitialized(game);
-
-            var level = TestHelper.CreateLevel(fragment.Height, fragment.Width, game);
-            level.GenerationRandom = new SimpleRandom {Seed = seed};
-
-            fragment.TryPlace(level, level.BoundingRectangle);
-            return level;
         }
     }
 }

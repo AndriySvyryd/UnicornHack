@@ -375,7 +375,7 @@ namespace UnicornHack.Generation.Map
                     var newLocationIndex = level.PointToIndex[newLocationX, newLocationY];
                     var newNeighbours = (byte)(neighbours[newLocationIndex]
                                                | 1 << Level.OppositeDirectionIndexes[directionIndex]);
-                    if (newNeighbours == Byte.MaxValue
+                    if (newNeighbours == (byte)DirectionFlags.Circle
                         && (neighbours[level.PointToIndex[roomPoint.X, roomPoint.Y]] & 1 << directionIndex) != 0)
                     {
                         var insidePoint = new Point(newLocationX, newLocationY);
@@ -486,9 +486,9 @@ namespace UnicornHack.Generation.Map
             for (var j = 0; j < neighbours.Length; j++)
             {
                 var perimeterPointFound = false;
-                for (var i = 1; i < 4; i++)
+                for (var i = 3; i > 0; i--)
                 {
-                    var directionIndexToCheck = (previousPointDirectionIndex + i) % 4;
+                    var directionIndexToCheck = (previousPointDirectionIndex + i * 2) % 8;
                     if (currentNeighbourMap.HasFlag((DirectionFlags)(1 << directionIndexToCheck)))
                     {
                         var directionToCheck = Level.MovementDirections[directionIndexToCheck];

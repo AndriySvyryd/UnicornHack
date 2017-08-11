@@ -24,59 +24,59 @@
                     className = "mapCorridor";
                     break;
                 case MapFeature.StoneWall:
-                    var neighbour = level.WallNeighbours[i] & 0xF;
-                    switch (neighbour)
+                    var neighbours = (DirectionFlags)level.WallNeighbours[i] & DirectionFlags.Cross;
+                    switch (neighbours)
                     {
-                        case 0:
+                        case DirectionFlags.None:
                             symbol = '●';
                             break;
-                        case 1:
+                        case DirectionFlags.North:
                             symbol = '╹';
                             break;
-                        case 2:
+                        case DirectionFlags.East:
                             symbol = '╺';
                             break;
-                        case 3:
+                        case DirectionFlags.NorthAndEast:
                             symbol = '┗';
                             break;
-                        case 4:
+                        case DirectionFlags.South:
                             symbol = '╻';
                             break;
-                        case 5:
+                        case DirectionFlags.Longitudinal:
                             symbol = '┃';
                             break;
-                        case 6:
+                        case DirectionFlags.SouthAndEast:
                             symbol = '┏';
                             break;
-                        case 7:
+                        case DirectionFlags.NorthEastSouth:
                             symbol = '┣';
                             break;
-                        case 8:
+                        case DirectionFlags.West:
                             symbol = '╸';
                             break;
-                        case 9:
+                        case DirectionFlags.NorthAndWest:
                             symbol = '┛';
                             break;
-                        case 10:
+                        case DirectionFlags.Latitudinal:
                             symbol = '━';
                             break;
-                        case 11:
+                        case DirectionFlags.NorthEastWest:
                             symbol = '┻';
                             break;
-                        case 12:
+                        case DirectionFlags.SouthAndWest:
                             symbol = '┓';
                             break;
-                        case 13:
+                        case DirectionFlags.NorthWestSouth:
                             symbol = '┫';
                             break;
-                        case 14:
+                        case DirectionFlags.SouthEastWest:
                             symbol = '┳';
                             break;
-                        case 15:
+                        case DirectionFlags.Cross:
                             symbol = '╋';
                             break;
                         default:
-                            throw new InvalidOperationException($"Invalid wall neighbours: {neighbour}");
+                            throw new InvalidOperationException("Invalid wall neighbours: " + neighbours);
                     }
                     className = "mapWall";
                     break;
@@ -134,7 +134,7 @@
     foreach (var item in level.Items)
     {
         var symbol = ' ';
-        var className = "inherit";
+    var className = "inherit";
         switch (item.Type & ~ItemType.Intricate & ~ItemType.Exotic)
         {
             case ItemType.Coin:
@@ -177,7 +177,7 @@
     foreach (var actor in level.Actors)
     {
         var symbol = ' ';
-        var className = "inherit";
+    var className = "inherit";
         switch (actor.BaseName)
         {
             case "player":
