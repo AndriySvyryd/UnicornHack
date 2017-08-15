@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnicornHack.Data;
+using UnicornHack.Utils;
 
 namespace UnicornHack.Generation
 {
@@ -9,6 +11,9 @@ namespace UnicornHack.Generation
         public ItemType Type { get; set; }
         public float Weight { get; set; }
         public IReadOnlyList<ItemGroup> SubGroups { get; set; }
+
+        public static readonly SingleCSScriptLoader<ItemGroup> Loader =
+            new SingleCSScriptLoader<ItemGroup>("data", "item groups", typeof(ItemGroupData));
 
         public IEnumerable<ItemGroup> GetGroups(Item item)
         {

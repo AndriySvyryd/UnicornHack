@@ -27,7 +27,7 @@ namespace UnicornHack.Generation
                     }
 
                     var enumeratorsStack = new Stack<IEnumerator<ItemGroup>>();
-                    var currentGroup = Item.ItemGroupLoader.Object;
+                    var currentGroup = ItemGroup.Loader.Object;
                     var itemPlaced = false;
                     do
                     {

@@ -13,6 +13,7 @@
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <UserSecretsId>aspnet-UnicornHack-fb43824c-0f51-4c8e-9170-252a1c885c83</UserSecretsId>
     <RootNamespace>UnicornHack</RootNamespace>
+    <TypeScriptToolsVersion>2.3</TypeScriptToolsVersion>
   </PropertyGroup>
 
   <ItemGroup>

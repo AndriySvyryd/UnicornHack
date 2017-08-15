@@ -1,67 +1,80 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using CSharpScriptSerialization;
+using UnicornHack.Definitions;
+using UnicornHack.Effects;
+using UnicornHack.Generation;
+using UnicornHack.Generation.Map;
 
 namespace UnicornHack.Utils
 {
-    public abstract class CSScriptLoaderBase<T>
-        where T : ILoadable
+    public abstract class CSScriptLoaderBase
     {
-        protected Dictionary<string, T> NameLookup { get; } = new Dictionary<string, T>(StringComparer.Ordinal);
-        public string BasePath { get; }
+        public static readonly string ClassExtension = ".cs";
+        public static readonly string ScriptExtension = ".csx";
+        public static readonly string FilePattern = "*" + ScriptExtension;
+        public static readonly bool LoadScripts = false;
 
-        protected CSScriptLoaderBase(string relativePath)
+        public static IReadOnlyList<string> Namespaces = new[]
         {
-            BasePath = Path.Combine(AppContext.BaseDirectory, relativePath);
-        }
+            typeof(PlayerRace).GetTypeInfo().Namespace,
+            typeof(Ability).GetTypeInfo().Namespace,
+            typeof(Effect).GetTypeInfo().Namespace,
+            typeof(Weight).GetTypeInfo().Namespace,
+            typeof(MapFragment).GetTypeInfo().Namespace,
+            typeof(Dimensions).GetTypeInfo().Namespace
+        };
 
-        public T Get(string name)
-            => !TryGet(name, out var variant)
-            ? throw new InvalidOperationException($"'{name}' not found")
-            : variant;
+        public static T Load<T>(string script)
+            => CSScriptSerializer.Deserialize<T>(
+                script,
+                Enumerable.Empty<Assembly>(),
+                Namespaces);
 
-        public bool TryGet(string name, out T variant)
+        public static T LoadFile<T>(string path)
+            => Load<T>(File.ReadAllText(path));
+
+        public static string GetScriptFilename(string name) => name.Replace(' ', '_') + ScriptExtension;
+        public static string GetNameFromFilename(string filename) => filename.Replace('_', ' ') + ScriptExtension;
+        public static string GetClassFilename(string name) => GenerateIdentifier(name) + ClassExtension;
+
+        public static string GenerateIdentifier(string name)
         {
-            if (NameLookup.TryGetValue(name, out variant))
+            var candidateStringBuilder = new StringBuilder();
+            var previousLetterCharInWordIsLowerCase = false;
+            var isFirstCharacterInWord = true;
+            foreach (var c in name)
             {
-                return true;
-            }
-
-            var path = Path.Combine(BasePath, CSScriptDeserializer.GetFilename(name));
-            if (File.Exists(path))
-            {
-                variant = Load(path);
-                return true;
-            }
-            return false;
-        }
-
-        protected void LoadAll()
-        {
-            foreach (var file in
-                Directory.EnumerateFiles(BasePath, CSScriptDeserializer.FilePattern, SearchOption.AllDirectories))
-            {
-                if (!NameLookup.ContainsKey(
-                    CSScriptDeserializer.GetNameFromFilename(Path.GetFileNameWithoutExtension(file))))
+                var isNotLetterOrDigit = !char.IsLetterOrDigit(c);
+                if (isNotLetterOrDigit
+                    || (previousLetterCharInWordIsLowerCase && char.IsUpper(c)))
                 {
-                    try
+                    isFirstCharacterInWord = true;
+                    previousLetterCharInWordIsLowerCase = false;
+                    if (isNotLetterOrDigit)
                     {
-                        Load(file);
-                    }
-                    catch (Exception e)
-                    {
-                        throw new InvalidOperationException($"Error while loading {typeof(T).Name} '{Path.GetFileName(file)}'\r\n", e);
+                        continue;
                     }
                 }
+
+                candidateStringBuilder.Append(isFirstCharacterInWord
+                    ? char.ToUpperInvariant(c)
+                    : char.ToLowerInvariant(c));
+                isFirstCharacterInWord = false;
+                if (char.IsLower(c))
+                {
+                    previousLetterCharInWordIsLowerCase = true;
+                }
             }
+
+            return candidateStringBuilder.ToString();
         }
 
-        protected T Load(string path)
-        {
-            var instance = CSScriptDeserializer.LoadFile<T>(path);
-            instance.OnLoad();
-            NameLookup[instance.Name] = instance;
-            return instance;
-        }
+        protected T LoadField<T>(Type type, string fieldName)
+            => (T)type.GetRuntimeField(fieldName).GetValue(null);
     }
 }

@@ -3,14 +3,18 @@ using System.IO;
 
 namespace UnicornHack.Utils
 {
-    public class SingleCSScriptLoader<T>
+    public class SingleCSScriptLoader<T> : CSScriptLoaderBase
     {
         private T _object;
-        public string ScriptPath { get; }
+        public string BasePath { get; }
+        public string Name { get; }
+        public Type DataType { get; }
 
-        public SingleCSScriptLoader(string relativePath)
+        public SingleCSScriptLoader(string relativePath, string name, Type dataType)
         {
-            ScriptPath = Path.Combine(AppContext.BaseDirectory, relativePath);
+            BasePath = Path.Combine(AppContext.BaseDirectory, relativePath);
+            Name = name;
+            DataType = dataType;
         }
 
         public T Object
@@ -19,7 +23,9 @@ namespace UnicornHack.Utils
             {
                 if (Equals(_object, default(T)))
                 {
-                    _object = CSScriptDeserializer.LoadFile<T>(ScriptPath);
+                    _object = LoadScripts
+                        ? LoadFile<T>(Path.Combine(BasePath, GetScriptFilename(Name)))
+                        : LoadField<T>(DataType, GenerateIdentifier(Name));
                 }
                 return _object;
             }

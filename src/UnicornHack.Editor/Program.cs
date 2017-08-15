@@ -4,27 +4,35 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using CSharpScriptSerialization;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Formatting;
 using UnicornHack.Definitions;
+using UnicornHack.Generation;
 using UnicornHack.Generation.Map;
 using UnicornHack.Utils;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace UnicornHack.Editor
 {
     public class Program
     {
+        private static readonly bool SerializeToScript = false;
+
         public static void Main(string[] args)
         {
-            SerializeCreatures(verify: true);
-            SerializePlayers(verify: true);
-            SerializeItems(verify: true);
+            SerializeCreatures();
+            SerializePlayers();
+            SerializeItems();
             SerializeItemGroups();
-            SerializeBranches(verify: true);
-            SerializeNormalFragments(verify: true);
-            SerializeConnectingFragments(verify: true);
-            SerializeDefiningFragments(verify: true);
+            SerializeBranches();
+            SerializeNormalFragments();
+            SerializeConnectingFragments();
+            SerializeDefiningFragments();
         }
 
-        private static void SerializePlayers(bool verify = false)
+        private static void SerializePlayers()
         {
             Console.WriteLine("Serializing players...");
 
@@ -35,17 +43,17 @@ namespace UnicornHack.Editor
                 var script = CSScriptSerializer.Serialize(playerVariant);
 
                 File.WriteAllText(
-                    Path.Combine(PlayerDirectory, CSScriptDeserializer.GetFilename(playerVariant.Name)),
+                    Path.Combine(PlayerDirectory, CSScriptLoaderBase.GetScriptFilename(playerVariant.Name)),
                     script);
 
-                if (verify)
+                if (SerializeToScript)
                 {
                     Verify(script, playerVariant);
                 }
             }
         }
 
-        private static void SerializeCreatures(bool verify = false)
+        private static void SerializeCreatures()
         {
             Console.WriteLine("Serializing creatures...");
 
@@ -56,17 +64,17 @@ namespace UnicornHack.Editor
                 var script = CSScriptSerializer.Serialize(creatureVariant);
 
                 File.WriteAllText(
-                    Path.Combine(CreatureDirectory, CSScriptDeserializer.GetFilename(creatureVariant.Name)),
+                    Path.Combine(CreatureDirectory, CSScriptLoaderBase.GetScriptFilename(creatureVariant.Name)),
                     script);
 
-                if (verify)
+                if (SerializeToScript)
                 {
                     Verify(script, creatureVariant);
                 }
             }
         }
 
-        private static void SerializeItems(bool verify = false)
+        private static void SerializeItems()
         {
             Console.WriteLine("Serializing items...");
 
@@ -74,13 +82,9 @@ namespace UnicornHack.Editor
 
             foreach (var item in Item.Loader.GetAll())
             {
-                var script = CSScriptSerializer.Serialize(item);
+                var script = Serialize(item, ItemDirectory, typeof(object));
 
-                File.WriteAllText(
-                    Path.Combine(ItemDirectory, CSScriptDeserializer.GetFilename(item.Name)),
-                    script);
-
-                if (verify)
+                if (SerializeToScript)
                 {
                     Verify(script, item);
                 }
@@ -89,14 +93,12 @@ namespace UnicornHack.Editor
 
         private static void SerializeItemGroups()
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(ItemGroupsFile));
+            Directory.CreateDirectory(ItemGroupsDirectory);
 
-            var script = CSScriptSerializer.Serialize(Item.ItemGroupLoader.Object);
-
-            File.WriteAllText(ItemGroupsFile, script);
+            Serialize(ItemGroup.Loader.Object, ItemGroupsDirectory, ItemGroup.Loader.Name, ItemGroup.Loader.DataType);
         }
 
-        private static void SerializeBranches(bool verify = false)
+        private static void SerializeBranches()
         {
             Console.WriteLine("Serializing branches...");
 
@@ -107,17 +109,17 @@ namespace UnicornHack.Editor
                 var script = CSScriptSerializer.Serialize(branch);
 
                 File.WriteAllText(
-                    Path.Combine(BranchDirectory, CSScriptDeserializer.GetFilename(branch.Name)),
+                    Path.Combine(BranchDirectory, CSScriptLoaderBase.GetScriptFilename(branch.Name)),
                     script);
 
-                if (verify)
+                if (SerializeToScript)
                 {
                     Verify(script, branch);
                 }
             }
         }
 
-        private static void SerializeNormalFragments(bool verify = false)
+        private static void SerializeNormalFragments()
         {
             Console.WriteLine("Serializing normal fragments...");
 
@@ -128,17 +130,17 @@ namespace UnicornHack.Editor
                 var script = CSScriptSerializer.Serialize(fragment);
 
                 File.WriteAllText(
-                    Path.Combine(MapFragmentDirectory, CSScriptDeserializer.GetFilename(fragment.Name)),
+                    Path.Combine(MapFragmentDirectory, CSScriptLoaderBase.GetScriptFilename(fragment.Name)),
                     script);
 
-                if (verify)
+                if (SerializeToScript)
                 {
                     Verify(script, fragment);
                 }
             }
         }
 
-        private static void SerializeConnectingFragments(bool verify = false)
+        private static void SerializeConnectingFragments()
         {
             Console.WriteLine("Serializing connecting fragments...");
 
@@ -149,17 +151,17 @@ namespace UnicornHack.Editor
                 var script = CSScriptSerializer.Serialize(fragment);
 
                 File.WriteAllText(
-                    Path.Combine(ConnectingMapFragmentDirectory, CSScriptDeserializer.GetFilename(fragment.Name)),
+                    Path.Combine(ConnectingMapFragmentDirectory, CSScriptLoaderBase.GetScriptFilename(fragment.Name)),
                     script);
 
-                if (verify)
+                if (SerializeToScript)
                 {
                     Verify(script, fragment);
                 }
             }
         }
 
-        private static void SerializeDefiningFragments(bool verify = false)
+        private static void SerializeDefiningFragments()
         {
             Console.WriteLine("Serializing defining fragments...");
 
@@ -170,13 +172,71 @@ namespace UnicornHack.Editor
                 var script = CSScriptSerializer.Serialize(fragment);
 
                 File.WriteAllText(
-                    Path.Combine(DefiningMapFragmentDirectory, CSScriptDeserializer.GetFilename(fragment.Name)),
+                    Path.Combine(DefiningMapFragmentDirectory, CSScriptLoaderBase.GetScriptFilename(fragment.Name)),
                     script);
 
-                if (verify)
+                if (SerializeToScript)
                 {
                     Verify(script, fragment);
                 }
+            }
+        }
+
+        private static string Serialize(ILoadable obj, string directory, Type dataType)
+            => Serialize(obj, directory, obj.Name, dataType);
+
+        private static string Serialize(object obj, string directory, string name, Type dataType)
+        {
+            if (CSScriptLoaderBase.LoadScripts)
+            {
+                var script = CSScriptSerializer.Serialize(obj);
+                File.WriteAllText(Path.Combine(directory, CSScriptLoaderBase.GetScriptFilename(name)), script);
+                return script;
+            }
+            else
+            {
+                var code = SerializeToCode(obj, name, dataType);
+                File.WriteAllText(Path.Combine(directory, CSScriptLoaderBase.GetClassFilename(name)), code);
+                return code;
+            }
+        }
+
+        private static string SerializeToCode(object obj, string name, Type dataType)
+        {
+            var expression = CompilationUnit()
+                .WithUsings(List(new[]
+                {
+                    UsingDirective(ParseName("System.Collections.Generic")),
+                    UsingDirective(ParseName("UnicornHack.Generation"))
+                }))
+                .WithMembers(
+                    SingletonList<MemberDeclarationSyntax>(
+                        NamespaceDeclaration(ParseName(dataType.Namespace))
+                            .WithMembers(
+                                SingletonList<MemberDeclarationSyntax>(ClassDeclaration(dataType.Name)
+                                    .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword),
+                                        Token(SyntaxKind.PartialKeyword)))
+                                    .WithMembers(SingletonList<MemberDeclarationSyntax>(
+                                        FieldDeclaration(
+                                                VariableDeclaration(IdentifierName(obj.GetType().Name))
+                                                    .WithVariables(SingletonSeparatedList(
+                                                        VariableDeclarator(
+                                                                Identifier(CSScriptLoaderBase.GenerateIdentifier(name)))
+                                                            .WithInitializer(
+                                                                EqualsValueClause(
+                                                                    CSScriptSerializer.GetCreationExpression(obj))))))
+                                            .WithModifiers(
+                                                TokenList(Token(SyntaxKind.PublicKeyword),
+                                                    Token(SyntaxKind.StaticKeyword),
+                                                    Token(SyntaxKind.ReadOnlyKeyword)))))))));
+
+            using (var workspace = new AdhocWorkspace())
+            {
+                return Formatter.Format(
+                        expression,
+                        workspace,
+                        workspace.Options)
+                    .ToFullString();
             }
         }
 
@@ -235,7 +295,7 @@ namespace UnicornHack.Editor
         {
             try
             {
-                var serializedVariant = CSScriptDeserializer.Load<T>(script);
+                var serializedVariant = CSScriptLoaderBase.Load<T>(script);
                 if (!isValid(serializedVariant))
                 {
                     Console.WriteLine(script);
@@ -310,8 +370,7 @@ namespace UnicornHack.Editor
         public static readonly string BaseDirectory =
             GetCommonPrefix(new[]
             {
-                Creature.Loader.BasePath,
-                Item.Loader.BasePath,
+                ItemGroup.Loader.BasePath,
                 MapFragment.NormalLoader.BasePath
             });
 
@@ -330,8 +389,10 @@ namespace UnicornHack.Editor
                 Item.Loader.BasePath.Substring(BaseDirectory.Length,
                     Item.Loader.BasePath.Length - BaseDirectory.Length));
 
-        public static readonly string ItemGroupsFile =
-            Path.Combine(BaseDirectory, "new", Path.GetFileName(Item.ItemGroupLoader.ScriptPath));
+        public static readonly string ItemGroupsDirectory =
+            Path.Combine(BaseDirectory, "new",
+                ItemGroup.Loader.BasePath.Substring(BaseDirectory.Length,
+                    ItemGroup.Loader.BasePath.Length - BaseDirectory.Length));
 
         public static readonly string BranchDirectory =
             Path.Combine(BaseDirectory, "new",

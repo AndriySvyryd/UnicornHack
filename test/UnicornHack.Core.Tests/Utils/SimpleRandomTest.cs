@@ -98,7 +98,7 @@ namespace UnicornHack.Utils
             var seed = Environment.TickCount;
             var random = new SimpleRandom { Seed = seed };
             var selectedCounts = new int[itemWeights.Length];
-            var selectionCount = 10000;
+            var selectionCount = 100000;
             for (var i = 0; i < selectionCount; i++)
             {
                 var selectedIndex = random.NextBinomial(p, n);
