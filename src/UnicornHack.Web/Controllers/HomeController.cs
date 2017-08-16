@@ -168,32 +168,16 @@ namespace UnicornHack.Controllers
 
             Initialize(character.Game);
 
-            var levelsToLoad = new List<Tuple<string, byte>>
-            {
-                Tuple.Create(character.Level.BranchName, character.Level.Depth)
-            };
+            LoadLevel(character.Level.GameId, character.Level.BranchName, character.Level.Depth);
 
-            // Preload adjacent levels
+            // Preload adjacent level
             var connection = character.Level.Connections.SingleOrDefault(s =>
                 s.LevelX == character.LevelX
                 && s.LevelY == character.LevelY);
             if (connection != null)
             {
-                levelsToLoad.Add(Tuple.Create(connection.TargetBranchName, connection.TargetLevelDepth));
+                LoadLevel(connection.GameId, connection.TargetBranchName, connection.TargetLevelDepth);
             }
-
-            _dbContext.Levels
-                .Include(l => l.Items).ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
-                .Include(l => l.Actors).ThenInclude(a => a.Inventory).ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
-                .Include(l => l.Actors).ThenInclude(a => a.Abilities).ThenInclude(a => a.Effects)
-                .Include(l => l.Connections).ThenInclude(c => c.TargetBranch)
-                .Include(l => l.IncomingConnections).ThenInclude(c => c.Level)
-                .Include(l => l.Branch)
-                .Include(l => l.Game)
-                .Include(l => l.GenerationRandom)
-                .Where(l => l.GameId == character.GameId)
-                .Where(l => levelsToLoad.Contains(new Tuple<string, byte>(l.BranchName, l.Depth)))
-                .Load();
 
             // TODO: Pregenerate all connected levels to ensure the order
             connection?.TargetLevel.EnsureGenerated();
@@ -216,6 +200,22 @@ namespace UnicornHack.Controllers
             }
 
             return character;
+        }
+
+        private void LoadLevel(int gameId, string branchName, byte depth)
+        {
+            _dbContext.Levels
+                .Include(l => l.Items).ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
+                .Include(l => l.Actors).ThenInclude(a => a.Inventory).ThenInclude(i => i.Abilities)
+                .ThenInclude(a => a.Effects)
+                .Include(l => l.Actors).ThenInclude(a => a.Abilities).ThenInclude(a => a.Effects)
+                .Include(l => l.Connections).ThenInclude(c => c.TargetBranch)
+                .Include(l => l.IncomingConnections).ThenInclude(c => c.Level)
+                .Include(l => l.Branch)
+                .Include(l => l.Game)
+                .Include(l => l.GenerationRandom)
+                .Where(l => l.GameId == gameId && l.BranchName == branchName && l.Depth == depth)
+                .Load();
         }
 
         private void LoadEvents(Player character)
