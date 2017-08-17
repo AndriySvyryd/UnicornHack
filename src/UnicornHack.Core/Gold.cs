@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CSharpScriptSerialization;
+using UnicornHack.Generation;
 using UnicornHack.Utils;
 
 namespace UnicornHack
@@ -17,24 +18,6 @@ namespace UnicornHack
         }
 
         public int Quantity { get; set; }
-
-        public override IReadOnlyList<Item> Instantiate(IItemLocation location, int? quantity = null)
-        {
-            var item = (Gold)Instantiate(location.Game);
-            item.Quantity = quantity ?? 1;
-
-            if (!item.MoveTo(location))
-            {
-                item.Remove();
-                return new List<Item>();
-            }
-
-            return new List<Item> {item};
-        }
-
-        public static Gold Get() => (Gold)Loader.Get("gold coin");
-
-        protected override Item CreateInstance(Game game) => new Gold(game);
 
         public override bool MoveTo(IItemLocation location)
         {
@@ -58,14 +41,9 @@ namespace UnicornHack
                 throw new ArgumentOutOfRangeException(nameof(quantity));
             }
 
-            var gold = (Gold)Get().Instantiate(Game);
+            var gold = (Gold)GoldVariant.Get().Instantiate(Game);
             gold.Quantity = quantity;
             return gold.AddReference();
         }
-
-        private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<Gold>(
-            GetPropertyConditions<Gold>());
-
-        public override ICSScriptSerializer GetSerializer() => Serializer;
     }
 }

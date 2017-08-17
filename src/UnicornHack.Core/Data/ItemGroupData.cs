@@ -3,7 +3,7 @@ using UnicornHack.Generation;
 
 namespace UnicornHack.Data
 {
-    public class ItemGroupData
+    public static class ItemGroupData
     {
         public static readonly ItemGroup ItemGroups = new ItemGroup
         {

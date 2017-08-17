@@ -11,10 +11,13 @@ namespace UnicornHack
         {
         }
 
-        public ItemStack(Item baseItem, Game game)
+        public ItemStack(Item item, Game game)
             : base(game)
         {
-            BaseName = baseItem.Name;
+            BaseName = item.BaseName;
+            Type = item.Type;
+            Material = item.Material;
+            StackSize = item.StackSize;
         }
 
         protected override bool CanContainStacks => false;
@@ -61,7 +64,7 @@ namespace UnicornHack
             }
             else
             {
-                var newStack = new ItemStack(BaseItem, Game);
+                var newStack = new ItemStack(Items.First(), Game);
                 foreach (var item in Items.Take(quantity).ToList())
                 {
                     using (item.AddReference())

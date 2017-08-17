@@ -5,6 +5,7 @@ using System.Linq;
 using CSharpScriptSerialization;
 using UnicornHack.Effects;
 using UnicornHack.Events;
+using UnicornHack.Generation;
 using UnicornHack.Utils;
 
 namespace UnicornHack
@@ -678,7 +679,7 @@ namespace UnicornHack
             NextActionTick += DefaultActionDelay;
 
             Gold -= quantity;
-            var item = UnicornHack.Gold.Get().Instantiate(new LevelCell(Level, LevelX, LevelY), quantity).Single();
+            var item = GoldVariant.Get().Instantiate(new LevelCell(Level, LevelX, LevelY), quantity).Single();
 
             ItemDropEvent.New(this, item, Game.EventOrder++);
 

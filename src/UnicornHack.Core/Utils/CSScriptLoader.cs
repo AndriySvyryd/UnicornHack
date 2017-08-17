@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -8,8 +9,8 @@ namespace UnicornHack.Utils
     {
         private IReadOnlyList<T> _objects;
 
-        public CSScriptLoader(string relativePath)
-            : base(relativePath)
+        public CSScriptLoader(string relativePath, Type dataType = null)
+            : base(relativePath, dataType)
         {
         }
 

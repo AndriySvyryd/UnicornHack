@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -21,8 +20,10 @@ namespace UnicornHack.Utils
 
         public static IReadOnlyList<string> Namespaces = new[]
         {
-            typeof(PlayerRace).GetTypeInfo().Namespace,
+            typeof(object).GetTypeInfo().Namespace,
+            typeof(List<>).GetTypeInfo().Namespace,
             typeof(Ability).GetTypeInfo().Namespace,
+            typeof(PlayerRace).GetTypeInfo().Namespace,
             typeof(Effect).GetTypeInfo().Namespace,
             typeof(Weight).GetTypeInfo().Namespace,
             typeof(MapFragment).GetTypeInfo().Namespace,
@@ -73,8 +74,5 @@ namespace UnicornHack.Utils
 
             return candidateStringBuilder.ToString();
         }
-
-        protected T LoadField<T>(Type type, string fieldName)
-            => (T)type.GetRuntimeField(fieldName).GetValue(null);
     }
 }

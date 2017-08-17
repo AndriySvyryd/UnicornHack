@@ -12,10 +12,11 @@ namespace UnicornHack.Generation
         public float Weight { get; set; }
         public IReadOnlyList<ItemGroup> SubGroups { get; set; }
 
+        // Loader isn't declared on ItemGroupData to allow it to be loaded lazily
         public static readonly SingleCSScriptLoader<ItemGroup> Loader =
-            new SingleCSScriptLoader<ItemGroup>("data", "item groups", typeof(ItemGroupData));
+            new SingleCSScriptLoader<ItemGroup>("Data", "item groups", typeof(ItemGroupData));
 
-        public IEnumerable<ItemGroup> GetGroups(Item item)
+        public IEnumerable<ItemGroup> GetGroups(ItemVariant item)
         {
             var queue = new Queue<ItemGroup>();
             queue.Enqueue(this);

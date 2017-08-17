@@ -6,6 +6,7 @@ using CSharpScriptSerialization;
 using UnicornHack.Definitions;
 using UnicornHack.Effects;
 using UnicornHack.Events;
+using UnicornHack.Generation;
 using UnicornHack.Utils;
 
 namespace UnicornHack
@@ -101,10 +102,10 @@ namespace UnicornHack
             MaxEP = 100 + Willpower * 10;
             EP = MaxEP;
 
-            Item.Loader.Get("potion of healing").Instantiate(this, quantity:3);
-            Item.Loader.Get("mail armor").Instantiate(this);
-            Item.Loader.Get("long sword").Instantiate(this);
-            Item.Loader.Get("dagger").Instantiate(this);
+            ItemVariant.Loader.Get("potion of healing").Instantiate(this, quantity:3);
+            ItemVariant.Loader.Get("mail armor").Instantiate(this);
+            ItemVariant.Loader.Get("long sword").Instantiate(this);
+            ItemVariant.Loader.Get("dagger").Instantiate(this);
         }
 
         #endregion

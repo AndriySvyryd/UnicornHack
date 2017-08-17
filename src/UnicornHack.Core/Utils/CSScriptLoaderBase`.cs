@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 
 namespace UnicornHack.Utils
 {
@@ -9,58 +10,67 @@ namespace UnicornHack.Utils
     {
         protected Dictionary<string, T> NameLookup { get; } = new Dictionary<string, T>(StringComparer.Ordinal);
         public string BasePath { get; }
+        public Type DataType { get; }
+        private readonly object _lockRoot = new object();
 
-        protected CSScriptLoaderBase(string relativePath)
+        protected CSScriptLoaderBase(string relativePath, Type dataType = null)
         {
             BasePath = Path.Combine(AppContext.BaseDirectory, relativePath);
+            DataType = dataType;
         }
 
         public T Get(string name)
-            => !TryGet(name, out var variant)
-            ? throw new InvalidOperationException($"'{name}' not found")
-            : variant;
-
-        public bool TryGet(string name, out T variant)
         {
-            if (NameLookup.TryGetValue(name, out variant))
+            if (NameLookup.Count == 0)
             {
-                return true;
+                LoadAll();
             }
 
-            var path = Path.Combine(BasePath, GetScriptFilename(name));
-            if (File.Exists(path))
+            if (NameLookup.TryGetValue(name, out var variant))
             {
-                variant = Load(path);
-                return true;
+                return variant;
             }
-            return false;
+
+            throw new InvalidOperationException($"'{name}' not found");
         }
 
         protected void LoadAll()
         {
-            foreach (var file in
-                Directory.EnumerateFiles(BasePath, FilePattern, SearchOption.AllDirectories))
+            lock (_lockRoot)
             {
-                if (!NameLookup.ContainsKey(GetNameFromFilename(Path.GetFileNameWithoutExtension(file))))
+                if (NameLookup.Count != 0)
                 {
-                    try
+                    return;
+                }
+
+                if (LoadScripts || DataType == null)
+                {
+                    foreach (var file in
+                        Directory.EnumerateFiles(BasePath, FilePattern, SearchOption.AllDirectories))
                     {
-                        Load(file);
+                        try
+                        {
+                            var instance = LoadFile<T>(file);
+                            instance.OnLoad();
+                            NameLookup[instance.Name] = instance;
+                        }
+                        catch (Exception e)
+                        {
+                            throw new InvalidOperationException(
+                                $"Error while loading {typeof(T).Name} '{Path.GetFileName(file)}'\r\n", e);
+                        }
                     }
-                    catch (Exception e)
+                }
+                else
+                {
+                    foreach (var field in DataType.GetRuntimeFields())
                     {
-                        throw new InvalidOperationException($"Error while loading {typeof(T).Name} '{Path.GetFileName(file)}'\r\n", e);
+                        var instance = (T)field.GetValue(null);
+                        instance.OnLoad();
+                        NameLookup[instance.Name] = instance;
                     }
                 }
             }
-        }
-
-        protected T Load(string path)
-        {
-            var instance = LoadFile<T>(path);
-            instance.OnLoad();
-            NameLookup[instance.Name] = instance;
-            return instance;
         }
     }
 }

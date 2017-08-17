@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Reflection;
 
 namespace UnicornHack.Utils
 {
@@ -25,7 +26,7 @@ namespace UnicornHack.Utils
                 {
                     _object = LoadScripts
                         ? LoadFile<T>(Path.Combine(BasePath, GetScriptFilename(Name)))
-                        : LoadField<T>(DataType, GenerateIdentifier(Name));
+                        : (T)DataType.GetRuntimeField(GenerateIdentifier(Name)).GetValue(null);
                 }
                 return _object;
             }

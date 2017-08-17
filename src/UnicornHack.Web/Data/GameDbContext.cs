@@ -176,7 +176,7 @@ namespace UnicornHack.Models
 
             modelBuilder.Entity<Item>(eb =>
             {
-                eb.Ignore(i => i.GenerationWeight);
+                eb.Ignore(i => i.BaseItem);
                 eb.Ignore(i => i.SimpleProperties);
                 eb.Ignore(i => i.ValuedProperties);
                 eb.Property("_referenceCount");

@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
+using UnicornHack.Data.Items;
 using UnicornHack.Definitions;
 using UnicornHack.Generation;
 using UnicornHack.Generation.Map;
@@ -80,9 +81,9 @@ namespace UnicornHack.Editor
 
             Directory.CreateDirectory(ItemDirectory);
 
-            foreach (var item in Item.Loader.GetAll())
+            foreach (var item in ItemVariant.Loader.GetAll())
             {
-                var script = Serialize(item, ItemDirectory, typeof(object));
+                var script = Serialize(item, ItemDirectory, typeof(ItemVariantData));
 
                 if (SerializeToScript)
                 {
@@ -204,17 +205,14 @@ namespace UnicornHack.Editor
         private static string SerializeToCode(object obj, string name, Type dataType)
         {
             var expression = CompilationUnit()
-                .WithUsings(List(new[]
-                {
-                    UsingDirective(ParseName("System.Collections.Generic")),
-                    UsingDirective(ParseName("UnicornHack.Generation"))
-                }))
+                .WithUsings(List(CSScriptLoaderBase.Namespaces.Select(n => UsingDirective(ParseName(n)))))
                 .WithMembers(
                     SingletonList<MemberDeclarationSyntax>(
                         NamespaceDeclaration(ParseName(dataType.Namespace))
                             .WithMembers(
                                 SingletonList<MemberDeclarationSyntax>(ClassDeclaration(dataType.Name)
                                     .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword),
+                                        Token(SyntaxKind.StaticKeyword),
                                         Token(SyntaxKind.PartialKeyword)))
                                     .WithMembers(SingletonList<MemberDeclarationSyntax>(
                                         FieldDeclaration(
@@ -247,7 +245,7 @@ namespace UnicornHack.Editor
         private static void Verify(string script, PlayerRace player)
             => Verify<PlayerRace>(script, c => c.Name == player.Name, null, null);
 
-        private static void Verify(string script, Item item)
+        private static void Verify(string script, ItemVariant item)
             => Verify<Item>(script, c => c.Name == item.Name,
                 c => c.SimpleProperties, c => c.ValuedProperties);
 
@@ -386,8 +384,8 @@ namespace UnicornHack.Editor
 
         public static readonly string ItemDirectory =
             Path.Combine(BaseDirectory, "new",
-                Item.Loader.BasePath.Substring(BaseDirectory.Length,
-                    Item.Loader.BasePath.Length - BaseDirectory.Length));
+                ItemVariant.Loader.BasePath.Substring(BaseDirectory.Length,
+                    ItemVariant.Loader.BasePath.Length - BaseDirectory.Length));
 
         public static readonly string ItemGroupsDirectory =
             Path.Combine(BaseDirectory, "new",

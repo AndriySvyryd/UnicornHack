@@ -35,7 +35,7 @@ namespace UnicornHack.Generation
                         {
                             //var quality = level.GenerationRandom.NextBinomial(difficultyFraction, qualityList.Count - 1);
                             foreach (var itemVariant in level.GenerationRandom.WeightedOrder(
-                                Item.Loader.GetAllValues(currentGroup), c => c.GetWeight(level)))
+                                ItemVariant.Loader.GetAllValues(currentGroup), c => c.GetWeight(level)))
                             {
                                 var quantity = currentGroup.Type == ItemType.Coin
                                     ? level.GenerationRandom.NextBinomial(difficultyFraction, 49) + 1

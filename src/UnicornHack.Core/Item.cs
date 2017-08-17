@@ -1,113 +1,33 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using CSharpScriptSerialization;
 using UnicornHack.Generation;
 using UnicornHack.Utils;
 
 namespace UnicornHack
 {
-    public class Item : IReferenceable, ICSScriptSerializable, ILoadable
+    public class Item : IReferenceable
     {
-        #region State
-
-        private ItemType? _itemType;
-        private int? _weight;
-        private Material? _material;
-        private Size? _equipableSizes;
-        private bool? _nameable;
-        private int? _stackSize;
-        private ISet<string> _simpleProperties;
-        private IDictionary<string, object> _valuedProperties;
-        private EquipmentSlot? _equipableSlots;
-
-        public virtual int Id { get; private set; }
         public virtual string Name { get; set; }
 
         public virtual string BaseName { get; set; }
-        public Item BaseItem => BaseName == null ? null : Loader.Get(BaseName);
+        public ItemVariant BaseItem => BaseName == null ? null : ItemVariant.Loader.Get(BaseName);
 
-        public virtual ItemType Type
-        {
-            get { return _itemType ?? BaseItem?.Type ?? ItemType.None; }
-            set { _itemType = value; }
-        }
-
-        public virtual Weight GenerationWeight { get; set; }
+        public virtual ItemType Type { get; set; }
 
         /// <summary> 100g units </summary>
-        public virtual int Weight
-        {
-            get { return _weight ?? BaseItem?.Weight ?? 0; }
-            set { _weight = value; }
-        }
+        public virtual int Weight { get; set; }
 
-        public virtual Material Material
-        {
-            get { return _material ?? BaseItem?.Material ?? Material.Default; }
-            set { _material = value; }
-        }
-
-        public virtual bool Nameable
-        {
-            get { return _nameable ?? BaseItem?.Nameable ?? true; }
-            set { _nameable = value; }
-        }
-
-        public virtual int StackSize
-        {
-            get { return _stackSize ?? BaseItem?.StackSize ?? 1; }
-            set { _stackSize = value; }
-        }
-
-        public virtual Size EquipableSizes
-        {
-            get { return _equipableSizes ?? BaseItem?.EquipableSizes ?? Size.All; }
-            set { _equipableSizes = value; }
-        }
-
-        public virtual EquipmentSlot EquipableSlots
-        {
-            get { return _equipableSlots ?? BaseItem?.EquipableSlots ?? EquipmentSlot.Default; }
-            set { _equipableSlots = value; }
-        }
-
+        public virtual Material Material { get; set; }
+        public virtual bool Nameable { get; set; }
+        public virtual int StackSize { get; set; }
+        public virtual Size EquipableSizes { get; set; }
+        public virtual EquipmentSlot EquipableSlots { get; set; }
         public virtual ISet<Ability> Abilities { get; set; } = new HashSet<Ability>();
+        public virtual ISet<string> SimpleProperties { get; set; } = new HashSet<string>();
+        public virtual IDictionary<string, object> ValuedProperties { get; set; } = new Dictionary<string, object>();
 
-        public virtual ISet<string> SimpleProperties
-        {
-            get
-            {
-                if (_simpleProperties != null)
-                {
-                    return _simpleProperties;
-                }
-                if (BaseItem != null)
-                {
-                    return BaseItem.SimpleProperties;
-                }
-                return _simpleProperties = new HashSet<string>();
-            }
-            set { _simpleProperties = value; }
-        }
-
-        public virtual IDictionary<string, object> ValuedProperties
-        {
-            get
-            {
-                if (_valuedProperties != null)
-                {
-                    return _valuedProperties;
-                }
-                if (BaseItem != null)
-                {
-                    return BaseItem.ValuedProperties;
-                }
-                return _valuedProperties = new Dictionary<string, object>();
-            }
-            set { _valuedProperties = value; }
-        }
-
+        public virtual int Id { get; private set; }
         public int? ActorId { get; set; }
         public Actor Actor { get; set; }
         public EquipmentSlot? EquippedSlot { get; set; }
@@ -157,10 +77,6 @@ namespace UnicornHack
             return slots;
         }
 
-        #endregion
-
-        #region Creation
-
         public Item()
         {
         }
@@ -172,53 +88,6 @@ namespace UnicornHack
             Id = game.NextItemId++;
             game.Items.Add(this);
         }
-
-        public virtual Item Instantiate(Game game)
-        {
-            if (Game != null)
-            {
-                throw new InvalidOperationException("This item is already part of a game.");
-            }
-
-            var itemInstance = CreateInstance(game);
-            itemInstance.BaseName = Name;
-            itemInstance.Type = Type;
-            itemInstance.Weight = Weight;
-            itemInstance.Material = Material;
-            itemInstance.Nameable = Nameable;
-            itemInstance.StackSize = StackSize;
-            itemInstance.EquipableSizes = EquipableSizes;
-
-            foreach (var ability in Abilities)
-            {
-                itemInstance.Abilities.Add(ability.Instantiate(game).AddReference().Referenced);
-            }
-
-            return itemInstance;
-        }
-
-        public virtual IReadOnlyList<Item> Instantiate(IItemLocation location, int? quantity = null)
-        {
-            var items = new List<Item>();
-            quantity = quantity ?? 1;
-            for (var i = 0; i < quantity; i++)
-            {
-                var item = Instantiate(location.Game);
-                items.Add(item);
-                if (!item.MoveTo(location))
-                {
-                    foreach (var createdItem in items)
-                    {
-                        createdItem.Remove();
-                    }
-                    return new List<Item>();
-                }
-            }
-
-            return items;
-        }
-
-        protected virtual Item CreateInstance(Game game) => new Item(game);
 
         private int _referenceCount;
 
@@ -241,10 +110,6 @@ namespace UnicornHack
                 //Game.Repository.Delete(this);
             }
         }
-
-        #endregion
-
-        #region Actions
 
         public virtual bool MoveTo(IItemLocation location)
         {
@@ -307,7 +172,7 @@ namespace UnicornHack
                     var stack = existingItem as ItemStack;
                     if (stack == null)
                     {
-                        stack = new ItemStack(BaseItem, Game);
+                        stack = new ItemStack(this, Game);
 
                         existingItem.MoveTo(stack);
 
@@ -328,7 +193,7 @@ namespace UnicornHack
             return this;
         }
 
-        protected void Remove()
+        public void Remove()
         {
             Actor?.Remove(this);
 
@@ -350,59 +215,5 @@ namespace UnicornHack
 
             return result;
         }
-
-        private Func<string, byte, int, float> _weightFunction;
-
-        public virtual float GetWeight(Level level)
-        {
-            if (_weightFunction == null)
-            {
-                _weightFunction = (GenerationWeight ?? new DefaultWeight()).CreateItemWeightFunction();
-            }
-
-            return _weightFunction(level.Branch.Name, level.Depth, 0);
-        }
-
-        #endregion
-
-        #region Serialization
-
-        public void OnLoad()
-        {
-        }
-
-        public static readonly GroupedCSScriptLoader<ItemGroup, Item> Loader =
-            new GroupedCSScriptLoader<ItemGroup, Item>(@"data\items\", i => ItemGroup.Loader.Object.GetGroups(i));
-
-        private static readonly CSScriptSerializer Serializer =
-            new PropertyCSScriptSerializer<Item>(GetPropertyConditions<Item>());
-
-        protected static Dictionary<string, Func<TItem, object, bool>> GetPropertyConditions<TItem>()
-            where TItem : Item
-        {
-            return new Dictionary<string, Func<TItem, object, bool>>
-            {
-                {nameof(Name), (o, v) => v != null},
-                {nameof(BaseName), (o, v) => v != null},
-                {nameof(Type), (o, v) => (ItemType)v != (o.BaseItem?.Type ?? ItemType.None)},
-                {nameof(Weight), (o, v) => (int)v != (o.BaseItem?.Weight ?? 0)},
-                {nameof(GenerationWeight), (o, v) => (Weight)v != o.BaseItem?.GenerationWeight},
-                {nameof(Material), (o, v) => (Material)v != (o.BaseItem?.Material ?? Material.Default)},
-                {nameof(Nameable), (o, v) => (bool)v != (o.BaseItem?.Nameable ?? true)},
-                {nameof(StackSize), (o, v) => (int)v != (o.BaseItem?.StackSize ?? 1)},
-                {nameof(EquipableSizes), (o, v) => (Size)v != (o.BaseItem?.EquipableSizes ?? Size.All)},
-                {
-                    nameof(EquipableSlots),
-                    (o, v) => (EquipmentSlot)v != (o.BaseItem?.EquipableSlots ?? EquipmentSlot.Default)
-                },
-                {nameof(Abilities), (o, v) => ((ICollection<Ability>)v).Count != 0},
-                {nameof(SimpleProperties), (o, v) => ((ICollection<string>)v).Count != 0},
-                {nameof(ValuedProperties), (o, v) => ((IDictionary<string, object>)v).Keys.Count != 0}
-            };
-        }
-
-        public virtual ICSScriptSerializer GetSerializer() => Serializer;
-
-        #endregion
     }
 }

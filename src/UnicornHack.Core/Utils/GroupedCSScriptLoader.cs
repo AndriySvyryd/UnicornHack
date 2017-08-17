@@ -9,14 +9,14 @@ namespace UnicornHack.Utils
         private Dictionary<TKey, List<T>> _objects;
         private readonly Func<T, IEnumerable<TKey>> _keySelector;
 
-        public GroupedCSScriptLoader(string relativePath, Func<T, TKey> keySelector)
-            : base(relativePath)
+        public GroupedCSScriptLoader(string relativePath, Func<T, TKey> keySelector, Type dataType = null)
+            : base(relativePath, dataType)
         {
             _keySelector = i => Sequence.Single(keySelector(i));
         }
 
-        public GroupedCSScriptLoader(string relativePath, Func<T, IEnumerable<TKey>> keySelector)
-            : base(relativePath)
+        public GroupedCSScriptLoader(string relativePath, Func<T, IEnumerable<TKey>> keySelector, Type dataType = null)
+            : base(relativePath, dataType)
         {
             _keySelector = keySelector;
         }
