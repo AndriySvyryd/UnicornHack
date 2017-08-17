@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UnicornHack.Effects;
 using UnicornHack.Events;
+using UnicornHack.Generation;
 using UnicornHack.Models;
 using UnicornHack.Models.GameViewModels;
 using UnicornHack.Services;
@@ -110,7 +111,7 @@ namespace UnicornHack.Controllers
                 _dbContext.Games.Add(game);
                 _dbContext.SaveChanges();
 
-                var surfaceBranch = Branch.Get("surface").Instantiate(game);
+                var surfaceBranch = BranchDefinition.Get("surface").Instantiate(game);
                 var surfaceLevel = new Level(surfaceBranch, depth: 1, seed: seed);
                 surfaceLevel.EnsureGenerated();
                 var initialLevel = surfaceLevel.Connections.Single().TargetLevel;

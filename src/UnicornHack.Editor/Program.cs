@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
+using UnicornHack.Data.Branches;
 using UnicornHack.Data.Items;
 using UnicornHack.Definitions;
 using UnicornHack.Generation;
@@ -23,14 +24,14 @@ namespace UnicornHack.Editor
 
         public static void Main(string[] args)
         {
-            SerializeCreatures();
-            SerializePlayers();
-            SerializeItems();
-            SerializeItemGroups();
+            //SerializeCreatures();
+            //SerializePlayers();
+            //SerializeItems();
+            //SerializeItemGroups();
             SerializeBranches();
-            SerializeNormalFragments();
-            SerializeConnectingFragments();
-            SerializeDefiningFragments();
+            //SerializeNormalFragments();
+            //SerializeConnectingFragments();
+            //SerializeDefiningFragments();
         }
 
         private static void SerializePlayers()
@@ -105,13 +106,9 @@ namespace UnicornHack.Editor
 
             Directory.CreateDirectory(BranchDirectory);
 
-            foreach (var branch in Branch.GetAllBranches())
+            foreach (var branch in BranchDefinition.Loader.GetAll())
             {
-                var script = CSScriptSerializer.Serialize(branch);
-
-                File.WriteAllText(
-                    Path.Combine(BranchDirectory, CSScriptLoaderBase.GetScriptFilename(branch.Name)),
-                    script);
+                var script = Serialize(branch, BranchDirectory, typeof(BranchDefinitionData));
 
                 if (SerializeToScript)
                 {
@@ -249,7 +246,7 @@ namespace UnicornHack.Editor
             => Verify<Item>(script, c => c.Name == item.Name,
                 c => c.SimpleProperties, c => c.ValuedProperties);
 
-        private static void Verify(string script, Branch branch)
+        private static void Verify(string script, BranchDefinition branch)
             => Verify<Branch>(script, f => f.Name == branch.Name, null, null);
 
         private static void Verify(string script, MapFragment fragment)
@@ -394,8 +391,8 @@ namespace UnicornHack.Editor
 
         public static readonly string BranchDirectory =
             Path.Combine(BaseDirectory, "new",
-                Branch.Loader.BasePath.Substring(BaseDirectory.Length,
-                    Branch.Loader.BasePath.Length - BaseDirectory.Length));
+                BranchDefinition.Loader.BasePath.Substring(BaseDirectory.Length,
+                    BranchDefinition.Loader.BasePath.Length - BaseDirectory.Length));
 
         public static readonly string MapFragmentDirectory =
             Path.Combine(BaseDirectory, "new",

@@ -31,7 +31,6 @@ namespace UnicornHack.Models
         {
             modelBuilder.Entity<Branch>(eb =>
             {
-                eb.Ignore(b => b.GenerationWeight);
                 eb.HasKey(b => new {b.GameId, b.Name});
                 eb.HasMany(b => b.Levels)
                     .WithOne(l => l.Branch)

@@ -11,6 +11,7 @@ namespace UnicornHack
         public virtual string Name { get; set; }
 
         public virtual string BaseName { get; set; }
+        // TODO: Remove this
         public ItemVariant BaseItem => BaseName == null ? null : ItemVariant.Loader.Get(BaseName);
 
         public virtual ItemType Type { get; set; }

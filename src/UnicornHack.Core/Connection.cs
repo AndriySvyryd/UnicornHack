@@ -1,4 +1,5 @@
 using System.Linq;
+using UnicornHack.Generation;
 using UnicornHack.Utils;
 
 namespace UnicornHack
@@ -24,7 +25,7 @@ namespace UnicornHack
             TargetLevelDepth = targetLevelDepth;
 
             TargetBranch = Game.GetBranch(targetBranchName)
-                           ?? Branch.Get(TargetBranchName).Instantiate(Game);
+                           ?? BranchDefinition.Get(TargetBranchName).Instantiate(Game);
 
             TargetLevel = Game.GetLevel(targetBranchName, TargetLevelDepth)
                           ?? new Level(TargetBranch, TargetLevelDepth, Level.GenerationRandom.Seed);
