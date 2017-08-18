@@ -1,11 +1,17 @@
-new DefiningMapFragment
+using UnicornHack.Generation;
+using UnicornHack.Generation.Map;
+
+namespace UnicornHack.Data.Fragments
 {
-    Name = "FOVTest",
-    GenerationWeight = new BranchWeight { W = new ConstantWeight { }, Name = "dungeon", MinDepth = 1, MaxDepth = 1 },
-    CreatureGenerator = new CreatureGenerator { ExpectedInitialCount = 0},
-    ItemGenerator = new ItemGenerator { ExpectedInitialCount = 0 },
-    NoRandomDoorways = true,
-    Map = @"
+    public static partial class DefiningMapFragmentData
+    {
+        public static readonly DefiningMapFragment Fovtest = new DefiningMapFragment
+        {
+            Name = "FOVTest",
+            GenerationWeight =
+                new BranchWeight {W = new ConstantWeight(), Name = "dungeon", MinDepth = 1, MaxDepth = 1},
+            NoRandomDoorways = true,
+            Map = @"
 #####                                       #####################
 #...###################                     #...................#
 ###...................#######################.......#...#...#...#
@@ -47,4 +53,6 @@ new DefiningMapFragment
 #...............................................................#
 #################################################################
 "
+        };
+    }
 }

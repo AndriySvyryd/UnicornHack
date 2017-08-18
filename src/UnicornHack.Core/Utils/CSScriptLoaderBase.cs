@@ -15,8 +15,7 @@ namespace UnicornHack.Utils
     {
         public static readonly string ClassExtension = ".cs";
         public static readonly string ScriptExtension = ".csx";
-        public static readonly string FilePattern = "*" + ScriptExtension;
-        public static readonly bool LoadScripts = false;
+        protected static readonly bool LoadScripts = false;
 
         public static IReadOnlyList<string> Namespaces = new[]
         {

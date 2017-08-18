@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using CSharpScriptSerialization;
+using UnicornHack.Data.Fragments;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Generation.Map
@@ -41,13 +42,8 @@ namespace UnicornHack.Generation.Map
 
         #region Serialization
 
-        public static readonly CSScriptLoader<DefiningMapFragment> DefiningLoader =
-            new CSScriptLoader<DefiningMapFragment>(@"data\fragments\defining\");
-
-        public static DefiningMapFragment GetDefiningMapFragment(string name) => DefiningLoader.Get(name);
-
-        public static IReadOnlyList<DefiningMapFragment> GetAllDefiningMapFragments() => DefiningLoader
-            .GetAll();
+        public new static readonly CSScriptLoader<DefiningMapFragment> Loader =
+            new CSScriptLoader<DefiningMapFragment>(@"Data\Fragments\Defining\", typeof(DefiningMapFragmentData));
 
         private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<DefiningMapFragment>(
             GetPropertyConditions<DefiningMapFragment>());
@@ -64,6 +60,16 @@ namespace UnicornHack.Generation.Map
             propertyConditions.Add(nameof(LevelHeight), (o, v) => (byte)v != 40);
             propertyConditions.Add(nameof(LevelWidth), (o, v) => (byte)v != 80);
             propertyConditions.Add(nameof(Layout), (o, v) => v != null && !(v is EmptyLayout));
+            propertyConditions.Add(nameof(CreatureGenerator),
+                (o, v) => v != null
+                          && ((CreatureGenerator)v).ExpectedInitialCount
+                          != new CreatureGenerator().ExpectedInitialCount);
+            propertyConditions.Add(nameof(ItemGenerator),
+                (o, v) => v != null
+                          && ((ItemGenerator)v).ExpectedInitialCount
+                          != new ItemGenerator().ExpectedInitialCount);
+            propertyConditions.Add(nameof(DefaultTerrain), (o, v) => (MapFeature)v != MapFeature.Default);
+            propertyConditions.Add(nameof(DefaultPathTerrain), (o, v) => (MapFeature)v != MapFeature.Default);
             propertyConditions.Add(nameof(Map), mapCondition);
             return propertyConditions;
         }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CSharpScriptSerialization;
+using UnicornHack.Data.Fragments;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Generation.Map
@@ -108,10 +109,8 @@ namespace UnicornHack.Generation.Map
 
         #region Serialization
 
-        public static readonly CSScriptLoader<ConnectingMapFragment> ConnectingLoader =
-            new CSScriptLoader<ConnectingMapFragment>(@"data\fragments\connecting\");
-
-        public static IReadOnlyList<ConnectingMapFragment> GetAllConnectingMapFragments() => ConnectingLoader.GetAll();
+        public new static readonly CSScriptLoader<ConnectingMapFragment> Loader =
+            new CSScriptLoader<ConnectingMapFragment>(@"Data\Fragments\Connecting\", typeof(ConnectingMapFragmentData));
 
         private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<ConnectingMapFragment>(
             GetPropertyConditions<ConnectingMapFragment>());

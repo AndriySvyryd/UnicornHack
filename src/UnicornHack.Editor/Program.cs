@@ -8,8 +8,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
-using UnicornHack.Data.Branches;
-using UnicornHack.Data.Items;
 using UnicornHack.Definitions;
 using UnicornHack.Generation;
 using UnicornHack.Generation.Map;
@@ -24,178 +22,90 @@ namespace UnicornHack.Editor
 
         public static void Main(string[] args)
         {
-            //SerializeCreatures();
-            //SerializePlayers();
-            //SerializeItems();
-            //SerializeItemGroups();
+            SerializeCreatures();
+            SerializePlayers();
+            SerializeItems();
+            SerializeItemGroups();
             SerializeBranches();
-            //SerializeNormalFragments();
-            //SerializeConnectingFragments();
-            //SerializeDefiningFragments();
+            SerializeNormalFragments();
+            SerializeConnectingFragments();
+            SerializeDefiningFragments();
         }
 
         private static void SerializePlayers()
         {
             Console.WriteLine("Serializing players...");
 
-            Directory.CreateDirectory(PlayerDirectory);
-
-            foreach (var playerVariant in PlayerRace.Loader.GetAll())
-            {
-                var script = CSScriptSerializer.Serialize(playerVariant);
-
-                File.WriteAllText(
-                    Path.Combine(PlayerDirectory, CSScriptLoaderBase.GetScriptFilename(playerVariant.Name)),
-                    script);
-
-                if (SerializeToScript)
-                {
-                    Verify(script, playerVariant);
-                }
-            }
+            Serialize(PlayerRace.Loader);
         }
 
         private static void SerializeCreatures()
         {
             Console.WriteLine("Serializing creatures...");
 
-            Directory.CreateDirectory(CreatureDirectory);
-
-            foreach (var creatureVariant in Creature.Loader.GetAll())
-            {
-                var script = CSScriptSerializer.Serialize(creatureVariant);
-
-                File.WriteAllText(
-                    Path.Combine(CreatureDirectory, CSScriptLoaderBase.GetScriptFilename(creatureVariant.Name)),
-                    script);
-
-                if (SerializeToScript)
-                {
-                    Verify(script, creatureVariant);
-                }
-            }
+            Serialize(Creature.Loader);
         }
 
         private static void SerializeItems()
         {
             Console.WriteLine("Serializing items...");
 
-            Directory.CreateDirectory(ItemDirectory);
-
-            foreach (var item in ItemVariant.Loader.GetAll())
-            {
-                var script = Serialize(item, ItemDirectory, typeof(ItemVariantData));
-
-                if (SerializeToScript)
-                {
-                    Verify(script, item);
-                }
-            }
+            Serialize(ItemVariant.Loader);
         }
 
         private static void SerializeItemGroups()
         {
-            Directory.CreateDirectory(ItemGroupsDirectory);
+            Console.WriteLine("Serializing item groups...");
 
-            Serialize(ItemGroup.Loader.Object, ItemGroupsDirectory, ItemGroup.Loader.Name, ItemGroup.Loader.DataType);
+            Serialize(ItemGroup.Loader);
         }
 
         private static void SerializeBranches()
         {
             Console.WriteLine("Serializing branches...");
 
-            Directory.CreateDirectory(BranchDirectory);
-
-            foreach (var branch in BranchDefinition.Loader.GetAll())
-            {
-                var script = Serialize(branch, BranchDirectory, typeof(BranchDefinitionData));
-
-                if (SerializeToScript)
-                {
-                    Verify(script, branch);
-                }
-            }
+            Serialize(BranchDefinition.Loader);
         }
 
         private static void SerializeNormalFragments()
         {
             Console.WriteLine("Serializing normal fragments...");
 
-            Directory.CreateDirectory(MapFragmentDirectory);
-
-            foreach (var fragment in MapFragment.GetAllNormalMapFragments())
-            {
-                var script = CSScriptSerializer.Serialize(fragment);
-
-                File.WriteAllText(
-                    Path.Combine(MapFragmentDirectory, CSScriptLoaderBase.GetScriptFilename(fragment.Name)),
-                    script);
-
-                if (SerializeToScript)
-                {
-                    Verify(script, fragment);
-                }
-            }
+            Serialize(MapFragment.Loader);
         }
 
         private static void SerializeConnectingFragments()
         {
             Console.WriteLine("Serializing connecting fragments...");
 
-            Directory.CreateDirectory(ConnectingMapFragmentDirectory);
-
-            foreach (var fragment in ConnectingMapFragment.GetAllConnectingMapFragments())
-            {
-                var script = CSScriptSerializer.Serialize(fragment);
-
-                File.WriteAllText(
-                    Path.Combine(ConnectingMapFragmentDirectory, CSScriptLoaderBase.GetScriptFilename(fragment.Name)),
-                    script);
-
-                if (SerializeToScript)
-                {
-                    Verify(script, fragment);
-                }
-            }
+            Serialize(ConnectingMapFragment.Loader);
         }
 
         private static void SerializeDefiningFragments()
         {
             Console.WriteLine("Serializing defining fragments...");
 
-            Directory.CreateDirectory(DefiningMapFragmentDirectory);
-
-            foreach (var fragment in DefiningMapFragment.GetAllDefiningMapFragments())
-            {
-                var script = CSScriptSerializer.Serialize(fragment);
-
-                File.WriteAllText(
-                    Path.Combine(DefiningMapFragmentDirectory, CSScriptLoaderBase.GetScriptFilename(fragment.Name)),
-                    script);
-
-                if (SerializeToScript)
-                {
-                    Verify(script, fragment);
-                }
-            }
+            Serialize(DefiningMapFragment.Loader);
         }
 
-        private static string Serialize(ILoadable obj, string directory, Type dataType)
-            => Serialize(obj, directory, obj.Name, dataType);
-
-        private static string Serialize(object obj, string directory, string name, Type dataType)
+        private static void Serialize<T>(CSScriptLoaderBase<T> loader)
+            where T : ILoadable
         {
-            if (CSScriptLoaderBase.LoadScripts)
+            var directory = Path.Combine(AppContext.BaseDirectory, "New", loader.RelativePath);
+            Directory.CreateDirectory(directory);
+            foreach (var item in loader.GetAll())
             {
-                var script = CSScriptSerializer.Serialize(obj);
-                File.WriteAllText(Path.Combine(directory, CSScriptLoaderBase.GetScriptFilename(name)), script);
-                return script;
-            }
-            else
-            {
-                var code = SerializeToCode(obj, name, dataType);
-                File.WriteAllText(Path.Combine(directory, CSScriptLoaderBase.GetClassFilename(name)), code);
-                return code;
+                if (SerializeToScript)
+                {
+                    var script = CSScriptSerializer.Serialize(item);
+                    File.WriteAllText(Path.Combine(loader.RelativePath, CSScriptLoaderBase.GetScriptFilename(item.Name)), script);
+                    Verify(script, (dynamic)item);
+                }
+                else
+                {
+                    var code = SerializeToCode(item, item.Name, loader.DataType);
+                    File.WriteAllText(Path.Combine(directory, CSScriptLoaderBase.GetClassFilename(item.Name)), code);
+                }
             }
         }
 
@@ -361,79 +271,5 @@ namespace UnicornHack.Editor
                 .ToDictionary(
                     p => p.Name,
                     p => (PropertyDescription)p.GetGetMethod().Invoke(null, null));
-
-        public static readonly string BaseDirectory =
-            GetCommonPrefix(new[]
-            {
-                ItemGroup.Loader.BasePath,
-                MapFragment.NormalLoader.BasePath
-            });
-
-        public static readonly string PlayerDirectory =
-            Path.Combine(BaseDirectory, "new",
-                PlayerRace.Loader.BasePath.Substring(BaseDirectory.Length,
-                    PlayerRace.Loader.BasePath.Length - BaseDirectory.Length));
-
-        public static readonly string CreatureDirectory =
-            Path.Combine(BaseDirectory, "new",
-                Creature.Loader.BasePath.Substring(BaseDirectory.Length,
-                    Creature.Loader.BasePath.Length - BaseDirectory.Length));
-
-        public static readonly string ItemDirectory =
-            Path.Combine(BaseDirectory, "new",
-                ItemVariant.Loader.BasePath.Substring(BaseDirectory.Length,
-                    ItemVariant.Loader.BasePath.Length - BaseDirectory.Length));
-
-        public static readonly string ItemGroupsDirectory =
-            Path.Combine(BaseDirectory, "new",
-                ItemGroup.Loader.BasePath.Substring(BaseDirectory.Length,
-                    ItemGroup.Loader.BasePath.Length - BaseDirectory.Length));
-
-        public static readonly string BranchDirectory =
-            Path.Combine(BaseDirectory, "new",
-                BranchDefinition.Loader.BasePath.Substring(BaseDirectory.Length,
-                    BranchDefinition.Loader.BasePath.Length - BaseDirectory.Length));
-
-        public static readonly string MapFragmentDirectory =
-            Path.Combine(BaseDirectory, "new",
-                MapFragment.NormalLoader.BasePath.Substring(BaseDirectory.Length,
-                    MapFragment.NormalLoader.BasePath.Length - BaseDirectory.Length));
-
-        public static readonly string ConnectingMapFragmentDirectory =
-            Path.Combine(BaseDirectory, "new",
-                ConnectingMapFragment.ConnectingLoader.BasePath.Substring(BaseDirectory.Length,
-                    ConnectingMapFragment.ConnectingLoader.BasePath.Length - BaseDirectory.Length));
-
-        public static readonly string DefiningMapFragmentDirectory =
-            Path.Combine(BaseDirectory, "new",
-                DefiningMapFragment.DefiningLoader.BasePath.Substring(BaseDirectory.Length,
-                    DefiningMapFragment.DefiningLoader.BasePath.Length - BaseDirectory.Length));
-
-        private static string GetCommonPrefix(IReadOnlyList<string> strings)
-        {
-            if (strings.Count == 0)
-            {
-                return null;
-            }
-
-            var firstString = strings[0];
-            var prefixLength = firstString.Length;
-
-            for (var y = 1; y < strings.Count; y++)
-            {
-                var s = strings[y];
-                for (var i = 0; i < firstString.Length && i < prefixLength; i++)
-                {
-                    var c = firstString[i];
-                    if (i == s.Length
-                        || s[i] != c)
-                    {
-                        prefixLength = i;
-                    }
-                }
-            }
-
-            return firstString.Substring(0, prefixLength);
-        }
     }
 }

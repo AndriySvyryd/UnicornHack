@@ -6,15 +6,16 @@ using UnicornHack.Utils;
 
 namespace UnicornHack.Generation
 {
-    public class ItemGroup
+    public class ItemGroup : ILoadable
     {
         public ItemType Type { get; set; }
         public float Weight { get; set; }
         public IReadOnlyList<ItemGroup> SubGroups { get; set; }
 
-        // Loader isn't declared on ItemGroupData to allow it to be loaded lazily
+        public string Name { get; } = "item groups";
+
         public static readonly SingleCSScriptLoader<ItemGroup> Loader =
-            new SingleCSScriptLoader<ItemGroup>("Data", "item groups", typeof(ItemGroupData));
+            new SingleCSScriptLoader<ItemGroup>("Data", typeof(ItemGroupData));
 
         public IEnumerable<ItemGroup> GetGroups(ItemVariant item)
         {

@@ -21,10 +21,6 @@ namespace UnicornHack.Generation
             };
         }
 
-        void ILoadable.OnLoad()
-        {
-        }
-
         public static readonly CSScriptLoader<BranchDefinition> Loader =
             new CSScriptLoader<BranchDefinition>(@"Data\Branches\", typeof(BranchDefinitionData));
 

@@ -817,10 +817,6 @@ namespace UnicornHack
 
         #region Serialization
 
-        void ILoadable.OnLoad()
-        {
-        }
-
         protected static Dictionary<string, Func<TActor, object, bool>> GetPropertyConditions<TActor>()
             where TActor : Actor
             => new Dictionary<string, Func<TActor, object, bool>>

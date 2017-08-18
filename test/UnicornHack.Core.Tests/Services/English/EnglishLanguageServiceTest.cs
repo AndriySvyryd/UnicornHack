@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnicornHack.Effects;
 using UnicornHack.Events;
+using UnicornHack.Generation;
 using UnicornHack.Generation.Map;
 using Xunit;
 
@@ -262,7 +263,7 @@ namespace UnicornHack.Services.English
         [Fact]
         public void ItemPickUpEvent()
         {
-            var coins = (Gold)Gold.Get().Instantiate(new Game());
+            var coins = (Gold)GoldVariant.Get().Instantiate(new Game());
             coins.Quantity = 11;
             var newt = new Creature {BaseName = "newt"};
             var player = new Player {BaseName = "human", Name = "Dudley", Sex = Sex.Male};
@@ -291,7 +292,7 @@ namespace UnicornHack.Services.English
         [Fact]
         public void ItemDropEvent()
         {
-            var coins = (Gold)Gold.Get().Instantiate(new Game());
+            var coins = (Gold)GoldVariant.Get().Instantiate(new Game());
             coins.Quantity = 11;
             var newt = new Creature {BaseName = "newt"};
             var player = new Player {BaseName = "human", Name = "Dudley", Sex = Sex.Male};

@@ -1,35 +1,18 @@
 using System;
-using System.IO;
-using System.Reflection;
 
 namespace UnicornHack.Utils
 {
-    public class SingleCSScriptLoader<T> : CSScriptLoaderBase
+    public class SingleCSScriptLoader<T> : CSScriptLoaderBase<T>
+        where T : ILoadable, new()
     {
-        private T _object;
-        public string BasePath { get; }
-        public string Name { get; }
-        public Type DataType { get; }
-
-        public SingleCSScriptLoader(string relativePath, string name, Type dataType)
+        private readonly string _name;
+        public SingleCSScriptLoader(string relativePath, Type dataType)
+            : base(relativePath, dataType)
         {
-            BasePath = Path.Combine(AppContext.BaseDirectory, relativePath);
-            Name = name;
-            DataType = dataType;
+            _name = new T().Name;
+            FilePattern = GetScriptFilename(_name) + ScriptExtension;
         }
 
-        public T Object
-        {
-            get
-            {
-                if (Equals(_object, default(T)))
-                {
-                    _object = LoadScripts
-                        ? LoadFile<T>(Path.Combine(BasePath, GetScriptFilename(Name)))
-                        : (T)DataType.GetRuntimeField(GenerateIdentifier(Name)).GetValue(null);
-                }
-                return _object;
-            }
-        }
+        public T Object => Get(_name);
     }
 }

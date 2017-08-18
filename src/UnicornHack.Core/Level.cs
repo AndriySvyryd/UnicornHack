@@ -115,7 +115,7 @@ namespace UnicornHack
             {
                 // TODO: Log parameters if failed
                 var fragment = GenerationRandom.Pick(
-                    DefiningMapFragment.GetAllDefiningMapFragments(), f => f.GetWeight(BranchName, Depth));
+                    DefiningMapFragment.Loader.GetAsList(), f => f.GetWeight(BranchName, Depth));
 
                 Height = fragment.LevelHeight;
                 Width = fragment.LevelWidth;

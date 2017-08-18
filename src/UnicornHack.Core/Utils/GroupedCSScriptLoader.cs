@@ -21,11 +21,12 @@ namespace UnicornHack.Utils
             _keySelector = keySelector;
         }
 
-        private Dictionary<TKey, List<T>> EnsureLoaded()
+        protected override void EnsureLoaded()
         {
+            base.EnsureLoaded();
+
             if (_objects == null)
             {
-                LoadAll();
                 _objects = new Dictionary<TKey, List<T>>();
                 foreach (var value in NameLookup.Values)
                 {
@@ -41,20 +42,18 @@ namespace UnicornHack.Utils
                     }
                 }
             }
-
-            return _objects;
         }
 
         public IReadOnlyList<T> GetAllValues(TKey key)
-            => EnsureLoaded().TryGetValue(key, out var list) ? list : new List<T>();
-
-        public IEnumerable<TKey> GetAllKeys()
-            => EnsureLoaded().Keys;
-
-        public IEnumerable<T> GetAll()
         {
             EnsureLoaded();
-            return NameLookup.Values;
+            return _objects.TryGetValue(key, out var list) ? list : new List<T>();
+        }
+
+        public IEnumerable<TKey> GetAllKeys()
+        {
+            EnsureLoaded();
+            return _objects.Keys;
         }
     }
 }

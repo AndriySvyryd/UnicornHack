@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
 using CSharpScriptSerialization;
+using UnicornHack.Data.Fragments;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Generation.Map
 {
     public class MapFragment : ICSScriptSerializable, ILoadable
     {
-        #region State
-
         public virtual string Name { get; set; }
         public virtual string Map { get; set; } = "";
         public virtual DynamicMap DynamicMap { get; set; }
@@ -32,19 +31,30 @@ namespace UnicornHack.Generation.Map
         public virtual int[,] PointToIndex { get; private set; }
         public virtual Point[] IndexToPoint { get; private set; }
 
-        #endregion
+        private Func<string, byte, int, int, float> _weightFunction;
 
-        #region Creation
+        public virtual float GetWeight(Level level, Rectangle boundingRectangle)
+        {
+            // TODO: take transformations into account
+            if (PayloadArea.Width > boundingRectangle.Width
+                || PayloadArea.Height > boundingRectangle.Height)
+            {
+                return 0;
+            }
+
+            if (_weightFunction == null)
+            {
+                _weightFunction = GenerationWeight.CreateFragmentWeightFunction();
+            }
+
+            return _weightFunction(level.Branch.Name, level.Depth, 0, 0);
+        }
 
         // Characters that can be used as conditions for neighbors:
         // ~ - marks the edge row and/or column as conditional
         // X - should be outside the level
         // # - wall or other unpassable terrain
         // . - floor or other passable terrain
-        void ILoadable.OnLoad()
-        {
-        }
-
         public virtual void EnsureInitialized(Game game)
         {
             // TODO: make this thread-safe
@@ -174,29 +184,6 @@ namespace UnicornHack.Generation.Map
             }
         }
 
-        #endregion
-
-        #region Actions
-
-        private Func<string, byte, int, int, float> _weightFunction;
-
-        public virtual float GetWeight(Level level, Rectangle boundingRectangle)
-        {
-            // TODO: take transformations into account
-            if (PayloadArea.Width > boundingRectangle.Width
-                || PayloadArea.Height > boundingRectangle.Height)
-            {
-                return 0;
-            }
-
-            if (_weightFunction == null)
-            {
-                _weightFunction = GenerationWeight.CreateFragmentWeightFunction();
-            }
-
-            return _weightFunction(level.Branch.Name, level.Depth, 0, 0);
-        }
-
         public Room TryPlace(Level level, Rectangle boundingRectangle)
         {
             try
@@ -246,9 +233,11 @@ namespace UnicornHack.Generation.Map
         }
 
         protected virtual void Write(char c, Point point, Level level,
-            (List<Point> doorwayPoints, List<Point> perimeterPoints, List<Point> insidePoints, List<Point> points) state)
+            (List<Point> doorwayPoints, List<Point> perimeterPoints, List<Point> insidePoints, List<Point> points)
+                state)
         {
-            (List<Point> doorwayPoints, List<Point> perimeterPoints, List<Point> insidePoints, List<Point> points) = state;
+            (List<Point> doorwayPoints, List<Point> perimeterPoints, List<Point> insidePoints, List<Point> points) =
+                state;
             var feature = MapFeature.Default;
             switch (c)
             {
@@ -575,14 +564,8 @@ namespace UnicornHack.Generation.Map
                || neighbourMap.HasFlag(DirectionFlags.SoutheastCorner)
                || neighbourMap.HasFlag(DirectionFlags.SouthwestCorner);
 
-        #endregion
-
-        #region Serialization
-
-        public static readonly CSScriptLoader<MapFragment> NormalLoader =
-            new CSScriptLoader<MapFragment>(@"data\fragments\normal\");
-
-        public static IReadOnlyList<MapFragment> GetAllNormalMapFragments() => NormalLoader.GetAll();
+        public static readonly CSScriptLoader<MapFragment> Loader =
+            new CSScriptLoader<MapFragment>(@"Data\Fragments\Normal\", typeof(NormalMapFragmentData));
 
         private static readonly CSScriptSerializer Serializer =
             new PropertyCSScriptSerializer<MapFragment>(GetPropertyConditions<MapFragment>());
@@ -607,7 +590,5 @@ namespace UnicornHack.Generation.Map
         }
 
         public virtual ICSScriptSerializer GetSerializer() => Serializer;
-
-        #endregion
     }
 }

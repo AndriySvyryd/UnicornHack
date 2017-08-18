@@ -14,13 +14,19 @@ namespace UnicornHack.Utils
         {
         }
 
-        public IReadOnlyList<T> GetAll()
+        protected override void EnsureLoaded()
         {
+            base.EnsureLoaded();
+
             if (_objects == null)
             {
-                LoadAll();
                 _objects = NameLookup.Values.ToList();
             }
+        }
+
+        public IReadOnlyList<T> GetAsList()
+        {
+            EnsureLoaded();
 
             return _objects;
         }

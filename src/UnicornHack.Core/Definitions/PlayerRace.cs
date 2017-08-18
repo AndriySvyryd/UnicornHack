@@ -35,12 +35,6 @@ namespace UnicornHack.Definitions
             return race;
         }
 
-        #region Serialization
-
-        public void OnLoad()
-        {
-        }
-
         public static readonly CSScriptLoader<PlayerRace> Loader = new CSScriptLoader<PlayerRace>(@"data\players\");
 
         private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<PlayerRace>(
@@ -57,7 +51,5 @@ namespace UnicornHack.Definitions
             };
 
         public virtual ICSScriptSerializer GetSerializer() => Serializer;
-
-        #endregion
     }
 }

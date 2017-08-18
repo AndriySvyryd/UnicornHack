@@ -149,10 +149,6 @@ namespace UnicornHack.Generation
 
         protected virtual Item CreateInstance(Game game) => new Item(game);
 
-        public void OnLoad()
-        {
-        }
-
         private Func<string, byte, int, float> _weightFunction;
 
         public virtual float GetWeight(Level level)

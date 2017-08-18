@@ -74,10 +74,10 @@ namespace UnicornHack.Generation.Map
                                                  c.TargetLevelDepth == level.Depth + 1) < 2));
                 var sortedFragments = placingConnections
                     ? level.GenerationRandom.WeightedOrder(
-                        ConnectingMapFragment.GetAllConnectingMapFragments(),
+                        ConnectingMapFragment.Loader.GetAsList(),
                         f => f.GetWeight(level, nextLot.Value, danglingConnection))
                     : level.GenerationRandom.WeightedOrder(
-                        MapFragment.GetAllNormalMapFragments(),
+                        MapFragment.Loader.GetAsList(),
                         f => f.GetWeight(level, nextLot.Value));
 
                 placedRoom = TryPlace(level, nextLot.Value, sortedFragments);

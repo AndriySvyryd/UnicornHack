@@ -9,22 +9,24 @@ namespace UnicornHack.Utils
         where T : ILoadable
     {
         protected Dictionary<string, T> NameLookup { get; } = new Dictionary<string, T>(StringComparer.Ordinal);
-        public string BasePath { get; }
+        protected string BasePath { get; }
+        public string RelativePath { get; }
         public Type DataType { get; }
+        protected string FilePattern { get; set; } = "*" + ScriptExtension;
+
         private readonly object _lockRoot = new object();
 
+        // Loader shouldn't be declared on dataType to allow it to be loaded lazily
         protected CSScriptLoaderBase(string relativePath, Type dataType = null)
         {
             BasePath = Path.Combine(AppContext.BaseDirectory, relativePath);
+            RelativePath = relativePath;
             DataType = dataType;
         }
 
         public T Get(string name)
         {
-            if (NameLookup.Count == 0)
-            {
-                LoadAll();
-            }
+            EnsureLoaded();
 
             if (NameLookup.TryGetValue(name, out var variant))
             {
@@ -34,40 +36,47 @@ namespace UnicornHack.Utils
             throw new InvalidOperationException($"'{name}' not found");
         }
 
-        protected void LoadAll()
+        public virtual IEnumerable<T> GetAll()
         {
-            lock (_lockRoot)
-            {
-                if (NameLookup.Count != 0)
-                {
-                    return;
-                }
+            EnsureLoaded();
+            return NameLookup.Values;
+        }
 
-                if (LoadScripts || DataType == null)
+        protected virtual void EnsureLoaded()
+        {
+            if (NameLookup.Count == 0)
+            {
+                lock (_lockRoot)
                 {
-                    foreach (var file in
-                        Directory.EnumerateFiles(BasePath, FilePattern, SearchOption.AllDirectories))
+                    if (NameLookup.Count != 0)
                     {
-                        try
+                        return;
+                    }
+
+                    if (LoadScripts || DataType == null)
+                    {
+                        foreach (var file in
+                            Directory.EnumerateFiles(BasePath, FilePattern, SearchOption.TopDirectoryOnly))
                         {
-                            var instance = LoadFile<T>(file);
-                            instance.OnLoad();
-                            NameLookup[instance.Name] = instance;
-                        }
-                        catch (Exception e)
-                        {
-                            throw new InvalidOperationException(
-                                $"Error while loading {typeof(T).Name} '{Path.GetFileName(file)}'\r\n", e);
+                            try
+                            {
+                                var instance = LoadFile<T>(file);
+                                NameLookup[instance.Name] = instance;
+                            }
+                            catch (Exception e)
+                            {
+                                throw new InvalidOperationException(
+                                    $"Error while loading {typeof(T).Name} '{Path.GetFileName(file)}'\r\n", e);
+                            }
                         }
                     }
-                }
-                else
-                {
-                    foreach (var field in DataType.GetRuntimeFields())
+                    else
                     {
-                        var instance = (T)field.GetValue(null);
-                        instance.OnLoad();
-                        NameLookup[instance.Name] = instance;
+                        foreach (var field in DataType.GetRuntimeFields())
+                        {
+                            var instance = (T)field.GetValue(null);
+                            NameLookup[instance.Name] = instance;
+                        }
                     }
                 }
             }

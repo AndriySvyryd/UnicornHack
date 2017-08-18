@@ -3,6 +3,5 @@
     public interface ILoadable
     {
         string Name { get; }
-        void OnLoad();
     }
 }

@@ -1,9 +1,12 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
+using CSharpScriptSerialization;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Generation.Map
 {
-    public class UniformLayout : Layout
+    public class UniformLayout : Layout, ICSScriptSerializable
     {
         private Dimensions _lotSize;
 
@@ -52,5 +55,23 @@ namespace UnicornHack.Generation.Map
 
             return null;
         }
+
+        private static readonly CSScriptSerializer Serializer =
+            new PropertyCSScriptSerializer<UniformLayout>(GetPropertyConditions<UniformLayout>());
+
+        protected static Dictionary<string, Func<TUniformLayout, object, bool>> GetPropertyConditions<TUniformLayout>()
+            where TUniformLayout : UniformLayout
+        {
+            return new Dictionary<string, Func<TUniformLayout, object, bool>>
+            {
+                // ReSharper disable once CompareOfFloatsByEqualityOperator
+                {nameof(Coverage), (o, v) => (float)v != 0.4f},
+                {nameof(MaxRoomCount), (o, v) => (byte)v != 16},
+                {nameof(MaxLotSize), (o, v) => !new Dimensions(20, 20).Equals(v)},
+                {nameof(MinLotSize), (o, v) => !new Dimensions(6, 6).Equals(v)}
+            };
+        }
+
+        public virtual ICSScriptSerializer GetSerializer() => Serializer;
     }
 }
