@@ -25,8 +25,7 @@ namespace UnicornHack.Events
                 var attackerSensed = sensor.CanSense(attacker);
                 var victimSensed = sensor.CanSense(victim);
 
-                if (attackerSensed == SenseType.None
-                    && victimSensed == SenseType.None)
+                if (attackerSensed == SenseType.None && victimSensed == SenseType.None)
                 {
                     continue;
                 }

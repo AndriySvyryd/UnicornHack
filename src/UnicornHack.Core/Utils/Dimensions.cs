@@ -11,8 +11,6 @@ namespace UnicornHack.Utils
         public byte Width { get; set; }
         public byte Height { get; set; }
 
-        public bool Contains(Dimensions d)
-            => Width >= d.Width
-               && Height >= d.Height;
+        public bool Contains(Dimensions d) => Width >= d.Width && Height >= d.Height;
     }
 }

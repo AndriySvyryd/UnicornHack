@@ -8,8 +8,7 @@ namespace UnicornHack.Effects
         {
         }
 
-        public VenomDamage(Game game)
-            : base(game)
+        public VenomDamage(Game game) : base(game)
         {
         }
 
@@ -23,7 +22,6 @@ namespace UnicornHack.Effects
             }
         }
 
-        public override Effect Instantiate(Game game)
-            => new VenomDamage(game) {Damage = Damage};
+        public override Effect Instantiate(Game game) => new VenomDamage(game) {Damage = Damage};
     }
 }

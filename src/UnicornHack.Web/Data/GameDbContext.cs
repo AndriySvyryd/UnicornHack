@@ -71,10 +71,6 @@ namespace UnicornHack.Models
 
             modelBuilder.Entity<Actor>(eb =>
             {
-                eb.Ignore(a => a.BaseActor);
-                eb.Ignore(a => a.SimpleProperties);
-                eb.Ignore(a => a.ValuedProperties);
-                eb.Ignore(a => a.MovementDelay);
                 eb.Property("_referenceCount");
                 eb.HasKey(a => new {a.GameId, a.Id});
                 eb.HasIndex(a => a.Name).IsUnique();
@@ -87,10 +83,7 @@ namespace UnicornHack.Models
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            modelBuilder.Entity<Creature>(cb =>
-            {
-                cb.Ignore(c => c.GenerationWeight);
-            });
+            modelBuilder.Entity<Creature>(cb => {});
 
             modelBuilder.Entity<Player>(pb =>
             {
@@ -99,7 +92,7 @@ namespace UnicornHack.Models
                 pb.Ignore(p => p.NextLevelXP);
             });
 
-            modelBuilder.Entity<ActivePlayerRace>(rb =>
+            modelBuilder.Entity<PlayerRace>(rb =>
             {
                 rb.HasKey(r => new {r.GameId, r.PlayerId, r.Id});
                 rb.HasOne(r => r.Player)
@@ -253,9 +246,9 @@ namespace UnicornHack.Models
             modelBuilder.Entity<Blind>();
             modelBuilder.Entity<Bind>();
             modelBuilder.Entity<ChangeRace>();
-            modelBuilder.Entity<ChangeSimpleProperty>();
-            modelBuilder.Entity<ChangeValuedProperty<int>>();
-            modelBuilder.Entity<ChangeValuedProperty<Size>>();
+            modelBuilder.Entity<ChangeProperty<bool>>();
+            modelBuilder.Entity<ChangeProperty<int>>();
+            modelBuilder.Entity<ChangeProperty<Size>>();
             modelBuilder.Entity<ColdDamage>();
             modelBuilder.Entity<ConferLycanthropy>();
             modelBuilder.Entity<Confuse>();

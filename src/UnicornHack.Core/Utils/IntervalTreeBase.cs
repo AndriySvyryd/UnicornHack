@@ -112,10 +112,7 @@ namespace UnicornHack.Utils
             public NodeBase Left;
             public NodeBase Right;
 
-            protected NodeBase(byte key)
-            {
-                Key = key;
-            }
+            protected NodeBase(byte key) => Key = key;
         }
     }
 }

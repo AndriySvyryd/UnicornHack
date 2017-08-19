@@ -9,15 +9,13 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Engulf(Game game)
-            : base(game)
+        public Engulf(Game game) : base(game)
         {
         }
 
         public int Duration { get; set; }
 
-        public override Effect Instantiate(Game game)
-            => new Engulf(game) {Duration = Duration};
+        public override Effect Instantiate(Game game) => new Engulf(game) {Duration = Duration};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {

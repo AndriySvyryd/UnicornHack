@@ -41,7 +41,7 @@ namespace UnicornHack.Utils
             var randomCount = 20;
             var initialRectangles = new List<Rectangle>(randomCount);
             var seed = Environment.TickCount;
-            var random = new SimpleRandom { Seed = seed };
+            var random = new SimpleRandom {Seed = seed};
             for (var i = 0; i < randomCount; i++)
             {
                 initialRectangles.Add(Rectangle.CreateRandom(random, boundingRectangle));
@@ -58,7 +58,8 @@ namespace UnicornHack.Utils
             }
         }
 
-        private static void Test(IReadOnlyList<Rectangle> initialRectangles, Rectangle boundingRectangle, Rectangle targetRectangle)
+        private static void Test(IReadOnlyList<Rectangle> initialRectangles, Rectangle boundingRectangle,
+            Rectangle targetRectangle)
         {
             var expectedRectangles = new List<Rectangle>();
             var otherRectangles = new List<Rectangle>();
@@ -79,14 +80,16 @@ namespace UnicornHack.Utils
                 }
             }
 
-            TestAssert.Equal(expectedRectangles, tree.GetOverlappingCorners(targetRectangle), $"Target: {targetRectangle}");
+            TestAssert.Equal(expectedRectangles, tree.GetOverlappingCorners(targetRectangle),
+                $"Target: {targetRectangle}");
 
             foreach (var rectangle in otherRectangles)
             {
                 Assert.True(tree.Remove(rectangle));
             }
 
-            TestAssert.Equal(expectedRectangles, tree.GetOverlappingCorners(targetRectangle), $"Target: {targetRectangle}");
+            TestAssert.Equal(expectedRectangles, tree.GetOverlappingCorners(targetRectangle),
+                $"Target: {targetRectangle}");
 
             foreach (var rectangle in expectedRectangles)
             {
@@ -98,7 +101,8 @@ namespace UnicornHack.Utils
             tree.InsertRange(expectedRectangles);
             tree.InsertRange(otherRectangles);
 
-            TestAssert.Equal(expectedRectangles, tree.GetOverlappingCorners(targetRectangle), $"Target: {targetRectangle}");
+            TestAssert.Equal(expectedRectangles, tree.GetOverlappingCorners(targetRectangle),
+                $"Target: {targetRectangle}");
         }
     }
 }

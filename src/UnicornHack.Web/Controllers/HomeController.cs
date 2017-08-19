@@ -111,7 +111,7 @@ namespace UnicornHack.Controllers
                 _dbContext.Games.Add(game);
                 _dbContext.SaveChanges();
 
-                var surfaceBranch = BranchDefinition.Get("surface").Instantiate(game);
+                var surfaceBranch = BranchDefinition.Loader.Get("surface").Instantiate(game);
                 var surfaceLevel = new Level(surfaceBranch, depth: 1, seed: seed);
                 surfaceLevel.EnsureGenerated();
                 var initialLevel = surfaceLevel.Connections.Single().TargetLevel;

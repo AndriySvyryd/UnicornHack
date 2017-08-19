@@ -9,15 +9,13 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Sleep(Game game)
-            : base(game)
+        public Sleep(Game game) : base(game)
         {
         }
 
         public int Duration { get; set; }
 
-        public override Effect Instantiate(Game game)
-            => new Sleep(game) {Duration = Duration};
+        public override Effect Instantiate(Game game) => new Sleep(game) {Duration = Duration};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {

@@ -7,9 +7,10 @@ namespace UnicornHack.Generation
     public class ContainerVariant : ItemVariant
     {
         private short? _capacity;
+
         public virtual short Capacity
         {
-            get => _capacity ?? (Base as ContainerVariant)?.Capacity ?? Int16.MaxValue;
+            get => _capacity ?? (Base as ContainerVariant)?.Capacity ?? short.MaxValue;
             set => _capacity = value;
         }
 
@@ -22,14 +23,14 @@ namespace UnicornHack.Generation
 
         protected override Item CreateInstance(Game game) => new Container(game);
 
-        private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<ContainerVariant>(
-            GetPropertyConditions<ContainerVariant>());
+        private static readonly CSScriptSerializer Serializer =
+            new PropertyCSScriptSerializer<ContainerVariant>(GetPropertyConditions<ContainerVariant>());
 
         protected new static Dictionary<string, Func<TItemVariant, object, bool>> GetPropertyConditions<TItemVariant>()
             where TItemVariant : ContainerVariant
         {
             var propertyConditions = ItemVariant.GetPropertyConditions<TItemVariant>();
-            propertyConditions.Add(nameof(Capacity), (o, v) => (short)v != Int16.MaxValue);
+            propertyConditions.Add(nameof(Capacity), (o, v) => (short)v != short.MaxValue);
             return propertyConditions;
         }
 

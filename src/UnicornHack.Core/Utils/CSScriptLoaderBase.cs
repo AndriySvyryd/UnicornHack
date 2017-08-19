@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using CSharpScriptSerialization;
-using UnicornHack.Definitions;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 using UnicornHack.Generation.Map;
@@ -22,7 +21,6 @@ namespace UnicornHack.Utils
             typeof(object).GetTypeInfo().Namespace,
             typeof(List<>).GetTypeInfo().Namespace,
             typeof(Ability).GetTypeInfo().Namespace,
-            typeof(PlayerRace).GetTypeInfo().Namespace,
             typeof(Effect).GetTypeInfo().Namespace,
             typeof(Weight).GetTypeInfo().Namespace,
             typeof(MapFragment).GetTypeInfo().Namespace,
@@ -30,13 +28,9 @@ namespace UnicornHack.Utils
         };
 
         public static T Load<T>(string script)
-            => CSScriptSerializer.Deserialize<T>(
-                script,
-                Enumerable.Empty<Assembly>(),
-                Namespaces);
+            => CSScriptSerializer.Deserialize<T>(script, Enumerable.Empty<Assembly>(), Namespaces);
 
-        public static T LoadFile<T>(string path)
-            => Load<T>(File.ReadAllText(path));
+        public static T LoadFile<T>(string path) => Load<T>(File.ReadAllText(path));
 
         public static string GetScriptFilename(string name) => name.Replace(' ', '_') + ScriptExtension;
         public static string GetNameFromFilename(string filename) => filename.Replace('_', ' ') + ScriptExtension;
@@ -45,16 +39,13 @@ namespace UnicornHack.Utils
         public static string GenerateIdentifier(string name)
         {
             var candidateStringBuilder = new StringBuilder();
-            var previousLetterCharInWordIsLowerCase = false;
             var isFirstCharacterInWord = true;
             foreach (var c in name)
             {
                 var isNotLetterOrDigit = !char.IsLetterOrDigit(c);
-                if (isNotLetterOrDigit
-                    || (previousLetterCharInWordIsLowerCase && char.IsUpper(c)))
+                if (isNotLetterOrDigit || char.IsUpper(c))
                 {
                     isFirstCharacterInWord = true;
-                    previousLetterCharInWordIsLowerCase = false;
                     if (isNotLetterOrDigit)
                     {
                         continue;
@@ -65,10 +56,25 @@ namespace UnicornHack.Utils
                     ? char.ToUpperInvariant(c)
                     : char.ToLowerInvariant(c));
                 isFirstCharacterInWord = false;
-                if (char.IsLower(c))
+            }
+
+            return candidateStringBuilder.ToString();
+        }
+
+        public static string GetNameFromIdentifier(string identifier)
+        {
+            var candidateStringBuilder = new StringBuilder();
+            var charsInPreviousWord = 0;
+            foreach (var c in identifier)
+            {
+                if (char.IsUpper(c) && charsInPreviousWord > 1)
                 {
-                    previousLetterCharInWordIsLowerCase = true;
+                    candidateStringBuilder.Append(' ');
+                    charsInPreviousWord = 0;
                 }
+
+                candidateStringBuilder.Append(char.ToLowerInvariant(c));
+                charsInPreviousWord++;
             }
 
             return candidateStringBuilder.ToString();

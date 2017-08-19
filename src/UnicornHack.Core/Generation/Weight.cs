@@ -10,13 +10,13 @@ namespace UnicornHack.Generation
 {
     public abstract class Weight
     {
-        public readonly int DefaultWeight = 100;
+        public readonly int DefaultWeight = 1;
 
         protected static readonly ParameterExpression BranchParameter =
             Expression.Parameter(typeof(string), name: "branch");
 
-        protected static readonly ParameterExpression DepthParameter =
-            Expression.Parameter(typeof(byte), name: "depth");
+        protected static readonly ParameterExpression DepthParameter = Expression.Parameter(typeof(byte), name: "depth")
+            ;
 
         protected static readonly ParameterExpression InstancesParameter =
             Expression.Parameter(typeof(int), name: "instances");
@@ -47,18 +47,16 @@ namespace UnicornHack.Generation
 
         public virtual Func<string, byte, int, float> CreateCreatureWeightFunction()
         {
-            var parameters = new[] { BranchParameter, DepthParameter, InstancesParameter };
+            var parameters = new[] {BranchParameter, DepthParameter, InstancesParameter};
 
-            return Expression.Lambda<Func<string, byte, int, float>>(GetExpression(parameters), parameters)
-                .Compile();
+            return Expression.Lambda<Func<string, byte, int, float>>(GetExpression(parameters), parameters).Compile();
         }
 
         public virtual Func<string, byte, int, float> CreateItemWeightFunction()
         {
-            var parameters = new[] { BranchParameter, DepthParameter, InstancesParameter };
+            var parameters = new[] {BranchParameter, DepthParameter, InstancesParameter};
 
-            return Expression.Lambda<Func<string, byte, int, float>>(GetExpression(parameters), parameters)
-                .Compile();
+            return Expression.Lambda<Func<string, byte, int, float>>(GetExpression(parameters), parameters).Compile();
         }
 
         protected static void Check(ParameterExpression requiredParameter,
@@ -85,20 +83,12 @@ namespace UnicornHack.Generation
         public abstract Expression GetExpression(IReadOnlyDictionary<string, ParameterExpression> parameters);
     }
 
-    public class ConstantWeight : Weight
-    {
-        public virtual float W { get; set; }
-
-        public override Expression GetExpression(IReadOnlyDictionary<string, ParameterExpression> parameters)
-            => Expression.Constant(W);
-    }
-
     public class DefaultWeight : Weight, ICSScriptSerializable
     {
         public virtual float Multiplier { get; set; } = 1;
 
-        public override Expression GetExpression(IReadOnlyDictionary<string, ParameterExpression> parameters)
-            => Expression.Multiply(Expression.Constant(Multiplier), Expression.Constant((float)DefaultWeight));
+        public override Expression GetExpression(IReadOnlyDictionary<string, ParameterExpression> parameters) =>
+            Expression.Multiply(Expression.Constant(Multiplier), Expression.Constant((float)DefaultWeight));
 
         private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<DefaultWeight>(
             new Dictionary<string, Func<DefaultWeight, object, bool>>
@@ -112,32 +102,17 @@ namespace UnicornHack.Generation
 
     public class InfiniteWeight : Weight, ICSScriptSerializable
     {
-        public override Expression GetExpression(IReadOnlyDictionary<string, ParameterExpression> parameters)
-            => Expression.Constant(float.PositiveInfinity);
+        public override Expression GetExpression(IReadOnlyDictionary<string, ParameterExpression> parameters) =>
+            Expression.Constant(float.PositiveInfinity);
 
         private static readonly CSScriptSerializer Serializer = new ConstructorCSScriptSerializer<InfiniteWeight>();
         public ICSScriptSerializer GetSerializer() => Serializer;
     }
 
-    public class NotBranchWeight : Weight
-    {
-        public virtual Weight W { get; set; }
-        public virtual string Name { get; set; }
-
-        public override Expression GetExpression(IReadOnlyDictionary<string, ParameterExpression> parameters)
-        {
-            Check(BranchParameter, parameters);
-
-            return Expression.Condition(
-                Expression.NotEqual(Expression.Constant(Name), BranchParameter),
-                W.GetExpression(parameters),
-                Expression.Constant(0f));
-        }
-    }
-
     public class BranchWeight : Weight
     {
-        public virtual Weight W { get; set; }
+        public virtual Weight Matched { get; set; }
+        public virtual Weight NotMatched { get; set; }
         public virtual string Name { get; set; }
         public virtual short MinDepth { get; set; }
         public virtual short MaxDepth { get; set; }
@@ -164,10 +139,8 @@ namespace UnicornHack.Generation
                     Expression.LessThanOrEqual(DepthParameter, Expression.Constant((byte)MaxDepth)));
             }
 
-            return Expression.Condition(
-                condition,
-                W.GetExpression(parameters),
-                Expression.Constant(0f));
+            return Expression.Condition(condition, Matched?.GetExpression(parameters) ?? Expression.Constant(0f),
+                NotMatched?.GetExpression(parameters) ?? Expression.Constant(0f));
         }
     }
 
@@ -183,10 +156,8 @@ namespace UnicornHack.Generation
         {
             Check(InstancesParameter, parameters);
 
-            return Expression.Condition(
-                Expression.LessThan(InstancesParameter, Expression.Constant(Max)),
-                W.GetExpression(parameters),
-                Expression.Constant(0f));
+            return Expression.Condition(Expression.LessThan(InstancesParameter, Expression.Constant(Max)),
+                W.GetExpression(parameters), Expression.Constant(0f));
         }
     }
 
@@ -204,10 +175,8 @@ namespace UnicornHack.Generation
         {
             Check(TagInstancesParameter, parameters);
 
-            return Expression.Condition(
-                Expression.LessThan(TagInstancesParameter, Expression.Constant(Max)),
-                W.GetExpression(parameters),
-                Expression.Constant(0f));
+            return Expression.Condition(Expression.LessThan(TagInstancesParameter, Expression.Constant(Max)),
+                W.GetExpression(parameters), Expression.Constant(0f));
         }
     }
 

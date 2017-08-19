@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using CSharpScriptSerialization;
 using UnicornHack.Generation;
 using UnicornHack.Utils;
 
@@ -12,8 +10,7 @@ namespace UnicornHack
         {
         }
 
-        public Gold(Game game)
-            : base(game)
+        public Gold(Game game) : base(game)
         {
         }
 
@@ -35,8 +32,7 @@ namespace UnicornHack
 
         public override TransientReference<Item> Split(int quantity)
         {
-            if (quantity > Quantity
-                || quantity <= 0)
+            if (quantity > Quantity || quantity <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(quantity));
             }

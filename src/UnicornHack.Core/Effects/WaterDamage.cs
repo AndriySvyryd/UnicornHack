@@ -8,8 +8,7 @@ namespace UnicornHack.Effects
         {
         }
 
-        public WaterDamage(Game game)
-            : base(game)
+        public WaterDamage(Game game) : base(game)
         {
         }
 
@@ -24,7 +23,6 @@ namespace UnicornHack.Effects
             }
         }
 
-        public override Effect Instantiate(Game game)
-            => new WaterDamage(game) {Damage = Damage};
+        public override Effect Instantiate(Game game) => new WaterDamage(game) {Damage = Damage};
     }
 }

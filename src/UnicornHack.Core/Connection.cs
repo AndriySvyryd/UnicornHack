@@ -24,17 +24,14 @@ namespace UnicornHack
             TargetBranchName = targetBranchName;
             TargetLevelDepth = targetLevelDepth;
 
-            TargetBranch = Game.GetBranch(targetBranchName)
-                           ?? BranchDefinition.Get(TargetBranchName).Instantiate(Game);
+            TargetBranch = Game.GetBranch(targetBranchName) ?? BranchDefinition.Loader.Get(TargetBranchName).Instantiate(Game);
 
             TargetLevel = Game.GetLevel(targetBranchName, TargetLevelDepth)
                           ?? new Level(TargetBranch, TargetLevelDepth, Level.GenerationRandom.Seed);
             TargetLevel.IncomingConnections.Add(this);
 
             var connectingStairs = Level.IncomingConnections.FirstOrDefault(s =>
-                s.BranchName == targetBranchName
-                && s.LevelDepth == targetLevelDepth
-                && s.TargetLevelX == null);
+                s.BranchName == targetBranchName && s.LevelDepth == targetLevelDepth && s.TargetLevelX == null);
             if (connectingStairs != null)
             {
                 TargetLevelX = connectingStairs.LevelX;
@@ -44,6 +41,7 @@ namespace UnicornHack
             }
         }
 
+        // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Local
         public int Id { get; private set; }
 
         public byte LevelX { get; set; }
@@ -64,7 +62,8 @@ namespace UnicornHack
 
         public Game Game { get; set; }
 
-        public static Connection CreateSourceConnection(Level level, Point p, string targetBranchName, byte depth = 1)
+        public static Connection
+            CreateSourceConnection(Level level, Point p, string targetBranchName, byte depth = 1)
             => new Connection(level, p, targetBranchName, depth);
 
         public static Connection CreateReceivingConnection(Level level, Point p, Connection incoming)

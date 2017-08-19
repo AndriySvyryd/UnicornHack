@@ -8,8 +8,7 @@ namespace UnicornHack.Effects
         {
         }
 
-        public MagicalDamage(Game game)
-            : base(game)
+        public MagicalDamage(Game game) : base(game)
         {
         }
 
@@ -22,7 +21,6 @@ namespace UnicornHack.Effects
             }
         }
 
-        public override Effect Instantiate(Game game)
-            => new MagicalDamage(game) {Damage = Damage};
+        public override Effect Instantiate(Game game) => new MagicalDamage(game) {Damage = Damage};
     }
 }

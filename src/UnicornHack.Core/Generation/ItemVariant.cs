@@ -162,8 +162,8 @@ namespace UnicornHack.Generation
         }
 
         public static readonly GroupedCSScriptLoader<ItemGroup, ItemVariant> Loader =
-            new GroupedCSScriptLoader<ItemGroup, ItemVariant>(
-                @"Data\Items\", i => ItemGroup.Loader.Object.GetGroups(i), typeof(ItemVariantData));
+            new GroupedCSScriptLoader<ItemGroup, ItemVariant>(@"Data\Items\", i => ItemGroup.Loader.Object.GetGroups(i),
+                typeof(ItemVariantData));
 
         private static readonly CSScriptSerializer Serializer =
             new PropertyCSScriptSerializer<ItemVariant>(GetPropertyConditions<ItemVariant>());
@@ -177,7 +177,11 @@ namespace UnicornHack.Generation
                 {nameof(BaseName), (o, v) => v != null},
                 {nameof(Type), (o, v) => (ItemType)v != (o.Base?.Type ?? ItemType.None)},
                 {nameof(Weight), (o, v) => (int)v != (o.Base?.Weight ?? 0)},
-                {nameof(GenerationWeight), (o, v) => (Weight)v != o.Base?.GenerationWeight},
+                // ReSharper disable once CompareOfFloatsByEqualityOperator
+                {
+                    nameof(GenerationWeight),
+                    (o, v) => (Weight)v != null && (!(v is DefaultWeight def) || def.Multiplier != 1)
+                },
                 {nameof(Material), (o, v) => (Material)v != (o.Base?.Material ?? Material.Default)},
                 {nameof(Nameable), (o, v) => (bool)v != (o.Base?.Nameable ?? true)},
                 {nameof(StackSize), (o, v) => (int)v != (o.Base?.StackSize ?? 1)},

@@ -114,7 +114,8 @@ namespace UnicornHack.Services.English
         [InlineData("focus", "foci")]
         public void Nouns_are_pluralized(string noun, string expectedPlural)
         {
-            Assert.Equal(expectedPlural, Fixture.EnglishMorphologicalProcessor.ProcessNoun(noun, EnglishNounForm.Plural));
+            Assert.Equal(expectedPlural,
+                Fixture.EnglishMorphologicalProcessor.ProcessNoun(noun, EnglishNounForm.Plural));
         }
 
         [Theory]
@@ -141,10 +142,7 @@ namespace UnicornHack.Services.English
 
         protected TestFixture Fixture { get; }
 
-        public EnglishMorphologicalProcessorTest(TestFixture fixture)
-        {
-            Fixture = fixture;
-        }
+        public EnglishMorphologicalProcessorTest(TestFixture fixture) => Fixture = fixture;
 
         public class TestFixture
         {

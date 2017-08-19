@@ -1,6 +1,6 @@
 using System.Linq;
-using UnicornHack.Definitions;
 using UnicornHack.Events;
+using UnicornHack.Generation;
 
 namespace UnicornHack.Effects
 {
@@ -10,16 +10,14 @@ namespace UnicornHack.Effects
         {
         }
 
-        public ChangeRace(Game game)
-            : base(game)
+        public ChangeRace(Game game) : base(game)
         {
         }
 
         public string RaceName { get; set; }
         public bool Remove { get; set; }
 
-        public override Effect Instantiate(Game game)
-            => new ChangeRace(game) {RaceName = RaceName, Remove = Remove};
+        public override Effect Instantiate(Game game) => new ChangeRace(game) {RaceName = RaceName, Remove = Remove};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -33,7 +31,7 @@ namespace UnicornHack.Effects
                 }
                 else
                 {
-                    var race = PlayerRace.Loader.Get(RaceName);
+                    var race = PlayerRaceDefinition.Loader.Get(RaceName);
                     var existingRace = player.Races.SingleOrDefault(r => r.Species == race.Species);
                     if (existingRace == null)
                     {

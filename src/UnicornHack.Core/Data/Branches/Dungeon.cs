@@ -4,6 +4,6 @@ namespace UnicornHack.Data.Branches
 {
     public static partial class BranchDefinitionData
     {
-        public static readonly BranchDefinition Dungeon = new BranchDefinition { Name = "dungeon", Length = 10 };
+        public static readonly BranchDefinition Dungeon = new BranchDefinition {Name = "dungeon", Length = 10};
     }
 }

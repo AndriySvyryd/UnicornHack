@@ -8,18 +8,16 @@ namespace UnicornHack.Utils
     /// <typeparam name="TKey"></typeparam>
     /// <typeparam name="TValue"></typeparam>
     // ReSharper disable once InconsistentNaming
-    public class AATreeStrict<TKey, TValue> : AATree<TKey, TValue>
-        where TKey : IComparable<TKey>
+    public class AATreeStrict<TKey, TValue> : AATree<TKey, TValue> where TKey : IComparable<TKey>
     {
-        public bool Remove(TKey key)
-            => Remove(ref Root, key);
+        public bool Remove(TKey key) => Remove(ref Root, key);
 
         public bool TryGetValue(TKey key, out TValue value)
         {
             var node = Search(Root, key);
             if (node == null)
             {
-                value = default(TValue);
+                value = default;
                 return false;
             }
             value = node.Value;
@@ -30,7 +28,7 @@ namespace UnicornHack.Utils
         {
             get
             {
-                if (!TryGetValue(key, out TValue value))
+                if (!TryGetValue(key, out var value))
                 {
                     throw new InvalidOperationException($"Key {key} doesn't exist");
                 }
@@ -64,8 +62,7 @@ namespace UnicornHack.Utils
                 }
                 if (compare > 0)
                 {
-                    if (next == Sentinel
-                        || next.Key.CompareTo(node.Key) < 0)
+                    if (next == Sentinel || next.Key.CompareTo(node.Key) < 0)
                     {
                         next = node;
                     }
@@ -90,8 +87,7 @@ namespace UnicornHack.Utils
                 var compare = key.CompareTo(node.Key);
                 if (compare < 0)
                 {
-                    if (next == Sentinel
-                        || next.Key.CompareTo(node.Key) > 0)
+                    if (next == Sentinel || next.Key.CompareTo(node.Key) > 0)
                     {
                         next = node;
                     }
@@ -169,8 +165,7 @@ namespace UnicornHack.Utils
                 Deleted = null;
                 node = node.Right;
             }
-            else if (node.Left.Level < node.Level - 1
-                     || node.Right.Level < node.Level - 1)
+            else if (node.Left.Level < node.Level - 1 || node.Right.Level < node.Level - 1)
             {
                 node.Level--;
                 if (node.Right.Level > node.Level)

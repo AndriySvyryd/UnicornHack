@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 
 namespace UnicornHack.Utils
 {
-    public abstract class CSScriptLoaderBase<T> : CSScriptLoaderBase
-        where T : ILoadable
+    public abstract class CSScriptLoaderBase<T> : CSScriptLoaderBase where T : ILoadable
     {
         protected Dictionary<string, T> NameLookup { get; } = new Dictionary<string, T>(StringComparer.Ordinal);
         protected string BasePath { get; }
@@ -17,7 +17,7 @@ namespace UnicornHack.Utils
         private readonly object _lockRoot = new object();
 
         // Loader shouldn't be declared on dataType to allow it to be loaded lazily
-        protected CSScriptLoaderBase(string relativePath, Type dataType = null)
+        protected CSScriptLoaderBase(string relativePath, Type dataType)
         {
             BasePath = Path.Combine(AppContext.BaseDirectory, relativePath);
             RelativePath = relativePath;
@@ -53,10 +53,10 @@ namespace UnicornHack.Utils
                         return;
                     }
 
-                    if (LoadScripts || DataType == null)
+                    if (LoadScripts && Directory.Exists(BasePath))
                     {
-                        foreach (var file in
-                            Directory.EnumerateFiles(BasePath, FilePattern, SearchOption.TopDirectoryOnly))
+                        foreach (var file in Directory.EnumerateFiles(BasePath, FilePattern,
+                            SearchOption.TopDirectoryOnly))
                         {
                             try
                             {
@@ -72,7 +72,8 @@ namespace UnicornHack.Utils
                     }
                     else
                     {
-                        foreach (var field in DataType.GetRuntimeFields())
+                        foreach (var field in DataType.GetFields(BindingFlags.Public | BindingFlags.Static)
+                            .Where(f => typeof(T).GetTypeInfo().IsAssignableFrom(f.FieldType)))
                         {
                             var instance = (T)field.GetValue(null);
                             NameLookup[instance.Name] = instance;

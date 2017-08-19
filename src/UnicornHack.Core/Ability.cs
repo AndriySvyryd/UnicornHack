@@ -9,11 +9,14 @@ namespace UnicornHack
 {
     public class Ability : IReferenceable
     {
-        #region State
-
         public string Name { get; set; }
+
+        // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Local
         public int Id { get; private set; }
+
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public int GameId { get; private set; }
+
         public Game Game { get; set; }
         public virtual AbilityActivation Activation { get; set; }
         public virtual AbilityAction Action { get; set; }
@@ -34,17 +37,9 @@ namespace UnicornHack
 
         public virtual ISet<Effect> Effects { get; set; }
 
-        #endregion
+        public Ability() => Effects = new HashSet<Effect>();
 
-        #region Creation
-
-        public Ability()
-        {
-            Effects = new HashSet<Effect>();
-        }
-
-        public Ability(Game game)
-            : this()
+        public Ability(Game game) : this()
         {
             Game = game;
             Id = game.NextAbilityId++;
@@ -83,10 +78,7 @@ namespace UnicornHack
             _referenceCount++;
         }
 
-        public TransientReference<Ability> AddReference()
-        {
-            return new TransientReference<Ability>(this);
-        }
+        public TransientReference<Ability> AddReference() => new TransientReference<Ability>(this);
 
         public void RemoveReference()
         {
@@ -99,10 +91,6 @@ namespace UnicornHack
                 Game.Repository.Delete(this);
             }
         }
-
-        #endregion
-
-        #region Actions
 
         public virtual bool Activate(AbilityActivationContext abilityContext, bool pretend = false)
         {
@@ -151,31 +139,26 @@ namespace UnicornHack
                 effect.Apply(abilityContext);
             }
 
-            if (eventOrder != 0
-                && abilityContext.IsAttack)
+            if (eventOrder != 0 && abilityContext.IsAttack)
             {
                 AttackEvent.New(abilityContext, eventOrder);
             }
 
-            if (Activation == AbilityActivation.OnTarget
-                && abilityContext.AbilityTrigger != AbilityActivation.Default)
+            if (Activation == AbilityActivation.OnTarget && abilityContext.AbilityTrigger != AbilityActivation.Default)
             {
-                foreach (var triggeredAbility in
-                    activator.Abilities.Where(a => a.IsUsable && a.Activation == abilityContext.AbilityTrigger))
+                foreach (var triggeredAbility in activator.Abilities.Where(a =>
+                    a.IsUsable && a.Activation == abilityContext.AbilityTrigger))
                 {
-                    triggeredAbility.Activate(
-                        new AbilityActivationContext
-                        {
-                            Activator = abilityContext.Activator,
-                            Target = abilityContext.Target,
-                            IsAttack =  abilityContext.IsAttack
-                        });
+                    triggeredAbility.Activate(new AbilityActivationContext
+                    {
+                        Activator = abilityContext.Activator,
+                        Target = abilityContext.Target,
+                        IsAttack = abilityContext.IsAttack
+                    });
                 }
             }
 
             return true;
         }
-
-        #endregion
     }
 }

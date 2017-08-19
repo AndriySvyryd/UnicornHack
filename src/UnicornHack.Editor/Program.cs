@@ -2,13 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using CSharpScriptSerialization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
-using UnicornHack.Definitions;
 using UnicornHack.Generation;
 using UnicornHack.Generation.Map;
 using UnicornHack.Utils;
@@ -22,89 +20,48 @@ namespace UnicornHack.Editor
 
         public static void Main(string[] args)
         {
-            SerializeCreatures();
-            SerializePlayers();
-            SerializeItems();
-            SerializeItemGroups();
-            SerializeBranches();
-            SerializeNormalFragments();
-            SerializeConnectingFragments();
-            SerializeDefiningFragments();
-        }
-
-        private static void SerializePlayers()
-        {
-            Console.WriteLine("Serializing players...");
-
-            Serialize(PlayerRace.Loader);
-        }
-
-        private static void SerializeCreatures()
-        {
-            Console.WriteLine("Serializing creatures...");
-
-            Serialize(Creature.Loader);
-        }
-
-        private static void SerializeItems()
-        {
-            Console.WriteLine("Serializing items...");
-
+            Serialize(PropertyDescription.Loader);
+            Serialize(CreatureVariant.Loader);
+            Serialize(PlayerRaceDefinition.Loader);
             Serialize(ItemVariant.Loader);
-        }
-
-        private static void SerializeItemGroups()
-        {
-            Console.WriteLine("Serializing item groups...");
-
             Serialize(ItemGroup.Loader);
-        }
-
-        private static void SerializeBranches()
-        {
-            Console.WriteLine("Serializing branches...");
-
             Serialize(BranchDefinition.Loader);
-        }
-
-        private static void SerializeNormalFragments()
-        {
-            Console.WriteLine("Serializing normal fragments...");
-
-            Serialize(MapFragment.Loader);
-        }
-
-        private static void SerializeConnectingFragments()
-        {
-            Console.WriteLine("Serializing connecting fragments...");
-
+            Serialize(NormalMapFragment.Loader);
             Serialize(ConnectingMapFragment.Loader);
-        }
-
-        private static void SerializeDefiningFragments()
-        {
-            Console.WriteLine("Serializing defining fragments...");
-
             Serialize(DefiningMapFragment.Loader);
         }
 
-        private static void Serialize<T>(CSScriptLoaderBase<T> loader)
+        private static void Serialize<T>(CSScriptLoaderBase<T> loader, Func<T, T> transform = null)
             where T : ILoadable
         {
+            Console.WriteLine("Serializing " + typeof(T).Name + " instances...");
+
             var directory = Path.Combine(AppContext.BaseDirectory, "New", loader.RelativePath);
             Directory.CreateDirectory(directory);
             foreach (var item in loader.GetAll())
             {
-                if (SerializeToScript)
+                try
                 {
-                    var script = CSScriptSerializer.Serialize(item);
-                    File.WriteAllText(Path.Combine(loader.RelativePath, CSScriptLoaderBase.GetScriptFilename(item.Name)), script);
+                    var itemToSerialize = transform != null ? transform(item) : item;
+                    string script = null;
+                    if (SerializeToScript)
+                    {
+                        script = CSScriptSerializer.Serialize(itemToSerialize);
+                        File.WriteAllText(
+                            Path.Combine(loader.RelativePath,
+                                CSScriptLoaderBase.GetScriptFilename(itemToSerialize.Name)), script);
+                    }
+                    else
+                    {
+                        var code = SerializeToCode(itemToSerialize, itemToSerialize.Name, loader.DataType);
+                        File.WriteAllText(
+                            Path.Combine(directory, CSScriptLoaderBase.GetClassFilename(itemToSerialize.Name)), code);
+                    }
                     Verify(script, (dynamic)item);
                 }
-                else
+                catch (Exception e)
                 {
-                    var code = SerializeToCode(item, item.Name, loader.DataType);
-                    File.WriteAllText(Path.Combine(directory, CSScriptLoaderBase.GetClassFilename(item.Name)), code);
+                    throw new Exception("Failed to serialize " + item.Name, e);
                 }
             }
         }
@@ -145,30 +102,32 @@ namespace UnicornHack.Editor
             }
         }
 
-        private static void Verify(string script, Creature creature)
-            => Verify<Creature>(script, c => c.Name == creature.Name,
-                c => c.SimpleProperties, c => c.ValuedProperties);
+        private static void Verify(string script, PropertyDescription property)
+            => Verify(script, property, i => i.Name == property.Name, null, null);
 
-        private static void Verify(string script, PlayerRace player)
-            => Verify<PlayerRace>(script, c => c.Name == player.Name, null, null);
+        private static void Verify(string script, CreatureVariant creature)
+            => Verify(script, creature, c => c.Name == creature.Name, c => c.SimpleProperties, c => c.ValuedProperties);
+
+        private static void Verify(string script, PlayerRaceDefinition player)
+            => Verify(script, player, p => p.Name == player.Name, null, null);
 
         private static void Verify(string script, ItemVariant item)
-            => Verify<Item>(script, c => c.Name == item.Name,
-                c => c.SimpleProperties, c => c.ValuedProperties);
+            => Verify(script, item, i => i.Name == item.Name, c => c.SimpleProperties, c => c.ValuedProperties);
+
+        private static void Verify(string script, ItemGroup item)
+            => Verify(script, item, i => i.Name == item.Name, null, null);
 
         private static void Verify(string script, BranchDefinition branch)
-            => Verify<Branch>(script, f => f.Name == branch.Name, null, null);
+            => Verify(script, branch, b => b.Name == branch.Name, null, null);
 
         private static void Verify(string script, MapFragment fragment)
-            => Verify<MapFragment>(script, f => f.Name == fragment.Name && VerifyNoUnicode(fragment), null, null);
+            => Verify(script, fragment, f => f.Name == fragment.Name && VerifyNoUnicode(fragment), null, null);
 
         private static void Verify(string script, ConnectingMapFragment fragment)
-            => Verify<ConnectingMapFragment>(script, f => f.Name == fragment.Name && VerifyNoUnicode(fragment), null,
-                null);
+            => Verify(script, fragment, f => f.Name == fragment.Name && VerifyNoUnicode(fragment), null, null);
 
         private static void Verify(string script, DefiningMapFragment fragment)
-            => Verify<DefiningMapFragment>(script, f => f.Name == fragment.Name && VerifyNoUnicode(fragment), null,
-                null);
+            => Verify(script, fragment, f => f.Name == fragment.Name && VerifyNoUnicode(fragment), null, null);
 
         private static bool VerifyNoUnicode(MapFragment fragment)
         {
@@ -195,12 +154,13 @@ namespace UnicornHack.Editor
             return true;
         }
 
-        private static void Verify<T>(string script, Func<T, bool> isValid, Func<T, ISet<string>> getSimpleProperties,
+        private static void Verify<T>(string script, T variant, Func<T, bool> isValid,
+            Func<T, ISet<string>> getSimpleProperties,
             Func<T, IDictionary<string, object>> getValuedProperties)
         {
             try
             {
-                var serializedVariant = CSScriptLoaderBase.Load<T>(script);
+                var serializedVariant = script == null ? variant : CSScriptLoaderBase.Load<T>(script);
                 if (!isValid(serializedVariant))
                 {
                     Console.WriteLine(script);
@@ -211,10 +171,10 @@ namespace UnicornHack.Editor
                 {
                     foreach (var simpleProperty in simpleProperties)
                     {
-                        if (!CustomProperties.TryGetValue(simpleProperty, out PropertyDescription description))
+                        var description = PropertyDescription.Loader.Get(simpleProperty);
+                        if (description == null)
                         {
-                            throw new InvalidOperationException(
-                                "Invalid simple property: " + simpleProperty);
+                            throw new InvalidOperationException("Invalid simple property: " + simpleProperty);
                         }
                         if (description.PropertyType != typeof(bool))
                         {
@@ -229,10 +189,14 @@ namespace UnicornHack.Editor
                 {
                     foreach (var valuedProperty in valuedProperties)
                     {
-                        if (!CustomProperties.TryGetValue(valuedProperty.Key,
-                            out PropertyDescription description))
+                        var description = PropertyDescription.Loader.Get(valuedProperty.Key);
+                        if (description == null)
                         {
                             throw new InvalidOperationException("Invalid valued property: " + valuedProperty);
+                        }
+                        if (description.PropertyType == typeof(bool))
+                        {
+                            throw new InvalidOperationException("Simple property used as valued: " + valuedProperty);
                         }
                         if (description.PropertyType != valuedProperty.Value.GetType())
                         {
@@ -261,15 +225,5 @@ namespace UnicornHack.Editor
                 throw;
             }
         }
-
-        private static readonly Dictionary<string, PropertyDescription> CustomProperties = GetCustomProperties();
-
-        private static Dictionary<string, PropertyDescription> GetCustomProperties()
-            => typeof(PropertyDescription).GetProperties(
-                    BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Static)
-                .Where(p => !p.CanWrite)
-                .ToDictionary(
-                    p => p.Name,
-                    p => (PropertyDescription)p.GetGetMethod().Invoke(null, null));
     }
 }

@@ -67,7 +67,7 @@ namespace UnicornHack.Utils
 .*********************.#...#...#*#*#*#*#####",
                 Direction.North);
 
-            for (int i = 0; i < 10000; i++)
+            for (var i = 0; i < 10000; i++)
             {
                 level.GetShortestPath(new Point(0, 0), target, Direction.North);
             }
@@ -79,7 +79,7 @@ namespace UnicornHack.Utils
             var map = expectedPathMap.Replace('*', '.');
             var level = TestHelper.BuildLevel(map, seed);
 
-            var expectedFragment = new MapFragment {Map = expectedPathMap};
+            var expectedFragment = new NormalMapFragment { Map = expectedPathMap};
             expectedFragment.EnsureInitialized(level.Game);
             var expectedPathArray = new byte[level.Height * level.Width];
             expectedFragment.WriteMap(

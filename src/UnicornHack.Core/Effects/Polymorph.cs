@@ -10,13 +10,11 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Polymorph(Game game)
-            : base(game)
+        public Polymorph(Game game) : base(game)
         {
         }
 
-        public override Effect Instantiate(Game game)
-            => new Polymorph(game);
+        public override Effect Instantiate(Game game) => new Polymorph(game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {

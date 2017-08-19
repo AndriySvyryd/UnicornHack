@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnicornHack.Utils;
@@ -7,10 +6,14 @@ namespace UnicornHack
 {
     public class Room
     {
+        // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Local
         public virtual int Id { get; private set; }
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public virtual int GameId { get; private set; }
         public virtual Game Game { get; set; }
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public virtual string BranchName { get; private set; }
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public virtual byte LevelDepth { get; private set; }
         public virtual Level Level { get; set; }
 
@@ -38,7 +41,8 @@ namespace UnicornHack
         {
         }
 
-        public Room(Level level, Rectangle boundingRectangle, IReadOnlyList<Point> doorwayPoints, IReadOnlyList<Point> insidePoints)
+        public Room(Level level, Rectangle boundingRectangle, IReadOnlyList<Point> doorwayPoints,
+            IReadOnlyList<Point> insidePoints)
         {
             Game = level.Game;
             Level = level;
@@ -70,7 +74,7 @@ namespace UnicornHack
         public Room GetOrthogonallyClosest(IEnumerable<Room> rooms)
         {
             Room closest = null;
-            var distance = Int32.MaxValue;
+            var distance = int.MaxValue;
             foreach (var room in rooms)
             {
                 var nextDistance = BoundingRectangle.OrthogonalDistanceTo(room.BoundingRectangle);
@@ -87,8 +91,7 @@ namespace UnicornHack
         public Point GetGoodConnectionPoint(Room room)
         {
             var connectionPointDistances = DoorwayPoints
-                .Select(p => (Point: p, Distance: room.BoundingRectangle.DistanceTo(p)))
-                .ToList();
+                .Select(p => (Point: p, Distance: room.BoundingRectangle.DistanceTo(p))).ToList();
             byte maxDistance = 0;
             foreach (var connectionPointDistance in connectionPointDistances)
             {
@@ -99,10 +102,8 @@ namespace UnicornHack
             }
 
             // The closer points are much more likely to get chosen
-            return Level.GenerationRandom.WeightedOrder(connectionPointDistances,
-                    p => (maxDistance - p.Distance) << 1)
-                .First()
-                .Point;
+            return Level.GenerationRandom.WeightedOrder(connectionPointDistances, p => (maxDistance - p.Distance) << 1)
+                .First().Point;
         }
     }
 }

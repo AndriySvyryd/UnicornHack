@@ -8,8 +8,7 @@ namespace UnicornHack.Effects
         {
         }
 
-        protected DamageEffect(Game game)
-            : base(game)
+        protected DamageEffect(Game game) : base(game)
         {
         }
 

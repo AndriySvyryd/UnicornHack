@@ -16,8 +16,7 @@ namespace UnicornHack.Events
                 var dropperSensed = sensor.CanSense(dropper);
                 var itemSensed = sensor.CanSense(item);
 
-                if (dropperSensed == SenseType.None
-                    && itemSensed == SenseType.None)
+                if (dropperSensed == SenseType.None && itemSensed == SenseType.None)
                 {
                     continue;
                 }

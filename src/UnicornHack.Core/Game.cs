@@ -11,6 +11,7 @@ namespace UnicornHack
 {
     public class Game
     {
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public virtual int Id { get; private set; }
 
         public virtual int NextPlayerTick { get; set; }
@@ -58,29 +59,26 @@ namespace UnicornHack
             return null;
         }
 
-        public virtual (int[,], Point[]) GetPointIndex(byte width, byte height)
-            => Services.SharedCache.GetOrCreate(
-                nameof(GetPointIndex).GetHashCode() ^ (width << 8 + height), e =>
+        public virtual (int[,], Point[]) GetPointIndex(byte width, byte height) => Services.SharedCache.GetOrCreate(
+            nameof(GetPointIndex).GetHashCode() ^ (width << 8 + height), e =>
+            {
+                var pointToIndex = new int[width, height];
+                var indexToPoint = new Point[width * height];
+                var i = 0;
+                for (byte y = 0; y < height; y++)
                 {
-                    var pointToIndex = new int[width, height];
-                    var indexToPoint = new Point[width * height];
-                    var i = 0;
-                    for (byte y = 0; y < height; y++)
+                    for (byte x = 0; x < width; x++)
                     {
-                        for (byte x = 0; x < width; x++)
-                        {
-                            pointToIndex[x, y] = i;
-                            indexToPoint[i++] = new Point(x, y);
-                        }
+                        pointToIndex[x, y] = i;
+                        indexToPoint[i++] = new Point(x, y);
                     }
+                }
 
-                    return (pointToIndex, indexToPoint);
-                });
+                return (pointToIndex, indexToPoint);
+            });
 
-        public virtual Branch GetBranch(string branchName)
-            => Repository.Find<Branch>(Id, branchName);
+        public virtual Branch GetBranch(string branchName) => Repository.Find<Branch>(Id, branchName);
 
-        public virtual Level GetLevel(string branchName, byte depth)
-            => Repository.Find<Level>(Id, branchName, depth);
+        public virtual Level GetLevel(string branchName, byte depth) => Repository.Find<Level>(Id, branchName, depth);
     }
 }

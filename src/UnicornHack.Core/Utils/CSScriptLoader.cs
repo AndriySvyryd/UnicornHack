@@ -4,13 +4,11 @@ using System.Linq;
 
 namespace UnicornHack.Utils
 {
-    public class CSScriptLoader<T> : CSScriptLoaderBase<T>
-        where T : ILoadable
+    public class CSScriptLoader<T> : CSScriptLoaderBase<T> where T : ILoadable
     {
         private IReadOnlyList<T> _objects;
 
-        public CSScriptLoader(string relativePath, Type dataType = null)
-            : base(relativePath, dataType)
+        public CSScriptLoader(string relativePath, Type dataType = null) : base(relativePath, dataType)
         {
         }
 

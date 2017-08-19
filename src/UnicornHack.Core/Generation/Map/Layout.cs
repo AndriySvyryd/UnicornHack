@@ -52,8 +52,7 @@ namespace UnicornHack.Generation.Map
             }
 
             var placingConnections = true;
-            while (filledArea / (float)levelBoundingRectangle.Area < Coverage
-                   && level.Rooms.Count < MaxRoomCount)
+            while (filledArea / (float)levelBoundingRectangle.Area < Coverage && level.Rooms.Count < MaxRoomCount)
             {
                 var nextLot = SelectNextLot(placedFragments, level.GenerationRandom);
                 if (nextLot == null)
@@ -65,19 +64,18 @@ namespace UnicornHack.Generation.Map
                 // Then generate up to 3 source fragments, depending on the number of incoming connections
                 //     At least 2 to the next branch level if not final
                 var danglingConnection = level.IncomingConnections.FirstOrDefault(c => c.TargetLevelX == null);
-                placingConnections = placingConnections
-                                     && (danglingConnection != null
-                                         || level.Connections.Count(c => c.TargetLevelX == null) < 3
-                                         || (level.Branch.Length > level.Depth
-                                             && level.Connections.Count(c =>
-                                                 c.TargetBranchName == level.BranchName &&
-                                                 c.TargetLevelDepth == level.Depth + 1) < 2));
+                placingConnections = placingConnections && (danglingConnection != null ||
+                                                            level.Connections.Count(c => c.TargetLevelX == null) < 3 ||
+                                                            (level.Branch.Length > level.Depth &&
+                                                             level.Connections.Count(c =>
+                                                                 c.TargetBranchName == level.BranchName &&
+                                                                 c.TargetLevelDepth == level.Depth + 1) < 2));
                 var sortedFragments = placingConnections
                     ? level.GenerationRandom.WeightedOrder(
                         ConnectingMapFragment.Loader.GetAsList(),
                         f => f.GetWeight(level, nextLot.Value, danglingConnection))
-                    : level.GenerationRandom.WeightedOrder(
-                        MapFragment.Loader.GetAsList(),
+                    : (IEnumerable<MapFragment>)level.GenerationRandom.WeightedOrder(
+                        NormalMapFragment.Loader.GetAsList(),
                         f => f.GetWeight(level, nextLot.Value));
 
                 placedRoom = TryPlace(level, nextLot.Value, sortedFragments);
@@ -141,11 +139,12 @@ namespace UnicornHack.Generation.Map
             var path = FindCorridorPath(from, to, source.Level, allowDiagonals, avoidTurns);
             var alternativePath = FindCorridorPath(to, from, source.Level, allowDiagonals, avoidTurns);
 
-            var corridor = path.FragmentFeaturesHit > alternativePath.FragmentFeaturesHit
-                           || (path.FragmentFeaturesHit == alternativePath.FragmentFeaturesHit
-                               && path.FragmentFeaturesAlmostHit > alternativePath.FragmentFeaturesAlmostHit)
-                ? alternativePath.Path
-                : path.Path;
+            var corridor =
+                path.FragmentFeaturesHit > alternativePath.FragmentFeaturesHit ||
+                (path.FragmentFeaturesHit == alternativePath.FragmentFeaturesHit &&
+                 path.FragmentFeaturesAlmostHit > alternativePath.FragmentFeaturesAlmostHit)
+                    ? alternativePath.Path
+                    : path.Path;
 
             WriteCorridor(corridor, source.Level, width, addColumns);
 
@@ -195,9 +194,7 @@ namespace UnicornHack.Generation.Map
                     }
                 }
 
-                if (isHorizontalFree
-                    || isVerticalFree
-                    || isDiagonalFree)
+                if (isHorizontalFree || isVerticalFree || isDiagonalFree)
                 {
                     fragmentFeaturesAlmostHit += horizontalMove != null && !isHorizontalFree ? 1 : 0;
                     fragmentFeaturesAlmostHit += verticalMove != null && !isVerticalFree ? 1 : 0;
@@ -215,8 +212,7 @@ namespace UnicornHack.Generation.Map
                         var previousHeading = path[path.Count - 1];
                         if (previousHeading.X != 0)
                         {
-                            if (previousHeading.Y != 0
-                                && diagonalMove.HasValue)
+                            if (previousHeading.Y != 0 && diagonalMove.HasValue)
                             {
                                 current = diagonalMove.Value;
                                 continue;
@@ -263,8 +259,7 @@ namespace UnicornHack.Generation.Map
             foreach (var point in path)
             {
                 var currentFeature = (MapFeature)level.Terrain[level.PointToIndex[point.X, point.Y]];
-                if (currentFeature != MapFeature.RockFloor
-                    && currentFeature != MapFeature.StoneFloor)
+                if (currentFeature != MapFeature.RockFloor && currentFeature != MapFeature.StoneFloor)
                 {
                     var index = level.PointToIndex[point.X, point.Y];
                     if (level.Terrain[index] == (byte)MapFeature.StoneWall)

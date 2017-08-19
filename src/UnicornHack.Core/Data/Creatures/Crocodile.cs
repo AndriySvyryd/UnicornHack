@@ -1,0 +1,42 @@
+using System.Collections.Generic;
+using UnicornHack.Effects;
+using UnicornHack.Generation;
+
+namespace UnicornHack.Data.Creatures
+{
+    public static partial class CreatureData
+    {
+        public static readonly CreatureVariant Crocodile = new CreatureVariant
+        {
+            Name = "crocodile",
+            Species = Species.Crocodile,
+            SpeciesClass = SpeciesClass.Reptile,
+            MovementDelay = 133,
+            Weight = 1500,
+            Abilities =
+                new HashSet<Ability>
+                {
+                    new Ability
+                    {
+                        Activation = AbilityActivation.OnTarget,
+                        Action = AbilityAction.Bite,
+                        Timeout = 1,
+                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
+                    }
+                },
+            SimpleProperties =
+                new HashSet<string> {"swimming", "amphibiousness", "handlessness", "oviparity", "singular inventory"},
+            ValuedProperties =
+                new Dictionary<string, object>
+                {
+                    {"thick hide", 3},
+                    {"largeness", Size.Large},
+                    {"physical deflection", 16},
+                    {"magic resistance", 10}
+                },
+            InitialLevel = 8,
+            GenerationWeight = new DefaultWeight {Multiplier = 2F},
+            PreviousStageName = "baby crocodile"
+        };
+    }
+}

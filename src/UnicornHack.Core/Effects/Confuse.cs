@@ -9,15 +9,13 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Confuse(Game game)
-            : base(game)
+        public Confuse(Game game) : base(game)
         {
         }
 
         public int Duration { get; set; }
 
-        public override Effect Instantiate(Game game)
-            => new Confuse(game) {Duration = Duration};
+        public override Effect Instantiate(Game game) => new Confuse(game) {Duration = Duration};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {

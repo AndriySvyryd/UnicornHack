@@ -48,15 +48,13 @@ namespace UnicornHack.Utils
             return values;
         }
 
-        public static TList With<TList, T>(this TList list, T item)
-            where TList : ICollection<T>
+        public static TList With<TList, T>(this TList list, T item) where TList : ICollection<T>
         {
             list.Add(item);
             return list;
         }
 
-        public static TList AddRange<TList, T>(this TList list, IEnumerable<T> items)
-            where TList : ICollection<T>
+        public static TList AddRange<TList, T>(this TList list, IEnumerable<T> items) where TList : ICollection<T>
         {
             foreach (var item in items)
             {
@@ -89,11 +87,10 @@ namespace UnicornHack.Utils
             }
         }
 
-        public static TValue GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
-            => dictionary.GetValueOrDefault(key, default(TValue));
+        public static TValue GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) =>
+            dictionary.GetValueOrDefault(key, default);
 
-        public static TValue GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary,
-            TKey key, TValue fallBack)
-            => dictionary.TryGetValue(key, out var value) ? value : fallBack;
+        public static TValue GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key,
+            TValue fallBack) => dictionary.TryGetValue(key, out var value) ? value : fallBack;
     }
 }

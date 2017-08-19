@@ -3,23 +3,19 @@ using System.Collections.Generic;
 
 namespace UnicornHack.Utils
 {
-    public class GroupedCSScriptLoader<TKey, T> : CSScriptLoaderBase<T>
-        where T : ILoadable
+    public class GroupedCSScriptLoader<TKey, T> : CSScriptLoaderBase<T> where T : ILoadable
     {
         private Dictionary<TKey, List<T>> _objects;
         private readonly Func<T, IEnumerable<TKey>> _keySelector;
 
-        public GroupedCSScriptLoader(string relativePath, Func<T, TKey> keySelector, Type dataType = null)
-            : base(relativePath, dataType)
+        public GroupedCSScriptLoader(string relativePath, Func<T, TKey> keySelector, Type dataType = null) : base(
+            relativePath, dataType)
         {
             _keySelector = i => Sequence.Single(keySelector(i));
         }
 
         public GroupedCSScriptLoader(string relativePath, Func<T, IEnumerable<TKey>> keySelector, Type dataType = null)
-            : base(relativePath, dataType)
-        {
-            _keySelector = keySelector;
-        }
+            : base(relativePath, dataType) => _keySelector = keySelector;
 
         protected override void EnsureLoaded()
         {

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnicornHack.Generation;
 
@@ -13,7 +12,7 @@ namespace UnicornHack.Data.Items
             Weight = 40,
             Material = Material.Steel,
             EquipableSlots = EquipmentSlot.Body,
-            ValuedProperties = new Dictionary<string, Object> {{"ArmorClass", 10}}
+            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 10}, {"physical absorption", 2}}
         };
     }
 }

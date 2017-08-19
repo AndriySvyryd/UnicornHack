@@ -10,13 +10,11 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Teleport(Game game)
-            : base(game)
+        public Teleport(Game game) : base(game)
         {
         }
 
-        public override Effect Instantiate(Game game)
-            => new Teleport(game);
+        public override Effect Instantiate(Game game) => new Teleport(game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {

@@ -11,11 +11,12 @@ namespace UnicornHack.Generation.Map
         public virtual char? Glyph { get; set; }
         public virtual ConnectionDirection Direction { get; set; } = ConnectionDirection.Both;
 
-        private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<LevelConnection>(
-            new Dictionary<string, Func<LevelConnection, object, bool>>
-            {
-                {nameof(Direction), (o, v) => (ConnectionDirection)v != ConnectionDirection.Both}
-            });
+        private static readonly CSScriptSerializer Serializer =
+            new PropertyCSScriptSerializer<LevelConnection>(
+                new Dictionary<string, Func<LevelConnection, object, bool>>
+                {
+                    {nameof(Direction), (o, v) => (ConnectionDirection)v != ConnectionDirection.Both}
+                });
 
         public ICSScriptSerializer GetSerializer() => Serializer;
     }

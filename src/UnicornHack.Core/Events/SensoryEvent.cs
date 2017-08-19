@@ -25,10 +25,7 @@ namespace UnicornHack.Events
             _referenceCount++;
         }
 
-        public TransientReference<SensoryEvent> AddReference()
-        {
-            return new TransientReference<SensoryEvent>(this);
-        }
+        public TransientReference<SensoryEvent> AddReference() => new TransientReference<SensoryEvent>(this);
 
         public void RemoveReference()
         {

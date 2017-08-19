@@ -26,8 +26,7 @@ namespace UnicornHack.Generation
             while (queue.Count > 0)
             {
                 var current = queue.Dequeue();
-                if (current.SubGroups == null
-                    || current.SubGroups.Count == 0)
+                if (current.SubGroups == null || current.SubGroups.Count == 0)
                 {
                     yield return current;
                     continue;
@@ -48,7 +47,8 @@ namespace UnicornHack.Generation
                     var defaultGroup = current.SubGroups.FirstOrDefault(g => g.Type == ItemType.None);
                     if (defaultGroup == null)
                     {
-                        throw new InvalidOperationException($"Couldn't find a subgroup of {current.Type} for {item.Name}");
+                        throw new InvalidOperationException(
+                            $"Couldn't find a subgroup of {current.Type} for {item.Name}");
                     }
                     queue.Enqueue(defaultGroup);
                 }

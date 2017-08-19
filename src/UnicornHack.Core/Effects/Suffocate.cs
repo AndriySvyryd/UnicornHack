@@ -9,13 +9,11 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Suffocate(Game game)
-            : base(game)
+        public Suffocate(Game game) : base(game)
         {
         }
 
-        public override Effect Instantiate(Game game)
-            => new Suffocate(game);
+        public override Effect Instantiate(Game game) => new Suffocate(game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {

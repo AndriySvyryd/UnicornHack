@@ -9,15 +9,13 @@ namespace UnicornHack.Effects
         {
         }
 
-        public DrainEnergy(Game game)
-            : base(game)
+        public DrainEnergy(Game game) : base(game)
         {
         }
 
         public int Amount { get; set; }
 
-        public override Effect Instantiate(Game game)
-            => new DrainEnergy(game) {Amount = Amount};
+        public override Effect Instantiate(Game game) => new DrainEnergy(game) {Amount = Amount};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {

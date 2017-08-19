@@ -24,8 +24,7 @@ namespace UnicornHack.Utils
 
         public Segment? Intersection(Segment s)
         {
-            if (End < s.Beginning
-                || Beginning > s.End)
+            if (End < s.Beginning || Beginning > s.End)
             {
                 return null;
             }
@@ -40,24 +39,16 @@ namespace UnicornHack.Utils
                 return s;
             }
 
-            return Beginning >= s.Beginning
-                ? new Segment(Beginning, s.End)
-                : new Segment(s.Beginning, End);
+            return Beginning >= s.Beginning ? new Segment(Beginning, s.End) : new Segment(s.Beginning, End);
         }
 
-        public bool Overlaps(Segment s)
-            => Intersection(s) != null;
+        public bool Overlaps(Segment s) => Intersection(s) != null;
 
-        public bool Encloses(Segment s)
-            => Beginning < s.Beginning
-               && End > s.End;
+        public bool Encloses(Segment s) => Beginning < s.Beginning && End > s.End;
 
-        public bool Contains(Segment s)
-            => Beginning <= s.Beginning
-               && End >= s.End;
+        public bool Contains(Segment s) => Beginning <= s.Beginning && End >= s.End;
 
-        public bool Contains(byte value)
-            => Contains(new Segment(value, value));
+        public bool Contains(byte value) => Contains(new Segment(value, value));
 
         public byte DistanceTo(Segment s)
         {
@@ -76,11 +67,9 @@ namespace UnicornHack.Utils
             return 0;
         }
 
-        public byte DistanceTo(byte value)
-            => DistanceTo(new Segment(value, value));
+        public byte DistanceTo(byte value) => DistanceTo(new Segment(value, value));
 
-        public byte RandomPoint(SimpleRandom random)
-            => (byte)random.Next(Beginning, End + 1);
+        public byte RandomPoint(SimpleRandom random) => (byte)random.Next(Beginning, End + 1);
 
         public override string ToString() => $"[{Beginning}, {End}]";
     }

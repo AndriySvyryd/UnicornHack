@@ -9,11 +9,17 @@ namespace UnicornHack.Data.Fragments
         {
             Name = "d1",
             GenerationWeight =
-                new BranchWeight {W = new ConstantWeight(), Name = "dungeon", MinDepth = 1, MaxDepth = 1},
+                new BranchWeight
+                {
+                    Matched = new DefaultWeight {Multiplier = 0F},
+                    Name = "dungeon",
+                    MinDepth = 1,
+                    MaxDepth = 1
+                },
             NoRandomDoorways = true,
             Map = @"
                      ###########                 #######
-                     #..........,,,,,,,,,,,,,,,,,....%..,,
+                     #..........,,,,,,,,,,,,,,,,,.......,,
  ########           ##..=......#,,   #####,      #.....# ,
  #......#            #..........,,,, #.B.#,      #.....# ,,,
  #......#            #.........#,  , #>...,      ##.####   ,    ###########
@@ -27,7 +33,7 @@ namespace UnicornHack.Data.Fragments
              , #...............,,,,,,,,   , #..............#
              ,,....b..........#           , #$#.....b...<..#
                #........).....#           ,,...............#
-               #...%..........#             ################
+               #..............#             ################
                #####.##########
                    #,
                     ,

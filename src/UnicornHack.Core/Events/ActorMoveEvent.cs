@@ -18,13 +18,9 @@ namespace UnicornHack.Events
             foreach (var sensor in mover.Level.Actors)
             {
                 var moverSensed = sensor.CanSense(mover);
-                var moveeSensed = movee == null
-                    ? (SenseType?)null
-                    : sensor.CanSense(movee);
+                var moveeSensed = movee == null ? (SenseType?)null : sensor.CanSense(movee);
 
-                if (moverSensed == SenseType.None
-                    && (moveeSensed == null
-                        || moveeSensed.Value == SenseType.None))
+                if (moverSensed == SenseType.None && (moveeSensed == null || moveeSensed.Value == SenseType.None))
                 {
                     continue;
                 }

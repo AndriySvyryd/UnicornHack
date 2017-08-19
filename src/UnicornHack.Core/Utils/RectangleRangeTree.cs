@@ -28,7 +28,7 @@ namespace UnicornHack.Utils
         {
             var topLeft = rectangle.TopLeft;
             var bottomRight = rectangle.BottomRight;
-            if (!_tree.TryGetValue(topLeft.X, out AATreeLax<byte, (Point, RectangleTracker)> subtree))
+            if (!_tree.TryGetValue(topLeft.X, out var subtree))
             {
                 subtree = new AATreeLax<byte, (Point, RectangleTracker)>();
                 _tree[topLeft.X] = subtree;
@@ -39,8 +39,7 @@ namespace UnicornHack.Utils
             {
                 return false;
             }
-            if (topLeft.Y != bottomRight.Y
-                && !subtree.Insert(bottomRight.Y, (rectangle.BottomLeft, tracker)))
+            if (topLeft.Y != bottomRight.Y && !subtree.Insert(bottomRight.Y, (rectangle.BottomLeft, tracker)))
             {
                 return false;
             }
@@ -57,8 +56,7 @@ namespace UnicornHack.Utils
                 {
                     return false;
                 }
-                if (topLeft.Y != bottomRight.Y
-                    && !subtree.Insert(topLeft.Y, (rectangle.TopRight, tracker)))
+                if (topLeft.Y != bottomRight.Y && !subtree.Insert(topLeft.Y, (rectangle.TopRight, tracker)))
                 {
                     return false;
                 }
@@ -71,7 +69,7 @@ namespace UnicornHack.Utils
         {
             var topLeft = rectangle.TopLeft;
             var bottomRight = rectangle.BottomRight;
-            if (!_tree.TryGetValue(topLeft.X, out AATreeLax<byte, (Point, RectangleTracker)> subtree))
+            if (!_tree.TryGetValue(topLeft.X, out var subtree))
             {
                 return false;
             }
@@ -81,8 +79,8 @@ namespace UnicornHack.Utils
             {
                 return false;
             }
-            if (topLeft.Y != bottomRight.Y
-                && !subtree.Remove(bottomRight.Y, (new Point(topLeft.X, bottomRight.Y), tracker)))
+            if (topLeft.Y != bottomRight.Y &&
+                !subtree.Remove(bottomRight.Y, (new Point(topLeft.X, bottomRight.Y), tracker)))
             {
                 return false;
             }
@@ -98,8 +96,7 @@ namespace UnicornHack.Utils
                 {
                     return false;
                 }
-                if (topLeft.Y != bottomRight.Y
-                    && !subtree.Remove(bottomRight.Y, (bottomRight, tracker)))
+                if (topLeft.Y != bottomRight.Y && !subtree.Remove(bottomRight.Y, (bottomRight, tracker)))
                 {
                     return false;
                 }
@@ -122,33 +119,27 @@ namespace UnicornHack.Utils
             }
 
             // TODO: Consider using dynamic fractional cascading for perf
-            return _tree.GetRange(rectangle.TopLeft.X, rectangle.BottomRight.X, (x, t1) => t1)
-                .SelectMany(subtree =>
-                    subtree.GetRange(rectangle.TopLeft.Y, rectangle.BottomRight.Y, (y, t) =>
+            return _tree.GetRange(rectangle.TopLeft.X, rectangle.BottomRight.X, (x, t1) => t1).SelectMany(subtree =>
+                subtree.GetRange(rectangle.TopLeft.Y, rectangle.BottomRight.Y, (y, t) =>
+                {
+                    // Ignore duplicates
+                    if (t.Item2.ResultSet == _currentResultSet)
                     {
-                        // Ignore duplicates
-                        if (t.Item2.ResultSet == _currentResultSet)
-                        {
-                            return null;
-                        }
+                        return null;
+                    }
 
-                        t.Item2.ResultSet = _currentResultSet;
-                        return t.Item2.Rectangle;
-                    }))
-                .Where(r => r != null)
-                .Select(r => r.Value);
+                    t.Item2.ResultSet = _currentResultSet;
+                    return t.Item2.Rectangle;
+                })).Where(r => r != null).Select(r => r.Value);
         }
 
-        private IEnumerable<TResult> GetAll<TResult>(Func<byte, (Point, RectangleTracker), TResult> selector)
-            => _tree.GetAll((x, t) => t).SelectMany(subtree => subtree.GetAll(selector));
+        private IEnumerable<TResult> GetAll<TResult>(Func<byte, (Point, RectangleTracker), TResult> selector) =>
+            _tree.GetAll((x, t) => t).SelectMany(subtree => subtree.GetAll(selector));
 
 
         private class RectangleTracker
         {
-            public RectangleTracker(Rectangle rectangle)
-            {
-                Rectangle = rectangle;
-            }
+            public RectangleTracker(Rectangle rectangle) => Rectangle = rectangle;
 
             public int ResultSet { get; set; }
             public Rectangle? Rectangle { get; }

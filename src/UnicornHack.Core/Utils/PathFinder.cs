@@ -58,8 +58,8 @@ namespace UnicornHack.Utils
 
                 var currentLocation = _indexToPoint[currentLocationIndex];
 
-                Debug.Assert(currentLocation.Y * (_pointToIndex.GetUpperBound(dimension: 0) + 1) + currentLocation.X
-                             == currentLocationIndex);
+                Debug.Assert(currentLocation.Y * (_pointToIndex.GetUpperBound(dimension: 0) + 1) + currentLocation.X ==
+                             currentLocationIndex);
 
                 if (currentLocationIndex == targetLocation)
                 {
@@ -89,14 +89,15 @@ namespace UnicornHack.Utils
                         newCostFromStart += octants / 4f;
                     }
 
-                    if ((_graph[newLocationIndex].Status == _openNodeStatus
-                         || _graph[newLocationIndex].Status == _closedNodeStatus)
-                        && _graph[newLocationIndex].CostFromStart <= newCostFromStart)
+                    if ((_graph[newLocationIndex].Status == _openNodeStatus ||
+                         _graph[newLocationIndex].Status == _closedNodeStatus) &&
+                        _graph[newLocationIndex].CostFromStart <= newCostFromStart)
                     {
                         continue;
                     }
 
-                    var distanceToTarget = (byte)Math.Max(Math.Abs(target.X - newLocationX), Math.Abs(target.Y - newLocationY));
+                    var distanceToTarget = (byte)Math.Max(Math.Abs(target.X - newLocationX),
+                        Math.Abs(target.Y - newLocationY));
                     _graph[newLocationIndex].ArrivalDirection = (Direction)i;
                     _graph[newLocationIndex].PreviousX = currentLocation.X;
                     _graph[newLocationIndex].PreviousY = currentLocation.Y;
@@ -117,8 +118,7 @@ namespace UnicornHack.Utils
                 var pointY = target.Y;
                 var currentNode = _graph[_pointToIndex[pointX, pointY]];
 
-                while (pointX != currentNode.PreviousX
-                       || pointY != currentNode.PreviousY)
+                while (pointX != currentNode.PreviousX || pointY != currentNode.PreviousY)
                 {
                     var point = new Point(pointX, pointY);
                     pointX = currentNode.PreviousX;
@@ -150,10 +150,7 @@ namespace UnicornHack.Utils
         {
             private readonly PathFinderNode[] _graph;
 
-            public PathFinderNodeComparer(PathFinderNode[] graph)
-            {
-                _graph = graph;
-            }
+            public PathFinderNodeComparer(PathFinderNode[] graph) => _graph = graph;
 
             public int Compare(int a, int b)
             {

@@ -16,15 +16,15 @@ namespace UnicornHack.Generation
                 return new List<Item>();
             }
 
-            return new List<Item> { item };
+            return new List<Item> {item};
         }
 
         protected override Item CreateInstance(Game game) => new Gold(game);
 
         public static GoldVariant Get() => (GoldVariant)Loader.Get("gold coin");
 
-        private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<GoldVariant>(
-            GetPropertyConditions<GoldVariant>());
+        private static readonly CSScriptSerializer Serializer =
+            new PropertyCSScriptSerializer<GoldVariant>(GetPropertyConditions<GoldVariant>());
 
         public override ICSScriptSerializer GetSerializer() => Serializer;
     }

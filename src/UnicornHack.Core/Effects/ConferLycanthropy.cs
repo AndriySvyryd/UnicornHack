@@ -9,15 +9,13 @@ namespace UnicornHack.Effects
         {
         }
 
-        public ConferLycanthropy(Game game)
-            : base(game)
+        public ConferLycanthropy(Game game) : base(game)
         {
         }
 
         public string VariantName { get; set; }
 
-        public override Effect Instantiate(Game game)
-            => new ConferLycanthropy(game) {VariantName = VariantName};
+        public override Effect Instantiate(Game game) => new ConferLycanthropy(game) {VariantName = VariantName};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {

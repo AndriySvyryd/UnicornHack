@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using CSharpScriptSerialization;
-using UnicornHack.Definitions;
 using UnicornHack.Effects;
 using UnicornHack.Events;
 using UnicornHack.Generation;
@@ -13,30 +10,20 @@ namespace UnicornHack
 {
     public class Player : Actor
     {
-        #region State
-
-        public virtual byte Strength { get; set; }
-        public virtual byte Agility { get; set; }
-        public virtual byte Quickness { get; set; }
-        public virtual byte Constitution { get; set; }
-        public virtual byte Intelligence { get; set; }
-        public virtual byte Willpower { get; set; }
-
-        public virtual int NextRaceId { get; set; }
-        public virtual ICollection<ActivePlayerRace> Races { get; set; } = new HashSet<ActivePlayerRace>();
-        public virtual ActivePlayerRace LearningRace => Races.OrderBy(r => r.XPLevel).ThenBy(r => r.Id).First();
-
+        public static readonly byte StartingAttributeValue = 10;
+        public virtual int MaxEP { get; set; }
+        public virtual int EP { get; set; }
         public virtual int MaxXPLevel { get; set; }
         public virtual byte XPLevel => (byte)Races.Sum(r => r.XPLevel);
         public virtual int XP => LearningRace.XP;
         public virtual int NextLevelXP => LearningRace.NextLevelXP;
         public virtual float LeftoverRegenerationXP { get; set; }
-
         public virtual Skills Skills { get; set; }
         public virtual int UnspentSkillPoints { get; set; }
 
-        public virtual int MaxEP { get; set; }
-        public virtual int EP { get; set; }
+        public virtual int NextRaceId { get; set; }
+        public virtual ICollection<PlayerRace> Races { get; set; } = new HashSet<PlayerRace>();
+        public virtual PlayerRace LearningRace => Races.OrderBy(r => r.XPLevel).ThenBy(r => r.Id).First();
 
         public virtual int NextEventId { get; set; }
         public virtual ICollection<SensoryEvent> SensedEvents { get; set; } = new HashSet<SensoryEvent>();
@@ -48,23 +35,15 @@ namespace UnicornHack
         public virtual int? NextActionTarget { get; set; }
         public virtual int? NextActionTarget2 { get; set; }
 
-        public override Actor BaseActor { get; }
-        public override int MovementDelay => DefaultActionDelay * 10 / Quickness;
-
-        #endregion
-
-        #region Creation
-
         public Player()
         {
         }
 
-        public Player(Level level, byte x, byte y)
-            : base(level, x, y)
+        public Player(Level level, byte x, byte y) : base(level, x, y)
         {
             BaseName = "player";
 
-            UpdateNextLevelXP(PlayerRace.Loader.Get("human").Instantiate(this));
+            UpdateNextLevelXP(PlayerRaceDefinition.Loader.Get("human").Instantiate(this));
 
             Abilities.Add(new Ability(Game)
             {
@@ -73,11 +52,7 @@ namespace UnicornHack
                 Action = AbilityAction.Punch,
                 FreeSlotsRequired = EquipmentSlot.GraspBothExtremities | EquipmentSlot.GraspSingleExtremity,
                 DelayTicks = 100,
-                Effects = new HashSet<Effect>
-                {
-                    new MeleeAttack(Game),
-                    new PhysicalDamage(Game)
-                }
+                Effects = new HashSet<Effect> {new MeleeAttack(Game), new PhysicalDamage(Game)}
             });
 
             Abilities.Add(new Ability(Game)
@@ -86,40 +61,29 @@ namespace UnicornHack
                 Activation = AbilityActivation.OnMeleeAttack,
                 Action = AbilityAction.Punch,
                 FreeSlotsRequired = EquipmentSlot.GraspBothExtremities | EquipmentSlot.GraspSingleExtremity,
-                Effects = new HashSet<Effect>
-                {
-                    new MeleeAttack(Game),
-                    new PhysicalDamage(Game)
-                }
+                Effects = new HashSet<Effect> {new MeleeAttack(Game), new PhysicalDamage(Game)}
             });
 
             Skills = new Skills();
             RecalculateEffectsAndAbilities();
 
-            MaxHP = 100 + Constitution * 10;
             HP = MaxHP;
-
-            MaxEP = 100 + Willpower * 10;
             EP = MaxEP;
 
-            ItemVariant.Loader.Get("potion of healing").Instantiate(this, quantity:3);
+            ItemVariant.Loader.Get("potion of healing").Instantiate(this, quantity: 3);
             ItemVariant.Loader.Get("mail armor").Instantiate(this);
             ItemVariant.Loader.Get("long sword").Instantiate(this);
             ItemVariant.Loader.Get("dagger").Instantiate(this);
         }
 
-        #endregion
-
-        #region Actions
-
-        public void Add(ActivePlayerRace race)
+        public void Add(PlayerRace race)
         {
             Races.Add(race);
             race.XPLevel = 1;
             UpdateNextLevelXP(race);
         }
 
-        private void UpdateNextLevelXP(ActivePlayerRace race)
+        private void UpdateNextLevelXP(PlayerRace race)
         {
             var currentLevel = MaxXPLevel > XPLevel ? race.XPLevel : XPLevel;
             race.NextLevelXP = (int)((1 + Math.Ceiling(Math.Pow(currentLevel, 1.5))) * 50);
@@ -127,7 +91,7 @@ namespace UnicornHack
 
         public void AddXP(int xp)
         {
-            var regenerationRate =  (float)NextLevelXP / (MaxHP * 5);
+            var regenerationRate = (float)NextLevelXP / (MaxHP * 5);
             var regeneratingXp = xp + LeftoverRegenerationXP;
             var hpRegenerated = (int)Math.Floor(regeneratingXp / regenerationRate);
             LeftoverRegenerationXP = regeneratingXp % regenerationRate;
@@ -147,18 +111,17 @@ namespace UnicornHack
             }
         }
 
-        protected override void RecalculateEffectsAndAbilities()
+        public override void RecalculateEffectsAndAbilities()
         {
             base.RecalculateEffectsAndAbilities();
 
             foreach (var unarmedAbility in Abilities.Where(a => a.Name == UnarmedAttackName && a.IsUsable))
             {
-                unarmedAbility.Effects.OfType<PhysicalDamage>().Single().Damage = 5 + 2*Skills.FistWeapons;
+                unarmedAbility.Effects.OfType<PhysicalDamage>().Single().Damage = 5 + 2 * Skills.FistWeapons;
             }
 
             var mainMeleeAttack = Abilities.FirstOrDefault(a => a.Name == MeleeAttackName);
-            if (mainMeleeAttack != null
-                && mainMeleeAttack.IsUsable)
+            if (mainMeleeAttack != null && mainMeleeAttack.IsUsable)
             {
                 var mainWeapon = mainMeleeAttack.Effects.OfType<MeleeAttack>().Single().Weapon;
                 var meleeSkill = mainWeapon.EquippedSlot == EquipmentSlot.GraspBothExtremities
@@ -199,23 +162,23 @@ namespace UnicornHack
                 {
                     mainWeaponSkill = Skills.LongWeapons;
                 }
-                mainMeleeAttack.Effects.OfType<PhysicalDamage>().Single().Damage =
-                    meleeSkill + mainWeaponSkill;
+                mainMeleeAttack.Effects.OfType<PhysicalDamage>().Single().Damage = meleeSkill + mainWeaponSkill;
             }
 
             // TODO: Calculate attributes, size and other properties
-            Strength = StartingAttributeValue;
-            Agility = StartingAttributeValue;
-            Quickness = StartingAttributeValue;
-            Constitution = StartingAttributeValue;
-            Intelligence = StartingAttributeValue;
-            Willpower = StartingAttributeValue;
+            // StartingAttributeValue;
+
+            //MovementDelay = DefaultActionDelay * 10 / Quickness;
+            // TODO: adjust current hp/mp to maintain %
+            //MaxHP = 100 + Constitution * 10;
+            //MaxEP = 100 + Willpower * 10;
+            MovementDelay = DefaultActionDelay;
+            MaxHP = 100;
+            MaxEP = 100;
         }
 
         public override bool Act()
         {
-            Debug.Assert(Level != null);
-
             // TODO: add option to stop here and display current state
             // even if user already provided the next action / cannot perform an action
 
@@ -319,11 +282,6 @@ namespace UnicornHack
             SensedEvents.Add(@event);
         }
 
-        public override ICSScriptSerializer GetSerializer()
-        {
-            throw new NotImplementedException();
-        }
-
         public virtual bool UseStairs(bool up)
         {
             if (UseStairs(up, pretend: true))
@@ -401,57 +359,25 @@ namespace UnicornHack
             Log.Add(new LogEntry(this, string.Format(format, arguments), tick));
         }
 
-        public virtual string GetLogEntry(SensoryEvent @event)
-        {
-            return GetSpecificLogEntry((dynamic)@event);
-        }
+        public virtual string GetLogEntry(SensoryEvent @event) => GetSpecificLogEntry((dynamic)@event);
 
-        protected virtual string GetSpecificLogEntry(SensoryEvent @event)
-        {
-            return null;
-        }
+        protected virtual string GetSpecificLogEntry(SensoryEvent @event) => null;
 
-        protected virtual string GetSpecificLogEntry(AttackEvent @event)
-        {
-            return Game.Services.Language.ToString(@event);
-        }
+        protected virtual string GetSpecificLogEntry(AttackEvent @event) => Game.Services.Language.ToString(@event);
 
-        protected virtual string GetSpecificLogEntry(DeathEvent @event)
-        {
-            return Game.Services.Language.ToString(@event);
-        }
+        protected virtual string GetSpecificLogEntry(DeathEvent @event) => Game.Services.Language.ToString(@event);
 
-        protected virtual string GetSpecificLogEntry(ItemEquipmentEvent @event)
-        {
-            return Game.Services.Language.ToString(@event);
-        }
+        protected virtual string GetSpecificLogEntry(ItemEquipmentEvent @event) =>
+            Game.Services.Language.ToString(@event);
 
-        protected virtual string GetSpecificLogEntry(ItemUnequipmentEvent @event)
-        {
-            return Game.Services.Language.ToString(@event);
-        }
+        protected virtual string GetSpecificLogEntry(ItemUnequipmentEvent @event) =>
+            Game.Services.Language.ToString(@event);
 
-        protected virtual string GetSpecificLogEntry(ItemConsumptionEvent @event)
-        {
-            return Game.Services.Language.ToString(@event);
-        }
+        protected virtual string GetSpecificLogEntry(ItemConsumptionEvent @event) =>
+            Game.Services.Language.ToString(@event);
 
-        protected virtual string GetSpecificLogEntry(ItemDropEvent @event)
-        {
-            return Game.Services.Language.ToString(@event);
-        }
+        protected virtual string GetSpecificLogEntry(ItemDropEvent @event) => Game.Services.Language.ToString(@event);
 
-        protected virtual string GetSpecificLogEntry(ItemPickUpEvent @event)
-        {
-            return Game.Services.Language.ToString(@event);
-        }
-
-        #endregion
-
-        #region Serialization
-
-        public static readonly byte StartingAttributeValue = 10;
-
-        #endregion
+        protected virtual string GetSpecificLogEntry(ItemPickUpEvent @event) => Game.Services.Language.ToString(@event);
     }
 }

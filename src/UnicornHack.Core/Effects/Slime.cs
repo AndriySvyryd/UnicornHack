@@ -9,13 +9,11 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Slime(Game game)
-            : base(game)
+        public Slime(Game game) : base(game)
         {
         }
 
-        public override Effect Instantiate(Game game)
-            => new Slime(game);
+        public override Effect Instantiate(Game game) => new Slime(game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {

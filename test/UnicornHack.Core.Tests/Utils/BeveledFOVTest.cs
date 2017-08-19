@@ -180,7 +180,7 @@ A#
 
             level.RecomputeVisibility(new Point(0, 0), visibilityFalloff: 0);
 
-            var expectedFragment = new MapFragment {Map = expectedFOV};
+            var expectedFragment = new NormalMapFragment {Map = expectedFOV};
             expectedFragment.EnsureInitialized(level.Game);
 
             var expectedVisibility = new byte[level.Height * level.Width];

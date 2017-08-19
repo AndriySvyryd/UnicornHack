@@ -23,8 +23,7 @@ namespace UnicornHack.Generation.Map
         protected override Rectangle? SelectNextLot(RectangleIntervalTree placedFragments, SimpleRandom random)
         {
             var boundingRectangle = placedFragments.BoundingRectangle;
-            while (_lotSize.Width > boundingRectangle.Width
-                   || _lotSize.Height > boundingRectangle.Height)
+            while (_lotSize.Width > boundingRectangle.Width || _lotSize.Height > boundingRectangle.Height)
             {
                 _lotSize = new Dimensions((byte)(_lotSize.Width - 1), (byte)(_lotSize.Height - 1));
             }

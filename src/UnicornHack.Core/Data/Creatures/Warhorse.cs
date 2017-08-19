@@ -1,0 +1,37 @@
+using System.Collections.Generic;
+using UnicornHack.Effects;
+using UnicornHack.Generation;
+
+namespace UnicornHack.Data.Creatures
+{
+    public static partial class CreatureData
+    {
+        public static readonly CreatureVariant Warhorse = new CreatureVariant
+        {
+            Name = "warhorse",
+            Species = Species.Horse,
+            SpeciesClass = SpeciesClass.Quadrupedal,
+            MovementDelay = 50,
+            Weight = 1800,
+            Abilities =
+                new HashSet<Ability>
+                {
+                    new Ability
+                    {
+                        Activation = AbilityActivation.OnTarget,
+                        Action = AbilityAction.Kick,
+                        Timeout = 1,
+                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
+                    }
+                },
+            SimpleProperties =
+                new HashSet<string> {"animal body", "infravisibility", "handlessness", "singular inventory"},
+            ValuedProperties = new Dictionary<string, object> {{"largeness", Size.Large}, {"physical deflection", 16}},
+            InitialLevel = 7,
+            GenerationWeight = new DefaultWeight {Multiplier = 7F},
+            PreviousStageName = "horse",
+            Behavior = MonsterBehavior.Domesticable | MonsterBehavior.Mountable | MonsterBehavior.Wandering,
+            Noise = ActorNoiseType.Neigh
+        };
+    }
+}

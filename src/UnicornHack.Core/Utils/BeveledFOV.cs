@@ -25,8 +25,7 @@ namespace UnicornHack.Utils
         /// <remarks>
         ///     Functions take coordinates instead of Points for perf
         /// </remarks>
-        public BeveledFOV(
-            Func<byte, byte, byte, int, bool> blocksLight,
+        public BeveledFOV(Func<byte, byte, byte, int, bool> blocksLight,
             Func<byte, byte, DirectionFlags> getUnconnectedNeighbours)
         {
             _blocksLight = blocksLight;
@@ -38,13 +37,13 @@ namespace UnicornHack.Utils
             _blocksLight(origin.X, origin.Y, MaxVisibility, 0);
             for (byte octant = 0; octant < 8; octant++)
             {
-                Compute(octant, origin, rangeLimit, visibilityFalloff, x: 1, top: new Slope(1, 1), bottom: new Slope(0, 1));
+                Compute(octant, origin, rangeLimit, visibilityFalloff, x: 1, top: new Slope(1, 1),
+                    bottom: new Slope(0, 1));
             }
         }
 
-        public void Compute(Point origin, Direction heading,
-            byte primaryFOV, byte primaryRange,
-            byte secondaryFOV, byte secondaryRange)
+        public void Compute(Point origin, Direction heading, byte primaryFOV, byte primaryRange, byte secondaryFOV,
+            byte secondaryRange)
         {
             if (primaryFOV > secondaryFOV)
             {
@@ -59,32 +58,23 @@ namespace UnicornHack.Utils
             }
 
             octantShift = (byte)(8 + octantShift - secondaryFOV);
-            var visibilityFalloff = (byte)(Byte.MaxValue / secondaryRange);
+            var visibilityFalloff = (byte)(byte.MaxValue / secondaryRange);
             for (var octant = 0; octant < secondaryFOV - primaryFOV; octant++)
             {
-                Compute((byte)((octant + octantShift) % 8),
-                    origin,
-                    secondaryRange,
-                    visibilityFalloff,
-                    x: 1, top: new Slope(1, 1), bottom: new Slope(0, 1));
+                Compute((byte)((octant + octantShift) % 8), origin, secondaryRange, visibilityFalloff, x: 1,
+                    top: new Slope(1, 1), bottom: new Slope(0, 1));
             }
             for (var octant = secondaryFOV + primaryFOV; octant < secondaryFOV * 2; octant++)
             {
-                Compute((byte)((octant + octantShift) % 8),
-                    origin,
-                    secondaryRange,
-                    visibilityFalloff,
-                    x: 1, top: new Slope(1, 1), bottom: new Slope(0, 1));
+                Compute((byte)((octant + octantShift) % 8), origin, secondaryRange, visibilityFalloff, x: 1,
+                    top: new Slope(1, 1), bottom: new Slope(0, 1));
             }
 
-            visibilityFalloff = (byte)(Byte.MaxValue / primaryRange);
+            visibilityFalloff = (byte)(byte.MaxValue / primaryRange);
             for (var octant = secondaryFOV - primaryFOV; octant < secondaryFOV + primaryFOV; octant++)
             {
-                Compute((byte)((octant + octantShift) % 8),
-                    origin,
-                    primaryRange,
-                    visibilityFalloff,
-                    x: 1, top: new Slope(1, 1), bottom: new Slope(0, 1));
+                Compute((byte)((octant + octantShift) % 8), origin, primaryRange, visibilityFalloff, x: 1,
+                    top: new Slope(1, 1), bottom: new Slope(0, 1));
             }
         }
 
@@ -103,7 +93,8 @@ namespace UnicornHack.Utils
             public readonly int X, Y;
         }
 
-        private void Compute(byte octant, Point origin, byte rangeLimit, byte visibilityFalloff, int x, Slope top, Slope bottom)
+        private void Compute(byte octant, Point origin, byte rangeLimit, byte visibilityFalloff, int x, Slope top,
+            Slope bottom)
         {
             // Throughout this function there are references to various parts of tiles. A tile's coordinates refer to its center,
             // and the following diagram shows the parts of the tile and the vectors from the origin that pass through those parts.
@@ -157,36 +148,30 @@ namespace UnicornHack.Utils
                     // Calculate how much of the tile is visible. It can only be partially visible for the first
                     // and the last row in the sector. We can assume the tile is fully visible if the top slope is 1
                     // or the bottom is 0
-                    byte visibility = MaxVisibility;
-                    if (y == topY
-                        && y != x)
+                    var visibility = MaxVisibility;
+                    if (y == topY && y != x)
                     {
                         var max = new Slope(y * 2 + 1, x * 2 - 1);
                         var min = new Slope(y * 2 - 1, x * 2 + 1);
                         // visible portion = (top - min) / (max - min)
-                        visibility = (byte)((MaxVisibility - MinVisibility)
-                                            * (top.Y * min.X - top.X * min.Y) * max.X
-                                            / ((max.Y * min.X - max.X * min.Y) * top.X)
-                                            + MinVisibility);
+                        visibility =
+                            (byte)((MaxVisibility - MinVisibility) * (top.Y * min.X - top.X * min.Y) * max.X /
+                                   ((max.Y * min.X - max.X * min.Y) * top.X) + MinVisibility);
                     }
 
-                    if (y == bottomY
-                        && y != 0)
+                    if (y == bottomY && y != 0)
                     {
                         var max = new Slope(y * 2 + 1, x * 2 - 1);
                         var min = new Slope(y * 2 - 1, x * 2 + 1);
                         // hidden portion = (bottom - min) / (max - min)
                         visibility = (byte)(visibility -
-                                            (MaxVisibility - MinVisibility)
-                                            * (bottom.Y * min.X - bottom.X * min.Y) * max.X
-                                            / ((max.Y * min.X - max.X * min.Y) * bottom.X)
-                                            + MinVisibility);
+                                            (MaxVisibility - MinVisibility) * (bottom.Y * min.X - bottom.X * min.Y) *
+                                            max.X / ((max.Y * min.X - max.X * min.Y) * bottom.X) + MinVisibility);
                     }
 
                     var blocksLight = BlocksLight(x, y, octant, origin, visibility, rangeFalloff);
 
-                    if (x == rangeLimit
-                        || rangeFalloff >= MaxVisibility)
+                    if (x == rangeLimit || rangeFalloff >= MaxVisibility)
                     {
                         continue;
                     }
@@ -218,7 +203,8 @@ namespace UnicornHack.Utils
                                     bottom = new Slope(newBottomY, newBottomX);
                                     break;
                                 }
-                                Compute(octant, origin, rangeLimit, visibilityFalloff, x + 1, top, new Slope(newBottomY, newBottomX));
+                                Compute(octant, origin, rangeLimit, visibilityFalloff, x + 1, top,
+                                    new Slope(newBottomY, newBottomX));
                             }
                             else
                             {

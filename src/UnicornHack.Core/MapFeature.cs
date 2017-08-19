@@ -1,5 +1,3 @@
-using System;
-
 namespace UnicornHack
 {
     public enum MapFeature : byte

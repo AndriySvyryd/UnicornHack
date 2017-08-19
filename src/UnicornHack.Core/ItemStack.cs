@@ -11,8 +11,7 @@ namespace UnicornHack
         {
         }
 
-        public ItemStack(Item item, Game game)
-            : base(game)
+        public ItemStack(Item item, Game game) : base(game)
         {
             BaseName = item.BaseName;
             Type = item.Type;
@@ -37,16 +36,11 @@ namespace UnicornHack
             return true;
         }
 
-        public override Item StackWith(IEnumerable<Item> existingItems)
-        {
-            // TODO: combine stacks
-            return this;
-        }
+        public override Item StackWith(IEnumerable<Item> existingItems) => this;
 
         public override TransientReference<Item> Split(int quantity)
         {
-            if (quantity > Quantity
-                || quantity <= 0)
+            if (quantity > Quantity || quantity <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(quantity));
             }

@@ -15,9 +15,18 @@ namespace UnicornHack.Utils
             {
                 throw new IndexOutOfRangeException();
             }
-            if (k > n) { return 0; }
-            if (n == k) { return 1; }
-            if (k > n - k) { k = n - k; }
+            if (k > n)
+            {
+                return 0;
+            }
+            if (n == k)
+            {
+                return 1;
+            }
+            if (k > n - k)
+            {
+                k = n - k;
+            }
 
             long c = 1;
             for (long i = 1; i <= k; i++)
@@ -28,7 +37,7 @@ namespace UnicornHack.Utils
             return c;
         }
 
-        public static double BinomialDistributionMass(long k, long n, double p)
-            => Pow(p, k) * BinomialCoefficient(n, k) * Pow(1 - p, n - k);
+        public static double BinomialDistributionMass(long k, long n, double p) =>
+            Pow(p, k) * BinomialCoefficient(n, k) * Pow(1 - p, n - k);
     }
 }

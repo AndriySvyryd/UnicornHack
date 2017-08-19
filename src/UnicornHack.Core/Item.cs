@@ -11,6 +11,7 @@ namespace UnicornHack
         public virtual string Name { get; set; }
 
         public virtual string BaseName { get; set; }
+
         // TODO: Remove this
         public ItemVariant BaseItem => BaseName == null ? null : ItemVariant.Loader.Get(BaseName);
 
@@ -28,6 +29,7 @@ namespace UnicornHack
         public virtual ISet<string> SimpleProperties { get; set; } = new HashSet<string>();
         public virtual IDictionary<string, object> ValuedProperties { get; set; } = new Dictionary<string, object>();
 
+        // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Local
         public virtual int Id { get; private set; }
         public int? ActorId { get; set; }
         public Actor Actor { get; set; }
@@ -53,8 +55,8 @@ namespace UnicornHack
             }
 
             var slots = EquipmentSlot.Default;
-            if (EquipableSlots.HasFlag(EquipmentSlot.GraspBothExtremities)
-                && EquipableSlots.HasFlag(EquipmentSlot.GraspSingleExtremity))
+            if (EquipableSlots.HasFlag(EquipmentSlot.GraspBothExtremities) &&
+                EquipableSlots.HasFlag(EquipmentSlot.GraspSingleExtremity))
             {
                 if (size != Size.Tiny)
                 {
@@ -82,8 +84,7 @@ namespace UnicornHack
         {
         }
 
-        public Item(Game game)
-            : this()
+        public Item(Game game) : this()
         {
             Game = game;
             Id = game.NextItemId++;
@@ -92,11 +93,9 @@ namespace UnicornHack
 
         private int _referenceCount;
 
-        void IReferenceable.AddReference()
-            => _referenceCount++;
+        void IReferenceable.AddReference() => _referenceCount++;
 
-        public TransientReference<Item> AddReference()
-            => new TransientReference<Item>(this);
+        public TransientReference<Item> AddReference() => new TransientReference<Item>(this);
 
         public void RemoveReference()
         {

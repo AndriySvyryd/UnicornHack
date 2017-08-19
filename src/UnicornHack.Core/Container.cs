@@ -1,7 +1,5 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using CSharpScriptSerialization;
 
 namespace UnicornHack
 {
@@ -11,8 +9,7 @@ namespace UnicornHack
         {
         }
 
-        public Container(Game game)
-            : base(game)
+        public Container(Game game) : base(game)
         {
         }
 
@@ -43,10 +40,8 @@ namespace UnicornHack
             return true;
         }
 
-        public virtual bool CanAdd(Item item)
-            => Quantity < Capacity
-               && (!(item is Container)
-                   || CanContainStacks && item is ItemStack);
+        public virtual bool CanAdd(Item item) =>
+            Quantity < Capacity && (!(item is Container) || CanContainStacks && item is ItemStack);
 
         public virtual bool Remove(Item item)
         {

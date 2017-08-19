@@ -8,17 +8,12 @@ namespace UnicornHack.Effects
         {
         }
 
-        public MeleeAttack(Game game)
-            : base(game)
+        public MeleeAttack(Game game) : base(game)
         {
         }
 
-        public override Effect Instantiate(Game game)
-            => new MeleeAttack(game)
-            {
-                WeaponId = WeaponId,
-                Weapon = Weapon?.AddReference().Referenced
-            };
+        public override Effect Instantiate(Game game) =>
+            new MeleeAttack(game) {WeaponId = WeaponId, Weapon = Weapon?.AddReference().Referenced};
 
         protected override void Delete()
         {
@@ -39,8 +34,7 @@ namespace UnicornHack.Effects
                         abilityContext.AbilityResult.Action = weaponAbility.Action;
                     }
 
-                    if (abilityContext.Succeeded
-                        && weaponAbility.Activation == AbilityActivation.OnMeleeAttack)
+                    if (abilityContext.Succeeded && weaponAbility.Activation == AbilityActivation.OnMeleeAttack)
                     {
                         weaponAbility.Activate(abilityContext);
                     }

@@ -37,14 +37,14 @@ namespace UnicornHack
         {
             var game = CreateGame();
 
-            var fragment = new MapFragment
+            var fragment = new NormalMapFragment
             {
                 Map = map
             };
             fragment.EnsureInitialized(game);
 
             var level = CreateLevel(fragment.Height, fragment.Width, game);
-            level.GenerationRandom = new SimpleRandom { Seed = seed };
+            level.GenerationRandom = new SimpleRandom {Seed = seed};
 
             fragment.TryPlace(level, level.BoundingRectangle);
             return level;

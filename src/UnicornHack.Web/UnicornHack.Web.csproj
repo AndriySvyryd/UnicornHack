@@ -13,14 +13,10 @@
     <UserSecretsId>aspnet-UnicornHack-fb43824c-0f51-4c8e-9170-252a1c885c83</UserSecretsId>
     <RootNamespace>UnicornHack</RootNamespace>
     <TypeScriptToolsVersion>2.3</TypeScriptToolsVersion>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>7.1</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="..\UnicornHack.Core\Data\**">
-      <Link>Data/%(FileName)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="wwwroot\**\*;Views\**\*;Areas\**\Views">
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </None>

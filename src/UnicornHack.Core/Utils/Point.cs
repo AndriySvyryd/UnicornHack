@@ -16,17 +16,13 @@ namespace UnicornHack.Utils
         public readonly byte X;
         public readonly byte Y;
 
-        public byte DistanceTo(Point target)
-            => (byte)Math.Max(Math.Abs(target.X - X), Math.Abs(target.Y - Y));
+        public byte DistanceTo(Point target) => (byte)Math.Max(Math.Abs(target.X - X), Math.Abs(target.Y - Y));
 
-        public byte OrthogonalDistanceTo(Point target)
-            => (byte)(Math.Abs(target.X - X) + Math.Abs(target.Y - Y));
+        public byte OrthogonalDistanceTo(Point target) => (byte)(Math.Abs(target.X - X) + Math.Abs(target.Y - Y));
 
-        public Vector DirectionTo(Point target)
-            => new Vector((sbyte)(target.X - X), (sbyte)(target.Y - Y));
+        public Vector DirectionTo(Point target) => new Vector((sbyte)(target.X - X), (sbyte)(target.Y - Y));
 
-        public Point Translate(Vector direction)
-            => new Point((byte)(X + direction.X), (byte)(Y + direction.Y));
+        public Point Translate(Vector direction) => new Point((byte)(X + direction.X), (byte)(Y + direction.Y));
 
         public override string ToString() => $"({X}, {Y})";
 
@@ -40,10 +36,7 @@ namespace UnicornHack.Utils
             return false;
         }
 
-        public bool Equals(Point other)
-        {
-            return X == other.X && Y == other.Y;
-        }
+        public bool Equals(Point other) => X == other.X && Y == other.Y;
 
         public override int GetHashCode()
         {

@@ -23,10 +23,8 @@ namespace UnicornHack
             get { return _level.Items.Where(i => i.LevelX == _x && i.LevelY == _y); }
         }
 
-        public bool TryAdd(Item item)
-            => _level.TryAdd(item, _x, _y);
+        public bool TryAdd(Item item) => _level.TryAdd(item, _x, _y);
 
-        public bool CanAdd(Item item)
-            => _level.CanAdd(item, _x, _y);
+        public bool CanAdd(Item item) => _level.CanAdd(item, _x, _y);
     }
 }

@@ -2,8 +2,7 @@ using System;
 
 namespace UnicornHack.Utils
 {
-    public class TransientReference<T> : IDisposable
-        where T : IReferenceable
+    public class TransientReference<T> : IDisposable where T : IReferenceable
     {
         public TransientReference(T referenced)
         {
@@ -16,7 +15,7 @@ namespace UnicornHack.Utils
         public void Dispose()
         {
             Referenced?.RemoveReference();
-            Referenced = default(T);
+            Referenced = default;
         }
     }
 }

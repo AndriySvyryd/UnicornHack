@@ -9,15 +9,13 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Blind(Game game)
-            : base(game)
+        public Blind(Game game) : base(game)
         {
         }
 
         public int Duration { get; set; }
 
-        public override Effect Instantiate(Game game)
-            => new Blind(game) {Duration = Duration};
+        public override Effect Instantiate(Game game) => new Blind(game) {Duration = Duration};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {

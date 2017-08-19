@@ -9,15 +9,13 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Infect(Game game)
-            : base(game)
+        public Infect(Game game) : base(game)
         {
         }
 
         public int Strength { get; set; }
 
-        public override Effect Instantiate(Game game)
-            => new Infect(game) {Strength = Strength};
+        public override Effect Instantiate(Game game) => new Infect(game) {Strength = Strength};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {

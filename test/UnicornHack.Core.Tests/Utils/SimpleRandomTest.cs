@@ -96,7 +96,7 @@ namespace UnicornHack.Utils
             }
 
             var seed = Environment.TickCount;
-            var random = new SimpleRandom { Seed = seed };
+            var random = new SimpleRandom {Seed = seed};
             var selectedCounts = new int[itemWeights.Length];
             var selectionCount = 100000;
             for (var i = 0; i < selectionCount; i++)
@@ -129,7 +129,8 @@ namespace UnicornHack.Utils
                     builder.AppendLine("\tIndex\tFrequency\tAdjusted weight");
                     for (var j = 0; j < itemWeights.Length; j++)
                     {
-                        builder.AppendLine($"\t{j,4:N0}\t{selectedCounts[j],9:D} {(itemWeights[j] / weightSum) * selectionCount,12:N4}");
+                        builder.AppendLine(
+                            $"\t{j,4:N0}\t{selectedCounts[j],9:D} {(itemWeights[j] / weightSum) * selectionCount,12:N4}");
                     }
 
                     Assert.False(true, builder.ToString());

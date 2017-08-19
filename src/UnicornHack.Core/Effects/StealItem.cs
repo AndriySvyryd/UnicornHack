@@ -9,13 +9,11 @@ namespace UnicornHack.Effects
         {
         }
 
-        public StealItem(Game game)
-            : base(game)
+        public StealItem(Game game) : base(game)
         {
         }
 
-        public override Effect Instantiate(Game game)
-            => new StealItem(game);
+        public override Effect Instantiate(Game game) => new StealItem(game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {

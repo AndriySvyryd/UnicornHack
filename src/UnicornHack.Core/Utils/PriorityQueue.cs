@@ -8,13 +8,11 @@ namespace UnicornHack.Utils
         private readonly List<T> _list = new List<T>();
         private readonly IComparer<T> _comparer;
 
-        public PriorityQueue()
-            : this(Comparer<T>.Default, capacity: 0)
+        public PriorityQueue() : this(Comparer<T>.Default, capacity: 0)
         {
         }
 
-        public PriorityQueue(IComparer<T> comparer)
-            : this(comparer, capacity: 0)
+        public PriorityQueue(IComparer<T> comparer) : this(comparer, capacity: 0)
         {
         }
 
@@ -27,13 +25,11 @@ namespace UnicornHack.Utils
             }
         }
 
-        public PriorityQueue(IEnumerable<T> source)
-            : this(source, Comparer<T>.Default)
+        public PriorityQueue(IEnumerable<T> source) : this(source, Comparer<T>.Default)
         {
         }
 
-        public PriorityQueue(IEnumerable<T> source, IComparer<T> comparer)
-            : this(comparer, capacity: 0)
+        public PriorityQueue(IEnumerable<T> source, IComparer<T> comparer) : this(comparer, capacity: 0)
         {
             foreach (var element in source)
             {
@@ -41,13 +37,11 @@ namespace UnicornHack.Utils
             }
         }
 
-        public PriorityQueue(ICollection<T> source)
-            : this(source, Comparer<T>.Default)
+        public PriorityQueue(ICollection<T> source) : this(source, Comparer<T>.Default)
         {
         }
 
-        public PriorityQueue(ICollection<T> source, IComparer<T> comparer)
-            : this(comparer, source.Count)
+        public PriorityQueue(ICollection<T> source, IComparer<T> comparer) : this(comparer, source.Count)
         {
             foreach (var element in source)
             {
@@ -96,7 +90,7 @@ namespace UnicornHack.Utils
 
         public T this[int index]
         {
-            get { return _list[index]; }
+            get => _list[index];
             set
             {
                 _list[index] = value;
@@ -107,9 +101,7 @@ namespace UnicornHack.Utils
         public int Update(int position)
         {
             var newPosition = BubbleUp(position);
-            return newPosition != position
-                ? newPosition
-                : BubbleDown(newPosition);
+            return newPosition != position ? newPosition : BubbleDown(newPosition);
         }
 
         private int BubbleUp(int position)
@@ -162,7 +154,7 @@ namespace UnicornHack.Utils
             return position;
         }
 
-        public T Peek() => _list.Count > 0 ? _list[index: 0] : default(T);
+        public T Peek() => _list.Count > 0 ? _list[index: 0] : default;
 
         private int GetPosition(T item)
         {

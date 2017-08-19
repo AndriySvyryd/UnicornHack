@@ -9,13 +9,11 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Seduce(Game game)
-            : base(game)
+        public Seduce(Game game) : base(game)
         {
         }
 
-        public override Effect Instantiate(Game game)
-            => new Seduce(game);
+        public override Effect Instantiate(Game game) => new Seduce(game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {

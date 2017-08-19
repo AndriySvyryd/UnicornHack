@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
 using CSharpScriptSerialization;
-using UnicornHack.Data.Fragments;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Generation.Map
 {
-    public class MapFragment : ICSScriptSerializable, ILoadable
+    public abstract class MapFragment : ICSScriptSerializable, ILoadable
     {
         public virtual string Name { get; set; }
         public virtual string Map { get; set; } = "";
@@ -30,25 +29,6 @@ namespace UnicornHack.Generation.Map
 
         public virtual int[,] PointToIndex { get; private set; }
         public virtual Point[] IndexToPoint { get; private set; }
-
-        private Func<string, byte, int, int, float> _weightFunction;
-
-        public virtual float GetWeight(Level level, Rectangle boundingRectangle)
-        {
-            // TODO: take transformations into account
-            if (PayloadArea.Width > boundingRectangle.Width
-                || PayloadArea.Height > boundingRectangle.Height)
-            {
-                return 0;
-            }
-
-            if (_weightFunction == null)
-            {
-                _weightFunction = GenerationWeight.CreateFragmentWeightFunction();
-            }
-
-            return _weightFunction(level.Branch.Name, level.Depth, 0, 0);
-        }
 
         // Characters that can be used as conditions for neighbors:
         // ~ - marks the edge row and/or column as conditional
@@ -172,8 +152,7 @@ namespace UnicornHack.Generation.Map
                 }
                 var payloadOrigin = new Point((byte)(ConditionalFirstColumn ? 1 : 0),
                     (byte)(ConditionalFirstRow ? 1 : 0));
-                PayloadArea = new Rectangle(
-                    payloadOrigin,
+                PayloadArea = new Rectangle(payloadOrigin,
                     (byte)(Width - payloadOrigin.X - (ConditionalLastColumn ? 1 : 0)),
                     (byte)(Height - payloadOrigin.Y - (ConditionalLastRow ? 1 : 0)));
             }
@@ -222,8 +201,7 @@ namespace UnicornHack.Generation.Map
             var points = new List<Point>();
             WriteMap(target.Value, level, Write, (doorwayPoints, perimeterPoints, insidePoints, points));
 
-            if (!NoRandomDoorways
-                && doorwayPoints.Count == 0)
+            if (!NoRandomDoorways && doorwayPoints.Count == 0)
             {
                 // TODO: find doorway candidates in the perimeter walls
             }
@@ -277,21 +255,18 @@ namespace UnicornHack.Generation.Map
 
         protected virtual Room TryPlace(Level level, Rectangle boundingRectangle, DynamicMap map)
         {
-            if (map == null
-                || !boundingRectangle.Contains(map.MinSize))
+            if (map == null || !boundingRectangle.Contains(map.MinSize))
             {
                 return null;
             }
 
             // TODO: Read the defaults from the defining fragment
             var room = BuildRoom(level, map.GetRoomPoints(level, boundingRectangle),
-                p => { level.Terrain[level.PointToIndex[p.X, p.Y]] = (byte)MapFeature.StoneFloor; },
-                p =>
+                p => { level.Terrain[level.PointToIndex[p.X, p.Y]] = (byte)MapFeature.StoneFloor; }, p =>
                 {
                     level.Terrain[level.PointToIndex[p.X, p.Y]] = (byte)MapFeature.StoneWall;
                     level.AddNeighbours(MapFeature.StoneWall, p);
-                },
-                p => { });
+                }, p => { });
 
             return room;
         }
@@ -318,8 +293,8 @@ namespace UnicornHack.Generation.Map
             }
         }
 
-        public virtual Room BuildRoom(Level level, IEnumerable<Point> points,
-            Action<Point> insideAction, Action<Point> perimeterAction, Action<Point> outsideAction)
+        public virtual Room BuildRoom(Level level, IEnumerable<Point> points, Action<Point> insideAction,
+            Action<Point> perimeterAction, Action<Point> outsideAction)
         {
             void Noop(Point p)
             {
@@ -362,10 +337,10 @@ namespace UnicornHack.Generation.Map
                     }
 
                     var newLocationIndex = level.PointToIndex[newLocationX, newLocationY];
-                    var newNeighbours = (byte)(neighbours[newLocationIndex]
-                                               | 1 << Level.OppositeDirectionIndexes[directionIndex]);
-                    if (newNeighbours == (byte)DirectionFlags.Circle
-                        && (neighbours[level.PointToIndex[roomPoint.X, roomPoint.Y]] & 1 << directionIndex) != 0)
+                    var newNeighbours = (byte)(neighbours[newLocationIndex] |
+                                               1 << Level.OppositeDirectionIndexes[directionIndex]);
+                    if (newNeighbours == (byte)DirectionFlags.Circle &&
+                        (neighbours[level.PointToIndex[roomPoint.X, roomPoint.Y]] & 1 << directionIndex) != 0)
                     {
                         var insidePoint = new Point(newLocationX, newLocationY);
                         insideAction.Invoke(insidePoint);
@@ -384,9 +359,7 @@ namespace UnicornHack.Generation.Map
 
             var perimeter = WalkPerimeter(firstPoint, neighbours, level.PointToIndex, perimeterAction, outsideAction);
 
-            var doorwayPoints = perimeter.Count > 7
-                ? FindDoorwayPoints(perimeter, level)
-                : null;
+            var doorwayPoints = perimeter.Count > 7 ? FindDoorwayPoints(perimeter, level) : null;
 
             return new Room(level, new Rectangle(new Point(left, firstPoint.Y), new Point(right, lastPoint.Y)),
                 doorwayPoints, insidePoints);
@@ -413,9 +386,7 @@ namespace UnicornHack.Generation.Map
                 }
 
                 var direction = previousPoint.DirectionTo(nextPoint).GetUnit();
-                if (!allowCorners
-                    && direction.X != 0
-                    && direction.Y != 0)
+                if (!allowCorners && direction.X != 0 && direction.Y != 0)
                 {
                     continue;
                 }
@@ -424,15 +395,13 @@ namespace UnicornHack.Generation.Map
                 var secondOrthogonal = firstOrthogonal.GetInverse();
 
                 var corridorCandidatePoint = point.Translate(firstOrthogonal);
-                if (!level.IsValid(corridorCandidatePoint)
-                    || !level.CanPlaceCorridor(corridorCandidatePoint))
+                if (!level.IsValid(corridorCandidatePoint) || !level.CanPlaceCorridor(corridorCandidatePoint))
                 {
                     continue;
                 }
 
                 var doorwayCandidatePoint = point.Translate(secondOrthogonal);
-                if (!level.IsValid(doorwayCandidatePoint)
-                    || !level.CanPlaceCorridor(doorwayCandidatePoint))
+                if (!level.IsValid(doorwayCandidatePoint) || !level.CanPlaceCorridor(doorwayCandidatePoint))
                 {
                     continue;
                 }
@@ -442,29 +411,15 @@ namespace UnicornHack.Generation.Map
             return doorwayPoints;
         }
 
-        private static IReadOnlyList<Point> WalkPerimeter(
-            Point firstPoint, byte[] neighbours, int[,] pointToIndex,
-            Action<Point> perimeterAction, Action<Point> outsideAction)
-            => WalkPerimeter(
-                   new Point(firstPoint.X, (byte)(firstPoint.Y - 1)),
-                   DirectionFlags.South,
-                   Direction.North,
-                   new Dictionary<Point, int>(),
-                   neighbours,
-                   pointToIndex,
-                   perimeterAction,
-                   outsideAction)
-               ?? new List<Point>();
+        private static IReadOnlyList<Point> WalkPerimeter(Point firstPoint, byte[] neighbours, int[,] pointToIndex,
+            Action<Point> perimeterAction, Action<Point> outsideAction) =>
+            WalkPerimeter(new Point(firstPoint.X, (byte)(firstPoint.Y - 1)), DirectionFlags.South, Direction.North,
+                new Dictionary<Point, int>(), neighbours, pointToIndex, perimeterAction, outsideAction) ??
+            new List<Point>();
 
-        private static List<Point> WalkPerimeter(
-            Point firstPoint,
-            DirectionFlags currentNeighbourMap,
-            Direction previousPointDirection,
-            Dictionary<Point, int> visitedIntersections,
-            byte[] neighbours,
-            int[,] pointToIndex,
-            Action<Point> perimeterAction,
-            Action<Point> outsideAction)
+        private static List<Point> WalkPerimeter(Point firstPoint, DirectionFlags currentNeighbourMap,
+            Direction previousPointDirection, Dictionary<Point, int> visitedIntersections, byte[] neighbours,
+            int[,] pointToIndex, Action<Point> perimeterAction, Action<Point> outsideAction)
         {
             // Assuming both the perimeter and the inner area are contiguos
             List<Point> perimeter = null;
@@ -501,8 +456,7 @@ namespace UnicornHack.Generation.Map
                             {
                                 perimeter = new List<Point>();
                             }
-                            if (perimeter.Count == 0
-                                || !nextPoint.Equals(perimeter[0]))
+                            if (perimeter.Count == 0 || !nextPoint.Equals(perimeter[0]))
                             {
                                 perimeter.Add(nextPoint);
                                 perimeterAction.Invoke(nextPoint);
@@ -527,15 +481,9 @@ namespace UnicornHack.Generation.Map
 
                         outsideAction.Invoke(nextPoint);
 
-                        var subPerimeter = WalkPerimeter(
-                            nextPoint,
-                            nextNeighbourMap,
-                            (Direction)Level.OppositeDirectionIndexes[directionIndexToCheck],
-                            visitedIntersections,
-                            neighbours,
-                            pointToIndex,
-                            perimeterAction,
-                            outsideAction);
+                        var subPerimeter = WalkPerimeter(nextPoint, nextNeighbourMap,
+                            (Direction)Level.OppositeDirectionIndexes[directionIndexToCheck], visitedIntersections,
+                            neighbours, pointToIndex, perimeterAction, outsideAction);
 
                         if (subPerimeter != null)
                         {
@@ -558,17 +506,11 @@ namespace UnicornHack.Generation.Map
             throw new InvalidOperationException("Infinite loop");
         }
 
-        private static bool IsPerimeter(DirectionFlags neighbourMap)
-            => neighbourMap.HasFlag(DirectionFlags.NorthwestCorner)
-               || neighbourMap.HasFlag(DirectionFlags.NortheastCorner)
-               || neighbourMap.HasFlag(DirectionFlags.SoutheastCorner)
-               || neighbourMap.HasFlag(DirectionFlags.SouthwestCorner);
-
-        public static readonly CSScriptLoader<MapFragment> Loader =
-            new CSScriptLoader<MapFragment>(@"Data\Fragments\Normal\", typeof(NormalMapFragmentData));
-
-        private static readonly CSScriptSerializer Serializer =
-            new PropertyCSScriptSerializer<MapFragment>(GetPropertyConditions<MapFragment>());
+        private static bool IsPerimeter(DirectionFlags neighbourMap) =>
+            neighbourMap.HasFlag(DirectionFlags.NorthwestCorner) ||
+            neighbourMap.HasFlag(DirectionFlags.NortheastCorner) ||
+            neighbourMap.HasFlag(DirectionFlags.SoutheastCorner) ||
+            neighbourMap.HasFlag(DirectionFlags.SouthwestCorner);
 
         protected static Dictionary<string, Func<TMapFragment, object, bool>> GetPropertyConditions<TMapFragment>()
             where TMapFragment : MapFragment
@@ -576,7 +518,11 @@ namespace UnicornHack.Generation.Map
             return new Dictionary<string, Func<TMapFragment, object, bool>>
             {
                 {nameof(Name), (o, v) => v != null},
-                {nameof(GenerationWeight), (o, v) => (Weight)v != null},
+                // ReSharper disable once CompareOfFloatsByEqualityOperator
+                {
+                    nameof(GenerationWeight),
+                    (o, v) => (Weight)v != null && (!(v is DefaultWeight def) || def.Multiplier != 1)
+                },
                 {nameof(Map), (o, v) => !string.IsNullOrEmpty((string)v)},
                 {nameof(ByteMap), (o, v) => false},
                 {nameof(PayloadArea), (o, v) => false},
@@ -589,6 +535,6 @@ namespace UnicornHack.Generation.Map
             };
         }
 
-        public virtual ICSScriptSerializer GetSerializer() => Serializer;
+        public abstract ICSScriptSerializer GetSerializer();
     }
 }

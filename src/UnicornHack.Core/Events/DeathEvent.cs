@@ -14,12 +14,8 @@ namespace UnicornHack.Events
             foreach (var sensor in deceased.Level.Actors)
             {
                 var deceasedSensed = sensor.CanSense(deceased);
-                var corpseSensed = corpse == null
-                    ? (SenseType?)null
-                    : sensor.CanSense(corpse);
-                if (deceasedSensed == SenseType.None
-                    && (corpseSensed == null
-                        || corpseSensed == SenseType.None))
+                var corpseSensed = corpse == null ? (SenseType?)null : sensor.CanSense(corpse);
+                if (deceasedSensed == SenseType.None && (corpseSensed == null || corpseSensed == SenseType.None))
                 {
                     continue;
                 }

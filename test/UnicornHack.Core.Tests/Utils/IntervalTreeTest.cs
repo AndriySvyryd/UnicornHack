@@ -41,7 +41,7 @@ namespace UnicornHack.Utils
             var randomCount = 20;
             var initialRectangles = new List<Rectangle>(randomCount);
             var seed = Environment.TickCount;
-            var random = new SimpleRandom {Seed = seed };
+            var random = new SimpleRandom {Seed = seed};
             for (var i = 0; i < randomCount; i++)
             {
                 initialRectangles.Add(Rectangle.CreateRandom(random, boundingRectangle));

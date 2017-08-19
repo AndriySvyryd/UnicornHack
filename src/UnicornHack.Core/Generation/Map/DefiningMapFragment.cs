@@ -18,39 +18,27 @@ namespace UnicornHack.Generation.Map
 
         // TODO: Subfragment, item and creature generation weight and distribution modifiers
 
-        #region Actions
-
         private Func<string, byte, int, int, float> _weightFunction;
 
         public virtual float GetWeight(string branchName, byte depth)
         {
             if (_weightFunction == null)
             {
-                _weightFunction = GenerationWeight.CreateFragmentWeightFunction();
+                _weightFunction = (GenerationWeight ?? new DefaultWeight()).CreateFragmentWeightFunction();
             }
 
             // TODO: pass correct counts
             return _weightFunction(branchName, depth, 0, 0);
         }
 
-        public override float GetWeight(Level level, Rectangle boundingRectangle)
-        {
-            throw new InvalidOperationException();
-        }
-
-        #endregion
-
-        #region Serialization
-
         public new static readonly CSScriptLoader<DefiningMapFragment> Loader =
             new CSScriptLoader<DefiningMapFragment>(@"Data\Fragments\Defining\", typeof(DefiningMapFragmentData));
 
-        private static readonly CSScriptSerializer Serializer = new PropertyCSScriptSerializer<DefiningMapFragment>(
-            GetPropertyConditions<DefiningMapFragment>());
+        private static readonly CSScriptSerializer Serializer =
+            new PropertyCSScriptSerializer<DefiningMapFragment>(GetPropertyConditions<DefiningMapFragment>());
 
-        protected new static Dictionary<string, Func<TDefiningMapFragment, object, bool>> GetPropertyConditions
-            <TDefiningMapFragment>()
-            where TDefiningMapFragment : DefiningMapFragment
+        protected new static Dictionary<string, Func<TDefiningMapFragment, object, bool>>
+            GetPropertyConditions<TDefiningMapFragment>() where TDefiningMapFragment : DefiningMapFragment
         {
             var propertyConditions = ConnectingMapFragment.GetPropertyConditions<TDefiningMapFragment>();
             var mapCondition = propertyConditions[nameof(Map)];
@@ -61,13 +49,11 @@ namespace UnicornHack.Generation.Map
             propertyConditions.Add(nameof(LevelWidth), (o, v) => (byte)v != 80);
             propertyConditions.Add(nameof(Layout), (o, v) => v != null && !(v is EmptyLayout));
             propertyConditions.Add(nameof(CreatureGenerator),
-                (o, v) => v != null
-                          && ((CreatureGenerator)v).ExpectedInitialCount
-                          != new CreatureGenerator().ExpectedInitialCount);
+                (o, v) => v != null && ((CreatureGenerator)v).ExpectedInitialCount !=
+                          new CreatureGenerator().ExpectedInitialCount);
             propertyConditions.Add(nameof(ItemGenerator),
-                (o, v) => v != null
-                          && ((ItemGenerator)v).ExpectedInitialCount
-                          != new ItemGenerator().ExpectedInitialCount);
+                (o, v) => v != null &&
+                          ((ItemGenerator)v).ExpectedInitialCount != new ItemGenerator().ExpectedInitialCount);
             propertyConditions.Add(nameof(DefaultTerrain), (o, v) => (MapFeature)v != MapFeature.Default);
             propertyConditions.Add(nameof(DefaultPathTerrain), (o, v) => (MapFeature)v != MapFeature.Default);
             propertyConditions.Add(nameof(Map), mapCondition);
@@ -75,7 +61,5 @@ namespace UnicornHack.Generation.Map
         }
 
         public override ICSScriptSerializer GetSerializer() => Serializer;
-
-        #endregion
     }
 }

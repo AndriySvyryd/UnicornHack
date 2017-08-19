@@ -1,0 +1,97 @@
+using System.Collections.Generic;
+using UnicornHack.Effects;
+using UnicornHack.Generation;
+
+namespace UnicornHack.Data.Creatures
+{
+    public static partial class CreatureData
+    {
+        public static readonly CreatureVariant Beholder = new CreatureVariant
+        {
+            Name = "beholder",
+            Species = Species.FloatingSphere,
+            SpeciesClass = SpeciesClass.Aberration,
+            MovementDelay = 300,
+            Weight = 250,
+            Abilities =
+                new HashSet<Ability>
+                {
+                    new Ability
+                    {
+                        Activation = AbilityActivation.OnTarget,
+                        Action = AbilityAction.Bite,
+                        Timeout = 1,
+                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 3}}
+                    },
+                    new Ability
+                    {
+                        Activation = AbilityActivation.OnTarget,
+                        Action = AbilityAction.Gaze,
+                        Timeout = 7,
+                        Effects = new HashSet<Effect> {new Disintegrate {Damage = 5}}
+                    },
+                    new Ability
+                    {
+                        Activation = AbilityActivation.OnTarget,
+                        Action = AbilityAction.Gaze,
+                        Timeout = 7,
+                        Effects = new HashSet<Effect> {new Slow {Duration = 13}}
+                    },
+                    new Ability
+                    {
+                        Activation = AbilityActivation.OnTarget,
+                        Action = AbilityAction.Gaze,
+                        Timeout = 7,
+                        Effects = new HashSet<Effect> {new Sleep {Duration = 13}}
+                    },
+                    new Ability
+                    {
+                        Activation = AbilityActivation.OnTarget,
+                        Action = AbilityAction.Gaze,
+                        Timeout = 7,
+                        Effects = new HashSet<Effect> {new Confuse {Duration = 13}}
+                    },
+                    new Ability
+                    {
+                        Activation = AbilityActivation.OnTarget,
+                        Action = AbilityAction.Gaze,
+                        Timeout = 7,
+                        Effects = new HashSet<Effect> {new Stone()}
+                    },
+                    new Ability
+                    {
+                        Activation = AbilityActivation.OnTarget,
+                        Action = AbilityAction.Gaze,
+                        Timeout = 7,
+                        Effects = new HashSet<Effect> {new Disenchant()}
+                    }
+                },
+            SimpleProperties =
+                new HashSet<string>
+                {
+                    "flight",
+                    "flight control",
+                    "infravision",
+                    "infravisibility",
+                    "breathlessness",
+                    "limblessness",
+                    "headlessness",
+                    "asexuality",
+                    "no inventory"
+                },
+            ValuedProperties =
+                new Dictionary<string, object>
+                {
+                    {"cold resistance", 3},
+                    {"danger awareness", 3},
+                    {"stealthiness", 3},
+                    {"physical deflection", 16},
+                    {"magic resistance", 35}
+                },
+            InitialLevel = 8,
+            GenerationWeight = new DefaultWeight {Multiplier = 3F},
+            GenerationFlags = GenerationFlags.NonPolymorphable,
+            Behavior = MonsterBehavior.Wandering
+        };
+    }
+}

@@ -1,0 +1,40 @@
+using System.Collections.Generic;
+using UnicornHack.Effects;
+using UnicornHack.Generation;
+
+namespace UnicornHack.Data.Creatures
+{
+    public static partial class CreatureData
+    {
+        public static readonly CreatureVariant BabyPurpleWorm = new CreatureVariant
+        {
+            Name = "baby purple worm",
+            Species = Species.Worm,
+            SpeciesClass = SpeciesClass.Vermin,
+            MovementDelay = 400,
+            Weight = 600,
+            Abilities =
+                new HashSet<Ability>
+                {
+                    new Ability
+                    {
+                        Activation = AbilityActivation.OnTarget,
+                        Action = AbilityAction.Bite,
+                        Timeout = 1,
+                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 3}}
+                    }
+                },
+            SimpleProperties = new HashSet<string> {"serpentlike body", "eyelessness", "limblessness", "no inventory"},
+            ValuedProperties =
+                new Dictionary<string, object>
+                {
+                    {"poison resistance", 3},
+                    {"stealthiness", 3},
+                    {"physical deflection", 15}
+                },
+            InitialLevel = 4,
+            GenerationWeight = new DefaultWeight {Multiplier = 5F},
+            NextStageName = "purple worm"
+        };
+    }
+}

@@ -9,8 +9,7 @@ namespace UnicornHack.Utils
     /// </summary>
     public class YBoundedIntervalTree : IntervalTreeBase
     {
-        public YBoundedIntervalTree(Segment boundingSegment)
-            : base(boundingSegment)
+        public YBoundedIntervalTree(Segment boundingSegment) : base(boundingSegment)
         {
         }
 
@@ -19,11 +18,11 @@ namespace UnicornHack.Utils
 
         protected override NodeBase NewNode(byte key) => new Node(key);
 
-        protected override bool SubtreeInsert(Rectangle rectangle, NodeBase node)
-            => ((Node)node).IntersectingRectangles.Insert(rectangle);
+        protected override bool SubtreeInsert(Rectangle rectangle, NodeBase node) =>
+            ((Node)node).IntersectingRectangles.Insert(rectangle);
 
-        protected override bool SubtreeRemove(Rectangle rectangle, NodeBase node)
-            => ((Node)node).IntersectingRectangles.Remove(rectangle);
+        protected override bool SubtreeRemove(Rectangle rectangle, NodeBase node) =>
+            ((Node)node).IntersectingRectangles.Remove(rectangle);
 
         public IEnumerable<Rectangle> GetEnclosing(Rectangle rectangle)
         {
@@ -33,8 +32,7 @@ namespace UnicornHack.Utils
             {
                 throw new ArgumentOutOfRangeException();
             }
-            if (projection.Beginning == BoundingSegment.Beginning
-                || projection.End == BoundingSegment.End)
+            if (projection.Beginning == BoundingSegment.Beginning || projection.End == BoundingSegment.End)
             {
                 return Enumerable.Empty<Rectangle>();
             }
@@ -53,15 +51,14 @@ namespace UnicornHack.Utils
                 else if (projection.Beginning > node.Key)
                 {
                     results.AddRange(node.IntersectingRectangles.GetOverlappingCorners(
-                        new Rectangle(new Segment((byte)(projection.End + 1), BoundingSegment.End),
-                            otherProjection)));
+                        new Rectangle(new Segment((byte)(projection.End + 1), BoundingSegment.End), otherProjection)));
                     node = (Node)node.Right;
                 }
                 else
                 {
-                    results.AddRange(node.IntersectingRectangles.GetOverlappingCorners(
-                            new Rectangle(new Segment(BoundingSegment.Beginning, (byte)(projection.Beginning - 1)),
-                                otherProjection))
+                    results.AddRange(node.IntersectingRectangles
+                        .GetOverlappingCorners(new Rectangle(
+                            new Segment(BoundingSegment.Beginning, (byte)(projection.Beginning - 1)), otherProjection))
                         .Where(r => r.BottomRight.X > projection.End));
                     break;
                 }
@@ -74,10 +71,7 @@ namespace UnicornHack.Utils
         {
             public RectangleRangeTree IntersectingRectangles;
 
-            public Node(byte key) : base(key)
-            {
-                IntersectingRectangles = new RectangleRangeTree();
-            }
+            public Node(byte key) : base(key) => IntersectingRectangles = new RectangleRangeTree();
         }
     }
 }

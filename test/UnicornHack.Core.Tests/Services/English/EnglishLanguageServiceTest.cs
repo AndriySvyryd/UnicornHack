@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using UnicornHack.Effects;
 using UnicornHack.Events;
 using UnicornHack.Generation;
-using UnicornHack.Generation.Map;
 using Xunit;
 
 namespace UnicornHack.Services.English
@@ -235,7 +234,7 @@ namespace UnicornHack.Services.English
         [Fact]
         public void ItemConsumptionEvent()
         {
-            var potion = new Item {BaseName = "potion of healing" };
+            var potion = new Item {BaseName = "potion of healing", Type = ItemType.Potion};
             var newt = new Creature {BaseName = "newt"};
             var player = new Player {BaseName = "human", Name = "Dudley", Sex = Sex.Male};
 
@@ -328,7 +327,7 @@ namespace UnicornHack.Services.English
                 {
                     BaseName = "human",
                     Name = "Conan the Barbarian",
-                    Level = new Level {Branch = new Branch{Name = "Dungeon of Fun" } }
+                    Level = new Level {Branch = new Branch {Name = "Dungeon of Fun"}}
                 });
 
             Assert.Equal("Welcome to the Dungeon of Fun, Conan the Barbarian!", message);

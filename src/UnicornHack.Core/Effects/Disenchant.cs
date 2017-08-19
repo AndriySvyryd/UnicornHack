@@ -9,13 +9,11 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Disenchant(Game game)
-            : base(game)
+        public Disenchant(Game game) : base(game)
         {
         }
 
-        public override Effect Instantiate(Game game)
-            => new Disenchant(game);
+        public override Effect Instantiate(Game game) => new Disenchant(game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {

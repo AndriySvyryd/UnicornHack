@@ -11,8 +11,7 @@ namespace UnicornHack.Utils
     {
         public Rectangle(Point topLeft, Point bottomRight)
         {
-            if (topLeft.X > bottomRight.X
-                || topLeft.Y > bottomRight.Y)
+            if (topLeft.X > bottomRight.X || topLeft.Y > bottomRight.Y)
             {
                 throw new ArgumentOutOfRangeException(topLeft + " " + bottomRight);
             }
@@ -23,8 +22,7 @@ namespace UnicornHack.Utils
 
         public Rectangle(Point topLeft, byte width, byte height)
         {
-            if (width == 0
-                || height == 0)
+            if (width == 0 || height == 0)
             {
                 throw new ArgumentOutOfRangeException();
             }
@@ -33,8 +31,7 @@ namespace UnicornHack.Utils
             BottomRight = new Point((byte)(topLeft.X + width - 1), (byte)(topLeft.Y + height - 1));
         }
 
-        public Rectangle(Point topLeft, Dimensions size)
-            : this(topLeft, size.Width, size.Height)
+        public Rectangle(Point topLeft, Dimensions size) : this(topLeft, size.Width, size.Height)
         {
         }
 
@@ -72,35 +69,25 @@ namespace UnicornHack.Utils
             return new Rectangle(xIntersection.Value, yIntersection.Value);
         }
 
-        public bool Overlaps(Rectangle r)
-            => Intersection(r) != null;
+        public bool Overlaps(Rectangle r) => Intersection(r) != null;
 
-        public bool Encloses(Rectangle r)
-            => XProjection.Encloses(r.XProjection)
-               && YProjection.Encloses(r.YProjection);
+        public bool Encloses(Rectangle r) => XProjection.Encloses(r.XProjection) && YProjection.Encloses(r.YProjection);
 
-        public bool Contains(Rectangle r)
-            => XProjection.Contains(r.XProjection)
-               && YProjection.Contains(r.YProjection);
+        public bool Contains(Rectangle r) => XProjection.Contains(r.XProjection) && YProjection.Contains(r.YProjection);
 
-        public bool Contains(Point p)
-            => XProjection.Contains(p.X)
-               && YProjection.Contains(p.Y);
+        public bool Contains(Point p) => XProjection.Contains(p.X) && YProjection.Contains(p.Y);
 
-        public bool Contains(Dimensions d)
-            => Dimensions.Contains(d);
+        public bool Contains(Dimensions d) => Dimensions.Contains(d);
 
-        public byte DistanceTo(Rectangle r)
-            => Math.Max(XProjection.DistanceTo(r.XProjection), YProjection.DistanceTo(YProjection));
+        public byte DistanceTo(Rectangle r) =>
+            Math.Max(XProjection.DistanceTo(r.XProjection), YProjection.DistanceTo(YProjection));
 
-        public byte DistanceTo(Point p)
-            => Math.Max(XProjection.DistanceTo(p.X), YProjection.DistanceTo(p.Y));
+        public byte DistanceTo(Point p) => Math.Max(XProjection.DistanceTo(p.X), YProjection.DistanceTo(p.Y));
 
-        public byte OrthogonalDistanceTo(Rectangle r)
-            => (byte)(XProjection.DistanceTo(r.XProjection) + YProjection.DistanceTo(r.YProjection));
+        public byte OrthogonalDistanceTo(Rectangle r) =>
+            (byte)(XProjection.DistanceTo(r.XProjection) + YProjection.DistanceTo(r.YProjection));
 
-        public byte OrthogonalDistanceTo(Point p)
-            => (byte)(XProjection.DistanceTo(p.X) + YProjection.DistanceTo(p.Y));
+        public byte OrthogonalDistanceTo(Point p) => (byte)(XProjection.DistanceTo(p.X) + YProjection.DistanceTo(p.Y));
 
         public IEnumerator<Point> GetEnumerator()
         {
@@ -187,8 +174,7 @@ namespace UnicornHack.Utils
 
         public Point? PlaceInside(Rectangle rectangleToPlace, SimpleRandom random)
         {
-            if (rectangleToPlace.Width > Width
-                || rectangleToPlace.Height > Height)
+            if (rectangleToPlace.Width > Width || rectangleToPlace.Height > Height)
             {
                 return null;
             }
@@ -196,13 +182,11 @@ namespace UnicornHack.Utils
             var xOffset = random.Next(Width - rectangleToPlace.Width + 1);
             var yOffset = random.Next(Height - rectangleToPlace.Height + 1);
 
-            return new Point(
-                (byte)(TopLeft.X + xOffset),
-                (byte)(TopLeft.Y + yOffset));
+            return new Point((byte)(TopLeft.X + xOffset), (byte)(TopLeft.Y + yOffset));
         }
 
-        public static Rectangle CreateRandom(SimpleRandom random, Rectangle boundingRectangle)
-            => CreateRandom(random, boundingRectangle, new Dimensions(1, 1));
+        public static Rectangle CreateRandom(SimpleRandom random, Rectangle boundingRectangle) =>
+            CreateRandom(random, boundingRectangle, new Dimensions(1, 1));
 
         public static Rectangle CreateRandom(SimpleRandom random, Rectangle boundingRectangle, Dimensions minSize)
         {

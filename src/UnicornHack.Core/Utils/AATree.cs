@@ -5,8 +5,7 @@ using System.Collections.Generic;
 namespace UnicornHack.Utils
 {
     // ReSharper disable once InconsistentNaming
-    public abstract class AATree<TKey, TValue> : IEnumerable<(TKey, TValue)>
-        where TKey : IComparable<TKey>
+    public abstract class AATree<TKey, TValue> : IEnumerable<(TKey, TValue)> where TKey : IComparable<TKey>
     {
         protected static readonly Node Sentinel = new Node();
 
@@ -19,19 +18,14 @@ namespace UnicornHack.Utils
             Deleted = null;
         }
 
-        public bool Insert(TKey key, TValue value)
-            => Insert(ref Root, key, value);
+        public bool Insert(TKey key, TValue value) => Insert(ref Root, key, value);
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public IEnumerator<(TKey, TValue)> GetEnumerator()
-            => GetAll((k, v) => (k, v)).GetEnumerator();
+        public IEnumerator<(TKey, TValue)> GetEnumerator() => GetAll((k, v) => (k, v)).GetEnumerator();
 
-        public IEnumerable<TResult> GetAll<TResult>(Func<TKey, TValue, TResult> selector)
-            => GetAll(Root, selector, new List<TResult>());
+        public IEnumerable<TResult> GetAll<TResult>(Func<TKey, TValue, TResult> selector) =>
+            GetAll(Root, selector, new List<TResult>());
 
         private IEnumerable<TResult> GetAll<TResult>(Node node, Func<TKey, TValue, TResult> selector,
             List<TResult> result)
@@ -89,20 +83,18 @@ namespace UnicornHack.Utils
 
         public abstract (TKey, TValue) GetNextLarger(TKey key);
 
-        public IEnumerable<ValueTuple<TKey, TValue>> GetRange(TKey minKey, TKey maxKey)
-            => GetRange(Root, minKey, maxKey, true, true, (k, v) => (k, v), new List<ValueTuple<TKey, TValue>>());
+        public IEnumerable<ValueTuple<TKey, TValue>> GetRange(TKey minKey, TKey maxKey) => GetRange(Root, minKey,
+            maxKey, true, true, (k, v) => (k, v), new List<ValueTuple<TKey, TValue>>());
 
-        public IEnumerable<TResult> GetRange<TResult>(TKey minKey, TKey maxKey, Func<TKey, TValue, TResult> selector)
-            => GetRange(Root, minKey, maxKey, true, true, selector, new List<TResult>());
+        public IEnumerable<TResult> GetRange<TResult>(TKey minKey, TKey maxKey, Func<TKey, TValue, TResult> selector) =>
+            GetRange(Root, minKey, maxKey, true, true, selector, new List<TResult>());
 
-        protected IEnumerable<TResult> GetRange<TResult>(
-            Node node, TKey minKey, TKey maxKey, bool compareMin, bool compareMax,
-            Func<TKey, TValue, TResult> selector, List<TResult> result)
+        protected IEnumerable<TResult> GetRange<TResult>(Node node, TKey minKey, TKey maxKey, bool compareMin,
+            bool compareMax, Func<TKey, TValue, TResult> selector, List<TResult> result)
         {
             while (node != Sentinel)
             {
-                if (!compareMin
-                    && !compareMax)
+                if (!compareMin && !compareMax)
                 {
                     return GetAll(node, selector, result);
                 }
@@ -113,8 +105,7 @@ namespace UnicornHack.Utils
                 {
                     GetRange(node.Left, minKey, maxKey, compareMin, maxCompare <= 0, selector, result);
                 }
-                if (minCompare <= 0
-                    && maxCompare >= 0)
+                if (minCompare <= 0 && maxCompare >= 0)
                 {
                     result.Add(selector(node.Key, node.Value));
                 }
@@ -192,8 +183,7 @@ namespace UnicornHack.Utils
             }
             else
             {
-                if (!AllowsDuplicateKeys
-                    || !Insert(ref node.Left, key, value))
+                if (!AllowsDuplicateKeys || !Insert(ref node.Left, key, value))
                 {
                     return false;
                 }

@@ -13,20 +13,16 @@ namespace UnicornHack.Utils
         public readonly sbyte X;
         public readonly sbyte Y;
 
-        public Vector GetOrthogonal()
-            => new Vector((sbyte)-Y, X);
+        public Vector GetOrthogonal() => new Vector((sbyte)-Y, X);
 
-        public Vector GetInverse()
-            => new Vector((sbyte)-X, (sbyte)-Y);
+        public Vector GetInverse() => new Vector((sbyte)-X, (sbyte)-Y);
 
         public Vector GetUnit()
             => new Vector(X == 0 ? X : (sbyte)(X / Math.Abs(X)), Y == 0 ? Y : (sbyte)(Y / Math.Abs(Y)));
 
-        public byte Length()
-            => (byte)Math.Max(Math.Abs(X), Math.Abs(Y));
+        public byte Length() => (byte)Math.Max(Math.Abs(X), Math.Abs(Y));
 
-        public byte OrthogonalLength()
-            => (byte)(Math.Abs(X) + Math.Abs(Y));
+        public byte OrthogonalLength() => (byte)(Math.Abs(X) + Math.Abs(Y));
 
         public override string ToString() => $"{{{X}, {Y}}}";
 

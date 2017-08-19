@@ -117,7 +117,7 @@ namespace UnicornHack.Utils
                         {
                             result = laxTree.GetValues(value2).Cast<int?>().SingleOrDefault(v => v == j + 1);
                         }
-                        else if (strictTree.TryGetValue(value2, out int index2))
+                        else if (strictTree.TryGetValue(value2, out var index2))
                         {
                             result = index2;
                         }

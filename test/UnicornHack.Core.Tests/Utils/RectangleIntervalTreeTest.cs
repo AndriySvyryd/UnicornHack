@@ -58,7 +58,8 @@ namespace UnicornHack.Utils
             }
         }
 
-        private static void Test(IReadOnlyList<Rectangle> initialRectangles, Rectangle boundingRectangle, Rectangle targetRectangle)
+        private static void Test(IReadOnlyList<Rectangle> initialRectangles, Rectangle boundingRectangle,
+            Rectangle targetRectangle)
         {
             var expectedRectangles = new List<Rectangle>();
             var otherRectangles = new List<Rectangle>();

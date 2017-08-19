@@ -9,11 +9,10 @@ namespace UnicornHack
 {
     public class Level
     {
-        #region State
-
         private PathFinder _pathFinder;
         private BeveledFOV _fov;
 
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public string BranchName { get; private set; }
         public Branch Branch { get; set; }
         public byte Depth { get; set; }
@@ -33,14 +32,13 @@ namespace UnicornHack
         public virtual int GameId { get; private set; }
 
         public virtual Game Game { get; set; }
-        public virtual ICollection<Room> Rooms { get; private set; } = new HashSet<Room>();
-        public virtual ICollection<Item> Items { get; private set; } = new HashSet<Item>();
+        public virtual ICollection<Room> Rooms { get; } = new HashSet<Room>();
+        public virtual ICollection<Item> Items { get; } = new HashSet<Item>();
 
-        public virtual PriorityQueue<Actor> Actors { get; private set; } =
-            new PriorityQueue<Actor>(Actor.TickComparer.Instance);
+        public virtual PriorityQueue<Actor> Actors { get; } = new PriorityQueue<Actor>(Actor.TickComparer.Instance);
 
-        public virtual ICollection<Connection> Connections { get; private set; } = new HashSet<Connection>();
-        public virtual ICollection<Connection> IncomingConnections { get; private set; } = new HashSet<Connection>();
+        public virtual ICollection<Connection> Connections { get; } = new HashSet<Connection>();
+        public virtual ICollection<Connection> IncomingConnections { get; } = new HashSet<Connection>();
         public virtual IEnumerable<Player> Players => Actors.OfType<Player>();
 
         public int[,] PointToIndex { get; private set; }
@@ -55,22 +53,13 @@ namespace UnicornHack
             new Vector(x: -1, y: 0), new Vector(x: -1, y: 1), new Vector(x: 0, y: 1), new Vector(x: 1, y: 1)
         };
 
-        public static readonly byte[] OppositeDirectionIndexes =
-        {
-            4, 5, 6, 7,
-            0, 1, 2, 3
-        };
-
-        #endregion
-
-        #region Creation
+        public static readonly byte[] OppositeDirectionIndexes = {4, 5, 6, 7, 0, 1, 2, 3};
 
         public Level()
         {
         }
 
-        public Level(Branch branch, byte depth, int seed)
-            : this()
+        public Level(Branch branch, byte depth, int seed) : this()
         {
             Game = branch.Game;
             Game.Levels.Add(this);
@@ -114,8 +103,8 @@ namespace UnicornHack
             try
             {
                 // TODO: Log parameters if failed
-                var fragment = GenerationRandom.Pick(
-                    DefiningMapFragment.Loader.GetAsList(), f => f.GetWeight(BranchName, Depth));
+                var fragment = GenerationRandom.Pick(DefiningMapFragment.Loader.GetAsList(),
+                    f => f.GetWeight(BranchName, Depth));
 
                 Height = fragment.LevelHeight;
                 Width = fragment.LevelWidth;
@@ -190,10 +179,6 @@ namespace UnicornHack
             }
         }
 
-        #endregion
-
-        #region Actions
-
         public virtual Actor Turn()
         {
             EnsureInitialized();
@@ -223,8 +208,7 @@ namespace UnicornHack
                     }
 
                     var position = 0;
-                    while (Actors.Count > position + 1
-                           && actor.NextActionTick == Actors[position + 1].NextActionTick)
+                    while (Actors.Count > position + 1 && actor.NextActionTick == Actors[position + 1].NextActionTick)
                     {
                         // Make sure actors alternate if they were to act at the same time
                         actor.NextActionTick++;
@@ -278,10 +262,8 @@ namespace UnicornHack
             return GetShortestPath(firstPoint, lastPoint, origin.Heading);
         }
 
-        public List<Point> GetShortestPath(Point start, Point target, Direction initialDirection)
-        {
-            return _pathFinder.FindPath(start, target, initialDirection);
-        }
+        public List<Point> GetShortestPath(Point start, Point target, Direction initialDirection) =>
+            _pathFinder.FindPath(start, target, initialDirection);
 
         private int? CanMoveTo(byte currentLocationX, byte currentLocationY, int directionIndex)
         {
@@ -298,15 +280,14 @@ namespace UnicornHack
             return ((MapFeature)Terrain[newLocationIndex]).CanMoveTo() ? (int?)newLocationIndex : null;
         }
 
-        public bool IsValid(Point point)
-            => point.X < Width && point.Y < Height; // Since byte is unsigned there is no need to compare with 0
+        public bool IsValid(Point point) =>
+            point.X < Width && point.Y < Height; // Since byte is unsigned there is no need to compare with 0
 
         // TODO: Use locomotion type
         // TODO: block if directionIndex > 3 (diagonal) and path is too narrow to squeeze through
         // TODO: Also avoid actors (at least adjacent ones)
-        public bool CanMoveTo(Point location)
-            => IsValid(location)
-               && ((MapFeature)Terrain[PointToIndex[location.X, location.Y]]).CanMoveTo();
+        public bool CanMoveTo(Point location) =>
+            IsValid(location) && ((MapFeature)Terrain[PointToIndex[location.X, location.Y]]).CanMoveTo();
 
         public int? CanMoveTo(byte locationX, byte locationY)
         {
@@ -325,11 +306,7 @@ namespace UnicornHack
             _fov.Compute(location, 24, visibilityFalloff);
         }
 
-        public void RecomputeVisibility(
-            Point location,
-            Direction heading,
-            byte primaryFOV,
-            byte secondaryFOV)
+        public void RecomputeVisibility(Point location, Direction heading, byte primaryFOV, byte secondaryFOV)
         {
             Array.Clear(VisibleTerrain, 0, VisibleTerrain.Length);
             _fov.Compute(location, heading, primaryFOV, 16, secondaryFOV, 8);
@@ -359,10 +336,9 @@ namespace UnicornHack
             return true;
         }
 
-        private DirectionFlags GetVisibleNeighbours(byte x, byte y)
-            => x < Width && y < Height
-                ? (DirectionFlags)VisibleNeighbours[PointToIndex[x, y]]
-                : DirectionFlags.None;
+        private DirectionFlags GetVisibleNeighbours(byte x, byte y) => x < Width && y < Height
+            ? (DirectionFlags)VisibleNeighbours[PointToIndex[x, y]]
+            : DirectionFlags.None;
 
         public bool CanPlaceCorridor(Point location)
         {
@@ -391,8 +367,7 @@ namespace UnicornHack
 
                 var direction = MovementDirections[i];
                 if (Actors.Any(a =>
-                    a.LevelX == currentLocation.X + direction.X &&
-                    a.LevelY == currentLocation.Y + direction.Y))
+                    a.LevelX == currentLocation.X + direction.X && a.LevelY == currentLocation.Y + direction.Y))
                 {
                     continue;
                 }
@@ -425,8 +400,7 @@ namespace UnicornHack
             return true;
         }
 
-        public virtual bool CanAdd(Item item, byte x, byte y)
-            => true;
+        public virtual bool CanAdd(Item item, byte x, byte y) => true;
 
         public virtual bool Remove(Item item)
         {
@@ -442,7 +416,5 @@ namespace UnicornHack
             }
             return false;
         }
-
-        #endregion
     }
 }

@@ -8,15 +8,13 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Heal(Game game)
-            : base(game)
+        public Heal(Game game) : base(game)
         {
         }
 
         public int Amount { get; set; }
 
-        public override Effect Instantiate(Game game)
-            => new Heal(game) {Amount = Amount};
+        public override Effect Instantiate(Game game) => new Heal(game) {Amount = Amount};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {

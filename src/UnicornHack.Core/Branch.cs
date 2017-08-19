@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Generic;
-using UnicornHack.Generation;
-using UnicornHack.Utils;
 
 namespace UnicornHack
 {
@@ -19,8 +16,7 @@ namespace UnicornHack
         {
         }
 
-        public Branch(Game game, string name)
-            : this()
+        public Branch(Game game, string name) : this()
         {
             Game = game;
             Name = name;

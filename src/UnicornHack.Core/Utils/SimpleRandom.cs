@@ -32,23 +32,16 @@ namespace UnicornHack.Utils
             return result;
         }
 
-        public virtual TInput Pick<TInput>(IReadOnlyList<TInput> items)
-            => items[Next(0, items.Count)];
+        public virtual TInput Pick<TInput>(IReadOnlyList<TInput> items) => items[Next(0, items.Count)];
 
-        public virtual TInput Pick<TInput>(
-            IReadOnlyList<TInput> items,
-            Func<TInput, bool> condition)
-            => !TryPick(items, condition, out var item)
+        public virtual TInput Pick<TInput>(IReadOnlyList<TInput> items, Func<TInput, bool> condition) =>
+            !TryPick(items, condition, out var item)
                 ? throw new InvalidOperationException("No elements meet the condition")
                 : item;
 
-        public virtual TInput TryPick<TInput>(IReadOnlyList<TInput> items)
-            => items[Next(0, items.Count)];
+        public virtual TInput TryPick<TInput>(IReadOnlyList<TInput> items) => items[Next(0, items.Count)];
 
-        public virtual bool TryPick<TInput>(
-            IReadOnlyList<TInput> items,
-            Func<TInput, bool> condition,
-            out TInput item)
+        public virtual bool TryPick<TInput>(IReadOnlyList<TInput> items, Func<TInput, bool> condition, out TInput item)
         {
             var index = Next(0, items.Count);
             for (var i = index; i < items.Count; i++)
@@ -67,33 +60,23 @@ namespace UnicornHack.Utils
                     return true;
                 }
             }
-            item = default(TInput);
+            item = default;
             return false;
         }
 
-        public virtual TInput Pick<TInput>(
-            IReadOnlyList<TInput> items,
-            Func<TInput, float> getWeight)
-            => WeightedOrder(items, getWeight).First();
+        public virtual TInput Pick<TInput>(IReadOnlyList<TInput> items, Func<TInput, float> getWeight) =>
+            WeightedOrder(items, getWeight).First();
 
-        public virtual TResult Pick<TInput, TResult>(
-            IReadOnlyList<TInput> items,
-            Func<TInput, float> getWeight,
-            Func<TInput, int, TResult> selector)
-            => WeightedOrder(items, getWeight, selector).First();
+        public virtual TResult Pick<TInput, TResult>(IReadOnlyList<TInput> items, Func<TInput, float> getWeight,
+            Func<TInput, int, TResult> selector) => WeightedOrder(items, getWeight, selector).First();
 
-        public virtual IEnumerable<TInput> WeightedOrder<TInput>(
-            IReadOnlyList<TInput> items,
-            Func<TInput, float> getWeight)
-            => WeightedOrder(items, getWeight, (item, index) => item);
+        public virtual IEnumerable<TInput> WeightedOrder<TInput>(IReadOnlyList<TInput> items,
+            Func<TInput, float> getWeight) => WeightedOrder(items, getWeight, (item, index) => item);
 
-        public virtual IEnumerable<TResult> WeightedOrder<TInput, TResult>(
-            IReadOnlyList<TInput> items,
-            Func<TInput, float> getWeight,
-            Func<TInput, int, TResult> selector)
+        public virtual IEnumerable<TResult> WeightedOrder<TInput, TResult>(IReadOnlyList<TInput> items,
+            Func<TInput, float> getWeight, Func<TInput, int, TResult> selector)
         {
-            if (items == null
-                || items.Count == 0)
+            if (items == null || items.Count == 0)
             {
                 yield break;
             }
@@ -222,7 +205,7 @@ namespace UnicornHack.Utils
         private int NextInt() => (int)(int.MaxValue & NextUInt());
 
         /// <summary>
-        /// Generates <paramref name="n"/> random numbers and returns how many of them were smaller than <paramref name="p"/>
+        ///     Generates <paramref name="n" /> random numbers and returns how many of them were smaller than <paramref name="p" />
         /// </summary>
         /// <param name="p"> A number between 0 and 1 </param>
         /// <param name="n"> The number of numbers to generate </param>

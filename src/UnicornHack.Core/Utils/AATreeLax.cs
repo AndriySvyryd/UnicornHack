@@ -9,14 +9,11 @@ namespace UnicornHack.Utils
     /// <typeparam name="TKey"></typeparam>
     /// <typeparam name="TValue"></typeparam>
     // ReSharper disable once InconsistentNaming
-    public class AATreeLax<TKey, TValue> : AATree<TKey, TValue>
-        where TKey : IComparable<TKey>
+    public class AATreeLax<TKey, TValue> : AATree<TKey, TValue> where TKey : IComparable<TKey>
     {
-        public bool Remove(TKey key, TValue value)
-            => Remove(ref Root, key, value);
+        public bool Remove(TKey key, TValue value) => Remove(ref Root, key, value);
 
-        public IEnumerable<TValue> GetValues(TKey key)
-            => GetValues(Root, key, new List<TValue>());
+        public IEnumerable<TValue> GetValues(TKey key) => GetValues(Root, key, new List<TValue>());
 
         public override (TKey, TValue) GetNextSmaller(TKey key)
         {
@@ -40,9 +37,7 @@ namespace UnicornHack.Utils
                     if (compare == 0)
                     {
                         var rightSmaller = GetNextSmaller(node.Right, key);
-                        if (rightSmaller != Sentinel
-                            && (next == Sentinel
-                                || next.Key.CompareTo(rightSmaller.Key) < 0))
+                        if (rightSmaller != Sentinel && (next == Sentinel || next.Key.CompareTo(rightSmaller.Key) < 0))
                         {
                             next = rightSmaller;
                         }
@@ -51,8 +46,7 @@ namespace UnicornHack.Utils
                 }
                 if (compare > 0)
                 {
-                    if (next == Sentinel
-                        || next.Key.CompareTo(node.Key) < 0)
+                    if (next == Sentinel || next.Key.CompareTo(node.Key) < 0)
                     {
                         next = node;
                     }
@@ -82,8 +76,7 @@ namespace UnicornHack.Utils
                 var compare = key.CompareTo(node.Key);
                 if (compare < 0)
                 {
-                    if (next == Sentinel
-                        || next.Key.CompareTo(node.Key) > 0)
+                    if (next == Sentinel || next.Key.CompareTo(node.Key) > 0)
                     {
                         next = node;
                     }
@@ -94,9 +87,7 @@ namespace UnicornHack.Utils
                     if (compare == 0)
                     {
                         var leftLarger = GetNextLarger(node.Left, key);
-                        if (leftLarger != Sentinel
-                            && (next == Sentinel
-                                || next.Key.CompareTo(leftLarger.Key) > 0))
+                        if (leftLarger != Sentinel && (next == Sentinel || next.Key.CompareTo(leftLarger.Key) > 0))
                         {
                             next = leftLarger;
                         }
@@ -161,8 +152,7 @@ namespace UnicornHack.Utils
                         skip = Remove(ref node.Left, key, value);
                     }
                 }
-                if (!skip
-                    && !Remove(ref node.Right, key, value))
+                if (!skip && !Remove(ref node.Right, key, value))
                 {
                     return false;
                 }
@@ -175,8 +165,7 @@ namespace UnicornHack.Utils
                 Deleted = null;
                 node = node.Right;
             }
-            else if (node.Left.Level < node.Level - 1
-                     || node.Right.Level < node.Level - 1)
+            else if (node.Left.Level < node.Level - 1 || node.Right.Level < node.Level - 1)
             {
                 node.Level--;
                 if (node.Right.Level > node.Level)

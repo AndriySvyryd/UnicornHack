@@ -20,8 +20,7 @@ namespace UnicornHack.Generation
                 for (var i = 0; i < itemsPerRoom; i++)
                 {
                     if (!level.GenerationRandom.TryPick(room.InsidePoints,
-                        p => !level.Items.Any(c => c.LevelX == p.X && c.LevelY == p.Y),
-                        out var point))
+                        p => !level.Items.Any(c => c.LevelX == p.X && c.LevelY == p.Y), out var point))
                     {
                         goto NextRoom;
                     }
@@ -40,8 +39,7 @@ namespace UnicornHack.Generation
                                 var quantity = currentGroup.Type == ItemType.Coin
                                     ? level.GenerationRandom.NextBinomial(difficultyFraction, 49) + 1
                                     : 1;
-                                if (itemVariant.Instantiate(new LevelCell(level, point.X, point.Y), quantity) !=
-                                    null)
+                                if (itemVariant.Instantiate(new LevelCell(level, point.X, point.Y), quantity) != null)
                                 {
                                     itemPlaced = true;
                                     break;
@@ -56,8 +54,7 @@ namespace UnicornHack.Generation
                         else
                         {
                             enumeratorsStack.Push(level.GenerationRandom
-                                .WeightedOrder(currentGroup.SubGroups, g => g.Weight)
-                                .GetEnumerator());
+                                .WeightedOrder(currentGroup.SubGroups, g => g.Weight).GetEnumerator());
                         }
 
                         currentGroup = null;

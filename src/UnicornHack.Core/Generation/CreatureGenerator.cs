@@ -20,19 +20,17 @@ namespace UnicornHack.Generation
                 for (var i = 0; i < creaturesPerRoom; i++)
                 {
                     if (!level.GenerationRandom.TryPick(room.InsidePoints,
-                        p => !level.Actors.Any(c => c.LevelX == p.X && c.LevelY == p.Y),
-                        out var point))
+                        p => !level.Actors.Any(c => c.LevelX == p.X && c.LevelY == p.Y), out var point))
                     {
                         goto NextRoom;
                     }
 
                     foreach (var creatureLevel in Sequence.GetAlternating(
-                        level.GenerationRandom.NextBinomial(difficultyFraction, Creature.MaxLevel - 1),
-                        0, Creature.MaxLevel - 1))
+                        level.GenerationRandom.NextBinomial(difficultyFraction, CreatureVariant.MaxLevel - 1), 0,
+                        CreatureVariant.MaxLevel - 1))
                     {
                         foreach (var creatureVariant in level.GenerationRandom.WeightedOrder(
-                            Creature.Loader.GetAllValues((byte)(creatureLevel + 1)),
-                            c => c.GetWeight(level)))
+                            CreatureVariant.Loader.GetAllValues((byte)(creatureLevel + 1)), c => c.GetWeight(level)))
                         {
                             if (creatureVariant.Instantiate(level, point.X, point.Y) != null)
                             {

@@ -9,15 +9,13 @@ namespace UnicornHack.Effects
         {
         }
 
-        public ScriptedEffect(Game game)
-            : base(game)
+        public ScriptedEffect(Game game) : base(game)
         {
         }
 
         public string Script { get; set; }
 
-        public override Effect Instantiate(Game game)
-            => new ScriptedEffect(game) {Script = Script};
+        public override Effect Instantiate(Game game) => new ScriptedEffect(game) {Script = Script};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {

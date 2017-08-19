@@ -16,8 +16,7 @@ namespace UnicornHack.Events
                 var pickerSensed = sensor.CanSense(picker);
                 var itemSensed = sensor.CanSense(item);
 
-                if (pickerSensed == SenseType.None
-                    && itemSensed == SenseType.None)
+                if (pickerSensed == SenseType.None && itemSensed == SenseType.None)
                 {
                     continue;
                 }

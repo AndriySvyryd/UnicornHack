@@ -118,7 +118,7 @@ PP
         {
             var level = TestHelper.CreateLevel();
 
-            var fragment = new MapFragment
+            var fragment = new NormalMapFragment
             {
                 Map = map
             };
@@ -142,13 +142,13 @@ PP
                     switch (c)
                     {
                         case 'I':
-                            s.Item1.Add(point);
+                            s.expectedInside.Add(point);
                             break;
                         case 'P':
-                            s.Item2.Add(point);
+                            s.expectedPerimeter.Add(point);
                             break;
                         case 'O':
-                            s.Item3.Add(point);
+                            s.expectedOutside.Add(point);
                             break;
                     }
                 },
@@ -186,7 +186,6 @@ PP
                 {
                     Assert.Equal(1, firstPoint.Value.OrthogonalDistanceTo(lastPoint.Value));
                 }
-
             }
             catch (Exception e)
             {
