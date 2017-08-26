@@ -12,18 +12,17 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Quadruped,
             SpeciesClass = SpeciesClass.Quadrupedal,
             MovementDelay = 133,
-            Weight = 2500,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Headbutt,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 13}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -33,7 +32,7 @@ namespace UnicornHack.Data.Creatures
                 },
             SimpleProperties =
                 new HashSet<string> {"animal body", "infravisibility", "handlessness", "singular inventory"},
-            ValuedProperties = new Dictionary<string, object> {{"thick hide", 3}, {"largeness", Size.Large}},
+            ValuedProperties = new Dictionary<string, object> {{"thick hide", 3}, {"size", 8}, {"weight", 2500}},
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
             Noise = ActorNoiseType.Roar

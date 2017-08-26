@@ -12,17 +12,16 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Doppelganger,
             SpeciesClass = SpeciesClass.ShapeChanger,
             MovementDelay = 100,
-            Weight = 1000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 6}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -32,7 +31,13 @@ namespace UnicornHack.Data.Creatures
                 },
             SimpleProperties =
                 new HashSet<string> {"sleep resistance", "polymorph control", "infravisibility", "humanoidness"},
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 15}, {"magic resistance", 20}},
+            ValuedProperties =
+                new Dictionary<string, object>
+                {
+                    {"physical deflection", 15},
+                    {"magic resistance", 20},
+                    {"weight", 1000}
+                },
             InitialLevel = 9,
             GenerationFlags = GenerationFlags.NonPolymorphable,
             Behavior = MonsterBehavior.WeaponCollector,

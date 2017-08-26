@@ -98,7 +98,7 @@ namespace UnicornHack.Utils
             var seed = Environment.TickCount;
             var random = new SimpleRandom {Seed = seed};
             var selectedCounts = new int[itemWeights.Length];
-            var selectionCount = 100000;
+            var selectionCount = 500000;
             for (var i = 0; i < selectionCount; i++)
             {
                 var selectedIndex = random.NextBinomial(p, n);
@@ -156,7 +156,7 @@ namespace UnicornHack.Utils
             for (var i = 0; i < selectionCount; i++)
             {
                 var orderedItems = random.WeightedOrder(items, f => f, (f, index) => (f, index));
-                var selectedIndex = orderedItems.First(tuple => tuple.Item2 % 2 == 0).Item2;
+                var selectedIndex = orderedItems.First(tuple => tuple.index % 2 == 0).index;
                 selectedCounts[selectedIndex]++;
             }
 

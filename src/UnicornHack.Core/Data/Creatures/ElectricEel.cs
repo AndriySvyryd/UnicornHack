@@ -11,18 +11,17 @@ namespace UnicornHack.Data.Creatures
             Name = "electric eel",
             Species = Species.Eel,
             MovementDelay = 120,
-            Weight = 600,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new ElectricityDamage {Damage = 14}}
+                        Effects = new HashSet<Effect> {new Shock {Damage = 14}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Hug,
@@ -36,8 +35,9 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"electricity resistance", 3},
-                    {"largeness", Size.Large},
-                    {"physical deflection", 23}
+                    {"size", 8},
+                    {"physical deflection", 23},
+                    {"weight", 600}
                 },
             InitialLevel = 7,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},

@@ -10,20 +10,26 @@ namespace UnicornHack.Data.Players
         {
             Name = "ogre",
             Species = Species.Ogre,
-            Abilities = new HashSet<Ability>
+            Abilities = new HashSet<AbilityDefinition>
             {
-                new Ability
+                new AbilityDefinition
                 {
+                    Name = "innate",
                     Activation = AbilityActivation.Always,
                     Effects = new HashSet<Effect>
                     {
-                        new ChangeProperty<bool> {PropertyName = "Infravisibility", Value = true},
-                        new ChangeProperty<bool> {PropertyName = "Humanoidness", Value = true},
-                        new ChangeProperty<int> {PropertyName = "Strength", Value = 2},
-                        new ChangeProperty<int> {PropertyName = "Agility", Value = -2},
-                        new ChangeProperty<int> {PropertyName = "Constitution", Value = 2},
-                        new ChangeProperty<int> {PropertyName = "Quickness", Value = -2},
-                        new ChangeProperty<Size> {PropertyName = "Size", Value = Size.Large, IsAbsolute = true}
+                        new ChangeProperty<bool> {PropertyName = "infravisibility", Value = true},
+                        new ChangeProperty<bool> {PropertyName = "humanoidness", Value = true},
+                        new ChangeProperty<int> {PropertyName = "strength", Value = 2},
+                        new ChangeProperty<int> {PropertyName = "agility", Value = -2},
+                        new ChangeProperty<int> {PropertyName = "constitution", Value = 2},
+                        new ChangeProperty<int> {PropertyName = "quickness", Value = -2},
+                        new ChangeProperty<int>
+                        {
+                            PropertyName = "size",
+                            Value = 9,
+                            Function = ValueCombinationFunction.MeanRoundUp
+                        }
                     }
                 }
             }

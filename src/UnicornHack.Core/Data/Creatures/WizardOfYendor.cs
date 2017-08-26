@@ -11,18 +11,17 @@ namespace UnicornHack.Data.Creatures
             Name = "Wizard of Yendor",
             Species = Species.Human,
             MovementDelay = 100,
-            Weight = 1000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 13}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Spell,
@@ -52,7 +51,8 @@ namespace UnicornHack.Data.Creatures
                     {"energy regeneration", 3},
                     {"telepathy", 3},
                     {"physical deflection", 28},
-                    {"magic resistance", 100}
+                    {"magic resistance", 100},
+                    {"weight", 1000}
                 },
             InitialLevel = 30,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},

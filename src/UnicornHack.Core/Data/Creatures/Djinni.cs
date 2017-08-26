@@ -12,27 +12,26 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Djinni,
             SpeciesClass = SpeciesClass.Demon,
             MovementDelay = 100,
-            Weight = 1400,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 9}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 2}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 2}}
                     }
                 },
             SimpleProperties =
@@ -50,7 +49,8 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"poison resistance", 3},
                     {"physical deflection", 16},
-                    {"magic resistance", 30}
+                    {"magic resistance", 30},
+                    {"weight", 1400}
                 },
             InitialLevel = 7,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},

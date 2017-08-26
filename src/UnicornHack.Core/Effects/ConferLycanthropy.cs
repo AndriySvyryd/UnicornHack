@@ -1,6 +1,3 @@
-using System;
-using UnicornHack.Events;
-
 namespace UnicornHack.Effects
 {
     public class ConferLycanthropy : Effect
@@ -15,11 +12,16 @@ namespace UnicornHack.Effects
 
         public string VariantName { get; set; }
 
-        public override Effect Instantiate(Game game) => new ConferLycanthropy(game) {VariantName = VariantName};
+        public override Effect Copy(Game game) => new ConferLycanthropy(game) {VariantName = VariantName};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            throw new NotImplementedException();
+            if (!abilityContext.Succeeded)
+            {
+                return;
+            }
+
+            abilityContext.AppliedEffects.Add(new LycanthropyConfered(abilityContext) {VariantName = VariantName});
         }
     }
 }

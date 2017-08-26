@@ -11,25 +11,24 @@ namespace UnicornHack.Data.Creatures
             Name = "winged gargoyle",
             Species = Species.Gargoyle,
             MovementDelay = 80,
-            Weight = 1200,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -47,7 +46,8 @@ namespace UnicornHack.Data.Creatures
                     "oviparity",
                     "stoning resistance"
                 },
-            ValuedProperties = new Dictionary<string, object> {{"thick hide", 3}, {"physical deflection", 24}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"thick hide", 3}, {"physical deflection", 24}, {"weight", 1200}},
             InitialLevel = 9,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},
             PreviousStageName = "gargoyle",

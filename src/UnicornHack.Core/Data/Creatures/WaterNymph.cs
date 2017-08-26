@@ -12,18 +12,17 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Nymph,
             SpeciesClass = SpeciesClass.Fey,
             MovementDelay = 100,
-            Weight = 600,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new Seduce()}
+                        Effects = new HashSet<Effect> {new Sedate{Duration = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
@@ -33,7 +32,8 @@ namespace UnicornHack.Data.Creatures
                 },
             SimpleProperties =
                 new HashSet<string> {"teleportation", "swimming", "humanoidness", "infravisibility", "femaleness"},
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 11}, {"magic resistance", 20}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"physical deflection", 11}, {"magic resistance", 20}, {"weight", 600}},
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
             Behavior = MonsterBehavior.WeaponCollector,

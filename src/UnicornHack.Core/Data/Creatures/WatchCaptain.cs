@@ -11,24 +11,23 @@ namespace UnicornHack.Data.Creatures
             Name = "watch captain",
             Species = Species.Human,
             MovementDelay = 120,
-            Weight = 1000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -37,7 +36,13 @@ namespace UnicornHack.Data.Creatures
                     }
                 },
             SimpleProperties = new HashSet<string> {"infravisibility", "humanoidness"},
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 10}, {"magic resistance", 15}},
+            ValuedProperties =
+                new Dictionary<string, object>
+                {
+                    {"physical deflection", 10},
+                    {"magic resistance", 15},
+                    {"weight", 1000}
+                },
             InitialLevel = 10,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             PreviousStageName = "watchman",

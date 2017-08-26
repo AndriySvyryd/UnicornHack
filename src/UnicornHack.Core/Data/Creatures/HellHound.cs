@@ -12,23 +12,22 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Dog,
             SpeciesClass = SpeciesClass.Canine,
             MovementDelay = 85,
-            Weight = 700,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Breath,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new FireDamage {Damage = 10}}
+                        Effects = new HashSet<Effect> {new Burn {Damage = 10}}
                     }
                 },
             SimpleProperties =
@@ -38,7 +37,8 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"fire resistance", 3},
                     {"physical deflection", 18},
-                    {"magic resistance", 20}
+                    {"magic resistance", 20},
+                    {"weight", 700}
                 },
             InitialLevel = 12,
             GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 6F}, Name = "hell"},

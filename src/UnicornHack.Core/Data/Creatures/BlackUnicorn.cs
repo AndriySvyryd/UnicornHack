@@ -12,18 +12,17 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Unicorn,
             SpeciesClass = SpeciesClass.Quadrupedal,
             MovementDelay = 50,
-            Weight = 1300,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Headbutt,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 6}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Kick,
@@ -37,9 +36,10 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"poison resistance", 3},
                     {"venom resistance", 3},
-                    {"largeness", Size.Large},
+                    {"size", 8},
                     {"physical deflection", 18},
-                    {"magic resistance", 70}
+                    {"magic resistance", 70},
+                    {"weight", 1300}
                 },
             InitialLevel = 4,
             GenerationWeight = new DefaultWeight {Multiplier = 6F},

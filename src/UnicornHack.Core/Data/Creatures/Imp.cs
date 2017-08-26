@@ -12,21 +12,20 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Imp,
             SpeciesClass = SpeciesClass.Demon,
             MovementDelay = 100,
-            Weight = 100,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 2}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 2}}
                     }
                 },
             SimpleProperties = new HashSet<string> {"flight", "flight control", "infravision", "infravisibility"},
@@ -34,9 +33,10 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"regeneration", 3},
-                    {"largeness", Size.Tiny},
+                    {"size", 1},
                     {"physical deflection", 18},
-                    {"magic resistance", 20}
+                    {"magic resistance", 20},
+                    {"weight", 100}
                 },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 7F},

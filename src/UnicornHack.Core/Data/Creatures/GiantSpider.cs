@@ -12,31 +12,30 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Spider,
             SpeciesClass = SpeciesClass.Vermin,
             MovementDelay = 80,
-            Weight = 150,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new VenomDamage {Damage = 5}}
+                        Effects = new HashSet<Effect> {new Envenom {Damage = 5}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect>
                         {
-                            new ChangeProperty<int> {PropertyName = "Strength", Value = -1, Duration = 5}
+                            new ChangeProperty<int> {PropertyName = "strength", Value = -1, Duration = 5}
                         }
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 3}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 3}}
                     }
                 },
             SimpleProperties = new HashSet<string> {"clinginess", "animal body", "handlessness", "oviparity"},
@@ -45,7 +44,8 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"poison resistance", 3},
                     {"venom resistance", 3},
-                    {"physical deflection", 16}
+                    {"physical deflection", 16},
+                    {"weight", 150}
                 },
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 6F}

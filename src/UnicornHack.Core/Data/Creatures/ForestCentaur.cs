@@ -11,24 +11,23 @@ namespace UnicornHack.Data.Creatures
             Name = "forest centaur",
             Species = Species.Centaur,
             MovementDelay = 66,
-            Weight = 2000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 4}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Kick,
@@ -40,9 +39,10 @@ namespace UnicornHack.Data.Creatures
             ValuedProperties =
                 new Dictionary<string, object>
                 {
-                    {"largeness", Size.Large},
+                    {"size", 8},
                     {"physical deflection", 17},
-                    {"magic resistance", 10}
+                    {"magic resistance", 10},
+                    {"weight", 2000}
                 },
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},

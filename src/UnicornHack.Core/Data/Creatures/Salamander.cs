@@ -12,53 +12,52 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Salamander,
             SpeciesClass = SpeciesClass.Extraplanar,
             MovementDelay = 100,
-            Weight = 1500,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 9}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new FireDamage {Damage = 3}}
+                        Effects = new HashSet<Effect> {new Burn {Damage = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Hug,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new FireDamage {Damage = 7}}
+                        Effects = new HashSet<Effect> {new Burn {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Hug,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new FireDamage {Damage = 10}}
+                        Effects = new HashSet<Effect> {new Burn {Damage = 10}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new FireDamage {Damage = 10}}
+                        Effects = new HashSet<Effect> {new Burn {Damage = 10}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 7}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 7}}
                     }
                 },
             SimpleProperties =
@@ -78,8 +77,9 @@ namespace UnicornHack.Data.Creatures
                     {"fire resistance", 3},
                     {"poison resistance", 3},
                     {"thick hide", 3},
-                    {"largeness", Size.Large},
-                    {"physical deflection", 21}
+                    {"size", 8},
+                    {"physical deflection", 21},
+                    {"weight", 1500}
                 },
             InitialLevel = 10,
             GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 2F}, Name = "hell"},

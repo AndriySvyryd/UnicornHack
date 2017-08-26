@@ -1,6 +1,3 @@
-using System;
-using UnicornHack.Events;
-
 namespace UnicornHack.Effects
 {
     public class Suffocate : Effect
@@ -13,11 +10,16 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override Effect Instantiate(Game game) => new Suffocate(game);
+        public override Effect Copy(Game game) => new Suffocate(game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            throw new NotImplementedException();
+            if (!abilityContext.Succeeded)
+            {
+                return;
+            }
+
+            abilityContext.AppliedEffects.Add(new Suffocated(abilityContext) {Duration = Duration});
         }
     }
 }

@@ -13,8 +13,6 @@ namespace UnicornHack.Utils
         private const float IntToFloat = 1.0f / int.MaxValue;
         private uint _x = 1;
 
-        public int Id { get; set; }
-
         public int Seed
         {
             get => (int)_x;

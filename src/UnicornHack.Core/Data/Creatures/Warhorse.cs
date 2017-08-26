@@ -12,11 +12,10 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Horse,
             SpeciesClass = SpeciesClass.Quadrupedal,
             MovementDelay = 50,
-            Weight = 1800,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Kick,
@@ -26,7 +25,8 @@ namespace UnicornHack.Data.Creatures
                 },
             SimpleProperties =
                 new HashSet<string> {"animal body", "infravisibility", "handlessness", "singular inventory"},
-            ValuedProperties = new Dictionary<string, object> {{"largeness", Size.Large}, {"physical deflection", 16}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"size", 8}, {"physical deflection", 16}, {"weight", 1800}},
             InitialLevel = 7,
             GenerationWeight = new DefaultWeight {Multiplier = 7F},
             PreviousStageName = "horse",

@@ -12,25 +12,24 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Bat,
             SpeciesClass = SpeciesClass.Bird,
             MovementDelay = 60,
-            Weight = 100,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect>
                         {
-                            new ChangeProperty<int> {PropertyName = "Strength", Value = -1, Duration = 5}
+                            new ChangeProperty<int> {PropertyName = "strength", Value = -1, Duration = 5}
                         }
                     }
                 },
@@ -50,8 +49,9 @@ namespace UnicornHack.Data.Creatures
                     {"poison resistance", 3},
                     {"regeneration", 3},
                     {"stealthiness", 3},
-                    {"largeness", Size.Tiny},
-                    {"physical deflection", 14}
+                    {"size", 1},
+                    {"physical deflection", 14},
+                    {"weight", 100}
                 },
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},

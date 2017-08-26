@@ -12,25 +12,24 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Rat,
             SpeciesClass = SpeciesClass.Rodent | SpeciesClass.ShapeChanger,
             MovementDelay = 100,
-            Weight = 150,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 5,
                         Effects = new HashSet<Effect> {new ConferLycanthropy {VariantName = "ratwere"}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
                         Effects = new HashSet<Effect> {new ConferLycanthropy {VariantName = "ratwere"}}
@@ -43,9 +42,10 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"poison resistance", 3},
                     {"regeneration", 3},
-                    {"largeness", Size.Small},
+                    {"size", 2},
                     {"physical deflection", 14},
-                    {"magic resistance", 10}
+                    {"magic resistance", 10},
+                    {"weight", 150}
                 },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},

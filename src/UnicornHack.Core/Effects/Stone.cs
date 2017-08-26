@@ -1,6 +1,3 @@
-using System;
-using UnicornHack.Events;
-
 namespace UnicornHack.Effects
 {
     public class Stone : Effect
@@ -13,11 +10,16 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override Effect Instantiate(Game game) => new Stone(game);
+        public override Effect Copy(Game game) => new Stone(game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            throw new NotImplementedException();
+            if (!abilityContext.Succeeded)
+            {
+                return;
+            }
+
+            abilityContext.AppliedEffects.Add(new Stoned(abilityContext) {Duration = Duration});
         }
     }
 }

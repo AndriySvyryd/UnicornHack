@@ -12,16 +12,15 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Cockatrice,
             SpeciesClass = SpeciesClass.MagicalBeast,
             MovementDelay = 200,
-            Weight = 30,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Gaze,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new FireDamage {Damage = 7}}
+                        Effects = new HashSet<Effect> {new Burn {Damage = 7}}
                     }
                 },
             SimpleProperties =
@@ -38,9 +37,10 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"poison resistance", 3},
                     {"fire resistance", 3},
-                    {"largeness", Size.Small},
+                    {"size", 2},
                     {"physical deflection", 14},
-                    {"magic resistance", 30}
+                    {"magic resistance", 30},
+                    {"weight", 30}
                 },
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},

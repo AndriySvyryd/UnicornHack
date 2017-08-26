@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CSharpScriptSerialization;
 using UnicornHack.Data.Players;
+using UnicornHack.Effects;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Generation
@@ -12,26 +13,27 @@ namespace UnicornHack.Generation
 
         public virtual Species Species { get; set; }
         public virtual SpeciesClass SpeciesClass { get; set; }
-        public virtual ISet<Ability> Abilities { get; set; } = new HashSet<Ability>();
+        public virtual ISet<AbilityDefinition> Abilities { get; set; } = new HashSet<AbilityDefinition>();
 
-        public PlayerRace Instantiate(Player player)
+        public ChangedRace Instantiate(AbilityActivationContext abilityContext)
         {
-            var race = new PlayerRace
+            var race = new ChangedRace(abilityContext)
             {
-                Game = player.Game,
-                Player = player,
-                Id = player.NextRaceId++,
                 Name = Name,
                 Species = Species,
-                SpeciesClass = SpeciesClass
+                SpeciesClass = SpeciesClass,
+                Ability = new Ability(abilityContext.Target.Game)
+                {
+                    Name = Name,
+                    Activation = AbilityActivation.Always
+                }
             };
 
-            foreach (var ability in Abilities)
+            foreach (var abilityDefinition in Abilities)
             {
-                race.Abilities.Add(ability.Instantiate(player.Game).AddReference().Referenced);
+                race.Ability.Effects.Add(
+                    new AddAbility(abilityContext.Target.Game) { Ability = abilityDefinition.Copy(abilityContext.Target.Game) });
             }
-
-            player.Add(race);
 
             return race;
         }
@@ -48,7 +50,7 @@ namespace UnicornHack.Generation
             {nameof(Name), (o, v) => v != null},
             {nameof(Species), (o, v) => (Species)v != Species.Default},
             {nameof(SpeciesClass), (o, v) => (SpeciesClass)v != SpeciesClass.None},
-            {nameof(Abilities), (o, v) => ((ICollection<Ability>)v).Count != 0}
+            {nameof(Abilities), (o, v) => ((ICollection<AbilityDefinition>)v).Count != 0}
         };
 
         public virtual ICSScriptSerializer GetSerializer() => Serializer;

@@ -8,59 +8,48 @@ using UnicornHack.Utils;
 
 namespace UnicornHack
 {
-    public abstract class Actor : IItemLocation, IReferenceable
+    public abstract class Actor : Entity, IItemLocation, IReferenceable
     {
         public const int DefaultActionDelay = 100;
-        public const string InnateName = "Innate";
-        public const string UnarmedAttackName = "Unarmed attack";
-        public const string MeleeAttackName = "Melee attack";
-        public const string SecondaryMeleeAttackName = "Secondary melee attack";
+        public const string InnateName = "innate";
+        public const string UnarmedAttackName = "unarmed attack";
+        public const string MeleeAttackName = "melee attack";
+        public const string SecondaryMeleeAttackName = "secondary melee attack";
 
-        // ReSharper disable once UnusedAutoPropertyAccessor.Local
-        public virtual int Id { get; private set; }
-        public virtual string Name { get; set; }
-        public virtual string BaseName { get; set; }
-        public virtual Species Species { get; set; }
-        public virtual SpeciesClass SpeciesClass { get; set; }
-        public virtual int MovementDelay { get; set; }
+        public Species Species { get; set; }
+        public SpeciesClass SpeciesClass { get; set; }
+        public Sex Sex { get; set; }
+        public int MovementDelay { get; set; }
+        public virtual Direction Heading { get; set; }
+        public int MaxHP { get; set; } = 1;
+        public int HP { get; set; } = 1; // So actors start out alive
+        public bool IsAlive => HP > 0;
+        public int MaxEP { get; set; }
+        public int EP { get; set; }
 
-        /// <summary> 100g units </summary>
-        public virtual int Weight { get; set; }
-        public virtual Material Material { get; set; }
-        public virtual ISet<Ability> Abilities { get; set; } = new HashSet<Ability>();
-        public virtual Sex Sex { get; set; }
-        public virtual int MaxHP { get; set; }
-        public virtual int HP { get; set; }
-        public virtual bool IsAlive => HP > 0;
+        // TODO: Move to Entity when bug fixed
+        public string BranchName { get; set; }
+
+        public byte? LevelDepth { get; set; }
+        public Level Level { get; set; }
+        public byte LevelX { get; set; }
+        public byte LevelY { get; set; }
 
         /// <summary>
         ///     Warning: this should only be updated when this actor is acting
         /// </summary>
         public virtual int NextActionTick { get; set; }
+
         public virtual int Gold { get; set; }
         IEnumerable<Item> IItemLocation.Items => Inventory;
         public virtual ICollection<Item> Inventory { get; } = new HashSet<Item>();
-        public virtual string BranchName { get; set; }
-        public virtual byte? LevelDepth { get; set; }
-        public virtual Level Level { get; set; }
-        public virtual byte LevelX { get; set; }
-        public virtual byte LevelY { get; set; }
-        public virtual Direction Heading { get; set; }
-
-        // ReSharper disable once UnusedAutoPropertyAccessor.Local
-        public virtual int GameId { get; private set; }
-
-        public virtual Game Game { get; set; }
 
         protected Actor()
         {
         }
 
-        protected Actor(Level level, byte x, byte y) : this()
+        protected Actor(Level level, byte x, byte y) : base(level.Game)
         {
-            Game = level.Game;
-            Id = level.Game.NextActorId++;
-            Game.Actors.Add(this);
             LevelX = x;
             LevelY = y;
             Level = level;
@@ -80,21 +69,22 @@ namespace UnicornHack
 
         public void RemoveReference()
         {
-            if (--_referenceCount <= 0)
+            if (_referenceCount > 0
+                && --_referenceCount == 0)
             {
-                foreach (var item in Inventory)
+                foreach (var item in Inventory.ToList())
                 {
                     item.RemoveReference();
                 }
-                foreach (var ability in Abilities)
+                foreach (var ability in Abilities.ToList())
                 {
-                    ability.RemoveReference();
+                    Remove(ability);
                 }
                 Game.Repository.Delete(this);
             }
         }
 
-        public virtual void RecalculateEffectsAndAbilities()
+        public virtual void RecalculateAbilities()
         {
             Item twoHandedWeapon = null;
             Item mainWeapon = null;
@@ -141,12 +131,12 @@ namespace UnicornHack
                     {
                         Name = MeleeAttackName,
                         Activation = AbilityActivation.OnTarget,
-                        DelayTicks = 100,
+                        Delay = 100,
                         Effects = new HashSet<Effect> {new MeleeAttack(Game), new PhysicalDamage(Game)},
                         IsUsable = false
                     };
 
-                    Abilities.Add(mainMeleeAttack);
+                    Add(mainMeleeAttack);
                 }
                 if (secondaryMeleeAttack == null)
                 {
@@ -158,7 +148,7 @@ namespace UnicornHack
                         IsUsable = false
                     };
 
-                    Abilities.Add(secondaryMeleeAttack);
+                    Add(secondaryMeleeAttack);
                 }
 
                 mainMeleeAttack.IsUsable = true;
@@ -183,14 +173,6 @@ namespace UnicornHack
                     ability.IsUsable = (ability.FreeSlotsRequired & usedSlots) == EquipmentSlot.Default;
                 }
             }
-
-            //TODO: Add active abilities first
-
-            //Check effects (attributes provide an effect for players)
-            //Check equipment
-            //Check innate abilities (including skills for players)
-            //Check sustained abilities
-            //Check innate properties
         }
 
         /// <summary></summary>
@@ -200,8 +182,6 @@ namespace UnicornHack
         public virtual void Sense(SensoryEvent @event)
         {
             @event.Game = Game;
-            @event.AddReference();
-            @event.RemoveReference();
         }
 
         public virtual SenseType CanSense(Actor target)
@@ -394,8 +374,12 @@ namespace UnicornHack
                 return true;
             }
 
-            return ability.Activate(new AbilityActivationContext {Activator = this, Target = victim, IsAttack = true},
-                pretend);
+            return ability.Activate(new AbilityActivationContext
+            {
+                Activator = this,
+                Target = victim,
+                IsAttack = true
+            });
         }
 
         public virtual bool Equip(Item item, EquipmentSlot slot, bool pretend = false)
@@ -439,7 +423,18 @@ namespace UnicornHack
             item.EquippedSlot = slot;
             ItemEquipmentEvent.New(this, item, Game.EventOrder++);
 
-            RecalculateEffectsAndAbilities();
+            foreach (var ability in item.Abilities.Where(
+                a => a.Activation == AbilityActivation.WhileEquipped && !a.IsActive))
+            {
+                ability.Activate(new AbilityActivationContext
+                {
+                    Activator = this,
+                    Target = this,
+                    AbilityTrigger = AbilityActivation.WhileEquipped
+                });
+            }
+
+            RecalculateAbilities();
 
             return true;
         }
@@ -462,8 +457,13 @@ namespace UnicornHack
             item.EquippedSlot = null;
             ItemUnequipmentEvent.New(this, item, Game.EventOrder++);
 
-            // TODO: Just invalidate
-            RecalculateEffectsAndAbilities();
+            foreach (var ability in item.Abilities.Where(a
+                => a.Activation == AbilityActivation.WhileEquipped && a.IsActive))
+            {
+                ability.Deactivate();
+            }
+
+            RecalculateAbilities();
 
             return true;
         }
@@ -486,12 +486,18 @@ namespace UnicornHack
             using (var reference = item.Split(1))
             {
                 var splitItem = reference.Referenced;
-                foreach (var ability in splitItem.Abilities.Where(a => a.Activation == AbilityActivation.OnConsumption))
-                {
-                    ability.Activate(new AbilityActivationContext {Activator = this, Target = this}, pretend);
-                }
 
                 ItemConsumptionEvent.New(this, splitItem, Game.EventOrder++);
+
+                foreach (var ability in splitItem.Abilities.Where(a => a.Activation == AbilityActivation.OnConsumption))
+                {
+                    ability.Activate(new AbilityActivationContext
+                    {
+                        Activator = this,
+                        Target = this,
+                        AbilityTrigger = AbilityActivation.OnDigestion
+                    });
+                }
             }
 
             return true;
@@ -510,7 +516,6 @@ namespace UnicornHack
             using (item.AddReference())
             {
                 item.MoveTo(this);
-
                 ItemPickUpEvent.New(this, item, Game.EventOrder++);
             }
 
@@ -591,6 +596,17 @@ namespace UnicornHack
                 itemOrStack.AddReference();
             }
 
+            foreach (var ability in item.Abilities.Where(a
+                => a.Activation == AbilityActivation.WhilePossessed && !a.IsActive))
+            {
+                ability.Activate(new AbilityActivationContext
+                {
+                    Activator = this,
+                    Target = this,
+                    AbilityTrigger = AbilityActivation.WhilePossessed
+                });
+            }
+
             return true;
         }
 
@@ -598,15 +614,50 @@ namespace UnicornHack
 
         public virtual bool Remove(Item item)
         {
+            if (item.EquippedSlot != null)
+            {
+                Unequip(item);
+            }
+
+            foreach (var ability in item.Abilities.Where(a
+                => a.Activation == AbilityActivation.WhilePossessed && a.IsActive))
+            {
+                ability.Deactivate();
+            }
+
             item.ActorId = null;
             item.Actor = null;
-            item.EquippedSlot = null;
             if (Inventory.Remove(item))
             {
                 item.RemoveReference();
                 return true;
             }
             return false;
+        }
+
+        public override void Add(Ability ability)
+        {
+            base.Add(ability);
+
+            if (ability.Activation == AbilityActivation.Always && !ability.IsActive)
+            {
+                ability.Activate(new AbilityActivationContext
+                {
+                    Activator = this,
+                    Target = this,
+                    AbilityTrigger = AbilityActivation.Always
+                });
+            }
+        }
+
+        public override void Remove(Ability ability)
+        {
+            base.Remove(ability);
+
+            if (ability.IsActive)
+            {
+                ability.Deactivate();
+            }
         }
 
         public virtual bool ChangeCurrentHP(int hp)
@@ -628,6 +679,19 @@ namespace UnicornHack
             }
 
             return true;
+        }
+
+        public virtual void ChangeCurrentEP(int ep)
+        {
+            EP += ep;
+            if (EP < 0)
+            {
+                EP = 0;
+            }
+            if (EP > MaxEP)
+            {
+                EP = MaxEP;
+            }
         }
 
         protected virtual void Die()

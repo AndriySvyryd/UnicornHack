@@ -21,7 +21,7 @@
 </div>
 
 <div class="col-md-3" style="padding: 0">
-    <div class="inventory">
+    <div class="frame">
         @foreach (var item in Model.Inventory.OrderBy(i => i.Name))
         {
             <div>
@@ -36,7 +36,7 @@
                     else
                     {
                         // TODO: Get correct size
-                        var slots = item.GetEquipableSlots(Size.Medium).GetNonRedundantFlags(removeComposites: true).ToList();
+                        var slots = item.GetEquipableSlots(SizeCategory.Medium).GetNonRedundantFlags(removeComposites: true).ToList();
                         if (slots.Any())
                         {
                             if (slots.Count == 1)
@@ -65,16 +65,26 @@
     </div>
 </div>
 
-<div class="col-md-3 chat" style="padding: 0px">
-    <h3></h3>
+<div class="col-md-3" style="padding: 0">
+    <div class="frame">
+        @foreach (var property in Model.Properties.OrderBy(i => i.Name))
+        {
+            <div>
+                @Model.Game.Services.Language.ToString(property)
+            </div>
+        }
+    </div>
+</div>
+
+@*<div class="col-md-3 frame" style="padding: 0">
     <input type="text" style="background-color: black;" id="message" />
     <input type="button" id="sendmessage" style="background-color: gray" value="Send" />
     <input type="hidden" id="displayname" />
     <ul id="discussion"></ul>
-</div>
+</div>*@
 
 <div class="col-md-9">
-    <div class="log">
+    <div class="frame">
         @foreach (var entry in Model.Log.OrderBy(e => e.Id).Skip(Math.Max(0, Model.Log.Count() - 10)))
         {
             <div>

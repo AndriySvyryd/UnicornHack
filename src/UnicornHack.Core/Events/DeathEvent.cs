@@ -39,7 +39,7 @@ namespace UnicornHack.Events
         protected override void Delete()
         {
             base.Delete();
-            Deceased?.RemoveReference();
+            Deceased.RemoveReference();
             Corpse?.RemoveReference();
         }
     }

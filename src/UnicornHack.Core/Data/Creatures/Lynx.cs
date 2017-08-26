@@ -12,25 +12,24 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Cat,
             SpeciesClass = SpeciesClass.Feline,
             MovementDelay = 80,
-            Weight = 400,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
@@ -40,7 +39,7 @@ namespace UnicornHack.Data.Creatures
                 },
             SimpleProperties =
                 new HashSet<string> {"animal body", "infravisibility", "handlessness", "singular inventory"},
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 14}},
+            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 14}, {"weight", 400}},
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},
             Noise = ActorNoiseType.Growl

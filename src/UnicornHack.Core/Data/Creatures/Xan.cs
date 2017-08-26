@@ -12,28 +12,27 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Xan,
             SpeciesClass = SpeciesClass.Vermin,
             MovementDelay = 66,
-            Weight = 1,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Sting,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Sting,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new Cripple()}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 5}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 5}}
                     }
                 },
             SimpleProperties = new HashSet<string> {"flight", "flight control", "animal body", "handlessness"},
@@ -41,9 +40,10 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"poison resistance", 3},
-                    {"largeness", Size.Tiny},
+                    {"size", 1},
                     {"physical deflection", 22},
-                    {"magic resistance", 20}
+                    {"magic resistance", 20},
+                    {"weight", 1}
                 },
             InitialLevel = 7,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},

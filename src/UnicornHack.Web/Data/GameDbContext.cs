@@ -1,8 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
 using UnicornHack.Effects;
 using UnicornHack.Events;
-using UnicornHack.Generation.Map;
+using UnicornHack.Generation;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Models
@@ -20,11 +19,12 @@ namespace UnicornHack.Models
         public DbSet<Level> Levels { get; set; }
         public DbSet<Connection> Connections { get; set; }
         public DbSet<Player> Characters { get; set; }
-        public DbSet<Actor> Actors { get; set; }
-        public DbSet<Item> Items { get; set; }
+        public DbSet<Entity> Entities { get; set; }
         public DbSet<LogEntry> LogEntries { get; set; }
+        public DbSet<AbilityDefinition> AbilityDefinitions { get; set; }
         public DbSet<Ability> Abilities { get; set; }
         public DbSet<Effect> Effects { get; set; }
+        public DbSet<AppliedEffect> AppliedEffects { get; set; }
         public DbSet<SensoryEvent> SensoryEvents { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -53,6 +53,15 @@ namespace UnicornHack.Models
                 eb.HasMany(l => l.Rooms)
                     .WithOne(r => r.Level)
                     .HasForeignKey(r => new {r.GameId, r.BranchName, r.LevelDepth});
+                eb.OwnsOne(g => g.GenerationRandom);
+            });
+
+            modelBuilder.Entity<Connection>(eb =>
+            {
+                eb.HasKey(c => new {c.GameId, c.Id});
+                eb.HasOne(c => c.TargetBranch)
+                    .WithMany()
+                    .HasForeignKey(c => new {c.GameId, c.TargetBranchName});
             });
 
             modelBuilder.Entity<Room>(eb =>
@@ -66,53 +75,73 @@ namespace UnicornHack.Models
                 eb.Property<byte>("_y1");
                 eb.Property<byte>("_y2");
 
-                eb.HasKey(b => new { b.GameId, b.BranchName, b.LevelDepth, b.Id });
+                eb.HasKey(b => new {b.GameId, b.BranchName, b.LevelDepth, b.Id});
+            });
+
+            modelBuilder.Entity<Entity>(eb =>
+            {
+                eb.HasKey(i => new {i.GameId, i.Id});
+                eb.HasMany(i => i.Abilities)
+                    .WithOne(a => a.Entity)
+                    .HasForeignKey(a => new {a.GameId, a.EntityId});
+                eb.HasMany(e => e.ActiveEffects)
+                    .WithOne(e => e.Entity)
+                    .HasForeignKey(e => new {e.GameId, e.EntityId});
+                eb.HasMany(e => e.Properties)
+                    .WithOne(e => e.Entity)
+                    .HasForeignKey(e => new { e.GameId, e.EntityId });
             });
 
             modelBuilder.Entity<Actor>(eb =>
             {
                 eb.Property("_referenceCount");
-                eb.HasKey(a => new {a.GameId, a.Id});
                 eb.HasIndex(a => a.Name).IsUnique();
                 eb.HasOne(a => a.Level)
                     .WithMany(l => l.Actors)
                     .HasForeignKey(a => new {a.GameId, a.BranchName, a.LevelDepth});
-                eb.HasMany(a => a.Abilities)
-                    .WithOne()
-                    .HasForeignKey(nameof(Ability.GameId), "ActorId")
-                    .OnDelete(DeleteBehavior.Restrict);
             });
 
-            modelBuilder.Entity<Creature>(cb => {});
+            modelBuilder.Entity<Creature>(cb => { });
 
             modelBuilder.Entity<Player>(pb =>
             {
                 pb.Ignore(p => p.XP);
                 pb.Ignore(p => p.XPLevel);
                 pb.Ignore(p => p.NextLevelXP);
+                pb.Ignore(p => p.Races);
             });
 
-            modelBuilder.Entity<PlayerRace>(rb =>
+            modelBuilder.Entity<Item>(eb =>
             {
-                rb.HasKey(r => new {r.GameId, r.PlayerId, r.Id});
-                rb.HasOne(r => r.Player)
-                    .WithMany(p => p.Races)
-                    .IsRequired()
-                    .HasForeignKey(r => new {r.GameId, r.PlayerId});
-                rb.HasMany(i => i.Abilities)
-                    .WithOne()
-                    .HasForeignKey(nameof(Ability.GameId), "ActivePlayerId", "ActivePlayerRaceId");
+                eb.Property("_referenceCount");
+                eb.HasOne(i => i.Level)
+                    .WithMany(l => l.Items)
+                    .HasForeignKey(i => new {i.GameId, i.BranchName, i.LevelDepth});
+                eb.HasOne(i => i.Actor)
+                    .WithMany(a => a.Inventory)
+                    .HasForeignKey(i => new {i.GameId, i.ActorId});
+                eb.HasOne(i => i.Container)
+                    .WithMany(c => c.Items)
+                    .HasForeignKey(i => new {i.GameId, i.ContainerId});
             });
 
-            // TODO: Owned type
+            modelBuilder.Entity<ItemStack>();
+            modelBuilder.Entity<Gold>();
+
             modelBuilder.Entity<Skills>(eb =>
             {
-                eb.Property<int>("GameId");
-                eb.Property<int>("Id");
-                eb.HasKey("GameId", "Id");
+                eb.HasKey(s => new {s.GameId, s.Id});
                 eb.HasOne<Player>().WithOne(p => p.Skills)
-                    .IsRequired().HasForeignKey<Skills>("GameId", "Id");
+                    .IsRequired().HasForeignKey<Skills>(s => new { s.GameId, s.Id });
             });
+
+            modelBuilder.Entity<Property>(pb =>
+            {
+                pb.HasKey(p => new {p.GameId, p.EntityId, p.Name});
+            });
+
+            modelBuilder.Entity<Property<bool>>();
+            modelBuilder.Entity<Property<int>>();
 
             modelBuilder.Entity<Game>(eb =>
             {
@@ -133,13 +162,10 @@ namespace UnicornHack.Models
                     .WithOne(l => l.Game)
                     .HasForeignKey(l => l.GameId)
                     .OnDelete(DeleteBehavior.Restrict);
-                eb.HasMany(g => g.Actors)
+                eb.HasMany(g => g.Entities)
                     .WithOne(a => a.Game)
                     .HasForeignKey(a => a.GameId)
                     .OnDelete(DeleteBehavior.Restrict);
-                eb.HasMany(g => g.Items)
-                    .WithOne(i => i.Game)
-                    .HasForeignKey(i => i.GameId);
                 eb.HasMany(g => g.Connections)
                     .WithOne(s => s.Game)
                     .HasForeignKey(s => s.GameId)
@@ -150,52 +176,13 @@ namespace UnicornHack.Models
                 eb.HasMany(g => g.Effects)
                     .WithOne(e => e.Game)
                     .HasForeignKey(e => e.GameId);
+                eb.HasMany(g => g.AppliedEffects)
+                    .WithOne(e => e.Game)
+                    .HasForeignKey(e => e.GameId);
                 eb.HasMany(g => g.SensoryEvents)
                     .WithOne(e => e.Game)
                     .HasForeignKey(e => e.GameId);
-            });
-
-            // TODO: Owned type
-            modelBuilder.Entity<SimpleRandom>(eb =>
-            {
-                eb.HasOne<Game>()
-                    .WithOne(g => g.Random)
-                    .HasForeignKey<Game>("RandomId");
-                eb.HasOne<Level>()
-                    .WithOne(l => l.GenerationRandom)
-                    .HasForeignKey<Level>("RandomId");
-            });
-
-            modelBuilder.Entity<Item>(eb =>
-            {
-                eb.Ignore(i => i.BaseItem);
-                eb.Ignore(i => i.SimpleProperties);
-                eb.Ignore(i => i.ValuedProperties);
-                eb.Property("_referenceCount");
-                eb.HasKey(i => new {i.GameId, i.Id});
-                eb.HasOne(i => i.Level)
-                    .WithMany(l => l.Items)
-                    .HasForeignKey(i => new {i.GameId, i.BranchName, i.LevelDepth});
-                eb.HasOne(i => i.Actor)
-                    .WithMany(a => a.Inventory)
-                    .HasForeignKey(i => new {i.GameId, i.ActorId});
-                eb.HasOne(i => i.Container)
-                    .WithMany(c => c.Items)
-                    .HasForeignKey(i => new {i.GameId, i.ContainerId});
-                eb.HasMany(i => i.Abilities)
-                    .WithOne()
-                    .HasForeignKey(a => new { a.GameId, a.ItemId });
-            });
-
-            modelBuilder.Entity<ItemStack>();
-            modelBuilder.Entity<Gold>();
-
-            modelBuilder.Entity<Connection>(eb =>
-            {
-                eb.HasKey(c => new {c.GameId, c.Id});
-                eb.HasOne(c => c.TargetBranch)
-                    .WithMany()
-                    .HasForeignKey(c => new {c.GameId, c.TargetBranchName});
+                eb.OwnsOne(g => g.Random);
             });
 
             modelBuilder.Entity<LogEntry>(eb =>
@@ -213,8 +200,8 @@ namespace UnicornHack.Models
                 eb.HasKey(l => new {l.GameId, l.SensorId, l.Id});
                 eb.HasOne(e => e.Sensor)
                     .WithMany(a => a.SensedEvents)
-                    .HasForeignKey(s => new {s.GameId, s.SensorId});
-                eb.ToTable(name: "SensoryEvents");
+                    .HasForeignKey(s => new {s.GameId, s.SensorId})
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<ActorMoveEvent>();
@@ -234,141 +221,224 @@ namespace UnicornHack.Models
                     .WithOne()
                     .HasForeignKey(nameof(Effect.GameId), "AbilityId")
                     .OnDelete(DeleteBehavior.Restrict);
+                eb.HasMany(a => a.ActiveEffects)
+                    .WithOne(e => e.SourceAbility)
+                    .HasForeignKey(nameof(Effect.GameId), "AbilityId");
             });
 
-            modelBuilder.Entity<Effect>(eb =>
+            modelBuilder.Entity<AbilityDefinition>(eb =>
+            {
+                eb.HasKey(a => new {a.GameId, a.Id});
+                eb.HasMany(a => a.Effects)
+                    .WithOne()
+                    .HasForeignKey(nameof(Effect.GameId), "AbilityDefinitionId")
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<Effect>(eb => { eb.HasKey(a => new {a.GameId, a.Id}); });
+            modelBuilder.Entity<AppliedEffect>(eb =>
             {
                 eb.Property("_referenceCount");
                 eb.HasKey(a => new {a.GameId, a.Id});
             });
-            modelBuilder.Entity<AcidDamage>();
-            modelBuilder.Entity<AddAbility>();
+            modelBuilder.Entity<AddAbility>(ab =>
+            {
+                ab.HasOne(e => e.Ability)
+                    .WithOne()
+                    .HasForeignKey<AbilityDefinition>(nameof(Effect.GameId), "EffectId");
+            });
+            modelBuilder.Entity<AddedAbility>(ab =>
+            {
+                ab.HasOne(e => e.Ability)
+                    .WithOne()
+                    .HasForeignKey<Ability>(nameof(Effect.GameId), "EffectId");
+            });
             modelBuilder.Entity<Blind>();
+            modelBuilder.Entity<Blinded>();
             modelBuilder.Entity<Bind>();
-            modelBuilder.Entity<ChangeRace>();
+            modelBuilder.Entity<Bound>();
+            modelBuilder.Entity<Burn>();
+            modelBuilder.Entity<Burned>();
             modelBuilder.Entity<ChangeProperty<bool>>();
             modelBuilder.Entity<ChangeProperty<int>>();
-            modelBuilder.Entity<ChangeProperty<Size>>();
-            modelBuilder.Entity<ColdDamage>();
+            modelBuilder.Entity<ChangedProperty>();
+            modelBuilder.Entity<ChangedBoolProperty>();
+            modelBuilder.Entity<ChangedIntProperty>();
+            modelBuilder.Entity<ChangeRace>();
+            modelBuilder.Entity<ChangedRace>();
             modelBuilder.Entity<ConferLycanthropy>();
+            modelBuilder.Entity<LycanthropyConfered>();
             modelBuilder.Entity<Confuse>();
+            modelBuilder.Entity<Confused>();
+            modelBuilder.Entity<Corrode>();
+            modelBuilder.Entity<Corroded>();
             modelBuilder.Entity<Cripple>();
+            modelBuilder.Entity<Crippled>();
             modelBuilder.Entity<Curse>();
+            modelBuilder.Entity<Cursed>();
             modelBuilder.Entity<Deafen>();
+            modelBuilder.Entity<Deafened>();
             modelBuilder.Entity<Disarm>();
-            modelBuilder.Entity<Disenchant>();
+            modelBuilder.Entity<Disarmed>();
             modelBuilder.Entity<Disintegrate>();
+            modelBuilder.Entity<Disintegrated>();
             modelBuilder.Entity<DrainEnergy>();
+            modelBuilder.Entity<EnergyDrained>();
             modelBuilder.Entity<DrainLife>();
-            modelBuilder.Entity<ElectricityDamage>();
+            modelBuilder.Entity<LifeDrained>();
             modelBuilder.Entity<Engulf>();
-            modelBuilder.Entity<FireDamage>();
-            modelBuilder.Entity<Hallucinate>();
+            modelBuilder.Entity<Engulfed>();
+            modelBuilder.Entity<Envenom>();
+            modelBuilder.Entity<Envenomed>();
+            modelBuilder.Entity<Freeze>();
+            modelBuilder.Entity<Frozen>();
             modelBuilder.Entity<Heal>();
+            modelBuilder.Entity<Healed>();
             modelBuilder.Entity<Infect>();
+            modelBuilder.Entity<Infected>();
             modelBuilder.Entity<LevelTeleport>();
+            modelBuilder.Entity<LevelTeleported>();
             modelBuilder.Entity<MagicalDamage>();
+            modelBuilder.Entity<MagicallyDamaged>();
             modelBuilder.Entity<MeleeAttack>()
                 .HasOne(m => m.Weapon)
                 .WithMany()
-                // TODO: Use GameId, #7181
-                .HasForeignKey("GameId2", nameof(MeleeAttack.WeaponId));
+                .HasForeignKey(m => new {m.GameId, m.WeaponId});
+            modelBuilder.Entity<MeleeAttacked>()
+                .HasOne(m => m.Weapon)
+                .WithMany()
+                .HasForeignKey(m => new { m.GameId, m.WeaponId });
             modelBuilder.Entity<Paralyze>();
+            modelBuilder.Entity<Paralyzed>();
             modelBuilder.Entity<PhysicalDamage>();
-            modelBuilder.Entity<PoisonDamage>();
-            modelBuilder.Entity<Polymorph>();
+            modelBuilder.Entity<PhysicallyDamaged>();
+            modelBuilder.Entity<Poison>();
+            modelBuilder.Entity<Poisoned>();
+            modelBuilder.Entity<RangeAttack>()
+                .HasOne(m => m.Weapon)
+                .WithMany()
+                .HasForeignKey(m => new { m.GameId, m.WeaponId });
+            modelBuilder.Entity<RangeAttacked>()
+                .HasOne(m => m.Weapon)
+                .WithMany()
+                .HasForeignKey(m => new { m.GameId, m.WeaponId });
             modelBuilder.Entity<ScriptedEffect>();
-            modelBuilder.Entity<Seduce>();
-            modelBuilder.Entity<Sleep>();
+            modelBuilder.Entity<Sedate>();
+            modelBuilder.Entity<Sedated>();
+            modelBuilder.Entity<Shock>();
+            modelBuilder.Entity<Shocked>();
             modelBuilder.Entity<Slime>();
+            modelBuilder.Entity<Slimed>();
             modelBuilder.Entity<Slow>();
+            modelBuilder.Entity<Slowed>();
+            modelBuilder.Entity<Soak>();
+            modelBuilder.Entity<Soaked>();
             modelBuilder.Entity<StealGold>();
+            modelBuilder.Entity<GoldStolen>();
             modelBuilder.Entity<StealItem>();
+            modelBuilder.Entity<ItemStolen>();
             modelBuilder.Entity<Stick>();
+            modelBuilder.Entity<Stuck>();
             modelBuilder.Entity<Stone>();
+            modelBuilder.Entity<Stoned>();
             modelBuilder.Entity<Stun>();
+            modelBuilder.Entity<Stunned>();
             modelBuilder.Entity<Suffocate>();
+            modelBuilder.Entity<Suffocated>();
             modelBuilder.Entity<Teleport>();
-            modelBuilder.Entity<VenomDamage>();
-            modelBuilder.Entity<WaterDamage>();
-        }
+            modelBuilder.Entity<Teleported>();
 
-        private void OnModelCreatingToDo(ModelBuilder modelBuilder)
-        {
             modelBuilder.Entity<ActorMoveEvent>(eb =>
             {
                 eb.HasOne(e => e.Mover)
                     .WithMany()
-                    .HasForeignKey(e => new {e.GameId, e.MoverId});
+                    .HasForeignKey(e => new {e.GameId, e.MoverId})
+                    .OnDelete(DeleteBehavior.Restrict);
                 eb.HasOne(e => e.Movee)
                     .WithMany()
-                    .HasForeignKey(e => new {e.GameId, e.MoverId});
+                    .HasForeignKey(e => new {e.GameId, e.MoveeId})
+                    .OnDelete(DeleteBehavior.Restrict);
             });
             modelBuilder.Entity<AttackEvent>(eb =>
             {
                 eb.HasOne(e => e.Attacker)
                     .WithMany()
-                    .HasForeignKey(e => new {e.GameId, e.AttackerId});
+                    .HasForeignKey(e => new {e.GameId, e.AttackerId})
+                    .OnDelete(DeleteBehavior.Restrict);
                 eb.HasOne(e => e.Victim)
                     .WithMany()
-                    .HasForeignKey(e => new {e.GameId, e.VictimId});
-                eb.HasOne(e => e.Ability)
-                    .WithMany()
-                    .HasForeignKey(e => new {e.GameId, e.AbilityId});
+                    .HasForeignKey(e => new {e.GameId, e.VictimId})
+                    .OnDelete(DeleteBehavior.Restrict);
+                eb.HasMany(e => e.AppliedEffects)
+                    .WithOne()
+                    .HasForeignKey(nameof(AppliedEffect.GameId), "SensorId", "EventId")
+                    .OnDelete(DeleteBehavior.Restrict);
             });
             modelBuilder.Entity<DeathEvent>(eb =>
             {
                 eb.HasOne(e => e.Deceased)
                     .WithMany()
-                    .HasForeignKey(e => new {e.GameId, e.DeceasedId});
+                    .HasForeignKey(e => new {e.GameId, e.DeceasedId})
+                    .OnDelete(DeleteBehavior.Restrict);
                 eb.HasOne(e => e.Corpse)
                     .WithMany()
-                    .HasForeignKey(e => new {e.GameId, e.CorpseId});
+                    .HasForeignKey(e => new {e.GameId, e.CorpseId})
+                    .OnDelete(DeleteBehavior.Restrict);
             });
             modelBuilder.Entity<ItemConsumptionEvent>(eb =>
             {
                 eb.HasOne(e => e.Consumer)
                     .WithMany()
-                    .HasForeignKey(e => new {e.GameId, e.ConsumerId});
+                    .HasForeignKey(e => new {e.GameId, e.ConsumerId})
+                    .OnDelete(DeleteBehavior.Restrict);
                 eb.HasOne(e => e.Item)
                     .WithMany()
-                    .HasForeignKey(e => new {e.GameId, e.ItemId});
+                    .HasForeignKey(e => new {e.GameId, e.ItemId})
+                    .OnDelete(DeleteBehavior.Restrict);
             });
             modelBuilder.Entity<ItemDropEvent>(eb =>
             {
                 eb.HasOne(e => e.Dropper)
                     .WithMany()
-                    .HasForeignKey(e => new {e.GameId, e.DropperId});
+                    .HasForeignKey(e => new {e.GameId, e.DropperId})
+                    .OnDelete(DeleteBehavior.Restrict);
                 eb.HasOne(e => e.Item)
                     .WithMany()
-                    .HasForeignKey(e => new {e.GameId, e.ItemId});
+                    .HasForeignKey(e => new {e.GameId, e.ItemId})
+                    .OnDelete(DeleteBehavior.Restrict);
             });
             modelBuilder.Entity<ItemPickUpEvent>(eb =>
             {
                 eb.HasOne(e => e.Picker)
                     .WithMany()
-                    .HasForeignKey(e => new {e.GameId, e.PickerId});
+                    .HasForeignKey(e => new {e.GameId, e.PickerId})
+                    .OnDelete(DeleteBehavior.Restrict);
                 eb.HasOne(e => e.Item)
                     .WithMany()
-                    .HasForeignKey(e => new {e.GameId, e.ItemId});
+                    .HasForeignKey(e => new {e.GameId, e.ItemId})
+                    .OnDelete(DeleteBehavior.Restrict);
             });
             modelBuilder.Entity<ItemEquipmentEvent>(eb =>
             {
                 eb.HasOne(e => e.Equipper)
                     .WithMany()
-                    .HasForeignKey(e => new {e.GameId, e.EquipperId});
+                    .HasForeignKey(e => new {e.GameId, e.EquipperId})
+                    .OnDelete(DeleteBehavior.Restrict);
                 eb.HasOne(e => e.Item)
                     .WithMany()
-                    .HasForeignKey(e => new {e.GameId, e.ItemId});
+                    .HasForeignKey(e => new {e.GameId, e.ItemId})
+                    .OnDelete(DeleteBehavior.Restrict);
             });
             modelBuilder.Entity<ItemUnequipmentEvent>(eb =>
             {
                 eb.HasOne(e => e.Unequipper)
                     .WithMany()
-                    .HasForeignKey(e => new {e.GameId, e.UnequipperId});
+                    .HasForeignKey(e => new {e.GameId, e.UnequipperId})
+                    .OnDelete(DeleteBehavior.Restrict);
                 eb.HasOne(e => e.Item)
                     .WithMany()
-                    .HasForeignKey(e => new {e.GameId, e.ItemId});
+                    .HasForeignKey(e => new {e.GameId, e.ItemId})
+                    .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

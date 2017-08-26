@@ -2,7 +2,7 @@ namespace UnicornHack.Data.Properties
 {
     public static partial class PropertyData
     {
-        public static readonly PropertyDescription PhysicalDeflection =
-            new PropertyDescription {Name = "physical deflection", PropertyType = typeof(int), MinValue = 0};
+        public static readonly PropertyDescription<int> PhysicalDeflection =
+            new PropertyDescription<int> {Name = "physical deflection", MinValue = 0};
     }
 }

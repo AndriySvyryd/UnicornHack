@@ -12,21 +12,20 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Centipede,
             SpeciesClass = SpeciesClass.Vermin,
             MovementDelay = 300,
-            Weight = 50,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new VenomDamage {Damage = 2}}
+                        Effects = new HashSet<Effect> {new Envenom {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 2}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 2}}
                     }
                 },
             SimpleProperties =
@@ -36,8 +35,9 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"poison resistance", 3},
                     {"venom resistance", 3},
-                    {"largeness", Size.Tiny},
-                    {"physical deflection", 16}
+                    {"size", 1},
+                    {"physical deflection", 16},
+                    {"weight", 50}
                 },
             InitialLevel = 2,
             GenerationWeight = new DefaultWeight {Multiplier = 6F}

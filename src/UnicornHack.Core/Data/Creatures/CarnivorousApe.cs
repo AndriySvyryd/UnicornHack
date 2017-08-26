@@ -11,25 +11,24 @@ namespace UnicornHack.Data.Creatures
             Name = "carnivorous ape",
             Species = Species.Simian,
             MovementDelay = 100,
-            Weight = 1250,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -38,7 +37,7 @@ namespace UnicornHack.Data.Creatures
                     }
                 },
             SimpleProperties = new HashSet<string> {"animal body", "infravisibility", "humanoidness"},
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 14}},
+            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 14}, {"weight", 1250}},
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
             PreviousStageName = "ape",

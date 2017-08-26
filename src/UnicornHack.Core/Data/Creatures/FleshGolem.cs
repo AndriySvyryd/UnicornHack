@@ -11,18 +11,17 @@ namespace UnicornHack.Data.Creatures
             Name = "flesh golem",
             Species = Species.Golem,
             MovementDelay = 150,
-            Weight = 1400,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 9}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -44,8 +43,9 @@ namespace UnicornHack.Data.Creatures
                 {"poison resistance", 3},
                 {"regeneration", 3},
                 {"health point maximum", 40},
-                {"largeness", Size.Large},
-                {"physical deflection", 11}
+                {"size", 8},
+                {"physical deflection", 11},
+                {"weight", 1400}
             },
             InitialLevel = 9
         };

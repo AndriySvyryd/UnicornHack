@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.Extensions.Caching.Memory;
 using UnicornHack.Effects;
 using UnicornHack.Events;
+using UnicornHack.Generation;
 using UnicornHack.Services;
 using UnicornHack.Utils;
 
@@ -19,23 +20,25 @@ namespace UnicornHack
         public virtual int? InitialSeed { get; set; }
         public virtual SimpleRandom Random { get; set; }
 
-        public virtual int NextActorId { get; set; }
-        public virtual ICollection<Actor> Actors { get; set; } = new HashSet<Actor>();
-        public virtual int NextItemId { get; set; }
-        public virtual ICollection<Item> Items { get; set; } = new HashSet<Item>();
+        public virtual int NextEntityId { get; set; }
+        public virtual ICollection<Entity> Entities { get; set; } = new HashSet<Entity>();
         public virtual ICollection<Branch> Branches { get; set; } = new HashSet<Branch>();
         public virtual ICollection<Level> Levels { get; set; } = new HashSet<Level>();
         public virtual ICollection<Room> Rooms { get; set; } = new HashSet<Room>();
         public virtual int NextConnectionId { get; set; }
         public virtual ICollection<Connection> Connections { get; set; } = new HashSet<Connection>();
+        public virtual int NextAbilityDefinitionId { get; set; }
+        public virtual ICollection<AbilityDefinition> AbilityDefinitions { get; set; } = new HashSet<AbilityDefinition>();
         public virtual int NextAbilityId { get; set; }
         public virtual ICollection<Ability> Abilities { get; set; } = new HashSet<Ability>();
         public virtual int NextEffectId { get; set; }
         public virtual ICollection<Effect> Effects { get; set; } = new HashSet<Effect>();
+        public int NextAppliedEffectId { get; set; }
+        public virtual ICollection<AppliedEffect> AppliedEffects { get; set; } = new HashSet<AppliedEffect>();
         public virtual ICollection<SensoryEvent> SensoryEvents { get; set; } = new HashSet<SensoryEvent>();
         public virtual GameServices Services { get; set; }
         public virtual IRepository Repository { get; set; }
-        public virtual IEnumerable<Player> Players => Actors.OfType<Player>();
+        public virtual IEnumerable<Player> Players => Entities.OfType<Player>();
 
         public virtual Actor Turn()
         {

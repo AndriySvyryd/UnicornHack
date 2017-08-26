@@ -11,17 +11,16 @@ namespace UnicornHack.Data.Creatures
             Name = "storm giant",
             Species = Species.Giant,
             MovementDelay = 100,
-            Weight = 2250,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 13}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -34,9 +33,10 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"electricity resistance", 3},
-                    {"largeness", Size.Huge},
+                    {"size", 16},
                     {"physical deflection", 17},
-                    {"magic resistance", 10}
+                    {"magic resistance", 10},
+                    {"weight", 2250}
                 },
             InitialLevel = 16,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},

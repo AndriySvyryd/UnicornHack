@@ -11,17 +11,16 @@ namespace UnicornHack.Data.Creatures
             Name = "soldier",
             Species = Species.Human,
             MovementDelay = 120,
-            Weight = 1000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 4}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -30,7 +29,7 @@ namespace UnicornHack.Data.Creatures
                     }
                 },
             SimpleProperties = new HashSet<string> {"infravisibility", "humanoidness"},
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 10}},
+            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 10}, {"weight", 1000}},
             InitialLevel = 6,
             NextStageName = "sergeant",
             GenerationFlags = GenerationFlags.NonPolymorphable | GenerationFlags.SmallGroup,

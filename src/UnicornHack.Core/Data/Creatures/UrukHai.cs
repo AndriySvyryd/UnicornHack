@@ -11,17 +11,16 @@ namespace UnicornHack.Data.Creatures
             Name = "uruk-hai",
             Species = Species.Orc,
             MovementDelay = 133,
-            Weight = 1300,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 4}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -30,7 +29,7 @@ namespace UnicornHack.Data.Creatures
                     }
                 },
             SimpleProperties = new HashSet<string> {"infravision", "infravisibility", "humanoidness"},
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 10}},
+            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 10}, {"weight", 1300}},
             InitialLevel = 4,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},
             GenerationFlags = GenerationFlags.LargeGroup,

@@ -11,24 +11,23 @@ namespace UnicornHack.Data.Creatures
             Name = "dwarf lord",
             Species = Species.Dwarf,
             MovementDelay = 200,
-            Weight = 900,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -38,7 +37,8 @@ namespace UnicornHack.Data.Creatures
                 },
             SimpleProperties =
                 new HashSet<string> {"tool tunneling", "infravision", "infravisibility", "humanoidness", "maleness"},
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 10}, {"magic resistance", 10}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"physical deflection", 10}, {"magic resistance", 10}, {"weight", 900}},
             InitialLevel = 4,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},
             PreviousStageName = "dwarf",

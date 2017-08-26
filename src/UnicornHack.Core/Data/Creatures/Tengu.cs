@@ -12,23 +12,22 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Tengu,
             SpeciesClass = SpeciesClass.ShapeChanger,
             MovementDelay = 92,
-            Weight = 300,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 4}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 2}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
                         Effects = new HashSet<Effect> {new Teleport()}
@@ -40,9 +39,10 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"poison resistance", 3},
-                    {"largeness", Size.Small},
+                    {"size", 2},
                     {"physical deflection", 15},
-                    {"magic resistance", 30}
+                    {"magic resistance", 30},
+                    {"weight", 300}
                 },
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},

@@ -40,8 +40,8 @@ namespace UnicornHack.Events
         protected override void Delete()
         {
             base.Delete();
-            Equipper?.RemoveReference();
-            Item?.RemoveReference();
+            Equipper.RemoveReference();
+            Item.RemoveReference();
         }
     }
 }

@@ -12,36 +12,36 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Rat,
             SpeciesClass = SpeciesClass.Rodent,
             MovementDelay = 100,
-            Weight = 150,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect>
                         {
-                            new ChangeProperty<int> {PropertyName = "Constitution", Value = -1, Duration = 5}
+                            new ChangeProperty<int> {PropertyName = "constitution", Value = -1, Duration = 5}
                         }
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 3}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 3}}
                     }
                 },
             SimpleProperties =
                 new HashSet<string> {"animal body", "infravisibility", "handlessness", "singular inventory"},
-            ValuedProperties = new Dictionary<string, object> {{"largeness", Size.Small}, {"physical deflection", 14}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"size", 2}, {"physical deflection", 14}, {"weight", 150}},
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 6F},
             GenerationFlags = GenerationFlags.SmallGroup,

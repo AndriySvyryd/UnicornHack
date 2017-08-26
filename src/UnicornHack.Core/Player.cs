@@ -10,20 +10,18 @@ namespace UnicornHack
 {
     public class Player : Actor
     {
-        public static readonly byte StartingAttributeValue = 10;
-        public virtual int MaxEP { get; set; }
-        public virtual int EP { get; set; }
-        public virtual int MaxXPLevel { get; set; }
-        public virtual byte XPLevel => (byte)Races.Sum(r => r.XPLevel);
-        public virtual int XP => LearningRace.XP;
-        public virtual int NextLevelXP => LearningRace.NextLevelXP;
-        public virtual float LeftoverRegenerationXP { get; set; }
-        public virtual Skills Skills { get; set; }
-        public virtual int UnspentSkillPoints { get; set; }
+        public int MaxXPLevel { get; set; }
+        public byte XPLevel => (byte)Races.Sum(r => r.XPLevel);
+        public int XP => LearningRace?.XP ?? 0;
+        public int NextLevelXP => LearningRace?.NextLevelXP ?? 0;
+        public float LeftoverRegenerationXP { get; set; }
+        public Skills Skills { get; set; }
+        public int UnspentSkillPoints { get; set; }
 
-        public virtual int NextRaceId { get; set; }
-        public virtual ICollection<PlayerRace> Races { get; set; } = new HashSet<PlayerRace>();
-        public virtual PlayerRace LearningRace => Races.OrderBy(r => r.XPLevel).ThenBy(r => r.Id).First();
+        public virtual IEnumerable<ChangedRace> Races
+            => ActiveEffects.OfType<ChangedRace>().OrderBy(r => r.XPLevel).ThenBy(r => r.Id);
+
+        public virtual ChangedRace LearningRace => Races.FirstOrDefault();
 
         public virtual int NextEventId { get; set; }
         public virtual ICollection<SensoryEvent> SensedEvents { get; set; } = new HashSet<SensoryEvent>();
@@ -43,19 +41,28 @@ namespace UnicornHack
         {
             BaseName = "player";
 
-            UpdateNextLevelXP(PlayerRaceDefinition.Loader.Get("human").Instantiate(this));
+            new Ability(Game)
+            {
+                Name = "become human",
+                Activation = AbilityActivation.OnActivation,
+                Effects = new HashSet<Effect> {new ChangeRace(Game) {RaceName = "human"}}
+            }.Activate(
+                new AbilityActivationContext
+                {
+                    Target = this
+                });
 
-            Abilities.Add(new Ability(Game)
+            Add(new Ability(Game)
             {
                 Name = UnarmedAttackName,
                 Activation = AbilityActivation.OnTarget,
                 Action = AbilityAction.Punch,
                 FreeSlotsRequired = EquipmentSlot.GraspBothExtremities | EquipmentSlot.GraspSingleExtremity,
-                DelayTicks = 100,
+                Delay = 100,
                 Effects = new HashSet<Effect> {new MeleeAttack(Game), new PhysicalDamage(Game)}
             });
 
-            Abilities.Add(new Ability(Game)
+            Add(new Ability(Game)
             {
                 Name = UnarmedAttackName,
                 Activation = AbilityActivation.OnMeleeAttack,
@@ -65,7 +72,7 @@ namespace UnicornHack
             });
 
             Skills = new Skills();
-            RecalculateEffectsAndAbilities();
+            RecalculateAbilities();
 
             HP = MaxHP;
             EP = MaxEP;
@@ -74,19 +81,6 @@ namespace UnicornHack
             ItemVariant.Loader.Get("mail armor").Instantiate(this);
             ItemVariant.Loader.Get("long sword").Instantiate(this);
             ItemVariant.Loader.Get("dagger").Instantiate(this);
-        }
-
-        public void Add(PlayerRace race)
-        {
-            Races.Add(race);
-            race.XPLevel = 1;
-            UpdateNextLevelXP(race);
-        }
-
-        private void UpdateNextLevelXP(PlayerRace race)
-        {
-            var currentLevel = MaxXPLevel > XPLevel ? race.XPLevel : XPLevel;
-            race.NextLevelXP = (int)((1 + Math.Ceiling(Math.Pow(currentLevel, 1.5))) * 50);
         }
 
         public void AddXP(int xp)
@@ -107,13 +101,13 @@ namespace UnicornHack
                 {
                     MaxXPLevel = XPLevel;
                 }
-                UpdateNextLevelXP(race);
+                race.UpdateNextLevelXP();
             }
         }
 
-        public override void RecalculateEffectsAndAbilities()
+        public override void RecalculateAbilities()
         {
-            base.RecalculateEffectsAndAbilities();
+            base.RecalculateAbilities();
 
             foreach (var unarmedAbility in Abilities.Where(a => a.Name == UnarmedAttackName && a.IsUsable))
             {

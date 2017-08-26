@@ -10,19 +10,19 @@ namespace UnicornHack.Data.Items
         {
             Name = "long sword",
             Type = ItemType.WeaponMeleeMedium,
-            Weight = 10,
             Material = Material.Steel,
-            EquipableSizes = Size.Medium | Size.Large,
+            EquipableSizes = SizeCategory.Medium | SizeCategory.Large,
             EquipableSlots = EquipmentSlot.GraspSingleExtremity | EquipmentSlot.GraspBothExtremities,
-            Abilities = new HashSet<Ability>
+            Abilities = new HashSet<AbilityDefinition>
             {
-                new Ability
+                new AbilityDefinition
                 {
                     Activation = AbilityActivation.OnMeleeAttack,
                     Action = AbilityAction.Slash,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 }
-            }
+            },
+            ValuedProperties = new Dictionary<string, object> {{"weight", 10}}
         };
     }
 }

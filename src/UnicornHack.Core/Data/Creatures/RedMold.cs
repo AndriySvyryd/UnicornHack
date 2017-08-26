@@ -10,19 +10,18 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "red mold",
             Species = Species.Fungus,
-            Weight = 50,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeHit,
-                        Effects = new HashSet<Effect> {new FireDamage {Damage = 3}}
+                        Effects = new HashSet<Effect> {new Burn {Damage = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new FireDamage {Damage = 2}}
+                        Effects = new HashSet<Effect> {new Burn {Damage = 2}}
                     }
                 },
             SimpleProperties =
@@ -46,8 +45,9 @@ namespace UnicornHack.Data.Creatures
                     {"poison resistance", 3},
                     {"venom resistance", 3},
                     {"stealthiness", 3},
-                    {"largeness", Size.Small},
-                    {"physical deflection", 11}
+                    {"size", 2},
+                    {"physical deflection", 11},
+                    {"weight", 50}
                 },
             InitialLevel = 1,
             GenerationWeight = new DefaultWeight {Multiplier = 2F}

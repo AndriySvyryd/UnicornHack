@@ -12,35 +12,34 @@ namespace UnicornHack.Data.Creatures
             Species = Species.DemonMajor,
             SpeciesClass = SpeciesClass.Demon,
             MovementDelay = 100,
-            Weight = 1200,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 3}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 3}}
                     }
                 },
             SimpleProperties =
@@ -58,8 +57,9 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"fire resistance", 3},
                     {"poison resistance", 3},
-                    {"largeness", Size.Large},
-                    {"magic resistance", 50}
+                    {"size", 8},
+                    {"magic resistance", 50},
+                    {"weight", 1200}
                 },
             InitialLevel = 8,
             GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 2F}, Name = "hell"},

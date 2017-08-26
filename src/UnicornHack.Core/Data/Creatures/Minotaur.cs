@@ -11,25 +11,24 @@ namespace UnicornHack.Data.Creatures
             Name = "minotaur",
             Species = Species.Minotaur,
             MovementDelay = 80,
-            Weight = 1500,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 16}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 16}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Headbutt,
@@ -38,7 +37,8 @@ namespace UnicornHack.Data.Creatures
                     }
                 },
             SimpleProperties = new HashSet<string> {"infravision", "infravisibility", "humanoidness"},
-            ValuedProperties = new Dictionary<string, object> {{"largeness", Size.Large}, {"physical deflection", 14}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"size", 8}, {"physical deflection", 14}, {"weight", 1500}},
             InitialLevel = 15,
             Behavior = MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
             Noise = ActorNoiseType.Roar

@@ -11,23 +11,22 @@ namespace UnicornHack.Data.Creatures
             Name = "homunculus",
             Species = Species.Homunculus,
             MovementDelay = 100,
-            Weight = 60,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new Sleep {Duration = 2}}
+                        Effects = new HashSet<Effect> {new Sedate {Duration = 2}}
                     }
                 },
             SimpleProperties =
@@ -44,9 +43,10 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"poison resistance", 3},
                     {"regeneration", 3},
-                    {"largeness", Size.Small},
+                    {"size", 2},
                     {"physical deflection", 14},
-                    {"magic resistance", 10}
+                    {"magic resistance", 10},
+                    {"weight", 60}
                 },
             InitialLevel = 2,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},

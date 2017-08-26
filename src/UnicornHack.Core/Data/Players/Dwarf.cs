@@ -10,21 +10,27 @@ namespace UnicornHack.Data.Players
         {
             Name = "dwarf",
             Species = Species.Dwarf,
-            Abilities = new HashSet<Ability>
+            Abilities = new HashSet<AbilityDefinition>
             {
-                new Ability
+                new AbilityDefinition
                 {
-                    Name = "Innate",
+                    Name = "innate",
                     Activation = AbilityActivation.Always,
                     Effects = new HashSet<Effect>
                     {
-                        new ChangeProperty<bool> {PropertyName = "Infravision", Value = true},
-                        new ChangeProperty<bool> {PropertyName = "Infravisibility", Value = true},
-                        new ChangeProperty<bool> {PropertyName = "Humanoidness", Value = true},
-                        new ChangeProperty<int> {PropertyName = "Strength", Value = 1},
-                        new ChangeProperty<int> {PropertyName = "Agility", Value = -1},
-                        new ChangeProperty<int> {PropertyName = "Constitution", Value = 1},
-                        new ChangeProperty<int> {PropertyName = "Quickness", Value = -1}
+                        new ChangeProperty<bool> {PropertyName = "infravision", Value = true},
+                        new ChangeProperty<bool> {PropertyName = "infravisibility", Value = true},
+                        new ChangeProperty<bool> {PropertyName = "humanoidness", Value = true},
+                        new ChangeProperty<int> {PropertyName = "strength", Value = 1},
+                        new ChangeProperty<int> {PropertyName = "agility", Value = -1},
+                        new ChangeProperty<int> {PropertyName = "constitution", Value = 1},
+                        new ChangeProperty<int> {PropertyName = "quickness", Value = -1},
+                        new ChangeProperty<int>
+                        {
+                            PropertyName = "size",
+                            Value = 5,
+                            Function = ValueCombinationFunction.MeanRoundUp
+                        }
                     }
                 }
             }

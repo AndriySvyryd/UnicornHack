@@ -11,11 +11,10 @@ namespace UnicornHack.Data.Creatures
             Name = "shrieker",
             Species = Species.Fungus,
             MovementDelay = 1200,
-            Weight = 100,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Scream,
@@ -41,8 +40,9 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"poison resistance", 3},
                     {"venom resistance", 3},
-                    {"largeness", Size.Small},
-                    {"physical deflection", 13}
+                    {"size", 2},
+                    {"physical deflection", 13},
+                    {"weight", 100}
                 },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 2F}

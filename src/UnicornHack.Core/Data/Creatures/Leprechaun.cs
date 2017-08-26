@@ -12,11 +12,10 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Leprechaun,
             SpeciesClass = SpeciesClass.Fey,
             MovementDelay = 80,
-            Weight = 60,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
@@ -28,9 +27,10 @@ namespace UnicornHack.Data.Creatures
             ValuedProperties =
                 new Dictionary<string, object>
                 {
-                    {"largeness", Size.Tiny},
+                    {"size", 1},
                     {"physical deflection", 12},
-                    {"magic resistance", 20}
+                    {"magic resistance", 20},
+                    {"weight", 60}
                 },
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},

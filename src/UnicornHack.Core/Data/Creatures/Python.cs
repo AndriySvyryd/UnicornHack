@@ -12,25 +12,24 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Snake,
             SpeciesClass = SpeciesClass.Reptile,
             MovementDelay = 400,
-            Weight = 250,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Hug,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Hug,
@@ -48,7 +47,7 @@ namespace UnicornHack.Data.Creatures
                     "oviparity",
                     "no inventory"
                 },
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 15}},
+            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 15}, {"weight", 250}},
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
             Noise = ActorNoiseType.Hiss

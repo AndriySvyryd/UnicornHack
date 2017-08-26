@@ -1,6 +1,3 @@
-using System;
-using UnicornHack.Events;
-
 namespace UnicornHack.Effects
 {
     public class Engulf : Effect
@@ -13,13 +10,16 @@ namespace UnicornHack.Effects
         {
         }
 
-        public int Duration { get; set; }
-
-        public override Effect Instantiate(Game game) => new Engulf(game) {Duration = Duration};
+        public override Effect Copy(Game game) => new Engulf(game) {Duration = Duration};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            throw new NotImplementedException();
+            if (!abilityContext.Succeeded)
+            {
+                return;
+            }
+
+            abilityContext.AppliedEffects.Add(new Engulfed(abilityContext) {Duration = Duration});
         }
     }
 }

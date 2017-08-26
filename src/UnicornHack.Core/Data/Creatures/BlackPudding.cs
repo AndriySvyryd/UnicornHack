@@ -11,26 +11,25 @@ namespace UnicornHack.Data.Creatures
             Name = "black pudding",
             Species = Species.Pudding,
             MovementDelay = 200,
-            Weight = 512,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new AcidDamage {Damage = 13}}
+                        Effects = new HashSet<Effect> {new Corrode {Damage = 13}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeHit,
-                        Effects = new HashSet<Effect> {new AcidDamage {Damage = 3}}
+                        Effects = new HashSet<Effect> {new Corrode {Damage = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new AcidDamage {Damage = 13}}
+                        Effects = new HashSet<Effect> {new Corrode {Damage = 13}}
                     }
                 },
             SimpleProperties =
@@ -57,7 +56,8 @@ namespace UnicornHack.Data.Creatures
                 {"venom resistance", 3},
                 {"acid resistance", 3},
                 {"stealthiness", 3},
-                {"physical deflection", 14}
+                {"physical deflection", 14},
+                {"weight", 512}
             },
             InitialLevel = 10
         };

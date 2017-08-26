@@ -20,7 +20,7 @@ namespace UnicornHack.Utils
         {
             typeof(object).GetTypeInfo().Namespace,
             typeof(List<>).GetTypeInfo().Namespace,
-            typeof(Ability).GetTypeInfo().Namespace,
+            typeof(Game).GetTypeInfo().Namespace,
             typeof(Effect).GetTypeInfo().Namespace,
             typeof(Weight).GetTypeInfo().Namespace,
             typeof(MapFragment).GetTypeInfo().Namespace,

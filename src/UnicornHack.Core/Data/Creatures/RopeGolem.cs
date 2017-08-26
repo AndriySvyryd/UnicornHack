@@ -11,25 +11,24 @@ namespace UnicornHack.Data.Creatures
             Name = "rope golem",
             Species = Species.Golem,
             MovementDelay = 100,
-            Weight = 450,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Hug,
@@ -55,8 +54,9 @@ namespace UnicornHack.Data.Creatures
                 {"poison resistance", 3},
                 {"venom resistance", 3},
                 {"health point maximum", 30},
-                {"largeness", Size.Large},
-                {"physical deflection", 12}
+                {"size", 8},
+                {"physical deflection", 12},
+                {"weight", 450}
             },
             InitialLevel = 4,
             CorpseName = ""

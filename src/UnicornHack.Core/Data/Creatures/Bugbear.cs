@@ -12,17 +12,16 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Bugbear,
             SpeciesClass = SpeciesClass.MagicalBeast,
             MovementDelay = 133,
-            Weight = 1250,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -31,7 +30,8 @@ namespace UnicornHack.Data.Creatures
                     }
                 },
             SimpleProperties = new HashSet<string> {"infravision", "infravisibility", "humanoidness"},
-            ValuedProperties = new Dictionary<string, object> {{"largeness", Size.Large}, {"physical deflection", 15}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"size", 8}, {"physical deflection", 15}, {"weight", 1250}},
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},
             Behavior = MonsterBehavior.WeaponCollector,

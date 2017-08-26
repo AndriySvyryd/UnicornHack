@@ -85,11 +85,6 @@ namespace UnicornHack.Services.English
             string expectedMessage = "")
         {
             var languageService = CreateLanguageService();
-            var ability = new Ability
-            {
-                Action = abilityAction,
-                Effects = new HashSet<Effect>()
-            };
             var attackEvent = new AttackEvent
             {
                 Attacker = attacker,
@@ -97,18 +92,18 @@ namespace UnicornHack.Services.English
                 Sensor = sensor,
                 AttackerSensed = attackerSensed,
                 VictimSensed = victimSensed,
-                Ability = ability,
+                AbilityAction = abilityAction,
                 Hit = damage.HasValue
             };
 
             if (damage.HasValue)
             {
-                ability.Effects.Add(new PhysicalDamage {Damage = damage.Value});
+                attackEvent.AppliedEffects.Add(new PhysicallyDamaged {Damage = damage.Value});
             }
 
             if (weapon != null)
             {
-                ability.Effects.Add(new MeleeAttack {Weapon = weapon});
+                attackEvent.AppliedEffects.Add(new MeleeAttacked {Weapon = weapon});
             }
 
             Assert.Equal(expectedMessage, languageService.ToString(attackEvent));

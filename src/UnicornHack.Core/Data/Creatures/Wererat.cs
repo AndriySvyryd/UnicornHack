@@ -12,31 +12,30 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Human,
             SpeciesClass = SpeciesClass.ShapeChanger,
             MovementDelay = 100,
-            Weight = 1000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 5,
                         Effects = new HashSet<Effect> {new ConferLycanthropy {VariantName = "ratwere"}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
                         Effects = new HashSet<Effect> {new ConferLycanthropy {VariantName = "ratwere"}}
@@ -50,7 +49,8 @@ namespace UnicornHack.Data.Creatures
                     {"regeneration", 3},
                     {"lycanthropy", "ratwere"},
                     {"physical deflection", 10},
-                    {"magic resistance", 10}
+                    {"magic resistance", 10},
+                    {"weight", 1000}
                 },
             InitialLevel = 3,
             GenerationFlags = GenerationFlags.NonPolymorphable,

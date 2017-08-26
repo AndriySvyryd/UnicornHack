@@ -11,17 +11,16 @@ namespace UnicornHack.Data.Creatures
             Name = "gnome king",
             Species = Species.Gnome,
             MovementDelay = 120,
-            Weight = 750,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -33,9 +32,10 @@ namespace UnicornHack.Data.Creatures
             ValuedProperties =
                 new Dictionary<string, object>
                 {
-                    {"largeness", Size.Small},
+                    {"size", 2},
                     {"physical deflection", 10},
-                    {"magic resistance", 20}
+                    {"magic resistance", 20},
+                    {"weight", 750}
                 },
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},

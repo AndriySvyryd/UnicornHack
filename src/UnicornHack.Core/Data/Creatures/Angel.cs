@@ -12,31 +12,30 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Angel,
             SpeciesClass = SpeciesClass.Celestial,
             MovementDelay = 120,
-            Weight = 1000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Spell,
@@ -63,7 +62,8 @@ namespace UnicornHack.Data.Creatures
                     {"poison resistance", 3},
                     {"venom resistance", 3},
                     {"physical deflection", 24},
-                    {"magic resistance", 55}
+                    {"magic resistance", 55},
+                    {"weight", 1000}
                 },
             InitialLevel = 14,
             GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight {Multiplier = 4F}, Name = "hell"},

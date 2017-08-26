@@ -2,7 +2,7 @@ namespace UnicornHack.Data.Properties
 {
     public static partial class PropertyData
     {
-        public static readonly PropertyDescription Limblessness =
-            new PropertyDescription {Name = "limblessness", PropertyType = typeof(bool)};
+        public static readonly PropertyDescription<bool> Limblessness =
+            new PropertyDescription<bool> {Name = "limblessness"};
     }
 }

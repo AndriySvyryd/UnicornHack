@@ -12,16 +12,15 @@ namespace UnicornHack.Data.Creatures
             Species = Species.FloatingSphere,
             SpeciesClass = SpeciesClass.Extraplanar,
             MovementDelay = 92,
-            Weight = 10,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Explosion,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new ElectricityDamage {Damage = 14}}
+                        Effects = new HashSet<Effect> {new Shock {Damage = 14}}
                     }
                 },
             SimpleProperties =
@@ -41,9 +40,10 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"electricity resistance", 3},
-                    {"largeness", Size.Small},
+                    {"size", 2},
                     {"physical deflection", 16},
-                    {"magic resistance", 10}
+                    {"magic resistance", 10},
+                    {"weight", 10}
                 },
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},

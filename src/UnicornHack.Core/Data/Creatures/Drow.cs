@@ -11,29 +11,28 @@ namespace UnicornHack.Data.Creatures
             Name = "drow",
             Species = Species.Elf,
             MovementDelay = 100,
-            Weight = 800,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new Sleep {Duration = 5}}
+                        Effects = new HashSet<Effect> {new Sedate {Duration = 5}}
                     }
                 },
             SimpleProperties =
@@ -45,7 +44,8 @@ namespace UnicornHack.Data.Creatures
                     "infravisibility",
                     "humanoidness"
                 },
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 10}, {"magic resistance", 50}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"physical deflection", 10}, {"magic resistance", 50}, {"weight", 800}},
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
             GenerationFlags = GenerationFlags.NonPolymorphable | GenerationFlags.SmallGroup,

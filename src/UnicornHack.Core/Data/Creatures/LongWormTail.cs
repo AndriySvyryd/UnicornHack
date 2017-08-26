@@ -10,7 +10,7 @@ namespace UnicornHack.Data.Creatures
             Name = "long worm tail",
             Species = Species.Worm,
             SpeciesClass = SpeciesClass.Vermin,
-            ValuedProperties = new Dictionary<string, object> {{"largeness", Size.Gigantic}},
+            ValuedProperties = new Dictionary<string, object> {{"size", 32}, {"weight", 0}},
             InitialLevel = 1,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable

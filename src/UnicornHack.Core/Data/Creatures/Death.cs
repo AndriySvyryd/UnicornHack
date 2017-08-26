@@ -12,25 +12,24 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Horseman,
             SpeciesClass = SpeciesClass.Extraplanar,
             MovementDelay = 100,
-            Weight = 1000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new ScriptedEffect {Script = "Death"}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new ScriptedEffect {Script = "Death"}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
                         Effects = new HashSet<Effect> {new ScriptedEffect {Script = "Death"}}
@@ -67,7 +66,8 @@ namespace UnicornHack.Data.Creatures
                     {"venom resistance", 3},
                     {"regeneration", 3},
                     {"physical deflection", 25},
-                    {"magic resistance", 100}
+                    {"magic resistance", 100},
+                    {"weight", 1000}
                 },
             InitialLevel = 30,
             GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 0F}, Name = "hell"},

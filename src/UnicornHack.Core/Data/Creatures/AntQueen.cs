@@ -12,21 +12,20 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Ant,
             SpeciesClass = SpeciesClass.Vermin,
             MovementDelay = 66,
-            Weight = 10,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 5}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 5}}
                     }
                 },
             SimpleProperties = new HashSet<string> {"animal body", "handlessness", "femaleness", "oviparity"},
@@ -35,8 +34,9 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"poison resistance", 3},
                     {"stealthiness", 3},
-                    {"largeness", Size.Tiny},
-                    {"magic resistance", 20}
+                    {"size", 1},
+                    {"magic resistance", 20},
+                    {"weight", 10}
                 },
             InitialLevel = 9,
             GenerationFlags = GenerationFlags.Entourage

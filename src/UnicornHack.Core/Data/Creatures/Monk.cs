@@ -11,18 +11,17 @@ namespace UnicornHack.Data.Creatures
             Name = "monk",
             Species = Species.Human,
             MovementDelay = 100,
-            Weight = 1000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 4}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Kick,
@@ -31,7 +30,13 @@ namespace UnicornHack.Data.Creatures
                     }
                 },
             SimpleProperties = new HashSet<string> {"infravisibility", "humanoidness"},
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 14}, {"magic resistance", 10}},
+            ValuedProperties =
+                new Dictionary<string, object>
+                {
+                    {"physical deflection", 14},
+                    {"magic resistance", 10},
+                    {"weight", 1000}
+                },
             InitialLevel = 10,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             PreviousStageName = "abbot",

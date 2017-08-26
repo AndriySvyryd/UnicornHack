@@ -12,35 +12,34 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Scorpion,
             SpeciesClass = SpeciesClass.Vermin,
             MovementDelay = 80,
-            Weight = 150,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Sting,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new VenomDamage {Damage = 2}}
+                        Effects = new HashSet<Effect> {new Envenom {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 2}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 2}}
                     }
                 },
             SimpleProperties = new HashSet<string> {"concealment", "animal body", "handlessness", "oviparity"},
@@ -49,8 +48,9 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"poison resistance", 3},
                     {"venom resistance", 3},
-                    {"largeness", Size.Small},
-                    {"physical deflection", 17}
+                    {"size", 2},
+                    {"physical deflection", 17},
+                    {"weight", 150}
                 },
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 5F}

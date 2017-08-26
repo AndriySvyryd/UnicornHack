@@ -11,28 +11,27 @@ namespace UnicornHack.Data.Creatures
             Name = "gray ooze",
             Species = Species.Ooze,
             MovementDelay = 1200,
-            Weight = 500,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 9}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new WaterDamage {Damage = 9}}
+                        Effects = new HashSet<Effect> {new Soak {Damage = 9}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeHit,
-                        Effects = new HashSet<Effect> {new WaterDamage {Damage = 4}}
+                        Effects = new HashSet<Effect> {new Soak {Damage = 4}}
                     }
                 },
             SimpleProperties =
@@ -50,17 +49,17 @@ namespace UnicornHack.Data.Creatures
                     "asexuality",
                     "stoning resistance"
                 },
-            ValuedProperties =
-                new Dictionary<string, object>
-                {
-                    {"fire resistance", 3},
-                    {"cold resistance", 3},
-                    {"poison resistance", 3},
-                    {"venom resistance", 3},
-                    {"acid resistance", 3},
-                    {"stealthiness", 3},
-                    {"physical deflection", 12}
-                },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {"fire resistance", 3},
+                {"cold resistance", 3},
+                {"poison resistance", 3},
+                {"venom resistance", 3},
+                {"acid resistance", 3},
+                {"stealthiness", 3},
+                {"physical deflection", 12},
+                {"weight", 500}
+            },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
             CorpseName = ""

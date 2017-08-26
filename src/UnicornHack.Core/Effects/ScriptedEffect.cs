@@ -1,5 +1,4 @@
 using System;
-using UnicornHack.Events;
 
 namespace UnicornHack.Effects
 {
@@ -15,11 +14,11 @@ namespace UnicornHack.Effects
 
         public string Script { get; set; }
 
-        public override Effect Instantiate(Game game) => new ScriptedEffect(game) {Script = Script};
+        public override Effect Copy(Game game) => new ScriptedEffect(game) {Script = Script};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("ScriptedEffect");
         }
     }
 }

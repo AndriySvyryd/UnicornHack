@@ -11,11 +11,10 @@ namespace UnicornHack.Data.Creatures
             Name = "rock piercer",
             Species = Species.Piercer,
             MovementDelay = 1200,
-            Weight = 200,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -29,8 +28,9 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"stealthiness", 3},
-                    {"largeness", Size.Small},
-                    {"physical deflection", 17}
+                    {"size", 2},
+                    {"physical deflection", 17},
+                    {"weight", 200}
                 },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 3F}

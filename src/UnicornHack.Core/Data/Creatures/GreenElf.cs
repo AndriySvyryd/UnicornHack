@@ -11,17 +11,16 @@ namespace UnicornHack.Data.Creatures
             Name = "green-elf",
             Species = Species.Elf,
             MovementDelay = 100,
-            Weight = 800,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -38,7 +37,8 @@ namespace UnicornHack.Data.Creatures
                     "infravisibility",
                     "humanoidness"
                 },
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 10}, {"magic resistance", 10}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"physical deflection", 10}, {"magic resistance", 10}, {"weight", 800}},
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},
             GenerationFlags = GenerationFlags.SmallGroup,

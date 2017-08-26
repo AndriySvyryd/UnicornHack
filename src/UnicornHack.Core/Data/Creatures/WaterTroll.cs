@@ -11,31 +11,30 @@ namespace UnicornHack.Data.Creatures
             Name = "water troll",
             Species = Species.Troll,
             MovementDelay = 85,
-            Weight = 1200,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 9}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 9}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -49,9 +48,10 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"regeneration", 3},
-                    {"largeness", Size.Large},
+                    {"size", 8},
                     {"physical deflection", 16},
-                    {"magic resistance", 40}
+                    {"magic resistance", 40},
+                    {"weight", 1200}
                 },
             InitialLevel = 11,
             GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight(), Name = "hell"},

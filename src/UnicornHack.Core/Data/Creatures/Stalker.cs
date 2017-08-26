@@ -12,11 +12,10 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Elemental,
             SpeciesClass = SpeciesClass.Extraplanar,
             MovementDelay = 100,
-            Weight = 900,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
@@ -38,8 +37,9 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"stealthiness", 3},
-                    {"largeness", Size.Large},
-                    {"physical deflection", 17}
+                    {"size", 8},
+                    {"physical deflection", 17},
+                    {"weight", 900}
                 },
             InitialLevel = 8,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},

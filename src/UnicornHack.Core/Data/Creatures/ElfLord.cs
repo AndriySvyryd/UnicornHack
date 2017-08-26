@@ -11,24 +11,23 @@ namespace UnicornHack.Data.Creatures
             Name = "elf-lord",
             Species = Species.Elf,
             MovementDelay = 100,
-            Weight = 800,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -46,7 +45,8 @@ namespace UnicornHack.Data.Creatures
                     "humanoidness",
                     "maleness"
                 },
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 10}, {"magic resistance", 20}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"physical deflection", 10}, {"magic resistance", 20}, {"weight", 800}},
             InitialLevel = 8,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},
             GenerationFlags = GenerationFlags.SmallGroup,

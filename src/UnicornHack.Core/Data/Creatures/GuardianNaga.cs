@@ -12,23 +12,22 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Naga,
             SpeciesClass = SpeciesClass.Aberration,
             MovementDelay = 75,
-            Weight = 1500,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Spit,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new VenomDamage {Damage = 14}}
+                        Effects = new HashSet<Effect> {new Envenom {Damage = 14}}
                     }
                 },
             SimpleProperties =
@@ -46,8 +45,9 @@ namespace UnicornHack.Data.Creatures
                     {"poison resistance", 3},
                     {"venom resistance", 3},
                     {"thick hide", 3},
-                    {"largeness", Size.Huge},
-                    {"magic resistance", 50}
+                    {"size", 16},
+                    {"magic resistance", 50},
+                    {"weight", 1500}
                 },
             InitialLevel = 12,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},

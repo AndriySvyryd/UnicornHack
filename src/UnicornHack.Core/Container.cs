@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnicornHack
 {
@@ -15,7 +14,6 @@ namespace UnicornHack
 
         public virtual short Capacity { get; set; }
 
-        public override int Weight => Items.Sum(i => i.Weight);
         public ICollection<Item> Items { get; } = new HashSet<Item>();
         IEnumerable<Item> IItemLocation.Items => Items;
         public virtual int Quantity => Items.Count;
@@ -35,6 +33,7 @@ namespace UnicornHack
                 itemOrStack.Container = this;
                 Items.Add(itemOrStack);
                 itemOrStack.AddReference();
+                // TODO: Update weight
             }
 
             return true;

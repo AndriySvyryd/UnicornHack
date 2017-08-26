@@ -47,6 +47,12 @@ namespace UnicornHack
             Mechanics = skills.Mechanics;
         }
 
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
+        public virtual int Id { get; private set; }
+
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
+        public int GameId { get; private set; }
+
         public int OneHanded { get; set; }
         public int TwoHanded { get; set; }
         public int DualWielding { get; set; }

@@ -11,18 +11,17 @@ namespace UnicornHack.Data.Creatures
             Name = "giant eel",
             Species = Species.Eel,
             MovementDelay = 133,
-            Weight = 600,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Hug,
@@ -32,7 +31,8 @@ namespace UnicornHack.Data.Creatures
                 },
             SimpleProperties =
                 new HashSet<string> {"swimming", "water breathing", "limblessness", "oviparity", "no inventory"},
-            ValuedProperties = new Dictionary<string, object> {{"largeness", Size.Large}, {"physical deflection", 21}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"size", 8}, {"physical deflection", 21}, {"weight", 600}},
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             NextStageName = "electric eel"

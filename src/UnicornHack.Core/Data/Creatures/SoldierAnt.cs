@@ -12,28 +12,27 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Ant,
             SpeciesClass = SpeciesClass.Vermin,
             MovementDelay = 66,
-            Weight = 20,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Sting,
                         Timeout = 5,
-                        Effects = new HashSet<Effect> {new VenomDamage {Damage = 7}}
+                        Effects = new HashSet<Effect> {new Envenom {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 5}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 5}}
                     }
                 },
             SimpleProperties = new HashSet<string> {"animal body", "handlessness", "asexuality"},
@@ -42,8 +41,9 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"poison resistance", 3},
                     {"stealthiness", 3},
-                    {"largeness", Size.Tiny},
-                    {"physical deflection", 17}
+                    {"size", 1},
+                    {"physical deflection", 17},
+                    {"weight", 20}
                 },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},

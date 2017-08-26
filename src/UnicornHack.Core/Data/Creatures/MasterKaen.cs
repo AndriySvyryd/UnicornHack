@@ -11,18 +11,17 @@ namespace UnicornHack.Data.Creatures
             Name = "Master Kaen",
             Species = Species.Human,
             MovementDelay = 100,
-            Weight = 1000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 24}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Spell,
@@ -39,7 +38,8 @@ namespace UnicornHack.Data.Creatures
                     "maleness",
                     "stoning resistance"
                 },
-            ValuedProperties = new Dictionary<string, object> {{"poison resistance", 3}, {"magic resistance", 10}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"poison resistance", 3}, {"magic resistance", 10}, {"weight", 1000}},
             InitialLevel = 16,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,

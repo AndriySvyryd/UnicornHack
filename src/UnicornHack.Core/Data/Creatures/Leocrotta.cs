@@ -12,25 +12,24 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Quadruped,
             SpeciesClass = SpeciesClass.Quadrupedal,
             MovementDelay = 66,
-            Weight = 1200,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -43,9 +42,10 @@ namespace UnicornHack.Data.Creatures
             ValuedProperties =
                 new Dictionary<string, object>
                 {
-                    {"largeness", Size.Large},
+                    {"size", 8},
                     {"physical deflection", 16},
-                    {"magic resistance", 10}
+                    {"magic resistance", 10},
+                    {"weight", 1200}
                 },
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},

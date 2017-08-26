@@ -11,41 +11,40 @@ namespace UnicornHack.Data.Creatures
             Name = "master mind flayer",
             Species = Species.Illithid,
             MovementDelay = 100,
-            Weight = 1200,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 4}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Suck,
                         Timeout = 1,
                         Effects = new HashSet<Effect>
                         {
-                            new ChangeProperty<int> {PropertyName = "Intelligence", Value = -2, Duration = 10}
+                            new ChangeProperty<int> {PropertyName = "intelligence", Value = -2, Duration = 10}
                         }
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Suck,
                         Timeout = 1,
                         Effects = new HashSet<Effect>
                         {
-                            new ChangeProperty<int> {PropertyName = "Intelligence", Value = -2, Duration = 10}
+                            new ChangeProperty<int> {PropertyName = "intelligence", Value = -2, Duration = 10}
                         }
                     }
                 },
@@ -60,7 +59,13 @@ namespace UnicornHack.Data.Creatures
                     "humanoidness"
                 },
             ValuedProperties =
-                new Dictionary<string, object> {{"telepathy", 3}, {"largeness", Size.Large}, {"magic resistance", 90}},
+                new Dictionary<string, object>
+                {
+                    {"telepathy", 3},
+                    {"size", 8},
+                    {"magic resistance", 90},
+                    {"weight", 1200}
+                },
             InitialLevel = 13,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},
             PreviousStageName = "mind flayer",

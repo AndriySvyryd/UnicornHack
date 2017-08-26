@@ -11,25 +11,24 @@ namespace UnicornHack.Data.Creatures
             Name = "yeti",
             Species = Species.Simian,
             MovementDelay = 80,
-            Weight = 1600,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -42,8 +41,9 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"cold resistance", 3},
-                    {"largeness", Size.Large},
-                    {"physical deflection", 14}
+                    {"size", 8},
+                    {"physical deflection", 14},
+                    {"weight", 1600}
                 },
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},

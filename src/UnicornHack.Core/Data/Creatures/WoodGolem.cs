@@ -11,11 +11,10 @@ namespace UnicornHack.Data.Creatures
             Name = "wood golem",
             Species = Species.Golem,
             MovementDelay = 400,
-            Weight = 1000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -39,8 +38,9 @@ namespace UnicornHack.Data.Creatures
                 {"venom resistance", 3},
                 {"thick hide", 3},
                 {"health point maximum", 50},
-                {"largeness", Size.Large},
-                {"physical deflection", 16}
+                {"size", 8},
+                {"physical deflection", 16},
+                {"weight", 1000}
             },
             InitialLevel = 7,
             CorpseName = ""

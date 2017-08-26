@@ -1,5 +1,4 @@
 using System.Linq;
-using UnicornHack.Events;
 using UnicornHack.Generation;
 
 namespace UnicornHack.Effects
@@ -17,17 +16,26 @@ namespace UnicornHack.Effects
         public string RaceName { get; set; }
         public bool Remove { get; set; }
 
-        public override Effect Instantiate(Game game) => new ChangeRace(game) {RaceName = RaceName, Remove = Remove};
+        public override Effect Copy(Game game) => new ChangeRace(game) {RaceName = RaceName, Remove = Remove};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            var player = abilityContext.Target as Player;
-            if (player != null)
+            if (abilityContext.Target is Player player)
             {
                 if (Remove)
                 {
-                    // TODO: Show a dialog
-                    player.Game.Random.Pick(player.Races.ToList()).Remove();
+                    var race = player.Races.SingleOrDefault(r => r.Name == RaceName);
+                    if (race == null)
+                    {
+                        return;
+                    }
+
+                    race.Remove();
+
+                    if (!player.Races.Any())
+                    {
+                        player.ChangeCurrentHP(-1 * player.HP);
+                    }
                 }
                 else
                 {
@@ -35,7 +43,12 @@ namespace UnicornHack.Effects
                     var existingRace = player.Races.SingleOrDefault(r => r.Species == race.Species);
                     if (existingRace == null)
                     {
-                        race.Instantiate(player);
+                        var changedRace = race.Instantiate(abilityContext);
+                        abilityContext.Target.ActiveEffects.Add(changedRace.AddReference().Referenced);
+                        abilityContext.Target.Add(changedRace.Ability);
+
+                        changedRace.XPLevel = 1;
+                        changedRace.UpdateNextLevelXP();
                     }
                     // TODO: Change subrace
                 }

@@ -12,25 +12,24 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Dog,
             SpeciesClass = SpeciesClass.Canine | SpeciesClass.ShapeChanger,
             MovementDelay = 100,
-            Weight = 300,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 5,
                         Effects = new HashSet<Effect> {new ConferLycanthropy {VariantName = "jackalwere"}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
                         Effects = new HashSet<Effect> {new ConferLycanthropy {VariantName = "jackalwere"}}
@@ -43,9 +42,10 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"poison resistance", 3},
                     {"regeneration", 3},
-                    {"largeness", Size.Small},
+                    {"size", 2},
                     {"physical deflection", 13},
-                    {"magic resistance", 10}
+                    {"magic resistance", 10},
+                    {"weight", 300}
                 },
             InitialLevel = 2,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},

@@ -12,28 +12,27 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Scorpion,
             SpeciesClass = SpeciesClass.Vermin,
             MovementDelay = 100,
-            Weight = 1000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Sting,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new Infect {Strength = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 7}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 7}}
                     }
                 },
             SimpleProperties = new HashSet<string> {"animal body", "handlessness", "maleness", "stoning resistance"},
@@ -42,7 +41,8 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"poison resistance", 3},
                     {"venom resistance", 3},
-                    {"physical deflection", 17}
+                    {"physical deflection", 17},
+                    {"weight", 1000}
                 },
             InitialLevel = 16,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},

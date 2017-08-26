@@ -13,21 +13,21 @@ namespace UnicornHack.Data.Creatures
             SpeciesClass = SpeciesClass.Undead,
             MovementDelay = 100,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new DrainLife {Amount = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeHit,
                         Effects = new HashSet<Effect> {new DrainLife {Amount = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
                         Effects = new HashSet<Effect> {new DrainLife {Amount = 1}}
@@ -54,7 +54,8 @@ namespace UnicornHack.Data.Creatures
                     {"cold resistance", 3},
                     {"poison resistance", 3},
                     {"physical deflection", 16},
-                    {"magic resistance", 15}
+                    {"magic resistance", 15},
+                    {"weight", 0}
                 },
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},

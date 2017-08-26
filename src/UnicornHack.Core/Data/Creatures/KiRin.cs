@@ -12,32 +12,31 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Kirin,
             SpeciesClass = SpeciesClass.Reptile | SpeciesClass.Celestial,
             MovementDelay = 66,
-            Weight = 1300,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Kick,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Kick,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Headbutt,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Spell,
@@ -64,9 +63,10 @@ namespace UnicornHack.Data.Creatures
                     {"poison resistance", 3},
                     {"venom resistance", 3},
                     {"thick hide", 3},
-                    {"largeness", Size.Large},
+                    {"size", 8},
                     {"physical deflection", 25},
-                    {"magic resistance", 90}
+                    {"magic resistance", 90},
+                    {"weight", 1300}
                 },
             InitialLevel = 16,
             GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight {Multiplier = 4F}, Name = "hell"},

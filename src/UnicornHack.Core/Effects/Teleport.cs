@@ -1,11 +1,7 @@
-using System;
-using UnicornHack.Events;
-
 namespace UnicornHack.Effects
 {
     public class Teleport : Effect
     {
-        // Teleports items too
         public Teleport()
         {
         }
@@ -14,11 +10,16 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override Effect Instantiate(Game game) => new Teleport(game);
+        public override Effect Copy(Game game) => new Teleport(game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            throw new NotImplementedException();
+            if (!abilityContext.Succeeded)
+            {
+                return;
+            }
+
+            abilityContext.AppliedEffects.Add(new Teleported(abilityContext));
         }
     }
 }

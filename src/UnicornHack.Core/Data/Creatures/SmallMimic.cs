@@ -12,28 +12,22 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Mimic,
             SpeciesClass = SpeciesClass.ShapeChanger,
             MovementDelay = 400,
-            Weight = 300,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new Stick()}
-                    },
-                    new Ability
-                    {
-                        Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new Polymorph()}
                     }
                 },
             SimpleProperties =
@@ -55,8 +49,9 @@ namespace UnicornHack.Data.Creatures
                     {"acid resistance", 3},
                     {"stealthiness", 3},
                     {"thick hide", 3},
-                    {"largeness", Size.Small},
-                    {"physical deflection", 13}
+                    {"size", 2},
+                    {"physical deflection", 13},
+                    {"weight", 300}
                 },
             InitialLevel = 7,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},

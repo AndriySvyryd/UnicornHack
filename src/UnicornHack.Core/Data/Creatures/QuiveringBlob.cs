@@ -11,11 +11,10 @@ namespace UnicornHack.Data.Creatures
             Name = "quivering blob",
             Species = Species.Blob,
             MovementDelay = 1200,
-            Weight = 200,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
@@ -43,8 +42,9 @@ namespace UnicornHack.Data.Creatures
                     {"poison resistance", 3},
                     {"venom resistance", 3},
                     {"stealthiness", 3},
-                    {"largeness", Size.Small},
-                    {"physical deflection", 12}
+                    {"size", 2},
+                    {"physical deflection", 12},
+                    {"weight", 200}
                 },
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 6F},

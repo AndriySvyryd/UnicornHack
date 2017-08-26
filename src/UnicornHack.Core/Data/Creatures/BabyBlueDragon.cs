@@ -12,11 +12,10 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Dragon,
             SpeciesClass = SpeciesClass.Reptile,
             MovementDelay = 133,
-            Weight = 1500,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -40,9 +39,10 @@ namespace UnicornHack.Data.Creatures
                     {"electricity resistance", 3},
                     {"poison resistance", 3},
                     {"thick hide", 3},
-                    {"largeness", Size.Large},
+                    {"size", 8},
                     {"physical deflection", 18},
-                    {"magic resistance", 10}
+                    {"magic resistance", 10},
+                    {"weight", 1500}
                 },
             InitialLevel = 12,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},

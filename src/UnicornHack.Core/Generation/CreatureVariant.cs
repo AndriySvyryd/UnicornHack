@@ -16,7 +16,6 @@ namespace UnicornHack.Generation
         private Species? _species;
         private SpeciesClass? _speciesClass;
         private int? _movementDelay;
-        private int? _weight;
         private Material? _material;
         private ISet<string> _simpleProperties;
         private IDictionary<string, object> _valuedProperties;
@@ -39,13 +38,6 @@ namespace UnicornHack.Generation
         {
             get => _movementDelay ?? BaseActor?.MovementDelay ?? 0;
             set => _movementDelay = value;
-        }
-
-        /// <summary> 100g units </summary>
-        public virtual int Weight
-        {
-            get => _weight ?? BaseActor?.Weight ?? 0;
-            set => _weight = value;
         }
 
         public virtual Material Material
@@ -88,7 +80,7 @@ namespace UnicornHack.Generation
             set => _valuedProperties = value;
         }
 
-        public virtual ISet<Ability> Abilities { get; set; } = new HashSet<Ability>();
+        public virtual ISet<AbilityDefinition> Abilities { get; set; } = new HashSet<AbilityDefinition>();
         public byte InitialLevel { get; set; }
         public virtual int XP { get; set; }
         public virtual Weight GenerationWeight { get; set; }
@@ -121,7 +113,6 @@ namespace UnicornHack.Generation
                 Species = Species,
                 SpeciesClass = SpeciesClass,
                 MovementDelay = MovementDelay,
-                Weight = Weight,
                 Material = Material,
                 Noise = Noise,
                 Behavior = Behavior,
@@ -133,7 +124,7 @@ namespace UnicornHack.Generation
             };
 
             var innateAbility =
-                new Ability(level.Game) {Name = Actor.InnateName, Activation = AbilityActivation.Always};
+                new AbilityDefinition(level.Game) {Name = Actor.InnateName, Activation = AbilityActivation.Always};
 
             var sexSet = false;
             foreach (var simpleProperty in SimpleProperties)
@@ -167,19 +158,20 @@ namespace UnicornHack.Generation
             foreach (var valuedProperty in ValuedProperties)
             {
                 innateAbility.Effects.Add(
-                    Effect.CreateChangeValuedProperty(level.Game, valuedProperty.Key, valuedProperty.Value));
+                    Effect.CreateChangeProperty(level.Game, valuedProperty.Key, valuedProperty.Value));
             }
 
             foreach (var ability in Abilities)
             {
-                creature.Abilities.Add(ability.Instantiate(level.Game));
+                creature.Add(ability.Instantiate(level.Game));
             }
 
+            // TODO: Properly calculate HP
             creature.MaxHP = 50 + creature.DifficultyLevel * 5;
             creature.MaxHP = creature.MaxHP < 1 ? 1 : creature.MaxHP;
             creature.HP = creature.MaxHP;
 
-            creature.RecalculateEffectsAndAbilities();
+            creature.RecalculateAbilities();
             return creature;
         }
 
@@ -216,6 +208,7 @@ namespace UnicornHack.Generation
         private static readonly CSScriptSerializer Serializer =
             new PropertyCSScriptSerializer<CreatureVariant>(GetPropertyConditions<CreatureVariant>());
 
+        // TODO: Serialize property names as static references
         protected static Dictionary<string, Func<TCreatureVariant, object, bool>>
             GetPropertyConditions<TCreatureVariant>() where TCreatureVariant : CreatureVariant =>
             new Dictionary<string, Func<TCreatureVariant, object, bool>>
@@ -225,9 +218,8 @@ namespace UnicornHack.Generation
                 {nameof(Species), (o, v) => (Species)v != (o.BaseActor?.Species ?? Species.Default)},
                 {nameof(SpeciesClass), (o, v) => (SpeciesClass)v != (o.BaseActor?.SpeciesClass ?? SpeciesClass.None)},
                 {nameof(MovementDelay), (o, v) => (int)v != (o.BaseActor?.MovementDelay ?? 0)},
-                {nameof(Weight), (o, v) => (int)v != (o.BaseActor?.Weight ?? 0)},
                 {nameof(Material), (o, v) => (Material)v != (o.BaseActor?.Material ?? Material.Flesh)},
-                {nameof(Abilities), (o, v) => ((ICollection<Ability>)v).Count != 0},
+                {nameof(Abilities), (o, v) => ((ICollection<AbilityDefinition>)v).Count != 0},
                 {nameof(SimpleProperties), (o, v) => ((ICollection<string>)v).Count != 0},
                 {nameof(ValuedProperties), (o, v) => ((IDictionary<string, object>)v).Keys.Count != 0},
                 {nameof(InitialLevel), (o, v) => (byte)v != 0},

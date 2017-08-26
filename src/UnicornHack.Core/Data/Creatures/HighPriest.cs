@@ -11,31 +11,30 @@ namespace UnicornHack.Data.Creatures
             Name = "high priest",
             Species = Species.Human,
             MovementDelay = 75,
-            Weight = 1000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 22}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Spell,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new ScriptedEffect {Script = "DivineSpell"}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Spell,
@@ -52,7 +51,8 @@ namespace UnicornHack.Data.Creatures
                     {"electricity resistance", 3},
                     {"poison resistance", 3},
                     {"physical deflection", 13},
-                    {"magic resistance", 70}
+                    {"magic resistance", 70},
+                    {"weight", 1000}
                 },
             InitialLevel = 25,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},

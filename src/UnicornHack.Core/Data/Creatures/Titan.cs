@@ -11,24 +11,23 @@ namespace UnicornHack.Data.Creatures
             Name = "titan",
             Species = Species.Giant,
             MovementDelay = 66,
-            Weight = 3000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 9}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Spell,
@@ -41,9 +40,10 @@ namespace UnicornHack.Data.Creatures
             ValuedProperties =
                 new Dictionary<string, object>
                 {
-                    {"largeness", Size.Gigantic},
+                    {"size", 32},
                     {"physical deflection", 23},
-                    {"magic resistance", 70}
+                    {"magic resistance", 70},
+                    {"weight", 3000}
                 },
             InitialLevel = 16,
             GenerationFlags = GenerationFlags.NonGenocidable,

@@ -11,18 +11,17 @@ namespace UnicornHack.Data.Creatures
             Name = "glass golem",
             Species = Species.Golem,
             MovementDelay = 200,
-            Weight = 1800,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 9}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -54,9 +53,10 @@ namespace UnicornHack.Data.Creatures
                 {"venom resistance", 3},
                 {"thick hide", 3},
                 {"health point maximum", 60},
-                {"largeness", Size.Large},
+                {"size", 8},
                 {"physical deflection", 16},
-                {"magic resistance", 50}
+                {"magic resistance", 50},
+                {"weight", 1800}
             },
             InitialLevel = 16,
             CorpseName = ""

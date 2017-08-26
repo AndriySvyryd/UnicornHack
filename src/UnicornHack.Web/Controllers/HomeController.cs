@@ -1,6 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UnicornHack.Effects;
@@ -16,6 +16,7 @@ namespace UnicornHack.Controllers
     public class HomeController : Controller
     {
         private readonly GameDbContext _dbContext;
+
         //private readonly IHubContext<GameHub, IGameClient> _hubContext;
         private readonly GameServices _gameServices;
 
@@ -25,15 +26,9 @@ namespace UnicornHack.Controllers
             _gameServices = gameServices;
         }
 
-        public IActionResult Index()
-        {
-            return View(new Character());
-        }
+        public IActionResult Index() => View(new Character());
 
-        public IActionResult Contact()
-        {
-            return View();
-        }
+        public IActionResult Contact() => View();
 
         //
         // GET: /Home/Game?Name
@@ -58,8 +53,8 @@ namespace UnicornHack.Controllers
             var character = FindOrCreateCharacter(name);
 
             character.NextAction = action;
-            character.NextActionTarget = string.IsNullOrEmpty(target) ? (int?)null : Int32.Parse(target);
-            character.NextActionTarget2 = string.IsNullOrEmpty(target2) ? (int?)null : Int32.Parse(target2);
+            character.NextActionTarget = string.IsNullOrEmpty(target) ? (int?)null : int.Parse(target);
+            character.NextActionTarget2 = string.IsNullOrEmpty(target2) ? (int?)null : int.Parse(target2);
 
             Turn(character);
             return PartialView(nameof(Game), character);
@@ -82,6 +77,9 @@ namespace UnicornHack.Controllers
             // TODO: Move this
             _dbContext.Entry(level).Property(l => l.VisibleTerrain).IsModified = true;
 
+            var entries = _dbContext.ChangeTracker.Entries()
+                .Where(e => e.State != EntityState.Modified && e.State != EntityState.Unchanged)
+                .ToList();
             _dbContext.SaveChanges();
 
             // Level is null if the character is dead
@@ -91,17 +89,22 @@ namespace UnicornHack.Controllers
             }
         }
 
-        public IActionResult Error()
-        {
-            return View();
-        }
+        public IActionResult Error() => View();
 
         private Player FindOrCreateCharacter(string name)
         {
             var character = FindCharacter(name);
             if (character == null)
             {
-                var seed = Environment.TickCount;
+                var seed = 0;
+                using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
+                {
+                    byte[] rngData = new byte[4];
+                    rng.GetBytes(rngData);
+
+                    seed = rngData[0] | rngData[1] << 8 | rngData[2] << 16 | rngData[3] << 24;
+                }
+
                 var game = new Game
                 {
                     InitialSeed = seed,
@@ -152,9 +155,11 @@ namespace UnicornHack.Controllers
             _dbContext.Characters
                 .Include(c => c.Game.Random)
                 .Include(c => c.Log)
-                .Include(c => c.Races).ThenInclude(r => r.Abilities).ThenInclude(a => a.Effects)
+                .Include(c => c.Abilities).ThenInclude(a => a.Effects)
+                .Include(c => c.ActiveEffects).ThenInclude(e => e.SourceAbility)
+                .Include(c => c.Properties)
                 .Include(c => c.Skills)
-                //.Include(c => c.SensedEvents)
+                .Include(c => c.SensedEvents)
                 .Include(c => c.Level.Connections)
                 .Include(c => c.Level.IncomingConnections)
                 .Include(c => c.Level.Game)
@@ -185,10 +190,11 @@ namespace UnicornHack.Controllers
 
             LoadEvents(character);
 
-            var loadedContainerIds = _dbContext.Items.Local.OfType<Container>().Select(c => c.Id).ToList();
+            var gameId = character.GameId;
+            var loadedContainerIds = _dbContext.Set<Container>().Local.Select(c => c.Id).ToList();
             _dbContext.Set<Container>()
                 .Include(c => c.Items).ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
-                .Where(i => loadedContainerIds.Contains(i.Id))
+                .Where(i => i.GameId == gameId && loadedContainerIds.Contains(i.Id))
                 .Load();
 
             var meleeAttacks = _dbContext.Set<MeleeAttack>().Local.Select(c => c.Id).ToList();
@@ -196,7 +202,25 @@ namespace UnicornHack.Controllers
             {
                 _dbContext.Set<MeleeAttack>()
                     .Include(e => e.Weapon.Abilities).ThenInclude(a => a.Effects)
-                    .Where(e => meleeAttacks.Contains(e.Id))
+                    .Where(e => e.GameId == gameId && meleeAttacks.Contains(e.Id))
+                    .Load();
+            }
+
+            var addedAbilities = _dbContext.Set<AddedAbility>().Local.Select(c => c.Id).ToList();
+            if (addedAbilities.Any())
+            {
+                _dbContext.Set<AddedAbility>()
+                    .Include(a => a.Ability).ThenInclude(a => a.Effects)
+                    .Where(a => a.GameId == gameId && addedAbilities.Contains(a.Id))
+                    .Load();
+            }
+
+            var addAbilities = _dbContext.Set<AddAbility>().Local.Select(c => c.Id).ToList();
+            if (addAbilities.Any())
+            {
+                _dbContext.Set<AddAbility>()
+                    .Include(a => a.Ability).ThenInclude(a => a.Effects)
+                    .Where(a => a.GameId == gameId && addAbilities.Contains(a.Id))
                     .Load();
             }
 
@@ -207,11 +231,19 @@ namespace UnicornHack.Controllers
         {
             _dbContext.Levels
                 .Include(l => l.Items).ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
+                .Include(l => l.Items).ThenInclude(i => i.ActiveEffects).ThenInclude(i => i.SourceAbility)
+                .Include(l => l.Items).ThenInclude(i => i.Properties)
                 .Include(l => l.Actors).ThenInclude(a => a.Inventory).ThenInclude(i => i.Abilities)
                 .ThenInclude(a => a.Effects)
+                .Include(l => l.Actors).ThenInclude(a => a.Inventory).ThenInclude(i => i.ActiveEffects)
+                .ThenInclude(i => i.SourceAbility)
+                .Include(l => l.Actors).ThenInclude(a => a.Inventory).ThenInclude(i => i.Properties)
                 .Include(l => l.Actors).ThenInclude(a => a.Abilities).ThenInclude(a => a.Effects)
+                .Include(l => l.Actors).ThenInclude(a => a.ActiveEffects).ThenInclude(i => i.SourceAbility)
+                .Include(l => l.Actors).ThenInclude(a => a.Properties)
                 .Include(l => l.Connections).ThenInclude(c => c.TargetBranch)
                 .Include(l => l.IncomingConnections).ThenInclude(c => c.Level)
+                .Include(l => l.Rooms)
                 .Include(l => l.Branch)
                 .Include(l => l.Game)
                 .Include(l => l.GenerationRandom)
@@ -222,44 +254,46 @@ namespace UnicornHack.Controllers
         private void LoadEvents(Player character)
         {
             // TODO: Replace these with inline includes
+            var gameId = character.GameId;
+            var id = character.Id;
             _dbContext.Set<ActorMoveEvent>()
-                .Where(e => e.GameId == character.GameId && e.SensorId == character.Id)
+                .Where(e => e.GameId == gameId && e.SensorId == id)
                 .Include(e => e.Mover)
                 .Include(e => e.Movee)
                 .Load();
             _dbContext.Set<AttackEvent>()
-                .Where(e => e.GameId == character.GameId && e.SensorId == character.Id)
-                .Include(e => e.Ability.Effects)
+                .Where(e => e.GameId == gameId && e.SensorId == id)
+                .Include(e => e.AppliedEffects)
                 .Include(e => e.Attacker)
                 .Include(e => e.Victim)
                 .Load();
             _dbContext.Set<DeathEvent>()
-                .Where(e => e.GameId == character.GameId && e.SensorId == character.Id)
+                .Where(e => e.GameId == gameId && e.SensorId == id)
                 .Include(e => e.Deceased)
                 .Include(e => e.Corpse)
                 .Load();
             _dbContext.Set<ItemConsumptionEvent>()
-                .Where(e => e.GameId == character.GameId && e.SensorId == character.Id)
+                .Where(e => e.GameId == gameId && e.SensorId == id)
                 .Include(e => e.Consumer)
                 .Include(e => e.Item)
                 .Load();
             _dbContext.Set<ItemDropEvent>()
-                .Where(e => e.GameId == character.GameId && e.SensorId == character.Id)
+                .Where(e => e.GameId == gameId && e.SensorId == id)
                 .Include(e => e.Dropper)
                 .Include(e => e.Item)
                 .Load();
             _dbContext.Set<ItemPickUpEvent>()
-                .Where(e => e.GameId == character.GameId && e.SensorId == character.Id)
+                .Where(e => e.GameId == gameId && e.SensorId == id)
                 .Include(e => e.Picker)
                 .Include(e => e.Item)
                 .Load();
             _dbContext.Set<ItemEquipmentEvent>()
-                .Where(e => e.GameId == character.GameId && e.SensorId == character.Id)
+                .Where(e => e.GameId == gameId && e.SensorId == id)
                 .Include(e => e.Equipper)
                 .Include(e => e.Item)
                 .Load();
             _dbContext.Set<ItemUnequipmentEvent>()
-                .Where(e => e.GameId == character.GameId && e.SensorId == character.Id)
+                .Where(e => e.GameId == gameId && e.SensorId == id)
                 .Include(e => e.Unequipper)
                 .Include(e => e.Item)
                 .Load();
@@ -278,19 +312,18 @@ namespace UnicornHack.Controllers
                 .Include(g => g.Branches)
                 .Include(g => g.Levels).ThenInclude(l => l.GenerationRandom)
                 .Include(g => g.Connections)
-                .Include(g => g.Actors)
-                .Include(g => g.Items)
-                .Include(g => g.Abilities)
+                .Include(g => g.Entities)
+                .Include(g => g.AbilityDefinitions)
                 .Include(g => g.Effects)
-                //.Include(g => g.SensoryEvents)
+                .Include(g => g.Abilities)
+                .Include(g => g.AppliedEffects)
+                .Include(g => g.SensoryEvents)
                 .Single(g => g.Id == game.Id);
 
             _dbContext.Set<MeleeAttack>()
                 .Where(e => e.GameId == game.Id)
                 .Include(e => e.Weapon.Abilities).ThenInclude(a => a.Effects)
                 .Load();
-
-            _dbContext.Set<SimpleRandom>().Remove(game.Random);
 
             foreach (var playerCharacter in game.Players)
             {
@@ -305,26 +338,29 @@ namespace UnicornHack.Controllers
             {
                 _dbContext.Effects.Remove(effect);
             }
+            foreach (var appliedEffect in game.AppliedEffects.ToList())
+            {
+                _dbContext.AppliedEffects.Remove(appliedEffect);
+            }
             foreach (var ability in game.Abilities.ToList())
             {
                 _dbContext.Abilities.Remove(ability);
             }
-            foreach (var item in game.Items.ToList())
+            foreach (var abilityDefinition in game.AbilityDefinitions.ToList())
             {
-                _dbContext.Items.Remove(item);
+                _dbContext.AbilityDefinitions.Remove(abilityDefinition);
             }
             foreach (var sensoryEvent in game.SensoryEvents.ToList())
             {
                 _dbContext.SensoryEvents.Remove(sensoryEvent);
             }
-            foreach (var actor in game.Actors.ToList())
+            foreach (var actor in game.Entities.ToList())
             {
-                _dbContext.Actors.Remove(actor);
+                _dbContext.Entities.Remove(actor);
             }
             foreach (var level in game.Levels.ToList())
             {
-                game.Repository.Delete(level);
-                game.Repository.Delete(level.GenerationRandom);
+                _dbContext.Levels.Remove(level);
             }
             foreach (var stairs in game.Connections.ToList())
             {

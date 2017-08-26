@@ -12,28 +12,27 @@ namespace UnicornHack.Data.Creatures
             Species = Species.DemonMajor,
             SpeciesClass = SpeciesClass.Demon,
             MovementDelay = 133,
-            Weight = 1500,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new VenomDamage {Damage = 7}}
+                        Effects = new HashSet<Effect> {new Envenom {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Gaze,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new Stun {Duration = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 14}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 14}}
                     }
                 },
             SimpleProperties =
@@ -52,9 +51,10 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"fire resistance", 3},
                     {"poison resistance", 3},
-                    {"largeness", Size.Large},
+                    {"size", 8},
                     {"physical deflection", 25},
-                    {"magic resistance", 85}
+                    {"magic resistance", 85},
+                    {"weight", 1500}
                 },
             InitialLevel = 30,
             GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 0F}, Name = "hell"},

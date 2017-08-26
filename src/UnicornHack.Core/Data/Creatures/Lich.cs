@@ -12,33 +12,32 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Lich,
             SpeciesClass = SpeciesClass.Undead,
             MovementDelay = 200,
-            Weight = 600,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new ColdDamage {Damage = 5}}
+                        Effects = new HashSet<Effect> {new Freeze {Damage = 5}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Spell,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
                         Effects = new HashSet<Effect> {new Infect()}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 10}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 10}}
                     }
                 },
             SimpleProperties =
@@ -57,7 +56,8 @@ namespace UnicornHack.Data.Creatures
                     {"poison resistance", 3},
                     {"venom resistance", 3},
                     {"regeneration", 3},
-                    {"magic resistance", 30}
+                    {"magic resistance", 30},
+                    {"weight", 600}
                 },
             InitialLevel = 11,
             NextStageName = "demilich",

@@ -12,11 +12,10 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Cat,
             SpeciesClass = SpeciesClass.Feline,
             MovementDelay = 75,
-            Weight = 200,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -26,7 +25,8 @@ namespace UnicornHack.Data.Creatures
                 },
             SimpleProperties =
                 new HashSet<string> {"animal body", "infravisibility", "handlessness", "singular inventory"},
-            ValuedProperties = new Dictionary<string, object> {{"largeness", Size.Small}, {"physical deflection", 15}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"size", 2}, {"physical deflection", 15}, {"weight", 200}},
             InitialLevel = 4,
             GenerationWeight = new DefaultWeight {Multiplier = 7F},
             PreviousStageName = "kitten",

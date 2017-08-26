@@ -12,35 +12,34 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Cloud,
             SpeciesClass = SpeciesClass.Extraplanar,
             MovementDelay = 1200,
-            Weight = 1,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new Engulf {Duration = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnDigestion,
                         Action = AbilityAction.Digestion,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnDigestion,
                         Action = AbilityAction.Digestion,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new WaterDamage {Damage = 1}}
+                        Effects = new HashSet<Effect> {new Soak {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeHit,
-                        Effects = new HashSet<Effect> {new WaterDamage {Damage = 2}}
+                        Effects = new HashSet<Effect> {new Soak {Damage = 2}}
                     }
                 },
             SimpleProperties =
@@ -69,8 +68,9 @@ namespace UnicornHack.Data.Creatures
                     {"venom resistance", 3},
                     {"acid resistance", 3},
                     {"stealthiness", 3},
-                    {"largeness", Size.Huge},
-                    {"magic resistance", 30}
+                    {"size", 16},
+                    {"magic resistance", 30},
+                    {"weight", 1}
                 },
             InitialLevel = 3,
             GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight {Multiplier = 4F}, Name = "hell"},

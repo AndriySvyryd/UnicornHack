@@ -12,11 +12,10 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Dog,
             SpeciesClass = SpeciesClass.Canine,
             MovementDelay = 75,
-            Weight = 400,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -26,7 +25,7 @@ namespace UnicornHack.Data.Creatures
                 },
             SimpleProperties =
                 new HashSet<string> {"animal body", "infravisibility", "handlessness", "singular inventory"},
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 13}},
+            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 13}, {"weight", 400}},
             InitialLevel = 4,
             GenerationWeight = new DefaultWeight {Multiplier = 6F},
             Noise = ActorNoiseType.Bark

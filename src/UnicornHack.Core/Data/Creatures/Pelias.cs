@@ -11,17 +11,16 @@ namespace UnicornHack.Data.Creatures
             Name = "Pelias",
             Species = Species.Human,
             MovementDelay = 100,
-            Weight = 1000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -31,7 +30,8 @@ namespace UnicornHack.Data.Creatures
                 },
             SimpleProperties =
                 new HashSet<string> {"infravisibility", "humanoidness", "maleness", "stoning resistance"},
-            ValuedProperties = new Dictionary<string, object> {{"poison resistance", 3}, {"magic resistance", 30}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"poison resistance", 3}, {"magic resistance", 30}, {"weight", 1000}},
             InitialLevel = 16,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,

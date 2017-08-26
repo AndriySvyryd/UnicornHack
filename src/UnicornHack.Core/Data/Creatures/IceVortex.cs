@@ -13,31 +13,31 @@ namespace UnicornHack.Data.Creatures
             SpeciesClass = SpeciesClass.Extraplanar,
             MovementDelay = 60,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new Engulf {Duration = 4}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnDigestion,
                         Action = AbilityAction.Digestion,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new ColdDamage {Damage = 3}}
+                        Effects = new HashSet<Effect> {new Freeze {Damage = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeHit,
-                        Effects = new HashSet<Effect> {new ColdDamage {Damage = 3}}
+                        Effects = new HashSet<Effect> {new Freeze {Damage = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnRangedHit,
-                        Effects = new HashSet<Effect> {new ColdDamage {Damage = 3}}
+                        Effects = new HashSet<Effect> {new Freeze {Damage = 3}}
                     }
                 },
             SimpleProperties =
@@ -65,9 +65,10 @@ namespace UnicornHack.Data.Creatures
                     {"cold resistance", 3},
                     {"poison resistance", 3},
                     {"venom resistance", 3},
-                    {"largeness", Size.Huge},
+                    {"size", 16},
                     {"physical deflection", 18},
-                    {"magic resistance", 30}
+                    {"magic resistance", 30},
+                    {"weight", 0}
                 },
             InitialLevel = 5,
             GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight {Multiplier = 5F}, Name = "hell"},

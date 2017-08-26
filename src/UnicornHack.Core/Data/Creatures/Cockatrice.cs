@@ -12,30 +12,29 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Cockatrice,
             SpeciesClass = SpeciesClass.MagicalBeast,
             MovementDelay = 200,
-            Weight = 30,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new Stone()}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeHit,
                         Effects = new HashSet<Effect> {new Stone()}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
                         Effects = new HashSet<Effect> {new Stone()}
@@ -55,9 +54,10 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"poison resistance", 3},
-                    {"largeness", Size.Small},
+                    {"size", 2},
                     {"physical deflection", 14},
-                    {"magic resistance", 30}
+                    {"magic resistance", 30},
+                    {"weight", 30}
                 },
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},

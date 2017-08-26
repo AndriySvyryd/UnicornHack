@@ -7,6 +7,8 @@ namespace UnicornHack
 {
     public class ItemStack : Container
     {
+        // TODO: Expose abilities of the contained items
+
         public ItemStack()
         {
         }

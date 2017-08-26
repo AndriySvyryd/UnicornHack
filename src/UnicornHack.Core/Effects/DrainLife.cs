@@ -1,6 +1,3 @@
-using System;
-using UnicornHack.Events;
-
 namespace UnicornHack.Effects
 {
     public class DrainLife : Effect
@@ -15,11 +12,18 @@ namespace UnicornHack.Effects
 
         public int Amount { get; set; }
 
-        public override Effect Instantiate(Game game) => new DrainLife(game) {Amount = Amount};
+        public override Effect Copy(Game game) => new DrainLife(game) {Amount = Amount};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            throw new NotImplementedException();
+            if (!abilityContext.Succeeded)
+            {
+                return;
+            }
+
+            abilityContext.Target.ChangeCurrentHP(-1 * Amount);
+            abilityContext.Activator.ChangeCurrentHP(Amount);
+            abilityContext.AppliedEffects.Add(new LifeDrained(abilityContext) {Amount = Amount});
         }
     }
 }

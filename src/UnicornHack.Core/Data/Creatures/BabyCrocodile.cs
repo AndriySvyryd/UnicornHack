@@ -12,11 +12,10 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Crocodile,
             SpeciesClass = SpeciesClass.Reptile,
             MovementDelay = 200,
-            Weight = 200,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -25,7 +24,8 @@ namespace UnicornHack.Data.Creatures
                     }
                 },
             SimpleProperties = new HashSet<string> {"swimming", "amphibiousness", "handlessness", "singular inventory"},
-            ValuedProperties = new Dictionary<string, object> {{"largeness", Size.Small}, {"physical deflection", 14}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"size", 2}, {"physical deflection", 14}, {"weight", 200}},
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
             NextStageName = "crocodile"

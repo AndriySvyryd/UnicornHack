@@ -12,11 +12,10 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Woodchuck,
             SpeciesClass = SpeciesClass.Rodent,
             MovementDelay = 400,
-            Weight = 100,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -33,7 +32,8 @@ namespace UnicornHack.Data.Creatures
                     "handlessness",
                     "singular inventory"
                 },
-            ValuedProperties = new Dictionary<string, object> {{"largeness", Size.Small}, {"physical deflection", 15}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"size", 2}, {"physical deflection", 15}, {"weight", 100}},
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
             Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector

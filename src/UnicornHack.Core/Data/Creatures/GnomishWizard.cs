@@ -11,11 +11,10 @@ namespace UnicornHack.Data.Creatures
             Name = "gnomish wizard",
             Species = Species.Gnome,
             MovementDelay = 150,
-            Weight = 700,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Spell,
@@ -27,9 +26,10 @@ namespace UnicornHack.Data.Creatures
             ValuedProperties =
                 new Dictionary<string, object>
                 {
-                    {"largeness", Size.Small},
+                    {"size", 2},
                     {"physical deflection", 10},
-                    {"magic resistance", 20}
+                    {"magic resistance", 20},
+                    {"weight", 700}
                 },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},

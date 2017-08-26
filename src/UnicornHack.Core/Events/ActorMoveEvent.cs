@@ -33,6 +33,7 @@ namespace UnicornHack.Events
                     Tick = mover.Level.CurrentTick
                 };
                 mover.AddReference();
+                movee?.AddReference();
 
                 sensor.Sense(@event);
             }
@@ -41,7 +42,7 @@ namespace UnicornHack.Events
         protected override void Delete()
         {
             base.Delete();
-            Mover?.RemoveReference();
+            Mover.RemoveReference();
             Movee?.RemoveReference();
         }
     }

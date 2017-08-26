@@ -10,19 +10,19 @@ namespace UnicornHack.Data.Items
         {
             Name = "dagger",
             Type = ItemType.WeaponMeleeShort,
-            Weight = 5,
             Material = Material.Steel,
-            EquipableSizes = Size.Tiny | Size.Small,
+            EquipableSizes = SizeCategory.Tiny | SizeCategory.Small,
             EquipableSlots = EquipmentSlot.GraspSingleExtremity | EquipmentSlot.GraspBothExtremities,
-            Abilities = new HashSet<Ability>
+            Abilities = new HashSet<AbilityDefinition>
             {
-                new Ability
+                new AbilityDefinition
                 {
                     Activation = AbilityActivation.OnMeleeAttack,
                     Action = AbilityAction.Slash,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 }
-            }
+            },
+            ValuedProperties = new Dictionary<string, object> {{"weight", 5}}
         };
     }
 }

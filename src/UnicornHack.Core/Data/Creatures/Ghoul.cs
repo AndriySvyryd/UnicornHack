@@ -12,25 +12,24 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Ghoul,
             SpeciesClass = SpeciesClass.Undead,
             MovementDelay = 150,
-            Weight = 400,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new Slow {Duration = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
                         Effects = new HashSet<Effect> {new Infect()}
@@ -50,7 +49,8 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"cold resistance", 3},
                     {"poison resistance", 3},
-                    {"physical deflection", 16}
+                    {"physical deflection", 16},
+                    {"weight", 400}
                 },
             InitialLevel = 12,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},

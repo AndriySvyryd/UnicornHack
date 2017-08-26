@@ -12,35 +12,34 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Succubus,
             SpeciesClass = SpeciesClass.Demon,
             MovementDelay = 100,
-            Weight = 1400,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new Seduce()}
+                        Effects = new HashSet<Effect> {new Sedate {Duration = 5}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 2}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 2}}
                     }
                 },
             SimpleProperties =
@@ -58,7 +57,8 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"fire resistance", 3},
                     {"poison resistance", 3},
-                    {"magic resistance", 70}
+                    {"magic resistance", 70},
+                    {"weight", 1400}
                 },
             InitialLevel = 6,
             CorpseName = "",

@@ -1,15 +1,8 @@
-using System;
-using System.Collections.Generic;
-using UnicornHack;
-using UnicornHack.Effects;
-using UnicornHack.Generation;
-using UnicornHack.Generation.Map;
-using UnicornHack.Utils;
-
 namespace UnicornHack.Data.Properties
 {
     public static partial class PropertyData
     {
-        public static readonly PropertyDescription EnergyPointMaximum = new PropertyDescription { Name = "energy point maximum", PropertyType = typeof(int), MinValue = 0 };
+        public static readonly PropertyDescription<int> EnergyPointMaximum =
+            new PropertyDescription<int> {Name = "energy point maximum", MinValue = 0};
     }
 }

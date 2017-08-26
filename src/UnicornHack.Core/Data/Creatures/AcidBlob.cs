@@ -11,19 +11,18 @@ namespace UnicornHack.Data.Creatures
             Name = "acid blob",
             Species = Species.Blob,
             MovementDelay = 400,
-            Weight = 30,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeHit,
-                        Effects = new HashSet<Effect> {new AcidDamage {Damage = 4}}
+                        Effects = new HashSet<Effect> {new Corrode {Damage = 4}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new AcidDamage {Damage = 4}}
+                        Effects = new HashSet<Effect> {new Corrode {Damage = 4}}
                     }
                 },
             SimpleProperties =
@@ -48,8 +47,9 @@ namespace UnicornHack.Data.Creatures
                     {"venom resistance", 3},
                     {"acid resistance", 3},
                     {"stealthiness", 3},
-                    {"largeness", Size.Tiny},
-                    {"physical deflection", 12}
+                    {"size", 1},
+                    {"physical deflection", 12},
+                    {"weight", 30}
                 },
             InitialLevel = 1,
             GenerationWeight = new DefaultWeight {Multiplier = 6F},

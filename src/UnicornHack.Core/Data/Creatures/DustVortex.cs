@@ -13,16 +13,16 @@ namespace UnicornHack.Data.Creatures
             SpeciesClass = SpeciesClass.Extraplanar,
             MovementDelay = 60,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new Engulf {Duration = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnDigestion,
                         Action = AbilityAction.Digestion,
@@ -54,9 +54,10 @@ namespace UnicornHack.Data.Creatures
                     {"water weakness", 3},
                     {"poison resistance", 3},
                     {"venom resistance", 3},
-                    {"largeness", Size.Huge},
+                    {"size", 16},
                     {"physical deflection", 18},
-                    {"magic resistance", 30}
+                    {"magic resistance", 30},
+                    {"weight", 0}
                 },
             InitialLevel = 4,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},

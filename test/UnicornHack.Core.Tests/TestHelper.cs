@@ -36,6 +36,9 @@ namespace UnicornHack
         public static Level BuildLevel(string map, int seed)
         {
             var game = CreateGame();
+            game.Random = new SimpleRandom { Seed = seed };
+            game.InitialSeed = seed;
+            game.Repository = new TestRepository();
 
             var fragment = new NormalMapFragment
             {

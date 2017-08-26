@@ -12,39 +12,44 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Sandestin,
             SpeciesClass = SpeciesClass.ShapeChanger,
             MovementDelay = 100,
-            Weight = 1500,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 4}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 4}}
                     }
                 },
             SimpleProperties =
                 new HashSet<string> {"infravision", "infravisibility", "humanoidness", "stoning resistance"},
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 16}, {"magic resistance", 60}},
+            ValuedProperties =
+                new Dictionary<string, object>
+                {
+                    {"physical deflection", 16},
+                    {"magic resistance", 60},
+                    {"weight", 1500}
+                },
             InitialLevel = 13,
             GenerationWeight = new BranchWeight {Matched = new DefaultWeight(), Name = "hell"},
             CorpseName = "",

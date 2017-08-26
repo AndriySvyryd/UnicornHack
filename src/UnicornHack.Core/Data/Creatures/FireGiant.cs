@@ -11,17 +11,16 @@ namespace UnicornHack.Data.Creatures
             Name = "fire giant",
             Species = Species.Giant,
             MovementDelay = 100,
-            Weight = 2250,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 11}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -34,9 +33,10 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"fire resistance", 3},
-                    {"largeness", Size.Huge},
+                    {"size", 16},
                     {"physical deflection", 16},
-                    {"magic resistance", 5}
+                    {"magic resistance", 5},
+                    {"weight", 2250}
                 },
             InitialLevel = 9,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},

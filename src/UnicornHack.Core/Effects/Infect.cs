@@ -1,6 +1,3 @@
-using System;
-using UnicornHack.Events;
-
 namespace UnicornHack.Effects
 {
     public class Infect : Effect
@@ -15,11 +12,16 @@ namespace UnicornHack.Effects
 
         public int Strength { get; set; }
 
-        public override Effect Instantiate(Game game) => new Infect(game) {Strength = Strength};
+        public override Effect Copy(Game game) => new Infect(game) {Strength = Strength};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            throw new NotImplementedException();
+            if (!abilityContext.Succeeded)
+            {
+                return;
+            }
+
+            abilityContext.AppliedEffects.Add(new Infected(abilityContext) {Strength = Strength});
         }
     }
 }

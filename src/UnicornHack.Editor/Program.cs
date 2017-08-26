@@ -2,15 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using CSharpScriptSerialization;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Formatting;
+using UnicornHack.Effects;
 using UnicornHack.Generation;
 using UnicornHack.Generation.Map;
 using UnicornHack.Utils;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace UnicornHack.Editor
 {
@@ -48,12 +45,15 @@ namespace UnicornHack.Editor
                     {
                         script = CSScriptSerializer.Serialize(itemToSerialize);
                         File.WriteAllText(
-                            Path.Combine(loader.RelativePath,
-                                CSScriptLoaderBase.GetScriptFilename(itemToSerialize.Name)), script);
+                            Path.Combine(
+                                loader.RelativePath,
+                                CSScriptLoaderBase.GetScriptFilename(itemToSerialize.Name)),
+                            script);
                     }
                     else
                     {
-                        var code = SerializeToCode(itemToSerialize, itemToSerialize.Name, loader.DataType);
+                        var code = CSClassSerializer.Serialize(
+                            itemToSerialize, itemToSerialize.Name, loader.DataType.Namespace, loader.DataType.Name);
                         File.WriteAllText(
                             Path.Combine(directory, CSScriptLoaderBase.GetClassFilename(itemToSerialize.Name)), code);
                     }
@@ -66,68 +66,32 @@ namespace UnicornHack.Editor
             }
         }
 
-        private static string SerializeToCode(object obj, string name, Type dataType)
-        {
-            var expression = CompilationUnit()
-                .WithUsings(List(CSScriptLoaderBase.Namespaces.Select(n => UsingDirective(ParseName(n)))))
-                .WithMembers(
-                    SingletonList<MemberDeclarationSyntax>(
-                        NamespaceDeclaration(ParseName(dataType.Namespace))
-                            .WithMembers(
-                                SingletonList<MemberDeclarationSyntax>(ClassDeclaration(dataType.Name)
-                                    .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword),
-                                        Token(SyntaxKind.StaticKeyword),
-                                        Token(SyntaxKind.PartialKeyword)))
-                                    .WithMembers(SingletonList<MemberDeclarationSyntax>(
-                                        FieldDeclaration(
-                                                VariableDeclaration(IdentifierName(obj.GetType().Name))
-                                                    .WithVariables(SingletonSeparatedList(
-                                                        VariableDeclarator(
-                                                                Identifier(CSScriptLoaderBase.GenerateIdentifier(name)))
-                                                            .WithInitializer(
-                                                                EqualsValueClause(
-                                                                    CSScriptSerializer.GetCreationExpression(obj))))))
-                                            .WithModifiers(
-                                                TokenList(Token(SyntaxKind.PublicKeyword),
-                                                    Token(SyntaxKind.StaticKeyword),
-                                                    Token(SyntaxKind.ReadOnlyKeyword)))))))));
-
-            using (var workspace = new AdhocWorkspace())
-            {
-                return Formatter.Format(
-                        expression,
-                        workspace,
-                        workspace.Options)
-                    .ToFullString();
-            }
-        }
-
         private static void Verify(string script, PropertyDescription property)
-            => Verify(script, property, i => i.Name == property.Name, null, null);
+            => Verify(script, property, i => i.Name == property.Name, null, null, null);
 
         private static void Verify(string script, CreatureVariant creature)
-            => Verify(script, creature, c => c.Name == creature.Name, c => c.SimpleProperties, c => c.ValuedProperties);
+            => Verify(script, creature, c => c.Name == creature.Name, c => c.SimpleProperties, c => c.ValuedProperties, c => c.Abilities);
 
         private static void Verify(string script, PlayerRaceDefinition player)
-            => Verify(script, player, p => p.Name == player.Name, null, null);
+            => Verify(script, player, p => p.Name == player.Name, null, null, c => c.Abilities);
 
         private static void Verify(string script, ItemVariant item)
-            => Verify(script, item, i => i.Name == item.Name, c => c.SimpleProperties, c => c.ValuedProperties);
+            => Verify(script, item, i => i.Name == item.Name, c => c.SimpleProperties, c => c.ValuedProperties, c => c.Abilities);
 
         private static void Verify(string script, ItemGroup item)
-            => Verify(script, item, i => i.Name == item.Name, null, null);
+            => Verify(script, item, i => i.Name == item.Name, null, null, null);
 
         private static void Verify(string script, BranchDefinition branch)
-            => Verify(script, branch, b => b.Name == branch.Name, null, null);
+            => Verify(script, branch, b => b.Name == branch.Name, null, null, null);
 
         private static void Verify(string script, MapFragment fragment)
-            => Verify(script, fragment, f => f.Name == fragment.Name && VerifyNoUnicode(fragment), null, null);
+            => Verify(script, fragment, f => f.Name == fragment.Name && VerifyNoUnicode(fragment), null, null, null);
 
         private static void Verify(string script, ConnectingMapFragment fragment)
-            => Verify(script, fragment, f => f.Name == fragment.Name && VerifyNoUnicode(fragment), null, null);
+            => Verify(script, fragment, f => f.Name == fragment.Name && VerifyNoUnicode(fragment), null, null, null);
 
         private static void Verify(string script, DefiningMapFragment fragment)
-            => Verify(script, fragment, f => f.Name == fragment.Name && VerifyNoUnicode(fragment), null, null);
+            => Verify(script, fragment, f => f.Name == fragment.Name && VerifyNoUnicode(fragment), null, null, null);
 
         private static bool VerifyNoUnicode(MapFragment fragment)
         {
@@ -156,8 +120,10 @@ namespace UnicornHack.Editor
 
         private static void Verify<T>(string script, T variant, Func<T, bool> isValid,
             Func<T, ISet<string>> getSimpleProperties,
-            Func<T, IDictionary<string, object>> getValuedProperties)
+            Func<T, IDictionary<string, object>> getValuedProperties,
+            Func<T, ISet<AbilityDefinition>> getAbilities)
         {
+            // TODO: Verify abilities
             try
             {
                 var serializedVariant = script == null ? variant : CSScriptLoaderBase.Load<T>(script);
@@ -203,7 +169,6 @@ namespace UnicornHack.Editor
                             throw new InvalidOperationException(
                                 $"Valued property {valuedProperty} should be of type {description.PropertyType}");
                         }
-
                         if (((IComparable)description.MinValue)?.CompareTo(valuedProperty.Value) > 0)
                         {
                             throw new InvalidOperationException(
@@ -218,11 +183,76 @@ namespace UnicornHack.Editor
                         }
                     }
                 }
+
+                var abilities = getAbilities?.Invoke(serializedVariant);
+                if (abilities != null)
+                {
+                    foreach (var ability in abilities)
+                    {
+                        Validate(ability);
+                    }
+                }
             }
             catch (Exception)
             {
                 Console.WriteLine(script);
                 throw;
+            }
+        }
+
+        private static void Validate(AbilityDefinition ability)
+        {
+            foreach (var effect in ability.Effects)
+            {
+                switch (effect)
+                {
+                    case AddAbility addAbility:
+                        Validate(addAbility.Ability);
+                        break;
+                    case ChangeProperty<int> property:
+                        Validate(property);
+                        break;
+                    case ChangeProperty<bool> property:
+                        Validate(property);
+                        break;
+                    case ChangeProperty<string> property:
+                        Validate(property);
+                        break;
+                    case ChangeProperty<byte> property:
+                        Validate(property);
+                        break;
+                }
+            }
+        }
+
+        private static void Validate<T>(ChangeProperty<T> property)
+        {
+            var description = PropertyDescription.Loader.Get(property.PropertyName);
+            if (description == null)
+            {
+                throw new InvalidOperationException("Invalid valued property: " + property.PropertyName);
+            }
+            if (description.PropertyType != property.Value.GetType()
+                || description.PropertyType != typeof(T))
+            {
+                throw new InvalidOperationException(
+                    $"Valued property {property.PropertyName} should be of type {description.PropertyType}");
+            }
+            if (property.Function != ValueCombinationFunction.Sum
+                && property.Function != ValueCombinationFunction.Percent)
+            {
+                if (((IComparable)description.MinValue)?.CompareTo(property.Value) > 0)
+                {
+                    throw new InvalidOperationException(
+                        $"Valued property {property.PropertyName} should be lesser or equal to " +
+                        description.MinValue);
+                }
+                if (((IComparable)description.MaxValue)?.CompareTo(property.Value) < 0)
+                {
+                    throw new InvalidOperationException(
+                        $"Valued property {property.PropertyName} should be greater or equal to " +
+                        description.MaxValue);
+                }
             }
         }
     }

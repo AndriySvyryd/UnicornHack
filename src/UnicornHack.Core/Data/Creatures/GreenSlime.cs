@@ -11,23 +11,22 @@ namespace UnicornHack.Data.Creatures
             Name = "green slime",
             Species = Species.Ooze,
             MovementDelay = 200,
-            Weight = 400,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new Slime()}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeHit,
                         Effects = new HashSet<Effect> {new Slime()}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
                         Effects = new HashSet<Effect> {new Slime()}
@@ -57,7 +56,8 @@ namespace UnicornHack.Data.Creatures
                     {"venom resistance", 3},
                     {"acid resistance", 3},
                     {"stealthiness", 3},
-                    {"physical deflection", 14}
+                    {"physical deflection", 14},
+                    {"weight", 400}
                 },
             InitialLevel = 6,
             GenerationWeight = new BranchWeight {Matched = new DefaultWeight(), Name = "hell"},

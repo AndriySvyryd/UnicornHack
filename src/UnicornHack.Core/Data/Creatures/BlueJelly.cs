@@ -10,19 +10,18 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "blue jelly",
             Species = Species.Jelly,
-            Weight = 100,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeHit,
-                        Effects = new HashSet<Effect> {new ColdDamage {Damage = 3}}
+                        Effects = new HashSet<Effect> {new Freeze {Damage = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new ColdDamage {Damage = 3}}
+                        Effects = new HashSet<Effect> {new Freeze {Damage = 3}}
                     }
                 },
             SimpleProperties =
@@ -45,9 +44,10 @@ namespace UnicornHack.Data.Creatures
                 {"venom resistance", 3},
                 {"cold resistance", 3},
                 {"stealthiness", 3},
-                {"largeness", Size.Small},
+                {"size", 2},
                 {"physical deflection", 12},
-                {"magic resistance", 10}
+                {"magic resistance", 10},
+                {"weight", 100}
             },
             InitialLevel = 4,
             GenerationWeight = new DefaultWeight {Multiplier = 5F}

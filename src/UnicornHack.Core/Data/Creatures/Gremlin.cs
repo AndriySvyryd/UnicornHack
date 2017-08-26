@@ -11,35 +11,34 @@ namespace UnicornHack.Data.Creatures
             Name = "gremlin",
             Species = Species.Gremlin,
             MovementDelay = 100,
-            Weight = 100,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new Curse()}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 3}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 3}}
                     }
                 },
             SimpleProperties = new HashSet<string> {"humanoidness", "swimming", "infravisibility"},
@@ -47,9 +46,10 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"poison resistance", 3},
-                    {"largeness", Size.Small},
+                    {"size", 2},
                     {"physical deflection", 18},
-                    {"magic resistance", 25}
+                    {"magic resistance", 25},
+                    {"weight", 100}
                 },
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},

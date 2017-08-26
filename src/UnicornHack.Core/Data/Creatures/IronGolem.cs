@@ -11,23 +11,22 @@ namespace UnicornHack.Data.Creatures
             Name = "iron golem",
             Species = Species.Golem,
             MovementDelay = 200,
-            Weight = 2000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 22}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Breath,
                         Timeout = 5,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 14}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 14}}
                     }
                 },
             SimpleProperties =
@@ -52,9 +51,10 @@ namespace UnicornHack.Data.Creatures
                 {"venom resistance", 3},
                 {"thick hide", 3},
                 {"health point maximum", 80},
-                {"largeness", Size.Large},
+                {"size", 8},
                 {"physical deflection", 17},
-                {"magic resistance", 60}
+                {"magic resistance", 60},
+                {"weight", 2000}
             },
             InitialLevel = 18,
             CorpseName = ""

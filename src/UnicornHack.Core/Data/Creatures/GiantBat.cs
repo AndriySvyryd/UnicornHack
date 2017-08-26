@@ -12,11 +12,10 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Bat,
             SpeciesClass = SpeciesClass.Bird,
             MovementDelay = 54,
-            Weight = 100,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -39,8 +38,9 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"poison resistance", 3},
                     {"stealthiness", 3},
-                    {"largeness", Size.Tiny},
-                    {"physical deflection", 13}
+                    {"size", 1},
+                    {"physical deflection", 13},
+                    {"weight", 100}
                 },
             InitialLevel = 2,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},

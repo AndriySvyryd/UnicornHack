@@ -12,11 +12,10 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Lizard,
             SpeciesClass = SpeciesClass.Reptile,
             MovementDelay = 200,
-            Weight = 50,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -25,7 +24,8 @@ namespace UnicornHack.Data.Creatures
                     }
                 },
             SimpleProperties = new HashSet<string> {"handlessness", "oviparity", "singular inventory"},
-            ValuedProperties = new Dictionary<string, object> {{"largeness", Size.Small}, {"physical deflection", 13}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"size", 2}, {"physical deflection", 13}, {"weight", 50}},
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 4F}
         };

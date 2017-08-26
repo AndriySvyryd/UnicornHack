@@ -10,19 +10,18 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "spotted jelly",
             Species = Species.Jelly,
-            Weight = 100,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeHit,
-                        Effects = new HashSet<Effect> {new AcidDamage {Damage = 3}}
+                        Effects = new HashSet<Effect> {new Corrode {Damage = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new AcidDamage {Damage = 3}}
+                        Effects = new HashSet<Effect> {new Corrode {Damage = 3}}
                     }
                 },
             SimpleProperties =
@@ -46,9 +45,10 @@ namespace UnicornHack.Data.Creatures
                 {"venom resistance", 3},
                 {"acid resistance", 3},
                 {"stealthiness", 3},
-                {"largeness", Size.Small},
+                {"size", 2},
                 {"physical deflection", 12},
-                {"magic resistance", 10}
+                {"magic resistance", 10},
+                {"weight", 100}
             },
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 5F}

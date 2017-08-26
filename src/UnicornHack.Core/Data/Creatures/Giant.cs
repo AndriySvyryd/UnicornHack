@@ -11,17 +11,16 @@ namespace UnicornHack.Data.Creatures
             Name = "giant",
             Species = Species.Giant,
             MovementDelay = 200,
-            Weight = 2250,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 11}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -30,7 +29,8 @@ namespace UnicornHack.Data.Creatures
                     }
                 },
             SimpleProperties = new HashSet<string> {"infravision", "infravisibility", "humanoidness"},
-            ValuedProperties = new Dictionary<string, object> {{"largeness", Size.Huge}, {"physical deflection", 14}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"size", 16}, {"physical deflection", 14}, {"weight", 2250}},
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.NonGenocidable,

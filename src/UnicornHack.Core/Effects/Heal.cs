@@ -1,5 +1,3 @@
-using UnicornHack.Events;
-
 namespace UnicornHack.Effects
 {
     public class Heal : Effect
@@ -14,11 +12,17 @@ namespace UnicornHack.Effects
 
         public int Amount { get; set; }
 
-        public override Effect Instantiate(Game game) => new Heal(game) {Amount = Amount};
+        public override Effect Copy(Game game) => new Heal(game) {Amount = Amount};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
+            if (!abilityContext.Succeeded)
+            {
+                return;
+            }
+
             abilityContext.Target.ChangeCurrentHP(Amount);
+            abilityContext.AppliedEffects.Add(new Healed(abilityContext) {Amount = Amount});
         }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CSharpScriptSerialization;
 using UnicornHack.Data.Items;
+using UnicornHack.Effects;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Generation
@@ -9,9 +10,8 @@ namespace UnicornHack.Generation
     public class ItemVariant : ICSScriptSerializable, ILoadable
     {
         private ItemType? _itemType;
-        private int? _weight;
         private Material? _material;
-        private Size? _equipableSizes;
+        private SizeCategory? _equipableSizes;
         private bool? _nameable;
         private int? _stackSize;
         private ISet<string> _simpleProperties;
@@ -29,13 +29,6 @@ namespace UnicornHack.Generation
         {
             get => _itemType ?? Base?.Type ?? ItemType.None;
             set => _itemType = value;
-        }
-
-        /// <summary> 100g units </summary>
-        public virtual int Weight
-        {
-            get => _weight ?? Base?.Weight ?? 0;
-            set => _weight = value;
         }
 
         public virtual Material Material
@@ -56,9 +49,9 @@ namespace UnicornHack.Generation
             set => _stackSize = value;
         }
 
-        public virtual Size EquipableSizes
+        public virtual SizeCategory EquipableSizes
         {
-            get => _equipableSizes ?? Base?.EquipableSizes ?? Size.All;
+            get => _equipableSizes ?? Base?.EquipableSizes ?? SizeCategory.All;
             set => _equipableSizes = value;
         }
 
@@ -68,7 +61,7 @@ namespace UnicornHack.Generation
             set => _equipableSlots = value;
         }
 
-        public virtual ISet<Ability> Abilities { get; set; } = new HashSet<Ability>();
+        public virtual ISet<AbilityDefinition> Abilities { get; set; } = new HashSet<AbilityDefinition>();
 
         public virtual ISet<string> SimpleProperties
         {
@@ -109,18 +102,29 @@ namespace UnicornHack.Generation
             var itemInstance = CreateInstance(game);
             itemInstance.BaseName = Name;
             itemInstance.Type = Type;
-            itemInstance.Weight = Weight;
             itemInstance.Material = Material;
             itemInstance.Nameable = Nameable;
             itemInstance.StackSize = StackSize;
             itemInstance.EquipableSizes = EquipableSizes;
             itemInstance.EquipableSlots = EquipableSlots;
-            itemInstance.SimpleProperties = SimpleProperties;
-            itemInstance.ValuedProperties = ValuedProperties;
+
+            var innateAbility =
+                new AbilityDefinition(game) { Name = Actor.InnateName, Activation = AbilityActivation.Always }; foreach (var simpleProperty in SimpleProperties)
+            {
+
+                innateAbility.Effects.Add(
+                    new ChangeProperty<bool>(game) { PropertyName = simpleProperty, Value = true });
+            }
+
+            foreach (var valuedProperty in ValuedProperties)
+            {
+                innateAbility.Effects.Add(
+                    Effect.CreateChangeProperty(game, valuedProperty.Key, valuedProperty.Value));
+            }
 
             foreach (var ability in Abilities)
             {
-                itemInstance.Abilities.Add(ability.Instantiate(game).AddReference().Referenced);
+                itemInstance.Add(ability.Instantiate(game));
             }
 
             return itemInstance;
@@ -176,7 +180,6 @@ namespace UnicornHack.Generation
                 {nameof(Name), (o, v) => v != null},
                 {nameof(BaseName), (o, v) => v != null},
                 {nameof(Type), (o, v) => (ItemType)v != (o.Base?.Type ?? ItemType.None)},
-                {nameof(Weight), (o, v) => (int)v != (o.Base?.Weight ?? 0)},
                 // ReSharper disable once CompareOfFloatsByEqualityOperator
                 {
                     nameof(GenerationWeight),
@@ -185,12 +188,12 @@ namespace UnicornHack.Generation
                 {nameof(Material), (o, v) => (Material)v != (o.Base?.Material ?? Material.Default)},
                 {nameof(Nameable), (o, v) => (bool)v != (o.Base?.Nameable ?? true)},
                 {nameof(StackSize), (o, v) => (int)v != (o.Base?.StackSize ?? 1)},
-                {nameof(EquipableSizes), (o, v) => (Size)v != (o.Base?.EquipableSizes ?? Size.All)},
+                {nameof(EquipableSizes), (o, v) => (SizeCategory)v != (o.Base?.EquipableSizes ?? SizeCategory.All)},
                 {
                     nameof(EquipableSlots),
                     (o, v) => (EquipmentSlot)v != (o.Base?.EquipableSlots ?? EquipmentSlot.Default)
                 },
-                {nameof(Abilities), (o, v) => ((ICollection<Ability>)v).Count != 0},
+                {nameof(Abilities), (o, v) => ((ICollection<AbilityDefinition>)v).Count != 0},
                 {nameof(SimpleProperties), (o, v) => ((ICollection<string>)v).Count != 0},
                 {nameof(ValuedProperties), (o, v) => ((IDictionary<string, object>)v).Keys.Count != 0}
             };

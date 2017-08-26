@@ -10,11 +10,10 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "Oracle",
             Species = Species.Human,
-            Weight = 1000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Spell,
@@ -23,7 +22,7 @@ namespace UnicornHack.Data.Creatures
                     }
                 },
             SimpleProperties = new HashSet<string> {"infravisibility", "humanoidness", "femaleness"},
-            ValuedProperties = new Dictionary<string, object> {{"magic resistance", 50}},
+            ValuedProperties = new Dictionary<string, object> {{"magic resistance", 50}, {"weight", 1000}},
             InitialLevel = 12,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.NonPolymorphable,

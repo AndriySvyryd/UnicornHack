@@ -12,23 +12,22 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Wolf,
             SpeciesClass = SpeciesClass.Canine,
             MovementDelay = 100,
-            Weight = 700,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Breath,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new ColdDamage {Damage = 7}}
+                        Effects = new HashSet<Effect> {new Freeze {Damage = 7}}
                     }
                 },
             SimpleProperties =
@@ -38,7 +37,8 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"cold resistance", 3},
                     {"physical deflection", 16},
-                    {"magic resistance", 20}
+                    {"magic resistance", 20},
+                    {"weight", 700}
                 },
             InitialLevel = 7,
             GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight {Multiplier = 5F}, Name = "hell"},

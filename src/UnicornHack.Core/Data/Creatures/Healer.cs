@@ -11,11 +11,10 @@ namespace UnicornHack.Data.Creatures
             Name = "healer",
             Species = Species.Human,
             MovementDelay = 100,
-            Weight = 1000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Spell,
@@ -29,7 +28,8 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"poison resistance", 3},
                     {"physical deflection", 10},
-                    {"magic resistance", 10}
+                    {"magic resistance", 10},
+                    {"weight", 1000}
                 },
             InitialLevel = 10,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},

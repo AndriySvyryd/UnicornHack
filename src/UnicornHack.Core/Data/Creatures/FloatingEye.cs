@@ -12,11 +12,10 @@ namespace UnicornHack.Data.Creatures
             Species = Species.FloatingSphere,
             SpeciesClass = SpeciesClass.Aberration,
             MovementDelay = 1200,
-            Weight = 10,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeHit,
                         Effects = new HashSet<Effect> {new Paralyze {Duration = 35}}
@@ -41,9 +40,10 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"stealthiness", 3},
-                    {"largeness", Size.Small},
+                    {"size", 2},
                     {"physical deflection", 11},
-                    {"magic resistance", 10}
+                    {"magic resistance", 10},
+                    {"weight", 10}
                 },
             InitialLevel = 2,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},

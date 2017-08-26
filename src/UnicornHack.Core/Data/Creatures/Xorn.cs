@@ -11,32 +11,31 @@ namespace UnicornHack.Data.Creatures
             Name = "xorn",
             Species = Species.Xorn,
             MovementDelay = 133,
-            Weight = 1200,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -62,7 +61,8 @@ namespace UnicornHack.Data.Creatures
                     {"venom resistance", 3},
                     {"thick hide", 3},
                     {"physical deflection", 22},
-                    {"magic resistance", 20}
+                    {"magic resistance", 20},
+                    {"weight", 1200}
                 },
             InitialLevel = 8,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},

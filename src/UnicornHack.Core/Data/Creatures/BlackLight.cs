@@ -13,14 +13,14 @@ namespace UnicornHack.Data.Creatures
             SpeciesClass = SpeciesClass.Extraplanar,
             MovementDelay = 80,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Explosion,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new Hallucinate {Duration = 27}}
+                        Effects = new HashSet<Effect> {new Confuse {Duration = 27}}
                     }
                 },
             SimpleProperties =
@@ -53,7 +53,8 @@ namespace UnicornHack.Data.Creatures
                 {"poison resistance", 3},
                 {"venom resistance", 3},
                 {"stealthiness", 3},
-                {"largeness", Size.Small}
+                {"size", 2},
+                {"weight", 0}
             },
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},

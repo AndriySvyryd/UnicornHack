@@ -12,31 +12,30 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Wraith,
             SpeciesClass = SpeciesClass.Undead,
             MovementDelay = 100,
-            Weight = 1000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new DrainLife {Amount = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Breath,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new Sleep {Duration = 26}}
+                        Effects = new HashSet<Effect> {new Sedate {Duration = 26}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
                         Effects = new HashSet<Effect> {new DrainLife {Amount = 1}}
@@ -62,7 +61,8 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"cold resistance", 3},
                     {"poison resistance", 3},
-                    {"magic resistance", 25}
+                    {"magic resistance", 25},
+                    {"weight", 1000}
                 },
             InitialLevel = 13,
             CorpseName = "",

@@ -11,17 +11,16 @@ namespace UnicornHack.Data.Creatures
             Name = "ogre lord",
             Species = Species.Ogre,
             MovementDelay = 100,
-            Weight = 1650,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -33,9 +32,10 @@ namespace UnicornHack.Data.Creatures
             ValuedProperties =
                 new Dictionary<string, object>
                 {
-                    {"largeness", Size.Large},
+                    {"size", 8},
                     {"physical deflection", 17},
-                    {"magic resistance", 30}
+                    {"magic resistance", 30},
+                    {"weight", 1650}
                 },
             InitialLevel = 7,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},

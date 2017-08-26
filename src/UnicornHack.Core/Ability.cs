@@ -1,5 +1,5 @@
-using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using UnicornHack.Effects;
 using UnicornHack.Events;
@@ -18,26 +18,33 @@ namespace UnicornHack
         public int GameId { get; private set; }
 
         public Game Game { get; set; }
+
         public virtual AbilityActivation Activation { get; set; }
         public virtual AbilityAction Action { get; set; }
         public virtual int Timeout { get; set; }
-        public virtual int TimeoutLeft { get; set; }
+        public virtual int EnergyPointCost { get; set; }
+        public virtual int Delay { get; set; }
+
+        // TODO: Use a placeholder item
         public virtual EquipmentSlot FreeSlotsRequired { get; set; }
         public virtual bool IsActive { get; set; }
         public virtual bool IsUsable { get; set; }
-        public virtual int EnergyPointCost { get; set; }
-        public virtual int DelayTicks { get; set; }
-
-        public int? ItemId { get; set; }
+        public virtual int TimeoutLeft { get; set; }
 
         // TODO: Whether it can be interrupted
         // TODO: Targeting mode
         // TODO: Success condition
         // TODO: Activation condition
 
-        public virtual ISet<Effect> Effects { get; set; }
+        public virtual ISet<Effect> Effects { get; set; } = new HashSet<Effect>();
+        public ICollection<AppliedEffect> ActiveEffects { get; set; } = new HashSet<AppliedEffect>();
 
-        public Ability() => Effects = new HashSet<Effect>();
+        public int EntityId { get; set; }
+        public Entity Entity { get; set; }
+
+        public Ability()
+        {
+        }
 
         public Ability(Game game) : this()
         {
@@ -45,30 +52,6 @@ namespace UnicornHack
             Id = game.NextAbilityId++;
             game.Abilities.Add(this);
             IsUsable = true;
-        }
-
-        public virtual Ability Instantiate(Game game)
-        {
-            if (Game != null)
-            {
-                throw new InvalidOperationException("This ability is already part of a game.");
-            }
-
-            var abilityInstance = new Ability(game)
-            {
-                Activation = Activation,
-                Action = Action,
-                DelayTicks = DelayTicks,
-                EnergyPointCost = EnergyPointCost,
-                Timeout = Timeout
-            };
-
-            foreach (var effect in Effects)
-            {
-                abilityInstance.Effects.Add(effect.Instantiate(game).AddReference().Referenced);
-            }
-
-            return abilityInstance;
         }
 
         private int _referenceCount;
@@ -84,11 +67,12 @@ namespace UnicornHack
         {
             if (--_referenceCount <= 0)
             {
+                Game.Repository.Delete(this);
                 foreach (var effect in Effects)
                 {
-                    effect.RemoveReference();
+                    effect.Delete();
                 }
-                Game.Repository.Delete(this);
+                Effects.Clear();
             }
         }
 
@@ -111,26 +95,41 @@ namespace UnicornHack
                 return true;
             }
 
+            if (Activation == AbilityActivation.Always
+                || Activation == AbilityActivation.WhileToggled
+                || Activation == AbilityActivation.WhilePossessed
+                || Activation == AbilityActivation.WhileEquipped)
+            {
+                Debug.Assert(!IsActive);
+                IsActive = true;
+            }
+
+            if (EnergyPointCost > 0)
+            {
+                abilityContext.Activator.ChangeCurrentEP(-1 * EnergyPointCost);
+            }
+
             var eventOrder = 0;
-            var firstAbility = abilityContext.AbilityResult == null;
+            var firstAbility = abilityContext.Ability == null;
             if (firstAbility)
             {
+                abilityContext.Ability = this;
                 // TODO: Also apply delay for secondary attacks
                 if (Activation == AbilityActivation.OnTarget)
                 {
-                    if (DelayTicks == 0)
+                    if (Delay == 0)
                     {
                         // TODO: Specify the correct delay in the abilities
                         activator.NextActionTick += Actor.DefaultActionDelay;
                     }
                     else
                     {
-                        activator.NextActionTick += DelayTicks;
+                        activator.NextActionTick += Delay;
                     }
                 }
 
-                abilityContext.Succeeded = Game.Random.Next(maxValue: 3) != 0;
-                abilityContext.AbilityResult = new Ability(Game) {Action = Action};
+                abilityContext.Succeeded = !abilityContext.IsAttack || Game.Random.Next(maxValue: 3) != 0;
+                abilityContext.AbilityAction = Action;
                 eventOrder = Game.EventOrder++;
             }
 
@@ -141,13 +140,14 @@ namespace UnicornHack
 
             if (eventOrder != 0 && abilityContext.IsAttack)
             {
+                // TODO: Move to Actor
                 AttackEvent.New(abilityContext, eventOrder);
             }
 
             if (Activation == AbilityActivation.OnTarget && abilityContext.AbilityTrigger != AbilityActivation.Default)
             {
-                foreach (var triggeredAbility in activator.Abilities.Where(a =>
-                    a.IsUsable && a.Activation == abilityContext.AbilityTrigger))
+                foreach (var triggeredAbility in activator.Abilities.Where(
+                    a => a.IsUsable && a.Activation == abilityContext.AbilityTrigger))
                 {
                     triggeredAbility.Activate(new AbilityActivationContext
                     {
@@ -159,6 +159,22 @@ namespace UnicornHack
             }
 
             return true;
+        }
+
+        public void Deactivate()
+        {
+            Debug.Assert(Activation == AbilityActivation.Always
+                         || Activation == AbilityActivation.WhileToggled
+                         || Activation == AbilityActivation.WhileEquipped
+                         || Activation == AbilityActivation.WhilePossessed);
+
+            Debug.Assert(IsActive);
+            IsActive = false;
+
+            foreach (var appliedEffect in ActiveEffects.ToList())
+            {
+                appliedEffect.Remove();
+            }
         }
     }
 }

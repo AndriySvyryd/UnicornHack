@@ -1,6 +1,4 @@
-﻿using UnicornHack.Events;
-
-namespace UnicornHack.Effects
+﻿namespace UnicornHack.Effects
 {
     public class MeleeAttack : Effect
     {
@@ -12,14 +10,7 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override Effect Instantiate(Game game) =>
-            new MeleeAttack(game) {WeaponId = WeaponId, Weapon = Weapon?.AddReference().Referenced};
-
-        protected override void Delete()
-        {
-            base.Delete();
-            Weapon?.RemoveReference();
-        }
+        public override Effect Copy(Game game) => new MeleeAttack(game) {Weapon = Weapon};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -29,9 +20,9 @@ namespace UnicornHack.Effects
             {
                 foreach (var weaponAbility in Weapon.Abilities)
                 {
-                    if (abilityContext.AbilityResult.Action == AbilityAction.Default)
+                    if (abilityContext.AbilityAction == AbilityAction.Default)
                     {
-                        abilityContext.AbilityResult.Action = weaponAbility.Action;
+                        abilityContext.AbilityAction = weaponAbility.Action;
                     }
 
                     if (abilityContext.Succeeded && weaponAbility.Activation == AbilityActivation.OnMeleeAttack)
@@ -41,10 +32,12 @@ namespace UnicornHack.Effects
                 }
             }
 
-            if (abilityContext.Succeeded)
+            if (!abilityContext.Succeeded)
             {
-                abilityContext.AbilityResult.Effects.Add(Instantiate(Game));
+                return;
             }
+
+            abilityContext.AppliedEffects.Add(new MeleeAttacked(abilityContext) {Weapon = Weapon});
         }
 
         public int? WeaponId { get; set; }

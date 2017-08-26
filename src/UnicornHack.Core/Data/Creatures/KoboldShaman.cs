@@ -11,21 +11,20 @@ namespace UnicornHack.Data.Creatures
             Name = "kobold shaman",
             Species = Species.Kobold,
             MovementDelay = 200,
-            Weight = 450,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Spell,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 6}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 6}}
                     }
                 },
             SimpleProperties = new HashSet<string> {"infravision", "infravisibility", "humanoidness", "maleness"},
@@ -33,9 +32,10 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"poison resistance", 3},
-                    {"largeness", Size.Small},
+                    {"size", 2},
                     {"physical deflection", 12},
-                    {"magic resistance", 10}
+                    {"magic resistance", 10},
+                    {"weight", 450}
                 },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},

@@ -69,6 +69,19 @@ namespace UnicornHack.Services.English
             return "a " + itemName;
         }
 
+        public string ToString(Property property)
+        {
+            switch (property.Value)
+            {
+                case bool boolValue:
+                    return boolValue ? property.Name : "";
+                case int intValue:
+                    return property.Name + ": " + intValue;
+                default:
+                    throw new NotImplementedException("Property value " + property.Value + " not supported.");
+            }
+        }
+
         public string ToString(EquipmentSlot slot, Actor actor, bool abbreviate)
         {
             switch (slot)
@@ -251,7 +264,7 @@ namespace UnicornHack.Services.English
 
                 var distanceModifier = @event.AttackerSensed.HasFlag(SenseType.SoundDistant) ? "distant" : null;
 
-                if (@event.Ability.Action == AbilityAction.Scream)
+                if (@event.AbilityAction == AbilityAction.Scream)
                 {
                     return ToSentence("You hear a", distanceModifier, "scream.");
                 }
@@ -265,7 +278,7 @@ namespace UnicornHack.Services.English
             var victimPerson = @event.Sensor == @event.Victim ? EnglishPerson.Second : EnglishPerson.Third;
             var victim = ToString(@event.Victim, victimPerson, @event.VictimSensed);
 
-            var attackVerb = ToVerb(@event.Ability.Action);
+            var attackVerb = ToVerb(@event.AbilityAction);
             var mainVerbForm = attackerPerson == EnglishPerson.Third
                 ? EnglishVerbForm.ThirdPersonSingularPresent
                 : EnglishVerbForm.BareInfinitive;
@@ -284,18 +297,11 @@ namespace UnicornHack.Services.English
                     return attackSentence;
                 }
 
-                var damage = @event.Ability.Effects.OfType<DamageEffect>().Aggregate(0, (d, e) => d + e.Damage);
-                var damageSentence = "";
+                var damage = @event.AppliedEffects.OfType<PhysicallyDamaged>().Aggregate(0, (d, e) => d + e.Damage);
+                string damageSentence;
                 if (victimPerson == EnglishPerson.Second)
                 {
-                    if (damage == 0)
-                    {
-                        damageSentence = "You are unaffected.";
-                    }
-                    else
-                    {
-                        damageSentence = Format("[{0} pts.]", damage);
-                    }
+                    damageSentence = damage == 0 ? "You are unaffected." : Format("[{0} pts.]", damage);
                 }
                 else
                 {

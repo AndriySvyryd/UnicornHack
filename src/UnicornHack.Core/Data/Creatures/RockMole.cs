@@ -12,11 +12,10 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Mole,
             SpeciesClass = SpeciesClass.Rodent,
             MovementDelay = 400,
-            Weight = 100,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -33,7 +32,7 @@ namespace UnicornHack.Data.Creatures
                     "handlessness",
                     "singular inventory"
                 },
-            ValuedProperties = new Dictionary<string, object> {{"largeness", Size.Small}, {"magic resistance", 20}},
+            ValuedProperties = new Dictionary<string, object> {{"size", 2}, {"magic resistance", 20}, {"weight", 100}},
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
             Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector

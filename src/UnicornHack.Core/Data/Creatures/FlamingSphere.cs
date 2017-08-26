@@ -12,16 +12,15 @@ namespace UnicornHack.Data.Creatures
             Species = Species.FloatingSphere,
             SpeciesClass = SpeciesClass.Extraplanar,
             MovementDelay = 92,
-            Weight = 10,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Explosion,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new FireDamage {Damage = 14}}
+                        Effects = new HashSet<Effect> {new Burn {Damage = 14}}
                     }
                 },
             SimpleProperties =
@@ -42,9 +41,10 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"fire resistance", 3},
-                    {"largeness", Size.Small},
+                    {"size", 2},
                     {"physical deflection", 16},
-                    {"magic resistance", 10}
+                    {"magic resistance", 10},
+                    {"weight", 10}
                 },
             InitialLevel = 6,
             GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight {Multiplier = 4F}, Name = "hell"},

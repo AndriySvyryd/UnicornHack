@@ -12,21 +12,20 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Beetle,
             SpeciesClass = SpeciesClass.Vermin,
             MovementDelay = 200,
-            Weight = 10,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 5}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 5}}
                     }
                 },
             SimpleProperties = new HashSet<string> {"animal body", "handlessness"},
@@ -34,8 +33,9 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"poison resistance", 3},
-                    {"largeness", Size.Tiny},
-                    {"physical deflection", 17}
+                    {"size", 1},
+                    {"physical deflection", 17},
+                    {"weight", 10}
                 },
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 4F}

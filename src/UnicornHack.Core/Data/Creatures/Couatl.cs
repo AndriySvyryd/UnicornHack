@@ -12,18 +12,17 @@ namespace UnicornHack.Data.Creatures
             Species = Species.WingedSnake,
             SpeciesClass = SpeciesClass.Reptile | SpeciesClass.Celestial,
             MovementDelay = 120,
-            Weight = 900,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Hug,
@@ -45,9 +44,10 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"poison resistance", 3},
                     {"venom resistance", 3},
-                    {"largeness", Size.Large},
+                    {"size", 8},
                     {"physical deflection", 15},
-                    {"magic resistance", 30}
+                    {"magic resistance", 30},
+                    {"weight", 900}
                 },
             InitialLevel = 8,
             GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight {Multiplier = 4F}, Name = "hell"},

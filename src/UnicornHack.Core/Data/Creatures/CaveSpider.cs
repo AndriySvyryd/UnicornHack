@@ -12,11 +12,10 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Spider,
             SpeciesClass = SpeciesClass.Vermin,
             MovementDelay = 100,
-            Weight = 50,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -31,8 +30,9 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"poison resistance", 3},
                     {"venom resistance", 3},
-                    {"largeness", Size.Small},
-                    {"physical deflection", 17}
+                    {"size", 2},
+                    {"physical deflection", 17},
+                    {"weight", 50}
                 },
             InitialLevel = 1,
             GenerationWeight = new DefaultWeight {Multiplier = 6F},

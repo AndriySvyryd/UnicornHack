@@ -1,18 +1,22 @@
+using System.Collections.Generic;
 using System.Diagnostics;
+using UnicornHack.Effects;
 
 namespace UnicornHack.Events
 {
     public class AttackEvent : SensoryEvent
     {
-        public virtual Actor Attacker { get; set; }
-        public virtual int AttackerId { get; private set; }
-        public virtual SenseType AttackerSensed { get; set; }
-        public virtual Actor Victim { get; set; }
-        public virtual int VictimId { get; private set; }
-        public virtual SenseType VictimSensed { get; set; }
-        public virtual Ability Ability { get; set; }
-        public virtual int AbilityId { get; private set; }
-        public virtual bool Hit { get; set; }
+        public Actor Attacker { get; set; }
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
+        public int AttackerId { get; private set; }
+        public SenseType AttackerSensed { get; set; }
+        public Actor Victim { get; set; }
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
+        public int VictimId { get; private set; }
+        public SenseType VictimSensed { get; set; }
+        public AbilityAction AbilityAction { get; set; }
+        public ISet<AppliedEffect> AppliedEffects { get; set; } = new HashSet<AppliedEffect>();
+        public bool Hit { get; set; }
 
         public static void New(AbilityActivationContext abilityContext, int eventOrder)
         {
@@ -36,14 +40,18 @@ namespace UnicornHack.Events
                     AttackerSensed = attackerSensed,
                     Victim = victim,
                     VictimSensed = victimSensed,
-                    Ability = abilityContext.AbilityResult,
+                    AbilityAction = abilityContext.AbilityAction,
+                    AppliedEffects = abilityContext.AppliedEffects,
                     Hit = abilityContext.Succeeded,
                     EventOrder = eventOrder,
                     Tick = attacker.Level.CurrentTick
                 };
                 attacker.AddReference();
                 victim.AddReference();
-                abilityContext.AbilityResult.AddReference();
+                foreach (var effect in @event.AppliedEffects)
+                {
+                    effect.AddReference();
+                }
 
                 sensor.Sense(@event);
             }
@@ -54,7 +62,10 @@ namespace UnicornHack.Events
             base.Delete();
             Attacker?.RemoveReference();
             Victim?.RemoveReference();
-            Ability?.RemoveReference();
+            foreach (var effect in AppliedEffects)
+            {
+                effect.RemoveReference();
+            }
         }
     }
 }

@@ -12,21 +12,20 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Bee,
             SpeciesClass = SpeciesClass.Vermin,
             MovementDelay = 66,
-            Weight = 5,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Sting,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new VenomDamage {Damage = 2}}
+                        Effects = new HashSet<Effect> {new Envenom {Damage = 2}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 2}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 2}}
                     }
                 },
             SimpleProperties =
@@ -35,8 +34,9 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"poison resistance", 3},
-                    {"largeness", Size.Tiny},
-                    {"physical deflection", 21}
+                    {"size", 1},
+                    {"physical deflection", 21},
+                    {"weight", 5}
                 },
             InitialLevel = 1,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},

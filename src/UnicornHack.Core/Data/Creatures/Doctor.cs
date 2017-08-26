@@ -11,11 +11,10 @@ namespace UnicornHack.Data.Creatures
             Name = "doctor",
             Species = Species.Human,
             MovementDelay = 200,
-            Weight = 1000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
@@ -24,7 +23,7 @@ namespace UnicornHack.Data.Creatures
                     }
                 },
             SimpleProperties = new HashSet<string> {"infravisibility", "humanoidness"},
-            ValuedProperties = new Dictionary<string, object> {{"poison resistance", 3}},
+            ValuedProperties = new Dictionary<string, object> {{"poison resistance", 3}, {"weight", 1000}},
             InitialLevel = 11,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},
             GenerationFlags = GenerationFlags.NonPolymorphable,

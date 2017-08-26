@@ -2,12 +2,7 @@ namespace UnicornHack.Data.Properties
 {
     public static partial class PropertyData
     {
-        public static readonly PropertyDescription VenomResistance = new PropertyDescription
-        {
-            Name = "venom resistance",
-            PropertyType = typeof(int),
-            MinValue = 0,
-            MaxValue = 3
-        };
+        public static readonly PropertyDescription<int> VenomResistance =
+            new PropertyDescription<int> {Name = "venom resistance", MinValue = 0, MaxValue = 3};
     }
 }

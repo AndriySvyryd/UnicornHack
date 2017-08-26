@@ -11,33 +11,32 @@ namespace UnicornHack.Data.Creatures
             Name = "ochre jelly",
             Species = Species.Jelly,
             MovementDelay = 400,
-            Weight = 100,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new Engulf {Duration = 4}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnDigestion,
                         Action = AbilityAction.Digestion,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new AcidDamage {Damage = 10}}
+                        Effects = new HashSet<Effect> {new Corrode {Damage = 10}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeHit,
-                        Effects = new HashSet<Effect> {new AcidDamage {Damage = 7}}
+                        Effects = new HashSet<Effect> {new Corrode {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new AcidDamage {Damage = 7}}
+                        Effects = new HashSet<Effect> {new Corrode {Damage = 7}}
                     }
                 },
             SimpleProperties =
@@ -61,9 +60,10 @@ namespace UnicornHack.Data.Creatures
                 {"venom resistance", 3},
                 {"acid resistance", 3},
                 {"stealthiness", 3},
-                {"largeness", Size.Small},
+                {"size", 2},
                 {"physical deflection", 12},
-                {"magic resistance", 20}
+                {"magic resistance", 20},
+                {"weight", 100}
             },
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 5F}

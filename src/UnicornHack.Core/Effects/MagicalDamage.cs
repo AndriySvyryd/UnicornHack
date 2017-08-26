@@ -1,8 +1,6 @@
-using UnicornHack.Events;
-
 namespace UnicornHack.Effects
 {
-    public class MagicalDamage : DamageEffect
+    public class MagicalDamage : Effect
     {
         public MagicalDamage()
         {
@@ -12,15 +10,19 @@ namespace UnicornHack.Effects
         {
         }
 
+        public int Damage { get; set; }
+
+        public override Effect Copy(Game game) => new MagicalDamage(game) {Damage = Damage};
+
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            base.Apply(abilityContext);
-            if (abilityContext.Succeeded)
+            if (!abilityContext.Succeeded)
             {
-                abilityContext.AbilityResult.Effects.Add(Instantiate(Game));
+                return;
             }
-        }
 
-        public override Effect Instantiate(Game game) => new MagicalDamage(game) {Damage = Damage};
+            abilityContext.Target.ChangeCurrentHP(-1 * Damage);
+            abilityContext.AppliedEffects.Add(new MagicallyDamaged(abilityContext) {Damage = Damage});
+        }
     }
 }

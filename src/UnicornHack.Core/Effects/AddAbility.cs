@@ -1,5 +1,4 @@
-using System;
-using UnicornHack.Events;
+using UnicornHack.Generation;
 
 namespace UnicornHack.Effects
 {
@@ -13,14 +12,28 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Ability Ability { get; set; }
-        public int Duration { get; set; }
+        public AbilityDefinition Ability { get; set; }
 
-        public override Effect Instantiate(Game game) => new AddAbility(game) {Ability = Ability, Duration = Duration};
+        public override Effect Copy(Game game)
+            => new AddAbility(game) {Ability = Ability.Copy(game), Duration = Duration};
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            throw new NotImplementedException();
+            var newEffect = new AddedAbility(abilityContext)
+            {
+                Duration = Duration,
+                Ability = Ability.Instantiate(Game).AddReference().Referenced
+            };
+            abilityContext.Target.ActiveEffects.Add(newEffect.AddReference().Referenced);
+            abilityContext.Target.Add(newEffect.Ability);
+        }
+
+        public override void Delete()
+        {
+            base.Delete();
+
+            Ability.Delete();
+            Ability = null;
         }
     }
 }

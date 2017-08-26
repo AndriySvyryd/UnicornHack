@@ -13,9 +13,9 @@ namespace UnicornHack.Data.Creatures
             SpeciesClass = SpeciesClass.Undead,
             MovementDelay = 400,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
@@ -46,7 +46,8 @@ namespace UnicornHack.Data.Creatures
                     {"disintegration resistance", 3},
                     {"poison resistance", 3},
                     {"physical deflection", 25},
-                    {"magic resistance", 15}
+                    {"magic resistance", 15},
+                    {"weight", 0}
                 },
             InitialLevel = 10,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},

@@ -13,9 +13,9 @@ namespace UnicornHack.Data.Creatures
             SpeciesClass = SpeciesClass.Extraplanar,
             MovementDelay = 80,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Explosion,
@@ -53,7 +53,8 @@ namespace UnicornHack.Data.Creatures
                 {"poison resistance", 3},
                 {"venom resistance", 3},
                 {"stealthiness", 3},
-                {"largeness", Size.Small}
+                {"size", 2},
+                {"weight", 0}
             },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},

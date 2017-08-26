@@ -11,18 +11,17 @@ namespace UnicornHack.Data.Creatures
             Name = "gas spore",
             Species = Species.FloatingSphere,
             MovementDelay = 400,
-            Weight = 10,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Explosion,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 14}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Explosion,
@@ -53,8 +52,9 @@ namespace UnicornHack.Data.Creatures
                     {"poison resistance", 3},
                     {"venom resistance", 3},
                     {"stealthiness", 3},
-                    {"largeness", Size.Small},
-                    {"physical deflection", 10}
+                    {"size", 2},
+                    {"physical deflection", 10},
+                    {"weight", 10}
                 },
             InitialLevel = 1,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},

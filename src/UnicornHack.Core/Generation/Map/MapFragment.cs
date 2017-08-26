@@ -473,7 +473,7 @@ namespace UnicornHack.Generation.Map
                             break;
                         }
 
-                        if (visitedIntersections.TryGetValue(nextPoint, out var visitedDirection))
+                        if (visitedIntersections.TryGetValue(nextPoint, out var _))
                         {
                             continue;
                         }

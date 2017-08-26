@@ -11,28 +11,27 @@ namespace UnicornHack.Data.Creatures
             Name = "rust monster",
             Species = Species.RustMonster,
             MovementDelay = 66,
-            Weight = 1000,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new WaterDamage {Damage = 7}}
+                        Effects = new HashSet<Effect> {new Soak {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new WaterDamage {Damage = 7}}
+                        Effects = new HashSet<Effect> {new Soak {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeHit,
-                        Effects = new HashSet<Effect> {new WaterDamage {Damage = 10}}
+                        Effects = new HashSet<Effect> {new Soak {Damage = 10}}
                     }
                 },
             SimpleProperties =
@@ -44,7 +43,7 @@ namespace UnicornHack.Data.Creatures
                     "handlessness",
                     "singular inventory"
                 },
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 18}},
+            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 18}, {"weight", 1000}},
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 3F}
         };

@@ -12,18 +12,17 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Dwarf,
             SpeciesClass = SpeciesClass.Undead,
             MovementDelay = 200,
-            Weight = 900,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 4}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnConsumption,
                         Effects = new HashSet<Effect> {new Infect()}
@@ -44,7 +43,8 @@ namespace UnicornHack.Data.Creatures
                     {"cold resistance", 3},
                     {"poison resistance", 3},
                     {"physical deflection", 15},
-                    {"magic resistance", 30}
+                    {"magic resistance", 30},
+                    {"weight", 900}
                 },
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},

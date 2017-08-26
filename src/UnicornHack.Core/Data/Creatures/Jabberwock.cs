@@ -11,25 +11,24 @@ namespace UnicornHack.Data.Creatures
             Name = "jabberwock",
             Species = Species.Jabberwock,
             MovementDelay = 100,
-            Weight = 1300,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 16}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 16}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -50,9 +49,10 @@ namespace UnicornHack.Data.Creatures
             ValuedProperties =
                 new Dictionary<string, object>
                 {
-                    {"largeness", Size.Large},
+                    {"size", 8},
                     {"physical deflection", 22},
-                    {"magic resistance", 50}
+                    {"magic resistance", 50},
+                    {"weight", 1300}
                 },
             InitialLevel = 15,
             Noise = ActorNoiseType.Burble

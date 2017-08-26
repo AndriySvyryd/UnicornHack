@@ -9,10 +9,10 @@ namespace UnicornHack.Data.Items
         {
             Name = "mail armor",
             Type = ItemType.ArmorBody,
-            Weight = 40,
             Material = Material.Steel,
             EquipableSlots = EquipmentSlot.Body,
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 10}, {"physical absorption", 2}}
+            ValuedProperties =
+                new Dictionary<string, object> {{"physical deflection", 10}, {"physical absorption", 2}, {"weight", 40}}
         };
     }
 }

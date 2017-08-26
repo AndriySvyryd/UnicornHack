@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnicornHack.Generation;
 
 namespace UnicornHack.Data.Items
@@ -9,7 +10,8 @@ namespace UnicornHack.Data.Items
             Name = "gold coin",
             Type = ItemType.Coin,
             Nameable = false,
-            StackSize = 2147483647
+            StackSize = 2147483647,
+            ValuedProperties = new Dictionary<string, object> {{"weight", 0}}
         };
     }
 }

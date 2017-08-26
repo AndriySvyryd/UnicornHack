@@ -12,17 +12,16 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Skeleton,
             SpeciesClass = SpeciesClass.Undead,
             MovementDelay = 200,
-            Weight = 300,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 3}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -48,7 +47,8 @@ namespace UnicornHack.Data.Creatures
                     {"poison resistance", 3},
                     {"venom resistance", 3},
                     {"thick hide", 3},
-                    {"physical deflection", 10}
+                    {"physical deflection", 10},
+                    {"weight", 300}
                 },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},

@@ -1,6 +1,4 @@
-﻿using UnicornHack.Events;
-
-namespace UnicornHack.Effects
+﻿namespace UnicornHack.Effects
 {
     public class ChangeProperty<T> : Effect
     {
@@ -14,19 +12,26 @@ namespace UnicornHack.Effects
 
         public string PropertyName { get; set; }
         public T Value { get; set; }
-        public bool IsAbsolute { get; set; }
-        public int Duration { get; set; }
+        public ValueCombinationFunction Function { get; set; }
 
-        public override Effect Instantiate(Game game) => new ChangeProperty<T>(game)
+        public override Effect Copy(Game game) => new ChangeProperty<T>(game)
         {
             PropertyName = PropertyName,
             Value = Value,
-            IsAbsolute = IsAbsolute,
+            Function = Function,
             Duration = Duration
         };
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
+            var newEffect = ChangedProperty.Create<T>(abilityContext);
+            newEffect.Duration = Duration;
+            newEffect.PropertyName = PropertyName;
+            newEffect.Function = Function;
+            newEffect.Value = Value;
+
+            abilityContext.Target.ActiveEffects.Add(newEffect.AddReference().Referenced);
+            abilityContext.Target.InvalidateProperty<T>(PropertyName);
         }
     }
 }

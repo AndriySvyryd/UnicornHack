@@ -12,32 +12,31 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Hulk,
             SpeciesClass = SpeciesClass.MagicalBeast,
             MovementDelay = 200,
-            Weight = 1300,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 6}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Gaze,
@@ -50,9 +49,10 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"thick hide", 3},
-                    {"largeness", Size.Large},
+                    {"size", 8},
                     {"physical deflection", 18},
-                    {"magic resistance", 25}
+                    {"magic resistance", 25},
+                    {"weight", 1300}
                 },
             InitialLevel = 9,
             GenerationWeight = new DefaultWeight {Multiplier = 2F}

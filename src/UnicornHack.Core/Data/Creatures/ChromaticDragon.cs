@@ -12,39 +12,38 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Dragon,
             SpeciesClass = SpeciesClass.Reptile,
             MovementDelay = 100,
-            Weight = 4500,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Breath,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ElementalDamage"}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 18}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Claw,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Spell,
@@ -75,8 +74,9 @@ namespace UnicornHack.Data.Creatures
                     {"acid resistance", 3},
                     {"danger awareness", 3},
                     {"thick hide", 3},
-                    {"largeness", Size.Gigantic},
-                    {"magic resistance", 30}
+                    {"size", 32},
+                    {"magic resistance", 30},
+                    {"weight", 4500}
                 },
             InitialLevel = 16,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},

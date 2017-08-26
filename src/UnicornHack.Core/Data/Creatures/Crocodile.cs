@@ -12,11 +12,10 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Crocodile,
             SpeciesClass = SpeciesClass.Reptile,
             MovementDelay = 133,
-            Weight = 1500,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -30,9 +29,10 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"thick hide", 3},
-                    {"largeness", Size.Large},
+                    {"size", 8},
                     {"physical deflection", 16},
-                    {"magic resistance", 10}
+                    {"magic resistance", 10},
+                    {"weight", 1500}
                 },
             InitialLevel = 8,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},

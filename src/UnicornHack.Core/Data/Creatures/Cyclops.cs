@@ -11,24 +11,23 @@ namespace UnicornHack.Data.Creatures
             Name = "Cyclops",
             Species = Species.Giant,
             MovementDelay = 100,
-            Weight = 2200,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeAttack,
                         Action = AbilityAction.Modifier,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 18}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Punch,
@@ -46,7 +45,7 @@ namespace UnicornHack.Data.Creatures
                     "maleness",
                     "stoning resistance"
                 },
-            ValuedProperties = new Dictionary<string, object> {{"largeness", Size.Huge}},
+            ValuedProperties = new Dictionary<string, object> {{"size", 16}, {"weight", 2200}},
             InitialLevel = 16,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,

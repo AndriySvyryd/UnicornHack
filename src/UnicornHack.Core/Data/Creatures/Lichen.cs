@@ -11,18 +11,21 @@ namespace UnicornHack.Data.Creatures
             Name = "lichen",
             Species = Species.Fungus,
             MovementDelay = 1200,
-            Weight = 20,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new Stick()}
                     },
-                    new Ability {Activation = AbilityActivation.OnMeleeHit, Effects = new HashSet<Effect> {new Stick()}}
+                    new AbilityDefinition
+                    {
+                        Activation = AbilityActivation.OnMeleeHit,
+                        Effects = new HashSet<Effect> {new Stick()}
+                    }
                 },
             SimpleProperties =
                 new HashSet<string>
@@ -44,8 +47,9 @@ namespace UnicornHack.Data.Creatures
                     {"poison resistance", 3},
                     {"venom resistance", 3},
                     {"stealthiness", 3},
-                    {"largeness", Size.Small},
-                    {"physical deflection", 11}
+                    {"size", 2},
+                    {"physical deflection", 11},
+                    {"weight", 20}
                 },
             InitialLevel = 1,
             GenerationWeight = new DefaultWeight {Multiplier = 5F}

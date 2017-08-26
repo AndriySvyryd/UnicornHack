@@ -11,11 +11,10 @@ namespace UnicornHack.Data.Creatures
             Name = "glass piercer",
             Species = Species.Piercer,
             MovementDelay = 1200,
-            Weight = 400,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -30,8 +29,9 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"acid resistance", 3},
                     {"stealthiness", 3},
-                    {"largeness", Size.Small},
-                    {"physical deflection", 19}
+                    {"size", 2},
+                    {"physical deflection", 19},
+                    {"weight", 400}
                 },
             InitialLevel = 7,
             GenerationWeight = new DefaultWeight {Multiplier = 3F}

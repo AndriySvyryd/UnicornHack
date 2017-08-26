@@ -11,39 +11,38 @@ namespace UnicornHack.Data.Creatures
             Name = "gelatinous cube",
             Species = Species.Blob,
             MovementDelay = 200,
-            Weight = 600,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new Paralyze {Duration = 4}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Touch,
                         Timeout = 7,
                         Effects = new HashSet<Effect> {new Engulf {Duration = 7}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnDigestion,
                         Action = AbilityAction.Digestion,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new PoisonDamage {Damage = 1}}
+                        Effects = new HashSet<Effect> {new Poison {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnDigestion,
                         Action = AbilityAction.Digestion,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new AcidDamage {Damage = 1}}
+                        Effects = new HashSet<Effect> {new Corrode {Damage = 1}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnMeleeHit,
                         Effects = new HashSet<Effect> {new Paralyze {Duration = 4}}
@@ -72,8 +71,9 @@ namespace UnicornHack.Data.Creatures
                 {"venom resistance", 3},
                 {"acid resistance", 3},
                 {"stealthiness", 3},
-                {"largeness", Size.Large},
-                {"physical deflection", 12}
+                {"size", 8},
+                {"physical deflection", 12},
+                {"weight", 600}
             },
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},

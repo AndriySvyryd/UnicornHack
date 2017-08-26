@@ -12,11 +12,10 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Worm,
             SpeciesClass = SpeciesClass.Vermin,
             MovementDelay = 400,
-            Weight = 1500,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -30,9 +29,10 @@ namespace UnicornHack.Data.Creatures
                 new Dictionary<string, object>
                 {
                     {"poison resistance", 3},
-                    {"largeness", Size.Gigantic},
+                    {"size", 32},
                     {"physical deflection", 15},
-                    {"magic resistance", 10}
+                    {"magic resistance", 10},
+                    {"weight", 1500}
                 },
             InitialLevel = 9,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},

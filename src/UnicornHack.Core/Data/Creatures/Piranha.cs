@@ -11,11 +11,10 @@ namespace UnicornHack.Data.Creatures
             Name = "piranha",
             Species = Species.Fish,
             MovementDelay = 100,
-            Weight = 60,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -25,7 +24,8 @@ namespace UnicornHack.Data.Creatures
                 },
             SimpleProperties =
                 new HashSet<string> {"swimming", "water breathing", "limblessness", "oviparity", "no inventory"},
-            ValuedProperties = new Dictionary<string, object> {{"largeness", Size.Tiny}, {"physical deflection", 16}},
+            ValuedProperties =
+                new Dictionary<string, object> {{"size", 1}, {"physical deflection", 16}, {"weight", 60}},
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.SmallGroup

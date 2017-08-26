@@ -12,16 +12,15 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Snake,
             SpeciesClass = SpeciesClass.Reptile,
             MovementDelay = 80,
-            Weight = 100,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
                         Timeout = 1,
-                        Effects = new HashSet<Effect> {new VenomDamage {Damage = 3}}
+                        Effects = new HashSet<Effect> {new Envenom {Damage = 3}}
                     }
                 },
             SimpleProperties =
@@ -40,8 +39,9 @@ namespace UnicornHack.Data.Creatures
                 {
                     {"poison resistance", 3},
                     {"venom resistance", 3},
-                    {"largeness", Size.Small},
-                    {"physical deflection", 17}
+                    {"size", 2},
+                    {"physical deflection", 17},
+                    {"weight", 100}
                 },
             InitialLevel = 4,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},

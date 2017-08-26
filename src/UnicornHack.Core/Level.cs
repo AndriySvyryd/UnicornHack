@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using UnicornHack.Generation.Map;
 using UnicornHack.Utils;
 
@@ -407,8 +408,8 @@ namespace UnicornHack
             item.BranchName = null;
             item.LevelDepth = null;
             item.Level = null;
-            item.LevelX = null;
-            item.LevelY = null;
+            item.LevelX = 0;
+            item.LevelY = 0;
             if (Items.Remove(item))
             {
                 item.RemoveReference();

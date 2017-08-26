@@ -9,16 +9,23 @@ namespace UnicornHack.Data.Players
         public static readonly PlayerRaceDefinition Human = new PlayerRaceDefinition
         {
             Name = "human",
-            Abilities = new HashSet<Ability>
+            Species = Species.Human,
+            Abilities = new HashSet<AbilityDefinition>
             {
-                new Ability
+                new AbilityDefinition
                 {
-                    Name = "Innate",
+                    Name = "innate",
                     Activation = AbilityActivation.Always,
                     Effects = new HashSet<Effect>
                     {
-                        new ChangeProperty<bool> {PropertyName = "Infravisibility", Value = true},
-                        new ChangeProperty<bool> {PropertyName = "Humanoidness", Value = true}
+                        new ChangeProperty<bool> {PropertyName = "infravisibility", Value = true},
+                        new ChangeProperty<bool> {PropertyName = "humanoidness", Value = true},
+                        new ChangeProperty<int>
+                        {
+                            PropertyName = "size",
+                            Value = 6,
+                            Function = ValueCombinationFunction.MeanRoundUp
+                        }
                     }
                 }
             }

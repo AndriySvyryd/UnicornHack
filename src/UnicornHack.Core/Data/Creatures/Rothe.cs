@@ -12,18 +12,17 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Quadruped,
             SpeciesClass = SpeciesClass.Quadrupedal,
             MovementDelay = 133,
-            Weight = 600,
             Abilities =
-                new HashSet<Ability>
+                new HashSet<AbilityDefinition>
                 {
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Headbutt,
                         Timeout = 1,
                         Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 4}}
                     },
-                    new Ability
+                    new AbilityDefinition
                     {
                         Activation = AbilityActivation.OnTarget,
                         Action = AbilityAction.Bite,
@@ -40,7 +39,7 @@ namespace UnicornHack.Data.Creatures
                     "handlessness",
                     "singular inventory"
                 },
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 13}},
+            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 13}, {"weight", 600}},
             InitialLevel = 2,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
             GenerationFlags = GenerationFlags.SmallGroup,
