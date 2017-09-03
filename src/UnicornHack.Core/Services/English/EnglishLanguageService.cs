@@ -82,11 +82,14 @@ namespace UnicornHack.Services.English
             }
         }
 
+        public string ToString(Ability ability)
+            => ability.Name;
+
         public string ToString(EquipmentSlot slot, Actor actor, bool abbreviate)
         {
             switch (slot)
             {
-                case EquipmentSlot.GraspMainExtremity:
+                case EquipmentSlot.GraspPrimaryExtremity:
                     return abbreviate ? "MH" : "main hand";
                 case EquipmentSlot.GraspSecondaryExtremity:
                     return abbreviate ? "OH" : "off hand";
@@ -121,7 +124,7 @@ namespace UnicornHack.Services.English
         {
             switch (slot)
             {
-                case EquipmentSlot.GraspMainExtremity:
+                case EquipmentSlot.GraspPrimaryExtremity:
                 case EquipmentSlot.GraspSecondaryExtremity:
                 case EquipmentSlot.GraspMouth:
                     return "in the";
@@ -209,6 +212,12 @@ namespace UnicornHack.Services.English
                 case AbilityAction.Poke:
                     verb = "poke";
                     break;
+                case AbilityAction.Hit:
+                    verb = "hit";
+                    break;
+                case AbilityAction.Impale:
+                    verb = "impale";
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(abilityAction), abilityAction, message: null);
             }
@@ -290,13 +299,17 @@ namespace UnicornHack.Services.English
                     @event.Attacker != @event.Victim
                         ? victim
                         : EnglishMorphologicalProcessor.GetPronoun(EnglishPronounForm.Reflexive, EnglishNumber.Singular,
-                            attackerPerson, victimGender), @event.Sensor == @event.Victim ? "!" : ".");
+                            attackerPerson, victimGender),
+                    @event.Weapon == null ? "" : "with",
+                    @event.Weapon == null ? "" : ToString(@event.Weapon),
+                    @event.Sensor == @event.Victim ? "!" : ".");
 
                 if (!@event.VictimSensed.HasFlag(SenseType.Sight))
                 {
                     return attackSentence;
                 }
 
+                // TODO: Handle other types of damage
                 var damage = @event.AppliedEffects.OfType<PhysicallyDamaged>().Aggregate(0, (d, e) => d + e.Damage);
                 string damageSentence;
                 if (victimPerson == EnglishPerson.Second)
@@ -319,7 +332,10 @@ namespace UnicornHack.Services.English
             }
             return ToSentence(attacker,
                 EnglishMorphologicalProcessor.ProcessVerb(verbPhrase: "try", form: mainVerbForm),
-                EnglishMorphologicalProcessor.ProcessVerb(attackVerb, EnglishVerbForm.Infinitive), victim, ", but",
+                EnglishMorphologicalProcessor.ProcessVerb(attackVerb, EnglishVerbForm.Infinitive), victim,
+                @event.Weapon == null ? "" : "with",
+                @event.Weapon == null ? "" : ToString(@event.Weapon),
+                ", but",
                 EnglishMorphologicalProcessor.ProcessVerb(verbPhrase: "miss", form: mainVerbForm));
         }
 

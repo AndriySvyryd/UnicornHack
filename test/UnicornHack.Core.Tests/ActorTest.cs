@@ -231,7 +231,7 @@ namespace UnicornHack
             Assert.Equal(2, player.GetProperty<int>("strength"));
             Assert.Equal(4, player.GetProperty<int>("size"));
 
-            player.Equip(item, EquipmentSlot.GraspMainExtremity);
+            player.Equip(item, EquipmentSlot.GraspPrimaryExtremity);
 
             Assert.True(player.GetProperty<bool>("humanoidness"));
             Assert.Equal(4, player.GetProperty<int>("strength"));

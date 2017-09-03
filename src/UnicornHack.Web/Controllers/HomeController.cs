@@ -77,9 +77,6 @@ namespace UnicornHack.Controllers
             // TODO: Move this
             _dbContext.Entry(level).Property(l => l.VisibleTerrain).IsModified = true;
 
-            var entries = _dbContext.ChangeTracker.Entries()
-                .Where(e => e.State != EntityState.Modified && e.State != EntityState.Unchanged)
-                .ToList();
             _dbContext.SaveChanges();
 
             // Level is null if the character is dead
@@ -124,9 +121,12 @@ namespace UnicornHack.Controllers
 
                 character.WriteLog(game.Services.Language.Welcome(character), character.Level.CurrentTick);
 
+                // Avoid cyclical dependency
+                character.DefaultAttack = null;
                 _dbContext.Characters.Add(character);
                 _dbContext.SaveChanges();
 
+                character.RecalculateWeaponAbilities();
                 Turn(character);
                 _dbContext.SaveChanges();
             }
@@ -203,6 +203,15 @@ namespace UnicornHack.Controllers
                 _dbContext.Set<MeleeAttack>()
                     .Include(e => e.Weapon.Abilities).ThenInclude(a => a.Effects)
                     .Where(e => e.GameId == gameId && meleeAttacks.Contains(e.Id))
+                    .Load();
+            }
+
+            var rangeAttacks = _dbContext.Set<RangeAttack>().Local.Select(c => c.Id).ToList();
+            if (rangeAttacks.Any())
+            {
+                _dbContext.Set<RangeAttack>()
+                    .Include(e => e.Weapon.Abilities).ThenInclude(a => a.Effects)
+                    .Where(e => e.GameId == gameId && rangeAttacks.Contains(e.Id))
                     .Load();
             }
 

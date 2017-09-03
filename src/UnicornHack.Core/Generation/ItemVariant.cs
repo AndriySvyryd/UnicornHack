@@ -109,11 +109,12 @@ namespace UnicornHack.Generation
             itemInstance.EquipableSlots = EquipableSlots;
 
             var innateAbility =
-                new AbilityDefinition(game) { Name = Actor.InnateName, Activation = AbilityActivation.Always }; foreach (var simpleProperty in SimpleProperties)
-            {
+                new AbilityDefinition(game) {Name = Actor.InnateAbilityName, Activation = AbilityActivation.Always};
 
+            foreach (var simpleProperty in SimpleProperties)
+            {
                 innateAbility.Effects.Add(
-                    new ChangeProperty<bool>(game) { PropertyName = simpleProperty, Value = true });
+                    new ChangeProperty<bool>(game) {PropertyName = simpleProperty, Value = true});
             }
 
             foreach (var valuedProperty in ValuedProperties)

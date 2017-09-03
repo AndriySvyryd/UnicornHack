@@ -20,13 +20,11 @@ namespace UnicornHack
         public Game Game { get; set; }
 
         public virtual AbilityActivation Activation { get; set; }
+        // TODO: Move/refactor this
         public virtual AbilityAction Action { get; set; }
         public virtual int Timeout { get; set; }
         public virtual int EnergyPointCost { get; set; }
         public virtual int Delay { get; set; }
-
-        // TODO: Use a placeholder item
-        public virtual EquipmentSlot FreeSlotsRequired { get; set; }
         public virtual bool IsActive { get; set; }
         public virtual bool IsUsable { get; set; }
         public virtual int TimeoutLeft { get; set; }

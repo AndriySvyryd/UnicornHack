@@ -9,6 +9,7 @@ namespace UnicornHack.Events
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public virtual int SensorId { get; private set; }
 
+        // TODO: Many-to-many
         public virtual Player Sensor { get; set; }
 
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
@@ -25,6 +26,7 @@ namespace UnicornHack.Events
             _referenceCount++;
         }
 
+        // TODO: Only create one instance per action
         public TransientReference<SensoryEvent> AddReference() => new TransientReference<SensoryEvent>(this);
 
         public void RemoveReference()

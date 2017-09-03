@@ -109,6 +109,9 @@ namespace UnicornHack.Models
                 pb.Ignore(p => p.XPLevel);
                 pb.Ignore(p => p.NextLevelXP);
                 pb.Ignore(p => p.Races);
+                pb.HasOne(p => p.DefaultAttack)
+                    .WithOne()
+                    .HasForeignKey<Player>(nameof(Actor.GameId), "DefaultAttackId");
             });
 
             modelBuilder.Entity<Item>(eb =>
@@ -219,11 +222,11 @@ namespace UnicornHack.Models
                 eb.HasKey(a => new {a.GameId, a.Id});
                 eb.HasMany(a => a.Effects)
                     .WithOne()
-                    .HasForeignKey(nameof(Effect.GameId), "AbilityId")
+                    .HasForeignKey(nameof(Effect.GameId), "DefiningAbilityId")
                     .OnDelete(DeleteBehavior.Restrict);
                 eb.HasMany(a => a.ActiveEffects)
                     .WithOne(e => e.SourceAbility)
-                    .HasForeignKey(nameof(Effect.GameId), "AbilityId");
+                    .HasForeignKey(nameof(Effect.GameId), "SourceAbilityId");
             });
 
             modelBuilder.Entity<AbilityDefinition>(eb =>
@@ -240,6 +243,12 @@ namespace UnicornHack.Models
             {
                 eb.Property("_referenceCount");
                 eb.HasKey(a => new {a.GameId, a.Id});
+            });
+            modelBuilder.Entity<ActivateAbility>(ab =>
+            {
+                ab.HasOne(e => e.Ability)
+                    .WithOne()
+                    .HasForeignKey<ActivateAbility>(nameof(Effect.GameId), "AbilityId");
             });
             modelBuilder.Entity<AddAbility>(ab =>
             {
@@ -303,11 +312,13 @@ namespace UnicornHack.Models
             modelBuilder.Entity<MeleeAttack>()
                 .HasOne(m => m.Weapon)
                 .WithMany()
-                .HasForeignKey(m => new {m.GameId, m.WeaponId});
+                .HasForeignKey(m => new {m.GameId, m.WeaponId})
+                .OnDelete(DeleteBehavior.ClientSetNull);
             modelBuilder.Entity<MeleeAttacked>()
                 .HasOne(m => m.Weapon)
                 .WithMany()
-                .HasForeignKey(m => new { m.GameId, m.WeaponId });
+                .HasForeignKey(m => new {m.GameId, m.WeaponId})
+                .OnDelete(DeleteBehavior.ClientSetNull);
             modelBuilder.Entity<Paralyze>();
             modelBuilder.Entity<Paralyzed>();
             modelBuilder.Entity<PhysicalDamage>();
@@ -317,11 +328,13 @@ namespace UnicornHack.Models
             modelBuilder.Entity<RangeAttack>()
                 .HasOne(m => m.Weapon)
                 .WithMany()
-                .HasForeignKey(m => new { m.GameId, m.WeaponId });
+                .HasForeignKey(m => new {m.GameId, m.WeaponId})
+                .OnDelete(DeleteBehavior.ClientSetNull);
             modelBuilder.Entity<RangeAttacked>()
                 .HasOne(m => m.Weapon)
                 .WithMany()
-                .HasForeignKey(m => new { m.GameId, m.WeaponId });
+                .HasForeignKey(m => new { m.GameId, m.WeaponId })
+                .OnDelete(DeleteBehavior.ClientSetNull);
             modelBuilder.Entity<ScriptedEffect>();
             modelBuilder.Entity<Sedate>();
             modelBuilder.Entity<Sedated>();
@@ -371,8 +384,11 @@ namespace UnicornHack.Models
                     .OnDelete(DeleteBehavior.Restrict);
                 eb.HasMany(e => e.AppliedEffects)
                     .WithOne()
-                    .HasForeignKey(nameof(AppliedEffect.GameId), "SensorId", "EventId")
+                    .HasForeignKey(nameof(AppliedEffect.GameId), "SensorId", "AttackEventId")
                     .OnDelete(DeleteBehavior.Restrict);
+                eb.HasOne(e => e.Weapon)
+                    .WithMany()
+                    .HasForeignKey(nameof(AppliedEffect.GameId), "WeaponId");
             });
             modelBuilder.Entity<DeathEvent>(eb =>
             {

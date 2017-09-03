@@ -72,8 +72,7 @@ namespace UnicornHack.Generation
                 Action = Action,
                 Delay = Delay,
                 Timeout = Timeout,
-                EnergyPointCost = EnergyPointCost,
-                FreeSlotsRequired = FreeSlotsRequired
+                EnergyPointCost = EnergyPointCost
             };
 
             foreach (var effect in Effects)

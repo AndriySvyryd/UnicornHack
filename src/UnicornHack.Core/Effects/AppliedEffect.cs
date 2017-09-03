@@ -46,8 +46,13 @@ namespace UnicornHack.Effects
         {
             if (--_referenceCount <= 0)
             {
-                Game.Repository.Delete(this);
+                Delete();
             }
+        }
+
+        protected virtual void Delete()
+        {
+            Game.Repository.Delete(this);
         }
 
         public virtual void Remove()

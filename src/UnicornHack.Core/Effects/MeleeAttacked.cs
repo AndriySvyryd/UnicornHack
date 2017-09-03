@@ -12,5 +12,11 @@
 
         public int? WeaponId { get; set; }
         public Item Weapon { get; set; }
+
+        protected override void Delete()
+        {
+            base.Delete();
+            Weapon?.RemoveReference();
+        }
     }
 }

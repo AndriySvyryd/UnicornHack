@@ -124,7 +124,7 @@ namespace UnicornHack.Generation
             };
 
             var innateAbility =
-                new AbilityDefinition(level.Game) {Name = Actor.InnateName, Activation = AbilityActivation.Always};
+                new AbilityDefinition(level.Game) {Name = Actor.InnateAbilityName, Activation = AbilityActivation.Always};
 
             var sexSet = false;
             foreach (var simpleProperty in SimpleProperties)
@@ -171,7 +171,7 @@ namespace UnicornHack.Generation
             creature.MaxHP = creature.MaxHP < 1 ? 1 : creature.MaxHP;
             creature.HP = creature.MaxHP;
 
-            creature.RecalculateAbilities();
+            creature.RecalculateWeaponAbilities();
             return creature;
         }
 

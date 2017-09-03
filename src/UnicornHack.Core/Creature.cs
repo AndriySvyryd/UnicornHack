@@ -49,11 +49,11 @@ namespace UnicornHack
 
             if (possibleDirectionsToMove.Contains(Heading) && Game.Random.NextBool())
             {
-                return Move(Heading, safe: true);
+                return Move(Heading);
             }
 
             var directionIndex = Game.Random.Next(minValue: 0, maxValue: possibleDirectionsToMove.Count);
-            return Move(possibleDirectionsToMove[directionIndex], safe: true);
+            return Move(possibleDirectionsToMove[directionIndex]);
         }
 
         private bool TryAttackPlayerCharacter()
@@ -67,6 +67,27 @@ namespace UnicornHack
             return Attack(playerCharacter);
         }
 
+        private bool Attack(Actor victim, bool pretend = false)
+        {
+            var ability = Abilities.FirstOrDefault(a => a.Activation == AbilityActivation.OnTarget && a.IsUsable);
+            if (ability == null)
+            {
+                return false;
+            }
+
+            if (pretend)
+            {
+                return true;
+            }
+
+            return ability.Activate(new AbilityActivationContext
+            {
+                Activator = this,
+                Target = victim,
+                IsAttack = true
+            });
+        }
+
         private bool TryMoveToPlayerCharacter()
         {
             var playerCharacter = Level.Players.FirstOrDefault(pc => Level.GridDistance(this, pc) <= 6 && pc.IsAlive);
@@ -76,9 +97,9 @@ namespace UnicornHack
             }
 
             var direction = Level.GetFirstStepFromShortestPath(this, playerCharacter);
-            if (direction != null && Move(direction.Value, pretend: true, safe: true))
+            if (direction != null && Move(direction.Value, pretend: true))
             {
-                return Move(direction.Value, safe: true);
+                return Move(direction.Value);
             }
 
             return false;

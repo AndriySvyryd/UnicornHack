@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using UnicornHack.Effects;
 
 namespace UnicornHack.Events
@@ -17,6 +18,7 @@ namespace UnicornHack.Events
         public AbilityAction AbilityAction { get; set; }
         public ISet<AppliedEffect> AppliedEffects { get; set; } = new HashSet<AppliedEffect>();
         public bool Hit { get; set; }
+        public Item Weapon { get; set; }
 
         public static void New(AbilityActivationContext abilityContext, int eventOrder)
         {
@@ -24,6 +26,10 @@ namespace UnicornHack.Events
             var victim = abilityContext.Target;
             Debug.Assert(attacker.Level == victim.Level);
 
+            var weapon = abilityContext.AppliedEffects.OfType<MeleeAttacked>().Select(m => m.Weapon)
+                             .FirstOrDefault(w => w != null)
+                         ?? abilityContext.AppliedEffects.OfType<RangeAttacked>().Select(r => r.Weapon)
+                             .FirstOrDefault(w => w != null);
             foreach (var sensor in attacker.Level.Actors)
             {
                 var attackerSensed = sensor.CanSense(attacker);
@@ -42,6 +48,7 @@ namespace UnicornHack.Events
                     VictimSensed = victimSensed,
                     AbilityAction = abilityContext.AbilityAction,
                     AppliedEffects = abilityContext.AppliedEffects,
+                    Weapon = weapon,
                     Hit = abilityContext.Succeeded,
                     EventOrder = eventOrder,
                     Tick = attacker.Level.CurrentTick

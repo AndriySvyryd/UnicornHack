@@ -84,14 +84,14 @@ namespace UnicornHack
                             switch (yAbility.Activation)
                             {
                                 case AbilityActivation.Always:
-                                    if (xAbility.Name == Actor.InnateName)
+                                    if (xAbility.Name == Actor.InnateAbilityName)
                                     {
-                                        if (yAbility.Name != Actor.InnateName)
+                                        if (yAbility.Name != Actor.InnateAbilityName)
                                         {
                                             return -1;
                                         }
                                     }
-                                    else if (yAbility.Name == Actor.InnateName)
+                                    else if (yAbility.Name == Actor.InnateAbilityName)
                                     {
                                         return 1;
                                     }

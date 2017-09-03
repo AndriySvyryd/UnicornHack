@@ -1,4 +1,6 @@
-﻿namespace UnicornHack.Effects
+﻿using UnicornHack.Data.Properties;
+
+namespace UnicornHack.Effects
 {
     public class RangeAttack : Effect
     {
@@ -16,28 +18,35 @@
         {
             abilityContext.AbilityTrigger |= AbilityActivation.OnRangedAttack;
 
-            if (Weapon != null)
+            foreach (var weaponAbility in Weapon.Abilities)
             {
-                foreach (var weaponAbility in Weapon.Abilities)
+                if (abilityContext.AbilityAction == AbilityAction.Default)
                 {
-                    if (abilityContext.AbilityAction == AbilityAction.Default)
-                    {
-                        abilityContext.AbilityAction = weaponAbility.Action;
-                    }
+                    abilityContext.AbilityAction = weaponAbility.Action;
+                }
 
-                    if (abilityContext.Succeeded && weaponAbility.Activation == AbilityActivation.OnRangedAttack)
-                    {
-                        weaponAbility.Activate(abilityContext);
-                    }
+                if (abilityContext.Succeeded && weaponAbility.Activation == AbilityActivation.OnRangedAttack)
+                {
+                    weaponAbility.Activate(abilityContext);
                 }
             }
 
-            if (!abilityContext.Succeeded)
+            if (abilityContext.AbilityAction == AbilityAction.Default)
             {
-                return;
+                abilityContext.AbilityAction = AbilityAction.Hit;
             }
 
-            abilityContext.AppliedEffects.Add(new RangeAttacked(abilityContext) {Weapon = Weapon});
+            abilityContext.AppliedEffects.Add(
+                new RangeAttacked(abilityContext) {Weapon = Weapon.AddReference().Referenced});
+
+            if (!Weapon.GetProperty<bool>(PropertyData.InfiniteAmmo.Name)
+                && abilityContext.Target is Actor actorTarget)
+            {
+                Weapon.MoveTo(new LevelCell(
+                    actorTarget.Level,
+                    actorTarget.LevelX,
+                    actorTarget.LevelY));
+            }
         }
 
         public int? WeaponId { get; set; }

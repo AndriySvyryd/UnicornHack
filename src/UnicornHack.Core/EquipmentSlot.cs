@@ -6,9 +6,9 @@ namespace UnicornHack
     public enum EquipmentSlot
     {
         Default = 0,
-        GraspMainExtremity = 1 << 0,
+        GraspPrimaryExtremity = 1 << 0,
         GraspSecondaryExtremity = 1 << 1,
-        GraspSingleExtremity = GraspMainExtremity | GraspSecondaryExtremity,
+        GraspSingleExtremity = GraspPrimaryExtremity | GraspSecondaryExtremity,
         GraspBothExtremities = 1 << 2,
         GraspMouth = 1 << 3,
         Feet = 1 << 4,

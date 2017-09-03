@@ -39,17 +39,10 @@
                         var slots = item.GetEquipableSlots(SizeCategory.Medium).GetNonRedundantFlags(removeComposites: true).ToList();
                         if (slots.Any())
                         {
-                            if (slots.Count == 1)
-                            {
-                                @: <a class="itemAction" href="javascript:PerformAction('EQUIP', @item.Id, @((int)slots.Single()))">equip</a>
-                            }
-                            else
-                            {
-                                var slotLinks = string.Join(" ", slots.Select(equipmentSlot =>
-                                    $"<a class=\"itemAction\" href=\"javascript: PerformAction('EQUIP', {item.Id}, {(int)equipmentSlot})\">{Model.Game.Services.Language.ToString(equipmentSlot, Model, abbreviate: true)}</a>"));
+                            var slotLinks = string.Join(" ", slots.Select(equipmentSlot =>
+                                $"<a class=\"itemAction\" href=\"javascript: PerformAction('EQUIP', {item.Id}, {(int)equipmentSlot})\">{Model.Game.Services.Language.ToString(equipmentSlot, Model, abbreviate: true)}</a>"));
 
-                                @: equip (@Html.Raw(slotLinks))
-                            }
+                            @: (@Html.Raw(slotLinks))
                         }
                     }
 
@@ -59,6 +52,31 @@
                     }
 
                     @: <a class="itemAction" href="javascript:PerformAction('DROP', @item.Id)">drop</a>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<div class="col-md-3" style="padding: 0">
+    <div class="frame">
+        @foreach (var ability in Model.Abilities.Where(a =>
+            a.IsUsable
+            && (a.Name == Actor.DoubleMeleeAttackName || a.Name == Actor.PrimaryMeleeAttackName
+                || a.Name == Actor.SecondaryMeleeAttackName || a.Name == Actor.DoubleRangedAttackName
+                || a.Name == Actor.PrimaryRangedAttackName || a.Name == Actor.SecondaryRangedAttackName)))
+        {
+            <div>
+                @{
+                    var abilityName = Model.Game.Services.Language.ToString(ability);
+                    if (Model.DefaultAttack == ability)
+                    {
+                        @('*' + abilityName)
+                    }
+                    else
+                    {
+                        @: <a class="selectAbility" href="javascript:PerformAction('MAKEDEFAULT', @ability.Id)">@abilityName</a>
+                    }
                 }
             </div>
         }

@@ -169,7 +169,7 @@ namespace UnicornHack.Services.English
                 Sensor = player
             }));
 
-            var sword = new Item {BaseName = "long sword", EquippedSlot = EquipmentSlot.GraspMainExtremity};
+            var sword = new Item {BaseName = "long sword", EquippedSlot = EquipmentSlot.GraspPrimaryExtremity};
             Assert.Equal("You equip a long sword in the main hand.", languageService.ToString(new ItemEquipmentEvent
             {
                 Item = sword,

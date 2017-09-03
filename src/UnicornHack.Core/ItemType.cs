@@ -32,6 +32,14 @@ namespace UnicornHack
         Trinket = 1 << 25,
         SkillBook = 1 << 26,
         Intricate = 1 << 30,
-        Exotic = 1 << 31
+        Exotic = 1 << 31,
+
+        WeaponRanged = WeaponRangedThrown | WeaponRangedSlingshot | WeaponRangedBow | WeaponRangedCrossbow
+                       | WeaponMagicStaff,
+
+        WeaponMelee = WeaponMeleeFist | WeaponMeleeShort | WeaponMeleeMedium | WeaponMeleeLong
+                      | WeaponMagicFocus,
+
+        Wepon = WeaponMelee | WeaponRanged
     }
 }
