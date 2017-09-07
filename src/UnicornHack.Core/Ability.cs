@@ -112,7 +112,6 @@ namespace UnicornHack
             if (firstAbility)
             {
                 abilityContext.Ability = this;
-                // TODO: Also apply delay for secondary attacks
                 if (Activation == AbilityActivation.OnTarget
                     && activator is Actor actor)
                 {

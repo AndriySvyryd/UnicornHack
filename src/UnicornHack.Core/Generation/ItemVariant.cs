@@ -123,6 +123,8 @@ namespace UnicornHack.Generation
                     Effect.CreateChangeProperty(game, valuedProperty.Key, valuedProperty.Value));
             }
 
+            itemInstance.Add(innateAbility.Instantiate(game));
+
             foreach (var ability in Abilities)
             {
                 itemInstance.Add(ability.Instantiate(game));

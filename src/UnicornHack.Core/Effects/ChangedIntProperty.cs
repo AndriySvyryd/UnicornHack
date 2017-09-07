@@ -56,6 +56,7 @@ namespace UnicornHack.Effects
                     break;
             }
 
+            // TODO: Check min/max
             state.RunningSum = property.LastValue;
             state.SummandCount = 1;
         }

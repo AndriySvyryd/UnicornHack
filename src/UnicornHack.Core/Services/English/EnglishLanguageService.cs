@@ -33,8 +33,7 @@ namespace UnicornHack.Services.English
                 return "something";
             }
 
-            var creature = actor as Creature;
-            if (creature != null)
+            if (actor is Creature creature)
             {
                 var name = creature.BaseName + (creature.Name == null ? "" : " named \"" + creature.Name + "\"");
 
@@ -66,7 +65,11 @@ namespace UnicornHack.Services.English
                        EnglishMorphologicalProcessor.ProcessNoun(itemName, EnglishNounForm.Plural);
             }
 
-            return "a " + itemName;
+            return (EnglishMorphologicalProcessor.IsPlural(itemName)
+                ? ""
+                : IsVocal(itemName[0])
+                    ? "an "
+                    : "a ") + itemName;
         }
 
         public string ToString(Property property)
@@ -253,6 +256,21 @@ namespace UnicornHack.Services.English
                     return "down";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(direction), direction, message: null);
+            }
+        }
+
+        private bool IsVocal(char c)
+        {
+            switch (char.ToLowerInvariant(c))
+            {
+                case 'a':
+                case 'e':
+                case 'i':
+                case 'o':
+                case 'u':
+                    return true;
+                    default:
+                    return false;
             }
         }
 

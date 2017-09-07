@@ -1,0 +1,113 @@
+@font-face {
+    font-family: DejaVuSansMono;
+    src: url('../fonts/DejaVuSansMono.woff2') format('woff2'),
+        url('../fonts/DejaVuSansMono.woff') format('woff'),
+        url('../fonts/DejaVuSansMono.ttf') format('truetype');
+}
+
+body {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    color: white;
+    background-color: black;
+    font-family: DejaVuSansMono, Menlo, Consolas, monospace;
+}
+
+a {
+    background-color: inherit;
+    color: inherit;
+    text-decoration: inherit;
+}
+
+a:hover {
+    border-bottom: 1px dotted gray;
+}
+
+ul {
+    list-style-type: none;
+    padding: 10px;
+}
+
+pre {
+    color: inherit;
+    background-color: inherit;
+    font-family: inherit;
+    line-height: 22px;
+    font-size: 20px;
+}
+
+.mapContainer {
+    overflow: hidden;
+    height: 620px;
+}
+
+.map {
+    transform: scale(1.0, 0.75);
+    transform-origin: 0 0;
+    height: 810px;
+    align-items: center;
+    justify-content: center;
+    line-height: 20px;
+    font-size: 18px;
+    white-space: pre;
+    display: flex;
+}
+
+.map__inner-container {
+}
+
+.map__row {
+    overflow: hidden;
+}
+
+.chat__messages {
+    max-height: 120px;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.frame {
+    border-width: 1px;
+    display: block;
+    padding: 9.5px;
+    margin: 0 0 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.itemAction {
+    color: grey;
+}
+
+.btn-nav,
+.btn-nav:focus,
+.btn-nav:hover {
+    color: #fff;
+    border-color: #fff;
+    font-size: 100%;
+    text-decoration: none;
+    border-bottom: 1px;
+}
+
+.btn-nav {
+    background-color: #333;
+}
+
+.btn-nav:focus,
+.btn-nav:hover {
+    background-color: #888;
+}
+
+/* Wrapping element */
+/* Set some basic padding to keep content from hitting the edges */
+.body-content {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+/* Set widths on the form inputs since otherwise they're 100% wide */
+input,
+select,
+textarea {
+    max-width: 280px;
+}

@@ -340,6 +340,9 @@ namespace UnicornHack.Services.English
             }
         }
 
+        public bool IsPlural(string noun)
+            => noun.Substring(noun.Length - 2, 2) == "es";
+
         public string GetPronoun(EnglishPronounForm form, EnglishNumber number, EnglishPerson person,
             EnglishGender? gender)
         {

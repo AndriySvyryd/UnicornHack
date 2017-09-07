@@ -2,9 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using UnicornHack.Effects;
 using UnicornHack.Events;
 using UnicornHack.Generation;
-using UnicornHack.Utils;
 
-namespace UnicornHack.Models
+namespace UnicornHack.Data
 {
     public class GameDbContext : DbContext
     {

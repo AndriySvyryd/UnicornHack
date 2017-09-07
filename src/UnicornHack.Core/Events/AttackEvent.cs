@@ -44,6 +44,7 @@ namespace UnicornHack.Events
                     continue;
                 }
 
+                // TODO: One instance per event
                 var @event = new AttackEvent
                 {
                     Attacker = attacker,

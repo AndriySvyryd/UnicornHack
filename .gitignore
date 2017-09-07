@@ -29,11 +29,13 @@ bld/
 
 # Generated Web files
 **/wwwroot/lib/
+**/dist/
 **/wwwroot/js/ts/
 **/wwwroot/_references.js
 *.min.js
 *.min.css
 *.js.map
+/yarn.lock
 
 # MSTest test Results
 [Tt]est[Rr]esult*/
@@ -203,6 +205,7 @@ orleans.codegen.cs
 
 # ASP.NET
 *launchSettings.json
+npm-shrinkwrap.json
 node_modules/
 bower_components/
 

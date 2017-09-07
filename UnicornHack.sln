@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26228.4
+VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{DC92B3A8-5CB9-4514-9744-7E19CABDDF98}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A1D43057-B6B1-4DBD-814D-327AF7F7563F}"
 	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		CONTRIBUTING.md = CONTRIBUTING.md
 		NuGet.config = NuGet.config
 		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{E1416F49-DAC9-4EAF-9689-C5B84EA5C604}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnicornHack.Web", "src\UnicornHack.Web\UnicornHack.Web.csproj", "{4122F12D-85EE-46F2-A19F-92F3BB063BA3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnicornHack.Core", "src\UnicornHack.Core\UnicornHack.Core.csproj", "{8F9BD3B7-296B-4700-BC06-908D1A119472}"
 EndProject
@@ -20,16 +20,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnicornHack.Core.Tests", "t
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnicornHack.Editor", "src\UnicornHack.Editor\UnicornHack.Editor.csproj", "{36C0D421-119D-40A1-BB88-F20029048199}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnicornHack.Web", "src\UnicornHack.Web\UnicornHack.Web.csproj", "{0D11AA86-8146-4870-A53F-7577FB81EFA1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4122F12D-85EE-46F2-A19F-92F3BB063BA3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4122F12D-85EE-46F2-A19F-92F3BB063BA3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4122F12D-85EE-46F2-A19F-92F3BB063BA3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4122F12D-85EE-46F2-A19F-92F3BB063BA3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{8F9BD3B7-296B-4700-BC06-908D1A119472}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8F9BD3B7-296B-4700-BC06-908D1A119472}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8F9BD3B7-296B-4700-BC06-908D1A119472}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -42,14 +40,21 @@ Global
 		{36C0D421-119D-40A1-BB88-F20029048199}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{36C0D421-119D-40A1-BB88-F20029048199}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{36C0D421-119D-40A1-BB88-F20029048199}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0D11AA86-8146-4870-A53F-7577FB81EFA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D11AA86-8146-4870-A53F-7577FB81EFA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D11AA86-8146-4870-A53F-7577FB81EFA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D11AA86-8146-4870-A53F-7577FB81EFA1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{4122F12D-85EE-46F2-A19F-92F3BB063BA3} = {DC92B3A8-5CB9-4514-9744-7E19CABDDF98}
 		{8F9BD3B7-296B-4700-BC06-908D1A119472} = {DC92B3A8-5CB9-4514-9744-7E19CABDDF98}
 		{F554156D-8AD3-4366-9FF0-F7411E688577} = {E1416F49-DAC9-4EAF-9689-C5B84EA5C604}
 		{36C0D421-119D-40A1-BB88-F20029048199} = {DC92B3A8-5CB9-4514-9744-7E19CABDDF98}
+		{0D11AA86-8146-4870-A53F-7577FB81EFA1} = {DC92B3A8-5CB9-4514-9744-7E19CABDDF98}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E8AE20F5-24C9-4FE1-A1F7-ECF0FF7A0A66}
 	EndGlobalSection
 EndGlobal

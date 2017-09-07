@@ -1,6 +1,6 @@
 @model UnicornHack.Models.GameViewModels.Character
 @{
-    ViewData["Title"] = "Home";
+    ViewData["Title"] = "Welcome to UnicornHack";
 }
 
 <div class="container">
@@ -38,6 +38,7 @@
 
     <form asp-controller="Home" asp-action="Game" method="get" class="form-inline" role="form">
         <div asp-validation-summary="All" class="text-danger"></div>
+        @*TODO: validate that the character is not dead. Autocomplete alive characters.*@
         <div class="form-group">
             <input asp-for="Name" class="form-control" />
         </div>
