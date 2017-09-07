@@ -31,7 +31,7 @@
             newEffect.Value = Value;
 
             abilityContext.Target.ActiveEffects.Add(newEffect.AddReference().Referenced);
-            abilityContext.Target.InvalidateProperty<T>(PropertyName);
+            newEffect.UpdateProperty();
         }
     }
 }

@@ -28,5 +28,14 @@ namespace UnicornHack.Effects
                                                         " not implemented.");
             }
         }
+
+        public abstract void UpdateProperty();
+
+        public override void Remove()
+        {
+            base.Remove();
+
+            UpdateProperty();
+        }
     }
 }

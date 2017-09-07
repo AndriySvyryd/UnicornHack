@@ -21,8 +21,8 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Target.ChangeCurrentEP(-1 * Amount);
-            abilityContext.Activator.ChangeCurrentEP(Amount);
+            (abilityContext.Target as Actor)?.ChangeCurrentEP(-1 * Amount);
+            (abilityContext.Activator as Actor)?.ChangeCurrentEP(Amount);
             abilityContext.AppliedEffects.Add(new EnergyDrained(abilityContext) {Amount = Amount});
         }
     }

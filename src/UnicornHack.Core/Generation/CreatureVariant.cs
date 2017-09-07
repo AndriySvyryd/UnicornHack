@@ -161,15 +161,12 @@ namespace UnicornHack.Generation
                     Effect.CreateChangeProperty(level.Game, valuedProperty.Key, valuedProperty.Value));
             }
 
+            creature.Add(innateAbility.Instantiate(level.Game));
+
             foreach (var ability in Abilities)
             {
                 creature.Add(ability.Instantiate(level.Game));
             }
-
-            // TODO: Properly calculate HP
-            creature.MaxHP = 50 + creature.DifficultyLevel * 5;
-            creature.MaxHP = creature.MaxHP < 1 ? 1 : creature.MaxHP;
-            creature.HP = creature.MaxHP;
 
             creature.RecalculateWeaponAbilities();
             return creature;

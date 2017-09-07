@@ -19,13 +19,13 @@ namespace UnicornHack.Data.Items
                 {
                     Activation = AbilityActivation.OnMeleeAttack,
                     Action = AbilityAction.Slash,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 3}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 15}}
                 },
                 new AbilityDefinition
                 {
                     Activation = AbilityActivation.OnRangedAttack,
                     Action = AbilityAction.Hit,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
                 }
             },
             SimpleProperties = new HashSet<string> {"infinite ammo"},

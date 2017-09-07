@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using UnicornHack.Data.Properties;
 using UnicornHack.Effects;
 using UnicornHack.Events;
 using UnicornHack.Utils;
@@ -82,11 +83,6 @@ namespace UnicornHack
             }
 
             var activator = abilityContext.Activator;
-            var target = abilityContext.Target;
-            if (!target.IsAlive)
-            {
-                return false;
-            }
 
             if (pretend)
             {
@@ -104,7 +100,11 @@ namespace UnicornHack
 
             if (EnergyPointCost > 0)
             {
-                abilityContext.Activator.ChangeCurrentEP(-1 * EnergyPointCost);
+                if (activator.GetProperty<int>(PropertyData.EnergyPoints.Name) < EnergyPointCost)
+                {
+                    return false;
+                }
+                ((Actor)abilityContext.Activator).ChangeCurrentEP(-1 * EnergyPointCost);
             }
 
             var eventOrder = 0;
@@ -113,16 +113,17 @@ namespace UnicornHack
             {
                 abilityContext.Ability = this;
                 // TODO: Also apply delay for secondary attacks
-                if (Activation == AbilityActivation.OnTarget)
+                if (Activation == AbilityActivation.OnTarget
+                    && activator is Actor actor)
                 {
                     if (Delay == 0)
                     {
                         // TODO: Specify the correct delay in the abilities
-                        activator.NextActionTick += Actor.DefaultActionDelay;
+                        actor.NextActionTick += Actor.DefaultActionDelay;
                     }
                     else
                     {
-                        activator.NextActionTick += Delay;
+                        actor.NextActionTick += Delay;
                     }
                 }
 

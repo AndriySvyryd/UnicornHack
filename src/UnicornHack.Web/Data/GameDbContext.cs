@@ -142,9 +142,26 @@ namespace UnicornHack.Models
             {
                 pb.HasKey(p => new {p.GameId, p.EntityId, p.Name});
             });
-
-            modelBuilder.Entity<Property<bool>>();
-            modelBuilder.Entity<Property<int>>();
+            modelBuilder.Entity<CalculatedProperty<bool>>(pb =>
+            {
+                pb.Ignore(p => p.CurrentValue);
+                pb.Property<bool>("_currentValue");
+            });
+            modelBuilder.Entity<CalculatedProperty<int>>(pb =>
+            {
+                pb.Ignore(p => p.CurrentValue);
+                pb.Property<int>("_currentValue");
+            });
+            modelBuilder.Entity<DynamicProperty<bool>>(pb =>
+            {
+                pb.Ignore(p => p.CurrentValue);
+                pb.Property<bool>("_currentValue");
+            });
+            modelBuilder.Entity<DynamicProperty<int>>(pb =>
+            {
+                pb.Ignore(p => p.CurrentValue);
+                pb.Property<int>("_currentValue");
+            });
 
             modelBuilder.Entity<Game>(eb =>
             {

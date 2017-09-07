@@ -1,3 +1,5 @@
+using UnicornHack.Data.Properties;
+
 namespace UnicornHack.Effects
 {
     public class Soak : Effect
@@ -23,7 +25,10 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Target.ChangeCurrentHP(-1 * Damage);
+            if (abilityContext.Target.GetProperty<int>(PropertyData.WaterWeakness.Name) > 0)
+            {
+                (abilityContext.Target as Actor)?.ChangeCurrentHP(-1 * Damage);
+            }
             abilityContext.AppliedEffects.Add(new Soaked(abilityContext) {Damage = Damage});
         }
     }

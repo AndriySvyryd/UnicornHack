@@ -19,7 +19,7 @@ namespace UnicornHack.Data.Items
                 {
                     Activation = AbilityActivation.OnMeleeAttack,
                     Action = AbilityAction.Hit,
-                    Effects = new HashSet<Effect> {new Freeze {Damage = 5}}
+                    Effects = new HashSet<Effect> {new Freeze {Damage = 40}}
                 }
             },
             ValuedProperties = new Dictionary<string, object> {{"weight", 5}}

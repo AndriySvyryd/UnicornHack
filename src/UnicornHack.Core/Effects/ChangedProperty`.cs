@@ -12,12 +12,10 @@ namespace UnicornHack.Effects
 
         public T Value { get; set; }
 
-        public abstract void Apply(Property<T> property, ref (int RunningSum, int SummandCount) state);
+        public abstract void Apply(CalculatedProperty<T> property, ref (int RunningSum, int SummandCount) state);
 
-        public override void Remove()
+        public override void UpdateProperty()
         {
-            base.Remove();
-
             Entity.InvalidateProperty<T>(PropertyName);
         }
     }

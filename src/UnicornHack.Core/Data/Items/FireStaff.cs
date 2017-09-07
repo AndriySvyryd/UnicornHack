@@ -19,7 +19,7 @@ namespace UnicornHack.Data.Items
                 {
                     Activation = AbilityActivation.OnRangedAttack,
                     Action = AbilityAction.Hit,
-                    Effects = new HashSet<Effect> {new Burn {Damage = 5}}
+                    Effects = new HashSet<Effect> {new Burn {Damage = 30}}
                 }
             },
             SimpleProperties = new HashSet<string> { "infinite ammo" },

@@ -21,8 +21,8 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Target.ChangeCurrentHP(-1 * Amount);
-            abilityContext.Activator.ChangeCurrentHP(Amount);
+            (abilityContext.Target as Actor)?.ChangeCurrentHP(-1 * Amount);
+            (abilityContext.Activator as Actor)?.ChangeCurrentHP(Amount);
             abilityContext.AppliedEffects.Add(new LifeDrained(abilityContext) {Amount = Amount});
         }
     }

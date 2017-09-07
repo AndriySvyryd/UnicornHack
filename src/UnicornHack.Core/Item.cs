@@ -20,14 +20,6 @@ namespace UnicornHack
         public int? ContainerId { get; set; }
         public Container Container { get; set; }
 
-        // TODO: Move to Entity when bug fixed
-        public string BranchName { get; set; }
-
-        public byte? LevelDepth { get; set; }
-        public Level Level { get; set; }
-        public byte LevelX { get; set; }
-        public byte LevelY { get; set; }
-
         public EquipmentSlot GetEquipableSlots(SizeCategory size)
         {
             if (EquipableSizes.HasFlag(size))

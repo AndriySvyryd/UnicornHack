@@ -22,8 +22,12 @@ namespace UnicornHack.Events
 
         public static void New(AbilityActivationContext abilityContext, int eventOrder)
         {
-            var attacker = abilityContext.Activator;
-            var victim = abilityContext.Target;
+            if (!(abilityContext.Activator is Actor attacker)
+                || !(abilityContext.Target is Actor victim))
+            {
+                return;
+            }
+
             Debug.Assert(attacker.Level == victim.Level);
 
             var weapon = abilityContext.AppliedEffects.OfType<MeleeAttacked>().Select(m => m.Weapon)

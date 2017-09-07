@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -13,6 +14,7 @@ namespace UnicornHack
     {
         public const int DefaultActionDelay = 100;
         public const string InnateAbilityName = "innate";
+        public const string AttributedAbilityName = "attributed";
 
         public const string PrimaryMeleeAttackName = "primary melee attack";
         public const string SecondaryMeleeAttackName = "secondary melee attack";
@@ -24,24 +26,17 @@ namespace UnicornHack
         public const string DoubleRangedAttackName = "double ranged attack";
         public const string AdditionalRangedAttackName = "additional ranged attack";
 
+        public virtual Direction Heading { get; set; }
+        // TODO: make these properties dynamic
         public Species Species { get; set; }
         public SpeciesClass SpeciesClass { get; set; }
         public Sex Sex { get; set; }
         public int MovementDelay { get; set; }
-        public virtual Direction Heading { get; set; }
-        public int MaxHP { get; set; } = 1;
-        public int HP { get; set; } = 1; // So actors start out alive
+        public int MaxHP => GetProperty<int>(PropertyData.HitPointMaximum.Name);
+        public int HP => GetProperty<int>(PropertyData.HitPoints.Name);
         public bool IsAlive => HP > 0;
-        public int MaxEP { get; set; }
-        public int EP { get; set; }
-
-        // TODO: Move to Entity when bug fixed
-        public string BranchName { get; set; }
-
-        public byte? LevelDepth { get; set; }
-        public Level Level { get; set; }
-        public byte LevelX { get; set; }
-        public byte LevelY { get; set; }
+        public int MaxEP => GetProperty<int>(PropertyData.EnergyPointMaximum.Name);
+        public int EP => GetProperty<int>(PropertyData.EnergyPoints.Name);
 
         /// <summary>
         ///     Warning: this should only be updated when this actor is acting
@@ -51,6 +46,17 @@ namespace UnicornHack
         public virtual int Gold { get; set; }
         IEnumerable<Item> IItemLocation.Items => Inventory;
         public virtual ICollection<Item> Inventory { get; } = new HashSet<Item>();
+
+        private static readonly Dictionary<string, List<object>> PropertyListeners = new Dictionary<string, List<object>>();
+
+        static Actor()
+        {
+            AddPropertyListener<int>(PropertyData.HitPointMaximum.Name, (a, o, n) => a.OnMaxHPChanged(o, n));
+            AddPropertyListener<int>(PropertyData.EnergyPointMaximum.Name, (a, o, n) => a.OnMaxEPChanged(o, n));
+            AddPropertyListener<int>(PropertyData.Constitution.Name, (a, o, n) => a.OnConstitutionChanged(o, n));
+            AddPropertyListener<int>(PropertyData.Willpower.Name, (a, o, n) => a.OnWillpowerChanged(o, n));
+            AddPropertyListener<int>(PropertyData.Quickness.Name, (a, o, n) => a.OnQuicknessChanged(o, n));
+        }
 
         protected Actor()
         {
@@ -64,6 +70,8 @@ namespace UnicornHack
             NextActionTick = level.Game.NextPlayerTick;
             level.Actors.Push(this);
             AddReference();
+
+            AddAttributeAbility();
         }
 
         private int _referenceCount;
@@ -90,6 +98,39 @@ namespace UnicornHack
                 }
                 Game.Repository.Delete(this);
             }
+        }
+
+        private void AddAttributeAbility()
+        {
+            var ability = new Ability(Game)
+            {
+                Name = AttributedAbilityName,
+                Activation = AbilityActivation.Always,
+                Effects = new HashSet<Effect>
+                {
+                    new ChangeProperty<int>(Game)
+                    {
+                        PropertyName = PropertyData.HitPointMaximum.Name,
+                        Function = ValueCombinationFunction.Sum
+                    },
+                    new ChangeProperty<int>(Game)
+                    {
+                        PropertyName = PropertyData.EnergyPointMaximum.Name,
+                        Function = ValueCombinationFunction.Sum
+                    }
+                }
+            };
+
+            Add(ability);
+
+            var constitution = GetProperty<int>(PropertyData.Constitution.Name);
+            OnConstitutionChanged(constitution, constitution);
+
+            var willpower = GetProperty<int>(PropertyData.Willpower.Name);
+            OnWillpowerChanged(willpower, willpower);
+
+            var quickness = GetProperty<int>(PropertyData.Quickness.Name);
+            OnQuicknessChanged(quickness, quickness);
         }
 
         public virtual void RecalculateWeaponAbilities()
@@ -345,7 +386,6 @@ namespace UnicornHack
             }
         }
 
-        /// <summary></summary>
         /// <returns>Returns <c>false</c> if the actor hasn't finished their turn.</returns>
         public abstract bool Act();
 
@@ -354,7 +394,7 @@ namespace UnicornHack
             @event.Game = Game;
         }
 
-        public virtual SenseType CanSense(Actor target)
+        public virtual SenseType CanSense(Entity target)
         {
             var sense = SenseType.None;
             if (target == this) // Or is adjecent
@@ -366,8 +406,6 @@ namespace UnicornHack
 
             return sense;
         }
-
-        public virtual SenseType CanSense(Item target) => SenseType.Sight;
 
         public virtual bool UseStairs(bool up, bool pretend = false)
         {
@@ -788,29 +826,65 @@ namespace UnicornHack
             return false;
         }
 
-        public override void Add(Ability ability)
+        public override void OnPropertyChanged<T>(string propertyName, T oldValue, T newValue)
         {
-            base.Add(ability);
-
-            if (ability.Activation == AbilityActivation.Always && !ability.IsActive)
+            if (PropertyListeners.TryGetValue(propertyName, out var listeners))
             {
-                ability.Activate(new AbilityActivationContext
+                foreach (var listener in listeners)
                 {
-                    Activator = this,
-                    Target = this,
-                    AbilityTrigger = AbilityActivation.Always
-                });
+                    ((Action<Actor, T, T>)listener)(this, oldValue, newValue);
+                }
             }
+
+            base.OnPropertyChanged(propertyName, oldValue, newValue);
         }
 
-        public override void Remove(Ability ability)
-        {
-            base.Remove(ability);
+        public override bool HasListener(string propertyName)
+            => PropertyListeners.ContainsKey(propertyName)
+               || base.HasListener(propertyName);
 
-            if (ability.IsActive)
+        private static void AddPropertyListener<T>(string propertyName, Action<Actor, T, T> action)
+        {
+            if (!PropertyListeners.TryGetValue(propertyName, out var listeners))
             {
-                ability.Deactivate();
+                listeners = new List<object>();
+                PropertyListeners[propertyName] = listeners;
             }
+
+            listeners.Add(action);
+        }
+
+        private void OnMaxHPChanged(int oldValue, int newValue)
+        {
+            var newHP = HP * newValue / oldValue;
+            ChangeCurrentHP(newHP - HP);
+        }
+
+        private void OnMaxEPChanged(int oldValue, int newValue)
+        {
+            var newEP = EP * newValue / oldValue;
+            ChangeCurrentEP(newEP - EP);
+        }
+
+        private void OnConstitutionChanged(int oldValue, int newValue)
+        {
+            var effect = Abilities.First(a => a.Name == AttributedAbilityName).ActiveEffects
+                .OfType<ChangedProperty<int>>().First(e => e.PropertyName == PropertyData.HitPointMaximum.Name);
+            effect.Value = newValue * 10;
+            effect.UpdateProperty();
+        }
+
+        private void OnWillpowerChanged(int oldValue, int newValue)
+        {
+            var effect = Abilities.First(a => a.Name == AttributedAbilityName).ActiveEffects
+                .OfType<ChangedProperty<int>>().First(e => e.PropertyName == PropertyData.EnergyPointMaximum.Name);
+            effect.Value = newValue * 10;
+            effect.UpdateProperty();
+        }
+
+        private void OnQuicknessChanged(int oldValue, int newValue)
+        {
+            MovementDelay = DefaultActionDelay * 10 / GetProperty<int>(PropertyData.Quickness.Name);
         }
 
         public virtual bool ChangeCurrentHP(int hp)
@@ -819,16 +893,21 @@ namespace UnicornHack
             {
                 return false;
             }
-            HP += hp;
+
+            var hpProperty = InvalidateProperty<int>(PropertyData.HitPoints.Name);
+            var newHP = hpProperty.LastValue + hp;
+
+            if (newHP > MaxHP)
+            {
+                newHP = MaxHP;
+            }
+
+            hpProperty.CurrentValue = newHP;
+
             if (!IsAlive)
             {
                 Die();
                 return false;
-            }
-
-            if (HP > MaxHP)
-            {
-                HP = MaxHP;
             }
 
             return true;
@@ -836,15 +915,19 @@ namespace UnicornHack
 
         public virtual void ChangeCurrentEP(int ep)
         {
-            EP += ep;
-            if (EP < 0)
+            var epProperty = InvalidateProperty<int>(PropertyData.EnergyPoints.Name);
+            var newEP = epProperty.LastValue + ep;
+
+            if (newEP < 0)
             {
-                EP = 0;
+                newEP = 0;
             }
             if (EP > MaxEP)
             {
-                EP = MaxEP;
+                newEP = MaxEP;
             }
+
+            epProperty.CurrentValue = newEP;
         }
 
         protected virtual void Die()

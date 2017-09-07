@@ -60,16 +60,6 @@ namespace UnicornHack
             Skills = new Skills();
             RecalculateWeaponAbilities();
 
-            // TODO: Recalculate when properties change
-            MovementDelay = DefaultActionDelay * 10 / GetProperty<int>(PropertyData.Quickness.Name);
-
-            // TODO: adjust current hp/mp to maintain %
-            MaxHP = 100 + GetProperty<int>(PropertyData.Constitution.Name) * 10;
-            MaxEP = 100 + GetProperty<int>(PropertyData.Willpower.Name) * 10;
-
-            HP = MaxHP;
-            EP = MaxEP;
-
             ItemVariant.Loader.Get("potion of healing").Instantiate(this, quantity: 3);
             ItemVariant.Loader.Get("mail armor").Instantiate(this);
             ItemVariant.Loader.Get("long sword").Instantiate(this);
@@ -78,6 +68,7 @@ namespace UnicornHack
             ItemVariant.Loader.Get("throwing knives").Instantiate(this);
             ItemVariant.Loader.Get("fire staff").Instantiate(this);
             ItemVariant.Loader.Get("freezing focus").Instantiate(this);
+            ItemVariant.Loader.Get("potion of ogreness").Instantiate(this);
         }
 
         public void AddXP(int xp)
@@ -221,7 +212,7 @@ namespace UnicornHack
             if (weapon == null)
             {
                 // TODO: Calculate h2h damage
-                return 5;
+                return 20;
             }
             if (weapon.Type.HasFlag(ItemType.WeaponMeleeFist))
             {
@@ -274,7 +265,7 @@ namespace UnicornHack
         }
 
         private int GetWeightDamage(Item weapon)
-            => weapon.GetProperty<int>(PropertyData.Weight.Name) / 5;
+            => weapon.GetProperty<int>(PropertyData.Weight.Name);
 
         public override bool Act()
         {

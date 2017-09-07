@@ -10,7 +10,7 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override void Apply(Property<int> property, ref (int RunningSum, int SummandCount) state)
+        public override void Apply(CalculatedProperty<int> property, ref (int RunningSum, int SummandCount) state)
         {
             if (state.SummandCount == 0)
             {
@@ -20,8 +20,8 @@ namespace UnicornHack.Effects
                     case ValueCombinationFunction.Percent:
                         break;
                     default:
-                        property.TypedValue = Value;
-                        state.RunningSum = property.TypedValue;
+                        property.LastValue = Value;
+                        state.RunningSum = property.LastValue;
                         state.SummandCount = 1;
                         return;
                 }
@@ -30,33 +30,33 @@ namespace UnicornHack.Effects
             switch (Function)
             {
                 case ValueCombinationFunction.Sum:
-                    property.TypedValue += Value;
+                    property.LastValue += Value;
                     break;
                 case ValueCombinationFunction.Percent:
-                    property.TypedValue = (property.TypedValue * Value) / 100;
+                    property.LastValue = (property.LastValue * Value) / 100;
                     break;
                 case ValueCombinationFunction.Override:
-                    property.TypedValue = Value;
+                    property.LastValue = Value;
                     break;
                 case ValueCombinationFunction.Max:
-                    property.TypedValue = property.TypedValue > Value ? property.TypedValue : Value;
+                    property.LastValue = property.LastValue > Value ? property.LastValue : Value;
                     break;
                 case ValueCombinationFunction.Min:
-                    property.TypedValue = property.TypedValue < Value ? property.TypedValue : Value;
+                    property.LastValue = property.LastValue < Value ? property.LastValue : Value;
                     break;
                 case ValueCombinationFunction.MeanRoundDown:
                     state.RunningSum += Value;
                     state.SummandCount++;
-                    property.TypedValue = state.RunningSum / state.SummandCount;
+                    property.LastValue = state.RunningSum / state.SummandCount;
                     break;
                 case ValueCombinationFunction.MeanRoundUp:
                     state.RunningSum += Value;
                     state.SummandCount++;
-                    property.TypedValue = (state.RunningSum + state.SummandCount - 1) / state.SummandCount;
+                    property.LastValue = (state.RunningSum + state.SummandCount - 1) / state.SummandCount;
                     break;
             }
 
-            state.RunningSum = property.TypedValue;
+            state.RunningSum = property.LastValue;
             state.SummandCount = 1;
         }
     }

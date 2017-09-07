@@ -9,6 +9,7 @@ namespace UnicornHack
     public abstract class PropertyDescription : ILoadable, ICSScriptSerializable
     {
         public string Name { get; set; }
+        public bool IsCalculated { get; set; } = true;
         public string Desciption { get; set; }
         public abstract Type PropertyType { get; set; }
         public object MinValue { get; set; }
@@ -24,6 +25,7 @@ namespace UnicornHack
             return new Dictionary<string, Func<TPropertyDescription, object, bool>>
             {
                 {nameof(Name), (o, v) => v != null},
+                {nameof(IsCalculated), (o, v) => !(bool)v},
                 {nameof(Desciption), (o, v) => v != null},
                 {nameof(PropertyType), (o, v) => v != null},
                 {nameof(MinValue), (o, v) => v != null},

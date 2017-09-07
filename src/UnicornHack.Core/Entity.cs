@@ -26,6 +26,14 @@ namespace UnicornHack
 
         public Game Game { get; set; }
 
+        public string BranchName { get; set; }
+        public byte? LevelDepth { get; set; }
+        public Level Level { get; set; }
+        public byte LevelX { get; set; }
+        public byte LevelY { get; set; }
+
+        private static readonly Dictionary<string, List<object>> PropertyListeners = new Dictionary<string, List<object>>();
+
         public Entity()
         {
         }
@@ -41,25 +49,68 @@ namespace UnicornHack
         {
             if (Properties.List.TryGetValue(propertyName, out var property))
             {
-                if (!property.IsCurrent)
-                {
-                    property.UpdateValue();
-                }
-                return ((Property<T>)property).TypedValue;
+                return ((Property<T>)property).CurrentValue;
             }
 
             return ((PropertyDescription<T>)PropertyDescription.Loader.Get(propertyName)).DefaultValue;
         }
 
-        public void InvalidateProperty<T>(string propertyName)
+        public Property<T> InvalidateProperty<T>(string propertyName)
         {
-            if (!Properties.List.TryGetValue(propertyName, out var property))
+            if (((PropertyDescription<T>)PropertyDescription.Loader.Get(propertyName)).IsCalculated)
             {
-                property = new Property<T>(this, propertyName);
-                Properties.Add(property);
+                if (!Properties.List.TryGetValue(propertyName, out var property))
+                {
+                    property = new CalculatedProperty<T>(this, propertyName);
+                    Properties.Add(property);
+                }
+
+                var calculatedProperty = (CalculatedProperty<T>)property;
+
+                calculatedProperty.IsCurrent = false;
+
+                if (HasListener(propertyName))
+                {
+                    property.UpdateValue();
+                }
+
+                return calculatedProperty;
+            }
+            else
+            {
+                if (!Properties.List.TryGetValue(propertyName, out var property))
+                {
+                    property = new DynamicProperty<T>(this, propertyName);
+                    Properties.Add(property);
+                }
+
+                return (Property<T>)property;
+            }
+        }
+
+        public virtual void OnPropertyChanged<T>(string propertyName, T oldValue, T newValue)
+        {
+            if (PropertyListeners.TryGetValue(propertyName, out var listeners))
+            {
+                foreach (var listener in listeners)
+                {
+                    ((Action<Entity, T, T>)listener)(this, oldValue, newValue);
+                }
+            }
+        }
+
+        public virtual bool HasListener(string propertyName)
+            => PropertyListeners.ContainsKey(propertyName);
+
+        private static void AddPropertyListener<T>(string propertyName, Action<Entity, T, T> action)
+        {
+            if (!PropertyListeners.TryGetValue(propertyName, out var listeners))
+            {
+                listeners = new List<object>();
+                PropertyListeners[propertyName] = listeners;
             }
 
-            property.IsCurrent = false;
+            listeners.Add(action);
         }
 
         public virtual void Add(Ability ability)
@@ -67,7 +118,16 @@ namespace UnicornHack
             Abilities.Add(ability.AddReference().Referenced);
             ability.Entity = this;
             (this as IReferenceable)?.AddReference();
-            // TODO: Trigger permanent abilities here
+
+            if (ability.Activation == AbilityActivation.Always && !ability.IsActive)
+            {
+                ability.Activate(new AbilityActivationContext
+                {
+                    Activator = this,
+                    Target = this,
+                    AbilityTrigger = AbilityActivation.Always
+                });
+            }
         }
 
         public virtual void Remove(Ability ability)
@@ -76,6 +136,11 @@ namespace UnicornHack
             ability.RemoveReference();
             ability.Entity = null;
             (this as IReferenceable)?.RemoveReference();
+
+            if (ability.IsActive)
+            {
+                ability.Deactivate();
+            }
         }
     }
 }
