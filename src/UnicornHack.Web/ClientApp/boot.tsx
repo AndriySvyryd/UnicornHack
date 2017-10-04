@@ -1,4 +1,4 @@
-import './css/site.css';
+import './styles/site.css';
 import 'bootstrap-loader';
 import 'url-search-params-polyfill';
 import * as React from 'react';

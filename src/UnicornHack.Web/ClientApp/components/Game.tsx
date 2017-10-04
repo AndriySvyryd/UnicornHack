@@ -10,8 +10,8 @@ import { Inventory } from './Inventory';
 import { AbilityBar } from './AbilityBar';
 import { PropertyList } from './PropertyList';
 import { Map } from './Map';
-import { MapStyles } from './MapStyles';
-import { Player, Level, ICompactLevel } from './Model';
+import { MapStyles } from '../styles/MapStyles';
+import { Player, Level, ICompactLevel } from '../transport/Model';
 import { GameLog } from './GameLog';
 
 interface IGameProps {
@@ -49,7 +49,20 @@ export class Game extends React.Component<IGameProps, GameState> {
         };
 
         connection.on('ReceiveMessage', (userName: string, message: string) => this.addMessage(MessageType.Client, message, userName));
-        connection.on('ReceiveState', (level: ICompactLevel) => this.setState({ level: Level.expand(level), waiting: false }));
+        connection.on('ReceiveState', (level: ICompactLevel) => {
+            let start = 0;
+            if (this.isInDev()) {
+                start = performance.now();
+            }
+
+            const s = this.setState({ level: Level.expand(level), waiting: false });
+
+            if (this.isInDev()) {
+                const end = performance.now();
+                console.log('ReceiveState time: ', end - start);
+            }
+            return s;
+        });
 
         connection.start()
             .then(() => { this.getFullState() }) // TODO: wait for mount
@@ -135,8 +148,8 @@ export class Game extends React.Component<IGameProps, GameState> {
         this.sendMessage = this.sendMessage.bind(this);
     }
 
-    componentDidMount() {
-        this.recordKey();
+    shouldComponentUpdate(nextProps: IGameProps, nextState: GameState): boolean {
+        return this.props !== nextProps || this.state !== nextState;
     }
 
     recordKey() {
@@ -146,7 +159,20 @@ export class Game extends React.Component<IGameProps, GameState> {
 
     private getFullState() {
         this.state.connection.invoke('GetState', this.props.playerName)
-            .then((v: ICompactLevel) => this.setState({ level: Level.expand(v), waiting: false }))
+            .then((level: ICompactLevel) => {
+                let start = 0;
+                if (this.isInDev()) {
+                    start = performance.now();
+                }
+
+                const s = this.setState({ level: Level.expand(level), waiting: false });
+
+                if (this.isInDev()) {
+                    const end = performance.now();
+                    console.log('GetState time: ', end - start);
+                }
+                return s;
+            })
             .catch(e => this.addError((e || '').toString()));
     }
 
@@ -172,6 +198,10 @@ export class Game extends React.Component<IGameProps, GameState> {
 
     private addError(error: string) {
         this.addMessage(MessageType.Error, error);
+    }
+
+    private isInDev(): boolean {
+        return process.env.NODE_ENV !== 'production';
     }
 
     render() {

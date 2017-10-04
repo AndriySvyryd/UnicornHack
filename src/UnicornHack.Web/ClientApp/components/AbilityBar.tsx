@@ -1,7 +1,11 @@
 ﻿import * as React from 'React';
-import { Ability } from './Model';
+import { Ability } from '../transport/Model';
 
 export class AbilityBar extends React.Component<IAbilityBarProps, {}> {
+    shouldComponentUpdate(nextProps: IAbilityBarProps): boolean {
+        return this.props.abilities !== nextProps.abilities;
+    }
+
     render() {
         const abilities = this.props.abilities.map(a => <AbilityLine ability={a} performAction={this.props.performAction} key={a.id} />);
         return (<div className="frame">{abilities}</div>);
@@ -14,6 +18,11 @@ interface IAbilityBarProps {
 }
 
 export class AbilityLine extends React.Component<IAbilityProps, {}> {
+    shouldComponentUpdate(nextProps: IAbilityProps): boolean {
+        return this.props.ability.id !== nextProps.ability.id
+            || this.props.ability.isDefault !== nextProps.ability.isDefault;
+    }
+
     render() {
         if (this.props.ability.isDefault) {
             return <div>{'*' + this.props.ability.name}</div>;

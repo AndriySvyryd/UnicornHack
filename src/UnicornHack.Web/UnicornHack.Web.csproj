@@ -9,16 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="ClientApp\components\buffer.d.ts" />
-    <None Remove="ClientApp\components\Chat.tsx" />
-    <None Remove="ClientApp\components\Map.tsx" />
-    <None Remove="ClientApp\components\MapStyles.tsx" />
-    <None Remove="ClientApp\components\Model.tsx" />
-    <None Remove="ClientApp\components\StatusBar.tsx" />
-    <None Remove="ClientApp\declarations\mousetrap.d.ts" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.1.0-preview1-27000" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.0.0-alpha1-final" />
@@ -33,15 +23,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\UnicornHack.Core\UnicornHack.Core.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <TypeScriptCompile Include="ClientApp\components\StatusBar.tsx" />
-    <TypeScriptCompile Include="ClientApp\components\Chat.tsx" />
-    <TypeScriptCompile Include="ClientApp\components\Map.tsx" />
-    <TypeScriptCompile Include="ClientApp\components\MapStyles.tsx" />
-    <TypeScriptCompile Include="ClientApp\components\Model.tsx" />
-    <TypeScriptCompile Include="ClientApp\declarations\mousetrap.d.ts" />
   </ItemGroup>
 
   <Target Name="DebugRunWebpack" BeforeTargets="Build" Condition=" '$(Configuration)' == 'Debug' And !Exists('wwwroot\dist') ">

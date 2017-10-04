@@ -17,6 +17,7 @@ a {
     background-color: inherit;
     color: inherit;
     text-decoration: inherit;
+    cursor: pointer;
 }
 
 a:hover {

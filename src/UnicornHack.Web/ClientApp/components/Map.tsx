@@ -1,8 +1,12 @@
 ﻿import * as React from 'React';
-import { Level, MapFeature, DirectionFlags, ItemType } from './Model';
-import { MapStyles, ITileStyle } from './MapStyles';
+import { Level, MapFeature, DirectionFlags, ItemType } from '../transport/Model';
+import { MapStyles, ITileStyle } from '../styles/MapStyles';
 
 export class Map extends React.Component<IMapProps, {}> {
+    shouldComponentUpdate(nextProps: IMapProps): boolean {
+        return this.props !== nextProps;
+    }
+
     render() {
         const rows = new Array<ITileProps[]>(this.props.level.height);
         const styles = this.props.styles;
@@ -73,6 +77,10 @@ interface IMapProps {
 }
 
 class Row extends React.Component<IRowProps, {}> {
+    shouldComponentUpdate(nextProps: IRowProps): boolean {
+        return this.props !== nextProps;
+    }
+
     render() {
         const row = this.props.row.map((t, i) =>
             <Tile {...t} key={i} />
@@ -86,6 +94,12 @@ interface IRowProps {
 }
 
 class Tile extends React.Component<ITileProps, {}> {
+    shouldComponentUpdate(nextProps: ITileProps): boolean {
+        return this.props.glyph.char !== nextProps.glyph.char
+            || this.props.glyph.style !== nextProps.glyph.style
+            || this.props.visibility !== nextProps.visibility;
+    }
+
     render() {
         const opacity = 0.3 + ((this.props.visibility / 255) * 0.7);
         return (<div className="map__row" style={Object.assign({ opacity: opacity, float: 'left' }, this.props.glyph.style)}>

@@ -1,8 +1,11 @@
 import * as React from 'React';
-import { Item } from './Model';
-import { ItemType } from './Model';
+import { Item, ItemType } from '../transport/Model';
 
 export class Inventory extends React.Component<IInventoryProps, {}> {
+    shouldComponentUpdate(nextProps: IInventoryProps): boolean {
+        return this.props.items !== nextProps.items;
+    }
+
     render() {
         const items = this.props.items.map(i => <InventoryLine item={i} key={i.id} performAction={this.props.performAction} />);
 
@@ -16,6 +19,15 @@ interface IInventoryProps {
 }
 
 class InventoryLine extends React.Component<IItemProps, {}> {
+    shouldComponentUpdate(nextProps: IItemProps): boolean {
+        return this.props.item.name !== nextProps.item.name
+            || this.props.item.equippableSlots !== nextProps.item.equippableSlots
+            || this.props.item.equippedSlot !== nextProps.item.equippedSlot
+            || this.props.item.type !== nextProps.item.type
+            || this.props.item.equippableSlots !== nextProps.item.equippableSlots
+            || this.props.item.equippableSlots !== nextProps.item.equippableSlots ;
+    }
+
     render() {
         const itemLine: any[] = [];
         if (this.props.item.equippedSlot !== null) {
