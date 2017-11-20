@@ -30,7 +30,7 @@
             newEffect.Function = Function;
             newEffect.Value = Value;
 
-            abilityContext.Target.ActiveEffects.Add(newEffect.AddReference().Referenced);
+            newEffect.Add();
             newEffect.UpdateProperty();
         }
     }

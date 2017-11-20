@@ -21,7 +21,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.AppliedEffects.Add(new Infected(abilityContext) {Strength = Strength});
+            abilityContext.Add(new Infected(abilityContext) {Strength = Strength});
         }
     }
 }

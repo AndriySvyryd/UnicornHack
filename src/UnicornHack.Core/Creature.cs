@@ -1,5 +1,4 @@
 using System.Linq;
-using UnicornHack.Generation;
 using UnicornHack.Utils;
 
 namespace UnicornHack
@@ -80,12 +79,16 @@ namespace UnicornHack
                 return true;
             }
 
-            return ability.Activate(new AbilityActivationContext
+            var context = new AbilityActivationContext
             {
                 Activator = this,
                 Target = victim,
                 IsAttack = true
-            });
+            };
+            using (context)
+            {
+                return ability.Activate(context);
+            }
         }
 
         private bool TryMoveToPlayerCharacter()

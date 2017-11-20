@@ -21,8 +21,11 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            (abilityContext.Target as Actor)?.ChangeCurrentHP(Amount);
-            abilityContext.AppliedEffects.Add(new Healed(abilityContext) {Amount = Amount});
+            if (abilityContext.Target is Actor actor)
+            {
+                actor.ChangeCurrentHP(Amount);
+                abilityContext.Add(new Healed(abilityContext) { Amount = Amount });
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Utils;
 
 namespace UnicornHack
 {
@@ -14,7 +15,7 @@ namespace UnicornHack
 
         public virtual short Capacity { get; set; }
 
-        public ICollection<Item> Items { get; } = new HashSet<Item>();
+        public ObservableSnapshotHashSet<Item> Items { get; } = new ObservableSnapshotHashSet<Item>();
         IEnumerable<Item> IItemLocation.Items => Items;
         public virtual int Quantity => Items.Count;
         protected virtual bool CanContainStacks => true;

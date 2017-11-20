@@ -19,7 +19,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.AppliedEffects.Add(new ItemStolen(abilityContext));
+            abilityContext.Add(new ItemStolen(abilityContext));
         }
     }
 }

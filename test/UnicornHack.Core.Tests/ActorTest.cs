@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Utils;
 using Xunit;
 
 namespace UnicornHack
@@ -44,7 +45,7 @@ namespace UnicornHack
             Assert.Equal(10, player.GetProperty<int>("strength"));
             Assert.Equal(6, player.GetProperty<int>("size"));
 
-            var changedRace = race.Instantiate(new AbilityActivationContext
+            var activationContext = new AbilityActivationContext
             {
                 Ability = new Ability(player.Game)
                 {
@@ -52,10 +53,13 @@ namespace UnicornHack
                     Activation = AbilityActivation.OnActivation
                 },
                 Target = player
-            });
-
-            player.ActiveEffects.Add(changedRace);
-            player.Add(changedRace.Ability);
+            };
+            using (activationContext)
+            {
+                var changedRace = race.Instantiate(activationContext);
+                player.ActiveEffects.Add(changedRace);
+                player.Add(changedRace.Ability);
+            }
 
             Assert.True(player.GetProperty<bool>("humanoidness"));
             Assert.Equal(20, player.GetProperty<int>("strength"));
@@ -66,7 +70,7 @@ namespace UnicornHack
                 {
                     Name = "hunker down",
                     Activation = AbilityActivation.WhileToggled,
-                    Effects = new HashSet<Effect>
+                    Effects = new ObservableSnapshotHashSet<Effect>
                     {
                         new ChangeProperty<bool>(player.Game)
                         {
@@ -96,7 +100,7 @@ namespace UnicornHack
                 {
                     Name = "burly man",
                     Activation = AbilityActivation.Always,
-                    Effects = new HashSet<Effect>
+                    Effects = new ObservableSnapshotHashSet<Effect>
                     {
                         new ChangeProperty<bool>(player.Game)
                         {
@@ -142,12 +146,12 @@ namespace UnicornHack
                 Type = ItemType.Potion,
                 EquipableSizes = SizeCategory.Medium | SizeCategory.Large,
                 EquipableSlots = EquipmentSlot.GraspSingleExtremity,
-                Abilities = new HashSet<Ability>
+                Abilities = new ObservableSnapshotHashSet<Ability>
                 {
                     new Ability(player.Game)
                     {
                         Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect>
+                        Effects = new ObservableSnapshotHashSet<Effect>
                         {
                             new ChangeProperty<bool>(player.Game)
                             {
@@ -175,7 +179,7 @@ namespace UnicornHack
                     new Ability(player.Game)
                     {
                         Activation = AbilityActivation.WhileEquipped,
-                        Effects = new HashSet<Effect>
+                        Effects = new ObservableSnapshotHashSet<Effect>
                         {
                             new ChangeProperty<bool>(player.Game)
                             {
@@ -200,7 +204,7 @@ namespace UnicornHack
                     new Ability(player.Game)
                     {
                         Activation = AbilityActivation.WhilePossessed,
-                        Effects = new HashSet<Effect>
+                        Effects = new ObservableSnapshotHashSet<Effect>
                         {
                             new ChangeProperty<bool>(player.Game)
                             {

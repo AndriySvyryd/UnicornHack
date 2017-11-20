@@ -1,22 +1,75 @@
-﻿using UnicornHack.Data;
+﻿using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
+using UnicornHack.Data;
 using UnicornHack.Effects;
-using UnicornHack.Services;
 
 namespace UnicornHack.Models.GameHubModels
 {
-    public class CompactPlayerRace
+    public static class CompactPlayerRace
     {
-        public object[] Properties { get; set; }
-
-        public static CompactPlayerRace Serialize(ChangedRace race, GameDbContext context, GameServices services)
-            => new CompactPlayerRace
+        public static List<object> Serialize(AppliedEffect raceEffect, EntityState? state, SerializationContext context)
+        {
+            var race = (ChangedRace)raceEffect;
+            List<object> properties;
+            switch (state)
             {
-                Properties = new object[]
+                case null:
+                case EntityState.Added:
                 {
-                    race.Name,
-                    race.XPLevel,
-                    race.IsLearning
+                    properties = state == null
+                        ? new List<object>(5)
+                        : new List<object>(6) {state};
+                    properties.Add(race.Id);
+                    properties.Add(race.Name);
+                    properties.Add(race.XPLevel);
+                    properties.Add(race.XP);
+                    properties.Add(race.NextLevelXP);
+                    return properties;
                 }
-            };
+                case EntityState.Deleted:
+                    return new List<object> {state, race.Id};
+            }
+
+            properties = new List<object> {state, race.Id};
+
+            var raceEntry = context.Context.Entry(race);
+            var i = 1;
+
+            if (raceEntry.State != EntityState.Unchanged)
+            {
+                var name = raceEntry.Property(nameof(ChangedRace.Name));
+                if (name.IsModified)
+                {
+                    properties.Add(i);
+                    properties.Add(race.Name);
+                }
+
+                i++;
+                var xpLevel = raceEntry.Property(nameof(ChangedRace.XPLevel));
+                if (xpLevel.IsModified)
+                {
+                    properties.Add(i);
+                    properties.Add(race.XPLevel);
+                }
+
+                i++;
+                var xp = raceEntry.Property(nameof(ChangedRace.XP));
+                if (xp.IsModified)
+                {
+                    properties.Add(i);
+                    properties.Add(race.XP);
+                }
+
+                i++;
+                var nextLevelXP = raceEntry.Property(nameof(ChangedRace.NextLevelXP));
+                if (nextLevelXP.IsModified)
+                {
+                    properties.Add(i);
+                    properties.Add(race.NextLevelXP);
+                }
+            }
+
+            return properties.Count > 2 ? properties : null;
+        }
     }
 }

@@ -10,9 +10,8 @@ namespace UnicornHack
         public string Name { get; set; }
         public string BaseName { get; set; }
         public virtual Material Material { get; set; }
-        public virtual ISet<Ability> Abilities { get; set; } = new HashSet<Ability>();
-
-        public ISet<AppliedEffect> ActiveEffects { get; set; } = new HashSet<AppliedEffect>();
+        public virtual ObservableSnapshotHashSet<Ability> Abilities { get; set; } = new ObservableSnapshotHashSet<Ability>();
+        public ObservableSnapshotHashSet<AppliedEffect> ActiveEffects { get; set; } = new ObservableSnapshotHashSet<AppliedEffect>();
 
         public SortedListAdapter<string, Property> Properties { get; set; } = new SortedListAdapter<string, Property>(
             new SortedList<string, Property>(StringComparer.Ordinal), e => e.Name);
@@ -117,16 +116,19 @@ namespace UnicornHack
         {
             Abilities.Add(ability.AddReference().Referenced);
             ability.Entity = this;
-            (this as IReferenceable)?.AddReference();
 
             if (ability.Activation == AbilityActivation.Always && !ability.IsActive)
             {
-                ability.Activate(new AbilityActivationContext
+                var context = new AbilityActivationContext
                 {
                     Activator = this,
                     Target = this,
                     AbilityTrigger = AbilityActivation.Always
-                });
+                };
+                using (context)
+                {
+                    ability.Activate(context);
+                }
             }
         }
 
@@ -135,7 +137,6 @@ namespace UnicornHack
             Abilities.Remove(ability);
             ability.RemoveReference();
             ability.Entity = null;
-            (this as IReferenceable)?.RemoveReference();
 
             if (ability.IsActive)
             {

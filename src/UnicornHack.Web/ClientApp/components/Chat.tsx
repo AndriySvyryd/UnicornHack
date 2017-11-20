@@ -1,10 +1,9 @@
 import * as React from 'react';
+import { action, observable } from 'mobx';
+import { observer } from 'mobx-react';
 
+@observer
 export class Chat extends React.Component<IChatProps, {}> {
-    shouldComponentUpdate(nextProps: IChatProps): boolean {
-        return this.props.messages !== nextProps.messages;
-    }
-
     render() {
         return (
             <div className="frame">
@@ -24,6 +23,7 @@ interface IChatProps {
     messages: IMessage[];
 }
 
+@observer
 class MessageLine extends React.Component<IMessage, {}> {
     render() {
         const line: React.ReactElement<any>[] = [];
@@ -67,34 +67,34 @@ export enum MessageType {
     Info
 }
 
-class InputForm extends React.Component<IInputFormProps, IChatState> {
+@observer
+class InputForm extends React.Component<IInputFormProps, {}> {
+    @observable
+    outgoingMessage: string;
+
     constructor(props: IInputFormProps) {
         super(props);
 
-        this.handleChange = this.handleChange.bind(this);
-        this.handleSubmit = this.handleSubmit.bind(this);
+        this.handleChange = action.bound(this.handleChange.bind(this));
+        this.handleSubmit = action.bound(this.handleSubmit.bind(this));
 
-        this.state = { outgoingMessage: '' };
-    }
-
-    shouldComponentUpdate(nextProps: IInputFormProps, nextState: IChatState): boolean {
-        return this.state.outgoingMessage !== nextState.outgoingMessage;
+        this.outgoingMessage = '';
     }
 
     handleChange(event: React.ChangeEvent<HTMLInputElement>) {
-        this.setState({ outgoingMessage: event.target.value });
+        this.outgoingMessage = event.target.value;
     }
 
     handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-        this.props.sendMessage(this.state.outgoingMessage);
-        this.setState({ outgoingMessage: '' });
+        this.props.sendMessage(this.outgoingMessage);
+        this.outgoingMessage = '';
         event.preventDefault();
     }
 
     render() {
         return (
             <form onSubmit={this.handleSubmit} autoComplete="off">
-                <input type="text" style={{ backgroundColor: 'black' }} value={this.state.outgoingMessage} onChange={this.handleChange} />
+                <input type="text" style={{ backgroundColor: 'black' }} value={this.outgoingMessage} onChange={this.handleChange} />
                 <input type="submit" style={{ backgroundColor: 'gray' }} value="Send" />
             </form>
         );
@@ -103,8 +103,4 @@ class InputForm extends React.Component<IInputFormProps, IChatState> {
 
 interface IInputFormProps {
     sendMessage: (outgoingMessage: string) => void;
-}
-
-interface IChatState {
-    outgoingMessage: string;
 }

@@ -19,7 +19,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.AppliedEffects.Add(new Blinded(abilityContext) {Duration = Duration});
+            abilityContext.Add(new Blinded(abilityContext) {Duration = Duration});
         }
     }
 }

@@ -21,7 +21,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.AppliedEffects.Add(new GoldStolen(abilityContext) {Amount = Amount});
+            abilityContext.Add(new GoldStolen(abilityContext) {Amount = Amount});
         }
     }
 }

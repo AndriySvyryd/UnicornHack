@@ -19,7 +19,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.AppliedEffects.Add(new Slimed(abilityContext) {Duration = Duration});
+            abilityContext.Add(new Slimed(abilityContext) {Duration = Duration});
         }
     }
 }

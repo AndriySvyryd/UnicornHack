@@ -19,7 +19,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.AppliedEffects.Add(new Stuck(abilityContext) {Duration = Duration});
+            abilityContext.Add(new Stuck(abilityContext) {Duration = Duration});
         }
     }
 }

@@ -1,68 +1,176 @@
+using System.Collections.Generic;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using UnicornHack.Data;
-using UnicornHack.Services;
+using UnicornHack.Data.Properties;
 using UnicornHack.Utils;
 
 // ReSharper disable RedundantAssignment
 namespace UnicornHack.Models.GameHubModels
 {
-    public class CompactItem
+    public static class CompactItem
     {
-        public object[] Properties { get; set; }
-        private static readonly int ItemPropertyCount = 8;
+        private const int ItemPropertyCount = 8;
 
-        public static CompactItem Serialize(Item item, GameDbContext context, GameServices services)
+        public static List<object> Serialize(Item item, EntityState? state, SerializationContext context)
         {
+            List<object> properties;
+            switch (state)
+            {
+                case null:
+                case EntityState.Added:
+                    switch (item)
+                    {
+                        case Gold gold:
+                            properties = state == null
+                                ? new List<object>(ItemPropertyCount + 1)
+                                : new List<object>(ItemPropertyCount + 2) {state};
+                            return Serialize(gold, properties, context);
+                        case Container container:
+                            properties = state == null
+                                ? new List<object>(ItemPropertyCount + 1)
+                                : new List<object>(ItemPropertyCount + 2) {state};
+                            return Serialize(container, properties, context);
+                        default:
+                            properties = state == null
+                                ? new List<object>(ItemPropertyCount)
+                                : new List<object>(ItemPropertyCount + 1) {state};
+                            return Serialize(item, properties, context);
+                    }
+
+                case EntityState.Deleted:
+                    return new List<object> {state, item.Id};
+            }
+
+            properties = new List<object>(2) {state};
+            var itemEntry = context.Context.Entry(item);
             switch (item)
             {
                 case Gold gold:
-                    return Serialize(gold, new object[ItemPropertyCount + 1], context, services);
+                    properties = Serialize(itemEntry, gold, properties, context);
+                    break;
                 case Container container:
-                    return Serialize(container, new object[ItemPropertyCount + 1], context, services);
+                    properties = Serialize(itemEntry, container, properties, context);
+                    break;
                 default:
-                    return Serialize(item, new object[ItemPropertyCount], context, services);
+                    properties = Serialize(itemEntry, item, properties, context);
+                    break;
             }
+
+            return properties.Count > 2 ? properties : null;
         }
 
-        private static CompactItem Serialize(Item item, object[] properties, GameDbContext context, GameServices services)
+        private static List<object> Serialize(Item item, List<object> properties, SerializationContext context)
         {
-            var i = 0;
-            properties[i++] = item.Id;
-            properties[i++] = item.BaseName;
-            properties[i++] = services.Language.ToString(item);
-            properties[i++] = item.LevelX;
-            properties[i++] = item.LevelY;
-            properties[i++] = (int)item.Type;
-            properties[i++] = item.EquippedSlot == null
-                ? null
-                : services.Language.ToString(item.EquippedSlot.Value, item.Actor, abbreviate: true);
+            properties.Add(item.Id);
+            properties.Add(item.BaseName);
 
-            // TODO: Get correct size
-            var slots = item.GetEquipableSlots(SizeCategory.Medium).GetNonRedundantFlags(removeComposites: true)
-                .Select(s => new object[] {(int)s, services.Language.ToString(s, item.Actor, abbreviate: true)})
+            var slots = item.GetEquipableSlots(context.Observer.GetProperty<int>(PropertyData.Size.Name))
+                .GetNonRedundantFlags(removeComposites: true)
+                .Select(s => new object[] {(int)s, context.Services.Language.ToString(s, item.Actor, abbreviate: true)})
                 .ToList();
-            properties[i++] = slots.Any() ? slots : null;
+            properties.Add(slots.Count > 0 ? slots : null);
+            properties.Add(context.Services.Language.ToString(item));
+            properties.Add(item.LevelX);
+            properties.Add(item.LevelY);
+            properties.Add((int)item.Type);
+            properties.Add(item.EquippedSlot == null
+                ? null
+                : context.Services.Language.ToString(item.EquippedSlot.Value, item.Actor, abbreviate: true));
 
-            return new CompactItem
+            return properties;
+        }
+
+        public static List<object> Serialize(
+            EntityEntry itemEntry, Item item, List<object> properties, SerializationContext context)
+        {
+            properties.Add(item.Id);
+
+            var observer = context.Observer;
+            var sizeChanges = CollectionChanges.SerializeCollection(
+                observer.Properties, CompactProperty.Serialize, p => p.Name == PropertyData.Size.Name, context);
+
+            var i = 2;
+            if (sizeChanges.Count > 0)
             {
-                Properties = properties
-            };
+                var slots = item.GetEquipableSlots(observer.GetProperty<int>(PropertyData.Size.Name))
+                    .GetNonRedundantFlags(removeComposites: true)
+                    .Select(s => new List<object>
+                    {
+                        (int)s,
+                        context.Services.Language.ToString(s, item.Actor, abbreviate: true)
+                    })
+                    .ToList();
+
+                properties.Add(i);
+                properties.Add(slots);
+            }
+
+            i++;
+            var name = itemEntry.Property(nameof(Item.Name));
+            var quantityModified = false;
+            if (item is Gold)
+            {
+                quantityModified = itemEntry.Property(nameof(Gold.Quantity)).IsModified;
+            }
+            else if (item is Container container)
+            {
+                var itemsChanges = CollectionChanges.SerializeCollection(
+                    container.Items, Serialize, context);
+
+                quantityModified = itemsChanges.Count > 0;
+            }
+
+            if (name.IsModified
+                || quantityModified)
+            {
+                properties.Add(i);
+                properties.Add(context.Services.Language.ToString(item));
+            }
+
+            if (itemEntry.State != EntityState.Unchanged)
+            {
+                i++;
+                var levelX = itemEntry.Property(nameof(Item.LevelX));
+                if (levelX.IsModified)
+                {
+                    properties.Add(i);
+                    properties.Add(item.LevelX);
+                }
+
+                i++;
+                var levelY = itemEntry.Property(nameof(Item.LevelY));
+                if (levelY.IsModified)
+                {
+                    properties.Add(i);
+                    properties.Add(item.LevelY);
+                }
+
+                i++;
+                var equippedSlot = itemEntry.Property(nameof(Item.EquippedSlot));
+                if (equippedSlot.IsModified)
+                {
+                    properties.Add(i);
+                    properties.Add(item.EquippedSlot == null
+                        ? null
+                        : context.Services.Language.ToString(item.EquippedSlot.Value, item.Actor, abbreviate: true));
+                }
+            }
+
+            return properties;
         }
 
-        private static CompactItem Serialize(Gold gold, object[] properties, GameDbContext context, GameServices services)
+        public static void Snapshot(Item item)
         {
-            var i = ItemPropertyCount;
-            properties[i++] = gold.Quantity;
-
-            return Serialize((Item)gold, properties, context, services);
-        }
-
-        private static CompactItem Serialize(Container container, object[] properties, GameDbContext context, GameServices services)
-        {
-            var i = ItemPropertyCount;
-            properties[i++] = container.Quantity;
-
-            return Serialize((Item)container, properties, context, services);
+            if (item is Container container)
+            {
+                container.Items.CreateSnapshot();
+                foreach (var containedItem in container.Items)
+                {
+                    Snapshot(containedItem);
+                }
+            }
         }
     }
 }

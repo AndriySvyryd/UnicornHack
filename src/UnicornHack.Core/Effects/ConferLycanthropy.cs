@@ -21,7 +21,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.AppliedEffects.Add(new LycanthropyConfered(abilityContext) {VariantName = VariantName});
+            abilityContext.Add(new LycanthropyConfered(abilityContext) {VariantName = VariantName});
         }
     }
 }

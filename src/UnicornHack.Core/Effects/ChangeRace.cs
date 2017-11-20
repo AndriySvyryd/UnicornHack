@@ -44,7 +44,7 @@ namespace UnicornHack.Effects
                     if (existingRace == null)
                     {
                         var changedRace = race.Instantiate(abilityContext);
-                        abilityContext.Target.ActiveEffects.Add(changedRace.AddReference().Referenced);
+                        changedRace.Add();
                         abilityContext.Target.Add(changedRace.Ability);
 
                         changedRace.XPLevel = 1;

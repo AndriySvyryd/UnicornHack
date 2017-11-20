@@ -53,14 +53,19 @@ namespace UnicornHack.Effects
         protected virtual void Delete()
         {
             Game.Repository.Delete(this);
+            SourceAbility.ActiveEffects.Remove(this);
+            SourceAbility?.RemoveReference();
+            SourceAbility = null;
+        }
+
+        public virtual void Add()
+        {
+            Entity.ActiveEffects.Add(AddReference().Referenced);
         }
 
         public virtual void Remove()
         {
             Entity.ActiveEffects.Remove(this);
-            SourceAbility.ActiveEffects.Remove(this);
-            SourceAbility?.RemoveReference();
-            SourceAbility = null;
             RemoveReference();
         }
     }

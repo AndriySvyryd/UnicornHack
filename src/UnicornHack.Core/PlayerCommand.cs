@@ -8,5 +8,6 @@ namespace UnicornHack
 
         public string Command { get; set; }
         public string Target { get; set; }
+        public string Target2 { get; set; }
     }
 }

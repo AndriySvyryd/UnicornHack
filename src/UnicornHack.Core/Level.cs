@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using UnicornHack.Generation.Map;
 using UnicornHack.Utils;
 
@@ -22,9 +21,13 @@ namespace UnicornHack
         public byte Width { get; set; }
         public Rectangle BoundingRectangle => new Rectangle(new Point(0, 0), Width, Height);
         public byte[] VisibleTerrain { get; set; }
+        public Dictionary<int, byte> VisibleTerrainChanges { get; set; } = new Dictionary<int, byte>();
         public byte[] VisibleNeighbours { get; set; }
+        public bool VisibleNeighboursChanged { get; set; }
         public byte[] Terrain { get; set; }
+        public Dictionary<int, byte> TerrainChanges { get; set; } = new Dictionary<int, byte>();
         public byte[] WallNeighbours { get; set; }
+        public Dictionary<int, byte> WallNeighboursChanges { get; set; } = new Dictionary<int, byte>();
         public int NextRoomId { get; set; }
         public int CurrentTick { get; set; }
         public SimpleRandom GenerationRandom { get; set; }
@@ -33,13 +36,11 @@ namespace UnicornHack
         public virtual int GameId { get; private set; }
 
         public virtual Game Game { get; set; }
-        public virtual ICollection<Room> Rooms { get; } = new HashSet<Room>();
-        public virtual ICollection<Item> Items { get; } = new HashSet<Item>();
-
+        public virtual ObservableSnapshotHashSet<Room> Rooms { get; } = new ObservableSnapshotHashSet<Room>();
+        public virtual ObservableSnapshotHashSet<Item> Items { get; } = new ObservableSnapshotHashSet<Item>();
         public virtual PriorityQueue<Actor> Actors { get; } = new PriorityQueue<Actor>(Actor.TickComparer.Instance);
-
-        public virtual ICollection<Connection> Connections { get; } = new HashSet<Connection>();
-        public virtual ICollection<Connection> IncomingConnections { get; } = new HashSet<Connection>();
+        public virtual ObservableSnapshotHashSet<Connection> Connections { get; } = new ObservableSnapshotHashSet<Connection>();
+        public virtual ObservableSnapshotHashSet<Connection> IncomingConnections { get; } = new ObservableSnapshotHashSet<Connection>();
         public virtual IEnumerable<Player> Players => Actors.OfType<Player>();
 
         public int[,] PointToIndex { get; private set; }
@@ -139,6 +140,16 @@ namespace UnicornHack
             // Increment each tag instance count on level, branch, game
         }
 
+        public void SetTerrain(Point point, byte feature)
+        {
+            var index = PointToIndex[point.X, point.Y];
+            Terrain[index] = feature;
+            if (TerrainChanges != null)
+            {
+                TerrainChanges[index] = feature;
+            }
+        }
+
         public void AddNeighbours(MapFeature feature, Point point)
         {
             switch (feature)
@@ -146,16 +157,17 @@ namespace UnicornHack
                 case MapFeature.Pool:
                 case MapFeature.RockFloor:
                 case MapFeature.StoneFloor:
-                    ModifyNeighbours(VisibleNeighbours, point, add: true);
+                    ModifyNeighbours(VisibleNeighbours, null, point, add: true);
+                    VisibleNeighboursChanged = true;
                     break;
                 case MapFeature.StoneArchway:
                 case MapFeature.StoneWall:
-                    ModifyNeighbours(WallNeighbours, point, add: true);
+                    ModifyNeighbours(WallNeighbours, WallNeighboursChanges, point, add: true);
                     break;
             }
         }
 
-        private void ModifyNeighbours(byte[] neighbours, Point point, bool add)
+        private void ModifyNeighbours(byte[] neighbours, Dictionary<int, byte> changes, Point point, bool add)
         {
             for (var directionIndex = 0; directionIndex < 8; directionIndex++)
             {
@@ -176,6 +188,11 @@ namespace UnicornHack
                 else
                 {
                     neighbours[newLocationIndex] &= (byte)~neighbourBit;
+                }
+
+                if (changes != null)
+                {
+                    changes[newLocationIndex] = neighbours[newLocationIndex];
                 }
             }
         }
@@ -303,14 +320,34 @@ namespace UnicornHack
 
         public void RecomputeVisibility(Point location, byte visibilityFalloff)
         {
-            Array.Clear(VisibleTerrain, 0, VisibleTerrain.Length);
+            var oldVisibleTerrain = VisibleTerrain;
+            VisibleTerrain = new byte[VisibleTerrain.Length];
             _fov.Compute(location, 24, visibilityFalloff);
+            DetectVisibilityChanges(oldVisibleTerrain);
         }
 
         public void RecomputeVisibility(Point location, Direction heading, byte primaryFOV, byte secondaryFOV)
         {
-            Array.Clear(VisibleTerrain, 0, VisibleTerrain.Length);
+            var oldVisibleTerrain = VisibleTerrain;
+            VisibleTerrain = new byte[VisibleTerrain.Length];
             _fov.Compute(location, heading, primaryFOV, 16, secondaryFOV, 8);
+            DetectVisibilityChanges(oldVisibleTerrain);
+        }
+
+        private void DetectVisibilityChanges(byte[] oldVisibleTerrain)
+        {
+            if (VisibleTerrainChanges != null)
+            {
+                VisibleTerrainChanges.Clear();
+                for (int i = 0; i < VisibleTerrain.Length; i++)
+                {
+                    var newValue = VisibleTerrain[i];
+                    if (newValue != oldVisibleTerrain[i])
+                    {
+                        VisibleTerrainChanges.Add(i, newValue);
+                    }
+                }
+            }
         }
 
         private bool BlocksLight(byte x, byte y, byte visibility, int rangeFalloff)

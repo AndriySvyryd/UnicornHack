@@ -23,7 +23,7 @@ namespace UnicornHack.Effects
 
             (abilityContext.Target as Actor)?.ChangeCurrentEP(-1 * Amount);
             (abilityContext.Activator as Actor)?.ChangeCurrentEP(Amount);
-            abilityContext.AppliedEffects.Add(new EnergyDrained(abilityContext) {Amount = Amount});
+            abilityContext.Add(new EnergyDrained(abilityContext) {Amount = Amount});
         }
     }
 }

@@ -23,7 +23,7 @@ namespace UnicornHack.Effects
             }
 
             (abilityContext.Target as Actor)?.ChangeCurrentHP(-1 * Damage);
-            abilityContext.AppliedEffects.Add(new Envenomed(abilityContext) {Damage = Damage});
+            abilityContext.Add(new Envenomed(abilityContext) {Damage = Damage});
         }
     }
 }

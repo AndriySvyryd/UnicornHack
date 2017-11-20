@@ -36,7 +36,7 @@
                 abilityContext.AbilityAction = AbilityAction.Punch;
             }
 
-            abilityContext.AppliedEffects.Add(new MeleeAttacked(abilityContext) { Weapon = Weapon?.AddReference().Referenced });
+            abilityContext.Add(new MeleeAttacked(abilityContext) { Weapon = Weapon?.AddReference().Referenced });
         }
 
         public int? WeaponId { get; set; }

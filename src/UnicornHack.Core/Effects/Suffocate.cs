@@ -19,7 +19,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.AppliedEffects.Add(new Suffocated(abilityContext) {Duration = Duration});
+            abilityContext.Add(new Suffocated(abilityContext) {Duration = Duration});
         }
     }
 }

@@ -19,7 +19,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.AppliedEffects.Add(new Teleported(abilityContext));
+            abilityContext.Add(new Teleported(abilityContext));
         }
     }
 }

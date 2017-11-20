@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using UnicornHack.Effects;
 using UnicornHack.Events;
@@ -7,6 +10,8 @@ namespace UnicornHack.Data
 {
     public class GameDbContext : DbContext
     {
+        private Func<GameDbContext, int, string, byte, IEnumerable<Level>> _loadLevel;
+
         // ReSharper disable once SuggestBaseTypeForParameter
         public GameDbContext(DbContextOptions<GameDbContext> options)
             : base(options)
@@ -28,6 +33,10 @@ namespace UnicornHack.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // TODO: Derive entity classes from NotificationEntity and
+            // implement INotifyCollectionChanged on PriorityQueue and SortedListAdapter
+            //modelBuilder.HasChangeTrackingStrategy(ChangeTrackingStrategy.ChangingAndChangedNotificationsWithOriginalValues);
+
             modelBuilder.Entity<Branch>(eb =>
             {
                 eb.HasKey(b => new {b.GameId, b.Name});
@@ -41,7 +50,10 @@ namespace UnicornHack.Data
                 eb.Ignore(l => l.Players);
                 eb.Ignore(l => l.IndexToPoint);
                 eb.Ignore(l => l.PointToIndex);
-                eb.Property(l => l.Terrain).IsRequired();
+                eb.Ignore(l => l.TerrainChanges);
+                eb.Ignore(l => l.WallNeighboursChanges);
+                eb.Ignore(l => l.VisibleTerrainChanges);
+                eb.Ignore(l => l.VisibleNeighboursChanged);
                 eb.HasKey(l => new {l.GameId, l.BranchName, l.Depth});
                 eb.HasMany(l => l.Connections)
                     .WithOne(s => s.Level)
@@ -317,6 +329,8 @@ namespace UnicornHack.Data
             modelBuilder.Entity<Envenomed>();
             modelBuilder.Entity<Freeze>();
             modelBuilder.Entity<Frozen>();
+            modelBuilder.Entity<GainXP>();
+            modelBuilder.Entity<GainedXP>();
             modelBuilder.Entity<Heal>();
             modelBuilder.Entity<Healed>();
             modelBuilder.Entity<Infect>();
@@ -472,6 +486,55 @@ namespace UnicornHack.Data
                     .HasForeignKey(e => new {e.GameId, e.ItemId})
                     .OnDelete(DeleteBehavior.Restrict);
             });
+        }
+
+        public void LoadLevel(int gameId, string branchName, byte depth)
+        {
+            if (_loadLevel == null)
+            {
+                _loadLevel = EF.CompileQuery((GameDbContext context, int id, string name, byte d) =>
+                    context.Levels
+                        .Include(l => l.Items).ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
+                        .Include(l => l.Items).ThenInclude(i => i.ActiveEffects).ThenInclude(e => e.SourceAbility)
+                        .Include(l => l.Items).ThenInclude(i => i.Properties)
+                        .Include(l => l.Items).ThenInclude<Level, Item, Container, IEnumerable<Item>>(c => c.Items)
+                        .ThenInclude(i => i.ActiveEffects).ThenInclude(e => e.SourceAbility)
+                        .Include(l => l.Items).ThenInclude<Level, Item, Container, IEnumerable<Item>>(c => c.Items)
+                        .ThenInclude(i => i.Properties)
+                        .Include(l => l.Items).ThenInclude<Level, Item, Container, IEnumerable<Item>>(c => c.Items)
+                        .ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
+                        .Include(l => l.Actors).ThenInclude(a => a.Inventory).ThenInclude(i => i.Abilities)
+                        .ThenInclude(a => a.Effects)
+                        .Include(l => l.Actors).ThenInclude(a => a.Inventory).ThenInclude(i => i.ActiveEffects)
+                        .ThenInclude(e => e.SourceAbility)
+                        .Include(l => l.Actors).ThenInclude(a => a.Inventory)
+                        .ThenInclude<Level, Item, Container, IEnumerable<Item>>(c => c.Items)
+                        .ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
+                        .Include(l => l.Actors).ThenInclude(a => a.Inventory)
+                        .ThenInclude<Level, Item, Container, IEnumerable<Item>>(c => c.Items)
+                        .ThenInclude(i => i.ActiveEffects).ThenInclude(e => e.SourceAbility)
+                        .Include(l => l.Actors).ThenInclude(a => a.Inventory)
+                        .ThenInclude<Level, Item, Container, IEnumerable<Item>>(c => c.Items)
+                        .ThenInclude(i => i.Properties)
+                        .Include(l => l.Actors).ThenInclude(a => a.Inventory).ThenInclude(i => i.Properties)
+                        .Include(l => l.Actors).ThenInclude(a => a.Abilities).ThenInclude(a => a.ActiveEffects)
+                        .Include(l => l.Actors).ThenInclude(a => a.Abilities).ThenInclude(a => a.Effects)
+                        .ThenInclude<Level, Effect, MeleeAttack, Item>(e => e.Weapon)
+                        .Include(l => l.Actors).ThenInclude(a => a.Abilities).ThenInclude(a => a.Effects)
+                        .ThenInclude<Level, Effect, RangeAttack, Item>(e => e.Weapon)
+                        .Include(l => l.Actors).ThenInclude(a => a.ActiveEffects).ThenInclude(e => e.SourceAbility)
+                        .Include(l => l.Actors).ThenInclude(a => a.Properties)
+                        .Include(l => l.Connections).ThenInclude(c => c.TargetBranch)
+                        .Include(l => l.IncomingConnections).ThenInclude(c => c.Level)
+                        .Include(l => l.Rooms)
+                        .Include(l => l.Branch)
+                        .Include(l => l.GenerationRandom)
+                        .Where(l => l.GameId == id && l.BranchName == name && l.Depth == d));
+            }
+
+            foreach (var _ in _loadLevel(this, gameId, branchName, depth))
+            {
+            }
         }
     }
 }

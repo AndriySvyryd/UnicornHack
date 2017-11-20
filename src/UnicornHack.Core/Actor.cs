@@ -27,8 +27,10 @@ namespace UnicornHack
         public const string AdditionalRangedAttackName = "additional ranged attack";
 
         public virtual Direction Heading { get; set; }
+
         // TODO: make these properties dynamic
         public Species Species { get; set; }
+
         public SpeciesClass SpeciesClass { get; set; }
         public Sex Sex { get; set; }
         public int MovementDelay { get; set; }
@@ -45,9 +47,10 @@ namespace UnicornHack
 
         public virtual int Gold { get; set; }
         IEnumerable<Item> IItemLocation.Items => Inventory;
-        public virtual ICollection<Item> Inventory { get; } = new HashSet<Item>();
+        public virtual ObservableSnapshotHashSet<Item> Inventory { get; } = new ObservableSnapshotHashSet<Item>();
 
-        private static readonly Dictionary<string, List<object>> PropertyListeners = new Dictionary<string, List<object>>();
+        private static readonly Dictionary<string, List<object>> PropertyListeners =
+            new Dictionary<string, List<object>>();
 
         static Actor()
         {
@@ -106,7 +109,7 @@ namespace UnicornHack
             {
                 Name = AttributedAbilityName,
                 Activation = AbilityActivation.Always,
-                Effects = new HashSet<Effect>
+                Effects = new ObservableSnapshotHashSet<Effect>
                 {
                     new ChangeProperty<int>(Game)
                     {
@@ -144,7 +147,7 @@ namespace UnicornHack
                 additionalMeleeAttack = new Ability(Game)
                 {
                     Name = AdditionalMeleeAttackName,
-                    Effects = new HashSet<Effect> { new MeleeAttack(Game), new PhysicalDamage(Game) }
+                    Effects = new ObservableSnapshotHashSet<Effect> {new MeleeAttack(Game), new PhysicalDamage(Game)}
                 };
 
                 Add(additionalMeleeAttack);
@@ -159,7 +162,7 @@ namespace UnicornHack
                     Activation = AbilityActivation.OnTarget,
                     // TODO: Calculate proper delay
                     Delay = 100,
-                    Effects = new HashSet<Effect>
+                    Effects = new ObservableSnapshotHashSet<Effect>
                     {
                         new MeleeAttack(Game),
                         new PhysicalDamage(Game),
@@ -179,7 +182,7 @@ namespace UnicornHack
                     Activation = AbilityActivation.OnTarget,
                     // TODO: Calculate proper delay
                     Delay = 100,
-                    Effects = new HashSet<Effect> {new MeleeAttack(Game), new PhysicalDamage(Game)}
+                    Effects = new ObservableSnapshotHashSet<Effect> {new MeleeAttack(Game), new PhysicalDamage(Game)}
                 };
 
                 Add(primaryMeleeAttack);
@@ -194,7 +197,7 @@ namespace UnicornHack
                     Activation = AbilityActivation.OnTarget,
                     // TODO: Calculate proper delay
                     Delay = 100,
-                    Effects = new HashSet<Effect> {new MeleeAttack(Game), new PhysicalDamage(Game)}
+                    Effects = new ObservableSnapshotHashSet<Effect> {new MeleeAttack(Game), new PhysicalDamage(Game)}
                 };
 
                 Add(secondaryMeleeAttack);
@@ -206,7 +209,7 @@ namespace UnicornHack
                 additionalRangedAttack = new Ability(Game)
                 {
                     Name = AdditionalRangedAttackName,
-                    Effects = new HashSet<Effect> { new RangeAttack(Game), new PhysicalDamage(Game) }
+                    Effects = new ObservableSnapshotHashSet<Effect> {new RangeAttack(Game), new PhysicalDamage(Game)}
                 };
 
                 Add(additionalRangedAttack);
@@ -221,7 +224,7 @@ namespace UnicornHack
                     Activation = AbilityActivation.OnTarget,
                     // TODO: Calculate proper delay
                     Delay = 100,
-                    Effects = new HashSet<Effect>
+                    Effects = new ObservableSnapshotHashSet<Effect>
                     {
                         new RangeAttack(Game),
                         new PhysicalDamage(Game),
@@ -241,7 +244,7 @@ namespace UnicornHack
                     Activation = AbilityActivation.OnTarget,
                     // TODO: Calculate proper delay
                     Delay = 100,
-                    Effects = new HashSet<Effect> {new RangeAttack(Game), new PhysicalDamage(Game)}
+                    Effects = new ObservableSnapshotHashSet<Effect> {new RangeAttack(Game), new PhysicalDamage(Game)}
                 };
 
                 Add(primaryRangedAttack);
@@ -256,7 +259,7 @@ namespace UnicornHack
                     Activation = AbilityActivation.OnTarget,
                     // TODO: Calculate proper delay
                     Delay = 100,
-                    Effects = new HashSet<Effect> {new RangeAttack(Game), new PhysicalDamage(Game)}
+                    Effects = new ObservableSnapshotHashSet<Effect> {new RangeAttack(Game), new PhysicalDamage(Game)}
                 };
 
                 Add(secondaryRangedAttack);
@@ -386,12 +389,15 @@ namespace UnicornHack
             }
         }
 
+        /// <summary>Gives an opportunity to perform actions.</summary>
         /// <returns>Returns <c>false</c> if the actor hasn't finished their turn.</returns>
         public abstract bool Act();
 
         public virtual void Sense(SensoryEvent @event)
         {
             @event.Game = Game;
+            @event.AddReference();
+            @event.RemoveReference();
         }
 
         public virtual SenseType CanSense(Entity target)
@@ -615,12 +621,16 @@ namespace UnicornHack
             foreach (var ability in item.Abilities.Where(
                 a => a.Activation == AbilityActivation.WhileEquipped && !a.IsActive))
             {
-                ability.Activate(new AbilityActivationContext
+                var context = new AbilityActivationContext
                 {
                     Activator = this,
                     Target = this,
                     AbilityTrigger = AbilityActivation.WhileEquipped
-                });
+                };
+                using (context)
+                {
+                    ability.Activate(context);
+                }
             }
 
             RecalculateWeaponAbilities();
@@ -682,12 +692,16 @@ namespace UnicornHack
 
                 foreach (var ability in splitItem.Abilities.Where(a => a.Activation == AbilityActivation.OnConsumption))
                 {
-                    ability.Activate(new AbilityActivationContext
+                    var context = new AbilityActivationContext
                     {
                         Activator = this,
                         Target = this,
                         AbilityTrigger = AbilityActivation.OnDigestion
-                    });
+                    };
+                    using (context)
+                    {
+                        ability.Activate(context);
+                    }
                 }
             }
 
@@ -790,12 +804,16 @@ namespace UnicornHack
             foreach (var ability in item.Abilities.Where(a
                 => a.Activation == AbilityActivation.WhilePossessed && !a.IsActive))
             {
-                ability.Activate(new AbilityActivationContext
+                var context = new AbilityActivationContext
                 {
                     Activator = this,
                     Target = this,
                     AbilityTrigger = AbilityActivation.WhilePossessed
-                });
+                };
+                using (context)
+                {
+                    ability.Activate(context);
+                }
             }
 
             return true;

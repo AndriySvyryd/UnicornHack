@@ -19,7 +19,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.AppliedEffects.Add(new Deafened(abilityContext) {Duration = Duration});
+            abilityContext.Add(new Deafened(abilityContext) {Duration = Duration});
         }
     }
 }

@@ -1,23 +1,44 @@
+using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 using UnicornHack.Data;
-using UnicornHack.Services;
 
 namespace UnicornHack.Models.GameHubModels
 {
-    public class CompactProperty
+    public static class CompactProperty
     {
-        public object[] Properties { get; set; }
-
-        public static CompactProperty Serialize(Property property, GameDbContext context, GameServices services)
+        public static List<object> Serialize(Property property, EntityState? state, SerializationContext context)
         {
-            var properties = new object[2];
-            var i = 0;
-            properties[i++] = property.Name;
-            properties[i] = services.Language.ToString(property);
-
-            return new CompactProperty
+            List<object> properties;
+            switch (state)
             {
-                Properties = properties
-            };
+                case null:
+                case EntityState.Added:
+                    properties = state == null
+                        ? new List<object>(2)
+                        : new List<object>(3) {state};
+
+                    properties.Add(property.Name);
+                    properties.Add(context.Services.Language.ToString(property));
+                    return properties;
+                case EntityState.Deleted:
+                    return new List<object> {state, property.Name};
+            }
+
+            properties = new List<object> {state, property.Name};
+            var propertyEntry = context.Context.Entry(property);
+            var i = 1;
+
+            if (propertyEntry.State != EntityState.Unchanged)
+            {
+                var value = propertyEntry.Property("_currentValue");
+                if (value.IsModified)
+                {
+                    properties.Add(i);
+                    properties.Add(context.Services.Language.ToString(property));
+                }
+            }
+
+            return properties.Count > 2 ? properties : null;
         }
     }
 }

@@ -23,6 +23,9 @@ namespace UnicornHack.Generation.Map
 
         protected virtual void InitializeTerrain(Level level, DefiningMapFragment fragment)
         {
+            level.TerrainChanges = null;
+            level.WallNeighboursChanges = null;
+            level.VisibleTerrainChanges = null;
             if (fragment.DefaultTerrain != MapFeature.Default)
             {
                 for (var index = 0; index < level.Terrain.Length; index++)

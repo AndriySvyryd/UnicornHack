@@ -1,68 +1,16 @@
 ﻿import * as React from 'React';
-import { Level, MapFeature, DirectionFlags, ItemType } from '../transport/Model';
+import { observer } from 'mobx-react';
+import { Level, MapFeature, ItemType, Tile } from '../transport/Model';
 import { MapStyles, ITileStyle } from '../styles/MapStyles';
 
+@observer
 export class Map extends React.Component<IMapProps, {}> {
-    shouldComponentUpdate(nextProps: IMapProps): boolean {
-        return this.props !== nextProps;
-    }
-
     render() {
-        const rows = new Array<ITileProps[]>(this.props.level.height);
-        const styles = this.props.styles;
-        const terrain = this.props.level.terrain;
-        const wallNeighbours = this.props.level.wallNeighbours;
-        const visibleTerrain = this.props.level.visibleTerrain;
+        const level = this.props.level;
 
-        let i = 0;
-        for (let y = 0; y < this.props.level.height; y++) {
-            const row = new Array<ITileProps>(this.props.level.width);
-            rows[y] = row;
-            for (let x = 0; x < this.props.level.width; x++) {
-                const feature = terrain[i];
-                let glyph = styles.features[feature];
-                if (glyph === undefined) {
-                    if (feature === MapFeature.StoneWall) {
-                        const neighbours = wallNeighbours[i] & DirectionFlags.Cross;
-
-                        glyph = styles.walls[neighbours];
-                        if (glyph === undefined) {
-                            throw `Invalid wall neighbours: ${neighbours}`;
-                        }
-                    } else {
-                        throw `Map feature ${feature} not supported.`;
-                    }
-                }
-
-                row[x] = { glyph: glyph, visibility: visibleTerrain[i] };
-                i++;
-            }
-        }
-
-        this.props.level.connections.map(c => rows[c.levelY][c.levelX].glyph = styles.connections[c.isDown ? 1 : 0]);
-
-        this.props.level.items.map(t => {
-            const type = t.type & ~ItemType.Intricate & ~ItemType.Exotic;
-            const glyph = styles.items[type];
-            if (glyph === undefined) {
-                throw `Item type ${type} not supported.`;
-            }
-            return rows[t.levelY][t.levelX].glyph = glyph;
-        });
-
-        this.props.level.actors.map(a => {
-            let glyph = styles.actors[a.baseName];
-            if (glyph === undefined) {
-                // TODO: Add more creatures
-                //throw `Actor type ${a.baseName} not supported.`;
-                glyph = Object.assign({}, styles.actors['default'], { char: a.baseName[0] });
-            }
-            return rows[a.levelY][a.levelX].glyph = glyph;
-        });
-
-        const map = new Array<React.ReactElement<any>>(rows.length);
-        for (let y = 0; y < rows.length; y++) {
-            map[y] = <Row row={rows[y]} key={y} />;
+        const map = new Array<React.ReactElement<any>>(level.height);
+        for (let y = 0; y < level.height; y++) {
+            map[y] = <MapRow row={level.tiles[y]} styles={this.props.styles} indexToPoint={level.indexToPoint} key={y} />;
         }
 
         return (<div className="mapContainer frame">
@@ -76,39 +24,71 @@ interface IMapProps {
     styles: MapStyles;
 }
 
-class Row extends React.Component<IRowProps, {}> {
-    shouldComponentUpdate(nextProps: IRowProps): boolean {
-        return this.props !== nextProps;
-    }
-
+@observer
+class MapRow extends React.Component<IRowProps, {}> {
     render() {
-        const row = this.props.row.map((t, i) =>
-            <Tile {...t} key={i} />
+        const row = this.props.row.map((t, x) =>
+            <MapTile tile={t} styles={this.props.styles} key={x} />
         );
         return (<div>{row}</div>);
     }
 }
 
 interface IRowProps {
-    row: ITileProps[];
+    row: Tile[];
+    styles: MapStyles;
+    indexToPoint: number[][];
 }
 
-class Tile extends React.Component<ITileProps, {}> {
-    shouldComponentUpdate(nextProps: ITileProps): boolean {
-        return this.props.glyph.char !== nextProps.glyph.char
-            || this.props.glyph.style !== nextProps.glyph.style
-            || this.props.visibility !== nextProps.visibility;
-    }
-
+@observer
+class MapTile extends React.Component<ITileProps, {}> {
     render() {
-        const opacity = 0.3 + ((this.props.visibility / 255) * 0.7);
-        return (<div className="map__row" style={Object.assign({ opacity: opacity, float: 'left' }, this.props.glyph.style)}>
-            {this.props.glyph.char}
+        const tile = this.props.tile;
+        const styles = this.props.styles;
+        let glyph: ITileStyle;
+        if (tile.actor != null) {
+            glyph = styles.actors[tile.actor.baseName];
+            if (glyph == undefined) {
+                glyph = Object.assign({}, styles.actors['default'], { char: tile.actor.baseName[0] });
+            }
+            // TODO: Add more creatures
+            if (glyph == undefined) {
+                throw `Actor type ${tile.actor.baseName} not supported.`;
+            }
+        } else if (tile.item != null) {
+            const type = tile.item.type & ~ItemType.Intricate & ~ItemType.Exotic;
+            glyph = styles.items[type];
+            if (glyph == undefined) {
+                throw `Item type ${type} not supported.`;
+            }
+        } else if (tile.connection != null) {
+            glyph = styles.connections[tile.connection.isDown ? 1 : 0];
+            if (glyph == undefined) {
+                throw `Connection type ${tile.connection.isDown} not supported.`;
+            }
+        } else {
+            const feature = tile.feature;
+            glyph = styles.features[feature];
+            if (glyph == undefined) {
+                if (feature === MapFeature.StoneWall) {
+                    glyph = styles.walls[tile.wallNeighbours];
+                    if (glyph == undefined) {
+                        throw `Invalid wall neighbours: ${tile.wallNeighbours}`;
+                    }
+                } else {
+                    throw `Map feature ${feature} not supported.`;
+                }
+            }
+        }
+
+        const opacity = 0.3 + ((tile.visibility / 255) * 0.7);
+        return (<div className="map__row" style={Object.assign({ opacity: opacity, float: 'left' }, glyph.style)}>
+            {glyph.char}
         </div>);
     }
 }
 
 interface ITileProps {
-    glyph: ITileStyle;
-    visibility: number;
+    tile: Tile;
+    styles: MapStyles;
 }

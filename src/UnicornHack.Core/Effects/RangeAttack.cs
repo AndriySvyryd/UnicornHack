@@ -36,7 +36,7 @@ namespace UnicornHack.Effects
                 abilityContext.AbilityAction = AbilityAction.Hit;
             }
 
-            abilityContext.AppliedEffects.Add(
+            abilityContext.Add(
                 new RangeAttacked(abilityContext) {Weapon = Weapon.AddReference().Referenced});
 
             if (!Weapon.GetProperty<bool>(PropertyData.InfiniteAmmo.Name)

@@ -1,4 +1,4 @@
-using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
@@ -25,28 +25,76 @@ namespace UnicornHack.Hubs
             _gameServices = gameServices;
         }
 
-        public Task SendMessage(string message) => Clients.All.InvokeAsync("ReceiveMessage", Context.User.Identity.Name, message);
+        public Task SendMessage(string message)
+            => Clients.All.InvokeAsync("ReceiveMessage", Context.User.Identity.Name, message);
 
-        public async Task<CompactLevel> GetState(string name)
-            => CompactLevel.Serialize((await FindOrCreateCharacterAsync(name)).Level, _dbContext, _gameServices);
+        public List<object> GetState(string name)
+        {
+            var player = FindOrCreateCharacter(name);
+            return CompactLevel.Serialize(
+                player.Level, EntityState.Added, 0, new SerializationContext(_dbContext, player, _gameServices));
+        }
 
         public async Task PerformAction(string name, string action, int? target, int? target2)
         {
-            var character = await FindOrCreateCharacterAsync(name);
+            var character = FindOrCreateCharacter(name);
+            CompactLevel.Snapshot(character.Level);
 
             character.NextAction = action;
             character.NextActionTarget = target;
             character.NextActionTarget2 = target2;
 
-            await TurnAsync(character);
-            await Clients.All.InvokeAsync("ReceiveState", CompactLevel.Serialize(character.Level, _dbContext, _gameServices));
+            var initialLevel = character.Level;
+            var previousTick = initialLevel.CurrentTick;
+
+            Turn(character);
+
+            _dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
+            var levelEntry = _dbContext.Entry(character.Level);
+            if (character.Level.TerrainChanges == null
+                ||character.Level.TerrainChanges.Count > 0)
+            {
+                levelEntry.Property(l => l.Terrain).IsModified = true;
+            }
+            if (character.Level.WallNeighboursChanges == null
+                || character.Level.WallNeighboursChanges.Count > 0)
+            {
+                levelEntry.Property(l => l.WallNeighbours).IsModified = true;
+            }
+            if (character.Level.VisibleTerrainChanges == null
+                || character.Level.VisibleTerrainChanges.Count > 0)
+            {
+                levelEntry.Property(l => l.VisibleTerrain).IsModified = true;
+            }
+            if (character.Level.VisibleNeighboursChanged)
+            {
+                levelEntry.Property(l => l.VisibleNeighbours).IsModified = true;
+            }
+
+            _dbContext.ChangeTracker.DetectChanges();
+            _dbContext.SaveChanges(acceptAllChangesOnSuccess: false);
+
+            var level = character.Level;
+            foreach (var player in level.Players)
+            {
+                var serializedLevel = CompactLevel.Serialize(
+                    level,
+                    level == initialLevel && character.Level.TerrainChanges != null ? EntityState.Modified : EntityState.Added,
+                    previousTick,
+                    new SerializationContext(_dbContext, player, _gameServices));
+
+                // TODO: only send to clients watching the current player
+                await Clients.All.InvokeAsync("ReceiveState", serializedLevel);
+            }
+
+            _dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
+            _dbContext.ChangeTracker.AcceptAllChanges();
         }
 
         #region Game managment
 
-        private async Task TurnAsync(Player character)
+        private void Turn(Player character)
         {
-            var level = character.Level;
             if (character.Game.NextPlayerTick == character.NextActionTick)
             {
                 character.Game.Turn();
@@ -57,20 +105,9 @@ namespace UnicornHack.Hubs
                 // Show the last events before death
                 character.Act();
             }
-
-            // TODO: Move this
-            _dbContext.Entry(level).Property(l => l.VisibleTerrain).IsModified = true;
-
-            await _dbContext.SaveChangesAsync();
-
-            // Level is null if the character is dead
-            if (!character.IsAlive)
-            {
-                character.Level = level;
-            }
         }
 
-        private async Task<Player> FindOrCreateCharacterAsync(string name)
+        private Player FindOrCreateCharacter(string name)
         {
             var character = FindCharacter(name);
             if (character == null)
@@ -78,7 +115,7 @@ namespace UnicornHack.Hubs
                 int seed;
                 using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
                 {
-                    byte[] rngData = new byte[4];
+                    var rngData = new byte[4];
                     rng.GetBytes(rngData);
 
                     seed = rngData[0] | rngData[1] << 8 | rngData[2] << 16 | rngData[3] << 24;
@@ -87,11 +124,11 @@ namespace UnicornHack.Hubs
                 var game = new Game
                 {
                     InitialSeed = seed,
-                    Random = new SimpleRandom { Seed = seed }
+                    Random = new SimpleRandom {Seed = seed}
                 };
                 Initialize(game);
                 _dbContext.Games.Add(game);
-                await _dbContext.SaveChangesAsync();
+                _dbContext.SaveChanges();
 
                 var surfaceBranch = BranchDefinition.Loader.Get("surface").Instantiate(game);
                 var surfaceLevel = new Level(surfaceBranch, depth: 1, seed: seed);
@@ -99,7 +136,7 @@ namespace UnicornHack.Hubs
                 var initialLevel = surfaceLevel.Connections.Single().TargetLevel;
                 initialLevel.EnsureGenerated();
                 var upStairs = initialLevel.Connections.First(c => c.TargetBranchName == surfaceBranch.Name);
-                character = new Player(initialLevel, upStairs.LevelX, upStairs.LevelY) { Name = name };
+                character = new Player(initialLevel, upStairs.LevelX, upStairs.LevelY) {Name = name};
 
                 character.WriteLog(game.Services.Language.Welcome(character), character.Level.CurrentTick);
                 _dbContext.Characters.Add(character);
@@ -107,58 +144,71 @@ namespace UnicornHack.Hubs
                 // Avoid cyclical dependency
                 var attack = character.DefaultAttack;
                 character.DefaultAttack = null;
-                await _dbContext.SaveChangesAsync();
+                _dbContext.SaveChanges();
 
                 character.DefaultAttack = attack;
-                await TurnAsync(character);
-                await _dbContext.SaveChangesAsync();
+                _dbContext.Entry(character).Property("DefaultAttackId").CurrentValue = attack.Id;
+                Turn(character);
+
+                _dbContext.SaveChanges();
             }
 
             if (!character.IsAlive
                 && !character.Game.Players.Any(pc => pc.IsAlive))
             {
                 Clean(character.Game);
-                _dbContext.SaveChanges();
-                character = await FindOrCreateCharacterAsync(name);
+                character = FindOrCreateCharacter(name);
             }
 
             return character;
         }
 
-        // TODO: make async
         private Player FindCharacter(string name)
         {
             var character = _dbContext.Characters
-                .FirstOrDefault(c => c.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+                .Include(c => c.Game.Random)
+                .Include(c => c.Skills)
+                //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ActorMoveEvent, Actor>(e => e.Mover)
+                //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ActorMoveEvent, Actor>(e => e.Movee)
+                .Include(c => c.SensedEvents)
+                .ThenInclude<Player, SensoryEvent, AttackEvent, IEnumerable<AppliedEffect>>(e => e.AppliedEffects)
+                //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, AttackEvent, Actor>(e => e.Attacker)
+                .Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, AttackEvent, Actor>(e => e.Victim)
+                .Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, DeathEvent, Actor>(e => e.Deceased)
+                //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, DeathEvent, Item>(e => e.Corpse)
+                //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemConsumptionEvent, Actor>(e => e.Consumer)
+                .Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemConsumptionEvent, Item>(e => e.Item)
+                //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemDropEvent, Actor>(e => e.Dropper)
+                //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemDropEvent, Item>(e => e.Item)
+                //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemPickUpEvent, Actor>(e => e.Picker)
+                //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemPickUpEvent, Item>(e => e.Item)
+                //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemEquipmentEvent, Actor>(e => e.Equipper)
+                //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemEquipmentEvent, Item>(e => e.Item)
+                //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemUnequipmentEvent, Actor>(e => e.Unequipper)
+                //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemUnequipmentEvent, Item>(e => e.Item)
+                .Include(c => c.Level)
+                .FirstOrDefault(c => c.Name == name);
 
-            if (character == null)
+            if (character?.Level == null)
             {
                 return null;
             }
 
-            _dbContext.Characters
-                .Include(c => c.Game.Random)
-                .Include(c => c.Log)
-                .Include(c => c.Abilities).ThenInclude(a => a.Effects)
-                .Include(c => c.ActiveEffects).ThenInclude(e => e.SourceAbility)
-                .Include(c => c.Properties)
-                .Include(c => c.Skills)
-                .Include(c => c.SensedEvents)
-                .Include(c => c.Level.Connections)
-                .Include(c => c.Level.IncomingConnections)
-                .Include(c => c.Level.Game)
-                .Include(c => c.Level.GenerationRandom)
-                .Where(c => c.GameId == character.GameId)
+            _dbContext.LogEntries
+                .Where(e => e.GameId == character.GameId && e.PlayerId == character.Id)
+                .OrderByDescending(e => e.Tick)
+                .ThenByDescending(e => e.Id)
+                .Take(10)
                 .Load();
-
-            if (character.Level == null)
-            {
-                return character;
-            }
 
             Initialize(character.Game);
 
-            LoadLevel(character.Level.GameId, character.Level.BranchName, character.Level.Depth);
+            _dbContext.LoadLevel(character.Level.GameId, character.Level.BranchName, character.Level.Depth);
+
+            //var item = character.Inventory.OfType<ItemStack>().First(s => s.Quantity > 3);
+            //var itemEntry = _dbContext.Entry(item);
+            //var snapshotValue = itemEntry.GetInfrastructure().GetRelationshipSnapshotValue(
+            //    itemEntry.Metadata.FindNavigation(nameof(Container.Items)));
 
             // Preload adjacent level
             var connection = character.Level.Connections.SingleOrDefault(s =>
@@ -166,41 +216,15 @@ namespace UnicornHack.Hubs
                 && s.LevelY == character.LevelY);
             if (connection != null)
             {
-                LoadLevel(connection.GameId, connection.TargetBranchName, connection.TargetLevelDepth);
+                _dbContext.LoadLevel(connection.GameId, connection.TargetBranchName, connection.TargetLevelDepth);
+
+                // TODO: Pregenerate all connected levels to ensure the order is deterministic
+                connection.TargetLevel.EnsureGenerated();
             }
-
-            // TODO: Pregenerate all connected levels to ensure the order
-            connection?.TargetLevel.EnsureGenerated();
-
-            LoadEvents(character);
 
             var gameId = character.GameId;
-            var loadedContainerIds = _dbContext.Set<Container>().Local.Select(c => c.Id).ToList();
-            _dbContext.Set<Container>()
-                .Include(c => c.Items).ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
-                .Where(i => i.GameId == gameId && loadedContainerIds.Contains(i.Id))
-                .Load();
-
-            var meleeAttacks = _dbContext.Set<MeleeAttack>().Local.Select(c => c.Id).ToList();
-            if (meleeAttacks.Any())
-            {
-                _dbContext.Set<MeleeAttack>()
-                    .Include(e => e.Weapon.Abilities).ThenInclude(a => a.Effects)
-                    .Where(e => e.GameId == gameId && meleeAttacks.Contains(e.Id))
-                    .Load();
-            }
-
-            var rangeAttacks = _dbContext.Set<RangeAttack>().Local.Select(c => c.Id).ToList();
-            if (rangeAttacks.Any())
-            {
-                _dbContext.Set<RangeAttack>()
-                    .Include(e => e.Weapon.Abilities).ThenInclude(a => a.Effects)
-                    .Where(e => e.GameId == gameId && rangeAttacks.Contains(e.Id))
-                    .Load();
-            }
-
             var addedAbilities = _dbContext.Set<AddedAbility>().Local.Select(c => c.Id).ToList();
-            if (addedAbilities.Any())
+            if (addedAbilities.Count > 0)
             {
                 _dbContext.Set<AddedAbility>()
                     .Include(a => a.Ability).ThenInclude(a => a.Effects)
@@ -209,7 +233,7 @@ namespace UnicornHack.Hubs
             }
 
             var addAbilities = _dbContext.Set<AddAbility>().Local.Select(c => c.Id).ToList();
-            if (addAbilities.Any())
+            if (addAbilities.Count > 0)
             {
                 _dbContext.Set<AddAbility>()
                     .Include(a => a.Ability).ThenInclude(a => a.Effects)
@@ -220,78 +244,6 @@ namespace UnicornHack.Hubs
             return character;
         }
 
-        private void LoadLevel(int gameId, string branchName, byte depth)
-        {
-            _dbContext.Levels
-                .Include(l => l.Items).ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
-                .Include(l => l.Items).ThenInclude(i => i.ActiveEffects).ThenInclude(i => i.SourceAbility)
-                .Include(l => l.Items).ThenInclude(i => i.Properties)
-                .Include(l => l.Actors).ThenInclude(a => a.Inventory).ThenInclude(i => i.Abilities)
-                .ThenInclude(a => a.Effects)
-                .Include(l => l.Actors).ThenInclude(a => a.Inventory).ThenInclude(i => i.ActiveEffects)
-                .ThenInclude(i => i.SourceAbility)
-                .Include(l => l.Actors).ThenInclude(a => a.Inventory).ThenInclude(i => i.Properties)
-                .Include(l => l.Actors).ThenInclude(a => a.Abilities).ThenInclude(a => a.Effects)
-                .Include(l => l.Actors).ThenInclude(a => a.ActiveEffects).ThenInclude(i => i.SourceAbility)
-                .Include(l => l.Actors).ThenInclude(a => a.Properties)
-                .Include(l => l.Connections).ThenInclude(c => c.TargetBranch)
-                .Include(l => l.IncomingConnections).ThenInclude(c => c.Level)
-                .Include(l => l.Rooms)
-                .Include(l => l.Branch)
-                .Include(l => l.Game)
-                .Include(l => l.GenerationRandom)
-                .Where(l => l.GameId == gameId && l.BranchName == branchName && l.Depth == depth)
-                .Load();
-        }
-
-        private void LoadEvents(Player character)
-        {
-            // TODO: Replace these with inline includes
-            var gameId = character.GameId;
-            var id = character.Id;
-            _dbContext.Set<ActorMoveEvent>()
-                .Where(e => e.GameId == gameId && e.SensorId == id)
-                .Include(e => e.Mover)
-                .Include(e => e.Movee)
-                .Load();
-            _dbContext.Set<AttackEvent>()
-                .Where(e => e.GameId == gameId && e.SensorId == id)
-                .Include(e => e.AppliedEffects)
-                .Include(e => e.Attacker)
-                .Include(e => e.Victim)
-                .Load();
-            _dbContext.Set<DeathEvent>()
-                .Where(e => e.GameId == gameId && e.SensorId == id)
-                .Include(e => e.Deceased)
-                .Include(e => e.Corpse)
-                .Load();
-            _dbContext.Set<ItemConsumptionEvent>()
-                .Where(e => e.GameId == gameId && e.SensorId == id)
-                .Include(e => e.Consumer)
-                .Include(e => e.Item)
-                .Load();
-            _dbContext.Set<ItemDropEvent>()
-                .Where(e => e.GameId == gameId && e.SensorId == id)
-                .Include(e => e.Dropper)
-                .Include(e => e.Item)
-                .Load();
-            _dbContext.Set<ItemPickUpEvent>()
-                .Where(e => e.GameId == gameId && e.SensorId == id)
-                .Include(e => e.Picker)
-                .Include(e => e.Item)
-                .Load();
-            _dbContext.Set<ItemEquipmentEvent>()
-                .Where(e => e.GameId == gameId && e.SensorId == id)
-                .Include(e => e.Equipper)
-                .Include(e => e.Item)
-                .Load();
-            _dbContext.Set<ItemUnequipmentEvent>()
-                .Where(e => e.GameId == gameId && e.SensorId == id)
-                .Include(e => e.Unequipper)
-                .Include(e => e.Item)
-                .Load();
-        }
-
         private void Initialize(Game game)
         {
             game.Services = _gameServices;
@@ -300,6 +252,13 @@ namespace UnicornHack.Hubs
 
         private void Clean(Game game)
         {
+            // Avoid cyclical dependency
+            foreach (var playerCharacter in game.Players)
+            {
+                playerCharacter.DefaultAttack = null;
+            }
+            _dbContext.SaveChanges();
+
             game = _dbContext.Games
                 .Include(g => g.Random)
                 .Include(g => g.Branches)
@@ -313,15 +272,8 @@ namespace UnicornHack.Hubs
                 .Include(g => g.SensoryEvents)
                 .Single(g => g.Id == game.Id);
 
-            _dbContext.Set<MeleeAttack>()
-                .Where(e => e.GameId == game.Id)
-                .Include(e => e.Weapon.Abilities).ThenInclude(a => a.Effects)
-                .Load();
-
             foreach (var playerCharacter in game.Players)
             {
-                LoadEvents(playerCharacter);
-
                 foreach (var log in playerCharacter.Log.ToList())
                 {
                     _dbContext.LogEntries.Remove(log);
@@ -347,9 +299,9 @@ namespace UnicornHack.Hubs
             {
                 _dbContext.SensoryEvents.Remove(sensoryEvent);
             }
-            foreach (var actor in game.Entities.ToList())
+            foreach (var entity in game.Entities.ToList())
             {
-                _dbContext.Entities.Remove(actor);
+                _dbContext.Entities.Remove(entity);
             }
             foreach (var level in game.Levels.ToList())
             {

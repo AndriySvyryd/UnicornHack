@@ -1,16 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnicornHack.Data.Items;
 using UnicornHack.Data.Properties;
 using UnicornHack.Effects;
 using UnicornHack.Events;
-using UnicornHack.Generation;
 using UnicornHack.Utils;
 
 namespace UnicornHack
 {
     public class Player : Actor
     {
+        private AbilityStatus _abilityStatus;
+
         public int MaxXPLevel { get; set; }
         public byte XPLevel => (byte)Races.Sum(r => r.XPLevel);
         public int XP => LearningRace?.XP ?? 0;
@@ -20,23 +22,19 @@ namespace UnicornHack
         public int UnspentSkillPoints { get; set; }
 
         public virtual IEnumerable<ChangedRace> Races
-            => ActiveEffects.OfType<ChangedRace>().OrderBy(r => r.XPLevel).ThenBy(r => r.Id);
+            => ActiveEffects.OfType<ChangedRace>().OrderByDescending(r => r.XPLevel).ThenByDescending(r => r.Id).ToList();
 
-        public virtual ChangedRace LearningRace => Races.FirstOrDefault();
-
+        public virtual ChangedRace LearningRace => Races.LastOrDefault();
         public virtual Ability DefaultAttack { get; set; }
-
-        public virtual int NextEventId { get; set; }
-        public virtual ICollection<SensoryEvent> SensedEvents { get; set; } = new HashSet<SensoryEvent>();
-
         public virtual int NextLogEntryId { get; set; }
-        public virtual ICollection<LogEntry> Log { get; set; } = new HashSet<LogEntry>();
-
+        public virtual ObservableSnapshotHashSet<LogEntry> Log { get; set; } = new ObservableSnapshotHashSet<LogEntry>();
         public virtual string NextAction { get; set; }
         public virtual int? NextActionTarget { get; set; }
         public virtual int? NextActionTarget2 { get; set; }
+        public virtual int NextEventId { get; set; }
 
-        private AbilityStatus _abilityStatus = AbilityStatus.Default;
+        public virtual ObservableSnapshotHashSet<SensoryEvent> SensedEvents { get; set; }
+            = new ObservableSnapshotHashSet<SensoryEvent>();
 
         public Player()
         {
@@ -46,29 +44,37 @@ namespace UnicornHack
         {
             BaseName = "player";
 
-            new Ability(Game)
+            var defaultRaceAbility = new Ability(Game)
             {
                 Name = "become human",
                 Activation = AbilityActivation.OnActivation,
-                Effects = new HashSet<Effect> {new ChangeRace(Game) {RaceName = "human"}}
-            }.Activate(
-                new AbilityActivationContext
-                {
-                    Target = this
-                });
+                Effects = new ObservableSnapshotHashSet<Effect> {new ChangeRace(Game) {RaceName = "human"}}
+            };
+            var context = new AbilityActivationContext
+            {
+                Target = this
+            };
+            using (context)
+            {
+                defaultRaceAbility.Activate(context);
+            }
+            defaultRaceAbility.IsUsable = false;
 
             Skills = new Skills();
             RecalculateWeaponAbilities();
 
-            ItemVariant.Loader.Get("potion of healing").Instantiate(this, quantity: 3);
-            ItemVariant.Loader.Get("mail armor").Instantiate(this);
-            ItemVariant.Loader.Get("long sword").Instantiate(this);
-            ItemVariant.Loader.Get("dagger").Instantiate(this);
-            ItemVariant.Loader.Get("shortbow").Instantiate(this);
-            ItemVariant.Loader.Get("throwing knives").Instantiate(this);
-            ItemVariant.Loader.Get("fire staff").Instantiate(this);
-            ItemVariant.Loader.Get("freezing focus").Instantiate(this);
-            ItemVariant.Loader.Get("potion of ogreness").Instantiate(this);
+            ItemVariantData.PotionOfHealing.Instantiate(this);
+            ItemVariantData.MailArmor.Instantiate(this);
+            ItemVariantData.LongSword.Instantiate(this);
+            ItemVariantData.Dagger.Instantiate(this);
+            ItemVariantData.ShortBow.Instantiate(this);
+            ItemVariantData.ThrowingKnives.Instantiate(this);
+            ItemVariantData.FireStaff.Instantiate(this);
+            ItemVariantData.FreezingFocus.Instantiate(this);
+            ItemVariantData.PotionOfOgreness.Instantiate(this);
+            ItemVariantData.PotionOfElfness.Instantiate(this);
+            ItemVariantData.PotionOfDwarfness.Instantiate(this);
+            ItemVariantData.PotionOfExperience.Instantiate(this, quantity: 5);
         }
 
         public void AddXP(int xp)
@@ -82,14 +88,16 @@ namespace UnicornHack
             race.XP += xp;
             if (race.XP >= race.NextLevelXP)
             {
-                race.XP -= race.NextLevelXP;
+                var leftoverXP = race.XP - race.NextLevelXP;
+                race.XP = 0;
                 race.XPLevel++;
-                // TODO: Trigger abilities
+                // TODO: Trigger abilities and fire an event
                 if (XPLevel > MaxXPLevel)
                 {
                     MaxXPLevel = XPLevel;
                 }
                 race.UpdateNextLevelXP();
+                AddXP(leftoverXP);
             }
         }
 
@@ -111,7 +119,8 @@ namespace UnicornHack
                 var techniqueSkill = Skills.OneHanded;
                 var weapon = secondaryMeleeAttack.Effects.OfType<MeleeAttack>().Single().Weapon;
                 var weaponSkill = GetMeleeSkill(weapon);
-                secondaryMeleeAttack.Effects.OfType<PhysicalDamage>().Single().Damage = techniqueSkill + weaponSkill ?? GetWeightDamage(weapon);
+                secondaryMeleeAttack.Effects.OfType<PhysicalDamage>().Single().Damage =
+                    techniqueSkill + weaponSkill ?? GetWeightDamage(weapon);
                 if (weaponSkill != null)
                 {
                     DefaultAttack = secondaryMeleeAttack;
@@ -126,7 +135,8 @@ namespace UnicornHack
                     ? Skills.TwoHanded
                     : Skills.OneHanded;
                 var weaponSkill = GetMeleeSkill(weapon);
-                primaryMeleeAttack.Effects.OfType<PhysicalDamage>().Single().Damage = techniqueSkill + weaponSkill ?? GetWeightDamage(weapon);
+                primaryMeleeAttack.Effects.OfType<PhysicalDamage>().Single().Damage =
+                    techniqueSkill + weaponSkill ?? GetWeightDamage(weapon);
                 if (weaponSkill != null)
                 {
                     DefaultAttack = primaryMeleeAttack;
@@ -272,6 +282,17 @@ namespace UnicornHack
             // TODO: add option to stop here and display current state
             // even if user already provided the next action / cannot perform an action
 
+            foreach (var @event in SensedEvents.OrderBy(e => e.EventOrder).ThenBy(e => e.Id).ToList())
+            {
+                var logEntry = GetLogEntry(@event);
+                if (logEntry != null)
+                {
+                    WriteLog(logEntry, @event.Tick);
+                }
+                SensedEvents.Remove(@event);
+                @event.RemoveReference();
+            }
+
             var initialTick = NextActionTick;
             if (IsAlive)
             {
@@ -349,17 +370,6 @@ namespace UnicornHack
                 }
             }
 
-            foreach (var @event in SensedEvents.OrderBy(e => e.EventOrder).ThenBy(e => e.Id).ToList())
-            {
-                var logEntry = GetLogEntry(@event);
-                if (logEntry != null)
-                {
-                    WriteLog(logEntry, @event.Tick);
-                }
-                SensedEvents.Remove(@event);
-                @event.RemoveReference();
-            }
-
             return initialTick != NextActionTick;
         }
 
@@ -409,23 +419,27 @@ namespace UnicornHack
                 _abilityStatus = AbilityStatus.BeingApplied;
             }
 
-            var result = DefaultAttack.Activate(new AbilityActivationContext
+            var context = new AbilityActivationContext
             {
                 Activator = this,
                 Target = actor,
                 IsAttack = true
-            });
-
-            if (_abilityStatus == AbilityStatus.BeingApplied)
+            };
+            using (context)
             {
-                _abilityStatus = AbilityStatus.Default;
-            }
-            else if(_abilityStatus == AbilityStatus.Invalid)
-            {
-                RecalculateWeaponAbilities();
-            }
+                var result = DefaultAttack.Activate(context);
 
-            return result;
+                if (_abilityStatus == AbilityStatus.BeingApplied)
+                {
+                    _abilityStatus = AbilityStatus.Default;
+                }
+                else if (_abilityStatus == AbilityStatus.Invalid)
+                {
+                    RecalculateWeaponAbilities();
+                }
+
+                return result;
+            }
         }
 
         public virtual bool Drop(Item item)

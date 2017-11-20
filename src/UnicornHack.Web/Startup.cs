@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SpaServices.Webpack;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using UnicornHack.Data;
@@ -23,17 +25,20 @@ namespace UnicornHack
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services
-                .AddDbContext<GameDbContext>(options =>
-                    options.EnableSensitiveDataLogging()
-                        .UseSqlServer(Configuration.GetConnectionString(name: "DefaultConnection")));
+            services.AddSingleton<ILanguageService, EnglishLanguageService>();
+            services.AddSingleton<GameServices>();
+
+            services.AddEntityFrameworkSqlServer();
+            services.AddDbContextPool<GameDbContext>((p, options) =>
+                options.UseSqlServer(Configuration.GetConnectionString(name: "DefaultConnection"))
+                    .UseInternalServiceProvider(p)
+                    .EnableSensitiveDataLogging()
+                    .ConfigureWarnings(w => w.Default(WarningBehavior.Throw)
+                        .Log(CoreEventId.SensitiveDataLoggingEnabledWarning)));
 
             services.AddMvc();
 
             services.AddSignalR();
-
-            services.AddSingleton<ILanguageService, EnglishLanguageService>();
-            services.AddSingleton<GameServices>();
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)

@@ -29,7 +29,7 @@ namespace UnicornHack.Effects
             {
                 (abilityContext.Target as Actor)?.ChangeCurrentHP(-1 * Damage);
             }
-            abilityContext.AppliedEffects.Add(new Soaked(abilityContext) {Damage = Damage});
+            abilityContext.Add(new Soaked(abilityContext) {Damage = Damage});
         }
     }
 }

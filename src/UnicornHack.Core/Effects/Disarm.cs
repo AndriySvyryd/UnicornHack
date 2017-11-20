@@ -19,7 +19,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.AppliedEffects.Add(new Disarmed(abilityContext));
+            abilityContext.Add(new Disarmed(abilityContext));
         }
     }
 }

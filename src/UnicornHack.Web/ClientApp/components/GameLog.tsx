@@ -1,27 +1,27 @@
 ﻿import * as React from 'React';
+import { observer } from 'mobx-react';
 import { LogEntry } from '../transport/Model';
 
+@observer
 export class GameLog extends React.Component<IGameLogProps, {}> {
-    shouldComponentUpdate(nextProps: IGameLogProps): boolean {
-        return this.props.properties !== nextProps.properties;
-    }
-
     render() {
-        const messages = this.props.properties.map(l => <GameLogLine {...l} key={l.id} />);
+        const messages = Array.from(this.props.properties.values(),
+            l => <GameLogLine entry={l} key={l.id} />);
         return (<div className="frame">{messages}</div>);
     }
 }
 
 interface IGameLogProps {
-    properties: LogEntry[]
+    properties: Map<string, LogEntry>
 }
 
-export class GameLogLine extends React.Component<LogEntry, {}> {
-    shouldComponentUpdate(nextProps: LogEntry): boolean {
-        return false;
-    }
-
+@observer
+export class GameLogLine extends React.Component<IGameLogLineProps, {}> {
     render() {
-        return <div>{this.props.message}</div>;
+        return <div>{this.props.entry.message}</div>;
     }
+}
+
+interface IGameLogLineProps {
+    entry: LogEntry
 }

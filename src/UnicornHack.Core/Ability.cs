@@ -19,7 +19,6 @@ namespace UnicornHack
         public int GameId { get; private set; }
 
         public Game Game { get; set; }
-
         public virtual AbilityActivation Activation { get; set; }
         // TODO: Move/refactor this
         public virtual AbilityAction Action { get; set; }
@@ -35,10 +34,10 @@ namespace UnicornHack
         // TODO: Success condition
         // TODO: Activation condition
 
-        public virtual ISet<Effect> Effects { get; set; } = new HashSet<Effect>();
-        public ICollection<AppliedEffect> ActiveEffects { get; set; } = new HashSet<AppliedEffect>();
+        public virtual ObservableSnapshotHashSet<Effect> Effects { get; set; } = new ObservableSnapshotHashSet<Effect>();
+        public ObservableSnapshotHashSet<AppliedEffect> ActiveEffects { get; set; } = new ObservableSnapshotHashSet<AppliedEffect>();
 
-        public int EntityId { get; set; }
+        public int? EntityId { get; set; }
         public Entity Entity { get; set; }
 
         public Ability()
@@ -83,6 +82,11 @@ namespace UnicornHack
             }
 
             var activator = abilityContext.Activator;
+            var target = abilityContext.Target as Actor;
+            if (target?.IsAlive == false)
+            {
+                return false;
+            }
 
             if (pretend)
             {
@@ -147,12 +151,16 @@ namespace UnicornHack
                 foreach (var triggeredAbility in activator.Abilities.Where(
                     a => a.IsUsable && a.Activation == abilityContext.AbilityTrigger))
                 {
-                    triggeredAbility.Activate(new AbilityActivationContext
+                    var context = new AbilityActivationContext
                     {
                         Activator = abilityContext.Activator,
                         Target = abilityContext.Target,
                         IsAttack = abilityContext.IsAttack
-                    });
+                    };
+                    using (context)
+                    {
+                        triggeredAbility.Activate(context);
+                    }
                 }
             }
 

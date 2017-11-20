@@ -1,26 +1,29 @@
 ﻿import * as React from 'React';
+import { observer } from 'mobx-react';
 import { Property } from '../transport/Model';
 
+@observer
 export class PropertyList extends React.Component<IPropertyListProps, {}> {
-    shouldComponentUpdate(nextProps: IPropertyListProps): boolean {
-        return this.props.properties !== nextProps.properties;
-    }
-
     render() {
-        const abilities = this.props.properties.map(p => <PropertyLine property={p} key={p.name} />);
+        const abilities: Array<Object> = [];
+        const values = this.props.properties.values();
+        let v = values.next();
+        while (!v.done) {
+            if (v.value.displayName !== "") {
+                abilities.push(<PropertyLine property={v.value} key={v.value.name} />);
+            }
+            v = values.next();
+        }
         return (<div className="frame">{abilities}</div>);
     }
 }
 
 interface IPropertyListProps {
-    properties: Property[]
+    properties: Map<string, Property>
 }
 
+@observer
 export class PropertyLine extends React.Component<IPropertyLineProps, {}> {
-    shouldComponentUpdate(nextProps: IPropertyLineProps): boolean {
-        return this.props.property.displayName !== nextProps.property.displayName;
-    }
-
     render() {
         return <div>{this.props.property.displayName}</div>;
     }

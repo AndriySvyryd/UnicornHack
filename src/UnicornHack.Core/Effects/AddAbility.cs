@@ -24,7 +24,7 @@ namespace UnicornHack.Effects
                 Duration = Duration,
                 Ability = Ability.Instantiate(Game).AddReference().Referenced
             };
-            abilityContext.Target.ActiveEffects.Add(newEffect.AddReference().Referenced);
+            newEffect.Add();
             abilityContext.Target.Add(newEffect.Ability);
         }
 

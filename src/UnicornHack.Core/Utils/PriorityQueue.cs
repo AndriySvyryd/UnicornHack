@@ -3,9 +3,10 @@ using System.Collections.Generic;
 
 namespace UnicornHack.Utils
 {
-    public class PriorityQueue<T> : ICollection<T>
+    public class PriorityQueue<T> : ISnapshotableCollection<T>
     {
         private readonly List<T> _list = new List<T>();
+        private HashSet<T> _snapshot;
         private readonly IComparer<T> _comparer;
 
         public PriorityQueue() : this(Comparer<T>.Default, capacity: 0)
@@ -50,6 +51,22 @@ namespace UnicornHack.Utils
         }
 
         public int Count => _list.Count;
+        public virtual HashSet<T> Snapshot => _snapshot;
+
+        public virtual HashSet<T> CreateSnapshot()
+        {
+            if (_snapshot == null)
+            {
+                _snapshot = new HashSet<T>(_list);
+            }
+            else
+            {
+                _snapshot.Clear();
+                _snapshot.AddRange(_list);
+            }
+
+            return _snapshot;
+        }
 
         public int Push(T element)
         {
@@ -106,7 +123,7 @@ namespace UnicornHack.Utils
 
         private int BubbleUp(int position)
         {
-            do
+            while (true)
             {
                 if (position == 0)
                 {
@@ -121,14 +138,14 @@ namespace UnicornHack.Utils
 
                 SwitchElements(parentPosition, position);
                 position = parentPosition;
-            } while (true);
+            }
 
             return position;
         }
 
         private int BubbleDown(int position)
         {
-            do
+            while (true)
             {
                 var parentPosition = position;
                 var leftChildPosition = (position << 1) + 1;
@@ -149,7 +166,7 @@ namespace UnicornHack.Utils
                 }
 
                 SwitchElements(position, parentPosition);
-            } while (true);
+            }
 
             return position;
         }

@@ -10,6 +10,7 @@
     "strict": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
+    "experimentalDecorators": true,
     "types": [ "webpack-env" ]
   },
   "exclude": [

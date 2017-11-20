@@ -20,9 +20,10 @@ namespace UnicornHack
         public int? ContainerId { get; set; }
         public Container Container { get; set; }
 
-        public EquipmentSlot GetEquipableSlots(SizeCategory size)
+        public EquipmentSlot GetEquipableSlots(int size)
         {
-            if (EquipableSizes.HasFlag(size))
+            var category = GetSizeCategory(size);
+            if (EquipableSizes.HasFlag(category))
             {
                 return EquipableSlots;
             }
@@ -31,18 +32,18 @@ namespace UnicornHack
             if (EquipableSlots.HasFlag(EquipmentSlot.GraspBothExtremities) &&
                 EquipableSlots.HasFlag(EquipmentSlot.GraspSingleExtremity))
             {
-                if (size != SizeCategory.Tiny)
+                if (category != SizeCategory.Tiny)
                 {
-                    var smallerSize = (SizeCategory)((int)size >> 1);
+                    var smallerSize = (SizeCategory)((int)category >> 1);
                     if (EquipableSizes.HasFlag(smallerSize))
                     {
                         slots |= EquipmentSlot.GraspSingleExtremity;
                     }
                 }
 
-                if (size != SizeCategory.Gigantic)
+                if (category != SizeCategory.Gigantic)
                 {
-                    var biggerSize = (SizeCategory)((int)size << 1);
+                    var biggerSize = (SizeCategory)((int)category << 1);
                     if (EquipableSizes.HasFlag(biggerSize))
                     {
                         slots |= EquipmentSlot.GraspBothExtremities;
@@ -51,6 +52,29 @@ namespace UnicornHack
             }
 
             return slots;
+        }
+
+        private static SizeCategory GetSizeCategory(int size)
+        {
+            if (size <= 2)
+            {
+                return SizeCategory.Tiny;
+            }
+            if (size <= 4)
+            {
+                return SizeCategory.Small;
+            }
+            if (size <= 8)
+            {
+                return SizeCategory.Medium;
+            }
+            if (size <= 13)
+            {
+                return SizeCategory.Large;
+            }
+            return size <= 25
+                ? SizeCategory.Huge
+                : SizeCategory.Gigantic;
         }
 
         public Item()

@@ -1,28 +1,23 @@
 ﻿import * as React from 'React';
+import { observer } from 'mobx-react';
 import { Ability } from '../transport/Model';
 
+@observer
 export class AbilityBar extends React.Component<IAbilityBarProps, {}> {
-    shouldComponentUpdate(nextProps: IAbilityBarProps): boolean {
-        return this.props.abilities !== nextProps.abilities;
-    }
-
     render() {
-        const abilities = this.props.abilities.map(a => <AbilityLine ability={a} performAction={this.props.performAction} key={a.id} />);
+        const abilities = Array.from(this.props.abilities.values(),
+            a => <AbilityLine ability={a} performAction={this.props.performAction} key={a.id} />);
         return (<div className="frame">{abilities}</div>);
     }
 }
 
 interface IAbilityBarProps {
-    abilities: Ability[];
+    abilities: Map<string, Ability>;
     performAction: (action: string, target: (number | null), target2: (number | null)) => void;
 }
 
+@observer
 export class AbilityLine extends React.Component<IAbilityProps, {}> {
-    shouldComponentUpdate(nextProps: IAbilityProps): boolean {
-        return this.props.ability.id !== nextProps.ability.id
-            || this.props.ability.isDefault !== nextProps.ability.isDefault;
-    }
-
     render() {
         if (this.props.ability.isDefault) {
             return <div>{'*' + this.props.ability.name}</div>;

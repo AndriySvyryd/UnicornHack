@@ -24,7 +24,7 @@ namespace UnicornHack.Effects
             }
 
             (abilityContext.Target as Actor)?.ChangeCurrentHP(-1 * Damage);
-            abilityContext.AppliedEffects.Add(new Shocked(abilityContext) {Damage = Damage});
+            abilityContext.Add(new Shocked(abilityContext) {Damage = Damage});
         }
     }
 }

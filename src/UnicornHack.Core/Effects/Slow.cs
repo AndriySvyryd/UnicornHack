@@ -19,7 +19,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.AppliedEffects.Add(new Slowed(abilityContext) {Duration = Duration});
+            abilityContext.Add(new Slowed(abilityContext) {Duration = Duration});
         }
     }
 }
