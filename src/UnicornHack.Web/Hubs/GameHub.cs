@@ -205,11 +205,6 @@ namespace UnicornHack.Hubs
 
             _dbContext.LoadLevel(character.Level.GameId, character.Level.BranchName, character.Level.Depth);
 
-            //var item = character.Inventory.OfType<ItemStack>().First(s => s.Quantity > 3);
-            //var itemEntry = _dbContext.Entry(item);
-            //var snapshotValue = itemEntry.GetInfrastructure().GetRelationshipSnapshotValue(
-            //    itemEntry.Metadata.FindNavigation(nameof(Container.Items)));
-
             // Preload adjacent level
             var connection = character.Level.Connections.SingleOrDefault(s =>
                 s.LevelX == character.LevelX

@@ -4,7 +4,6 @@ import 'url-search-params-polyfill';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as mobx from 'mobx';
-//import DevTools from 'mobx-react-devtools'
 import { Game } from './components/Game';
 
 function renderApp() {
@@ -18,10 +17,7 @@ function renderApp() {
     const playerName = new URLSearchParams(paramString.slice(0, nextParamIndex)).get("Name") || '';
     const baseUrl = document.getElementsByTagName('base')[0].getAttribute('href')!;
     ReactDOM.render(
-        <div>
-            {/*<DevTools />*/}
-            <Game playerName={playerName} baseUrl={baseUrl} />
-        </div>,
+        <Game playerName={playerName} baseUrl={baseUrl} />,
         document.getElementById('react-app')
     );
 }
