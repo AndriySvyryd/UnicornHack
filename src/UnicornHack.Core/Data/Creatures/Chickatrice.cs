@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,52 +13,49 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Cockatrice,
             SpeciesClass = SpeciesClass.MagicalBeast,
             MovementDelay = 300,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Bite,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Touch,
-                        Timeout = 5,
-                        Effects = new HashSet<Effect> {new Stone()}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnMeleeHit,
-                        Effects = new HashSet<Effect> {new Stone()}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new Stone()}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Bite,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
-            SimpleProperties =
-                new HashSet<string>
+                new AbilityDefinition
                 {
-                    "animal body",
-                    "infravisibility",
-                    "handlessness",
-                    "singular inventory",
-                    "stoning resistance"
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Touch,
+                    Timeout = 5,
+                    Effects = new HashSet<Effect> {new Stone()}
                 },
-            ValuedProperties =
-                new Dictionary<string, object>
+                new AbilityDefinition
                 {
-                    {"poison resistance", 3},
-                    {"size", 1},
-                    {"physical deflection", 12},
-                    {"magic resistance", 30},
-                    {"weight", 10}
+                    Activation = AbilityActivation.OnMeleeHit,
+                    Effects = new HashSet<Effect> {new Stone()}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnConsumption,
+                    Effects = new HashSet<Effect> {new Stone()}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "animal body",
+                "infravisibility",
+                "handlessness",
+                "singular inventory",
+                "stoning resistance"
+            },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {"poison resistance", 3},
+                {"size", 1},
+                {"physical deflection", 12},
+                {"magic resistance", 30},
+                {"weight", 10}
+            },
             InitialLevel = 4,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},
             NextStageName = "cockatrice",

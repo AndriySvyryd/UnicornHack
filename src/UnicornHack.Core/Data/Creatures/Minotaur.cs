@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -11,31 +12,30 @@ namespace UnicornHack.Data.Creatures
             Name = "minotaur",
             Species = Species.Minotaur,
             MovementDelay = 80,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Punch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 16}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Punch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 16}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Headbutt,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 9}}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Punch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 160}}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Punch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 160}}
+                },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Headbutt,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
+                }
+            },
             SimpleProperties = new HashSet<string> {"infravision", "infravisibility", "humanoidness"},
             ValuedProperties =
                 new Dictionary<string, object> {{"size", 8}, {"physical deflection", 14}, {"weight", 1500}},

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -11,41 +12,57 @@ namespace UnicornHack.Data.Creatures
             Name = "flesh golem",
             Species = Species.Golem,
             MovementDelay = 150,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Punch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 9}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Punch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 9}}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Punch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
                 },
-            SimpleProperties =
-                new HashSet<string>
+                new AbilityDefinition
                 {
-                    "sleep resistance",
-                    "breathlessness",
-                    "mindlessness",
-                    "humanoidness",
-                    "asexuality"
-                },
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Punch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "sleep resistance",
+                "breathlessness",
+                "mindlessness",
+                "humanoidness",
+                "asexuality"
+            },
             ValuedProperties = new Dictionary<string, object>
             {
-                {"poison resistance", 3},
-                {"regeneration", 3},
-                {"health point maximum", 40},
-                {"size", 8},
-                {"physical deflection", 11},
-                {"weight", 1400}
+                {
+                    "poison resistance",
+                    3
+                },
+                {
+                    "regeneration",
+                    3
+                },
+                {
+                    "hit point maximum",
+                    40
+                },
+                {
+                    "size",
+                    8
+                },
+                {
+                    "physical deflection",
+                    11
+                },
+                {
+                    "weight",
+                    1400
+                }
             },
             InitialLevel = 9
         };

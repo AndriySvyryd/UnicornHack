@@ -1,6 +1,6 @@
 ﻿import * as React from 'React';
 import { observer } from 'mobx-react';
-import { Level, MapFeature, ItemType, Tile } from '../transport/Model';
+import { Level, MapFeature, Tile } from '../transport/Model';
 import { MapStyles, ITileStyle } from '../styles/MapStyles';
 
 @observer
@@ -56,7 +56,7 @@ class MapTile extends React.Component<ITileProps, {}> {
                 throw `Actor type ${tile.actor.baseName} not supported.`;
             }
         } else if (tile.item != null) {
-            const type = tile.item.type & ~ItemType.Intricate & ~ItemType.Exotic;
+            const type = tile.item.type;
             glyph = styles.items[type];
             if (glyph == undefined) {
                 throw `Item type ${type} not supported.`;

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,59 +13,77 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Angel,
             SpeciesClass = SpeciesClass.Celestial,
             MovementDelay = 120,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnMeleeAttack,
-                        Action = AbilityAction.Modifier,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 3}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Punch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Punch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Spell,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new MagicalDamage {Damage = 7}}
-                    }
+                    Activation = AbilityActivation.OnMeleeAttack,
+                    Action = AbilityAction.Modifier,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
                 },
-            SimpleProperties =
-                new HashSet<string>
+                new AbilityDefinition
                 {
-                    "sleep resistance",
-                    "flight",
-                    "flight control",
-                    "infravisibility",
-                    "infravision",
-                    "invisibility detection",
-                    "humanoidness"
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Punch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
-            ValuedProperties =
-                new Dictionary<string, object>
+                new AbilityDefinition
                 {
-                    {"cold resistance", 3},
-                    {"electricity resistance", 3},
-                    {"poison resistance", 3},
-                    {"venom resistance", 3},
-                    {"physical deflection", 24},
-                    {"magic resistance", 55},
-                    {"weight", 1000}
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Punch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Spell,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new MagicalDamage {Damage = 70}}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "sleep resistance",
+                "flight",
+                "flight control",
+                "infravisibility",
+                "infravision",
+                "invisibility detection",
+                "humanoidness"
+            },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {
+                    "cold resistance",
+                    3
+                },
+                {
+                    "electricity resistance",
+                    3
+                },
+                {
+                    "poison resistance",
+                    3
+                },
+                {
+                    "venom resistance",
+                    3
+                },
+                {
+                    "physical deflection",
+                    24
+                },
+                {
+                    "magic resistance",
+                    55
+                },
+                {
+                    "weight",
+                    1000
+                }
+            },
             InitialLevel = 14,
             GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight {Multiplier = 4F}, Name = "hell"},
             PreviousStageName = "aleax",

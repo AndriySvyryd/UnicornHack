@@ -222,6 +222,7 @@ namespace UnicornHack.Hubs
             if (addedAbilities.Count > 0)
             {
                 _dbContext.Set<AddedAbility>()
+                    .Include(a => a.Ability).ThenInclude(a => a.Triggers)
                     .Include(a => a.Ability).ThenInclude(a => a.Effects)
                     .Where(a => a.GameId == gameId && addedAbilities.Contains(a.Id))
                     .Load();
@@ -231,6 +232,7 @@ namespace UnicornHack.Hubs
             if (addAbilities.Count > 0)
             {
                 _dbContext.Set<AddAbility>()
+                    .Include(a => a.Ability).ThenInclude(a => a.Triggers)
                     .Include(a => a.Ability).ThenInclude(a => a.Effects)
                     .Where(a => a.GameId == gameId && addAbilities.Contains(a.Id))
                     .Load();
@@ -263,6 +265,7 @@ namespace UnicornHack.Hubs
                 .Include(g => g.AbilityDefinitions)
                 .Include(g => g.Effects)
                 .Include(g => g.Abilities)
+                .Include(g => g.Triggers)
                 .Include(g => g.AppliedEffects)
                 .Include(g => g.SensoryEvents)
                 .Single(g => g.Id == game.Id);
@@ -285,6 +288,10 @@ namespace UnicornHack.Hubs
             foreach (var ability in game.Abilities.ToList())
             {
                 _dbContext.Abilities.Remove(ability);
+            }
+            foreach (var trigger in game.Triggers.ToList())
+            {
+                _dbContext.Triggers.Remove(trigger);
             }
             foreach (var abilityDefinition in game.AbilityDefinitions.ToList())
             {

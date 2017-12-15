@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -11,17 +12,16 @@ namespace UnicornHack.Data.Creatures
             Name = "Hippocrates",
             Species = Species.Human,
             MovementDelay = 100,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Spell,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new ScriptedEffect {Script = "DivineSpell"}}
-                    }
-                },
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Spell,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new ScriptedEffect {Script = "DivineSpell"}}
+                }
+            },
             SimpleProperties =
                 new HashSet<string> {"infravisibility", "humanoidness", "maleness", "stoning resistance"},
             ValuedProperties =

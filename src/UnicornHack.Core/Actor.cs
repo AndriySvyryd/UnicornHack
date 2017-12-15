@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using UnicornHack.Abilities;
 using UnicornHack.Data.Properties;
 using UnicornHack.Effects;
 using UnicornHack.Events;
@@ -16,15 +17,19 @@ namespace UnicornHack
         public const string InnateAbilityName = "innate";
         public const string AttributedAbilityName = "attributed";
 
+        public const string PrimaryMeleeWeaponAttackName = "primary melee weapon attack";
+        public const string SecondaryMeleeWeaponAttackName = "secondary melee weapon attack";
         public const string PrimaryMeleeAttackName = "primary melee attack";
         public const string SecondaryMeleeAttackName = "secondary melee attack";
         public const string DoubleMeleeAttackName = "double melee attack";
-        public const string AdditionalMeleeAttackName = "additional melee attack";
 
+        public const string PrimaryRangedWeaponAttackName = "primary ranged weapon attack";
+        public const string SecondaryRangedWeaponAttackName = "secondary ranged weapon attack";
         public const string PrimaryRangedAttackName = "primary ranged attack";
         public const string SecondaryRangedAttackName = "secondary ranged attack";
         public const string DoubleRangedAttackName = "double ranged attack";
-        public const string AdditionalRangedAttackName = "additional ranged attack";
+
+        private bool _weaponAbilitiesOutdated;
 
         public virtual Direction Heading { get; set; }
 
@@ -136,41 +141,54 @@ namespace UnicornHack
             OnQuicknessChanged(quickness, quickness);
         }
 
-        public virtual void RecalculateWeaponAbilities()
+        public override void OnAbilityActivated(Ability ability)
         {
+            base.OnAbilityActivated(ability);
+
+            if (AbilitiesBeingActivated == 0
+                && _weaponAbilitiesOutdated)
+            {
+                RecalculateWeaponAbilities();
+            }
+        }
+
+        public virtual bool RecalculateWeaponAbilities()
+        {
+            if (AbilitiesBeingActivated > 0)
+            {
+                _weaponAbilitiesOutdated = true;
+                return false;
+            }
+
+            _weaponAbilitiesOutdated = false;
+
             var canUseWeapons = !GetProperty<bool>(PropertyData.Handlessness.Name)
                                 && !GetProperty<bool>(PropertyData.Limblessness.Name);
 
-            var additionalMeleeAttack = Abilities.FirstOrDefault(a => a.Name == AdditionalMeleeAttackName);
-            if (additionalMeleeAttack == null && canUseWeapons)
+            var primaryMeleeWeaponAttack = Abilities.FirstOrDefault(a => a.Name == PrimaryMeleeWeaponAttackName);
+            if (primaryMeleeWeaponAttack == null && canUseWeapons)
             {
-                additionalMeleeAttack = new Ability(Game)
+                primaryMeleeWeaponAttack = new Ability(Game)
                 {
-                    Name = AdditionalMeleeAttackName,
-                    Effects = new ObservableSnapshotHashSet<Effect> {new MeleeAttack(Game), new PhysicalDamage(Game)}
+                    Name = PrimaryMeleeWeaponAttackName,
+                    Triggers = new ObservableSnapshotHashSet<Trigger> { new MeleeWeaponTrigger(Game) },
+                    Effects = new ObservableSnapshotHashSet<Effect> { new PhysicalDamage(Game) }
                 };
 
-                Add(additionalMeleeAttack);
+                Add(primaryMeleeWeaponAttack);
             }
 
-            var doubleMeleeAttack = Abilities.FirstOrDefault(a => a.Name == DoubleMeleeAttackName);
-            if (doubleMeleeAttack == null && canUseWeapons)
+            var secondaryMeleeWeaponAttack = Abilities.FirstOrDefault(a => a.Name == SecondaryMeleeWeaponAttackName);
+            if (secondaryMeleeWeaponAttack == null && canUseWeapons)
             {
-                doubleMeleeAttack = new Ability(Game)
+                secondaryMeleeWeaponAttack = new Ability(Game)
                 {
-                    Name = DoubleMeleeAttackName,
-                    Activation = AbilityActivation.OnTarget,
-                    // TODO: Calculate proper delay
-                    Delay = 100,
-                    Effects = new ObservableSnapshotHashSet<Effect>
-                    {
-                        new MeleeAttack(Game),
-                        new PhysicalDamage(Game),
-                        new ActivateAbility(Game) {Ability = additionalMeleeAttack.AddReference().Referenced}
-                    }
+                    Name = SecondaryMeleeWeaponAttackName,
+                    Triggers = new ObservableSnapshotHashSet<Trigger> { new MeleeWeaponTrigger(Game) },
+                    Effects = new ObservableSnapshotHashSet<Effect> { new PhysicalDamage(Game) }
                 };
 
-                Add(doubleMeleeAttack);
+                Add(secondaryMeleeWeaponAttack);
             }
 
             var primaryMeleeAttack = Abilities.FirstOrDefault(a => a.Name == PrimaryMeleeAttackName);
@@ -182,7 +200,11 @@ namespace UnicornHack
                     Activation = AbilityActivation.OnTarget,
                     // TODO: Calculate proper delay
                     Delay = 100,
-                    Effects = new ObservableSnapshotHashSet<Effect> {new MeleeAttack(Game), new PhysicalDamage(Game)}
+                    Triggers = new ObservableSnapshotHashSet<Trigger>
+                    {
+                        new AbilityTrigger(Game){Ability = primaryMeleeWeaponAttack.AddReference().Referenced}
+                    },
+                    Effects = new ObservableSnapshotHashSet<Effect> { new PhysicalDamage(Game)}
                 };
 
                 Add(primaryMeleeAttack);
@@ -197,42 +219,62 @@ namespace UnicornHack
                     Activation = AbilityActivation.OnTarget,
                     // TODO: Calculate proper delay
                     Delay = 100,
-                    Effects = new ObservableSnapshotHashSet<Effect> {new MeleeAttack(Game), new PhysicalDamage(Game)}
+                    Triggers = new ObservableSnapshotHashSet<Trigger>
+                    {
+                        new AbilityTrigger(Game){Ability = secondaryMeleeWeaponAttack.AddReference().Referenced}
+                    },
+                    Effects = new ObservableSnapshotHashSet<Effect> {new PhysicalDamage(Game)}
                 };
 
                 Add(secondaryMeleeAttack);
             }
 
-            var additionalRangedAttack = Abilities.FirstOrDefault(a => a.Name == AdditionalRangedAttackName);
-            if (additionalRangedAttack == null && canUseWeapons)
+            var doubleMeleeAttack = Abilities.FirstOrDefault(a => a.Name == DoubleMeleeAttackName);
+            if (doubleMeleeAttack == null && canUseWeapons)
             {
-                additionalRangedAttack = new Ability(Game)
+                doubleMeleeAttack = new Ability(Game)
                 {
-                    Name = AdditionalRangedAttackName,
-                    Effects = new ObservableSnapshotHashSet<Effect> {new RangeAttack(Game), new PhysicalDamage(Game)}
-                };
-
-                Add(additionalRangedAttack);
-            }
-
-            var doubleRangedAttack = Abilities.FirstOrDefault(a => a.Name == DoubleRangedAttackName);
-            if (doubleRangedAttack == null && canUseWeapons)
-            {
-                doubleRangedAttack = new Ability(Game)
-                {
-                    Name = DoubleRangedAttackName,
+                    Name = DoubleMeleeAttackName,
                     Activation = AbilityActivation.OnTarget,
                     // TODO: Calculate proper delay
                     Delay = 100,
+                    Triggers = new ObservableSnapshotHashSet<Trigger>
+                    {
+                        new AbilityTrigger(Game){Ability = primaryMeleeWeaponAttack.AddReference().Referenced},
+                        new AbilityTrigger(Game){Ability = secondaryMeleeWeaponAttack.AddReference().Referenced}
+                    },
                     Effects = new ObservableSnapshotHashSet<Effect>
                     {
-                        new RangeAttack(Game),
-                        new PhysicalDamage(Game),
-                        new ActivateAbility(Game) {Ability = additionalRangedAttack.AddReference().Referenced}
+                        new PhysicalDamage(Game)
                     }
                 };
 
-                Add(doubleRangedAttack);
+                Add(doubleMeleeAttack);
+            }
+            var primaryRangedWeaponAttack = Abilities.FirstOrDefault(a => a.Name == PrimaryRangedWeaponAttackName);
+            if (primaryRangedWeaponAttack == null && canUseWeapons)
+            {
+                primaryRangedWeaponAttack = new Ability(Game)
+                {
+                    Name = PrimaryRangedWeaponAttackName,
+                    Triggers = new ObservableSnapshotHashSet<Trigger> { new RangedWeaponTrigger(Game) },
+                    Effects = new ObservableSnapshotHashSet<Effect> { new PhysicalDamage(Game) }
+                };
+
+                Add(primaryRangedWeaponAttack);
+            }
+
+            var secondaryRangedWeaponAttack = Abilities.FirstOrDefault(a => a.Name == SecondaryRangedWeaponAttackName);
+            if (secondaryRangedWeaponAttack == null && canUseWeapons)
+            {
+                secondaryRangedWeaponAttack = new Ability(Game)
+                {
+                    Name = SecondaryRangedWeaponAttackName,
+                    Triggers = new ObservableSnapshotHashSet<Trigger> { new RangedWeaponTrigger(Game) },
+                    Effects = new ObservableSnapshotHashSet<Effect> { new PhysicalDamage(Game) }
+                };
+
+                Add(secondaryRangedWeaponAttack);
             }
 
             var primaryRangedAttack = Abilities.FirstOrDefault(a => a.Name == PrimaryRangedAttackName);
@@ -244,7 +286,11 @@ namespace UnicornHack
                     Activation = AbilityActivation.OnTarget,
                     // TODO: Calculate proper delay
                     Delay = 100,
-                    Effects = new ObservableSnapshotHashSet<Effect> {new RangeAttack(Game), new PhysicalDamage(Game)}
+                    Triggers = new ObservableSnapshotHashSet<Trigger>
+                    {
+                        new AbilityTrigger(Game){Ability = primaryRangedWeaponAttack.AddReference().Referenced}
+                    },
+                    Effects = new ObservableSnapshotHashSet<Effect> {new PhysicalDamage(Game)}
                 };
 
                 Add(primaryRangedAttack);
@@ -259,56 +305,93 @@ namespace UnicornHack
                     Activation = AbilityActivation.OnTarget,
                     // TODO: Calculate proper delay
                     Delay = 100,
-                    Effects = new ObservableSnapshotHashSet<Effect> {new RangeAttack(Game), new PhysicalDamage(Game)}
+                    Triggers = new ObservableSnapshotHashSet<Trigger>
+                    {
+                        new AbilityTrigger(Game){Ability = secondaryRangedWeaponAttack.AddReference().Referenced}
+                    },
+                    Effects = new ObservableSnapshotHashSet<Effect> {new PhysicalDamage(Game)}
                 };
 
                 Add(secondaryRangedAttack);
             }
 
+            var doubleRangedAttack = Abilities.FirstOrDefault(a => a.Name == DoubleRangedAttackName);
+            if (doubleRangedAttack == null && canUseWeapons)
+            {
+                doubleRangedAttack = new Ability(Game)
+                {
+                    Name = DoubleRangedAttackName,
+                    Activation = AbilityActivation.OnTarget,
+                    // TODO: Calculate proper delay
+                    Delay = 100,
+                    Triggers = new ObservableSnapshotHashSet<Trigger>
+                    {
+                        new AbilityTrigger(Game){Ability = primaryRangedWeaponAttack.AddReference().Referenced},
+                        new AbilityTrigger(Game){Ability = secondaryRangedWeaponAttack.AddReference().Referenced}
+                    },
+                    Effects = new ObservableSnapshotHashSet<Effect>
+                    {
+                        new PhysicalDamage(Game)
+                    }
+                };
+
+                Add(doubleRangedAttack);
+            }
+
+            if (primaryMeleeWeaponAttack != null)
+            {
+                primaryMeleeWeaponAttack.Action = AbilityAction.Modifier;
+                primaryMeleeWeaponAttack.Triggers.OfType<MeleeWeaponTrigger>().Single().Weapon = null;
+            }
+            if (secondaryMeleeWeaponAttack != null)
+            {
+                secondaryMeleeWeaponAttack.Action = AbilityAction.Modifier;
+                secondaryMeleeWeaponAttack.Triggers.OfType<MeleeWeaponTrigger>().Single().Weapon = null;
+            }
             if (primaryMeleeAttack != null)
             {
                 primaryMeleeAttack.IsUsable = false;
-                primaryMeleeAttack.Effects.OfType<MeleeAttack>().Single().Weapon = null;
+                primaryMeleeAttack.Action = AbilityAction.Modifier;
             }
             if (secondaryMeleeAttack != null)
             {
                 secondaryMeleeAttack.IsUsable = false;
-                secondaryMeleeAttack.Effects.OfType<MeleeAttack>().Single().Weapon = null;
+                secondaryMeleeAttack.Action = AbilityAction.Modifier;
             }
             if (doubleMeleeAttack != null)
             {
                 doubleMeleeAttack.IsUsable = false;
-                doubleMeleeAttack.Effects.OfType<MeleeAttack>().Single().Weapon = null;
+                doubleMeleeAttack.Action = AbilityAction.Modifier;
             }
-            if (additionalMeleeAttack != null)
+            if (primaryRangedWeaponAttack != null)
             {
-                additionalMeleeAttack.IsUsable = false;
-                additionalMeleeAttack.Effects.OfType<MeleeAttack>().Single().Weapon = null;
+                primaryRangedWeaponAttack.Action = AbilityAction.Modifier;
+                primaryRangedWeaponAttack.Triggers.OfType<RangedWeaponTrigger>().Single().Weapon = null;
+            }
+            if (secondaryRangedWeaponAttack != null)
+            {
+                secondaryRangedWeaponAttack.Action = AbilityAction.Modifier;
+                secondaryRangedWeaponAttack.Triggers.OfType<RangedWeaponTrigger>().Single().Weapon = null;
             }
             if (primaryRangedAttack != null)
             {
                 primaryRangedAttack.IsUsable = false;
-                primaryRangedAttack.Effects.OfType<RangeAttack>().Single().Weapon = null;
+                primaryRangedAttack.Action = AbilityAction.Modifier;
             }
             if (secondaryRangedAttack != null)
             {
                 secondaryRangedAttack.IsUsable = false;
-                secondaryRangedAttack.Effects.OfType<RangeAttack>().Single().Weapon = null;
+                secondaryRangedAttack.Action = AbilityAction.Modifier;
             }
             if (doubleRangedAttack != null)
             {
                 doubleRangedAttack.IsUsable = false;
-                doubleRangedAttack.Effects.OfType<RangeAttack>().Single().Weapon = null;
-            }
-            if (additionalRangedAttack != null)
-            {
-                additionalRangedAttack.IsUsable = false;
-                additionalRangedAttack.Effects.OfType<RangeAttack>().Single().Weapon = null;
+                doubleRangedAttack.Action = AbilityAction.Modifier;
             }
 
             if (!canUseWeapons)
             {
-                return;
+                return false;
             }
 
             Item twoHandedWeapon = null;
@@ -333,61 +416,137 @@ namespace UnicornHack
                 }
             }
 
+            var twoHandedWeaponType = twoHandedWeapon?.Type ?? ItemType.None;
             var primaryWeaponType = primaryWeapon?.Type ?? ItemType.WeaponMeleeFist;
             var secondaryWeaponType = secondaryWeapon?.Type ?? ItemType.WeaponMeleeFist;
-            var dualWielding = primaryWeapon != null && secondaryWeapon != null;
-            var dualFist = primaryWeaponType.HasFlag(ItemType.WeaponMeleeFist)
-                           && secondaryWeaponType.HasFlag(ItemType.WeaponMeleeFist);
+            var dualWielding = primaryWeapon != null && secondaryWeapon != null
+                               && (primaryWeaponType & ItemType.WeaponMeleeFist) == 0
+                               && (secondaryWeaponType & ItemType.WeaponMeleeFist) == 0;
+            var dualFist = (primaryWeaponType & ItemType.WeaponMeleeFist) != 0
+                           && (secondaryWeaponType & ItemType.WeaponMeleeFist) != 0;
 
             if (twoHandedWeapon != null)
             {
-                primaryMeleeAttack.IsUsable = true;
-                primaryMeleeAttack.Effects.OfType<MeleeAttack>().Single().Weapon = twoHandedWeapon;
+                if ((twoHandedWeaponType & ItemType.WeaponRanged) == 0)
+                {
+                    primaryMeleeAttack.IsUsable = true;
+                    primaryMeleeWeaponAttack.Triggers.OfType<MeleeWeaponTrigger>().Single().Weapon = twoHandedWeapon;
+                    EnsureMeleeAttack(twoHandedWeapon);
+                }
 
                 primaryRangedAttack.IsUsable = true;
-                primaryRangedAttack.Effects.OfType<RangeAttack>().Single().Weapon = twoHandedWeapon;
+                primaryRangedWeaponAttack.Triggers.OfType<RangedWeaponTrigger>().Single().Weapon = twoHandedWeapon;
+                if ((twoHandedWeaponType & ItemType.WeaponRanged & ~ItemType.WeaponRangedThrown) == 0
+                    && (twoHandedWeapon as Launcher)?.Projectile == null)
+                {
+                    primaryRangedWeaponAttack.Action = AbilityAction.Throw;
+                }
+                EnsureRangedAttack(twoHandedWeapon);
             }
             else
             {
-                if ((dualWielding
-                     && !primaryWeaponType.HasFlag(ItemType.WeaponMeleeFist)
-                     && !secondaryWeaponType.HasFlag(ItemType.WeaponMeleeFist))
+                if (dualWielding
                     || dualFist)
                 {
-                    doubleMeleeAttack.IsUsable = true;
-                    doubleMeleeAttack.Effects.OfType<MeleeAttack>().Single().Weapon = primaryWeapon;
+                    if ((primaryWeaponType & ItemType.WeaponRanged) == 0
+                        && (secondaryWeaponType & ItemType.WeaponRanged) == 0)
+                    {
+                        doubleMeleeAttack.IsUsable = true;
+                    }
 
-                    additionalMeleeAttack.IsUsable = true;
-                    additionalMeleeAttack.Effects.OfType<MeleeAttack>().Single().Weapon = secondaryWeapon;
-
-                    if (!dualFist)
+                    if (!dualFist
+                        && (((primaryWeaponType & ItemType.WeaponRanged) == 0)
+                            == ((secondaryWeaponType & ItemType.WeaponRanged) == 0)))
                     {
                         doubleRangedAttack.IsUsable = true;
-                        doubleRangedAttack.Effects.OfType<RangeAttack>().Single().Weapon = primaryWeapon;
-
-                        additionalRangedAttack.IsUsable = true;
-                        additionalRangedAttack.Effects.OfType<RangeAttack>().Single().Weapon = secondaryWeapon;
                     }
                 }
 
-                primaryMeleeAttack.IsUsable = true;
-                primaryMeleeAttack.Effects.OfType<MeleeAttack>().Single().Weapon = primaryWeapon;
+                // TODO: Use correct action for claws, etc.
+                if ((primaryWeaponType & ItemType.WeaponRanged) == 0)
+                {
+                    primaryMeleeAttack.IsUsable = true;
+                    primaryMeleeWeaponAttack.Triggers.OfType<MeleeWeaponTrigger>().Single().Weapon = primaryWeapon;
+                    if (primaryWeapon == null)
+                    {
+                        primaryMeleeWeaponAttack.Action = AbilityAction.Punch;
+                    }
+                    EnsureMeleeAttack(primaryWeapon);
+                }
+                if ((secondaryWeaponType & ItemType.WeaponRanged) == 0)
+                {
+                    secondaryMeleeAttack.IsUsable = true;
+                    secondaryMeleeWeaponAttack.Triggers.OfType<MeleeWeaponTrigger>().Single().Weapon = secondaryWeapon;
+                    if (secondaryWeapon == null)
+                    {
+                        secondaryMeleeWeaponAttack.Action = AbilityAction.Punch;
+                    }
+                    EnsureMeleeAttack(secondaryWeapon);
+                }
 
-                secondaryMeleeAttack.IsUsable = true;
-                secondaryMeleeAttack.Effects.OfType<MeleeAttack>().Single().Weapon = secondaryWeapon;
-
-                if (!primaryWeaponType.HasFlag(ItemType.WeaponMeleeFist))
+                if ((primaryWeaponType & ItemType.WeaponMeleeFist) == 0)
                 {
                     primaryRangedAttack.IsUsable = true;
-                    primaryRangedAttack.Effects.OfType<RangeAttack>().Single().Weapon = primaryWeapon;
+                    primaryRangedWeaponAttack.Triggers.OfType<RangedWeaponTrigger>().Single().Weapon = primaryWeapon;
+                    if ((primaryWeaponType & ItemType.WeaponRanged & ~ItemType.WeaponRangedThrown) == 0
+                        && (primaryWeapon as Launcher)?.Projectile == null)
+                    {
+                        primaryRangedWeaponAttack.Action = AbilityAction.Throw;
+                    }
+                    EnsureRangedAttack(primaryWeapon);
                 }
-                if (!secondaryWeaponType.HasFlag(ItemType.WeaponMeleeFist))
+                if ((secondaryWeaponType & ItemType.WeaponMeleeFist) == 0)
                 {
                     secondaryRangedAttack.IsUsable = true;
-                    secondaryRangedAttack.Effects.OfType<RangeAttack>().Single().Weapon = secondaryWeapon;
+                    secondaryRangedWeaponAttack.Triggers.OfType<RangedWeaponTrigger>().Single().Weapon = secondaryWeapon;
+                    if ((secondaryWeaponType & ItemType.WeaponRanged & ~ItemType.WeaponRangedThrown) == 0
+                        && (secondaryWeapon as Launcher)?.Projectile == null)
+                    {
+                        secondaryRangedWeaponAttack.Action = AbilityAction.Throw;
+                    }
+                    EnsureRangedAttack(secondaryWeapon);
                 }
             }
+
+            return true;
         }
+
+        private void EnsureMeleeAttack(Item weapon)
+        {
+            if (weapon != null
+                && weapon.Abilities.All(a => a.Activation != AbilityActivation.OnMeleeAttack))
+            {
+                weapon.Add(new Ability(Game)
+                {
+                    Activation = AbilityActivation.OnMeleeAttack,
+                    Action = AbilityAction.Hit,
+                    Effects = new ObservableSnapshotHashSet<Effect>
+                    {
+                        new PhysicalDamage(Game) {Damage = GetWeightDamage(weapon)}
+                    }
+                });
+            }
+        }
+
+        private void EnsureRangedAttack(Item weapon)
+        {
+            if (weapon != null
+                && weapon.Abilities.All(a => a.Activation != AbilityActivation.OnRangedAttack))
+            {
+                weapon.Add(new Ability(Game)
+                {
+                    Activation = AbilityActivation.OnRangedAttack,
+                    Action = AbilityAction.Hit,
+                    Effects = new ObservableSnapshotHashSet<Effect>
+                    {
+                        new PhysicalDamage(Game) {Damage = GetWeightDamage(weapon)}
+                    }
+                });
+            }
+        }
+
+        private int GetWeightDamage(Item weapon)
+            => 4 * weapon.GetProperty<int>(PropertyData.Weight.Name);
 
         /// <summary>Gives an opportunity to perform actions.</summary>
         /// <returns>Returns <c>false</c> if the actor hasn't finished their turn.</returns>
@@ -403,6 +562,11 @@ namespace UnicornHack
         public virtual SenseType CanSense(Entity target)
         {
             var sense = SenseType.None;
+            if (target == null)
+            {
+                return sense;
+            }
+
             if (target == this) // Or is adjecent
             {
                 sense |= SenseType.Touch;
@@ -585,7 +749,7 @@ namespace UnicornHack
                 return true;
             }
 
-            if (!item.EquipableSlots.HasFlag(slot))
+            if ((item.EquipableSlots & slot) == 0)
             {
                 return false;
             }
@@ -618,27 +782,14 @@ namespace UnicornHack
             item.EquippedSlot = slot;
             ItemEquipmentEvent.New(this, item, Game.EventOrder++);
 
-            foreach (var ability in item.Abilities.Where(
-                a => a.Activation == AbilityActivation.WhileEquipped && !a.IsActive))
-            {
-                var context = new AbilityActivationContext
-                {
-                    Activator = this,
-                    Target = this,
-                    AbilityTrigger = AbilityActivation.WhileEquipped
-                };
-                using (context)
-                {
-                    ability.Activate(context);
-                }
-            }
+            item.ActivateAbilities(AbilityActivation.WhileEquipped, this, this);
 
             RecalculateWeaponAbilities();
 
             return true;
         }
 
-        public virtual bool Unequip(Item item, bool pretend = false)
+        public virtual bool Unequip(Item item, bool pretend = false, bool fireEvent = true)
         {
             if (item?.EquippedSlot == null)
             {
@@ -650,13 +801,14 @@ namespace UnicornHack
                 return true;
             }
 
-            // TODO: Calculate delay
-            NextActionTick += DefaultActionDelay;
-
             item.EquippedSlot = null;
 
-            // TODO: Suppress message when thrown
-            ItemUnequipmentEvent.New(this, item, Game.EventOrder++);
+            if (fireEvent)
+            {
+                // TODO: Calculate delay
+                NextActionTick += DefaultActionDelay;
+                ItemUnequipmentEvent.New(this, item, Game.EventOrder++);
+            }
 
             foreach (var ability in item.Abilities.Where(a
                 => a.Activation == AbilityActivation.WhileEquipped && a.IsActive))
@@ -690,19 +842,7 @@ namespace UnicornHack
 
                 ItemConsumptionEvent.New(this, splitItem, Game.EventOrder++);
 
-                foreach (var ability in splitItem.Abilities.Where(a => a.Activation == AbilityActivation.OnConsumption))
-                {
-                    var context = new AbilityActivationContext
-                    {
-                        Activator = this,
-                        Target = this,
-                        AbilityTrigger = AbilityActivation.OnDigestion
-                    };
-                    using (context)
-                    {
-                        ability.Activate(context);
-                    }
-                }
+                splitItem.ActivateAbilities(AbilityActivation.OnConsumption, this, this);
             }
 
             return true;
@@ -751,7 +891,7 @@ namespace UnicornHack
 
         public virtual bool Drop(Item item, bool pretend = false)
         {
-            if (item.EquippedSlot != null && !Unequip(item, pretend))
+            if (item.EquippedSlot != null && !Unequip(item, pretend, fireEvent: false))
             {
                 return false;
             }
@@ -801,20 +941,7 @@ namespace UnicornHack
                 itemOrStack.AddReference();
             }
 
-            foreach (var ability in item.Abilities.Where(a
-                => a.Activation == AbilityActivation.WhilePossessed && !a.IsActive))
-            {
-                var context = new AbilityActivationContext
-                {
-                    Activator = this,
-                    Target = this,
-                    AbilityTrigger = AbilityActivation.WhilePossessed
-                };
-                using (context)
-                {
-                    ability.Activate(context);
-                }
-            }
+            item.ActivateAbilities(AbilityActivation.WhilePossessed, this, this);
 
             return true;
         }
@@ -825,7 +952,7 @@ namespace UnicornHack
         {
             if (item.EquippedSlot != null)
             {
-                Unequip(item);
+                Unequip(item, fireEvent: false);
             }
 
             foreach (var ability in item.Abilities.Where(a

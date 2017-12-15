@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -11,51 +12,48 @@ namespace UnicornHack.Data.Creatures
             Name = "gas spore",
             Species = Species.FloatingSphere,
             MovementDelay = 400,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Explosion,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 14}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Explosion,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new Deafen {Duration = 27}}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Explosion,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 140}}
                 },
-            SimpleProperties =
-                new HashSet<string>
+                new AbilityDefinition
                 {
-                    "sleep resistance",
-                    "flight",
-                    "flight control",
-                    "non animal",
-                    "breathlessness",
-                    "limblessness",
-                    "eyelessness",
-                    "headlessness",
-                    "mindlessness",
-                    "asexuality",
-                    "no inventory",
-                    "sliming resistance",
-                    "sickness resistance"
-                },
-            ValuedProperties =
-                new Dictionary<string, object>
-                {
-                    {"poison resistance", 3},
-                    {"venom resistance", 3},
-                    {"stealthiness", 3},
-                    {"size", 2},
-                    {"physical deflection", 10},
-                    {"weight", 10}
-                },
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Explosion,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new Deafen {Duration = 27}}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "sleep resistance",
+                "flight",
+                "flight control",
+                "non animal",
+                "breathlessness",
+                "limblessness",
+                "eyelessness",
+                "headlessness",
+                "mindlessness",
+                "asexuality",
+                "no inventory",
+                "sliming resistance",
+                "sickness resistance"
+            },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {"poison resistance", 3},
+                {"venom resistance", 3},
+                {"stealthiness", 3},
+                {"size", 2},
+                {"physical deflection", 10},
+                {"weight", 10}
+            },
             InitialLevel = 1,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
             CorpseName = ""

@@ -1,4 +1,5 @@
 using System.Linq;
+using UnicornHack.Abilities;
 using UnicornHack.Generation;
 
 namespace UnicornHack.Effects

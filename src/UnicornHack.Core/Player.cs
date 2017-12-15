@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnicornHack.Abilities;
 using UnicornHack.Data.Items;
-using UnicornHack.Data.Properties;
 using UnicornHack.Effects;
 using UnicornHack.Events;
 using UnicornHack.Utils;
@@ -11,8 +11,6 @@ namespace UnicornHack
 {
     public class Player : Actor
     {
-        private AbilityStatus _abilityStatus;
-
         public int MaxXPLevel { get; set; }
         public byte XPLevel => (byte)Races.Sum(r => r.XPLevel);
         public int XP => LearningRace?.XP ?? 0;
@@ -67,7 +65,7 @@ namespace UnicornHack
             ItemVariantData.MailArmor.Instantiate(this);
             ItemVariantData.LongSword.Instantiate(this);
             ItemVariantData.Dagger.Instantiate(this);
-            ItemVariantData.ShortBow.Instantiate(this);
+            ItemVariantData.Shortbow.Instantiate(this);
             ItemVariantData.ThrowingKnives.Instantiate(this);
             ItemVariantData.FireStaff.Instantiate(this);
             ItemVariantData.FreezingFocus.Instantiate(this);
@@ -101,27 +99,31 @@ namespace UnicornHack
             }
         }
 
-        public override void RecalculateWeaponAbilities()
+        public override bool RecalculateWeaponAbilities()
         {
-            if (_abilityStatus == AbilityStatus.BeingApplied)
+            if (!base.RecalculateWeaponAbilities())
             {
-                _abilityStatus = AbilityStatus.Invalid;
-                return;
+                return false;
             }
-
-            base.RecalculateWeaponAbilities();
 
             // TODO: Calculate skill effects properly
 
+            var primaryMeleeWeaponAttack = Abilities.FirstOrDefault(a => a.Name == PrimaryMeleeWeaponAttackName);
+            var primaryMeleeWeapon = primaryMeleeWeaponAttack.Triggers.OfType<MeleeWeaponTrigger>().Single().Weapon;
+            var primaryMeleeWeaponSkill = GetMeleeSkill(primaryMeleeWeapon);
+            primaryMeleeWeaponAttack.Effects.OfType<PhysicalDamage>().Single().Damage = primaryMeleeWeaponSkill ?? 0;
+
+            var secondaryMeleeWeaponAttack = Abilities.FirstOrDefault(a => a.Name == SecondaryMeleeWeaponAttackName);
+            var secondaryMeleeWeapon = secondaryMeleeWeaponAttack.Triggers.OfType<MeleeWeaponTrigger>().Single().Weapon;
+            var secondaryMeleeWeaponSkill = GetMeleeSkill(secondaryMeleeWeapon);
+            secondaryMeleeWeaponAttack.Effects.OfType<PhysicalDamage>().Single().Damage =  secondaryMeleeWeaponSkill ?? 0;
+
+            DefaultAttack = null;
             var secondaryMeleeAttack = Abilities.First(a => a.Name == SecondaryMeleeAttackName);
             if (secondaryMeleeAttack.IsUsable)
             {
-                var techniqueSkill = Skills.OneHanded;
-                var weapon = secondaryMeleeAttack.Effects.OfType<MeleeAttack>().Single().Weapon;
-                var weaponSkill = GetMeleeSkill(weapon);
-                secondaryMeleeAttack.Effects.OfType<PhysicalDamage>().Single().Damage =
-                    techniqueSkill + weaponSkill ?? GetWeightDamage(weapon);
-                if (weaponSkill != null)
+                secondaryMeleeAttack.Effects.OfType<PhysicalDamage>().Single().Damage = Skills.OneHanded;
+                if (secondaryMeleeWeaponSkill != null)
                 {
                     DefaultAttack = secondaryMeleeAttack;
                 }
@@ -130,48 +132,45 @@ namespace UnicornHack
             var primaryMeleeAttack = Abilities.First(a => a.Name == PrimaryMeleeAttackName);
             if (primaryMeleeAttack.IsUsable)
             {
-                var weapon = primaryMeleeAttack.Effects.OfType<MeleeAttack>().Single().Weapon;
-                var techniqueSkill = weapon?.EquippedSlot == EquipmentSlot.GraspBothExtremities
-                    ? Skills.TwoHanded
-                    : Skills.OneHanded;
-                var weaponSkill = GetMeleeSkill(weapon);
                 primaryMeleeAttack.Effects.OfType<PhysicalDamage>().Single().Damage =
-                    techniqueSkill + weaponSkill ?? GetWeightDamage(weapon);
-                if (weaponSkill != null)
+                    primaryMeleeWeapon?.EquippedSlot == EquipmentSlot.GraspBothExtremities
+                        ? Skills.TwoHanded
+                        : Skills.OneHanded;
+                if (primaryMeleeWeaponSkill != null
+                    && (primaryMeleeWeapon != null || DefaultAttack == null))
                 {
                     DefaultAttack = primaryMeleeAttack;
                 }
             }
 
             var doubleMeleeAttack = Abilities.First(a => a.Name == DoubleMeleeAttackName);
-            var additionalMeleeAttack = Abilities.First(a => a.Name == AdditionalMeleeAttackName);
-            if (doubleMeleeAttack.IsUsable
-                && additionalMeleeAttack.IsUsable)
+            if (doubleMeleeAttack.IsUsable)
             {
-                var techniqueSkill = Skills.DualWielding;
-
-                var mainWeapon = doubleMeleeAttack.Effects.OfType<MeleeAttack>().Single().Weapon;
-                var mainWeaponSkill = GetMeleeSkill(mainWeapon);
-                doubleMeleeAttack.Effects.OfType<PhysicalDamage>().Single().Damage =
-                    techniqueSkill + mainWeaponSkill ?? GetWeightDamage(mainWeapon);
-                var additionalWeapon = additionalMeleeAttack.Effects.OfType<MeleeAttack>().Single().Weapon;
-                var additionalWeaponSkill = GetMeleeSkill(additionalWeapon);
-                additionalMeleeAttack.Effects.OfType<PhysicalDamage>().Single().Damage =
-                    techniqueSkill + additionalWeaponSkill ?? GetWeightDamage(additionalWeapon);
-                if (mainWeaponSkill != null && additionalWeaponSkill != null)
+                doubleMeleeAttack.Effects.OfType<PhysicalDamage>().Single().Damage = Skills.DualWielding;
+                if (primaryMeleeWeaponSkill != null && secondaryMeleeWeaponSkill != null)
                 {
                     DefaultAttack = doubleMeleeAttack;
                 }
             }
 
+            var primaryRangedWeaponAttack = Abilities.FirstOrDefault(a => a.Name == PrimaryRangedWeaponAttackName);
+            var primaryRangedWeapon = primaryRangedWeaponAttack.Triggers.OfType<RangedWeaponTrigger>().Single().Weapon;
+            var primaryRangedSkill = GetRangedSkill(primaryRangedWeapon);
+            primaryRangedWeaponAttack.Effects.OfType<PhysicalDamage>().Single().Damage =
+                primaryRangedSkill ?? Skills.Thrown;
+
+            var secondaryRangedWeaponAttack = Abilities.FirstOrDefault(a => a.Name == SecondaryRangedWeaponAttackName);
+            var secondaryRangedWeapon =
+                secondaryRangedWeaponAttack.Triggers.OfType<RangedWeaponTrigger>().Single().Weapon;
+            var secondaryRangedSkill = GetRangedSkill(secondaryRangedWeapon);
+            secondaryRangedWeaponAttack.Effects.OfType<PhysicalDamage>().Single().Damage =
+                secondaryRangedSkill ?? Skills.Thrown;
+
             var secondaryRangedAttack = Abilities.First(a => a.Name == SecondaryRangedAttackName);
             if (secondaryRangedAttack.IsUsable)
             {
-                var techniqueSkill = Skills.OneHanded;
-                var weaponSkill = GetRangedSkill(secondaryRangedAttack.Effects.OfType<RangeAttack>().Single().Weapon);
-                secondaryRangedAttack.Effects.OfType<PhysicalDamage>().Single().Damage =
-                    techniqueSkill + weaponSkill ?? Skills.Thrown;
-                if (weaponSkill != null)
+                secondaryRangedAttack.Effects.OfType<PhysicalDamage>().Single().Damage = Skills.OneHanded;
+                if (secondaryRangedSkill != null)
                 {
                     DefaultAttack = secondaryRangedAttack;
                 }
@@ -180,41 +179,27 @@ namespace UnicornHack
             var primaryRangedAttack = Abilities.First(a => a.Name == PrimaryRangedAttackName);
             if (primaryRangedAttack.IsUsable)
             {
-                var weapon = primaryRangedAttack.Effects.OfType<RangeAttack>().Single().Weapon;
-                var techniqueSkill = weapon?.EquippedSlot == EquipmentSlot.GraspBothExtremities
-                    ? Skills.TwoHanded
-                    : Skills.OneHanded;
-                var weaponSkill = GetRangedSkill(weapon);
                 primaryRangedAttack.Effects.OfType<PhysicalDamage>().Single().Damage =
-                    techniqueSkill + weaponSkill ?? Skills.Thrown;
-                if (weaponSkill != null)
+                    primaryRangedWeapon?.EquippedSlot == EquipmentSlot.GraspBothExtremities
+                        ? Skills.TwoHanded
+                        : Skills.OneHanded;
+                if (primaryRangedSkill != null)
                 {
                     DefaultAttack = primaryRangedAttack;
                 }
             }
 
             var doubleRangedAttack = Abilities.FirstOrDefault(a => a.Name == DoubleRangedAttackName);
-            var additionalRangedAttack = Abilities.First(a => a.Name == AdditionalRangedAttackName);
-            if (doubleRangedAttack.IsUsable
-                && additionalRangedAttack.IsUsable)
+            if (doubleRangedAttack.IsUsable)
             {
-                var techniqueSkill = Skills.DualWielding;
-
-                var mainWeaponSkill = GetRangedSkill(doubleRangedAttack.Effects.OfType<RangeAttack>().Single().Weapon);
-                doubleRangedAttack.Effects.OfType<PhysicalDamage>().Single().Damage =
-                    techniqueSkill + mainWeaponSkill ?? Skills.Thrown;
-                var additionalWeaponSkill =
-                    GetRangedSkill(additionalRangedAttack.Effects.OfType<RangeAttack>().Single().Weapon);
-                additionalRangedAttack.Effects.OfType<PhysicalDamage>().Single().Damage =
-                    techniqueSkill + additionalWeaponSkill ?? Skills.Thrown;
-                if (mainWeaponSkill != null
-                    && additionalWeaponSkill != null)
+                doubleRangedAttack.Effects.OfType<PhysicalDamage>().Single().Damage = Skills.DualWielding;
+                if (primaryRangedSkill != null && secondaryRangedSkill != null)
                 {
                     DefaultAttack = doubleRangedAttack;
                 }
             }
 
-            _abilityStatus = AbilityStatus.Default;
+            return true;
         }
 
         private int? GetMeleeSkill(Item weapon)
@@ -224,23 +209,23 @@ namespace UnicornHack
                 // TODO: Calculate h2h damage
                 return 20;
             }
-            if (weapon.Type.HasFlag(ItemType.WeaponMeleeFist))
+            if ((weapon.Type & ItemType.WeaponMeleeFist) != 0)
             {
                 return Skills.FistWeapons;
             }
-            if (weapon.Type.HasFlag(ItemType.WeaponMeleeShort))
+            if ((weapon.Type & ItemType.WeaponMeleeShort) != 0)
             {
                 return Skills.ShortWeapons;
             }
-            if (weapon.Type.HasFlag(ItemType.WeaponMeleeMedium))
+            if ((weapon.Type & ItemType.WeaponMeleeMedium) != 0)
             {
                 return Skills.MediumWeapons;
             }
-            if (weapon.Type.HasFlag(ItemType.WeaponMeleeLong))
+            if ((weapon.Type & ItemType.WeaponMeleeLong) != 0)
             {
                 return Skills.LongWeapons;
             }
-            if (weapon.Type.HasFlag(ItemType.WeaponMagicFocus))
+            if ((weapon.Type & ItemType.WeaponMagicFocus) != 0)
             {
                 return Skills.MeleeMagicWeapons;
             }
@@ -250,32 +235,33 @@ namespace UnicornHack
 
         private int? GetRangedSkill(Item weapon)
         {
-            if (weapon.Type.HasFlag(ItemType.WeaponRangedThrown))
+            if (weapon == null)
+            {
+                return 0;
+            }
+            if ((weapon.Type & ItemType.WeaponRangedThrown) != 0)
             {
                 return Skills.Thrown;
             }
-            if (weapon.Type.HasFlag(ItemType.WeaponRangedBow))
+            if ((weapon.Type & ItemType.WeaponRangedBow) != 0)
             {
                 return Skills.Bows;
             }
-            if (weapon.Type.HasFlag(ItemType.WeaponRangedCrossbow))
+            if ((weapon.Type & ItemType.WeaponRangedCrossbow) != 0)
             {
                 return Skills.Crossbows;
             }
-            if (weapon.Type.HasFlag(ItemType.WeaponRangedSlingshot))
+            if ((weapon.Type & ItemType.WeaponRangedSlingshot) != 0)
             {
                 return Skills.Slingshots;
             }
-            if (weapon.Type.HasFlag(ItemType.WeaponMagicStaff))
+            if ((weapon.Type & ItemType.WeaponMagicStaff) != 0)
             {
                 return Skills.RangedMagicWeapons;
             }
 
             return null;
         }
-
-        private int GetWeightDamage(Item weapon)
-            => weapon.GetProperty<int>(PropertyData.Weight.Name);
 
         public override bool Act()
         {
@@ -414,31 +400,14 @@ namespace UnicornHack
                 return true;
             }
 
-            if (_abilityStatus == AbilityStatus.Default)
-            {
-                _abilityStatus = AbilityStatus.BeingApplied;
-            }
-
             var context = new AbilityActivationContext
             {
                 Activator = this,
-                Target = actor,
-                IsAttack = true
+                Target = actor
             };
             using (context)
             {
-                var result = DefaultAttack.Activate(context);
-
-                if (_abilityStatus == AbilityStatus.BeingApplied)
-                {
-                    _abilityStatus = AbilityStatus.Default;
-                }
-                else if (_abilityStatus == AbilityStatus.Invalid)
-                {
-                    RecalculateWeaponAbilities();
-                }
-
-                return result;
+                return DefaultAttack.Activate(context);
             }
         }
 
@@ -517,12 +486,5 @@ namespace UnicornHack
         protected virtual string GetSpecificLogEntry(ItemDropEvent @event) => Game.Services.Language.ToString(@event);
 
         protected virtual string GetSpecificLogEntry(ItemPickUpEvent @event) => Game.Services.Language.ToString(@event);
-
-        private enum AbilityStatus
-        {
-            Default = 0,
-            Invalid,
-            BeingApplied
-        }
     }
 }

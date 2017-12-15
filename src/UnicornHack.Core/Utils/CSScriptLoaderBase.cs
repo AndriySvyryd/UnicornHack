@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using CSharpScriptSerialization;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 using UnicornHack.Generation.Map;
@@ -21,6 +22,7 @@ namespace UnicornHack.Utils
             typeof(object).GetTypeInfo().Namespace,
             typeof(List<>).GetTypeInfo().Namespace,
             typeof(Game).GetTypeInfo().Namespace,
+            typeof(Ability).GetTypeInfo().Namespace,
             typeof(Effect).GetTypeInfo().Namespace,
             typeof(Weight).GetTypeInfo().Namespace,
             typeof(MapFragment).GetTypeInfo().Namespace,

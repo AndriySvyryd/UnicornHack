@@ -433,7 +433,8 @@ namespace UnicornHack.Generation.Map
                 for (var i = 3; i > 0; i--)
                 {
                     var directionIndexToCheck = (previousPointDirectionIndex + i * 2) % 8;
-                    if (currentNeighbourMap.HasFlag((DirectionFlags)(1 << directionIndexToCheck)))
+                    var neighbourDirection = (DirectionFlags)(1 << directionIndexToCheck);
+                    if ((currentNeighbourMap & neighbourDirection) == neighbourDirection)
                     {
                         var directionToCheck = Level.MovementDirections[directionIndexToCheck];
                         var newLocationX = (byte)(currentPoint.X + directionToCheck.X);
@@ -507,10 +508,10 @@ namespace UnicornHack.Generation.Map
         }
 
         private static bool IsPerimeter(DirectionFlags neighbourMap) =>
-            neighbourMap.HasFlag(DirectionFlags.NorthwestCorner) ||
-            neighbourMap.HasFlag(DirectionFlags.NortheastCorner) ||
-            neighbourMap.HasFlag(DirectionFlags.SoutheastCorner) ||
-            neighbourMap.HasFlag(DirectionFlags.SouthwestCorner);
+            (neighbourMap & DirectionFlags.NorthwestCorner) == DirectionFlags.NorthwestCorner ||
+            (neighbourMap & DirectionFlags.NortheastCorner) == DirectionFlags.NortheastCorner ||
+            (neighbourMap & DirectionFlags.SoutheastCorner) == DirectionFlags.SoutheastCorner ||
+            (neighbourMap & DirectionFlags.SouthwestCorner) == DirectionFlags.SouthwestCorner;
 
         protected static Dictionary<string, Func<TMapFragment, object, bool>> GetPropertyConditions<TMapFragment>()
             where TMapFragment : MapFragment

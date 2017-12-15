@@ -1,8 +1,11 @@
+using UnicornHack.Abilities;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Effects
 {
+    /// <summary>
     /// Represents the result from an effect application
+    /// </summary>
     public abstract class AppliedEffect : IReferenceable
     {
         protected AppliedEffect()
@@ -11,8 +14,8 @@ namespace UnicornHack.Effects
 
         protected AppliedEffect(AbilityActivationContext abilityContext)
         {
-            SourceAbility = abilityContext.Ability.AddReference().Referenced;
-            SourceAbility.ActiveEffects.Add(this);
+            SourceAbility = abilityContext.Ability?.AddReference().Referenced;
+            SourceAbility?.ActiveEffects.Add(this);
             Game = abilityContext.Target.Game;
             Entity = abilityContext.Target;
             Id = abilityContext.Target.Game.NextAppliedEffectId++;
@@ -53,7 +56,7 @@ namespace UnicornHack.Effects
         protected virtual void Delete()
         {
             Game.Repository.Delete(this);
-            SourceAbility.ActiveEffects.Remove(this);
+            SourceAbility?.ActiveEffects.Remove(this);
             SourceAbility?.RemoveReference();
             SourceAbility = null;
         }

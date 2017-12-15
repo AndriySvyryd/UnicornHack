@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -11,23 +12,22 @@ namespace UnicornHack.Data.Creatures
             Name = "goblin",
             Species = Species.Goblin,
             MovementDelay = 200,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnMeleeAttack,
-                        Action = AbilityAction.Modifier,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Punch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
-                    }
+                    Activation = AbilityActivation.OnMeleeAttack,
+                    Action = AbilityAction.Modifier,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Punch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
+                }
+            },
             SimpleProperties = new HashSet<string> {"infravision", "infravisibility", "humanoidness"},
             ValuedProperties =
                 new Dictionary<string, object> {{"size", 2}, {"physical deflection", 10}, {"weight", 400}},

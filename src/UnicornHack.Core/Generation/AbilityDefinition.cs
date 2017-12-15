@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 
 namespace UnicornHack.Generation
@@ -27,9 +28,9 @@ namespace UnicornHack.Generation
         // TODO: Whether it can be interrupted
         // TODO: Targeting mode
         // TODO: Success condition
-        // TODO: Activation condition
 
-        public virtual ISet<Effect> Effects { get; set; } = new HashSet<Effect>();
+        public virtual ISet<Trigger> Triggers { get; set; }
+        public virtual ISet<Effect> Effects { get; set; }
 
         public AbilityDefinition()
         {
@@ -40,11 +41,13 @@ namespace UnicornHack.Generation
             Game = game;
             Id = game.NextAbilityDefinitionId++;
             game.AbilityDefinitions.Add(this);
+            Triggers = new HashSet<Trigger>();
+            Effects = new HashSet<Effect>();
         }
 
         public virtual AbilityDefinition Copy(Game game)
         {
-            var abilityInstance = new AbilityDefinition(game)
+            var abilityCopy = new AbilityDefinition(game)
             {
                 Name = Name,
                 Activation = Activation,
@@ -55,12 +58,23 @@ namespace UnicornHack.Generation
                 FreeSlotsRequired = FreeSlotsRequired
             };
 
-            foreach (var effect in Effects)
+            if (Triggers != null)
             {
-                abilityInstance.Effects.Add(effect.Copy(game));
+                foreach (var trigger in Triggers)
+                {
+                    abilityCopy.Triggers.Add(trigger.Copy(game));
+                }
             }
 
-            return abilityInstance;
+            if (Effects != null)
+            {
+                foreach (var effect in Effects)
+                {
+                    abilityCopy.Effects.Add(effect.Copy(game));
+                }
+            }
+
+            return abilityCopy;
         }
 
         public virtual Ability Instantiate(Game game)
@@ -75,9 +89,20 @@ namespace UnicornHack.Generation
                 EnergyPointCost = EnergyPointCost
             };
 
-            foreach (var effect in Effects)
+            if (Triggers != null)
             {
-                abilityInstance.Effects.Add(effect.Copy(game));
+                foreach (var trigger in Triggers)
+                {
+                    abilityInstance.Triggers.Add(trigger.Copy(game));
+                }
+            }
+
+            if (Effects != null)
+            {
+                foreach (var effect in Effects)
+                {
+                    abilityInstance.Effects.Add(effect.Copy(game));
+                }
             }
 
             return abilityInstance;

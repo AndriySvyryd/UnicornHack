@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -11,17 +12,16 @@ namespace UnicornHack.Data.Creatures
             Name = "abbot",
             Species = Species.Human,
             MovementDelay = 100,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Punch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 4}}
-                    }
-                },
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Punch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 40}}
+                }
+            },
             SimpleProperties = new HashSet<string> {"infravisibility", "humanoidness"},
             ValuedProperties =
                 new Dictionary<string, object>

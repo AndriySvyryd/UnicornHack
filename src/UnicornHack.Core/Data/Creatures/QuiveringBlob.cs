@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -11,41 +12,38 @@ namespace UnicornHack.Data.Creatures
             Name = "quivering blob",
             Species = Species.Blob,
             MovementDelay = 1200,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Touch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 4}}
-                    }
-                },
-            SimpleProperties =
-                new HashSet<string>
-                {
-                    "sleep resistance",
-                    "decay resistance",
-                    "breathlessness",
-                    "amorphism",
-                    "non animal",
-                    "eyelessness",
-                    "limblessness",
-                    "headlessness",
-                    "mindlessness",
-                    "asexuality"
-                },
-            ValuedProperties =
-                new Dictionary<string, object>
-                {
-                    {"poison resistance", 3},
-                    {"venom resistance", 3},
-                    {"stealthiness", 3},
-                    {"size", 2},
-                    {"physical deflection", 12},
-                    {"weight", 200}
-                },
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Touch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 40}}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "sleep resistance",
+                "decay resistance",
+                "breathlessness",
+                "amorphism",
+                "non animal",
+                "eyelessness",
+                "limblessness",
+                "headlessness",
+                "mindlessness",
+                "asexuality"
+            },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {"poison resistance", 3},
+                {"venom resistance", 3},
+                {"stealthiness", 3},
+                {"size", 2},
+                {"physical deflection", 12},
+                {"weight", 200}
+            },
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 6F},
             Behavior = MonsterBehavior.Wandering

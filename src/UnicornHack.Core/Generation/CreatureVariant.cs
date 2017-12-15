@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CSharpScriptSerialization;
+using UnicornHack.Abilities;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Properties;
 using UnicornHack.Effects;

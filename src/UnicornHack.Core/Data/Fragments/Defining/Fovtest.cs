@@ -8,14 +8,13 @@ namespace UnicornHack.Data.Fragments
         public static readonly DefiningMapFragment FOVTest = new DefiningMapFragment
         {
             Name = "FOVTest",
-            GenerationWeight =
-                new BranchWeight
-                {
-                    Matched = new DefaultWeight {Multiplier = 0F},
-                    Name = "dungeon",
-                    MinDepth = 1,
-                    MaxDepth = 1
-                },
+            GenerationWeight = new BranchWeight
+            {
+                Matched = new DefaultWeight {Multiplier = 0F},
+                Name = "dungeon",
+                MinDepth = 1,
+                MaxDepth = 1
+            },
             NoRandomDoorways = true,
             Map = @"
 #####                                       #####################

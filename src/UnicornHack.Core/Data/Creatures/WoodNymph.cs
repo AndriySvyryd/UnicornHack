@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,24 +13,23 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Nymph,
             SpeciesClass = SpeciesClass.Fey,
             MovementDelay = 100,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Touch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new Sedate { Duration = 2 } }
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Touch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new StealItem()}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Touch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new Sedate {Duration = 2}}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Touch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new StealItem()}
+                }
+            },
             SimpleProperties = new HashSet<string> {"teleportation", "humanoidness", "infravisibility", "femaleness"},
             ValuedProperties =
                 new Dictionary<string, object> {{"physical deflection", 11}, {"magic resistance", 20}, {"weight", 600}},

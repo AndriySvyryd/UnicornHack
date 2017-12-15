@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using UnicornHack.Abilities;
 using UnicornHack.Data;
 
 namespace UnicornHack.Models.GameHubModels

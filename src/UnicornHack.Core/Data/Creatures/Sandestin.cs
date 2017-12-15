@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,35 +13,34 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Sandestin,
             SpeciesClass = SpeciesClass.ShapeChanger,
             MovementDelay = 100,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnMeleeAttack,
-                        Action = AbilityAction.Modifier,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Punch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Punch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new Poison {Damage = 4}}
-                    }
+                    Activation = AbilityActivation.OnMeleeAttack,
+                    Action = AbilityAction.Modifier,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Punch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
+                },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Punch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
+                },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnConsumption,
+                    Effects = new HashSet<Effect> {new Poison {Damage = 40}}
+                }
+            },
             SimpleProperties =
                 new HashSet<string> {"infravision", "infravisibility", "humanoidness", "stoning resistance"},
             ValuedProperties =

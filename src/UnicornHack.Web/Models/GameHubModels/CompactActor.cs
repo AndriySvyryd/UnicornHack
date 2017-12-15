@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using UnicornHack.Abilities;
 using UnicornHack.Data;
 using UnicornHack.Effects;
 
@@ -74,6 +75,7 @@ namespace UnicornHack.Models.GameHubModels
                 .Select(t => CompactItem.Serialize(t, null, context)).ToList());
             properties.Add(player.Abilities.Where(a => a.IsUsable && a.Activation == AbilityActivation.OnTarget)
                 .Select(a => CompactAbility.Serialize(a, null, context)).ToList());
+            // TODO: Group log entries for the same tick
             properties.Add(player.Log.OrderBy(e => e, LogEntry.Comparer).Skip(Math.Max(0, player.Log.Count - 10))
                 .Select(e => CompactLogEntry.Serialize(e, null, context)).ToList());
             properties.Add(player.Races

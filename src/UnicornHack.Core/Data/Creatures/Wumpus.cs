@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,34 +13,31 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Quadruped,
             SpeciesClass = SpeciesClass.Aberration,
             MovementDelay = 400,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Bite,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
-                    }
-                },
-            SimpleProperties =
-                new HashSet<string>
-                {
-                    "clinginess",
-                    "animal body",
-                    "infravisibility",
-                    "handlessness",
-                    "singular inventory"
-                },
-            ValuedProperties =
-                new Dictionary<string, object>
-                {
-                    {"size", 8},
-                    {"physical deflection", 18},
-                    {"magic resistance", 10},
-                    {"weight", 2500}
-                },
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Bite,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "clinginess",
+                "animal body",
+                "infravisibility",
+                "handlessness",
+                "singular inventory"
+            },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {"size", 8},
+                {"physical deflection", 18},
+                {"magic resistance", 10},
+                {"weight", 2500}
+            },
             InitialLevel = 8,
             GenerationWeight = new DefaultWeight {Multiplier = 6F},
             Noise = ActorNoiseType.Burble

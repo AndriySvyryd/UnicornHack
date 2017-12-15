@@ -1,4 +1,5 @@
 using System;
+using UnicornHack.Abilities;
 
 namespace UnicornHack.Effects
 {

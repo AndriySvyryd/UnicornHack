@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -11,30 +12,29 @@ namespace UnicornHack.Data.Creatures
             Name = "valkyrie",
             Species = Species.Human,
             MovementDelay = 100,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnMeleeAttack,
-                        Action = AbilityAction.Modifier,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 4}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Punch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Punch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
-                    }
+                    Activation = AbilityActivation.OnMeleeAttack,
+                    Action = AbilityAction.Modifier,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 40}}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Punch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
+                },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Punch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
+                }
+            },
             SimpleProperties = new HashSet<string> {"infravisibility", "humanoidness", "femaleness"},
             ValuedProperties =
                 new Dictionary<string, object> {{"cold resistance", 3}, {"physical deflection", 10}, {"weight", 1000}},

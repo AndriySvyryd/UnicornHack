@@ -345,7 +345,7 @@ namespace UnicornHack.Utils
                     break;
             }
 
-            return _getUnconnectedNeighbours((byte)nx, (byte)ny).HasFlag(directionsToCheck);
+            return (_getUnconnectedNeighbours((byte)nx, (byte)ny) & directionsToCheck) == directionsToCheck;
         }
 
         private bool BottomRightBeveled(int x, int y, byte octant, Point origin)
@@ -394,7 +394,7 @@ namespace UnicornHack.Utils
                     break;
             }
 
-            return _getUnconnectedNeighbours((byte)nx, (byte)ny).HasFlag(directionsToCheck);
+            return (_getUnconnectedNeighbours((byte)nx, (byte)ny) & directionsToCheck) == directionsToCheck;
         }
     }
 }

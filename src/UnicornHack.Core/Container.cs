@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnicornHack.Utils;
 
 namespace UnicornHack
@@ -32,8 +33,7 @@ namespace UnicornHack
             {
                 itemOrStack.ContainerId = Id;
                 itemOrStack.Container = this;
-                Items.Add(itemOrStack);
-                itemOrStack.AddReference();
+                Items.Add(itemOrStack.AddReference().Referenced);
                 // TODO: Update weight
             }
 
@@ -53,6 +53,15 @@ namespace UnicornHack
                 return true;
             }
             return false;
+        }
+
+        protected override void Delete()
+        {
+            base.Delete();
+            foreach (var item in Items.ToList())
+            {
+                Remove(item);
+            }
         }
     }
 }

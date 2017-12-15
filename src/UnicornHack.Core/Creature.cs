@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Linq;
+using UnicornHack.Abilities;
 using UnicornHack.Utils;
 
 namespace UnicornHack
@@ -23,6 +25,8 @@ namespace UnicornHack
 
         public override bool Act()
         {
+            Debug.Assert(IsAlive);
+
             if (TryAttackPlayerCharacter())
             {
                 return true;
@@ -82,8 +86,7 @@ namespace UnicornHack
             var context = new AbilityActivationContext
             {
                 Activator = this,
-                Target = victim,
-                IsAttack = true
+                Target = victim
             };
             using (context)
             {

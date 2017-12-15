@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using CSharpScriptSerialization;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
@@ -11,7 +9,7 @@ using UnicornHack.Utils;
 
 namespace UnicornHack.Editor
 {
-    public class Program
+    public static class Program
     {
         private static readonly bool SerializeToScript = false;
 
@@ -202,6 +200,11 @@ namespace UnicornHack.Editor
 
         private static void Validate(AbilityDefinition ability)
         {
+            if (ability.Effects == null)
+            {
+                return;
+            }
+
             foreach (var effect in ability.Effects)
             {
                 switch (effect)

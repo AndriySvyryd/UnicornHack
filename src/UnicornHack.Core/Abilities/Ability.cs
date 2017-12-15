@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using UnicornHack.Data.Properties;
@@ -6,7 +6,7 @@ using UnicornHack.Effects;
 using UnicornHack.Events;
 using UnicornHack.Utils;
 
-namespace UnicornHack
+namespace UnicornHack.Abilities
 {
     public class Ability : IReferenceable
     {
@@ -19,9 +19,12 @@ namespace UnicornHack
         public int GameId { get; private set; }
 
         public Game Game { get; set; }
+
         public virtual AbilityActivation Activation { get; set; }
+
         // TODO: Move/refactor this
         public virtual AbilityAction Action { get; set; }
+
         public virtual int Timeout { get; set; }
         public virtual int EnergyPointCost { get; set; }
         public virtual int Delay { get; set; }
@@ -34,8 +37,14 @@ namespace UnicornHack
         // TODO: Success condition
         // TODO: Activation condition
 
-        public virtual ObservableSnapshotHashSet<Effect> Effects { get; set; } = new ObservableSnapshotHashSet<Effect>();
-        public ObservableSnapshotHashSet<AppliedEffect> ActiveEffects { get; set; } = new ObservableSnapshotHashSet<AppliedEffect>();
+        public virtual ObservableSnapshotHashSet<Trigger> Triggers { get; set; } =
+            new ObservableSnapshotHashSet<Trigger>();
+
+        public virtual ObservableSnapshotHashSet<Effect> Effects { get; set; } =
+            new ObservableSnapshotHashSet<Effect>();
+
+        public ObservableSnapshotHashSet<AppliedEffect> ActiveEffects { get; set; } =
+            new ObservableSnapshotHashSet<AppliedEffect>();
 
         public int? EntityId { get; set; }
         public Entity Entity { get; set; }
@@ -71,6 +80,11 @@ namespace UnicornHack
                     effect.Delete();
                 }
                 Effects.Clear();
+                foreach (var trigger in Triggers)
+                {
+                    trigger.Delete();
+                }
+                Triggers.Clear();
             }
         }
 
@@ -102,22 +116,18 @@ namespace UnicornHack
                 IsActive = true;
             }
 
-            if (EnergyPointCost > 0)
+            if (IsExplicitlyActivated())
             {
-                if (activator.GetProperty<int>(PropertyData.EnergyPoints.Name) < EnergyPointCost)
+                if (EnergyPointCost > 0)
                 {
-                    return false;
+                    if (activator.GetProperty<int>(PropertyData.EnergyPoints.Name) < EnergyPointCost)
+                    {
+                        return false;
+                    }
+                    ((Actor)abilityContext.Activator).ChangeCurrentEP(-1 * EnergyPointCost);
                 }
-                ((Actor)abilityContext.Activator).ChangeCurrentEP(-1 * EnergyPointCost);
-            }
 
-            var eventOrder = 0;
-            var firstAbility = abilityContext.Ability == null;
-            if (firstAbility)
-            {
-                abilityContext.Ability = this;
-                if (Activation == AbilityActivation.OnTarget
-                    && activator is Actor actor)
+                if (activator is Actor actor)
                 {
                     if (Delay == 0)
                     {
@@ -129,43 +139,73 @@ namespace UnicornHack
                         actor.NextActionTick += Delay;
                     }
                 }
+            }
 
-                abilityContext.Succeeded = !abilityContext.IsAttack || Game.Random.Next(maxValue: 3) != 0;
+            Entity?.OnAbilityActivating(this);
+
+            var isFinal = IsFinal();
+            if (!isFinal)
+            {
+                abilityContext.EffectsToApply = abilityContext.EffectsToApply != null
+                    ? abilityContext.EffectsToApply.AddRange(Effects)
+                    : Effects.ToImmutableList();
+            }
+
+            var eventOrder = 0;
+            if (IsEventful())
+            {
+                Debug.Assert(abilityContext.AbilityAction == AbilityAction.Default);
+
                 abilityContext.AbilityAction = Action;
+                abilityContext.Succeeded = Game.Random.Next(maxValue: 3) != 0;
                 eventOrder = Game.EventOrder++;
             }
 
-            foreach (var effect in Effects)
+            foreach (var trigger in Triggers)
             {
-                effect.Apply(abilityContext);
+                trigger.Fire(abilityContext);
             }
 
-            if (eventOrder != 0 && abilityContext.IsAttack)
+            if (isFinal)
             {
-                // TODO: Move to Actor
-                AttackEvent.New(abilityContext, eventOrder);
-            }
+                Debug.Assert(abilityContext.Ability == null);
 
-            if (Activation == AbilityActivation.OnTarget && abilityContext.AbilityTrigger != AbilityActivation.Default)
-            {
-                foreach (var triggeredAbility in activator.Abilities.Where(
-                    a => a.IsUsable && a.Activation == abilityContext.AbilityTrigger))
+                abilityContext.Ability = this;
+
+                foreach (var effect in Effects)
                 {
-                    var context = new AbilityActivationContext
+                    effect.Apply(abilityContext);
+                }
+
+                if (abilityContext.EffectsToApply != null)
+                {
+                    foreach (var effect in abilityContext.EffectsToApply)
                     {
-                        Activator = abilityContext.Activator,
-                        Target = abilityContext.Target,
-                        IsAttack = abilityContext.IsAttack
-                    };
-                    using (context)
-                    {
-                        triggeredAbility.Activate(context);
+                        effect.Apply(abilityContext);
                     }
+
+                    abilityContext.EffectsToApply = null;
                 }
             }
 
+            if (eventOrder != 0)
+            {
+                AttackEvent.New(abilityContext, eventOrder);
+            }
+
+            Entity?.OnAbilityActivated(this);
             return true;
         }
+
+        private bool IsFinal() => Action != AbilityAction.Modifier
+                                  && Action != AbilityAction.Shoot
+                                  && Action != AbilityAction.Throw;
+
+        private bool IsEventful() => Action != AbilityAction.Default
+                                     && Action != AbilityAction.Modifier;
+
+        private bool IsExplicitlyActivated() => Activation == AbilityActivation.OnActivation
+                                             || Activation == AbilityActivation.OnTarget;
 
         public void Deactivate()
         {

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,33 +13,31 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Quadruped,
             SpeciesClass = SpeciesClass.Quadrupedal,
             MovementDelay = 133,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Headbutt,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 4}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Bite,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Headbutt,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 40}}
                 },
-            SimpleProperties =
-                new HashSet<string>
+                new AbilityDefinition
                 {
-                    "blindness",
-                    "animal body",
-                    "infravisibility",
-                    "handlessness",
-                    "singular inventory"
-                },
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Bite,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "blindness",
+                "animal body",
+                "infravisibility",
+                "handlessness",
+                "singular inventory"
+            },
             ValuedProperties = new Dictionary<string, object> {{"physical deflection", 13}, {"weight", 600}},
             InitialLevel = 2,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},

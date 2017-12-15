@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,43 +13,40 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Snake,
             SpeciesClass = SpeciesClass.Reptile,
             MovementDelay = 66,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Bite,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new Envenom {Damage = 5}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Spit,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new Blind {Duration = 5}}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Bite,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new Envenom {Damage = 50}}
                 },
-            SimpleProperties =
-                new HashSet<string>
+                new AbilityDefinition
                 {
-                    "swimming",
-                    "concealment",
-                    "infravision",
-                    "serpentlike body",
-                    "limblessness",
-                    "oviparity",
-                    "no inventory"
-                },
-            ValuedProperties =
-                new Dictionary<string, object>
-                {
-                    {"poison resistance", 3},
-                    {"venom resistance", 3},
-                    {"physical deflection", 18},
-                    {"weight", 250}
-                },
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Spit,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new Blind {Duration = 5}}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "swimming",
+                "concealment",
+                "infravision",
+                "serpentlike body",
+                "limblessness",
+                "oviparity",
+                "no inventory"
+            },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {"poison resistance", 3},
+                {"venom resistance", 3},
+                {"physical deflection", 18},
+                {"weight", 250}
+            },
             InitialLevel = 7,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
             Noise = ActorNoiseType.Hiss

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Utils;
 
@@ -31,6 +33,8 @@ namespace UnicornHack
         public byte LevelX { get; set; }
         public byte LevelY { get; set; }
 
+        protected int AbilitiesBeingActivated { get; set; }
+
         private static readonly Dictionary<string, List<object>> PropertyListeners = new Dictionary<string, List<object>>();
 
         public Entity()
@@ -45,18 +49,13 @@ namespace UnicornHack
         }
 
         public T GetProperty<T>(string propertyName)
-        {
-            if (Properties.List.TryGetValue(propertyName, out var property))
-            {
-                return ((Property<T>)property).CurrentValue;
-            }
-
-            return ((PropertyDescription<T>)PropertyDescription.Loader.Get(propertyName)).DefaultValue;
-        }
+            => Properties.List.TryGetValue(propertyName, out var property)
+                ? ((Property<T>)property).CurrentValue
+                : ((PropertyDescription<T>)PropertyDescription.Loader.Get(propertyName)).DefaultValue;
 
         public Property<T> InvalidateProperty<T>(string propertyName)
         {
-            if (((PropertyDescription<T>)PropertyDescription.Loader.Get(propertyName)).IsCalculated)
+            if (PropertyDescription.Loader.Get(propertyName).IsCalculated)
             {
                 if (!Properties.List.TryGetValue(propertyName, out var property))
                 {
@@ -112,24 +111,48 @@ namespace UnicornHack
             listeners.Add(action);
         }
 
+        public virtual void ActivateAbilities(AbilityActivation activation, Entity activator, Entity target)
+        {
+            using (var context = new AbilityActivationContext
+            {
+                Activator = activator,
+                Target = target
+            })
+            {
+                ActivateAbilities(activation, context, useSameContext: false);
+            }
+        }
+
+        public virtual void ActivateAbilities(
+            AbilityActivation activation, AbilityActivationContext context, bool useSameContext)
+        {
+            foreach (var ability in Abilities.Where(a => a.Activation == activation && !a.IsActive).ToList())
+            {
+                if (ability.Action == AbilityAction.Modifier
+                    || useSameContext)
+                {
+                    ability.Activate(context);
+                }
+                else
+                {
+                    using (var newContext = new AbilityActivationContext
+                    {
+                        Activator = context.Activator,
+                        Target = context.Target
+                    })
+                    {
+                        ability.Activate(newContext);
+                    }
+                }
+            }
+        }
+
         public virtual void Add(Ability ability)
         {
             Abilities.Add(ability.AddReference().Referenced);
             ability.Entity = this;
 
-            if (ability.Activation == AbilityActivation.Always && !ability.IsActive)
-            {
-                var context = new AbilityActivationContext
-                {
-                    Activator = this,
-                    Target = this,
-                    AbilityTrigger = AbilityActivation.Always
-                };
-                using (context)
-                {
-                    ability.Activate(context);
-                }
-            }
+            ActivateAbilities(AbilityActivation.Always, this, this);
         }
 
         public virtual void Remove(Ability ability)
@@ -142,6 +165,16 @@ namespace UnicornHack
             {
                 ability.Deactivate();
             }
+        }
+
+        public virtual void OnAbilityActivating(Ability ability)
+        {
+            AbilitiesBeingActivated++;
+        }
+
+        public virtual void OnAbilityActivated(Ability ability)
+        {
+            AbilitiesBeingActivated--;
         }
     }
 }

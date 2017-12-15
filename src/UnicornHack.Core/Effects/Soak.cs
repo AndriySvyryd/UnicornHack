@@ -1,3 +1,4 @@
+using UnicornHack.Abilities;
 using UnicornHack.Data.Properties;
 
 namespace UnicornHack.Effects

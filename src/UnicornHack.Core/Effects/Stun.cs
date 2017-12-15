@@ -1,3 +1,5 @@
+using UnicornHack.Abilities;
+
 namespace UnicornHack.Effects
 {
     public class Stun : Effect

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,28 +13,26 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Snake,
             SpeciesClass = SpeciesClass.Reptile,
             MovementDelay = 150,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Bite,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
-                    }
-                },
-            SimpleProperties =
-                new HashSet<string>
-                {
-                    "swimming",
-                    "concealment",
-                    "infravision",
-                    "serpentlike body",
-                    "limblessness",
-                    "oviparity",
-                    "no inventory"
-                },
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Bite,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "swimming",
+                "concealment",
+                "infravision",
+                "serpentlike body",
+                "limblessness",
+                "oviparity",
+                "no inventory"
+            },
             ValuedProperties =
                 new Dictionary<string, object> {{"size", 1}, {"physical deflection", 12}, {"weight", 50}},
             InitialLevel = 1,

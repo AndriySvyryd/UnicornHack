@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,55 +13,52 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Vampire,
             SpeciesClass = SpeciesClass.ShapeChanger | SpeciesClass.Undead,
             MovementDelay = 85,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnMeleeAttack,
-                        Action = AbilityAction.Modifier,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 4}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Punch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Bite,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new DrainLife {Amount = 4}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new Infect()}
-                    }
+                    Activation = AbilityActivation.OnMeleeAttack,
+                    Action = AbilityAction.Modifier,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 40}}
                 },
-            SimpleProperties =
-                new HashSet<string>
+                new AbilityDefinition
                 {
-                    "sleep resistance",
-                    "flight",
-                    "flight control",
-                    "infravision",
-                    "humanoidness",
-                    "breathlessness",
-                    "maleness",
-                    "sickness resistance"
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Punch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
-            ValuedProperties =
-                new Dictionary<string, object>
+                new AbilityDefinition
                 {
-                    {"poison resistance", 3},
-                    {"regeneration", 3},
-                    {"magic resistance", 40},
-                    {"weight", 1000}
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Bite,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new DrainLife {Amount = 4}}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnConsumption,
+                    Effects = new HashSet<Effect> {new Infect()}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "sleep resistance",
+                "flight",
+                "flight control",
+                "infravision",
+                "humanoidness",
+                "breathlessness",
+                "maleness",
+                "sickness resistance"
+            },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {"poison resistance", 3},
+                {"regeneration", 3},
+                {"magic resistance", 40},
+                {"weight", 1000}
+            },
             InitialLevel = 12,
             PreviousStageName = "vampire",
             NextStageName = "vampire mage",

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,62 +13,77 @@ namespace UnicornHack.Data.Creatures
             Species = Species.DemonMajor,
             SpeciesClass = SpeciesClass.Demon,
             MovementDelay = 133,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Claw,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Claw,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Bite,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Spell,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new Poison {Damage = 4}}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Claw,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
-            SimpleProperties =
-                new HashSet<string>
+                new AbilityDefinition
                 {
-                    "infravision",
-                    "invisibility detection",
-                    "infravisibility",
-                    "humanoidness",
-                    "sickness resistance"
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Claw,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
-            ValuedProperties =
-                new Dictionary<string, object>
+                new AbilityDefinition
                 {
-                    {"fire resistance", 3},
-                    {"poison resistance", 3},
-                    {"size", 16},
-                    {"physical deflection", 24},
-                    {"magic resistance", 65},
-                    {"weight", 2500}
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Bite,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Spell,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
+                },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnConsumption,
+                    Effects = new HashSet<Effect> {new Poison {Damage = 40}}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "infravision",
+                "invisibility detection",
+                "infravisibility",
+                "humanoidness",
+                "sickness resistance"
+            },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {
+                    "fire resistance",
+                    3
+                },
+                {
+                    "poison resistance",
+                    3
+                },
+                {
+                    "size",
+                    16
+                },
+                {
+                    "physical deflection",
+                    24
+                },
+                {
+                    "magic resistance",
+                    65
+                },
+                {
+                    "weight",
+                    2500
+                }
+            },
             InitialLevel = 11,
             GenerationWeight = new BranchWeight {Matched = new DefaultWeight(), Name = "hell"},
             PreviousStageName = "barbed devil",

@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
+using UnicornHack.Data.Items;
 using UnicornHack.Effects;
 using UnicornHack.Events;
 using UnicornHack.Generation;
@@ -27,11 +29,11 @@ namespace UnicornHack.Services.English
                 expectedMessage: "Wizard of Yendor tries to cast a spell at Dudley, but misses.");
 
             Verify(newt, nymph, player, SenseType.Sound, SenseType.Sight, AbilityAction.Sting, 11,
-                expectedMessage: "You hear some noises.");
+                expectedMessage: "You hear a noise.");
 
             Verify(newt, nymph, player, SenseType.Sight, SenseType.SoundDistant | SenseType.Danger | SenseType.Touch,
                 AbilityAction.Headbutt, 11,
-                expectedMessage: "The newt headbutts something.");
+                expectedMessage: "The newt headbutts the water nymph. (11 pts.)");
 
             Verify(nymph, player, player, SenseType.Sight | SenseType.Touch, SenseType.Sight | SenseType.Touch,
                 AbilityAction.Punch, 11,
@@ -65,11 +67,57 @@ namespace UnicornHack.Services.English
             Verify(nymph, nymph, player, SenseType.Sound, SenseType.None, AbilityAction.Scream, null,
                 expectedMessage: "You hear a scream.");
 
-            //Verify(nymph, player, player, SenseType.Sight, SenseType.Sight, AbilityAction.Weapon, 11, weapon: Bow, projectile: Arrow,
-            //    expectedMessage: "The water nymph shoots an arrow. You are hit by an arrow! [11 pts.]");
+            var game = TestHelper.CreateGame();
+            var dagger = ItemVariantData.Dagger.Instantiate(game);
 
-            //Verify(player, newt, player, SenseType.Sight, SenseType.Sight, AbilityAction.Weapon, 11, weapon: Bow, projectile: Arrow,
-            //    expectedMessage: "The arrow hits the newt. (11 pts.)");
+            Verify(player, newt, player, SenseType.Touch, SenseType.Sight, AbilityAction.Slash, 11, weapon: dagger,
+                expectedMessage: "You slash the newt with the dagger. (11 pts.)");
+
+            var bow = (Launcher)ItemVariantData.Shortbow.Instantiate(game);
+
+            Verify(nymph, player, player, SenseType.Sight, SenseType.None, AbilityAction.Shoot, null, weapon: bow,
+                expectedMessage: "The water nymph shoots with a shortbow.");
+
+            Verify(nymph, player, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, 11, weapon: bow.Projectile,
+                expectedMessage: "An arrow hits you! [11 pts.]");
+
+            Verify(nymph, player, player, SenseType.SoundDistant, SenseType.None, AbilityAction.Shoot, null, weapon: bow,
+                expectedMessage: "Something shoots with something.");
+
+            Verify(nymph, player, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, null, weapon: bow.Projectile,
+                expectedMessage: "An arrow misses you.");
+
+            Verify(player, newt, player, SenseType.Sight, SenseType.None, AbilityAction.Shoot, null, weapon: bow,
+                expectedMessage: "You shoot with the shortbow.");
+
+            Verify(player, newt, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, 11, weapon: bow.Projectile,
+                expectedMessage: "An arrow hits the newt. (11 pts.)");
+
+            Verify(nymph, newt, player, SenseType.Sound, SenseType.None, AbilityAction.Shoot, null, weapon: bow,
+                expectedMessage: "You hear a noise.");
+
+            Verify(nymph, newt, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, 2, weapon: bow.Projectile,
+                expectedMessage: "An arrow hits the newt. (2 pts.)");
+
+            var throwingKnives = (Launcher)ItemVariantData.ThrowingKnives.Instantiate(game);
+
+            Verify(nymph, player, player, SenseType.Sound, SenseType.None, AbilityAction.Throw, null, weapon: throwingKnives,
+                expectedMessage: "Something throws something.");
+
+            Verify(nymph, player, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, 11, weapon: throwingKnives.Projectile,
+                expectedMessage: "A throwing knife hits you! [11 pts.]");
+
+            Verify(player, newt, player, SenseType.Sight, SenseType.None, AbilityAction.Throw, null, weapon: throwingKnives,
+                expectedMessage: "You throw a throwing knife.");
+
+            Verify(player, newt, player, SenseType.None, SenseType.Sound, AbilityAction.Hit, null, weapon: throwingKnives.Projectile,
+                expectedMessage: "A throwing knife misses something.");
+
+            Verify(nymph, newt, player, SenseType.Sound, SenseType.None, AbilityAction.Throw, null, weapon: throwingKnives,
+                expectedMessage: "You hear a noise.");
+
+            Verify(nymph, newt, player, SenseType.None, SenseType.Sound, AbilityAction.Hit, 2, weapon: throwingKnives.Projectile,
+                expectedMessage: "A throwing knife hits something.");
         }
 
         private void Verify(
@@ -81,7 +129,6 @@ namespace UnicornHack.Services.English
             AbilityAction abilityAction,
             int? damage,
             Item weapon = null,
-            Item projectile = null,
             string expectedMessage = "")
         {
             var languageService = CreateLanguageService();
@@ -103,7 +150,14 @@ namespace UnicornHack.Services.English
 
             if (weapon != null)
             {
-                attackEvent.AppliedEffects.Add(new MeleeAttacked {Weapon = weapon});
+                if ((weapon.Type & ItemType.WeaponRanged) == 0)
+                {
+                    attackEvent.AppliedEffects.Add(new MeleeAttacked {Weapon = weapon});
+                }
+                else
+                {
+                    attackEvent.AppliedEffects.Add(new RangeAttacked {Weapon = weapon});
+                }
             }
 
             Assert.Equal(expectedMessage, languageService.ToString(attackEvent));

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -11,52 +12,49 @@ namespace UnicornHack.Data.Creatures
             Name = "violet fungus",
             Species = Species.Fungus,
             MovementDelay = 1200,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Touch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new Poison {Damage = 3}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Touch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new Stick()}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new Poison {Damage = 3}}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Touch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new Poison {Damage = 30}}
                 },
-            SimpleProperties =
-                new HashSet<string>
+                new AbilityDefinition
                 {
-                    "sleep resistance",
-                    "breathlessness",
-                    "non animal",
-                    "eyelessness",
-                    "limblessness",
-                    "headlessness",
-                    "mindlessness",
-                    "asexuality",
-                    "no inventory"
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Touch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new Stick()}
                 },
-            ValuedProperties =
-                new Dictionary<string, object>
+                new AbilityDefinition
                 {
-                    {"poison resistance", 3},
-                    {"venom resistance", 3},
-                    {"stealthiness", 3},
-                    {"size", 2},
-                    {"physical deflection", 13},
-                    {"weight", 100}
-                },
+                    Activation = AbilityActivation.OnConsumption,
+                    Effects = new HashSet<Effect> {new Poison {Damage = 30}}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "sleep resistance",
+                "breathlessness",
+                "non animal",
+                "eyelessness",
+                "limblessness",
+                "headlessness",
+                "mindlessness",
+                "asexuality",
+                "no inventory"
+            },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {"poison resistance", 3},
+                {"venom resistance", 3},
+                {"stealthiness", 3},
+                {"size", 2},
+                {"physical deflection", 13},
+                {"weight", 100}
+            },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 2F}
         };

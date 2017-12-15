@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,17 +13,16 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Horse,
             SpeciesClass = SpeciesClass.Quadrupedal,
             MovementDelay = 50,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Kick,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
-                    }
-                },
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Kick,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
+                }
+            },
             SimpleProperties =
                 new HashSet<string> {"animal body", "infravisibility", "handlessness", "singular inventory"},
             ValuedProperties =

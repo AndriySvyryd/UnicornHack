@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -11,17 +12,16 @@ namespace UnicornHack.Data.Creatures
             Name = "orc shaman",
             Species = Species.Orc,
             MovementDelay = 133,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Spell,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
-                    }
-                },
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Spell,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
+                }
+            },
             SimpleProperties = new HashSet<string> {"infravision", "infravisibility", "humanoidness"},
             ValuedProperties =
                 new Dictionary<string, object>

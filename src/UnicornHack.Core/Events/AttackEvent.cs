@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 
 namespace UnicornHack.Events
@@ -18,30 +19,34 @@ namespace UnicornHack.Events
         public AbilityAction AbilityAction { get; set; }
         public ISet<AppliedEffect> AppliedEffects { get; set; } = new HashSet<AppliedEffect>();
         public bool Hit { get; set; }
-        public Item Weapon { get; set; }
 
         public static void New(AbilityActivationContext abilityContext, int eventOrder)
         {
-            if (!(abilityContext.Activator is Actor attacker)
-                || !(abilityContext.Target is Actor victim))
+            var attacker = abilityContext.Activator as Actor;
+            var victim = abilityContext.Target as Actor;
+            var level = attacker?.Level ?? victim?.Level;
+            if (level == null)
             {
                 return;
             }
 
-            Debug.Assert(attacker.Level == victim.Level);
-
-            var weapon = abilityContext.AppliedEffects.OfType<MeleeAttacked>().Select(m => m.Weapon)
-                             .FirstOrDefault(w => w != null)
-                         ?? abilityContext.AppliedEffects.OfType<RangeAttacked>().Select(r => r.Weapon)
-                             .FirstOrDefault(w => w != null);
-            foreach (var sensor in attacker.Level.Actors)
+            foreach (var sensor in level.Actors)
             {
                 var attackerSensed = sensor.CanSense(attacker);
                 var victimSensed = sensor.CanSense(victim);
 
-                if (attackerSensed == SenseType.None && victimSensed == SenseType.None)
+                if (attackerSensed == SenseType.None)
                 {
-                    continue;
+                    if (victimSensed == SenseType.None)
+                    {
+                        continue;
+                    }
+
+                    if((victimSensed & (SenseType.Sight | SenseType.Touch)) == 0
+                        && !abilityContext.Succeeded)
+                    {
+                        continue;
+                    }
                 }
 
                 // TODO: One instance per event
@@ -53,13 +58,12 @@ namespace UnicornHack.Events
                     VictimSensed = victimSensed,
                     AbilityAction = abilityContext.AbilityAction,
                     AppliedEffects = abilityContext.AppliedEffects,
-                    Weapon = weapon,
                     Hit = abilityContext.Succeeded,
                     EventOrder = eventOrder,
-                    Tick = attacker.Level.CurrentTick
+                    Tick = level.CurrentTick
                 };
-                attacker.AddReference();
-                victim.AddReference();
+                attacker?.AddReference();
+                victim?.AddReference();
                 foreach (var effect in @event.AppliedEffects)
                 {
                     effect.AddReference();

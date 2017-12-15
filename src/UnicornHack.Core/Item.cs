@@ -23,19 +23,19 @@ namespace UnicornHack
         public EquipmentSlot GetEquipableSlots(int size)
         {
             var category = GetSizeCategory(size);
-            if (EquipableSizes.HasFlag(category))
+            if ((EquipableSizes & category) != 0)
             {
                 return EquipableSlots;
             }
 
             var slots = EquipmentSlot.Default;
-            if (EquipableSlots.HasFlag(EquipmentSlot.GraspBothExtremities) &&
-                EquipableSlots.HasFlag(EquipmentSlot.GraspSingleExtremity))
+            if ((EquipableSlots & EquipmentSlot.GraspBothExtremities) != 0 &&
+                (EquipableSlots & EquipmentSlot.GraspSingleExtremity) != 0)
             {
                 if (category != SizeCategory.Tiny)
                 {
                     var smallerSize = (SizeCategory)((int)category >> 1);
-                    if (EquipableSizes.HasFlag(smallerSize))
+                    if ((EquipableSizes & smallerSize) != 0)
                     {
                         slots |= EquipmentSlot.GraspSingleExtremity;
                     }
@@ -44,7 +44,7 @@ namespace UnicornHack
                 if (category != SizeCategory.Gigantic)
                 {
                     var biggerSize = (SizeCategory)((int)category << 1);
-                    if (EquipableSizes.HasFlag(biggerSize))
+                    if ((EquipableSizes & biggerSize) != 0)
                     {
                         slots |= EquipmentSlot.GraspBothExtremities;
                     }
@@ -95,12 +95,17 @@ namespace UnicornHack
         {
             if (--_referenceCount <= 0)
             {
-                foreach (var ability in Abilities.ToList())
-                {
-                    Remove(ability);
-                }
-                Game.Repository.Delete(this);
+                Delete();
             }
+        }
+
+        protected virtual void Delete()
+        {
+            foreach (var ability in Abilities.ToList())
+            {
+                Remove(ability);
+            }
+            Game.Repository.Delete(this);
         }
 
         public virtual bool MoveTo(IItemLocation location)

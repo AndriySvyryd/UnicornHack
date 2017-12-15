@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,61 +13,79 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Dragon,
             SpeciesClass = SpeciesClass.Reptile,
             MovementDelay = 133,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Breath,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new Confuse {Duration = 14}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Bite,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 9}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Claw,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Claw,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Breath,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new Confuse {Duration = 14}}
                 },
-            SimpleProperties =
-                new HashSet<string>
+                new AbilityDefinition
                 {
-                    "flight",
-                    "flight control",
-                    "invisibility detection",
-                    "infravision",
-                    "animal body",
-                    "handlessness",
-                    "oviparity",
-                    "singular inventory"
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Bite,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
                 },
-            ValuedProperties =
-                new Dictionary<string, object>
+                new AbilityDefinition
                 {
-                    {"poison resistance", 3},
-                    {"danger awareness", 3},
-                    {"thick hide", 3},
-                    {"size", 32},
-                    {"physical deflection", 28},
-                    {"magic resistance", 20},
-                    {"weight", 4500}
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Claw,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Claw,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "flight",
+                "flight control",
+                "invisibility detection",
+                "infravision",
+                "animal body",
+                "handlessness",
+                "oviparity",
+                "singular inventory"
+            },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {
+                    "poison resistance",
+                    3
+                },
+                {
+                    "danger awareness",
+                    3
+                },
+                {
+                    "thick hide",
+                    3
+                },
+                {
+                    "size",
+                    32
+                },
+                {
+                    "physical deflection",
+                    28
+                },
+                {
+                    "magic resistance",
+                    20
+                },
+                {
+                    "weight",
+                    4500
+                }
+            },
             InitialLevel = 15,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
             PreviousStageName = "baby shimmering dragon",

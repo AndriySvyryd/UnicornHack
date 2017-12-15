@@ -13,202 +13,223 @@ namespace UnicornHack.Data
                 new ItemGroup
                 {
                     Type = ItemType.WeaponMeleeFist,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
                 {
                     Type = ItemType.WeaponMeleeShort,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
                 {
                     Type = ItemType.WeaponMeleeMedium,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
                 {
                     Type = ItemType.WeaponMeleeLong,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
                 {
                     Type = ItemType.WeaponMagicFocus,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
                 {
                     Type = ItemType.WeaponMagicStaff,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
                 {
                     Type = ItemType.WeaponRangedThrown,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
                 {
                     Type = ItemType.WeaponRangedSlingshot,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
                 {
                     Type = ItemType.WeaponRangedBow,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
                 {
                     Type = ItemType.WeaponRangedCrossbow,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
                 {
                     Type = ItemType.WeaponAmmoContainer,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
+                new ItemGroup {Type = ItemType.WeaponProjectile},
                 new ItemGroup
                 {
                     Type = ItemType.Shield,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
                 {
                     Type = ItemType.ArmorBody,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
                 {
                     Type = ItemType.ArmorHead,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
                 {
                     Type = ItemType.ArmorFeet,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
                 {
                     Type = ItemType.ArmorHands,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
                 {
                     Type = ItemType.ArmorBack,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
                 {
                     Type = ItemType.Accessory,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
                 {
                     Type = ItemType.Container,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup {Type = ItemType.Potion, Weight = 100F},
                 new ItemGroup
                 {
                     Type = ItemType.Wand,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
@@ -216,19 +237,20 @@ namespace UnicornHack.Data
                     Type = ItemType.Figurine,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup
                 {
                     Type = ItemType.Trinket,
+                    Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup {Weight = 40F},
-                        new ItemGroup {Type = ItemType.Intricate, Weight = 20F},
-                        new ItemGroup {Type = ItemType.Exotic, Weight = 10F}
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
+                        new ItemGroup {Weight = 40F}
                     }
                 },
                 new ItemGroup {Type = ItemType.SkillBook, Weight = 50F}

@@ -1,6 +1,6 @@
 using System;
 
-namespace UnicornHack
+namespace UnicornHack.Generation
 {
     [Flags]
     public enum GenerationFlags

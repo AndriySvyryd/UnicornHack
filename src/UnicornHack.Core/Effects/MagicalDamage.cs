@@ -1,3 +1,5 @@
+using UnicornHack.Abilities;
+
 namespace UnicornHack.Effects
 {
     public class MagicalDamage : Effect
@@ -21,8 +23,11 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            (abilityContext.Target as Actor)?.ChangeCurrentHP(-1 * Damage);
-            abilityContext.Add(new MagicallyDamaged(abilityContext) {Damage = Damage});
+            if (Damage != 0)
+            {
+                (abilityContext.Target as Actor)?.ChangeCurrentHP(-1 * Damage);
+                abilityContext.Add(new MagicallyDamaged(abilityContext) {Damage = Damage});
+            }
         }
     }
 }

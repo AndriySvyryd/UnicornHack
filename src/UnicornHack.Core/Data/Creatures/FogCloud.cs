@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,66 +13,84 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Cloud,
             SpeciesClass = SpeciesClass.Extraplanar,
             MovementDelay = 1200,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Touch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new Engulf {Duration = 3}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnDigestion,
-                        Action = AbilityAction.Digestion,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 3}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnDigestion,
-                        Action = AbilityAction.Digestion,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new Soak {Damage = 1}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnMeleeHit,
-                        Effects = new HashSet<Effect> {new Soak {Damage = 2}}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Touch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new Engulf {Duration = 3}}
                 },
-            SimpleProperties =
-                new HashSet<string>
+                new AbilityDefinition
                 {
-                    "sleep resistance",
-                    "flight",
-                    "flight control",
-                    "non animal",
-                    "non solid body",
-                    "breathlessness",
-                    "limblessness",
-                    "eyelessness",
-                    "headlessness",
-                    "mindlessness",
-                    "asexuality",
-                    "no inventory",
-                    "stoning resistance",
-                    "sliming resistance",
-                    "sickness resistance"
+                    Activation = AbilityActivation.OnDigestion,
+                    Action = AbilityAction.Digestion,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
                 },
-            ValuedProperties =
-                new Dictionary<string, object>
+                new AbilityDefinition
                 {
-                    {"poison resistance", 3},
-                    {"venom resistance", 3},
-                    {"acid resistance", 3},
-                    {"stealthiness", 3},
-                    {"size", 16},
-                    {"magic resistance", 30},
-                    {"weight", 1}
+                    Activation = AbilityActivation.OnDigestion,
+                    Action = AbilityAction.Digestion,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new Soak {Damage = 10}}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnMeleeHit,
+                    Effects = new HashSet<Effect> {new Soak {Damage = 20}}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "sleep resistance",
+                "flight",
+                "flight control",
+                "non animal",
+                "non solid body",
+                "breathlessness",
+                "limblessness",
+                "eyelessness",
+                "headlessness",
+                "mindlessness",
+                "asexuality",
+                "no inventory",
+                "stoning resistance",
+                "sliming resistance",
+                "sickness resistance"
+            },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {
+                    "poison resistance",
+                    3
+                },
+                {
+                    "venom resistance",
+                    3
+                },
+                {
+                    "acid resistance",
+                    3
+                },
+                {
+                    "stealthiness",
+                    3
+                },
+                {
+                    "size",
+                    16
+                },
+                {
+                    "magic resistance",
+                    30
+                },
+                {
+                    "weight",
+                    1
+                }
+            },
             InitialLevel = 3,
             GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight {Multiplier = 4F}, Name = "hell"},
             CorpseName = ""

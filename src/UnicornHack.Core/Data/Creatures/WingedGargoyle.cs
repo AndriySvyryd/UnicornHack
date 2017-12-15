@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -11,41 +12,39 @@ namespace UnicornHack.Data.Creatures
             Name = "winged gargoyle",
             Species = Species.Gargoyle,
             MovementDelay = 80,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Claw,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Claw,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Bite,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Claw,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
-            SimpleProperties =
-                new HashSet<string>
+                new AbilityDefinition
                 {
-                    "flight",
-                    "flight control",
-                    "humanoidness",
-                    "breathlessness",
-                    "oviparity",
-                    "stoning resistance"
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Claw,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Bite,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "flight",
+                "flight control",
+                "humanoidness",
+                "breathlessness",
+                "oviparity",
+                "stoning resistance"
+            },
             ValuedProperties =
                 new Dictionary<string, object> {{"thick hide", 3}, {"physical deflection", 24}, {"weight", 1200}},
             InitialLevel = 9,

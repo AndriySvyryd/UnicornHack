@@ -1,6 +1,6 @@
 using System.Linq;
 using System.Reflection;
-using UnicornHack.Generation;
+using UnicornHack.Abilities;
 
 namespace UnicornHack.Effects
 {

@@ -1,6 +1,6 @@
 using System;
 
-namespace UnicornHack
+namespace UnicornHack.Abilities
 {
     [Flags]
     public enum AbilityActivation

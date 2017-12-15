@@ -32,7 +32,6 @@ namespace UnicornHack.Generation
                     {
                         if (currentGroup.SubGroups == null)
                         {
-                            //var quality = level.GenerationRandom.NextBinomial(difficultyFraction, qualityList.Count - 1);
                             foreach (var itemVariant in level.GenerationRandom.WeightedOrder(
                                 ItemVariant.Loader.GetAllValues(currentGroup), c => c.GetWeight(level)))
                             {
@@ -49,7 +48,7 @@ namespace UnicornHack.Generation
                             {
                                 break;
                             }
-                            // TODO: Log no item of the chosen type/rarity
+                            // TODO: Log no item of the chosen subgroup
                         }
                         else
                         {

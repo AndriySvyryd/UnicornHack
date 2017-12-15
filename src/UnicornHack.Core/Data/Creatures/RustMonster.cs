@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -11,38 +12,36 @@ namespace UnicornHack.Data.Creatures
             Name = "rust monster",
             Species = Species.RustMonster,
             MovementDelay = 66,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Touch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new Soak {Damage = 7}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Touch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new Soak {Damage = 7}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnMeleeHit,
-                        Effects = new HashSet<Effect> {new Soak {Damage = 10}}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Touch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new Soak {Damage = 70}}
                 },
-            SimpleProperties =
-                new HashSet<string>
+                new AbilityDefinition
                 {
-                    "swimming",
-                    "infravisibility",
-                    "animal body",
-                    "handlessness",
-                    "singular inventory"
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Touch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new Soak {Damage = 70}}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnMeleeHit,
+                    Effects = new HashSet<Effect> {new Soak {Damage = 100}}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "swimming",
+                "infravisibility",
+                "animal body",
+                "handlessness",
+                "singular inventory"
+            },
             ValuedProperties = new Dictionary<string, object> {{"physical deflection", 18}, {"weight", 1000}},
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 3F}

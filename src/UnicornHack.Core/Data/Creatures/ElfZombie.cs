@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,42 +13,39 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Elf,
             SpeciesClass = SpeciesClass.Undead,
             MovementDelay = 100,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Punch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 5}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new Infect()}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Punch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
                 },
-            SimpleProperties =
-                new HashSet<string>
+                new AbilityDefinition
                 {
-                    "sleep resistance",
-                    "invisibility detection",
-                    "infravision",
-                    "humanoidness",
-                    "breathlessness",
-                    "mindlessness",
-                    "sickness resistance"
-                },
-            ValuedProperties =
-                new Dictionary<string, object>
-                {
-                    {"cold resistance", 3},
-                    {"poison resistance", 3},
-                    {"physical deflection", 11},
-                    {"magic resistance", 10},
-                    {"weight", 800}
-                },
+                    Activation = AbilityActivation.OnConsumption,
+                    Effects = new HashSet<Effect> {new Infect()}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "sleep resistance",
+                "invisibility detection",
+                "infravision",
+                "humanoidness",
+                "breathlessness",
+                "mindlessness",
+                "sickness resistance"
+            },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {"cold resistance", 3},
+                {"poison resistance", 3},
+                {"physical deflection", 11},
+                {"magic resistance", 10},
+                {"weight", 800}
+            },
             InitialLevel = 4,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
             CorpseName = "elf",

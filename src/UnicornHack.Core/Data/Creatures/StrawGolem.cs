@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -11,45 +12,64 @@ namespace UnicornHack.Data.Creatures
             Name = "straw golem",
             Species = Species.Golem,
             MovementDelay = 100,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Punch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Punch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Punch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
-            SimpleProperties =
-                new HashSet<string>
+                new AbilityDefinition
                 {
-                    "sleep resistance",
-                    "non animal",
-                    "breathlessness",
-                    "mindlessness",
-                    "humanoidness",
-                    "asexuality",
-                    "stoning resistance",
-                    "sickness resistance"
-                },
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Punch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "sleep resistance",
+                "non animal",
+                "breathlessness",
+                "mindlessness",
+                "humanoidness",
+                "asexuality",
+                "stoning resistance",
+                "sickness resistance"
+            },
             ValuedProperties = new Dictionary<string, object>
             {
-                {"cold resistance", 3},
-                {"poison resistance", 3},
-                {"venom resistance", 3},
-                {"health point maximum", 20},
-                {"size", 8},
-                {"physical deflection", 10},
-                {"weight", 400}
+                {
+                    "cold resistance",
+                    3
+                },
+                {
+                    "poison resistance",
+                    3
+                },
+                {
+                    "venom resistance",
+                    3
+                },
+                {
+                    "hit point maximum",
+                    20
+                },
+                {
+                    "size",
+                    8
+                },
+                {
+                    "physical deflection",
+                    10
+                },
+                {
+                    "weight",
+                    400
+                }
             },
             InitialLevel = 3,
             CorpseName = ""

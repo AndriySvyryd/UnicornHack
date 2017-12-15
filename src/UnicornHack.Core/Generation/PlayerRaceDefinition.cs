@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CSharpScriptSerialization;
+using UnicornHack.Abilities;
 using UnicornHack.Data.Players;
 using UnicornHack.Effects;
 using UnicornHack.Utils;

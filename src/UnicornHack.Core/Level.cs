@@ -209,7 +209,8 @@ namespace UnicornHack
                     // Avoid infinite loop if no players are present
                     break;
                 }
-                Debug.Assert(actor.Level == this && actor.IsAlive);
+
+                Debug.Assert(actor.Level == this);
 
                 CurrentTick = actor.NextActionTick;
                 if (!actor.Act())

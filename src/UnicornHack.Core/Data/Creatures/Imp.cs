@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,32 +13,30 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Imp,
             SpeciesClass = SpeciesClass.Demon,
             MovementDelay = 100,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Claw,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 2}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new Poison {Damage = 2}}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Claw,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnConsumption,
+                    Effects = new HashSet<Effect> {new Poison {Damage = 20}}
+                }
+            },
             SimpleProperties = new HashSet<string> {"flight", "flight control", "infravision", "infravisibility"},
-            ValuedProperties =
-                new Dictionary<string, object>
-                {
-                    {"regeneration", 3},
-                    {"size", 1},
-                    {"physical deflection", 18},
-                    {"magic resistance", 20},
-                    {"weight", 100}
-                },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {"regeneration", 3},
+                {"size", 1},
+                {"physical deflection", 18},
+                {"magic resistance", 20},
+                {"weight", 100}
+            },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 7F},
             CorpseName = "",

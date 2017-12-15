@@ -989,21 +989,20 @@ export const enum ItemType {
     WeaponRangedBow = 1 << 10,
     WeaponRangedCrossbow = 1 << 11,
     WeaponAmmoContainer = 1 << 12,
-    Shield = 1 << 13,
-    ArmorBody = 1 << 14,
-    ArmorHead = 1 << 15,
-    ArmorFeet = 1 << 16,
-    ArmorHands = 1 << 17,
-    ArmorBack = 1 << 18,
-    Accessory = 1 << 19,
-    Container = 1 << 20,
-    Potion = 1 << 21,
-    Wand = 1 << 22,
-    Figurine = 1 << 23,
+    WeaponProjectile = 1 << 13,
+    Shield = 1 << 14,
+    ArmorBody = 1 << 15,
+    ArmorHead = 1 << 16,
+    ArmorFeet = 1 << 17,
+    ArmorHands = 1 << 18,
+    ArmorBack = 1 << 19,
+    Accessory = 1 << 20,
+    Container = 1 << 21,
+    Potion = 1 << 22,
+    Wand = 1 << 23,
+    Figurine = 1 << 24,
     Trinket = 1 << 25,
     SkillBook = 1 << 26,
-    Intricate = 1 << 30,
-    Exotic = 1 << 31,
 
     WeaponRanged = WeaponRangedThrown | WeaponRangedSlingshot | WeaponRangedBow | WeaponRangedCrossbow
         | WeaponMagicStaff,
@@ -1011,7 +1010,13 @@ export const enum ItemType {
     WeaponMelee = WeaponMeleeFist | WeaponMeleeShort | WeaponMeleeMedium | WeaponMeleeLong
         | WeaponMagicFocus,
 
-    Wepon = WeaponMelee | WeaponRanged
+    Weapon = WeaponMelee | WeaponRanged
+}
+
+export const enum ItemComplexity {
+    Normal = 0,
+    Intricate,
+    Exotic
 }
 
 export const enum EntityState {

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,38 +13,36 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Scorpion,
             SpeciesClass = SpeciesClass.Vermin,
             MovementDelay = 100,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Claw,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 7}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Sting,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new Infect {Strength = 2}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new Poison {Damage = 7}}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Claw,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Sting,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new Infect {Strength = 2}}
+                },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnConsumption,
+                    Effects = new HashSet<Effect> {new Poison {Damage = 70}}
+                }
+            },
             SimpleProperties = new HashSet<string> {"animal body", "handlessness", "maleness", "stoning resistance"},
-            ValuedProperties =
-                new Dictionary<string, object>
-                {
-                    {"poison resistance", 3},
-                    {"venom resistance", 3},
-                    {"physical deflection", 17},
-                    {"weight", 1000}
-                },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {"poison resistance", 3},
+                {"venom resistance", 3},
+                {"physical deflection", 17},
+                {"weight", 1000}
+            },
             InitialLevel = 16,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,

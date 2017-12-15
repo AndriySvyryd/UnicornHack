@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -11,32 +12,30 @@ namespace UnicornHack.Data.Creatures
             Name = "gnome lord",
             Species = Species.Gnome,
             MovementDelay = 150,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnMeleeAttack,
-                        Action = AbilityAction.Modifier,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 4}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Punch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
-                    }
+                    Activation = AbilityActivation.OnMeleeAttack,
+                    Action = AbilityAction.Modifier,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 40}}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Punch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
+                }
+            },
             SimpleProperties = new HashSet<string> {"infravision", "infravisibility", "humanoidness", "maleness"},
-            ValuedProperties =
-                new Dictionary<string, object>
-                {
-                    {"size", 2},
-                    {"physical deflection", 10},
-                    {"magic resistance", 5},
-                    {"weight", 700}
-                },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {"size", 2},
+                {"physical deflection", 10},
+                {"magic resistance", 5},
+                {"weight", 700}
+            },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
             PreviousStageName = "gnome",

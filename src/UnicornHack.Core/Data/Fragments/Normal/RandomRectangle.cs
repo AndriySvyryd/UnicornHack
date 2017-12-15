@@ -3,7 +3,7 @@ using UnicornHack.Utils;
 
 namespace UnicornHack.Data.Fragments
 {
-    public static partial class NormalMapFragmentData
+    public static class NormalMapFragmentData
     {
         public static readonly NormalMapFragment RandomRectangle = new NormalMapFragment
         {

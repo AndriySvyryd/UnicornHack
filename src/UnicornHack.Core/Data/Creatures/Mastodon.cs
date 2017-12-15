@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,34 +13,32 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Quadruped,
             SpeciesClass = SpeciesClass.Quadrupedal,
             MovementDelay = 100,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Headbutt,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 18}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Headbutt,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 18}}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Headbutt,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 180}}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Headbutt,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 180}}
+                }
+            },
             SimpleProperties =
                 new HashSet<string> {"animal body", "infravisibility", "handlessness", "singular inventory"},
-            ValuedProperties =
-                new Dictionary<string, object>
-                {
-                    {"thick hide", 3},
-                    {"size", 8},
-                    {"physical deflection", 15},
-                    {"weight", 3800}
-                },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {"thick hide", 3},
+                {"size", 8},
+                {"physical deflection", 15},
+                {"weight", 3800}
+            },
             InitialLevel = 20,
             GenerationWeight = new DefaultWeight {Multiplier = 6F},
             Noise = ActorNoiseType.Roar

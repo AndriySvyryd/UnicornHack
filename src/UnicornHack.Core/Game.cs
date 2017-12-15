@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Microsoft.Extensions.Caching.Memory;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Events;
 using UnicornHack.Generation;
@@ -31,6 +32,8 @@ namespace UnicornHack
         public virtual ICollection<AbilityDefinition> AbilityDefinitions { get; set; } = new HashSet<AbilityDefinition>();
         public virtual int NextAbilityId { get; set; }
         public virtual ICollection<Ability> Abilities { get; set; } = new HashSet<Ability>();
+        public virtual int NextTriggerId { get; set; }
+        public virtual ICollection<Trigger> Triggers { get; set; } = new HashSet<Trigger>();
         public virtual int NextEffectId { get; set; }
         public virtual ICollection<Effect> Effects { get; set; } = new HashSet<Effect>();
         public int NextAppliedEffectId { get; set; }

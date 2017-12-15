@@ -1,9 +1,8 @@
-namespace UnicornHack
+namespace UnicornHack.Abilities
 {
     public enum AbilityAction : byte
     {
         Default = 0,
-        // TODO: Remove
         Modifier,
         Hit,
         Slash,
@@ -13,6 +12,7 @@ namespace UnicornHack
         Impale,
         Bludgeon,
         Shoot,
+        Throw,
         Punch,
         Kick,
         Touch,

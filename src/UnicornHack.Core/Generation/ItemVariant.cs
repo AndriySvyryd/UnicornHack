@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CSharpScriptSerialization;
+using UnicornHack.Abilities;
 using UnicornHack.Data.Items;
 using UnicornHack.Effects;
 using UnicornHack.Utils;
@@ -10,6 +11,7 @@ namespace UnicornHack.Generation
     public class ItemVariant : ICSScriptSerializable, ILoadable
     {
         private ItemType? _itemType;
+        private ItemComplexity? _itemComplexity;
         private Material? _material;
         private SizeCategory? _equipableSizes;
         private bool? _nameable;
@@ -29,6 +31,12 @@ namespace UnicornHack.Generation
         {
             get => _itemType ?? Base?.Type ?? ItemType.None;
             set => _itemType = value;
+        }
+
+        public virtual ItemComplexity Complexity
+        {
+            get => _itemComplexity ?? Base?.Complexity ?? ItemComplexity.Normal;
+            set => _itemComplexity = value;
         }
 
         public virtual Material Material
@@ -183,6 +191,7 @@ namespace UnicornHack.Generation
                 {nameof(Name), (o, v) => v != null},
                 {nameof(BaseName), (o, v) => v != null},
                 {nameof(Type), (o, v) => (ItemType)v != (o.Base?.Type ?? ItemType.None)},
+                {nameof(Complexity), (o, v) => (ItemComplexity)v != (o.Base?.Complexity ?? ItemComplexity.Normal)},
                 // ReSharper disable once CompareOfFloatsByEqualityOperator
                 {
                     nameof(GenerationWeight),

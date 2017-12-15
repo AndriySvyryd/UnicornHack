@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,55 +13,76 @@ namespace UnicornHack.Data.Creatures
             Species = Species.Lich,
             SpeciesClass = SpeciesClass.Undead,
             MovementDelay = 133,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Touch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new Freeze {Damage = 10}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Spell,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new Infect()}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new Poison {Damage = 14}}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Touch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new Freeze {Damage = 100}}
                 },
-            SimpleProperties =
-                new HashSet<string>
+                new AbilityDefinition
                 {
-                    "sleep resistance",
-                    "infravision",
-                    "humanoidness",
-                    "breathlessness",
-                    "sickness resistance"
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Spell,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
                 },
-            ValuedProperties =
-                new Dictionary<string, object>
+                new AbilityDefinition
                 {
-                    {"fire resistance", 3},
-                    {"cold resistance", 3},
-                    {"poison resistance", 3},
-                    {"venom resistance", 3},
-                    {"regeneration", 3},
-                    {"physical deflection", 24},
-                    {"magic resistance", 90},
-                    {"weight", 600}
+                    Activation = AbilityActivation.OnConsumption,
+                    Effects = new HashSet<Effect> {new Infect()}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnConsumption,
+                    Effects = new HashSet<Effect> {new Poison {Damage = 140}}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "sleep resistance",
+                "infravision",
+                "humanoidness",
+                "breathlessness",
+                "sickness resistance"
+            },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {
+                    "fire resistance",
+                    3
+                },
+                {
+                    "cold resistance",
+                    3
+                },
+                {
+                    "poison resistance",
+                    3
+                },
+                {
+                    "venom resistance",
+                    3
+                },
+                {
+                    "regeneration",
+                    3
+                },
+                {
+                    "physical deflection",
+                    24
+                },
+                {
+                    "magic resistance",
+                    90
+                },
+                {
+                    "weight",
+                    600
+                }
+            },
             InitialLevel = 17,
             GenerationWeight = new BranchWeight {Matched = new DefaultWeight(), Name = "hell"},
             PreviousStageName = "demilich",

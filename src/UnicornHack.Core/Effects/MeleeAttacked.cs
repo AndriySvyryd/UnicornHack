@@ -1,4 +1,6 @@
-﻿namespace UnicornHack.Effects
+﻿using UnicornHack.Abilities;
+
+namespace UnicornHack.Effects
 {
     public class MeleeAttacked : AppliedEffect
     {

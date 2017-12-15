@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -12,59 +13,74 @@ namespace UnicornHack.Data.Creatures
             Species = Species.DemonMajor,
             SpeciesClass = SpeciesClass.Demon,
             MovementDelay = 400,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Claw,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Claw,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Sting,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new Envenom {Damage = 5}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnConsumption,
-                        Effects = new HashSet<Effect> {new Poison {Damage = 13}}
-                    }
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Claw,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
-            SimpleProperties =
-                new HashSet<string>
+                new AbilityDefinition
                 {
-                    "flight",
-                    "flight control",
-                    "infravisibility",
-                    "infravision",
-                    "invisibility detection",
-                    "serpentlike body",
-                    "humanoid torso",
-                    "maleness",
-                    "sickness resistance"
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Claw,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
-            ValuedProperties =
-                new Dictionary<string, object>
+                new AbilityDefinition
                 {
-                    {"fire resistance", 3},
-                    {"poison resistance", 3},
-                    {"size", 16},
-                    {"physical deflection", 23},
-                    {"magic resistance", 75},
-                    {"weight", 2500}
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Sting,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new Envenom {Damage = 50}}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnConsumption,
+                    Effects = new HashSet<Effect> {new Poison {Damage = 130}}
+                }
+            },
+            SimpleProperties = new HashSet<string>
+            {
+                "flight",
+                "flight control",
+                "infravisibility",
+                "infravision",
+                "invisibility detection",
+                "serpentlike body",
+                "humanoid torso",
+                "maleness",
+                "sickness resistance"
+            },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {
+                    "fire resistance",
+                    3
+                },
+                {
+                    "poison resistance",
+                    3
+                },
+                {
+                    "size",
+                    16
+                },
+                {
+                    "physical deflection",
+                    23
+                },
+                {
+                    "magic resistance",
+                    75
+                },
+                {
+                    "weight",
+                    2500
+                }
+            },
             InitialLevel = 30,
             GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 0F}, Name = "hell"},
             CorpseName = "",

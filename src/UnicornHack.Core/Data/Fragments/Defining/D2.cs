@@ -8,14 +8,13 @@ namespace UnicornHack.Data.Fragments
         public static readonly DefiningMapFragment D2 = new DefiningMapFragment
         {
             Name = "d2",
-            GenerationWeight =
-                new BranchWeight
-                {
-                    Matched = new DefaultWeight {Multiplier = 0F},
-                    Name = "dungeon",
-                    MinDepth = 2,
-                    MaxDepth = 2
-                },
+            GenerationWeight = new BranchWeight
+            {
+                Matched = new DefaultWeight {Multiplier = 0F},
+                Name = "dungeon",
+                MinDepth = 2,
+                MaxDepth = 2
+            },
             NoRandomDoorways = true,
             LevelHeight = 5,
             LevelWidth = 5,

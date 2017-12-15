@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Events;
 using UnicornHack.Generation;
@@ -27,6 +28,7 @@ namespace UnicornHack.Data
         public DbSet<LogEntry> LogEntries { get; set; }
         public DbSet<AbilityDefinition> AbilityDefinitions { get; set; }
         public DbSet<Ability> Abilities { get; set; }
+        public DbSet<Trigger> Triggers { get; set; }
         public DbSet<Effect> Effects { get; set; }
         public DbSet<AppliedEffect> AppliedEffects { get; set; }
         public DbSet<SensoryEvent> SensoryEvents { get; set; }
@@ -91,8 +93,8 @@ namespace UnicornHack.Data
 
             modelBuilder.Entity<Entity>(eb =>
             {
-                eb.HasKey(i => new {i.GameId, i.Id});
-                eb.HasMany(i => i.Abilities)
+                eb.HasKey(e => new {e.GameId, e.Id});
+                eb.HasMany(e => e.Abilities)
                     .WithOne(a => a.Entity)
                     .HasForeignKey(a => new {a.GameId, a.EntityId});
                 eb.HasMany(e => e.ActiveEffects)
@@ -141,6 +143,12 @@ namespace UnicornHack.Data
 
             modelBuilder.Entity<ItemStack>();
             modelBuilder.Entity<Gold>();
+            modelBuilder.Entity<Launcher>(eb =>
+            {
+                eb.HasOne(l => l.Projectile)
+                    .WithOne()
+                    .HasForeignKey<Item>(nameof(Item.GameId), "LauncherId");
+            });
 
             modelBuilder.Entity<Skills>(eb =>
             {
@@ -149,10 +157,7 @@ namespace UnicornHack.Data
                     .IsRequired().HasForeignKey<Skills>(s => new { s.GameId, s.Id });
             });
 
-            modelBuilder.Entity<Property>(pb =>
-            {
-                pb.HasKey(p => new {p.GameId, p.EntityId, p.Name});
-            });
+            modelBuilder.Entity<Property>(pb => pb.HasKey(p => new {p.GameId, p.EntityId, p.Name}));
             modelBuilder.Entity<CalculatedProperty<bool>>(pb =>
             {
                 pb.Ignore(p => p.CurrentValue);
@@ -202,6 +207,9 @@ namespace UnicornHack.Data
                     .HasForeignKey(s => s.GameId)
                     .OnDelete(DeleteBehavior.Restrict);
                 eb.HasMany(g => g.Abilities)
+                    .WithOne(a => a.Game)
+                    .HasForeignKey(a => a.GameId);
+                eb.HasMany(g => g.Triggers)
                     .WithOne(a => a.Game)
                     .HasForeignKey(a => a.GameId);
                 eb.HasMany(g => g.Effects)
@@ -255,28 +263,45 @@ namespace UnicornHack.Data
                 eb.HasMany(a => a.ActiveEffects)
                     .WithOne(e => e.SourceAbility)
                     .HasForeignKey(nameof(Effect.GameId), "SourceAbilityId");
+                eb.HasMany(a => a.Triggers)
+                    .WithOne()
+                    .HasForeignKey(nameof(Trigger.GameId), "AbilityId");
             });
+
+            modelBuilder.Entity<Trigger>().HasKey(a => new { a.GameId, a.Id });
+            modelBuilder.Entity<AbilityTrigger>().HasOne(e => e.Ability)
+                .WithMany()
+                .HasForeignKey(t => new { t.GameId, t.AbilityId })
+                .OnDelete(DeleteBehavior.ClientSetNull);
+            modelBuilder.Entity<MeleeWeaponTrigger>()
+                .HasOne(t => t.Weapon)
+                .WithMany()
+                .HasForeignKey(t => new { t.GameId, t.WeaponId })
+                .OnDelete(DeleteBehavior.ClientSetNull);
+            modelBuilder.Entity<RangedWeaponTrigger>()
+                .HasOne(t => t.Weapon)
+                .WithMany()
+                .HasForeignKey(t => new { t.GameId, t.WeaponId })
+                .OnDelete(DeleteBehavior.ClientSetNull);
 
             modelBuilder.Entity<AbilityDefinition>(eb =>
             {
                 eb.HasKey(a => new {a.GameId, a.Id});
+                eb.HasMany(a => a.Triggers)
+                    .WithOne()
+                    .HasForeignKey(nameof(Trigger.GameId), "AbilityDefinitionId")
+                    .OnDelete(DeleteBehavior.Restrict);
                 eb.HasMany(a => a.Effects)
                     .WithOne()
                     .HasForeignKey(nameof(Effect.GameId), "AbilityDefinitionId")
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            modelBuilder.Entity<Effect>(eb => { eb.HasKey(a => new {a.GameId, a.Id}); });
+            modelBuilder.Entity<Effect>(eb => eb.HasKey(a => new {a.GameId, a.Id}));
             modelBuilder.Entity<AppliedEffect>(eb =>
             {
                 eb.Property("_referenceCount");
                 eb.HasKey(a => new {a.GameId, a.Id});
-            });
-            modelBuilder.Entity<ActivateAbility>(ab =>
-            {
-                ab.HasOne(e => e.Ability)
-                    .WithOne()
-                    .HasForeignKey<ActivateAbility>(nameof(Effect.GameId), "AbilityId");
             });
             modelBuilder.Entity<AddAbility>(ab =>
             {
@@ -339,11 +364,6 @@ namespace UnicornHack.Data
             modelBuilder.Entity<LevelTeleported>();
             modelBuilder.Entity<MagicalDamage>();
             modelBuilder.Entity<MagicallyDamaged>();
-            modelBuilder.Entity<MeleeAttack>()
-                .HasOne(m => m.Weapon)
-                .WithMany()
-                .HasForeignKey(m => new {m.GameId, m.WeaponId})
-                .OnDelete(DeleteBehavior.ClientSetNull);
             modelBuilder.Entity<MeleeAttacked>()
                 .HasOne(m => m.Weapon)
                 .WithMany()
@@ -355,11 +375,6 @@ namespace UnicornHack.Data
             modelBuilder.Entity<PhysicallyDamaged>();
             modelBuilder.Entity<Poison>();
             modelBuilder.Entity<Poisoned>();
-            modelBuilder.Entity<RangeAttack>()
-                .HasOne(m => m.Weapon)
-                .WithMany()
-                .HasForeignKey(m => new {m.GameId, m.WeaponId})
-                .OnDelete(DeleteBehavior.ClientSetNull);
             modelBuilder.Entity<RangeAttacked>()
                 .HasOne(m => m.Weapon)
                 .WithMany()
@@ -416,9 +431,6 @@ namespace UnicornHack.Data
                     .WithOne()
                     .HasForeignKey(nameof(AppliedEffect.GameId), "SensorId", "AttackEventId")
                     .OnDelete(DeleteBehavior.Restrict);
-                eb.HasOne(e => e.Weapon)
-                    .WithMany()
-                    .HasForeignKey(nameof(AppliedEffect.GameId), "WeaponId");
             });
             modelBuilder.Entity<DeathEvent>(eb =>
             {
@@ -494,6 +506,7 @@ namespace UnicornHack.Data
             {
                 _loadLevel = EF.CompileQuery((GameDbContext context, int id, string name, byte d) =>
                     context.Levels
+                        .Include(l => l.Items).ThenInclude(i => i.Abilities).ThenInclude(a => a.Triggers)
                         .Include(l => l.Items).ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
                         .Include(l => l.Items).ThenInclude(i => i.ActiveEffects).ThenInclude(e => e.SourceAbility)
                         .Include(l => l.Items).ThenInclude(i => i.Properties)
@@ -502,11 +515,20 @@ namespace UnicornHack.Data
                         .Include(l => l.Items).ThenInclude<Level, Item, Container, IEnumerable<Item>>(c => c.Items)
                         .ThenInclude(i => i.Properties)
                         .Include(l => l.Items).ThenInclude<Level, Item, Container, IEnumerable<Item>>(c => c.Items)
+                        .ThenInclude(i => i.Abilities).ThenInclude(a => a.Triggers)
+                        .Include(l => l.Items).ThenInclude<Level, Item, Container, IEnumerable<Item>>(c => c.Items)
                         .ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
+                        .Include(l => l.Items).ThenInclude<Level, Item, Launcher, Item>(l => l.Projectile)
+                        .ThenInclude(i => i.Properties)
+                        .Include(l => l.Actors).ThenInclude(a => a.Inventory).ThenInclude(i => i.Abilities)
+                        .ThenInclude(a => a.Triggers)
                         .Include(l => l.Actors).ThenInclude(a => a.Inventory).ThenInclude(i => i.Abilities)
                         .ThenInclude(a => a.Effects)
                         .Include(l => l.Actors).ThenInclude(a => a.Inventory).ThenInclude(i => i.ActiveEffects)
                         .ThenInclude(e => e.SourceAbility)
+                        .Include(l => l.Actors).ThenInclude(a => a.Inventory)
+                        .ThenInclude<Level, Item, Container, IEnumerable<Item>>(c => c.Items)
+                        .ThenInclude(i => i.Abilities).ThenInclude(a => a.Triggers)
                         .Include(l => l.Actors).ThenInclude(a => a.Inventory)
                         .ThenInclude<Level, Item, Container, IEnumerable<Item>>(c => c.Items)
                         .ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
@@ -516,12 +538,18 @@ namespace UnicornHack.Data
                         .Include(l => l.Actors).ThenInclude(a => a.Inventory)
                         .ThenInclude<Level, Item, Container, IEnumerable<Item>>(c => c.Items)
                         .ThenInclude(i => i.Properties)
+                        .Include(l => l.Actors).ThenInclude(a => a.Inventory)
+                        .ThenInclude<Level, Item, Launcher, Item>(l => l.Projectile).ThenInclude(i => i.Properties)
+                        .Include(l => l.Actors).ThenInclude(a => a.Inventory)
+                        .ThenInclude<Level, Item, Launcher, Item>(l => l.Projectile)
+                        .ThenInclude(a => a.Abilities).ThenInclude(a => a.Triggers)
+                        .Include(l => l.Actors).ThenInclude(a => a.Inventory)
+                        .ThenInclude<Level, Item, Launcher, Item>(l => l.Projectile)
+                        .ThenInclude(a => a.Abilities).ThenInclude(a => a.Effects)
                         .Include(l => l.Actors).ThenInclude(a => a.Inventory).ThenInclude(i => i.Properties)
+                        .Include(l => l.Actors).ThenInclude(a => a.Abilities).ThenInclude(a => a.Triggers)
+                        .Include(l => l.Actors).ThenInclude(a => a.Abilities).ThenInclude(a => a.Effects)
                         .Include(l => l.Actors).ThenInclude(a => a.Abilities).ThenInclude(a => a.ActiveEffects)
-                        .Include(l => l.Actors).ThenInclude(a => a.Abilities).ThenInclude(a => a.Effects)
-                        .ThenInclude<Level, Effect, MeleeAttack, Item>(e => e.Weapon)
-                        .Include(l => l.Actors).ThenInclude(a => a.Abilities).ThenInclude(a => a.Effects)
-                        .ThenInclude<Level, Effect, RangeAttack, Item>(e => e.Weapon)
                         .Include(l => l.Actors).ThenInclude(a => a.ActiveEffects).ThenInclude(e => e.SourceAbility)
                         .Include(l => l.Actors).ThenInclude(a => a.Properties)
                         .Include(l => l.Connections).ThenInclude(c => c.TargetBranch)

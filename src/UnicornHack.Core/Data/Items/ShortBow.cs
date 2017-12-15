@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -6,7 +7,7 @@ namespace UnicornHack.Data.Items
 {
     public static partial class ItemVariantData
     {
-        public static readonly ItemVariant ShortBow = new ItemVariant
+        public static readonly LauncherVariant Shortbow = new LauncherVariant
         {
             Name = "shortbow",
             Type = ItemType.WeaponRangedBow,
@@ -18,12 +19,12 @@ namespace UnicornHack.Data.Items
                 new AbilityDefinition
                 {
                     Activation = AbilityActivation.OnRangedAttack,
-                    Action = AbilityAction.Hit,
+                    Action = AbilityAction.Shoot,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
                 }
             },
-            SimpleProperties = new HashSet<string> {"infinite ammo"},
-            ValuedProperties = new Dictionary<string, object> {{"weight", 5}}
+            ValuedProperties = new Dictionary<string, object> {{"weight", 5}},
+            Projectile = "arrow"
         };
     }
 }

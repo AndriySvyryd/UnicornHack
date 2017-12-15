@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Generation;
 
@@ -11,32 +12,30 @@ namespace UnicornHack.Data.Creatures
             Name = "ogre king",
             Species = Species.Ogre,
             MovementDelay = 85,
-            Abilities =
-                new HashSet<AbilityDefinition>
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
                 {
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnMeleeAttack,
-                        Action = AbilityAction.Modifier,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 9}}
-                    },
-                    new AbilityDefinition
-                    {
-                        Activation = AbilityActivation.OnTarget,
-                        Action = AbilityAction.Punch,
-                        Timeout = 1,
-                        Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 1}}
-                    }
+                    Activation = AbilityActivation.OnMeleeAttack,
+                    Action = AbilityAction.Modifier,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
                 },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Punch,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
+                }
+            },
             SimpleProperties = new HashSet<string> {"infravision", "infravisibility", "humanoidness", "maleness"},
-            ValuedProperties =
-                new Dictionary<string, object>
-                {
-                    {"size", 8},
-                    {"physical deflection", 16},
-                    {"magic resistance", 60},
-                    {"weight", 1700}
-                },
+            ValuedProperties = new Dictionary<string, object>
+            {
+                {"size", 8},
+                {"physical deflection", 16},
+                {"magic resistance", 60},
+                {"weight", 1700}
+            },
             InitialLevel = 9,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},
             PreviousStageName = "ogre lord",
