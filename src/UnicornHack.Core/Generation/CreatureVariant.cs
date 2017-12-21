@@ -110,7 +110,7 @@ namespace UnicornHack.Generation
         {
             var creature = new Creature(level, x, y)
             {
-                BaseName = Name,
+                VariantName = Name,
                 Species = Species,
                 SpeciesClass = SpeciesClass,
                 MovementDelay = MovementDelay,

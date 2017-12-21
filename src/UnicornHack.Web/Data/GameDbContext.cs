@@ -11,6 +11,7 @@ namespace UnicornHack.Data
 {
     public class GameDbContext : DbContext
     {
+        private Func<GameDbContext, string, IEnumerable<Player>> _loadPlayer;
         private Func<GameDbContext, int, string, byte, IEnumerable<Level>> _loadLevel;
 
         // ReSharper disable once SuggestBaseTypeForParameter
@@ -102,13 +103,12 @@ namespace UnicornHack.Data
                     .HasForeignKey(e => new {e.GameId, e.EntityId});
                 eb.HasMany(e => e.Properties)
                     .WithOne(e => e.Entity)
-                    .HasForeignKey(e => new { e.GameId, e.EntityId });
+                    .HasForeignKey(e => new {e.GameId, e.EntityId});
             });
 
             modelBuilder.Entity<Actor>(eb =>
             {
                 eb.Property("_referenceCount");
-                eb.HasIndex(a => a.Name).IsUnique();
                 eb.HasOne(a => a.Level)
                     .WithMany(l => l.Actors)
                     .HasForeignKey(a => new {a.GameId, a.BranchName, a.LevelDepth});
@@ -118,6 +118,8 @@ namespace UnicornHack.Data
 
             modelBuilder.Entity<Player>(pb =>
             {
+                // TODO: Unify with Name after switching to TPT
+                pb.HasIndex(a => a.PlayerName).IsUnique();
                 pb.Ignore(p => p.XP);
                 pb.Ignore(p => p.XPLevel);
                 pb.Ignore(p => p.NextLevelXP);
@@ -154,7 +156,7 @@ namespace UnicornHack.Data
             {
                 eb.HasKey(s => new {s.GameId, s.Id});
                 eb.HasOne<Player>().WithOne(p => p.Skills)
-                    .IsRequired().HasForeignKey<Skills>(s => new { s.GameId, s.Id });
+                    .IsRequired().HasForeignKey<Skills>(s => new {s.GameId, s.Id});
             });
 
             modelBuilder.Entity<Property>(pb => pb.HasKey(p => new {p.GameId, p.EntityId, p.Name}));
@@ -268,20 +270,20 @@ namespace UnicornHack.Data
                     .HasForeignKey(nameof(Trigger.GameId), "AbilityId");
             });
 
-            modelBuilder.Entity<Trigger>().HasKey(a => new { a.GameId, a.Id });
+            modelBuilder.Entity<Trigger>().HasKey(a => new {a.GameId, a.Id});
             modelBuilder.Entity<AbilityTrigger>().HasOne(e => e.Ability)
                 .WithMany()
-                .HasForeignKey(t => new { t.GameId, t.AbilityId })
+                .HasForeignKey(t => new {t.GameId, t.AbilityId})
                 .OnDelete(DeleteBehavior.ClientSetNull);
             modelBuilder.Entity<MeleeWeaponTrigger>()
                 .HasOne(t => t.Weapon)
                 .WithMany()
-                .HasForeignKey(t => new { t.GameId, t.WeaponId })
+                .HasForeignKey(t => new {t.GameId, t.WeaponId})
                 .OnDelete(DeleteBehavior.ClientSetNull);
             modelBuilder.Entity<RangedWeaponTrigger>()
                 .HasOne(t => t.Weapon)
                 .WithMany()
-                .HasForeignKey(t => new { t.GameId, t.WeaponId })
+                .HasForeignKey(t => new {t.GameId, t.WeaponId})
                 .OnDelete(DeleteBehavior.ClientSetNull);
 
             modelBuilder.Entity<AbilityDefinition>(eb =>
@@ -378,7 +380,7 @@ namespace UnicornHack.Data
             modelBuilder.Entity<RangeAttacked>()
                 .HasOne(m => m.Weapon)
                 .WithMany()
-                .HasForeignKey(m => new { m.GameId, m.WeaponId })
+                .HasForeignKey(m => new {m.GameId, m.WeaponId})
                 .OnDelete(DeleteBehavior.ClientSetNull);
             modelBuilder.Entity<ScriptedEffect>();
             modelBuilder.Entity<Sedate>();
@@ -500,7 +502,53 @@ namespace UnicornHack.Data
             });
         }
 
-        public void LoadLevel(int gameId, string branchName, byte depth)
+        public Player LoadPlayer(string name)
+        {
+            if (_loadPlayer == null)
+            {
+                _loadPlayer = EF.CompileQuery((GameDbContext context, string playerName) =>
+                    context.Characters
+                        .Include(c => c.Game.Random)
+                        .Include(c => c.Skills)
+                        //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ActorMoveEvent, Actor>(e => e.Mover)
+                        //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ActorMoveEvent, Actor>(e => e.Movee)
+                        .Include(c => c.SensedEvents)
+                        .ThenInclude<Player, SensoryEvent, AttackEvent, IEnumerable<AppliedEffect>>(e
+                            => e.AppliedEffects)
+                        //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, AttackEvent, Actor>(e => e.Attacker)
+                        .Include(c => c.SensedEvents)
+                        .ThenInclude<Player, SensoryEvent, AttackEvent, Actor>(e => e.Victim)
+                        .Include(c => c.SensedEvents)
+                        .ThenInclude<Player, SensoryEvent, DeathEvent, Actor>(e => e.Deceased)
+                        //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, DeathEvent, Item>(e => e.Corpse)
+                        //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemConsumptionEvent, Actor>(e => e.Consumer)
+                        .Include(c => c.SensedEvents)
+                        .ThenInclude<Player, SensoryEvent, ItemConsumptionEvent, Item>(e => e.Item)
+                        //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemDropEvent, Actor>(e => e.Dropper)
+                        //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemDropEvent, Item>(e => e.Item)
+                        //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemPickUpEvent, Actor>(e => e.Picker)
+                        //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemPickUpEvent, Item>(e => e.Item)
+                        //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemEquipmentEvent, Actor>(e => e.Equipper)
+                        //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemEquipmentEvent, Item>(e => e.Item)
+                        //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemUnequipmentEvent, Actor>(e => e.Unequipper)
+                        //.Include(c => c.SensedEvents).ThenInclude<Player, SensoryEvent, ItemUnequipmentEvent, Item>(e => e.Item)
+                        .Include(c => c.Level)
+                        .Where(c => c.PlayerName == playerName));
+            }
+
+            var player = _loadPlayer(this, name).First();
+
+            LogEntries
+                .Where(e => e.GameId == player.GameId && e.PlayerId == player.Id)
+                .OrderByDescending(e => e.Tick)
+                .ThenByDescending(e => e.Id)
+                .Take(10)
+                .Load();
+
+            return player;
+        }
+
+        public Level LoadLevel(int gameId, string branchName, byte depth)
         {
             if (_loadLevel == null)
             {
@@ -560,9 +608,7 @@ namespace UnicornHack.Data
                         .Where(l => l.GameId == id && l.BranchName == name && l.Depth == d));
             }
 
-            foreach (var _ in _loadLevel(this, gameId, branchName, depth))
-            {
-            }
+            return _loadLevel(this, gameId, branchName, depth).First();
         }
     }
 }

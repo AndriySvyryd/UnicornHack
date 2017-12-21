@@ -39,7 +39,7 @@ namespace UnicornHack.Generation
         public AbilityDefinition(Game game) : this()
         {
             Game = game;
-            Id = game.NextAbilityDefinitionId++;
+            Id = ++game.NextAbilityDefinitionId;
             game.AbilityDefinitions.Add(this);
             Triggers = new HashSet<Trigger>();
             Effects = new HashSet<Effect>();

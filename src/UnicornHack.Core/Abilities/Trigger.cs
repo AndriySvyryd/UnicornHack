@@ -11,7 +11,7 @@ namespace UnicornHack.Abilities
         protected Trigger(Game game)
         {
             Game = game;
-            Id = game.NextTriggerId++;
+            Id = ++game.NextTriggerId;
             game.Triggers.Add(this);
         }
 

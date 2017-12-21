@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "devDependencies": {
-    "@aspnet/signalr-client": "1.0.0-alpha2-final",
+    "@aspnet/signalr-client": "1.0.0-preview1-27812",
     "@types/history": "^4.6.0",
     "@types/isomorphic-fetch": "^0.0.34",
     "@types/jquery": "^3.2.1",

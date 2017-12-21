@@ -41,7 +41,7 @@ namespace UnicornHack.Services.English
 
             if (actor is Creature creature)
             {
-                var name = creature.BaseName + (creature.Name == null ? "" : " named \"" + creature.Name + "\"");
+                var name = creature.VariantName + (creature.Name == null ? "" : " named \"" + creature.Name + "\"");
 
                 var proper = char.IsUpper(name[index: 0]);
                 return (proper ? "" : definiteDeterminer ? "the " : "a ") + name;
@@ -58,7 +58,7 @@ namespace UnicornHack.Services.English
 
         public virtual string ToString(Item item, bool definiteDeterminer)
         {
-            var itemName = item.BaseName + (item.Name == null ? "" : " named \"" + item.Name + "\"");
+            var itemName = item.VariantName + (item.Name == null ? "" : " named \"" + item.Name + "\"");
             var quantity = (item as ItemStack)?.Quantity ?? (item as Gold)?.Quantity;
             if (quantity != null && quantity.Value > 1)
             {

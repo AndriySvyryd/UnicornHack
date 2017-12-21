@@ -18,7 +18,7 @@ namespace UnicornHack.Effects
             SourceAbility?.ActiveEffects.Add(this);
             Game = abilityContext.Target.Game;
             Entity = abilityContext.Target;
-            Id = abilityContext.Target.Game.NextAppliedEffectId++;
+            Id = ++abilityContext.Target.Game.NextAppliedEffectId;
         }
 
         public int? Duration { get; set; }

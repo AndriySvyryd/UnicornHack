@@ -12,7 +12,7 @@ namespace UnicornHack
         {
             unchecked
             {
-                Id = player.NextLogEntryId++;
+                Id = ++player.NextLogEntryId;
             }
             Player = player;
             Message = message;

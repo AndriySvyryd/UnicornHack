@@ -15,7 +15,7 @@ namespace UnicornHack
 
         public ItemStack(Item item, Game game) : base(game)
         {
-            BaseName = item.BaseName;
+            VariantName = item.VariantName;
             Type = item.Type;
             Material = item.Material;
             StackSize = item.StackSize;
@@ -25,7 +25,7 @@ namespace UnicornHack
 
         public override bool CanAdd(Item item)
         {
-            if (item.BaseName != BaseName)
+            if (item.VariantName != VariantName)
             {
                 return false;
             }

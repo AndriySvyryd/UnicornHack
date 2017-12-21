@@ -13,11 +13,11 @@ namespace UnicornHack.Services.English
         [Fact]
         public void AttackEvent()
         {
-            var newt = new Creature {BaseName = "newt"};
-            var nymph = new Creature {BaseName = "water nymph", Sex = Sex.Female};
-            var rodney = new Creature {BaseName = "Wizard of Yendor", Sex = Sex.None};
-            var player = new Player {BaseName = "human", Name = "Dudley", Sex = Sex.Male};
-            var player2 = new Player {BaseName = "human", Name = "Cudley", Sex = Sex.Male};
+            var newt = new Creature {VariantName = "newt"};
+            var nymph = new Creature {VariantName = "water nymph", Sex = Sex.Female};
+            var rodney = new Creature {VariantName = "Wizard of Yendor", Sex = Sex.None};
+            var player = new Player {VariantName = "human", Name = "Dudley", Sex = Sex.Male};
+            var player2 = new Player {VariantName = "human", Name = "Cudley", Sex = Sex.Male};
 
             Verify(newt, nymph, player, SenseType.Sight, SenseType.Sight, AbilityAction.Bite, 11,
                 expectedMessage: "The newt bites the water nymph. (11 pts.)");
@@ -166,8 +166,8 @@ namespace UnicornHack.Services.English
         [Fact]
         public void DeathEvent()
         {
-            var newt = new Creature {BaseName = "newt"};
-            var player = new Player {BaseName = "human", Name = "Dudley", Sex = Sex.Male};
+            var newt = new Creature {VariantName = "newt"};
+            var player = new Player {VariantName = "human", Name = "Dudley", Sex = Sex.Male};
 
             var languageService = CreateLanguageService();
 
@@ -189,9 +189,9 @@ namespace UnicornHack.Services.English
         [Fact]
         public void ItemEquipmentEvent()
         {
-            var armor = new Item {BaseName = "mail armor", EquippedSlot = EquipmentSlot.Body};
-            var nymph = new Creature {BaseName = "water nymph", Sex = Sex.Female};
-            var player = new Player {BaseName = "human", Name = "Dudley", Sex = Sex.Male};
+            var armor = new Item {VariantName = "mail armor", EquippedSlot = EquipmentSlot.Body};
+            var nymph = new Creature {VariantName = "water nymph", Sex = Sex.Female};
+            var player = new Player {VariantName = "human", Name = "Dudley", Sex = Sex.Male};
 
             var languageService = CreateLanguageService();
 
@@ -223,7 +223,7 @@ namespace UnicornHack.Services.English
                 Sensor = player
             }));
 
-            var sword = new Item {BaseName = "long sword", EquippedSlot = EquipmentSlot.GraspPrimaryExtremity};
+            var sword = new Item {VariantName = "long sword", EquippedSlot = EquipmentSlot.GraspPrimaryExtremity};
             Assert.Equal("You equip a long sword in the main hand.", languageService.ToString(new ItemEquipmentEvent
             {
                 Item = sword,
@@ -237,9 +237,9 @@ namespace UnicornHack.Services.English
         [Fact]
         public void ItemUnequipmentEvent()
         {
-            var armor = new Item {BaseName = "mail armor", EquippedSlot = EquipmentSlot.Body};
-            var nymph = new Creature {BaseName = "water nymph", Sex = Sex.Female};
-            var player = new Player {BaseName = "human", Name = "Dudley", Sex = Sex.Male};
+            var armor = new Item {VariantName = "mail armor", EquippedSlot = EquipmentSlot.Body};
+            var nymph = new Creature {VariantName = "water nymph", Sex = Sex.Female};
+            var player = new Player {VariantName = "human", Name = "Dudley", Sex = Sex.Male};
 
             var languageService = CreateLanguageService();
 
@@ -283,9 +283,9 @@ namespace UnicornHack.Services.English
         [Fact]
         public void ItemConsumptionEvent()
         {
-            var potion = new Item {BaseName = "potion of healing", Type = ItemType.Potion};
-            var newt = new Creature {BaseName = "newt"};
-            var player = new Player {BaseName = "human", Name = "Dudley", Sex = Sex.Male};
+            var potion = new Item {VariantName = "potion of healing", Type = ItemType.Potion};
+            var newt = new Creature {VariantName = "newt"};
+            var player = new Player {VariantName = "human", Name = "Dudley", Sex = Sex.Male};
 
             var languageService = CreateLanguageService();
 
@@ -313,8 +313,8 @@ namespace UnicornHack.Services.English
         {
             var coins = (Gold)GoldVariant.Get().Instantiate(new Game());
             coins.Quantity = 11;
-            var newt = new Creature {BaseName = "newt"};
-            var player = new Player {BaseName = "human", Name = "Dudley", Sex = Sex.Male};
+            var newt = new Creature {VariantName = "newt"};
+            var player = new Player {VariantName = "human", Name = "Dudley", Sex = Sex.Male};
 
             var languageService = CreateLanguageService();
 
@@ -342,8 +342,8 @@ namespace UnicornHack.Services.English
         {
             var coins = (Gold)GoldVariant.Get().Instantiate(new Game());
             coins.Quantity = 11;
-            var newt = new Creature {BaseName = "newt"};
-            var player = new Player {BaseName = "human", Name = "Dudley", Sex = Sex.Male};
+            var newt = new Creature {VariantName = "newt"};
+            var player = new Player {VariantName = "human", Name = "Dudley", Sex = Sex.Male};
 
             var languageService = CreateLanguageService();
 
@@ -374,7 +374,7 @@ namespace UnicornHack.Services.English
             var message = languageService.Welcome(
                 new Player
                 {
-                    BaseName = "human",
+                    VariantName = "human",
                     Name = "Conan the Barbarian",
                     Level = new Level {Branch = new Branch {Name = "Dungeon of Fun"}}
                 });

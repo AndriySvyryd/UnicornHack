@@ -56,7 +56,7 @@ namespace UnicornHack.Models.GameHubModels
         private static List<object> Serialize(Actor actor, List<object> properties)
         {
             properties.Add(actor.Id);
-            properties.Add(actor.BaseName);
+            properties.Add(actor.VariantName);
             properties.Add(actor.Name);
             properties.Add(actor.LevelX);
             properties.Add(actor.LevelY);

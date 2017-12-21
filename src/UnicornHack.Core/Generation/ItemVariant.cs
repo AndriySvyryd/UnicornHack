@@ -108,7 +108,7 @@ namespace UnicornHack.Generation
         public virtual Item Instantiate(Game game)
         {
             var itemInstance = CreateInstance(game);
-            itemInstance.BaseName = Name;
+            itemInstance.VariantName = Name;
             itemInstance.Type = Type;
             itemInstance.Material = Material;
             itemInstance.Nameable = Nameable;

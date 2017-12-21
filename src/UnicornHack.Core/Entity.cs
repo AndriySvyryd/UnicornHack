@@ -10,7 +10,7 @@ namespace UnicornHack
     public class Entity
     {
         public string Name { get; set; }
-        public string BaseName { get; set; }
+        public string VariantName { get; set; }
         public virtual Material Material { get; set; }
         public virtual ObservableSnapshotHashSet<Ability> Abilities { get; set; } = new ObservableSnapshotHashSet<Ability>();
         public ObservableSnapshotHashSet<AppliedEffect> ActiveEffects { get; set; } = new ObservableSnapshotHashSet<AppliedEffect>();
@@ -44,7 +44,7 @@ namespace UnicornHack
         public Entity(Game game) : this()
         {
             Game = game;
-            Id = game.NextEntityId++;
+            Id = ++game.NextEntityId;
             game.Entities.Add(this);
         }
 

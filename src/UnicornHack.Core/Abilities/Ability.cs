@@ -56,7 +56,7 @@ namespace UnicornHack.Abilities
         public Ability(Game game) : this()
         {
             Game = game;
-            Id = game.NextAbilityId++;
+            Id = ++game.NextAbilityId;
             game.Abilities.Add(this);
             IsUsable = true;
         }

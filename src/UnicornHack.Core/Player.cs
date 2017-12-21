@@ -11,6 +11,7 @@ namespace UnicornHack
 {
     public class Player : Actor
     {
+        public string PlayerName { get; set; }
         public int MaxXPLevel { get; set; }
         public byte XPLevel => (byte)Races.Sum(r => r.XPLevel);
         public int XP => LearningRace?.XP ?? 0;
@@ -40,7 +41,7 @@ namespace UnicornHack
 
         public Player(Level level, byte x, byte y) : base(level, x, y)
         {
-            BaseName = "player";
+            VariantName = "player";
 
             var defaultRaceAbility = new Ability(Game)
             {
@@ -365,7 +366,7 @@ namespace UnicornHack
             @event.Game = Game;
             unchecked
             {
-                @event.Id = NextEventId++;
+                @event.Id = ++NextEventId;
             }
             @event.AddReference();
             SensedEvents.Add(@event);

@@ -64,7 +64,7 @@ namespace UnicornHack.Models.GameHubModels
         private static List<object> Serialize(Item item, List<object> properties, SerializationContext context)
         {
             properties.Add(item.Id);
-            properties.Add(item.BaseName);
+            properties.Add(item.VariantName);
 
             var slots = item.GetEquipableSlots(context.Observer.GetProperty<int>(PropertyData.Size.Name))
                 .GetNonRedundantFlags(removeComposites: true)

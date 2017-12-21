@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SpaServices.Webpack;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -113,7 +112,7 @@ namespace UnicornHack
 
             app.UseSignalR(routes =>
             {
-                routes.MapHub<GameHub>("gameHub");
+                routes.MapHub<GameHub>("/gameHub");
             });
 
             app.UseMvc(routes =>

@@ -47,7 +47,7 @@ namespace UnicornHack
             Game = level.Game;
             Level = level;
             level.Rooms.Add(this);
-            Id = Level.NextRoomId++;
+            Id = ++Level.NextRoomId;
 
             BoundingRectangle = boundingRectangle;
             DoorwayPoints = doorwayPoints ?? new Point[0];

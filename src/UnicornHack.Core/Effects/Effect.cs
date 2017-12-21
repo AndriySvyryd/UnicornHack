@@ -13,7 +13,7 @@ namespace UnicornHack.Effects
         protected Effect(Game game)
         {
             Game = game;
-            Id = game.NextEffectId++;
+            Id = ++game.NextEffectId;
             game.Effects.Add(this);
         }
 

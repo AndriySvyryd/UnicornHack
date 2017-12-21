@@ -164,7 +164,7 @@ namespace UnicornHack
 
             foreach (var existingItem in existingItems)
             {
-                if (existingItem.BaseName == BaseName)
+                if (existingItem.VariantName == VariantName)
                 {
                     var stack = existingItem as ItemStack;
                     if (stack == null)

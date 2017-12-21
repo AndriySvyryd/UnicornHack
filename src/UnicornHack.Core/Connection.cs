@@ -13,7 +13,7 @@ namespace UnicornHack
         protected Connection(Level level, Point p, string targetBranchName, byte targetLevelDepth)
         {
             Game = level.Game;
-            Id = Game.NextConnectionId++;
+            Id = ++Game.NextConnectionId;
             Level = level;
             BranchName = level.BranchName;
             LevelDepth = level.Depth;
