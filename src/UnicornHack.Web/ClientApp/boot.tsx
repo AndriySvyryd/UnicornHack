@@ -16,10 +16,12 @@ function renderApp() {
     }
     const playerName = new URLSearchParams(paramString.slice(0, nextParamIndex)).get("Name") || '';
     const baseUrl = document.getElementsByTagName('base')[0].getAttribute('href')!;
-    ReactDOM.render(
-        <Game playerName={playerName} baseUrl={baseUrl} />,
-        document.getElementById('react-app')
-    );
+    if (playerName !== '') {
+        ReactDOM.render(
+            <Game playerName={playerName} baseUrl={baseUrl} />,
+            document.getElementById('react-app')
+        );
+    }
 }
 
 renderApp();

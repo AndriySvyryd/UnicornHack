@@ -19,7 +19,7 @@ namespace UnicornHack.Models.GameHubModels
                     {
                         properties = state == null
                             ? new List<object>(canBeDefault ? 3 : 2)
-                            : new List<object>(canBeDefault ? 4 : 3) {state};
+                            : new List<object>(canBeDefault ? 4 : 3) {(int)state};
                     }
 
                     properties.Add(ability.Id);
@@ -33,10 +33,10 @@ namespace UnicornHack.Models.GameHubModels
                     return properties;
                 }
                 case EntityState.Deleted:
-                    return new List<object> {state, ability.Id};
+                    return new List<object> {(int)state, ability.Id};
             }
 
-            properties = new List<object> {state, ability.Id};
+            properties = new List<object> {(int)state, ability.Id};
             var abilityEntry = context.Context.Entry(ability);
             var i = 1;
             var name = abilityEntry.Property(nameof(Ability.Name));
@@ -59,10 +59,6 @@ namespace UnicornHack.Models.GameHubModels
             }
 
             return properties.Count > 2 ? properties : null;
-        }
-
-        public static void Snapshot(Ability ability)
-        {
         }
 
         private static bool CanBeDefault(Ability ability)

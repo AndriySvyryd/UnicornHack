@@ -18,7 +18,7 @@ namespace UnicornHack.Models.GameHubModels
                 {
                     properties = state == null
                         ? new List<object>(5)
-                        : new List<object>(6) {state};
+                        : new List<object>(6) {(int)state};
                     properties.Add(race.Id);
                     properties.Add(race.Name);
                     properties.Add(race.XPLevel);
@@ -27,10 +27,10 @@ namespace UnicornHack.Models.GameHubModels
                     return properties;
                 }
                 case EntityState.Deleted:
-                    return new List<object> {state, race.Id};
+                    return new List<object> {(int)state, race.Id};
             }
 
-            properties = new List<object> {state, race.Id};
+            properties = new List<object> {(int)state, race.Id};
 
             var raceEntry = context.Context.Entry(race);
             var i = 1;

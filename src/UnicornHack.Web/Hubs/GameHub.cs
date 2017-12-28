@@ -79,9 +79,12 @@ namespace UnicornHack.Hubs
             var level = character.Level;
             foreach (var player in level.Players)
             {
+                var levelChanged = level != initialLevel
+                                   || character.Level.TerrainChanges == null
+                                   || previousTick == 0;
                 var serializedLevel = CompactLevel.Serialize(
                     level,
-                    level == initialLevel && character.Level.TerrainChanges != null ? EntityState.Modified : EntityState.Added,
+                    levelChanged ? EntityState.Added : EntityState.Modified,
                     previousTick,
                     new SerializationContext(_dbContext, player, _gameServices));
 
@@ -92,8 +95,6 @@ namespace UnicornHack.Hubs
             _dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
             _dbContext.ChangeTracker.AcceptAllChanges();
         }
-
-        #region Game managment
 
         private void Turn(Player character)
         {
@@ -149,10 +150,13 @@ namespace UnicornHack.Hubs
                 _dbContext.SaveChanges();
 
                 character.DefaultAttack = attack;
-                _dbContext.Entry(character).Property("DefaultAttackId").CurrentValue = attack.Id;
+                character.DefaultAttackId = attack?.Id;
                 Turn(character);
 
                 _dbContext.SaveChanges();
+
+                _gameServices.SharedCache.Set(name, character,
+                    new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
             }
 
             if (!character.IsAlive
@@ -183,7 +187,11 @@ namespace UnicornHack.Hubs
                 && cachedCharacterObject is Player cachedCharacter
                 && cachedCharacter.Game.NextPlayerTick == character.Game.NextPlayerTick)
             {
-                _dbContext.Attach(cachedCharacter);
+                _dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
+                EntityAttacher.Attach(cachedCharacter.Level, _dbContext);
+                _dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
+
+                LoadAdjacentLevel(cachedCharacter);
                 return cachedCharacter;
             }
 
@@ -191,44 +199,32 @@ namespace UnicornHack.Hubs
 
             Initialize(character.Game);
 
-            var level = _dbContext.LoadLevel(character.Level.GameId, character.Level.BranchName, character.Level.Depth);
+            _dbContext.LoadLevel(character.Level.GameId, character.Level.BranchName, character.Level.Depth);
 
-            // Preload adjacent level
-            var connection = level.Connections.SingleOrDefault(s =>
-                s.LevelX == character.LevelX
-                && s.LevelY == character.LevelY);
-            if (connection != null)
-            {
-                _dbContext.LoadLevel(connection.GameId, connection.TargetBranchName, connection.TargetLevelDepth);
-
-                // TODO: Pregenerate all connected levels to ensure the order is deterministic
-                connection.TargetLevel.EnsureGenerated();
-            }
-
-            var gameId = character.GameId;
-            var addedAbilities = _dbContext.Set<AddedAbility>().Local.Select(c => c.Id).ToList();
-            if (addedAbilities.Count > 0)
-            {
-                _dbContext.Set<AddedAbility>()
-                    .Include(a => a.Ability).ThenInclude(a => a.Triggers)
-                    .Include(a => a.Ability).ThenInclude(a => a.Effects)
-                    .Where(a => a.GameId == gameId && addedAbilities.Contains(a.Id))
-                    .Load();
-            }
-
-            var addAbilities = _dbContext.Set<AddAbility>().Local.Select(c => c.Id).ToList();
-            if (addAbilities.Count > 0)
-            {
-                _dbContext.Set<AddAbility>()
-                    .Include(a => a.Ability).ThenInclude(a => a.Triggers)
-                    .Include(a => a.Ability).ThenInclude(a => a.Effects)
-                    .Where(a => a.GameId == gameId && addAbilities.Contains(a.Id))
-                    .Load();
-            }
+            LoadAdjacentLevel(character);
 
             _gameServices.SharedCache.Set(name, character,
                 new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
             return character;
+        }
+
+        private void LoadAdjacentLevel(Player character)
+        {
+            var connection = character.Level.Connections.SingleOrDefault(s =>
+                s.LevelX == character.LevelX
+                && s.LevelY == character.LevelY);
+            if (connection != null)
+            {
+                if (connection.TargetLevel == null)
+                {
+                    _dbContext.LoadLevel(connection.GameId, connection.TargetBranchName, connection.TargetLevelDepth);
+                }
+
+                // TODO: Unload non-adjacent levels
+
+                // TODO: Pregenerate all connected levels to ensure the order is deterministic
+                connection.TargetLevel.EnsureGenerated();
+            }
         }
 
         private void Initialize(Game game)
@@ -247,9 +243,8 @@ namespace UnicornHack.Hubs
             _dbContext.SaveChanges();
 
             game = _dbContext.Games
-                .Include(g => g.Random)
                 .Include(g => g.Branches)
-                .Include(g => g.Levels).ThenInclude(l => l.GenerationRandom)
+                .Include(g => g.Levels)
                 .Include(g => g.Connections)
                 .Include(g => g.Entities)
                 .Include(g => g.AbilityDefinitions)
@@ -311,7 +306,5 @@ namespace UnicornHack.Hubs
             _dbContext.Games.Remove(game);
             _dbContext.SaveChanges();
         }
-
-        #endregion
     }
 }

@@ -20,6 +20,8 @@ namespace UnicornHack.Abilities
 
         public Game Game { get; set; }
 
+        public int? AddedAbilityEffectId { get; set; }
+
         public virtual AbilityActivation Activation { get; set; }
 
         // TODO: Move/refactor this

@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace UnicornHack.Abilities
+﻿namespace UnicornHack.Abilities
 {
     public abstract class Trigger
     {
@@ -22,6 +20,8 @@ namespace UnicornHack.Abilities
         public int GameId { get; private set; }
 
         public Game Game { get; set; }
+        public int? AbilityId { get; set; }
+        public int? AbilityDefinitionId { get; set; }
 
         public abstract Trigger Copy(Game game);
 

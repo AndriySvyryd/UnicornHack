@@ -29,10 +29,14 @@ namespace UnicornHack.Effects
         // ReSharper disable UnusedAutoPropertyAccessor.Local
         public int GameId { get; private set; }
 
-        public int? EntityId { get; private set; }
-
         public Game Game { get; set; }
+
+        public int? EntityId { get; private set; }
         public Entity Entity { get; set; }
+
+        public int? SensorId { get; set; }
+        public int? AttackEventId { get; set; }
+        public int? SourceAbilityId { get; set; }
 
         public Ability SourceAbility { get; set; }
 

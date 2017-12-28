@@ -125,7 +125,7 @@ namespace UnicornHack.Generation
             };
 
             var innateAbility =
-                new AbilityDefinition(level.Game) {Name = Actor.InnateAbilityName, Activation = AbilityActivation.Always};
+                new Ability(level.Game) {Name = Actor.InnateAbilityName, Activation = AbilityActivation.Always};
 
             var sexSet = false;
             foreach (var simpleProperty in SimpleProperties)
@@ -162,7 +162,7 @@ namespace UnicornHack.Generation
                     Effect.CreateChangeProperty(level.Game, valuedProperty.Key, valuedProperty.Value));
             }
 
-            creature.Add(innateAbility.Instantiate(level.Game));
+            creature.Add(innateAbility);
 
             foreach (var ability in Abilities)
             {

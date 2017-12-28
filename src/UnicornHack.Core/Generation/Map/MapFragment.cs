@@ -75,7 +75,10 @@ namespace UnicornHack.Generation.Map
                     y++;
                 }
 
-                Height = y;
+                if (y > Height)
+                {
+                    Height = y;
+                }
 
                 (PointToIndex, IndexToPoint) = game.GetPointIndex(Width, Height);
 
@@ -261,14 +264,12 @@ namespace UnicornHack.Generation.Map
             }
 
             // TODO: Read the defaults from the defining fragment
-            var room = BuildRoom(level, map.GetRoomPoints(level, boundingRectangle),
+            return BuildRoom(level, map.GetRoomPoints(level, boundingRectangle),
                 p => { level.Terrain[level.PointToIndex[p.X, p.Y]] = (byte)MapFeature.StoneFloor; }, p =>
                 {
                     level.Terrain[level.PointToIndex[p.X, p.Y]] = (byte)MapFeature.StoneWall;
                     level.AddNeighbours(MapFeature.StoneWall, p);
-                }, p => { });
-
-            return room;
+                }, _ => { });
         }
 
         public void WriteMap<TState>(Point target, Level level, Action<char, Point, Level, TState> write, TState state)
@@ -296,7 +297,7 @@ namespace UnicornHack.Generation.Map
         public virtual Room BuildRoom(Level level, IEnumerable<Point> points, Action<Point> insideAction,
             Action<Point> perimeterAction, Action<Point> outsideAction)
         {
-            void Noop(Point p)
+            void Noop(Point _)
             {
             }
 

@@ -29,7 +29,7 @@ export class Level {
         let i = 0;
         const state = compactLevel[i++] as EntityState;
         if (state !== EntityState.Added) {
-            if (currentLevel === undefined) {
+            if (currentLevel == undefined) {
                 return null;
             }
 
@@ -96,16 +96,15 @@ export class Level {
             return currentLevel;
         }
 
-        // TODO: reuse currentLevel
         const level = new Level();
 
         level.currentTick = compactLevel[i++];
         const actors = compactLevel[i++];
         const items = compactLevel[i++];
         const connections = compactLevel[i++];
-        const terrain = new Uint8Array(Buffer.from(compactLevel[i++], 'base64'));
-        const wallNeighbours = new Uint8Array(Buffer.from(compactLevel[i++], 'base64'));
-        const visibleTerrain = new Uint8Array(Buffer.from(compactLevel[i++], 'base64'));
+        const terrain = compactLevel[i++];
+        const wallNeighbours = compactLevel[i++];
+        const visibleTerrain = compactLevel[i++];
         level.branchName = compactLevel[i++];
         level.depth = compactLevel[i++];
         level.width = compactLevel[i++];

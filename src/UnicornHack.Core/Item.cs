@@ -19,6 +19,7 @@ namespace UnicornHack
         public Actor Actor { get; set; }
         public int? ContainerId { get; set; }
         public Container Container { get; set; }
+        public int? LauncherId { get; set; }
 
         public EquipmentSlot GetEquipableSlots(int size)
         {

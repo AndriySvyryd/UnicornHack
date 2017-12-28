@@ -1,4 +1,3 @@
-using System;
 using UnicornHack.Abilities;
 
 namespace UnicornHack.Effects
@@ -19,7 +18,6 @@ namespace UnicornHack.Effects
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            throw new NotImplementedException("ScriptedEffect");
         }
     }
 }

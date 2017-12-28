@@ -94,7 +94,8 @@ function getClientConfig(env) {
                 manifest: require('./wwwroot/dist/vendor-manifest.json')
             }),
             new CheckerPlugin(),
-            require('autoprefixer')
+            require('autoprefixer'),
+            new webpack.optimize.ModuleConcatenationPlugin()
         ].concat(isDevBuild
             ? [
                 new webpack.SourceMapDevToolPlugin({

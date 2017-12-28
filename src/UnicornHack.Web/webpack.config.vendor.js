@@ -57,7 +57,8 @@ function getClientConfig(env) {
             }), // Maps these identifiers to the jQuery package (because Bootstrap expects it to be a global variable)
             new webpack.DefinePlugin({
                 'process.env.NODE_ENV': isDevBuild ? '"development"' : '"production"'
-            })
+            }),
+            new webpack.optimize.ModuleConcatenationPlugin()
         ].concat(isDevBuild
             ? []
             : [

@@ -117,7 +117,7 @@ namespace UnicornHack.Generation
             itemInstance.EquipableSlots = EquipableSlots;
 
             var innateAbility =
-                new AbilityDefinition(game) {Name = Actor.InnateAbilityName, Activation = AbilityActivation.Always};
+                new Ability(game) {Name = Actor.InnateAbilityName, Activation = AbilityActivation.Always};
 
             foreach (var simpleProperty in SimpleProperties)
             {
@@ -131,7 +131,7 @@ namespace UnicornHack.Generation
                     Effect.CreateChangeProperty(game, valuedProperty.Key, valuedProperty.Value));
             }
 
-            itemInstance.Add(innateAbility.Instantiate(game));
+            itemInstance.Add(innateAbility);
 
             foreach (var ability in Abilities)
             {

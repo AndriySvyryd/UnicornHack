@@ -26,19 +26,19 @@ namespace UnicornHack.Models.GameHubModels
                         case Player player:
                             properties = state == null
                                 ? new List<object>(ActorPropertyCount + 7)
-                                : new List<object>(ActorPropertyCount + 8) {state};
+                                : new List<object>(ActorPropertyCount + 8) {(int)state};
                             return Serialize(player, properties, context);
                         default:
                             properties = state == null
                                 ? new List<object>(ActorPropertyCount)
-                                : new List<object>(ActorPropertyCount + 1) {state};
+                                : new List<object>(ActorPropertyCount + 1) {(int)state};
                             return Serialize(actor, properties);
                     }
                 case EntityState.Deleted:
-                    return new List<object> {state, actor.Id};
+                    return new List<object> {(int)state, actor.Id};
             }
 
-            properties = new List<object>(2) {state};
+            properties = new List<object>(2) {(int)state};
             var actorEntry = context.Context.Entry(actor);
             switch (actor)
             {
@@ -108,6 +108,7 @@ namespace UnicornHack.Models.GameHubModels
                     properties.Add(i);
                     properties.Add(actor.LevelX);
                 }
+
                 i++;
                 var levelY = actorEntry.Property(nameof(Actor.LevelY));
                 if (levelY.IsModified)
@@ -230,10 +231,6 @@ namespace UnicornHack.Models.GameHubModels
                 }
 
                 player.Abilities.CreateSnapshot();
-                foreach (var ability in player.Abilities)
-                {
-                    CompactAbility.Snapshot(ability);
-                }
 
                 player.Log.CreateSnapshot();
 

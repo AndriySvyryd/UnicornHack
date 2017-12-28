@@ -10,7 +10,7 @@
         {
         }
 
-        public int? AbilityId { get; set; }
+        public int? TriggeredAbilityId { get; set; }
         public Ability Ability { get; set; }
 
         public override Trigger Copy(Game game)

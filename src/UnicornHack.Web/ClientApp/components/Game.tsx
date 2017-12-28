@@ -43,7 +43,7 @@ export class Game extends React.Component<IGameProps, {}> {
             { transport: SignalR.TransportType.WebSockets, logging: logger });
         const connection =
             new SignalR.HubConnection(http,
-                { logging: logger, protocol: new SignalR.JsonHubProtocol }); // MessagePackHubProtocol
+                { logging: logger, protocol: new SignalR.MessagePackHubProtocol });
 
         connection.onclose = e => {
             if (e) {
@@ -162,7 +162,6 @@ export class Game extends React.Component<IGameProps, {}> {
             .then(action((level: any[]) => {
                 var newLevel = Level.expand(level);
                 if (newLevel == null) {
-                    this.waiting = true;
                     return;
                 }
 
@@ -232,7 +231,7 @@ export class Game extends React.Component<IGameProps, {}> {
                             <Map level={this.level} styles={this.styles} />
                             <StatusBar player={player} levelName={this.level.branchName} levelDepth={
                                 this.level.depth} />
-                            <GameLog properties={player.log} />
+                            <GameLog messages={player.log} />
                         </div>
 
                         <div className="col-md-3" style={{

@@ -15,6 +15,7 @@ namespace UnicornHack.Generation
         public int GameId { get; private set; }
 
         public Game Game { get; set; }
+        public int? AddAbilityEffectId { get; set; }
         public virtual AbilityActivation Activation { get; set; }
         public virtual AbilityAction Action { get; set; }
         public virtual int Timeout { get; set; }

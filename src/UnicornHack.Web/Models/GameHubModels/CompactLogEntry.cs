@@ -19,19 +19,19 @@ namespace UnicornHack.Models.GameHubModels
                 case EntityState.Added:
                     return new List<object>
                     {
-                        state,
+                        (int)state,
                         entry.Id,
                         ToString(entry)
                     };
                 case EntityState.Deleted:
                     return new List<object>
                     {
-                        state,
+                        (int)state,
                         entry.Id
                     };
             }
 
-            var properties = new List<object> {state, entry.Id};
+            var properties = new List<object> {(int)state, entry.Id};
 
             var logEntry = context.Context.Entry(entry);
             var i = 1;

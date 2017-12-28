@@ -15,16 +15,16 @@ namespace UnicornHack.Models.GameHubModels
                 case EntityState.Added:
                     properties = state == null
                         ? new List<object>(2)
-                        : new List<object>(3) {state};
+                        : new List<object>(3) {(int)state};
 
                     properties.Add(property.Name);
                     properties.Add(context.Services.Language.ToString(property));
                     return properties;
                 case EntityState.Deleted:
-                    return new List<object> {state, property.Name};
+                    return new List<object> {(int)state, property.Name};
             }
 
-            properties = new List<object> {state, property.Name};
+            properties = new List<object> {(int)state, property.Name};
             var propertyEntry = context.Context.Entry(property);
             var i = 1;
 

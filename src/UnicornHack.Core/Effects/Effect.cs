@@ -24,6 +24,9 @@ namespace UnicornHack.Effects
         public int GameId { get; private set; }
 
         public Game Game { get; set; }
+        public int? DefiningAbilityId { get; set; }
+        public int? SourceAbilityId { get; set; }
+        public int? AbilityDefinitionId { get; set; }
 
         // TODO: Abstract application condition
         // TODO: Create abstract base for duration effects

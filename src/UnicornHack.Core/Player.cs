@@ -24,6 +24,7 @@ namespace UnicornHack
             => ActiveEffects.OfType<ChangedRace>().OrderByDescending(r => r.XPLevel).ThenByDescending(r => r.Id).ToList();
 
         public virtual ChangedRace LearningRace => Races.LastOrDefault();
+        public virtual int? DefaultAttackId { get; set; }
         public virtual Ability DefaultAttack { get; set; }
         public virtual int NextLogEntryId { get; set; }
         public virtual ObservableSnapshotHashSet<LogEntry> Log { get; set; } = new ObservableSnapshotHashSet<LogEntry>();
@@ -78,7 +79,7 @@ namespace UnicornHack
 
         public void AddXP(int xp)
         {
-            var regenerationRate = (float)NextLevelXP / (MaxHP * 5);
+            var regenerationRate = (float)NextLevelXP / (MaxHP * 4);
             var regeneratingXp = xp + LeftoverRegenerationXP;
             var hpRegenerated = (int)Math.Floor(regeneratingXp / regenerationRate);
             LeftoverRegenerationXP = regeneratingXp % regenerationRate;
@@ -467,6 +468,7 @@ namespace UnicornHack
             Log.Add(new LogEntry(this, string.Format(format, arguments), tick));
         }
 
+        // TODO: avoid dynamic dispatch
         public virtual string GetLogEntry(SensoryEvent @event) => GetSpecificLogEntry((dynamic)@event);
 
         protected virtual string GetSpecificLogEntry(SensoryEvent @event) => null;

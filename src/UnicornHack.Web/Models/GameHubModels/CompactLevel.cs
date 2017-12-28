@@ -14,7 +14,7 @@ namespace UnicornHack.Models.GameHubModels
             {
                 return new List<object>(12)
                 {
-                    state,
+                    (int)state,
                     level.CurrentTick,
                     level.Actors.Select(a => CompactActor.Serialize(a, null, context)).ToList(),
                     level.Items.Select(t => CompactItem.Serialize(t, null, context)).ToList(),
@@ -31,7 +31,7 @@ namespace UnicornHack.Models.GameHubModels
 
             var dbContext = context.Context;
             var levelEntry = dbContext.Entry(level);
-            var properties = new List<object> {state, previousTick, level.CurrentTick};
+            var properties = new List<object> {(int)state, previousTick, level.CurrentTick};
 
             var i = 2;
             var serializedActors = CollectionChanges
@@ -73,6 +73,7 @@ namespace UnicornHack.Models.GameHubModels
                         changes[j++] = levelTerrainChange.Key;
                         changes[j++] = levelTerrainChange.Value;
                     }
+
                     properties.Add(changes);
                 }
 
@@ -87,6 +88,7 @@ namespace UnicornHack.Models.GameHubModels
                         changes[j++] = levelWallNeighboursChange.Key;
                         changes[j++] = levelWallNeighboursChange.Value;
                     }
+
                     properties.Add(changes);
                 }
 
@@ -102,6 +104,7 @@ namespace UnicornHack.Models.GameHubModels
                         changes[j++] = levelVisibleTerrainChange.Key;
                         changes[j++] = levelVisibleTerrainChange.Value;
                     }
+
                     properties.Add(changes);
                 }
             }
@@ -124,6 +127,10 @@ namespace UnicornHack.Models.GameHubModels
             }
 
             level.Connections.CreateSnapshot();
+
+            level.TerrainChanges = level.TerrainChanges ?? new Dictionary<int, byte>();
+            level.WallNeighboursChanges = level.WallNeighboursChanges ?? new Dictionary<int, byte>();
+            level.VisibleTerrainChanges = level.VisibleTerrainChanges ?? new Dictionary<int, byte>();
         }
     }
 }

@@ -25,25 +25,25 @@ namespace UnicornHack.Models.GameHubModels
                         case Gold gold:
                             properties = state == null
                                 ? new List<object>(ItemPropertyCount + 1)
-                                : new List<object>(ItemPropertyCount + 2) {state};
+                                : new List<object>(ItemPropertyCount + 2) {(int)state};
                             return Serialize(gold, properties, context);
                         case Container container:
                             properties = state == null
                                 ? new List<object>(ItemPropertyCount + 1)
-                                : new List<object>(ItemPropertyCount + 2) {state};
+                                : new List<object>(ItemPropertyCount + 2) {(int)state};
                             return Serialize(container, properties, context);
                         default:
                             properties = state == null
                                 ? new List<object>(ItemPropertyCount)
-                                : new List<object>(ItemPropertyCount + 1) {state};
+                                : new List<object>(ItemPropertyCount + 1) {(int)state};
                             return Serialize(item, properties, context);
                     }
 
                 case EntityState.Deleted:
-                    return new List<object> {state, item.Id};
+                    return new List<object> {(int)state, item.Id};
             }
 
-            properties = new List<object>(2) {state};
+            properties = new List<object>(2) {(int)state};
             var itemEntry = context.Context.Entry(item);
             switch (item)
             {

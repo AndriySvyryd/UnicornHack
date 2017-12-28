@@ -13,6 +13,9 @@ namespace UnicornHack.Utils
         private const byte MinVisibility = 0;
         private const byte MaxVisibility = byte.MaxValue;
 
+        /// <summary>
+        ///     Creates a new instance of <see cref="BeveledFOV"/>
+        /// </summary>
         /// <param name="blocksLight">
         ///     A function that determines whether the tile at the given X and Y coordinates blocks the passage of light.
         ///     It also marks the tile as visible.
@@ -23,7 +26,7 @@ namespace UnicornHack.Utils
         ///     The function must ignore coordinates that are out of bounds
         /// </param>
         /// <remarks>
-        ///     Functions take coordinates instead of Points for perf
+        ///     Functions take coordinates instead of <see cref="Point"/> for perf
         /// </remarks>
         public BeveledFOV(Func<byte, byte, byte, int, bool> blocksLight,
             Func<byte, byte, DirectionFlags> getUnconnectedNeighbours)
@@ -190,7 +193,8 @@ namespace UnicornHack.Utils
                             var newBottomX = x * 4;
                             if (!TopLeftBeveled(x, y, octant, origin))
                             {
-                                newBottomX--; // Top left midpoint since the corner is not beveled
+                                // Top left midpoint since the corner is not beveled to allow peaking through corner doors
+                                newBottomX--;
                             }
                             if (top.Greater(newBottomY, newBottomX))
                             {
@@ -229,9 +233,10 @@ namespace UnicornHack.Utils
                             // Bottom center of the tile above by default
                             var newTopY = y * 4 + 2;
                             var newTopX = x * 4;
-                            if (!BottomRightBeveled(x, y + 1, octant, origin))
+                            var bottomRightBeveled = BottomRightBeveled(x, y + 1, octant, origin);
+                            if (!bottomRightBeveled)
                             {
-                                newTopX++; // Bottom right midpoint since the corner is not beveled
+                                newTopX += 2; // Bottom right since the corner is not beveled
                             }
                             // We have to maintain the invariant that top > bottom. If not, the sector is empty and we're done.
                             if (bottom.GreaterOrEqual(newTopY, newTopX))
@@ -239,6 +244,17 @@ namespace UnicornHack.Utils
                                 return;
                             }
                             top = new Slope(newTopY, newTopX);
+                            if (bottomRightBeveled)
+                            {
+                                // Ensure the slope is under the bottom right corner of the next diagonal tile
+                                // to avoid peaking around columns
+                                var diagonalTopY = y*2+3;
+                                var diagonalTopX = x*2+4;
+                                if (top.Greater(diagonalTopY, diagonalTopX))
+                                {
+                                    top = new Slope(diagonalTopY, diagonalTopX);
+                                }
+                            }
                         }
                         wasOpaque = 0;
                     }

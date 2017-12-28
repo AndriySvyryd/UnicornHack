@@ -15,18 +15,18 @@ namespace UnicornHack.Models.GameHubModels
                 case EntityState.Added:
                     properties = state == null
                         ? new List<object>(4)
-                        : new List<object>(5) {state};
+                        : new List<object>(5) {(int)state};
                     properties.Add(connection.Id);
                     properties.Add(connection.LevelX);
                     properties.Add(connection.LevelY);
                     properties.Add(connection.TargetLevelDepth > connection.LevelDepth);
                     return properties;
                 case EntityState.Deleted:
-                    return new List<object>{state,connection.Id};
+                    return new List<object> {(int)state, connection.Id};
             }
 
             var connectionEntry = context.Context.Entry(connection);
-            properties = new List<object> {state, connection.Id};
+            properties = new List<object> {(int)state, connection.Id};
 
             var i = 1;
             if (connectionEntry.State != EntityState.Unchanged)
