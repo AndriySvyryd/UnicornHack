@@ -1,4 +1,4 @@
-/// <reference path='../../node_modules/@types/node/index.d.ts' />
+﻿/// <reference path='../../node_modules/@types/node/index.d.ts' />
 
 import { observable, computed, action } from "mobx";
 
@@ -14,6 +14,7 @@ export class Player {
     @observable gold: number = 0;
     @observable log: Map<string, LogEntry> = new Map<string, LogEntry>();
     @observable races: Map<string, PlayerRace> = new Map<string, PlayerRace>();
+    serverTime: number = 0;
 
     @computed get learningRace(): PlayerRace {
         let learningRace: PlayerRace | null = null;
@@ -82,6 +83,7 @@ export class Player {
         compactPlayer[i++].map((a: any[]) => PlayerRace.expandToCollection(a, currentPlayer.races, EntityState.Added));
         currentPlayer.nextActionTick = compactPlayer[i++];
         currentPlayer.gold = compactPlayer[i++];
+        currentPlayer.serverTime = compactPlayer[i++];
         return currentPlayer;
     }
 
@@ -114,6 +116,9 @@ export class Player {
                     break;
                 case 9:
                     this.gold = compactPlayer[i++];
+                    break;
+                case 10:
+                    this.serverTime = compactPlayer[i++];
                     break;
                 default:
                     return i - 1;

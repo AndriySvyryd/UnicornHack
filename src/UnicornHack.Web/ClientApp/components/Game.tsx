@@ -33,8 +33,12 @@ export class Game extends React.Component<IGameProps, {}> {
     connection: SignalR.HubConnection;
     styles: MapStyles = new MapStyles();
 
+    keyPressTime: number;
+
     constructor(props: IGameProps) {
         super(props);
+
+        this.keyPressTime = performance.now();
 
         const logger = new SignalR.ConsoleLogger(SignalR.LogLevel.Information);
         const http = new SignalR.HttpConnection(`http://${document.location.host}/gameHub`,
@@ -147,6 +151,9 @@ export class Game extends React.Component<IGameProps, {}> {
 
     @action.bound
     processServerState(compactPlayer: any[]) {
+        const receiveTime = performance.now();
+        const totalServerTime = receiveTime - this.keyPressTime;
+
         const newPlayer = Player.expand(compactPlayer, this.player);
         if (newPlayer == null) {
             console.log('Desync');
@@ -156,6 +163,13 @@ export class Game extends React.Component<IGameProps, {}> {
 
         this.player = newPlayer;
 
+        const clientTime = performance.now() - receiveTime;
+
+        console.log("Server time:\t" + newPlayer.serverTime);
+        console.log("Transmit time:\t" + (totalServerTime - newPlayer.serverTime));
+        console.log("Client time:\t" + clientTime);
+
+        this.keyPressTime = performance.now();
         this.performQueuedActions();
     }
 
@@ -164,6 +178,7 @@ export class Game extends React.Component<IGameProps, {}> {
             this.actionQueue.push({ action: action, target: target, target2: target2 });
         } else {
             this.waiting = true;
+            this.keyPressTime = performance.now();
             this.connection.invoke('PerformAction', this.props.playerName, action, target, target2)
                 .catch(e => this.addError((e || '').toString()));
         }

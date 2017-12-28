@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
@@ -30,16 +31,26 @@ namespace UnicornHack.Hubs
 
         public List<object> GetState(string name)
         {
+            var s = new Stopwatch();
+            s.Start();
+
             var player = FindPlayer(name) ?? CreateGame(name);
 
             _dbContext.SaveChanges();
 
-            return CompactPlayer.Serialize(player, EntityState.Added,
+            var serializedPlayer = CompactPlayer.Serialize(player, EntityState.Added,
                 new SerializationContext(_dbContext, player, _gameServices));
+
+            s.Stop();
+            serializedPlayer.Add(s.Elapsed.TotalMilliseconds);
+
+            return serializedPlayer;
         }
 
         public async Task PerformAction(string name, PlayerAction? action, int? target, int? target2)
         {
+            var s = new Stopwatch();
+            s.Start();
 
             var currentPlayer = FindPlayer(name);
             if (currentPlayer == null)
@@ -130,6 +141,17 @@ namespace UnicornHack.Hubs
                     player, newPlayer ? EntityState.Added : EntityState.Modified,
                     new SerializationContext(_dbContext, player, _gameServices));
 
+                s.Stop();
+                if (newPlayer)
+                {
+                    serializedPlayer.Add(s.Elapsed.TotalMilliseconds);
+                }
+                else
+                {
+                    serializedPlayer.Add(10);
+                    serializedPlayer.Add(s.Elapsed.TotalMilliseconds);
+                }
+
                 // TODO: only send to clients watching this player
                 await Clients.All.InvokeAsync("ReceiveState", serializedPlayer);
             }
@@ -149,6 +171,7 @@ namespace UnicornHack.Hubs
                 seed = rngData[0] | rngData[1] << 8 | rngData[2] << 16 | rngData[3] << 24;
             }
 
+            seed = 2;
             var game = new Game
             {
                 InitialSeed = seed,
