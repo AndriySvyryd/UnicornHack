@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
@@ -23,8 +25,8 @@ namespace UnicornHack.Abilities
         public int? AddedAbilityEffectId { get; set; }
 
         public virtual AbilityActivation Activation { get; set; }
-
-        // TODO: Move/refactor this
+        public virtual TargetingType? TargetingType { get; set; }
+        public virtual TargetingDirection? TargetingDirection { get; set; }
         public virtual AbilityAction Action { get; set; }
 
         public virtual int Timeout { get; set; }
@@ -35,7 +37,6 @@ namespace UnicornHack.Abilities
         public virtual int TimeoutLeft { get; set; }
 
         // TODO: Whether it can be interrupted
-        // TODO: Targeting mode
         // TODO: Success condition
         // TODO: Activation condition
 
@@ -98,7 +99,7 @@ namespace UnicornHack.Abilities
             }
 
             var activator = abilityContext.Activator;
-            var target = abilityContext.Target as Actor;
+            var target = abilityContext.TargetEntity as Actor;
             if (target?.IsAlive == false)
             {
                 return false;
@@ -197,6 +198,49 @@ namespace UnicornHack.Abilities
 
             Entity?.OnAbilityActivated(this);
             return true;
+        }
+
+        public virtual IReadOnlyCollection<Entity> GetTargets(AbilityActivationContext abilityContext)
+        {
+            if (abilityContext.TargetEntity != null)
+            {
+                return new[] {abilityContext.TargetEntity};
+            }
+
+            var level = abilityContext.Activator.Level;
+            var targetCell = abilityContext.TargetCell.Value;
+            var activatorCell = new Point(abilityContext.Activator.LevelX, abilityContext.Activator.LevelY);
+            var vectorToTarget = activatorCell.DifferenceTo(targetCell);
+            switch (TargetingType)
+            {
+                case Abilities.TargetingType.AdjacentSingle:
+                    if (vectorToTarget.Length() > 1)
+                    {
+                        return new Entity[0];
+                    }
+
+                    return level.Actors.Where(a => a.LevelX == targetCell.X && a.LevelY == targetCell.Y).ToList();
+                case Abilities.TargetingType.AdjacentArc:
+                    if (vectorToTarget.Length() > 1)
+                    {
+                        return new Entity[0];
+                    }
+
+                    var direction = vectorToTarget.AsDirection();
+                    var firstNeighbour = targetCell.Translate(Vector.Convert(direction.Rotate(1)));
+                    var secondNeighbour = targetCell.Translate(Vector.Convert(direction.Rotate(-1)));
+
+                    return level.Actors.Where(a => a.LevelX == targetCell.X && a.LevelY == targetCell.Y
+                                                   || a.LevelX == firstNeighbour.X && a.LevelY == firstNeighbour.Y
+                                                   || a.LevelX == secondNeighbour.X && a.LevelY == secondNeighbour.Y)
+                        .ToList();
+                case Abilities.TargetingType.Beam:
+                    // TODO: take blocking actors and terrain into account
+                    // TODO: set abilityContext.TargetCell to the final projectile position
+                    return level.Actors.Where(a => a.LevelX == targetCell.X && a.LevelY == targetCell.Y).ToList();
+                default:
+                    throw new ArgumentOutOfRangeException("TargetingType " + TargetingType + " not supported");
+            }
         }
 
         private bool IsFinal() => Action != AbilityAction.Modifier

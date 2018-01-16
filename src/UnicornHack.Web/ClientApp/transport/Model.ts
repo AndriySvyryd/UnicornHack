@@ -44,52 +44,52 @@ export class Level {
             currentLevel.currentTick = currentTick;
             for (; i < compactLevel.length;) {
                 switch (compactLevel[i++]) {
-                case 2:
-                    compactLevel[i++].map(
-                        (a: any[]) => Actor.expandToCollection(a, currentLevel.actors, currentLevel.tiles, state));
-                    break;
-                case 3:
-                    compactLevel[i++].map(
-                        (a: any[]) => Item.expandToCollection(a, currentLevel.items, currentLevel.tiles, state));
-                    break;
-                case 4:
-                    compactLevel[i++].map(
-                        (a: any[]) => Connection.expandToCollection(a, currentLevel.connections, currentLevel.tiles, state));
-                    break;
-                case 5:
-                    const terrainChanges = compactLevel[i++];
-                    for (let i = 0; i < terrainChanges.length;) {
-                        const changedPoint = currentLevel.indexToPoint[terrainChanges[i++]];
-                        currentLevel.tiles[changedPoint[1]][changedPoint[0]].feature = terrainChanges[i++];
-                    }
-                    break;
-                case 6:
-                    const wallNeighboursChanges = compactLevel[i++];
-                    for (let i = 0; i < wallNeighboursChanges.length;) {
-                        const changedPoint = currentLevel.indexToPoint[wallNeighboursChanges[i++]];
-                        currentLevel.tiles[changedPoint[1]][changedPoint[0]].wallNeighbours =
-                            wallNeighboursChanges[i++] & DirectionFlags.Cross;
-                    }
-                    break;
-                case 7:
-                    const visibleTerrainChanges = compactLevel[i++];
-                    for (let i = 0; i < visibleTerrainChanges.length;) {
-                        const changedPoint = currentLevel.indexToPoint[visibleTerrainChanges[i++]];
-                        currentLevel.tiles[changedPoint[1]][changedPoint[0]].visibility = visibleTerrainChanges[i++];
-                    }
-                    break;
-                case 8:
-                    currentLevel.branchName = compactLevel[i++];
-                    break;
-                case 9:
-                    currentLevel.depth = compactLevel[i++];
-                    break;
-                case 10:
-                    currentLevel.width = compactLevel[i++];
-                    break;
-                case 11:
-                    currentLevel.height = compactLevel[i++];
-                    break;
+                    case 2:
+                        compactLevel[i++].map(
+                            (a: any[]) => Actor.expandToCollection(a, currentLevel.actors, currentLevel.tiles, state));
+                        break;
+                    case 3:
+                        compactLevel[i++].map(
+                            (a: any[]) => Item.expandToCollection(a, currentLevel.items, currentLevel.tiles, state));
+                        break;
+                    case 4:
+                        compactLevel[i++].map(
+                            (a: any[]) => Connection.expandToCollection(a, currentLevel.connections, currentLevel.tiles, state));
+                        break;
+                    case 5:
+                        const terrainChanges = compactLevel[i++];
+                        for (let i = 0; i < terrainChanges.length;) {
+                            const changedPoint = currentLevel.indexToPoint[terrainChanges[i++]];
+                            currentLevel.tiles[changedPoint[1]][changedPoint[0]].feature = terrainChanges[i++];
+                        }
+                        break;
+                    case 6:
+                        const wallNeighboursChanges = compactLevel[i++];
+                        for (let i = 0; i < wallNeighboursChanges.length;) {
+                            const changedPoint = currentLevel.indexToPoint[wallNeighboursChanges[i++]];
+                            currentLevel.tiles[changedPoint[1]][changedPoint[0]].wallNeighbours =
+                                wallNeighboursChanges[i++] & DirectionFlags.Cross;
+                        }
+                        break;
+                    case 7:
+                        const visibleTerrainChanges = compactLevel[i++];
+                        for (let i = 0; i < visibleTerrainChanges.length;) {
+                            const changedPoint = currentLevel.indexToPoint[visibleTerrainChanges[i++]];
+                            currentLevel.tiles[changedPoint[1]][changedPoint[0]].visibility = visibleTerrainChanges[i++];
+                        }
+                        break;
+                    case 8:
+                        currentLevel.branchName = compactLevel[i++];
+                        break;
+                    case 9:
+                        currentLevel.depth = compactLevel[i++];
+                        break;
+                    case 10:
+                        currentLevel.width = compactLevel[i++];
+                        break;
+                    case 11:
+                        currentLevel.height = compactLevel[i++];
+                        break;
                 }
             }
 
@@ -133,6 +133,10 @@ export class Level {
         connections.map((a: any[]) => Connection.expandToCollection(a, level.connections, level.tiles, EntityState.Added));
 
         return level;
+    }
+
+    static pack(x: number, y: number): number {
+        return x << 8 | y;
     }
 }
 
@@ -1019,7 +1023,7 @@ export const enum ItemComplexity {
 }
 
 export const enum EntityState {
-    Detached,
+    Detached = 0,
     Unchanged,
     Deleted,
     Modified,

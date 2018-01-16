@@ -16,9 +16,12 @@ namespace UnicornHack.Effects
         {
             SourceAbility = abilityContext.Ability?.AddReference().Referenced;
             SourceAbility?.ActiveEffects.Add(this);
-            Game = abilityContext.Target.Game;
-            Entity = abilityContext.Target;
-            Id = ++abilityContext.Target.Game.NextAppliedEffectId;
+            Game = abilityContext.Activator?.Game
+                ?? abilityContext.TargetEntity.Game;
+            Entity = abilityContext.TargetEntity;
+            CellX = abilityContext.TargetCell?.X;
+            CellY = abilityContext.TargetCell?.Y;
+            Id = ++Game.NextAppliedEffectId;
         }
 
         public int? Duration { get; set; }
@@ -33,6 +36,8 @@ namespace UnicornHack.Effects
 
         public int? EntityId { get; private set; }
         public Entity Entity { get; set; }
+        public byte? CellX { get; set; }
+        public byte? CellY { get; set; }
 
         public int? SensorId { get; set; }
         public int? AttackEventId { get; set; }

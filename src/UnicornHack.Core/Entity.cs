@@ -116,7 +116,7 @@ namespace UnicornHack
             using (var context = new AbilityActivationContext
             {
                 Activator = activator,
-                Target = target
+                TargetEntity = target
             })
             {
                 ActivateAbilities(activation, context, useSameContext: false);
@@ -138,7 +138,8 @@ namespace UnicornHack
                     using (var newContext = new AbilityActivationContext
                     {
                         Activator = context.Activator,
-                        Target = context.Target
+                        TargetEntity = context.TargetEntity,
+                        TargetCell = context.TargetCell
                     })
                     {
                         ability.Activate(newContext);

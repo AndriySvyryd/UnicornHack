@@ -26,7 +26,7 @@ namespace UnicornHack.Effects
                 Ability = Ability.Instantiate(Game).AddReference().Referenced
             };
             newEffect.Add();
-            abilityContext.Target.Add(newEffect.Ability);
+            abilityContext.TargetEntity.Add(newEffect.Ability);
         }
 
         public override void Delete()

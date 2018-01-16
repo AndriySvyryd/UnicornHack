@@ -1,6 +1,4 @@
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using UnicornHack.Abilities;
 using UnicornHack.Effects;
 
@@ -23,7 +21,7 @@ namespace UnicornHack.Events
         public static void New(AbilityActivationContext abilityContext, int eventOrder)
         {
             var attacker = abilityContext.Activator as Actor;
-            var victim = abilityContext.Target as Actor;
+            var victim = abilityContext.TargetEntity as Actor;
             var level = attacker?.Level ?? victim?.Level;
             if (level == null)
             {

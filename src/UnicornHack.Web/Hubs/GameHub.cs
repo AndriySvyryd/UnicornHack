@@ -7,8 +7,6 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using UnicornHack.Data;
-using UnicornHack.Effects;
-using UnicornHack.Events;
 using UnicornHack.Generation;
 using UnicornHack.Models.GameHubModels;
 using UnicornHack.Services;
@@ -37,7 +35,7 @@ namespace UnicornHack.Hubs
                 player.Level, EntityState.Added, 0, new SerializationContext(_dbContext, player, _gameServices));
         }
 
-        public async Task PerformAction(string name, string action, int? target, int? target2)
+        public async Task PerformAction(string name, PlayerAction? action, int? target, int? target2)
         {
             var character = FindOrCreateCharacter(name);
             CompactLevel.Snapshot(character.Level);
@@ -255,13 +253,6 @@ namespace UnicornHack.Hubs
                 .Include(g => g.SensoryEvents)
                 .Single(g => g.Id == game.Id);
 
-            foreach (var playerCharacter in game.Players)
-            {
-                foreach (var log in playerCharacter.Log.ToList())
-                {
-                    _dbContext.LogEntries.Remove(log);
-                }
-            }
             foreach (var effect in game.Effects.ToList())
             {
                 _dbContext.Effects.Remove(effect);
@@ -288,6 +279,7 @@ namespace UnicornHack.Hubs
             }
             foreach (var entity in game.Entities.ToList())
             {
+                // TODO: Don't remove players and game
                 _dbContext.Entities.Remove(entity);
             }
             foreach (var level in game.Levels.ToList())

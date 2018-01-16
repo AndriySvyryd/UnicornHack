@@ -57,8 +57,9 @@ pre {
 .map__inner-container {
 }
 
-.map__row {
+.map__tile {
     overflow: hidden;
+    float: left;
 }
 
 .chat__messages {

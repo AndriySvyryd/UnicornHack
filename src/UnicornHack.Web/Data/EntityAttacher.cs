@@ -7,6 +7,7 @@ using UnicornHack.Generation;
 namespace UnicornHack.Data
 {
     // TODO: Extract visitor-like base class to handle inheritance better
+    // TODO: Add tests
     public static class EntityAttacher
     {
         public static void Attach(Level level, GameDbContext context)
@@ -139,6 +140,8 @@ namespace UnicornHack.Data
                 Attach(item, context);
             }
 
+            Attach(actor.NaturalWeapon, context);
+
             if (actor is Player player)
             {
                 foreach (var logEntry in player.Log)
@@ -149,6 +152,16 @@ namespace UnicornHack.Data
                 foreach (var @event in player.SensedEvents)
                 {
                     Attach(@event, context);
+                }
+
+                foreach (var queuedCommand in player.QueuedCommands)
+                {
+                    Attach(queuedCommand, context);
+                }
+
+                foreach (var playerCommand in player.CommandHistory)
+                {
+                    Attach(playerCommand, context);
                 }
 
                 Attach(player.Skills, context);
@@ -164,6 +177,17 @@ namespace UnicornHack.Data
             }
 
             logEntityEntry.State = EntityState.Unchanged;
+        }
+
+        public static void Attach(CommandBase command, GameDbContext context)
+        {
+            var commandEntry = context.Entry(command);
+            if (commandEntry.State != EntityState.Detached)
+            {
+                return;
+            }
+
+            commandEntry.State = EntityState.Unchanged;
         }
 
         public static void Attach(SensoryEvent @event, GameDbContext context)

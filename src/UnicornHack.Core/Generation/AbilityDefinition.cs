@@ -17,6 +17,8 @@ namespace UnicornHack.Generation
         public Game Game { get; set; }
         public int? AddAbilityEffectId { get; set; }
         public virtual AbilityActivation Activation { get; set; }
+        public virtual TargetingType? TargetingType { get; set; }
+        public virtual TargetingDirection? TargetingDirection { get; set; }
         public virtual AbilityAction Action { get; set; }
         public virtual int Timeout { get; set; }
         public virtual int Delay { get; set; }
@@ -27,7 +29,6 @@ namespace UnicornHack.Generation
         public virtual int EnergyPointCost { get; set; }
 
         // TODO: Whether it can be interrupted
-        // TODO: Targeting mode
         // TODO: Success condition
 
         public virtual ISet<Trigger> Triggers { get; set; }
@@ -52,6 +53,8 @@ namespace UnicornHack.Generation
             {
                 Name = Name,
                 Activation = Activation,
+                TargetingType = TargetingType,
+                TargetingDirection = TargetingDirection,
                 Action = Action,
                 Delay = Delay,
                 Timeout = Timeout,
@@ -84,6 +87,8 @@ namespace UnicornHack.Generation
             {
                 Name = Name,
                 Activation = Activation,
+                TargetingType = TargetingType,
+                TargetingDirection = TargetingDirection,
                 Action = Action,
                 Delay = Delay,
                 Timeout = Timeout,

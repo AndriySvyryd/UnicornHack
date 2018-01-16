@@ -1,6 +1,7 @@
 ﻿import * as React from 'React';
 import { observer } from 'mobx-react';
 import { Ability } from '../transport/Model';
+import { PlayerAction } from "../transport/PlayerAction";
 
 @observer
 export class AbilityBar extends React.Component<IAbilityBarProps, {}> {
@@ -13,7 +14,7 @@ export class AbilityBar extends React.Component<IAbilityBarProps, {}> {
 
 interface IAbilityBarProps {
     abilities: Map<string, Ability>;
-    performAction: (action: string, target: (number | null), target2: (number | null)) => void;
+    performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
 }
 
 @observer
@@ -21,10 +22,10 @@ export class AbilityLine extends React.Component<IAbilityProps, {}> {
     render() {
         if (this.props.ability.isDefault) {
             return <div>{'*' + this.props.ability.name}</div>;
-        }
-        else {
+        } else {
             return (<div><a onClick={
-                        () => this.props.performAction('MAKEDEFAULT', this.props.ability.id, null)}>{this.props.ability.name}</a>
+                        () => this.props.performAction(PlayerAction.ChooseDefaultAttack, this.props.ability.id, null)
+}>{this.props.ability.name}</a>
                     </div>);
         }
     }
@@ -32,5 +33,5 @@ export class AbilityLine extends React.Component<IAbilityProps, {}> {
 
 interface IAbilityProps {
     ability: Ability;
-    performAction: (action: string, target: (number | null), target2: (number | null)) => void;
+    performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
 }

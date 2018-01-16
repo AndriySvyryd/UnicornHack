@@ -21,16 +21,30 @@ namespace UnicornHack
         public int UnspentSkillPoints { get; set; }
 
         public virtual IEnumerable<ChangedRace> Races
-            => ActiveEffects.OfType<ChangedRace>().OrderByDescending(r => r.XPLevel).ThenByDescending(r => r.Id).ToList();
+            => ActiveEffects.OfType<ChangedRace>().OrderByDescending(r => r.XPLevel).ThenByDescending(r => r.Id)
+                .ToList();
 
         public virtual ChangedRace LearningRace => Races.LastOrDefault();
         public virtual int? DefaultAttackId { get; set; }
         public virtual Ability DefaultAttack { get; set; }
         public virtual int NextLogEntryId { get; set; }
-        public virtual ObservableSnapshotHashSet<LogEntry> Log { get; set; } = new ObservableSnapshotHashSet<LogEntry>();
-        public virtual string NextAction { get; set; }
+
+        public virtual ObservableSnapshotHashSet<LogEntry> Log { get; set; } =
+            new ObservableSnapshotHashSet<LogEntry>();
+
+        public virtual PlayerAction? NextAction { get; set; }
         public virtual int? NextActionTarget { get; set; }
         public virtual int? NextActionTarget2 { get; set; }
+        public virtual int NextCommandId { get; set; }
+
+        public virtual ObservableSnapshotHashSet<PlayerCommand> CommandHistory { get; set; } =
+            new ObservableSnapshotHashSet<PlayerCommand>();
+
+        public virtual int NextQueuedCommandId { get; set; }
+
+        public virtual ObservableSnapshotHashSet<QueuedCommand> QueuedCommands { get; set; } =
+            new ObservableSnapshotHashSet<QueuedCommand>();
+
         public virtual int NextEventId { get; set; }
 
         public virtual ObservableSnapshotHashSet<SensoryEvent> SensedEvents { get; set; }
@@ -52,15 +66,17 @@ namespace UnicornHack
             };
             var context = new AbilityActivationContext
             {
-                Target = this
+                TargetEntity = this
             };
             using (context)
             {
                 defaultRaceAbility.Activate(context);
             }
+
             defaultRaceAbility.IsUsable = false;
 
             Skills = new Skills();
+
             RecalculateWeaponAbilities();
 
             ItemVariantData.PotionOfHealing.Instantiate(this);
@@ -96,6 +112,7 @@ namespace UnicornHack
                 {
                     MaxXPLevel = XPLevel;
                 }
+
                 race.UpdateNextLevelXP();
                 AddXP(leftoverXP);
             }
@@ -118,7 +135,8 @@ namespace UnicornHack
             var secondaryMeleeWeaponAttack = Abilities.FirstOrDefault(a => a.Name == SecondaryMeleeWeaponAttackName);
             var secondaryMeleeWeapon = secondaryMeleeWeaponAttack.Triggers.OfType<MeleeWeaponTrigger>().Single().Weapon;
             var secondaryMeleeWeaponSkill = GetMeleeSkill(secondaryMeleeWeapon);
-            secondaryMeleeWeaponAttack.Effects.OfType<PhysicalDamage>().Single().Damage =  secondaryMeleeWeaponSkill ?? 0;
+            secondaryMeleeWeaponAttack.Effects.OfType<PhysicalDamage>().Single().Damage =
+                secondaryMeleeWeaponSkill ?? 0;
 
             DefaultAttack = null;
             var secondaryMeleeAttack = Abilities.First(a => a.Name == SecondaryMeleeAttackName);
@@ -208,25 +226,29 @@ namespace UnicornHack
         {
             if (weapon == null)
             {
-                // TODO: Calculate h2h damage
-                return 20;
+                return 0;
             }
+
             if ((weapon.Type & ItemType.WeaponMeleeFist) != 0)
             {
                 return Skills.FistWeapons;
             }
+
             if ((weapon.Type & ItemType.WeaponMeleeShort) != 0)
             {
                 return Skills.ShortWeapons;
             }
+
             if ((weapon.Type & ItemType.WeaponMeleeMedium) != 0)
             {
                 return Skills.MediumWeapons;
             }
+
             if ((weapon.Type & ItemType.WeaponMeleeLong) != 0)
             {
                 return Skills.LongWeapons;
             }
+
             if ((weapon.Type & ItemType.WeaponMagicFocus) != 0)
             {
                 return Skills.MeleeMagicWeapons;
@@ -241,22 +263,27 @@ namespace UnicornHack
             {
                 return 0;
             }
+
             if ((weapon.Type & ItemType.WeaponRangedThrown) != 0)
             {
                 return Skills.Thrown;
             }
+
             if ((weapon.Type & ItemType.WeaponRangedBow) != 0)
             {
                 return Skills.Bows;
             }
+
             if ((weapon.Type & ItemType.WeaponRangedCrossbow) != 0)
             {
                 return Skills.Crossbows;
             }
+
             if ((weapon.Type & ItemType.WeaponRangedSlingshot) != 0)
             {
                 return Skills.Slingshots;
             }
+
             if ((weapon.Type & ItemType.WeaponMagicStaff) != 0)
             {
                 return Skills.RangedMagicWeapons;
@@ -267,9 +294,6 @@ namespace UnicornHack
 
         public override bool Act()
         {
-            // TODO: add option to stop here and display current state
-            // even if user already provided the next action / cannot perform an action
-
             foreach (var @event in SensedEvents.OrderBy(e => e.EventOrder).ThenBy(e => e.Id).ToList())
             {
                 var logEntry = GetLogEntry(@event);
@@ -277,88 +301,129 @@ namespace UnicornHack
                 {
                     WriteLog(logEntry, @event.Tick);
                 }
+
                 SensedEvents.Remove(@event);
                 @event.RemoveReference();
             }
 
             var initialTick = NextActionTick;
-            if (IsAlive)
+            if (!IsAlive)
             {
-                var action = NextAction;
-                var target = NextActionTarget;
-                var target2 = NextActionTarget2;
-                if (action == null)
+                RecomputeFOV();
+                return false;
+            }
+
+            QueuedCommand queuedCommand = null;
+            var action = NextAction;
+            var target = NextActionTarget;
+            var target2 = NextActionTarget2;
+            if (action == null)
+            {
+                if (QueuedCommands.Count == 0)
                 {
-                    Level.RecomputeVisibility(new Point(LevelX, LevelY), Heading, primaryFOV: 1, secondaryFOV: 2);
+                    RecomputeFOV();
                     return false;
                 }
+
+                // TODO: add an option to stop here and display current state and allow to cancel
+                // if user already provided the next action
+
+                queuedCommand = QueuedCommands.OrderBy(c => c.Id).First();
+                QueuedCommands.Remove(queuedCommand);
+
+                action = queuedCommand.Action;
+                target = queuedCommand.Target;
+                target2 = queuedCommand.Target2;
+            }
+            else
+            {
+                CommandHistory.Add(new PlayerCommand(this, action.Value, target, target2));
 
                 NextAction = null;
                 NextActionTarget = null;
                 NextActionTarget2 = null;
+            }
 
-                Direction? moveDirection = null;
-                switch (action)
-                {
-                    case "N":
-                        moveDirection = Direction.North;
-                        break;
-                    case "S":
-                        moveDirection = Direction.South;
-                        break;
-                    case "W":
-                        moveDirection = Direction.West;
-                        break;
-                    case "E":
-                        moveDirection = Direction.East;
-                        break;
-                    case "NW":
-                        moveDirection = Direction.Northwest;
-                        break;
-                    case "NE":
-                        moveDirection = Direction.Northeast;
-                        break;
-                    case "SW":
-                        moveDirection = Direction.Southwest;
-                        break;
-                    case "SE":
-                        moveDirection = Direction.Southeast;
-                        break;
-                    case "U":
-                        UseStairs(up: true);
-                        break;
-                    case "D":
-                        UseStairs(up: false);
-                        break;
-                    case "H":
-                        NextActionTick += DefaultActionDelay;
-                        break;
-                    case "DROP":
-                        Drop(GetItem(target.Value));
-                        break;
-                    case "EQUIP":
-                        Equip(GetItem(target.Value), (EquipmentSlot)target2.Value);
-                        break;
-                    case "UNEQUIP":
-                        Unequip(GetItem(target.Value));
-                        break;
-                    case "QUAFF":
-                        Quaff(GetItem(target.Value));
-                        break;
-                    case "MAKEDEFAULT":
-                        DefaultAttack = Abilities.First(a => a.Id == target.Value);
-                        break;
-                    default:
-                        throw new InvalidOperationException($"Action {action} on character {Name} is invalid.");
-                }
+            Direction? moveDirection = null;
+            switch (action)
+            {
+                case PlayerAction.Wait:
+                    NextActionTick += DefaultActionDelay;
+                    break;
+                case PlayerAction.MoveOneCell:
+                    moveDirection = (Direction)target.Value;
+                    switch (moveDirection)
+                    {
+                        case Direction.Down:
+                            UseStairs(up: false);
+                            moveDirection = null;
+                            break;
+                        case Direction.Up:
+                            UseStairs(up: true);
+                            moveDirection = null;
+                            break;
+                    }
 
-                if (moveDirection != null)
-                {
-                    Move(moveDirection.Value);
-                }
+                    break;
+                case PlayerAction.MoveToCell:
+                    var targetCell = Point.Unpack(target).Value;
+
+                    // TODO: cancel movement if attacked or enemy is adjacent
+                    var direction = Level.GetFirstStepFromShortestPath(
+                        new Point(LevelX, LevelY), targetCell, Heading);
+
+                    if (direction == null)
+                    {
+                        WriteLog("No path", Level.CurrentTick);
+                        break;
+                    }
+
+                    if (Move(direction.Value))
+                    {
+                        if (LevelX != targetCell.X || LevelY != targetCell.Y)
+                        {
+                            QueuedCommands.Add(queuedCommand ??
+                                               new QueuedCommand(this, PlayerAction.MoveToCell, target, target2));
+                        }
+                    }
+                    break;
+                case PlayerAction.DropItem:
+                    Drop(GetItem(target.Value));
+                    break;
+                case PlayerAction.EquipItem:
+                    Equip(GetItem(target.Value), (EquipmentSlot)target2.Value);
+                    break;
+                case PlayerAction.UnequipItem:
+                    Unequip(GetItem(target.Value));
+                    break;
+                case PlayerAction.ActivateItem:
+                    Quaff(GetItem(target.Value));
+                    break;
+                case PlayerAction.ChooseDefaultAttack:
+                    DefaultAttack = Abilities.First(
+                        a => a.Id == target.Value && a.IsUsable && a.Activation == AbilityActivation.OnTarget);
+                    break;
+                case PlayerAction.PerformDefaultAttack:
+                    ActivateAbility(DefaultAttack, target);
+                    break;
+                case PlayerAction.ActivateAbility:
+                    ActivateAbility(Abilities.First(a => a.Id == target.Value), target2);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Action {action} on character {Name} is invalid.");
+            }
+
+            if (moveDirection != null)
+            {
+                Move(moveDirection.Value);
             }
 
             return initialTick != NextActionTick;
+        }
+
+        private void RecomputeFOV()
+        {
+            Level.RecomputeVisibility(new Point(LevelX, LevelY), Heading, primaryFOV: 1, secondaryFOV: 2);
         }
 
         public override void Sense(SensoryEvent @event)
@@ -369,6 +434,7 @@ namespace UnicornHack
             {
                 @event.Id = ++NextEventId;
             }
+
             @event.AddReference();
             SensedEvents.Add(@event);
         }
@@ -405,7 +471,7 @@ namespace UnicornHack
             var context = new AbilityActivationContext
             {
                 Activator = this,
-                Target = actor
+                TargetEntity = actor
             };
             using (context)
             {

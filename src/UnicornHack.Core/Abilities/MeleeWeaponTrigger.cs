@@ -21,9 +21,27 @@ namespace UnicornHack.Abilities
         {
             abilityContext.Activator.ActivateAbilities(AbilityActivation.OnMeleeAttack, abilityContext, useSameContext: false);
 
-            abilityContext.Add(new MeleeAttacked(abilityContext) { Weapon = Weapon?.AddReference().Referenced });
+            var targetsFound = false;
+            foreach (var target in Ability.GetTargets(abilityContext))
+            {
+                targetsFound = true;
+                // TODO: Determine whether attack was succesful
+                var hitContext = new AbilityActivationContext
+                {
+                    Activator = abilityContext.Activator,
+                    TargetEntity = target,
+                    EffectsToApply = abilityContext.EffectsToApply
+                };
 
-            Weapon?.ActivateAbilities(AbilityActivation.OnMeleeAttack, abilityContext, useSameContext: true);
+                hitContext.Add(new MeleeAttacked(abilityContext) { Weapon = Weapon.AddReference().Referenced });
+                Weapon.ActivateAbilities(AbilityActivation.OnMeleeAttack, hitContext, useSameContext: true);
+            }
+
+            if (!targetsFound)
+            {
+                abilityContext.Add(new MeleeAttacked(abilityContext) { Weapon = Weapon.AddReference().Referenced });
+                Weapon.ActivateAbilities(AbilityActivation.OnMeleeAttack, abilityContext, useSameContext: true);
+            }
         }
     }
 }

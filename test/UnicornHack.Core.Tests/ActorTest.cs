@@ -53,7 +53,7 @@ namespace UnicornHack
                     Name = "become troll",
                     Activation = AbilityActivation.OnActivation
                 },
-                Target = player
+                TargetEntity = player
             };
             using (activationContext)
             {
@@ -133,7 +133,7 @@ namespace UnicornHack
             var context = new AbilityActivationContext
             {
                 Activator = player,
-                Target = player
+                TargetEntity = player
             };
             activatableAbility.Activate(context);
 

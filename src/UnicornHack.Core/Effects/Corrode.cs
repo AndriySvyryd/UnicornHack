@@ -25,7 +25,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            (abilityContext.Target as Actor)?.ChangeCurrentHP(-1 * Damage);
+            (abilityContext.TargetEntity as Actor)?.ChangeCurrentHP(-1 * Damage);
             abilityContext.Add(new Corroded(abilityContext) {Damage = Damage});
         }
     }

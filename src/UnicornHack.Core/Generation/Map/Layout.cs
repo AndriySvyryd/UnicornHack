@@ -171,7 +171,7 @@ namespace UnicornHack.Generation.Map
                     break;
                 }
 
-                var heading = current.DirectionTo(target).GetUnit();
+                var heading = current.DifferenceTo(target).GetUnit();
 
                 Point? horizontalMove = null;
                 Point? verticalMove = null;

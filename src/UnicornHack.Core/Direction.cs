@@ -14,8 +14,7 @@ namespace UnicornHack
         South,
         Southeast,
         Up,
-        Down,
-        None
+        Down
     }
 
     [Flags]
@@ -60,6 +59,31 @@ namespace UnicornHack
 
     public static class DirectionExtentions
     {
+        public static Direction Rotate(this Direction direction, int octants)
+        {
+            var result = direction.AsOctants() + octants;
+            if (result < 0)
+            {
+                result += 8;
+            }
+            else if(result > 7)
+            {
+                result -= 8;
+            }
+
+            return (Direction)result;
+        }
+
+        public static int AsOctants(this Direction direction)
+        {
+            var result = (int)direction;
+            if (result > 7)
+            {
+                throw new InvalidOperationException("Angleless direction");
+            }
+            return result;
+        }
+
         public static int OctantsTo(this Direction direction, Direction otherDirection)
         {
             var difference = (int)otherDirection - (int)direction;

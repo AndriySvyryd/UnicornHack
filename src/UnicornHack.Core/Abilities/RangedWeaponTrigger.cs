@@ -1,7 +1,4 @@
-﻿using System.Linq;
-using UnicornHack.Data.Properties;
-using UnicornHack.Effects;
-using UnicornHack.Events;
+﻿using UnicornHack.Effects;
 
 namespace UnicornHack.Abilities
 {
@@ -22,21 +19,29 @@ namespace UnicornHack.Abilities
 
         public override void Fire(AbilityActivationContext abilityContext)
         {
-            abilityContext.Activator.ActivateAbilities(
-                AbilityActivation.OnRangedAttack, abilityContext, useSameContext: false);
+            abilityContext.Activator.ActivateAbilities(AbilityActivation.OnRangedAttack, abilityContext, useSameContext: false);
 
             abilityContext.Add(new RangeAttacked(abilityContext) { Weapon = Weapon.AddReference().Referenced });
 
+            var targets = Ability.GetTargets(abilityContext);
+            var level = abilityContext.Activator.Level;
             var projectile = (Weapon as Launcher)?.Projectile;
             if (projectile == null)
             {
                 projectile = Weapon;
-                if (abilityContext.Target is Actor actorTarget)
+                if (abilityContext.TargetEntity is Actor actorTarget)
                 {
                     Weapon.MoveTo(new LevelCell(
                         actorTarget.Level,
                         actorTarget.LevelX,
                         actorTarget.LevelY));
+                }
+                else if (abilityContext.TargetCell != null)
+                {
+                    Weapon.MoveTo(new LevelCell(
+                        level,
+                        abilityContext.TargetCell.Value.X,
+                        abilityContext.TargetCell.Value.Y));
                 }
             }
             else
@@ -44,16 +49,20 @@ namespace UnicornHack.Abilities
                 Weapon.ActivateAbilities(AbilityActivation.OnRangedAttack, abilityContext, useSameContext: true);
             }
 
-            var hitContext = new AbilityActivationContext
+            foreach (var target in targets)
             {
-                Activator = abilityContext.Activator,
-                Target = abilityContext.Target,
-                EffectsToApply = abilityContext.EffectsToApply
-            };
+                // TODO: Determine whether attack was succesful
+                var hitContext = new AbilityActivationContext
+                {
+                    Activator = abilityContext.Activator,
+                    TargetEntity = target,
+                    EffectsToApply = abilityContext.EffectsToApply
+                };
 
-            hitContext.Add(new RangeAttacked(abilityContext) { Weapon = projectile.AddReference().Referenced });
+                hitContext.Add(new RangeAttacked(hitContext) { Weapon = projectile.AddReference().Referenced });
 
-            projectile.ActivateAbilities(AbilityActivation.OnRangedAttack, hitContext, useSameContext: true);
+                projectile.ActivateAbilities(AbilityActivation.OnRangedAttack, hitContext, useSameContext: true);
+            }
         }
     }
 }

@@ -1,13 +1,14 @@
 namespace UnicornHack
 {
-    public class PlayerCommand
+    public class PlayerCommand : CommandBase
     {
-        public int GameId { get; set; }
-        public int Id { get; set; }
-        public Player Player { get; set; }
+        protected PlayerCommand()
+        {
+        }
 
-        public string Command { get; set; }
-        public string Target { get; set; }
-        public string Target2 { get; set; }
+        public PlayerCommand(Player player, PlayerAction action, int? target, int? target2)
+            : base(++player.NextCommandId, player, action, target, target2)
+        {
+        }
     }
 }

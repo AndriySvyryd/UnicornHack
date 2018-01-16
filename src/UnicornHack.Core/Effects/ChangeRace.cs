@@ -21,7 +21,7 @@ namespace UnicornHack.Effects
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            if (abilityContext.Target is Player player)
+            if (abilityContext.TargetEntity is Player player)
             {
                 if (Remove)
                 {
@@ -46,7 +46,7 @@ namespace UnicornHack.Effects
                     {
                         var changedRace = race.Instantiate(abilityContext);
                         changedRace.Add();
-                        abilityContext.Target.Add(changedRace.Ability);
+                        abilityContext.TargetEntity.Add(changedRace.Ability);
 
                         changedRace.XPLevel = 1;
                         changedRace.UpdateNextLevelXP();

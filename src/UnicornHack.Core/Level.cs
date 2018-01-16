@@ -39,8 +39,13 @@ namespace UnicornHack
         public virtual ObservableSnapshotHashSet<Room> Rooms { get; } = new ObservableSnapshotHashSet<Room>();
         public virtual ObservableSnapshotHashSet<Item> Items { get; } = new ObservableSnapshotHashSet<Item>();
         public virtual PriorityQueue<Actor> Actors { get; } = new PriorityQueue<Actor>(Actor.TickComparer.Instance);
-        public virtual ObservableSnapshotHashSet<Connection> Connections { get; } = new ObservableSnapshotHashSet<Connection>();
-        public virtual ObservableSnapshotHashSet<Connection> IncomingConnections { get; } = new ObservableSnapshotHashSet<Connection>();
+
+        public virtual ObservableSnapshotHashSet<Connection> Connections { get; } =
+            new ObservableSnapshotHashSet<Connection>();
+
+        public virtual ObservableSnapshotHashSet<Connection> IncomingConnections { get; } =
+            new ObservableSnapshotHashSet<Connection>();
+
         public virtual IEnumerable<Player> Players => Actors.OfType<Player>();
 
         public int[,] PointToIndex { get; private set; }
@@ -72,6 +77,7 @@ namespace UnicornHack
             {
                 throw new InvalidOperationException("Level created beyond branch length");
             }
+
             Game.Repository.Add(this);
             Terrain = new byte[0];
             WallNeighbours = new byte[0];
@@ -253,11 +259,16 @@ namespace UnicornHack
         }
 
         public virtual Direction? GetFirstStepFromShortestPath(Actor origin, Actor target)
-        {
-            var firstPoint = new Point(origin.LevelX, origin.LevelY);
-            var nextPoint = new Point(target.LevelX, target.LevelY);
+            => GetFirstStepFromShortestPath(
+                new Point(origin.LevelX, origin.LevelY),
+                new Point(target.LevelX, target.LevelY),
+                origin.Heading);
 
-            var path = GetShortestPath(origin, target);
+        public virtual Direction? GetFirstStepFromShortestPath(Point origin, Point target, Direction initialDirection)
+        {
+            var nextPoint = target;
+
+            var path = GetShortestPath(origin, target, initialDirection);
             if (path == null)
             {
                 return null;
@@ -268,9 +279,9 @@ namespace UnicornHack
                 nextPoint = path[path.Count - 1];
             }
 
-            Debug.Assert(firstPoint.DistanceTo(nextPoint) <= 1);
+            Debug.Assert(origin.DistanceTo(nextPoint) <= 1);
 
-            return firstPoint.DirectionTo(nextPoint).AsDirection();
+            return origin.DifferenceTo(nextPoint).AsDirection();
         }
 
         public List<Point> GetShortestPath(Actor origin, Actor target)
@@ -453,6 +464,7 @@ namespace UnicornHack
                 item.RemoveReference();
                 return true;
             }
+
             return false;
         }
     }

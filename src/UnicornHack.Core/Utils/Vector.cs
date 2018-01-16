@@ -20,6 +20,19 @@ namespace UnicornHack.Utils
         public Vector GetUnit()
             => new Vector(X == 0 ? X : (sbyte)(X / Math.Abs(X)), Y == 0 ? Y : (sbyte)(Y / Math.Abs(Y)));
 
+        /// <summary>
+        /// Get the vector angle in octants (0-8)
+        /// </summary>
+        /// <returns></returns>
+        public float GetOctantAngle()
+            => Y <= 0
+                ? (X >= 0
+                    ? -2 * Y / (float)(X - Y)
+                    : 2 - 2 * X / (float)(-X - Y))
+                : (X < 0
+                    ? 4 + 2 * Y / (float)(-X + Y)
+                    : 6 + 2 * X / (float)(X + Y));
+
         public byte Length() => (byte)Math.Max(Math.Abs(X), Math.Abs(Y));
 
         public byte OrthogonalLength() => (byte)(Math.Abs(X) + Math.Abs(Y));
@@ -40,6 +53,7 @@ namespace UnicornHack.Utils
                         case 1:
                             return Direction.Southwest;
                     }
+
                     break;
                 case 0:
                     switch (Y)
@@ -47,10 +61,11 @@ namespace UnicornHack.Utils
                         case -1:
                             return Direction.North;
                         case 0:
-                            return Direction.None;
+                            throw new InvalidOperationException("Zero length vector");
                         case 1:
                             return Direction.South;
                     }
+
                     break;
                 case 1:
                     switch (Y)
@@ -62,6 +77,7 @@ namespace UnicornHack.Utils
                         case 1:
                             return Direction.Southeast;
                     }
+
                     break;
             }
 
@@ -72,8 +88,6 @@ namespace UnicornHack.Utils
         {
             switch (direction)
             {
-                case Direction.None:
-                    return new Vector(x: 0, y: 0);
                 case Direction.North:
                     return new Vector(x: 0, y: -1);
                 case Direction.South:
@@ -93,6 +107,28 @@ namespace UnicornHack.Utils
                 default:
                     throw new ArgumentOutOfRangeException(nameof(direction), direction, message: null);
             }
+        }
+
+        public float OctantsTo(Direction direction)
+        {
+            var vectorAngle = GetOctantAngle();
+            if (float.IsNaN(vectorAngle))
+            {
+                throw new InvalidOperationException("Zero length vector");
+            }
+            var directionAngle = direction.AsOctants();
+
+            var difference = directionAngle - vectorAngle;
+            if (difference > 4)
+            {
+                difference -= 8;
+            }
+            else if (difference < -4)
+            {
+                difference += 8;
+            }
+
+            return difference;
         }
     }
 }

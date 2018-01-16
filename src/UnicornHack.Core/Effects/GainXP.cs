@@ -23,7 +23,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            if (abilityContext.Target is Player player)
+            if (abilityContext.TargetEntity is Player player)
             {
                 player.AddXP(Amount);
                 abilityContext.Add(new GainedXP(abilityContext) { Amount = Amount });

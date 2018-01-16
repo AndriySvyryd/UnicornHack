@@ -26,9 +26,9 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            if (abilityContext.Target.GetProperty<int>(PropertyData.WaterWeakness.Name) > 0)
+            if (abilityContext.TargetEntity.GetProperty<int>(PropertyData.WaterWeakness.Name) > 0)
             {
-                (abilityContext.Target as Actor)?.ChangeCurrentHP(-1 * Damage);
+                (abilityContext.TargetEntity as Actor)?.ChangeCurrentHP(-1 * Damage);
             }
             abilityContext.Add(new Soaked(abilityContext) {Damage = Damage});
         }

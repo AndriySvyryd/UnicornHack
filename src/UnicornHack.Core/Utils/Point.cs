@@ -1,11 +1,14 @@
 using System;
 using System.Diagnostics;
 
+// ReSharper disable ImpureMethodCallOnReadonlyValueField
 namespace UnicornHack.Utils
 {
-    //[StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct Point
     {
+        public readonly byte X;
+        public readonly byte Y;
+
         [DebuggerStepThrough]
         public Point(byte x, byte y)
         {
@@ -13,14 +16,24 @@ namespace UnicornHack.Utils
             Y = y;
         }
 
-        public readonly byte X;
-        public readonly byte Y;
+        public static Point? Unpack(int? bits)
+            => bits == null ? (Point?)null : Unpack(bits.Value);
+
+        public static Point Unpack(int bits)
+            => new Point((byte)((bits & 0xFF00) >> 8), (byte)(bits & 0xFF));
+
+        public static Point Unpack(ushort bits)
+            => new Point((byte)((bits & 0xFF00) >> 8), (byte)(bits & 0xFF));
+
+        public int ToInt32() => X << 8 | Y;
+
+        public ushort ToUInt16() => (ushort)(X << 8 | Y);
 
         public byte DistanceTo(Point target) => (byte)Math.Max(Math.Abs(target.X - X), Math.Abs(target.Y - Y));
 
         public byte OrthogonalDistanceTo(Point target) => (byte)(Math.Abs(target.X - X) + Math.Abs(target.Y - Y));
 
-        public Vector DirectionTo(Point target) => new Vector((sbyte)(target.X - X), (sbyte)(target.Y - Y));
+        public Vector DifferenceTo(Point target) => new Vector((sbyte)(target.X - X), (sbyte)(target.Y - Y));
 
         public Point Translate(Vector direction) => new Point((byte)(X + direction.X), (byte)(Y + direction.Y));
 
@@ -45,5 +58,9 @@ namespace UnicornHack.Utils
                 return (X.GetHashCode() * 397) ^ Y.GetHashCode();
             }
         }
+
+        public static bool operator ==(Point left, Point right) => left.Equals(right);
+
+        public static bool operator !=(Point left, Point right) => !(left == right);
     }
 }

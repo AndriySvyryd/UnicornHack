@@ -10,22 +10,23 @@
         {
         }
 
-        public int? TriggeredAbilityId { get; set; }
-        public Ability Ability { get; set; }
+        public int? AbilityToTriggerId { get; set; }
+        public Ability AbilityToTrigger { get; set; }
 
         public override Trigger Copy(Game game)
-            => new AbilityTrigger(game) { Ability = Ability.AddReference().Referenced };
+            => new AbilityTrigger(game) { AbilityToTrigger = AbilityToTrigger.AddReference().Referenced };
 
         public override void Fire(AbilityActivationContext abilityContext)
         {
             using (var context = new AbilityActivationContext
             {
                 Activator = abilityContext.Activator,
-                Target = abilityContext.Target,
+                TargetEntity = abilityContext.TargetEntity,
+                TargetCell = abilityContext.TargetCell,
                 EffectsToApply = abilityContext.EffectsToApply
             })
             {
-                Ability.Activate(context);
+                AbilityToTrigger.Activate(context);
             }
         }
 
@@ -33,8 +34,8 @@
         {
             base.Delete();
 
-            Ability.RemoveReference();
-            Ability = null;
+            AbilityToTrigger.RemoveReference();
+            AbilityToTrigger = null;
         }
     }
 }

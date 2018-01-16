@@ -76,6 +76,7 @@ namespace UnicornHack.Models.GameHubModels
             properties.Add(player.Abilities.Where(a => a.IsUsable && a.Activation == AbilityActivation.OnTarget)
                 .Select(a => CompactAbility.Serialize(a, null, context)).ToList());
             // TODO: Group log entries for the same tick
+            // TODO: Only send entries since last player turn
             properties.Add(player.Log.OrderBy(e => e, LogEntry.Comparer).Skip(Math.Max(0, player.Log.Count - 10))
                 .Select(e => CompactLogEntry.Serialize(e, null, context)).ToList());
             properties.Add(player.Races

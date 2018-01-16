@@ -23,7 +23,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            (abilityContext.Target as Actor)?.ChangeCurrentHP(-1 * Amount);
+            (abilityContext.TargetEntity as Actor)?.ChangeCurrentHP(-1 * Amount);
             (abilityContext.Activator as Actor)?.ChangeCurrentHP(Amount);
             abilityContext.Add(new LifeDrained(abilityContext) {Amount = Amount});
         }

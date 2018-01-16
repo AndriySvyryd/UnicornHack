@@ -2,6 +2,7 @@
 import { observer } from 'mobx-react';
 import { Level, MapFeature, Tile } from '../transport/Model';
 import { MapStyles, ITileStyle } from '../styles/MapStyles';
+import { PlayerAction } from 'ClientApp/transport/PlayerAction';
 
 @observer
 export class Map extends React.Component<IMapProps, {}> {
@@ -10,7 +11,13 @@ export class Map extends React.Component<IMapProps, {}> {
 
         const map = new Array<React.ReactElement<any>>(level.height);
         for (let y = 0; y < level.height; y++) {
-            map[y] = <MapRow row={level.tiles[y]} styles={this.props.styles} indexToPoint={level.indexToPoint} key={y} />;
+            map[y] = <MapRow
+                y={y}
+                row={level.tiles[y]}
+                styles={this.props.styles}
+                indexToPoint={level.indexToPoint}
+                performAction={this.props.performAction}
+                key={y} />;
         }
 
         return (<div className="mapContainer frame">
@@ -22,22 +29,30 @@ export class Map extends React.Component<IMapProps, {}> {
 interface IMapProps {
     level: Level;
     styles: MapStyles;
+    performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
 }
 
 @observer
 class MapRow extends React.Component<IRowProps, {}> {
     render() {
         const row = this.props.row.map((t, x) =>
-            <MapTile tile={t} styles={this.props.styles} key={x} />
+            <MapTile
+                x={x} y={this.props.y}
+                tile={t}
+                styles={this.props.styles}
+                performAction={this.props.performAction}
+                key={x} />
         );
         return (<div>{row}</div>);
     }
 }
 
 interface IRowProps {
+    y: number;
     row: Tile[];
     styles: MapStyles;
     indexToPoint: number[][];
+    performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
 }
 
 @observer
@@ -46,6 +61,10 @@ class MapTile extends React.Component<ITileProps, {}> {
         const tile = this.props.tile;
         const styles = this.props.styles;
         let glyph: ITileStyle;
+        let onClick: ((() => void) | undefined) =
+            () => this.props.performAction(PlayerAction.MoveToCell, Level.pack(this.props.x, this.props.y), null);
+        // TODO: also change pointer
+
         if (tile.actor != null) {
             glyph = styles.actors[tile.actor.baseName];
             if (glyph == undefined) {
@@ -54,6 +73,15 @@ class MapTile extends React.Component<ITileProps, {}> {
             // TODO: Add more creatures
             if (glyph == undefined) {
                 throw `Actor type ${tile.actor.baseName} not supported.`;
+            }
+
+            if (tile.actor.baseName == 'player') {
+                onClick = () => this.props.performAction(
+                    PlayerAction.Wait, null, null);
+            }
+            else {
+                onClick = () => this.props.performAction(
+                    PlayerAction.PerformDefaultAttack, Level.pack(this.props.x, this.props.y), null);
             }
         } else if (tile.item != null) {
             const type = tile.item.type;
@@ -79,16 +107,28 @@ class MapTile extends React.Component<ITileProps, {}> {
                     throw `Map feature ${feature} not supported.`;
                 }
             }
+
+            switch (tile.feature) {
+                case MapFeature.RockFloor:
+                case MapFeature.StoneFloor:
+                case MapFeature.StoneArchway:
+                    break;
+                default:
+                    onClick = undefined;
+            }
         }
 
         const opacity = 0.3 + ((tile.visibility / 255) * 0.7);
-        return (<div className="map__row" style={Object.assign({ opacity: opacity, float: 'left' }, glyph.style)}>
+        return (<div className="map__tile" style={Object.assign({ opacity: opacity }, glyph.style)} onClick={onClick}>
             {glyph.char}
         </div>);
     }
 }
 
 interface ITileProps {
+    x: number;
+    y: number;
     tile: Tile;
     styles: MapStyles;
+    performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
 }

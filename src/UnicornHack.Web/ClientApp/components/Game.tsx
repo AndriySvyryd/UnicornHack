@@ -15,6 +15,8 @@ import { MapStyles } from '../styles/MapStyles';
 import { Player, Level } from '../transport/Model';
 import { GameLog } from './GameLog';
 import { PlayerRace } from '../transport/Model';
+import { PlayerAction } from "../transport/PlayerAction";
+import { Direction } from "../transport/Direction";
 
 interface IGameProps {
     playerName: string;
@@ -100,49 +102,50 @@ export class Game extends React.Component<IGameProps, {}> {
             'moveDown': 'shift+.',
             'wait': ['numpad5', '5', '.'],
         };
+        // TODO: ESC to clear the action queue
         this.keyHandlers = {
             'moveNorth': (event: ExtendedKeyboardEvent) => {
-                this.performAction("N");
+                this.performAction(PlayerAction.MoveOneCell, Direction.North);
                 event.preventDefault();
             },
             'moveEast': (event: ExtendedKeyboardEvent) => {
-                this.performAction("E");
+                this.performAction(PlayerAction.MoveOneCell, Direction.East);
                 event.preventDefault();
             },
             'moveSouth': (event: ExtendedKeyboardEvent) => {
-                this.performAction("S");
+                this.performAction(PlayerAction.MoveOneCell, Direction.South);
                 event.preventDefault();
             },
             'moveWest': (event: ExtendedKeyboardEvent) => {
-                this.performAction("W");
+                this.performAction(PlayerAction.MoveOneCell, Direction.West);
                 event.preventDefault();
             },
             'moveNorthEast': (event: ExtendedKeyboardEvent) => {
-                this.performAction("NE");
+                this.performAction(PlayerAction.MoveOneCell, Direction.Northeast);
                 event.preventDefault();
             },
             'moveSouthEast': (event: ExtendedKeyboardEvent) => {
-                this.performAction("SE");
+                this.performAction(PlayerAction.MoveOneCell, Direction.Southeast);
                 event.preventDefault();
             },
             'moveSouthWest': (event: ExtendedKeyboardEvent) => {
-                this.performAction("SW");
+                this.performAction(PlayerAction.MoveOneCell, Direction.Southwest);
                 event.preventDefault();
             },
             'moveNorthWest': (event: ExtendedKeyboardEvent) => {
-                this.performAction("NW");
+                this.performAction(PlayerAction.MoveOneCell, Direction.Northwest);
                 event.preventDefault();
             },
             'moveUp': (event: ExtendedKeyboardEvent) => {
-                this.performAction("U");
+                this.performAction(PlayerAction.MoveOneCell, Direction.Up);
                 event.preventDefault();
             },
             'moveDown': (event: ExtendedKeyboardEvent) => {
-                this.performAction("D");
+                this.performAction(PlayerAction.MoveOneCell, Direction.Down);
                 event.preventDefault();
             },
             'wait': (event: ExtendedKeyboardEvent) => {
-                this.performAction("H");
+                this.performAction(PlayerAction.Wait);
                 event.preventDefault();
             },
             'record': (event: ExtendedKeyboardEvent) => this.recordKey()
@@ -172,7 +175,7 @@ export class Game extends React.Component<IGameProps, {}> {
             .catch(e => this.addError((e || '').toString()));
     }
 
-    private performAction(action: string, target: (number | null) = null, target2: (number | null) = null) {
+    private performAction(action: PlayerAction, target: (number | null) = null, target2: (number | null) = null) {
         if (this.waiting) {
             this.actionQueue.push({ action: action, target: target, target2: target2 });
         } else {
@@ -228,9 +231,9 @@ export class Game extends React.Component<IGameProps, {}> {
                             paddingTop: 0,
                             display: firstTimeLoading ? 'none' : 'block'
                         }}>
-                            <Map level={this.level} styles={this.styles} />
-                            <StatusBar player={player} levelName={this.level.branchName} levelDepth={
-                                this.level.depth} />
+                            <Map level={this.level} styles={this.styles} performAction={this.performAction} />
+                            <StatusBar player={player}
+                                levelName={this.level.branchName} levelDepth={this.level.depth} />
                             <GameLog messages={player.log} />
                         </div>
 
@@ -275,7 +278,7 @@ export class Game extends React.Component<IGameProps, {}> {
 }
 
 interface IAction {
-    action: string;
+    action: PlayerAction;
     target: (number | null);
     target2: (number | null);
 }

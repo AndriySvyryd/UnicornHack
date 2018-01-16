@@ -78,7 +78,7 @@ namespace UnicornHack.Utils
             AssertDistribution(itemWeights, weightSum, selectedCounts, selectionCount, seed);
         }
 
-        [Theory]
+        [Theory(Skip = "Flaky by design")]
         [InlineData(0.0f)]
         [InlineData(0.2f)]
         [InlineData(0.5f)]

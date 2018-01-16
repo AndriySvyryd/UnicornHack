@@ -86,7 +86,7 @@ namespace UnicornHack
             var context = new AbilityActivationContext
             {
                 Activator = this,
-                Target = victim
+                TargetEntity = victim
             };
             using (context)
             {

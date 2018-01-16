@@ -28,6 +28,11 @@ namespace UnicornHack.Services.English
 
         private string ToString(Actor actor, EnglishPerson person, bool canSense, bool definiteDeterminer = false)
         {
+            if (actor == null)
+            {
+                return null;
+            }
+
             if (person == EnglishPerson.Second)
             {
                 return EnglishMorphologicalProcessor.GetPronoun(EnglishPronounForm.Normal, EnglishNumber.Singular,
@@ -241,8 +246,6 @@ namespace UnicornHack.Services.English
         {
             switch (direction)
             {
-                case Direction.None:
-                    return "nowhere";
                 case Direction.North:
                     return "north";
                 case Direction.South:
@@ -313,7 +316,7 @@ namespace UnicornHack.Services.English
             var attackerPerson = @event.Sensor == @event.Attacker ? EnglishPerson.Second : EnglishPerson.Third;
             var attacker = ToString(@event.Attacker, attackerPerson, @event.AttackerSensed);
 
-            var victimGender = (EnglishGender)@event.Victim.Sex;
+            var victimGender = (EnglishGender?)@event.Victim?.Sex;
             var victimPerson = @event.Sensor == @event.Victim ? EnglishPerson.Second : EnglishPerson.Third;
             var victim = ToString(@event.Victim, victimPerson, @event.VictimSensed);
 
@@ -324,6 +327,22 @@ namespace UnicornHack.Services.English
 
             if (rangedAttack == null)
             {
+                var meleeWeaponPhrase = meleeWeapon == null || meleeWeapon.VariantName == ""
+                    ? ""
+                    : "with " +
+                      ((@event.AttackerSensed & (SenseType.Sight | SenseType.Touch)) != 0
+                          ? ToString(meleeWeapon, definiteDeterminer: attackerPerson == EnglishPerson.Second)
+                          : "something");
+
+                if (victim == null)
+                {
+                    return ToSentence(attacker,
+                        EnglishMorphologicalProcessor.ProcessVerb(attackVerb, mainVerbForm),
+                        "the air",
+                        meleeWeaponPhrase,
+                        @event.Sensor == @event.Victim ? "!" : ".");
+                }
+
                 if (@event.Hit)
                 {
                     var attackSentence = ToSentence(attacker,
@@ -333,12 +352,7 @@ namespace UnicornHack.Services.English
                             : EnglishMorphologicalProcessor.GetPronoun(EnglishPronounForm.Reflexive,
                                 EnglishNumber.Singular,
                                 attackerPerson, victimGender),
-                        meleeWeapon == null ? "" : "with",
-                        meleeWeapon == null
-                            ? ""
-                            : (@event.AttackerSensed & (SenseType.Sight | SenseType.Touch)) != 0
-                                ? ToString(meleeWeapon, definiteDeterminer: attackerPerson == EnglishPerson.Second)
-                                : "something",
+                        meleeWeaponPhrase,
                         @event.Sensor == @event.Victim ? "!" : ".");
 
                     if ((@event.VictimSensed & (SenseType.Sight | SenseType.Touch)) == 0)
@@ -354,12 +368,7 @@ namespace UnicornHack.Services.English
                     EnglishMorphologicalProcessor.ProcessVerb(verbPhrase: "try", form: mainVerbForm),
                     EnglishMorphologicalProcessor.ProcessVerb(attackVerb, EnglishVerbForm.Infinitive),
                     victim,
-                    meleeWeapon == null ? "" : "with",
-                    meleeWeapon == null
-                        ? ""
-                        : (@event.AttackerSensed & (SenseType.Sight | SenseType.Touch)) != 0
-                            ? ToString(meleeWeapon, definiteDeterminer: attackerPerson == EnglishPerson.Second)
-                            : "something",
+                    meleeWeaponPhrase,
                     ", but",
                     EnglishMorphologicalProcessor.ProcessVerb(verbPhrase: "miss", form: mainVerbForm));
             }
@@ -402,10 +411,12 @@ namespace UnicornHack.Services.English
                            @event.AppliedEffects, victimPerson == EnglishPerson.Second ? null : victim);
             }
 
-            return ToSentence(
-                ToString(rangedWeapon, definiteDeterminer: !isProjectile && attackerPerson == EnglishPerson.Second),
-                EnglishMorphologicalProcessor.ProcessVerb("miss", EnglishVerbForm.ThirdPersonSingularPresent),
-                victim);
+            return victim == null
+                ? null
+                : ToSentence(
+                    ToString(rangedWeapon, definiteDeterminer: !isProjectile && attackerPerson == EnglishPerson.Second),
+                    EnglishMorphologicalProcessor.ProcessVerb("miss", EnglishVerbForm.ThirdPersonSingularPresent),
+                    victim);
         }
 
         private string FormatDamage(ISet<AppliedEffect> effects, string victim)

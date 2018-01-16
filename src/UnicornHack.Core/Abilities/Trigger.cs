@@ -21,6 +21,7 @@
 
         public Game Game { get; set; }
         public int? AbilityId { get; set; }
+        public Ability Ability { get; set; }
         public int? AbilityDefinitionId { get; set; }
 
         public abstract Trigger Copy(Game game);

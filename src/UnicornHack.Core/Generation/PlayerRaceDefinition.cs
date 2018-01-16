@@ -23,7 +23,7 @@ namespace UnicornHack.Generation
                 Name = Name,
                 Species = Species,
                 SpeciesClass = SpeciesClass,
-                Ability = new Ability(abilityContext.Target.Game)
+                Ability = new Ability(abilityContext.TargetEntity.Game)
                 {
                     Name = Name,
                     Activation = AbilityActivation.Always
@@ -33,7 +33,7 @@ namespace UnicornHack.Generation
             foreach (var abilityDefinition in Abilities)
             {
                 race.Ability.Effects.Add(
-                    new AddAbility(abilityContext.Target.Game) { Ability = abilityDefinition.Copy(abilityContext.Target.Game) });
+                    new AddAbility(abilityContext.TargetEntity.Game) { Ability = abilityDefinition.Copy(abilityContext.TargetEntity.Game) });
             }
 
             return race;

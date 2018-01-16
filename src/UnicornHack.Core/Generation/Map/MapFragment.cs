@@ -386,7 +386,7 @@ namespace UnicornHack.Generation.Map
                     continue;
                 }
 
-                var direction = previousPoint.DirectionTo(nextPoint).GetUnit();
+                var direction = previousPoint.DifferenceTo(nextPoint).GetUnit();
                 if (!allowCorners && direction.X != 0 && direction.Y != 0)
                 {
                     continue;
