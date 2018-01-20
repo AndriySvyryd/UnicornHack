@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public GoldStolen(AbilityActivationContext abilityContext) : base(abilityContext)
+        public GoldStolen(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
 

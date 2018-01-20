@@ -30,7 +30,7 @@ namespace UnicornHack.Data.Creatures
             },
             SimpleProperties = new HashSet<string> {"infravisibility", "humanoidness", "femaleness"},
             ValuedProperties =
-                new Dictionary<string, object> {{"cold resistance", 3}, {"physical deflection", 10}, {"weight", 1000}},
+                new Dictionary<string, object> {{"cold resistance", 75}, {"physical deflection", 10}, {"weight", 1000}},
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             NextStageName = "valkyrie",

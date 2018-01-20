@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Frozen(AbilityActivationContext abilityContext) : base(abilityContext)
+        public Frozen(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
     }

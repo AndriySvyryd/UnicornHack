@@ -38,23 +38,23 @@ namespace UnicornHack.Data.Creatures
             {
                 {
                     "cold resistance",
-                    3
+                    75
                 },
                 {
                     "fire resistance",
-                    3
+                    75
                 },
                 {
                     "electricity resistance",
-                    3
+                    75
                 },
                 {
                     "poison resistance",
-                    3
+                    75
                 },
                 {
                     "venom resistance",
-                    3
+                    75
                 },
                 {
                     "thick hide",

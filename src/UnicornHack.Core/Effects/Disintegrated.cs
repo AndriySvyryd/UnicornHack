@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Disintegrated(AbilityActivationContext abilityContext) : base(abilityContext)
+        public Disintegrated(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
     }

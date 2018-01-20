@@ -17,6 +17,10 @@ namespace UnicornHack.Effects
             game.Effects.Add(this);
         }
 
+        protected Effect(Effect effect, Game game)
+            : this(game)
+            => TargetActivator = effect.TargetActivator;
+
         // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Local
         public int Id { get; private set; }
 
@@ -29,8 +33,7 @@ namespace UnicornHack.Effects
         public int? AbilityDefinitionId { get; set; }
 
         // TODO: Abstract application condition
-        // TODO: Create abstract base for duration effects
-        public int? Duration { get; set; }
+        public bool TargetActivator { get; set; }
 
         public abstract Effect Copy(Game game);
 

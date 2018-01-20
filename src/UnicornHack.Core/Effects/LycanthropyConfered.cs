@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public LycanthropyConfered(AbilityActivationContext abilityContext) : base(abilityContext)
+        public LycanthropyConfered(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
 

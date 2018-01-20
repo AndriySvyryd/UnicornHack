@@ -1,8 +1,9 @@
 using UnicornHack.Abilities;
+using UnicornHack.Data.Properties;
 
 namespace UnicornHack.Effects
 {
-    public class Shock : Effect
+    public class Shock : DamageEffect
     {
         public Shock()
         {
@@ -12,21 +13,29 @@ namespace UnicornHack.Effects
         {
         }
 
-        public int Damage { get; set; }
+        public Shock(Shock effect, Game game)
+            : base(effect, game)
+        {
+        }
 
-        public override Effect Copy(Game game) => new Shock(game) {Damage = Damage};
+        public override Effect Copy(Game game) => new Shock(this, game);
 
         // TODO: Causing some mechanical and magical items to trigger
         // TODO: Removes slow
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            if (!abilityContext.Succeeded)
+            if (!abilityContext.Succeeded
+                || Damage == 0)
             {
                 return;
             }
 
-            (abilityContext.TargetEntity as Actor)?.ChangeCurrentHP(-1 * Damage);
-            abilityContext.Add(new Shocked(abilityContext) {Damage = Damage});
+            var damage = ApplyDamage(
+                abilityContext,
+                null,
+                PropertyData.ElectricityResistance.Name);
+
+            abilityContext.Add(new Shocked(abilityContext, TargetActivator) {Damage = damage});
         }
     }
 }

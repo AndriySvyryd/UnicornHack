@@ -2,7 +2,7 @@ using UnicornHack.Abilities;
 
 namespace UnicornHack.Effects
 {
-    public class Blind : Effect
+    public class Blind : DurationEffect
     {
         public Blind()
         {
@@ -12,7 +12,12 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override Effect Copy(Game game) => new Blind(game) {Duration = Duration};
+        public Blind(Blind effect, Game game)
+            : base(effect, game)
+        {
+        }
+
+        public override Effect Copy(Game game) => new Blind(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -21,7 +26,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Add(new Blinded(abilityContext) {Duration = Duration});
+            abilityContext.Add(new Blinded(abilityContext, TargetActivator) {Duration = Duration});
         }
     }
 }

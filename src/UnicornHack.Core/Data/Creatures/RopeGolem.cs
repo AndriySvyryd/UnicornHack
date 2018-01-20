@@ -51,15 +51,15 @@ namespace UnicornHack.Data.Creatures
             {
                 {
                     "cold resistance",
-                    3
+                    75
                 },
                 {
                     "poison resistance",
-                    3
+                    75
                 },
                 {
                     "venom resistance",
-                    3
+                    75
                 },
                 {
                     "hit point maximum",

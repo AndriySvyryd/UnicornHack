@@ -12,9 +12,13 @@ namespace UnicornHack.Effects
         {
         }
 
+        public ConferLycanthropy(ConferLycanthropy effect, Game game)
+            : base(effect, game)
+            => VariantName = effect.VariantName;
+
         public string VariantName { get; set; }
 
-        public override Effect Copy(Game game) => new ConferLycanthropy(game) {VariantName = VariantName};
+        public override Effect Copy(Game game) => new ConferLycanthropy(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -23,7 +27,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Add(new LycanthropyConfered(abilityContext) {VariantName = VariantName});
+            abilityContext.Add(new LycanthropyConfered(abilityContext, TargetActivator) {VariantName = VariantName});
         }
     }
 }

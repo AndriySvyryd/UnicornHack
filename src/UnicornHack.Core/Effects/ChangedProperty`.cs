@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        protected ChangedProperty(AbilityActivationContext abilityContext) : base(abilityContext)
+        protected ChangedProperty(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
 

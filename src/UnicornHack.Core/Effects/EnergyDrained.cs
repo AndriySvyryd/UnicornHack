@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public EnergyDrained(AbilityActivationContext abilityContext) : base(abilityContext)
+        public EnergyDrained(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
 

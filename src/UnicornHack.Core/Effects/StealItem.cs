@@ -12,7 +12,12 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override Effect Copy(Game game) => new StealItem(game);
+        public StealItem(StealItem effect, Game game)
+            : base(effect, game)
+        {
+        }
+
+        public override Effect Copy(Game game) => new StealItem(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -21,7 +26,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Add(new ItemStolen(abilityContext));
+            abilityContext.Add(new ItemStolen(abilityContext, TargetActivator));
         }
     }
 }

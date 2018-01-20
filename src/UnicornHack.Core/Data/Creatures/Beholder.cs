@@ -81,7 +81,7 @@ namespace UnicornHack.Data.Creatures
             {
                 {
                     "cold resistance",
-                    3
+                    75
                 },
                 {
                     "danger awareness",

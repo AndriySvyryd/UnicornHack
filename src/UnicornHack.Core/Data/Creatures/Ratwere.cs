@@ -41,7 +41,7 @@ namespace UnicornHack.Data.Creatures
             {
                 {
                     "poison resistance",
-                    3
+                    75
                 },
                 {
                     "regeneration",

@@ -2,7 +2,7 @@ using UnicornHack.Abilities;
 
 namespace UnicornHack.Effects
 {
-    public class Stick : Effect
+    public class Stick : DurationEffect
     {
         public Stick()
         {
@@ -12,7 +12,12 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override Effect Copy(Game game) => new Stick(game);
+        public Stick(Stick effect, Game game)
+            : base(effect, game)
+        {
+        }
+
+        public override Effect Copy(Game game) => new Stick(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -21,7 +26,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Add(new Stuck(abilityContext) {Duration = Duration});
+            abilityContext.Add(new Stuck(abilityContext, TargetActivator) {Duration = Duration});
         }
     }
 }

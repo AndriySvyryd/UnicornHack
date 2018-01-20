@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Engulfed(AbilityActivationContext abilityContext) : base(abilityContext)
+        public Engulfed(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
     }

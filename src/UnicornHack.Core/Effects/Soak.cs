@@ -3,7 +3,7 @@ using UnicornHack.Data.Properties;
 
 namespace UnicornHack.Effects
 {
-    public class Soak : Effect
+    public class Soak : DamageEffect
     {
         public Soak()
         {
@@ -13,24 +13,29 @@ namespace UnicornHack.Effects
         {
         }
 
-        public int Damage { get; set; }
+        public Soak(Soak effect, Game game)
+            : base(effect, game)
+        {
+        }
 
-        public override Effect Copy(Game game) => new Soak(game) {Damage = Damage};
+        public override Effect Copy(Game game) => new Soak(this, game);
 
-        // TODO: Only does damage to actors with water weakness, rusts, dillutes and blanks items
+        // TODO: Rusts, dillutes and blanks items
         // TODO: Removes burning
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            if (!abilityContext.Succeeded)
+            if (!abilityContext.Succeeded
+                || Damage == 0)
             {
                 return;
             }
 
-            if (abilityContext.TargetEntity.GetProperty<int>(PropertyData.WaterWeakness.Name) > 0)
-            {
-                (abilityContext.TargetEntity as Actor)?.ChangeCurrentHP(-1 * Damage);
-            }
-            abilityContext.Add(new Soaked(abilityContext) {Damage = Damage});
+            var damage = ApplyDamage(
+                abilityContext,
+                null,
+                PropertyData.WaterResistance.Name);
+
+            abilityContext.Add(new Soaked(abilityContext, TargetActivator) {Damage = damage});
         }
     }
 }

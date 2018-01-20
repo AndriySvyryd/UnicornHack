@@ -2,7 +2,7 @@ using UnicornHack.Abilities;
 
 namespace UnicornHack.Effects
 {
-    public class Cripple : Effect
+    public class Cripple : DurationEffect
     {
         public Cripple()
         {
@@ -12,7 +12,12 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override Effect Copy(Game game) => new Cripple(game) {Duration = Duration};
+        public Cripple(Cripple effect, Game game)
+            : base(effect, game)
+        {
+        }
+
+        public override Effect Copy(Game game) => new Cripple(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -21,7 +26,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Add(new Confused(abilityContext) {Duration = Duration});
+            abilityContext.Add(new Confused(abilityContext, TargetActivator) {Duration = Duration});
         }
     }
 }

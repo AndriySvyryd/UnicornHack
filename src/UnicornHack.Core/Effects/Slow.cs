@@ -2,7 +2,7 @@ using UnicornHack.Abilities;
 
 namespace UnicornHack.Effects
 {
-    public class Slow : Effect
+    public class Slow : DurationEffect
     {
         public Slow()
         {
@@ -12,7 +12,12 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override Effect Copy(Game game) => new Slow(game) {Duration = Duration};
+        public Slow(Slow effect, Game game)
+            : base(effect, game)
+        {
+        }
+
+        public override Effect Copy(Game game) => new Slow(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -21,7 +26,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Add(new Slowed(abilityContext) {Duration = Duration});
+            abilityContext.Add(new Slowed(abilityContext, TargetActivator) {Duration = Duration});
         }
     }
 }

@@ -38,7 +38,7 @@ namespace UnicornHack.Data.Creatures
                 "stoning resistance"
             },
             ValuedProperties =
-                new Dictionary<string, object> {{"poison resistance", 3}, {"magic resistance", 10}, {"weight", 1000}},
+                new Dictionary<string, object> {{"poison resistance", 75}, {"magic resistance", 10}, {"weight", 1000}},
             InitialLevel = 16,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,

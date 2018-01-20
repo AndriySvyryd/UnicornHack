@@ -33,7 +33,7 @@ namespace UnicornHack.Data.Creatures
                 new HashSet<string> {"swimming", "water breathing", "limblessness", "oviparity", "no inventory"},
             ValuedProperties = new Dictionary<string, object>
             {
-                {"electricity resistance", 3},
+                {"electricity resistance", 75},
                 {"size", 8},
                 {"physical deflection", 23},
                 {"weight", 600}

@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Stuck(AbilityActivationContext abilityContext) : base(abilityContext)
+        public Stuck(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
     }

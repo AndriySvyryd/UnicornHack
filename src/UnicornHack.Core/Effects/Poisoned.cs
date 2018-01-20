@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Poisoned(AbilityActivationContext abilityContext) : base(abilityContext)
+        public Poisoned(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
     }

@@ -45,12 +45,30 @@ namespace UnicornHack.Data.Creatures
             SimpleProperties = new HashSet<string> {"infravision", "infravisibility", "humanoidness", "reanimation"},
             ValuedProperties = new Dictionary<string, object>
             {
-                {"cold resistance", 3},
-                {"regeneration", 3},
-                {"size", 8},
-                {"physical deflection", 18},
-                {"magic resistance", 20},
-                {"weight", 1000}
+                {
+                    "cold resistance",
+                    75
+                },
+                {
+                    "regeneration",
+                    3
+                },
+                {
+                    "size",
+                    8
+                },
+                {
+                    "physical deflection",
+                    18
+                },
+                {
+                    "magic resistance",
+                    20
+                },
+                {
+                    "weight",
+                    1000
+                }
             },
             InitialLevel = 9,
             GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight {Multiplier = 3F}, Name = "hell"},

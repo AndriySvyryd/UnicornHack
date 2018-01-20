@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Blinded(AbilityActivationContext abilityContext) : base(abilityContext)
+        public Blinded(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
     }

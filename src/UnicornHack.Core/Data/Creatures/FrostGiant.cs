@@ -31,7 +31,7 @@ namespace UnicornHack.Data.Creatures
             SimpleProperties = new HashSet<string> {"infravision", "infravisibility", "humanoidness"},
             ValuedProperties = new Dictionary<string, object>
             {
-                {"cold resistance", 3},
+                {"cold resistance", 75},
                 {"size", 16},
                 {"physical deflection", 17},
                 {"magic resistance", 10},

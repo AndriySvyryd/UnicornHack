@@ -14,14 +14,21 @@ namespace UnicornHack.Effects
         {
         }
 
+        public ChangeRace(ChangeRace effect, Game game)
+            : base(effect, game)
+        {
+            RaceName = effect.RaceName;
+            Remove = effect.Remove;
+        }
+
         public string RaceName { get; set; }
         public bool Remove { get; set; }
 
-        public override Effect Copy(Game game) => new ChangeRace(game) {RaceName = RaceName, Remove = Remove};
+        public override Effect Copy(Game game) => new ChangeRace(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            if (abilityContext.TargetEntity is Player player)
+            if ((TargetActivator ? abilityContext.Activator : abilityContext.TargetEntity) is Player player)
             {
                 if (Remove)
                 {
@@ -46,11 +53,12 @@ namespace UnicornHack.Effects
                     {
                         var changedRace = race.Instantiate(abilityContext);
                         changedRace.Add();
-                        abilityContext.TargetEntity.Add(changedRace.Ability);
+                        player.Add(changedRace.Ability);
 
                         changedRace.XPLevel = 1;
                         changedRace.UpdateNextLevelXP();
                     }
+
                     // TODO: Change subrace
                 }
             }

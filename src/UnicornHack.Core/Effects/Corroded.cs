@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Corroded(AbilityActivationContext abilityContext) : base(abilityContext)
+        public Corroded(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
     }

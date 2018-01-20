@@ -24,26 +24,26 @@ namespace UnicornHack.Abilities
 
         public int? AddedAbilityEffectId { get; set; }
 
-        public virtual AbilityActivation Activation { get; set; }
-        public virtual TargetingType? TargetingType { get; set; }
-        public virtual TargetingDirection? TargetingDirection { get; set; }
-        public virtual AbilityAction Action { get; set; }
+        public AbilityActivation Activation { get; set; }
+        public TargetingType? TargetingType { get; set; }
+        public TargetingDirection? TargetingDirection { get; set; }
+        public AbilityAction Action { get; set; }
+        public AbilitySuccessCondition? SuccessCondition { get; set; }
 
-        public virtual int Timeout { get; set; }
-        public virtual int EnergyPointCost { get; set; }
-        public virtual int Delay { get; set; }
-        public virtual bool IsActive { get; set; }
-        public virtual bool IsUsable { get; set; }
-        public virtual int TimeoutLeft { get; set; }
+        public int Timeout { get; set; }
+        public int EnergyPointCost { get; set; }
+        public int Delay { get; set; }
+        public bool IsActive { get; set; }
+        public bool IsUsable { get; set; }
+        public int TimeoutLeft { get; set; }
 
         // TODO: Whether it can be interrupted
-        // TODO: Success condition
         // TODO: Activation condition
 
-        public virtual ObservableSnapshotHashSet<Trigger> Triggers { get; set; } =
+        public ObservableSnapshotHashSet<Trigger> Triggers { get; set; } =
             new ObservableSnapshotHashSet<Trigger>();
 
-        public virtual ObservableSnapshotHashSet<Effect> Effects { get; set; } =
+        public ObservableSnapshotHashSet<Effect> Effects { get; set; } =
             new ObservableSnapshotHashSet<Effect>();
 
         public ObservableSnapshotHashSet<AppliedEffect> ActiveEffects { get; set; } =
@@ -82,11 +82,13 @@ namespace UnicornHack.Abilities
                 {
                     effect.Delete();
                 }
+
                 Effects.Clear();
                 foreach (var trigger in Triggers)
                 {
                     trigger.Delete();
                 }
+
                 Triggers.Clear();
             }
         }
@@ -127,6 +129,7 @@ namespace UnicornHack.Abilities
                     {
                         return false;
                     }
+
                     ((Actor)abilityContext.Activator).ChangeCurrentEP(-1 * EnergyPointCost);
                 }
 
@@ -160,7 +163,6 @@ namespace UnicornHack.Abilities
                 Debug.Assert(abilityContext.AbilityAction == AbilityAction.Default);
 
                 abilityContext.AbilityAction = Action;
-                abilityContext.Succeeded = Game.Random.Next(maxValue: 3) != 0;
                 eventOrder = Game.EventOrder++;
             }
 
@@ -174,6 +176,8 @@ namespace UnicornHack.Abilities
                 Debug.Assert(abilityContext.Ability == null);
 
                 abilityContext.Ability = this;
+
+                DetermineSuccess(abilityContext);
 
                 foreach (var effect in Effects)
                 {
@@ -243,6 +247,85 @@ namespace UnicornHack.Abilities
             }
         }
 
+        public void DetermineSuccess(AbilityActivationContext context)
+        {
+            var successCondition = SuccessCondition;
+            if (successCondition == null)
+            {
+                if (Activation != AbilityActivation.OnMeleeAttack
+                    && Activation != AbilityActivation.OnRangedAttack
+                    && Activation != AbilityActivation.OnTarget)
+                {
+                    successCondition = AbilitySuccessCondition.Always;
+                }
+                else
+                {
+                    switch (Action)
+                    {
+                        case AbilityAction.Default:
+                        case AbilityAction.Modifier:
+                            successCondition = AbilitySuccessCondition.Always;
+                            break;
+                        case AbilityAction.Hit:
+                        case AbilityAction.Slash:
+                        case AbilityAction.Chop:
+                        case AbilityAction.Stab:
+                        case AbilityAction.Poke:
+                        case AbilityAction.Impale:
+                        case AbilityAction.Bludgeon:
+                        case AbilityAction.Punch:
+                        case AbilityAction.Kick:
+                        case AbilityAction.Touch:
+                        case AbilityAction.Headbutt:
+                        case AbilityAction.Claw:
+                        case AbilityAction.Bite:
+                        case AbilityAction.Suck:
+                        case AbilityAction.Sting:
+                        case AbilityAction.Hug:
+                        case AbilityAction.Trample:
+                        case AbilityAction.Digestion:
+                        case AbilityAction.Shoot:
+                        case AbilityAction.Throw:
+                        case AbilityAction.Spit:
+                            successCondition = AbilitySuccessCondition.PhysicalAttack;
+                            break;
+                        case AbilityAction.Breath:
+                        case AbilityAction.Gaze:
+                        case AbilityAction.Scream:
+                        case AbilityAction.Spell:
+                        case AbilityAction.Explosion:
+                            successCondition = AbilitySuccessCondition.NonPhysicalAttack;
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                }
+            }
+
+            var success = true;
+            switch (successCondition)
+            {
+                case AbilitySuccessCondition.Always:
+                    break;
+                case AbilitySuccessCondition.PhysicalAttack:
+                    success = context.TargetEntity != null
+                              && Game.Random.Next(
+                                  context.TargetEntity.GetProperty<int>(PropertyData.PhysicalDeflection.Name) + 20)
+                              < 15;
+                    break;
+                case AbilitySuccessCondition.NonPhysicalAttack:
+                    success = context.TargetEntity != null
+                              && Game.Random.Next(
+                                  context.TargetEntity.GetProperty<int>(PropertyData.MagicDeflection.Name) + 20)
+                              < 15;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            context.Succeeded = success;
+        }
+
         private bool IsFinal() => Action != AbilityAction.Modifier
                                   && Action != AbilityAction.Shoot
                                   && Action != AbilityAction.Throw;
@@ -251,7 +334,7 @@ namespace UnicornHack.Abilities
                                      && Action != AbilityAction.Modifier;
 
         private bool IsExplicitlyActivated() => Activation == AbilityActivation.OnActivation
-                                             || Activation == AbilityActivation.OnTarget;
+                                                || Activation == AbilityActivation.OnTarget;
 
         public void Deactivate()
         {

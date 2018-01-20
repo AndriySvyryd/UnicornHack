@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public MeleeAttacked(AbilityActivationContext abilityContext) : base(abilityContext)
+        public MeleeAttacked(AbilityActivationContext abilityContext, bool targetActivator = false)
+            : base(abilityContext, targetActivator)
         {
         }
 

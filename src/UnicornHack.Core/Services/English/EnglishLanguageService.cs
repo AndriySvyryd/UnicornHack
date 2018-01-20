@@ -421,7 +421,7 @@ namespace UnicornHack.Services.English
 
         private string FormatDamage(ISet<AppliedEffect> effects, string victim)
         {
-            // TODO: Diffirintiate damage types
+            // TODO: Differentiate damage types
             var damage = effects.OfType<Damaged>().Aggregate(0, (d, e) => d + e.Damage);
 
             if (damage == 0)

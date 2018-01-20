@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public LifeDrained(AbilityActivationContext abilityContext) : base(abilityContext)
+        public LifeDrained(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
 

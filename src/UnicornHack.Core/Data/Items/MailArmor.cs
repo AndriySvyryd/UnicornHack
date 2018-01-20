@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using UnicornHack.Abilities;
+using UnicornHack.Effects;
 using UnicornHack.Generation;
 
 namespace UnicornHack.Data.Items
@@ -11,8 +13,19 @@ namespace UnicornHack.Data.Items
             Type = ItemType.ArmorBody,
             Material = Material.Steel,
             EquipableSlots = EquipmentSlot.Body,
-            ValuedProperties =
-                new Dictionary<string, object> {{"physical deflection", 10}, {"physical absorption", 2}, {"weight", 40}}
+            Abilities = new HashSet<AbilityDefinition>
+            {
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.WhileEquipped,
+                    Effects = new HashSet<Effect>
+                    {
+                        new ChangeProperty<int> {PropertyName = "physical deflection", Value = 10},
+                        new ChangeProperty<int> {PropertyName = "physical absorption", Value = 2}
+                    }
+                }
+            },
+            ValuedProperties = new Dictionary<string, object> {{"weight", 40}}
         };
     }
 }

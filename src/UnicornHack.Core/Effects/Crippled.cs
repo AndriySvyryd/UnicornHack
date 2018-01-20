@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Crippled(AbilityActivationContext abilityContext) : base(abilityContext)
+        public Crippled(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
     }

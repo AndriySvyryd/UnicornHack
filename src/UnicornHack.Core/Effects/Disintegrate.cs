@@ -1,8 +1,9 @@
 using UnicornHack.Abilities;
+using UnicornHack.Data.Properties;
 
 namespace UnicornHack.Effects
 {
-    public class Disintegrate : Effect
+    public class Disintegrate : DamageEffect
     {
         public Disintegrate()
         {
@@ -12,20 +13,28 @@ namespace UnicornHack.Effects
         {
         }
 
-        // TODO: Withers items
-        public int Damage { get; set; }
+        public Disintegrate(Disintegrate effect, Game game)
+            : base(effect, game)
+        {
+        }
 
-        public override Effect Copy(Game game) => new Disintegrate(game) {Damage = Damage};
+        // TODO: Withers items
+        public override Effect Copy(Game game) => new Disintegrate(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            if (!abilityContext.Succeeded)
+            if (!abilityContext.Succeeded
+                || Damage == 0)
             {
                 return;
             }
 
-            (abilityContext.TargetEntity as Actor)?.ChangeCurrentHP(-1 * Damage);
-            abilityContext.Add(new Disintegrated(abilityContext) {Damage = Damage});
+            var damage = ApplyDamage(
+                abilityContext,
+                null,
+                PropertyData.DisintegrationResistance.Name);
+
+            abilityContext.Add(new Disintegrated(abilityContext, TargetActivator) {Damage = damage});
         }
     }
 }

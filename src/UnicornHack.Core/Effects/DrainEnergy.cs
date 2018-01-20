@@ -12,9 +12,13 @@ namespace UnicornHack.Effects
         {
         }
 
+        public DrainEnergy(DrainEnergy effect, Game game)
+            : base(effect, game)
+            => Amount = effect.Amount;
+
         public int Amount { get; set; }
 
-        public override Effect Copy(Game game) => new DrainEnergy(game) {Amount = Amount};
+        public override Effect Copy(Game game) => new DrainEnergy(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -25,7 +29,7 @@ namespace UnicornHack.Effects
 
             (abilityContext.TargetEntity as Actor)?.ChangeCurrentEP(-1 * Amount);
             (abilityContext.Activator as Actor)?.ChangeCurrentEP(Amount);
-            abilityContext.Add(new EnergyDrained(abilityContext) {Amount = Amount});
+            abilityContext.Add(new EnergyDrained(abilityContext, TargetActivator) {Amount = Amount});
         }
     }
 }

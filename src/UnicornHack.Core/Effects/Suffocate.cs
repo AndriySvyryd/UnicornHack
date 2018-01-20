@@ -2,7 +2,7 @@ using UnicornHack.Abilities;
 
 namespace UnicornHack.Effects
 {
-    public class Suffocate : Effect
+    public class Suffocate : DurationEffect
     {
         public Suffocate()
         {
@@ -12,7 +12,12 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override Effect Copy(Game game) => new Suffocate(game);
+        public Suffocate(Suffocate effect, Game game)
+            : base(effect, game)
+        {
+        }
+
+        public override Effect Copy(Game game) => new Suffocate(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -21,7 +26,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Add(new Suffocated(abilityContext) {Duration = Duration});
+            abilityContext.Add(new Suffocated(abilityContext, TargetActivator) {Duration = Duration});
         }
     }
 }

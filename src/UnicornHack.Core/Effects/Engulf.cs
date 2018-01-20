@@ -2,7 +2,7 @@ using UnicornHack.Abilities;
 
 namespace UnicornHack.Effects
 {
-    public class Engulf : Effect
+    public class Engulf : DurationEffect
     {
         public Engulf()
         {
@@ -12,7 +12,12 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override Effect Copy(Game game) => new Engulf(game) {Duration = Duration};
+        public Engulf(Engulf effect, Game game)
+            : base(effect, game)
+        {
+        }
+
+        public override Effect Copy(Game game) => new Engulf(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -21,7 +26,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Add(new Engulfed(abilityContext) {Duration = Duration});
+            abilityContext.Add(new Engulfed(abilityContext, TargetActivator) {Duration = Duration});
         }
     }
 }

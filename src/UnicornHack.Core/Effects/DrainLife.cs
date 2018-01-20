@@ -12,9 +12,13 @@ namespace UnicornHack.Effects
         {
         }
 
+        public DrainLife(DrainLife effect, Game game)
+            : base(effect, game)
+            => Amount = effect.Amount;
+
         public int Amount { get; set; }
 
-        public override Effect Copy(Game game) => new DrainLife(game) {Amount = Amount};
+        public override Effect Copy(Game game) => new DrainLife(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -25,7 +29,7 @@ namespace UnicornHack.Effects
 
             (abilityContext.TargetEntity as Actor)?.ChangeCurrentHP(-1 * Amount);
             (abilityContext.Activator as Actor)?.ChangeCurrentHP(Amount);
-            abilityContext.Add(new LifeDrained(abilityContext) {Amount = Amount});
+            abilityContext.Add(new LifeDrained(abilityContext, TargetActivator) {Amount = Amount});
         }
     }
 }

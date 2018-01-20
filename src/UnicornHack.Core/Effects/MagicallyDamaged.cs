@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public MagicallyDamaged(AbilityActivationContext abilityContext) : base(abilityContext)
+        public MagicallyDamaged(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
     }

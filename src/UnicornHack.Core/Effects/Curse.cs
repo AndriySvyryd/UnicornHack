@@ -2,7 +2,7 @@ using UnicornHack.Abilities;
 
 namespace UnicornHack.Effects
 {
-    public class Curse : Effect
+    public class Curse : DurationEffect
     {
         public Curse()
         {
@@ -12,7 +12,12 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override Effect Copy(Game game) => new Curse(game);
+        public Curse(Curse effect, Game game)
+            : base(effect, game)
+        {
+        }
+
+        public override Effect Copy(Game game) => new Curse(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -21,7 +26,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Add(new Cursed(abilityContext) {Duration = Duration});
+            abilityContext.Add(new Cursed(abilityContext, TargetActivator) {Duration = Duration});
         }
     }
 }

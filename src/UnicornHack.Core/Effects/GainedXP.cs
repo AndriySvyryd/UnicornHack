@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public GainedXP(AbilityActivationContext abilityContext) : base(abilityContext)
+        public GainedXP(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
 

@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Suffocated(AbilityActivationContext abilityContext) : base(abilityContext)
+        public Suffocated(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
     }

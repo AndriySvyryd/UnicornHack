@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Teleported(AbilityActivationContext abilityContext) : base(abilityContext)
+        public Teleported(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
     }

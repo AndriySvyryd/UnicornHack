@@ -9,7 +9,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public ChangedRace(AbilityActivationContext abilityContext) : base(abilityContext)
+        public ChangedRace(AbilityActivationContext abilityContext, bool targetActivator = false)
+            : base(abilityContext, targetActivator)
         {
         }
 
@@ -29,6 +30,7 @@ namespace UnicornHack.Effects
             {
                 return;
             }
+
             var currentLevel = player.MaxXPLevel > XPLevel ? XPLevel : player.XPLevel;
             NextLevelXP = (int)((1 + Math.Ceiling(Math.Pow(currentLevel, 1.5))) * 50);
         }

@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Sedated(AbilityActivationContext abilityContext) : base(abilityContext)
+        public Sedated(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
     }

@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Deafened(AbilityActivationContext abilityContext) : base(abilityContext)
+        public Deafened(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
     }

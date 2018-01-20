@@ -12,9 +12,13 @@ namespace UnicornHack.Effects
         {
         }
 
+        public StealGold(StealGold effect, Game game)
+            : base(effect, game)
+            => Amount = effect.Amount;
+
         public int Amount { get; set; }
 
-        public override Effect Copy(Game game) => new StealGold(game);
+        public override Effect Copy(Game game) => new StealGold(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -23,7 +27,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Add(new GoldStolen(abilityContext) {Amount = Amount});
+            abilityContext.Add(new GoldStolen(abilityContext, TargetActivator) {Amount = Amount});
         }
     }
 }

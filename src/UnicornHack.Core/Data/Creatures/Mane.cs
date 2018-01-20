@@ -30,7 +30,12 @@ namespace UnicornHack.Data.Creatures
             },
             SimpleProperties = new HashSet<string> {"sleep resistance", "infravision", "infravisibility"},
             ValuedProperties =
-                new Dictionary<string, object> {{"poison resistance", 3}, {"physical deflection", 13}, {"weight", 500}},
+                new Dictionary<string, object>
+                {
+                    {"poison resistance", 75},
+                    {"physical deflection", 13},
+                    {"weight", 500}
+                },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
             CorpseName = "",

@@ -72,8 +72,8 @@ namespace UnicornHack.Data.Creatures
             },
             ValuedProperties = new Dictionary<string, object>
             {
-                {"fire resistance", 3},
-                {"poison resistance", 3},
+                {"fire resistance", 75},
+                {"poison resistance", 75},
                 {"thick hide", 3},
                 {"size", 8},
                 {"physical deflection", 21},

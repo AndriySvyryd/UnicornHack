@@ -46,7 +46,7 @@ namespace UnicornHack.Data.Creatures
             {
                 {
                     "acid resistance",
-                    3
+                    75
                 },
                 {
                     "stealthiness",

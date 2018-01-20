@@ -15,13 +15,15 @@ namespace UnicornHack.Abilities
         public int? WeaponId { get; set; }
         public Item Weapon { get; set; }
 
-        public override Trigger Copy(Game game) => new RangedWeaponTrigger(game) { Weapon = Weapon.AddReference().Referenced };
+        public override Trigger Copy(Game game)
+            => new RangedWeaponTrigger(game) {Weapon = Weapon?.AddReference().Referenced};
 
         public override void Fire(AbilityActivationContext abilityContext)
         {
-            abilityContext.Activator.ActivateAbilities(AbilityActivation.OnRangedAttack, abilityContext, useSameContext: false);
+            abilityContext.Activator.ActivateAbilities(AbilityActivation.OnRangedAttack, abilityContext,
+                useSameContext: false);
 
-            abilityContext.Add(new RangeAttacked(abilityContext) { Weapon = Weapon.AddReference().Referenced });
+            abilityContext.Add(new RangeAttacked(abilityContext) {Weapon = Weapon.AddReference().Referenced});
 
             var targets = Ability.GetTargets(abilityContext);
             var level = abilityContext.Activator.Level;
@@ -51,7 +53,6 @@ namespace UnicornHack.Abilities
 
             foreach (var target in targets)
             {
-                // TODO: Determine whether attack was succesful
                 var hitContext = new AbilityActivationContext
                 {
                     Activator = abilityContext.Activator,
@@ -59,7 +60,7 @@ namespace UnicornHack.Abilities
                     EffectsToApply = abilityContext.EffectsToApply
                 };
 
-                hitContext.Add(new RangeAttacked(hitContext) { Weapon = projectile.AddReference().Referenced });
+                hitContext.Add(new RangeAttacked(hitContext) {Weapon = projectile.AddReference().Referenced});
 
                 projectile.ActivateAbilities(AbilityActivation.OnRangedAttack, hitContext, useSameContext: true);
             }

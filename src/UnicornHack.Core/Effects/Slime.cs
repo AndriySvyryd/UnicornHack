@@ -2,7 +2,7 @@ using UnicornHack.Abilities;
 
 namespace UnicornHack.Effects
 {
-    public class Slime : Effect
+    public class Slime : DurationEffect
     {
         public Slime()
         {
@@ -12,7 +12,12 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override Effect Copy(Game game) => new Slime(game);
+        public Slime(Slime effect, Game game)
+            : base(effect, game)
+        {
+        }
+
+        public override Effect Copy(Game game) => new Slime(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -21,7 +26,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Add(new Slimed(abilityContext) {Duration = Duration});
+            abilityContext.Add(new Slimed(abilityContext, TargetActivator) {Duration = Duration});
         }
     }
 }

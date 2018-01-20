@@ -47,12 +47,30 @@ namespace UnicornHack.Data.Creatures
             },
             ValuedProperties = new Dictionary<string, object>
             {
-                {"poison resistance", 3},
-                {"venom resistance", 3},
-                {"stealthiness", 3},
-                {"size", 2},
-                {"physical deflection", 10},
-                {"weight", 10}
+                {
+                    "poison resistance",
+                    75
+                },
+                {
+                    "venom resistance",
+                    75
+                },
+                {
+                    "stealthiness",
+                    3
+                },
+                {
+                    "size",
+                    2
+                },
+                {
+                    "physical deflection",
+                    10
+                },
+                {
+                    "weight",
+                    10
+                }
             },
             InitialLevel = 1,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},

@@ -1,8 +1,9 @@
 using UnicornHack.Abilities;
+using UnicornHack.Data.Properties;
 
 namespace UnicornHack.Effects
 {
-    public class Freeze : Effect
+    public class Freeze : DamageEffect
     {
         public Freeze()
         {
@@ -12,21 +13,29 @@ namespace UnicornHack.Effects
         {
         }
 
-        public int Damage { get; set; }
+        public Freeze(Freeze effect, Game game)
+            : base(effect, game)
+        {
+        }
 
-        public override Effect Copy(Game game) => new Freeze(game) {Damage = Damage};
+        public override Effect Copy(Game game) => new Freeze(this, game);
 
         // TODO: Freezes items
         // TODO: Slows, removes burning, dissolving
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            if (!abilityContext.Succeeded)
+            if (!abilityContext.Succeeded
+                || Damage == 0)
             {
                 return;
             }
 
-            (abilityContext.TargetEntity as Actor)?.ChangeCurrentHP(-1 * Damage);
-            abilityContext.Add(new Frozen(abilityContext) {Damage = Damage});
+            var damage = ApplyDamage(
+                abilityContext,
+                null,
+                PropertyData.ColdResistance.Name);
+
+            abilityContext.Add(new Frozen(abilityContext, TargetActivator) {Damage = damage});
         }
     }
 }

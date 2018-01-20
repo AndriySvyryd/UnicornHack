@@ -1,8 +1,9 @@
 using UnicornHack.Abilities;
+using UnicornHack.Data.Properties;
 
 namespace UnicornHack.Effects
 {
-    public class Envenom : Effect
+    public class Envenom : DamageEffect
     {
         public Envenom()
         {
@@ -12,9 +13,12 @@ namespace UnicornHack.Effects
         {
         }
 
-        public int Damage { get; set; }
+        public Envenom(Envenom effect, Game game)
+            : base(effect, game)
+        {
+        }
 
-        public override Effect Copy(Game game) => new Envenom(game) {Damage = Damage};
+        public override Effect Copy(Game game) => new Envenom(this, game);
 
         // TODO: Decays items
         public override void Apply(AbilityActivationContext abilityContext)
@@ -24,8 +28,18 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            (abilityContext.TargetEntity as Actor)?.ChangeCurrentHP(-1 * Damage);
-            abilityContext.Add(new Envenomed(abilityContext) {Damage = Damage});
+            if (!abilityContext.Succeeded
+                || Damage == 0)
+            {
+                return;
+            }
+
+            var damage = ApplyDamage(
+                abilityContext,
+                null,
+                PropertyData.VenomResistance.Name);
+
+            abilityContext.Add(new Envenomed(abilityContext, TargetActivator) {Damage = damage});
         }
     }
 }

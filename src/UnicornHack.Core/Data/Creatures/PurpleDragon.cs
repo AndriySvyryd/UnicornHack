@@ -59,11 +59,11 @@ namespace UnicornHack.Data.Creatures
             {
                 {
                     "venom resistance",
-                    3
+                    75
                 },
                 {
                     "poison resistance",
-                    3
+                    75
                 },
                 {
                     "danger awareness",

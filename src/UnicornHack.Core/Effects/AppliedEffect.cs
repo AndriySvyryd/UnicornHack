@@ -4,7 +4,7 @@ using UnicornHack.Utils;
 namespace UnicornHack.Effects
 {
     /// <summary>
-    /// Represents the result from an effect application
+    ///     Represents the result from an effect application
     /// </summary>
     public abstract class AppliedEffect : IReferenceable
     {
@@ -12,15 +12,26 @@ namespace UnicornHack.Effects
         {
         }
 
-        protected AppliedEffect(AbilityActivationContext abilityContext)
+        protected AppliedEffect(AbilityActivationContext abilityContext, bool targetActivator)
         {
             SourceAbility = abilityContext.Ability?.AddReference().Referenced;
             SourceAbility?.ActiveEffects.Add(this);
             Game = abilityContext.Activator?.Game
-                ?? abilityContext.TargetEntity.Game;
-            Entity = abilityContext.TargetEntity;
-            CellX = abilityContext.TargetCell?.X;
-            CellY = abilityContext.TargetCell?.Y;
+                   ?? abilityContext.TargetEntity.Game;
+
+            if (targetActivator)
+            {
+                Entity = abilityContext.Activator;
+                CellX = abilityContext.Activator.LevelX;
+                CellY = abilityContext.Activator.LevelY;
+            }
+            else
+            {
+                Entity = abilityContext.TargetEntity;
+                CellX = abilityContext.TargetCell?.X;
+                CellY = abilityContext.TargetCell?.Y;
+            }
+
             Id = ++Game.NextAppliedEffectId;
         }
 

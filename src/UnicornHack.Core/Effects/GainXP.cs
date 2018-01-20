@@ -12,9 +12,13 @@ namespace UnicornHack.Effects
         {
         }
 
+        public GainXP(GainXP effect, Game game)
+            : base(effect, game)
+            => Amount = effect.Amount;
+
         public int Amount { get; set; }
 
-        public override Effect Copy(Game game) => new GainXP(game) {Amount = Amount};
+        public override Effect Copy(Game game) => new GainXP(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -23,10 +27,10 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            if (abilityContext.TargetEntity is Player player)
+            if ((TargetActivator ? abilityContext.Activator : abilityContext.TargetEntity) is Player player)
             {
                 player.AddXP(Amount);
-                abilityContext.Add(new GainedXP(abilityContext) { Amount = Amount });
+                abilityContext.Add(new GainedXP(abilityContext, TargetActivator) {Amount = Amount});
             }
         }
     }

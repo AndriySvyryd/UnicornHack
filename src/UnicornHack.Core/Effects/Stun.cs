@@ -2,7 +2,7 @@ using UnicornHack.Abilities;
 
 namespace UnicornHack.Effects
 {
-    public class Stun : Effect
+    public class Stun : DurationEffect
     {
         public Stun()
         {
@@ -12,7 +12,12 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override Effect Copy(Game game) => new Stun(game) {Duration = Duration};
+        public Stun(Stun effect, Game game)
+            : base(effect, game)
+        {
+        }
+
+        public override Effect Copy(Game game) => new Stun(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -21,7 +26,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Add(new Stunned(abilityContext) {Duration = Duration});
+            abilityContext.Add(new Stunned(abilityContext, TargetActivator) {Duration = Duration});
         }
     }
 }

@@ -23,7 +23,7 @@ namespace UnicornHack.Data.Creatures
                 }
             },
             SimpleProperties = new HashSet<string> {"infravisibility", "humanoidness"},
-            ValuedProperties = new Dictionary<string, object> {{"poison resistance", 3}, {"weight", 1000}},
+            ValuedProperties = new Dictionary<string, object> {{"poison resistance", 75}, {"weight", 1000}},
             InitialLevel = 11,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},
             GenerationFlags = GenerationFlags.NonPolymorphable,

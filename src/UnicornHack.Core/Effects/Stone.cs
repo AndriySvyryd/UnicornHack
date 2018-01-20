@@ -2,7 +2,7 @@ using UnicornHack.Abilities;
 
 namespace UnicornHack.Effects
 {
-    public class Stone : Effect
+    public class Stone : DurationEffect
     {
         public Stone()
         {
@@ -12,7 +12,12 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override Effect Copy(Game game) => new Stone(game);
+        public Stone(Stone effect, Game game)
+            : base(effect, game)
+        {
+        }
+
+        public override Effect Copy(Game game) => new Stone(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -21,7 +26,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Add(new Stoned(abilityContext) {Duration = Duration});
+            abilityContext.Add(new Stoned(abilityContext, TargetActivator) {Duration = Duration});
         }
     }
 }

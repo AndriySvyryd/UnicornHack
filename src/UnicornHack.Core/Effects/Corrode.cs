@@ -1,8 +1,9 @@
 using UnicornHack.Abilities;
+using UnicornHack.Data.Properties;
 
 namespace UnicornHack.Effects
 {
-    public class Corrode : Effect
+    public class Corrode : DamageEffect
     {
         public Corrode()
         {
@@ -12,21 +13,29 @@ namespace UnicornHack.Effects
         {
         }
 
-        public int Damage { get; set; }
+        public Corrode(Corrode effect, Game game)
+            : base(effect, game)
+        {
+        }
 
-        public override Effect Copy(Game game) => new Corrode(game) {Damage = Damage};
+        public override Effect Copy(Game game) => new Corrode(this, game);
 
         // TODO: Corrodes items
         // TODO: Removes stoning
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            if (!abilityContext.Succeeded)
+            if (!abilityContext.Succeeded
+                || Damage == 0)
             {
                 return;
             }
 
-            (abilityContext.TargetEntity as Actor)?.ChangeCurrentHP(-1 * Damage);
-            abilityContext.Add(new Corroded(abilityContext) {Damage = Damage});
+            var damage = ApplyDamage(
+                abilityContext,
+                null,
+                PropertyData.AcidResistance.Name);
+
+            abilityContext.Add(new Corroded(abilityContext, TargetActivator) {Damage = damage});
         }
     }
 }

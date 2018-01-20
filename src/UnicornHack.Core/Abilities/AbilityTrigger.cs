@@ -14,7 +14,7 @@
         public Ability AbilityToTrigger { get; set; }
 
         public override Trigger Copy(Game game)
-            => new AbilityTrigger(game) { AbilityToTrigger = AbilityToTrigger.AddReference().Referenced };
+            => new AbilityTrigger(game) {AbilityToTrigger = AbilityToTrigger?.AddReference().Referenced};
 
         public override void Fire(AbilityActivationContext abilityContext)
         {

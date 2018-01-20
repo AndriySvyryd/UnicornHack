@@ -12,9 +12,13 @@ namespace UnicornHack.Effects
         {
         }
 
+        public Infect(Infect effect, Game game)
+            : base(effect, game)
+            => Strength = Strength;
+
         public int Strength { get; set; }
 
-        public override Effect Copy(Game game) => new Infect(game) {Strength = Strength};
+        public override Effect Copy(Game game) => new Infect(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -23,7 +27,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Add(new Infected(abilityContext) {Strength = Strength});
+            abilityContext.Add(new Infected(abilityContext, TargetActivator) {Strength = Strength});
         }
     }
 }

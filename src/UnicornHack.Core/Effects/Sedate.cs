@@ -2,7 +2,7 @@ using UnicornHack.Abilities;
 
 namespace UnicornHack.Effects
 {
-    public class Sedate : Effect
+    public class Sedate : DurationEffect
     {
         public Sedate()
         {
@@ -12,7 +12,12 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override Effect Copy(Game game) => new Sedate(game) {Duration = Duration};
+        public Sedate(Sedate effect, Game game)
+            : base(effect, game)
+        {
+        }
+
+        public override Effect Copy(Game game) => new Sedate(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -21,7 +26,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Add(new Sedated(abilityContext) {Duration = Duration});
+            abilityContext.Add(new Sedated(abilityContext, TargetActivator) {Duration = Duration});
         }
     }
 }

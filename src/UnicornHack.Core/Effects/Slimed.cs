@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Slimed(AbilityActivationContext abilityContext) : base(abilityContext)
+        public Slimed(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
     }

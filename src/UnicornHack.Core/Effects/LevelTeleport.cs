@@ -12,7 +12,12 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override Effect Copy(Game game) => new LevelTeleport(game);
+        public LevelTeleport(LevelTeleport effect, Game game)
+            : base(effect, game)
+        {
+        }
+
+        public override Effect Copy(Game game) => new LevelTeleport(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -21,7 +26,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Add(new LevelTeleported(abilityContext));
+            abilityContext.Add(new LevelTeleported(abilityContext, TargetActivator));
         }
     }
 }

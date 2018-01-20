@@ -1,8 +1,9 @@
 using UnicornHack.Abilities;
+using UnicornHack.Data.Properties;
 
 namespace UnicornHack.Effects
 {
-    public class Burn : Effect
+    public class Burn : DamageEffect
     {
         public Burn()
         {
@@ -12,21 +13,29 @@ namespace UnicornHack.Effects
         {
         }
 
-        public int Damage { get; set; }
+        public Burn(Burn effect, Game game)
+            : base(effect, game)
+        {
+        }
 
-        public override Effect Copy(Game game) => new Burn(game) {Damage = Damage};
+        public override Effect Copy(Game game) => new Burn(this, game);
 
         // TODO: Burns items
         // TODO: Removes slime, wet, frozen
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            if (!abilityContext.Succeeded)
+            if (!abilityContext.Succeeded
+                || Damage == 0)
             {
                 return;
             }
 
-            (abilityContext.TargetEntity as Actor)?.ChangeCurrentHP(-1 * Damage);
-            abilityContext.Add(new Burned(abilityContext) {Damage = Damage});
+            var damage = ApplyDamage(
+                abilityContext,
+                null,
+                PropertyData.FireResistance.Name);
+
+            abilityContext.Add(new Burned(abilityContext, TargetActivator) {Damage = damage});
         }
     }
 }

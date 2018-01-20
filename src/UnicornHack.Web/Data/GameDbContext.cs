@@ -213,7 +213,7 @@ namespace UnicornHack.Data
                 eb.HasMany(g => g.Connections)
                     .WithOne(s => s.Game)
                     .HasForeignKey(s => s.GameId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Cascade);
                 eb.HasMany(g => g.Abilities)
                     .WithOne(a => a.Game)
                     .HasForeignKey(a => a.GameId);

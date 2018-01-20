@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Paralyzed(AbilityActivationContext abilityContext) : base(abilityContext)
+        public Paralyzed(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
     }

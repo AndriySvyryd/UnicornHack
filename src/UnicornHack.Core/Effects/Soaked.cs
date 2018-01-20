@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Soaked(AbilityActivationContext abilityContext) : base(abilityContext)
+        public Soaked(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
     }

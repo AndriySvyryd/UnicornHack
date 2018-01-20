@@ -2,7 +2,7 @@ using UnicornHack.Abilities;
 
 namespace UnicornHack.Effects
 {
-    public class Deafen : Effect
+    public class Deafen : DurationEffect
     {
         public Deafen()
         {
@@ -12,7 +12,12 @@ namespace UnicornHack.Effects
         {
         }
 
-        public override Effect Copy(Game game) => new Deafen(game) {Duration = Duration};
+        public Deafen(Deafen effect, Game game)
+            : base(effect, game)
+        {
+        }
+
+        public override Effect Copy(Game game) => new Deafen(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
@@ -21,7 +26,7 @@ namespace UnicornHack.Effects
                 return;
             }
 
-            abilityContext.Add(new Deafened(abilityContext) {Duration = Duration});
+            abilityContext.Add(new Deafened(abilityContext, TargetActivator) {Duration = Duration});
         }
     }
 }

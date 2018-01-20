@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public RangeAttacked(AbilityActivationContext abilityContext) : base(abilityContext)
+        public RangeAttacked(AbilityActivationContext abilityContext, bool targetActivator = false)
+            : base(abilityContext, targetActivator)
         {
         }
 

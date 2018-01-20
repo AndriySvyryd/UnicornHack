@@ -1,8 +1,9 @@
 using UnicornHack.Abilities;
+using UnicornHack.Data.Properties;
 
 namespace UnicornHack.Effects
 {
-    public class PhysicalDamage : Effect
+    public class PhysicalDamage : DamageEffect
     {
         public PhysicalDamage()
         {
@@ -12,22 +13,27 @@ namespace UnicornHack.Effects
         {
         }
 
-        public int Damage { get; set; }
+        public PhysicalDamage(PhysicalDamage effect, Game game)
+            : base(effect, game)
+        {
+        }
 
-        public override Effect Copy(Game game) => new PhysicalDamage(game) {Damage = Damage};
+        public override Effect Copy(Game game) => new PhysicalDamage(this, game);
 
         public override void Apply(AbilityActivationContext abilityContext)
         {
-            if (!abilityContext.Succeeded)
+            if (!abilityContext.Succeeded
+                || Damage == 0)
             {
                 return;
             }
 
-            if (Damage != 0)
-            {
-                (abilityContext.TargetEntity as Actor)?.ChangeCurrentHP(-1 * Damage);
-                abilityContext.Add(new PhysicallyDamaged(abilityContext) {Damage = Damage});
-            }
+            var damage = ApplyDamage(
+                abilityContext,
+                PropertyData.PhysicalAbsorption.Name,
+                PropertyData.PhysicalResistance.Name);
+
+            abilityContext.Add(new PhysicallyDamaged(abilityContext, TargetActivator) {Damage = damage});
         }
     }
 }

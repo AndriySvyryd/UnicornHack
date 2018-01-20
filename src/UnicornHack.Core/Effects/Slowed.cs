@@ -8,7 +8,8 @@ namespace UnicornHack.Effects
         {
         }
 
-        public Slowed(AbilityActivationContext abilityContext) : base(abilityContext)
+        public Slowed(AbilityActivationContext abilityContext, bool targetActivator)
+            : base(abilityContext, targetActivator)
         {
         }
     }
