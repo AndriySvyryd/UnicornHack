@@ -49,6 +49,7 @@ namespace UnicornHack
         public string BranchName { get; set; }
         public byte LevelDepth { get; set; }
         public Level Level { get; set; }
+        public Point LevelCell => new Point(LevelX, LevelY);
 
         public byte? TargetLevelX { get; set; }
         public byte? TargetLevelY { get; set; }
@@ -56,6 +57,7 @@ namespace UnicornHack
         public byte TargetLevelDepth { get; set; }
         public Level TargetLevel { get; set; }
         public Branch TargetBranch { get; set; }
+        public Point TargetLevelCell => new Point(TargetLevelX.Value, TargetLevelY.Value);
 
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public int GameId { get; private set; }

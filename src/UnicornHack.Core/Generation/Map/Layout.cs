@@ -25,7 +25,6 @@ namespace UnicornHack.Generation.Map
         {
             level.TerrainChanges = null;
             level.WallNeighboursChanges = null;
-            level.VisibleTerrainChanges = null;
             if (fragment.DefaultTerrain != MapFeature.Default)
             {
                 for (var index = 0; index < level.Terrain.Length; index++)

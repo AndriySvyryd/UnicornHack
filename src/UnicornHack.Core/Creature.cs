@@ -43,7 +43,7 @@ namespace UnicornHack
                 return true;
             }
 
-            var possibleDirectionsToMove = Level.GetPossibleMovementDirections(new Point(LevelX, LevelY), safe: true);
+            var possibleDirectionsToMove = Level.GetPossibleMovementDirections(LevelCell, safe: true);
             if (possibleDirectionsToMove.Count == 0)
             {
                 NextActionTick += DefaultActionDelay;
@@ -61,7 +61,7 @@ namespace UnicornHack
 
         private bool TryAttackPlayerCharacter()
         {
-            var playerCharacter = Level.Players.FirstOrDefault(pc => Level.GridDistance(this, pc) <= 1 && pc.IsAlive);
+            var playerCharacter = Level.Players.FirstOrDefault(pc => LevelCell.DistanceTo(pc.LevelCell) <= 1 && pc.IsAlive);
             if (playerCharacter == null)
             {
                 return false;
@@ -96,8 +96,15 @@ namespace UnicornHack
 
         private bool TryMoveToPlayerCharacter()
         {
-            var playerCharacter = Level.Players.FirstOrDefault(pc => Level.GridDistance(this, pc) <= 6 && pc.IsAlive);
+            var playerCharacter = Level.Players.FirstOrDefault(pc => LevelCell.DistanceTo(pc.LevelCell) <= 16 && pc.IsAlive);
             if (playerCharacter == null)
+            {
+                return false;
+            }
+
+            // TODO: Check memory and other senses
+            if (LevelCell.DistanceTo(playerCharacter.LevelCell) > 3
+                && GetVisibility(playerCharacter.LevelCell) == 0)
             {
                 return false;
             }
@@ -111,6 +118,10 @@ namespace UnicornHack
             return false;
         }
 
+        public override byte[] GetFOV()
+            // TODO: use correct FOV
+            => Level.GetNonPlayerFOV(LevelCell, Heading, primaryFOV: 1, secondaryFOV: 2);
+
         public override bool ChangeCurrentHP(int hp)
         {
             var wasAlive = IsAlive;
@@ -118,7 +129,7 @@ namespace UnicornHack
             if (wasAlive && !isAlive)
             {
                 // TODO: Track the last interacted player
-                var playerCharacter = Level.Players.Where(pc => pc.IsAlive).OrderBy(pc => Level.GridDistance(this, pc))
+                var playerCharacter = Level.Players.Where(pc => pc.IsAlive).OrderBy(pc => LevelCell.DistanceTo(pc.LevelCell))
                     .FirstOrDefault();
 
                 // TODO: Calculate diminishing XP

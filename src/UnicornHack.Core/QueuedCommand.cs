@@ -6,8 +6,8 @@
         {
         }
 
-        public QueuedCommand(Player player, PlayerAction action, int? target, int? target2)
-            : base(++player.NextQueuedCommandId, player, action, target, target2)
+        public QueuedCommand(Player player, int tick, PlayerAction action, int? target, int? target2)
+            : base(++player.NextQueuedCommandId, tick, player, action, target, target2)
         {
         }
     }

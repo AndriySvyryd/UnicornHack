@@ -204,17 +204,16 @@ namespace UnicornHack.Abilities
             return true;
         }
 
-        public virtual IReadOnlyCollection<Entity> GetTargets(AbilityActivationContext abilityContext)
+        public virtual IReadOnlyCollection<Entity> GetTargets(AbilityActivationContext context)
         {
-            if (abilityContext.TargetEntity != null)
+            if (context.TargetEntity != null)
             {
-                return new[] {abilityContext.TargetEntity};
+                return new[] {context.TargetEntity};
             }
 
-            var level = abilityContext.Activator.Level;
-            var targetCell = abilityContext.TargetCell.Value;
-            var activatorCell = new Point(abilityContext.Activator.LevelX, abilityContext.Activator.LevelY);
-            var vectorToTarget = activatorCell.DifferenceTo(targetCell);
+            var level = context.Activator.Level;
+            var targetCell = context.TargetCell.Value;
+            var vectorToTarget = context.Activator.LevelCell.DifferenceTo(targetCell);
             switch (TargetingType)
             {
                 case Abilities.TargetingType.AdjacentSingle:
@@ -223,7 +222,7 @@ namespace UnicornHack.Abilities
                         return new Entity[0];
                     }
 
-                    return level.Actors.Where(a => a.LevelX == targetCell.X && a.LevelY == targetCell.Y).ToList();
+                    return level.Actors.Where(a => a.LevelCell == targetCell).ToList();
                 case Abilities.TargetingType.AdjacentArc:
                     if (vectorToTarget.Length() > 1)
                     {
@@ -234,14 +233,14 @@ namespace UnicornHack.Abilities
                     var firstNeighbour = targetCell.Translate(Vector.Convert(direction.Rotate(1)));
                     var secondNeighbour = targetCell.Translate(Vector.Convert(direction.Rotate(-1)));
 
-                    return level.Actors.Where(a => a.LevelX == targetCell.X && a.LevelY == targetCell.Y
-                                                   || a.LevelX == firstNeighbour.X && a.LevelY == firstNeighbour.Y
-                                                   || a.LevelX == secondNeighbour.X && a.LevelY == secondNeighbour.Y)
+                    return level.Actors.Where(a => a.LevelCell == targetCell
+                                                   || a.LevelCell == firstNeighbour
+                                                   || a.LevelCell == secondNeighbour)
                         .ToList();
                 case Abilities.TargetingType.Beam:
-                    // TODO: take blocking actors and terrain into account
                     // TODO: set abilityContext.TargetCell to the final projectile position
-                    return level.Actors.Where(a => a.LevelX == targetCell.X && a.LevelY == targetCell.Y).ToList();
+                    // TODO: check LOS
+                    return level.Actors.Where(a => a.LevelCell == targetCell).ToList();
                 default:
                     throw new ArgumentOutOfRangeException("TargetingType " + TargetingType + " not supported");
             }
@@ -302,6 +301,7 @@ namespace UnicornHack.Abilities
                 }
             }
 
+            // TODO: Allow hit even if attacker doesn't see the victim, but there's LOS
             var success = true;
             switch (successCondition)
             {
@@ -309,12 +309,14 @@ namespace UnicornHack.Abilities
                     break;
                 case AbilitySuccessCondition.PhysicalAttack:
                     success = context.TargetEntity != null
+                              && ((Actor)context.Activator).GetVisibility(context.TargetEntity.LevelCell) > 0
                               && Game.Random.Next(
                                   context.TargetEntity.GetProperty<int>(PropertyData.PhysicalDeflection.Name) + 20)
                               < 15;
                     break;
                 case AbilitySuccessCondition.NonPhysicalAttack:
                     success = context.TargetEntity != null
+                              && ((Actor)context.Activator).GetVisibility(context.TargetEntity.LevelCell) > 0
                               && Game.Random.Next(
                                   context.TargetEntity.GetProperty<int>(PropertyData.MagicDeflection.Name) + 20)
                               < 15;

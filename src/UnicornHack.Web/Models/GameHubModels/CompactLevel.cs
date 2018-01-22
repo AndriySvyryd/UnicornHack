@@ -8,7 +8,8 @@ namespace UnicornHack.Models.GameHubModels
     public static class CompactLevel
     {
         public static List<object> Serialize(
-            Level level, EntityState state, int previousTick, SerializationContext context)
+            Level level, EntityState state, int previousTick, SerializationContext context,
+            Dictionary<int, byte> visibleTerrainChanges)
         {
             if (state == EntityState.Added)
             {
@@ -93,13 +94,13 @@ namespace UnicornHack.Models.GameHubModels
                 }
 
                 i++;
-                if (level.VisibleTerrainChanges.Count > 0)
+                if (visibleTerrainChanges.Count > 0)
                 {
                     properties.Add(i);
                     // TODO: send the whole array if too many changes
-                    var changes = new object[level.VisibleTerrainChanges.Count * 2];
+                    var changes = new object[visibleTerrainChanges.Count * 2];
                     var j = 0;
-                    foreach (var levelVisibleTerrainChange in level.VisibleTerrainChanges)
+                    foreach (var levelVisibleTerrainChange in visibleTerrainChanges)
                     {
                         changes[j++] = levelVisibleTerrainChange.Key;
                         changes[j++] = levelVisibleTerrainChange.Value;
@@ -128,9 +129,41 @@ namespace UnicornHack.Models.GameHubModels
 
             level.Connections.CreateSnapshot();
 
-            level.TerrainChanges = level.TerrainChanges ?? new Dictionary<int, byte>();
-            level.WallNeighboursChanges = level.WallNeighboursChanges ?? new Dictionary<int, byte>();
-            level.VisibleTerrainChanges = level.VisibleTerrainChanges ?? new Dictionary<int, byte>();
+            if (level.TerrainChanges != null)
+            {
+                level.TerrainChanges.Clear();
+            }
+            else
+            {
+                level.TerrainChanges = new Dictionary<int, byte>();
+            }
+
+            if (level.WallNeighboursChanges != null)
+            {
+                level.WallNeighboursChanges.Clear();
+            }
+            else
+            {
+                level.WallNeighboursChanges = new Dictionary<int, byte>();
+            }
+
+            level.VisibleNeighboursChanged = false;
+        }
+
+        public static Dictionary<int, byte> DetectVisibilityChanges(Level level, byte[] oldVisibleTerrain)
+        {
+            var visibleTerrainChanges = new Dictionary<int, byte>();
+
+            for (int i = 0; i < level.VisibleTerrain.Length; i++)
+            {
+                var newValue = level.VisibleTerrain[i];
+                if (newValue != oldVisibleTerrain[i])
+                {
+                    visibleTerrainChanges.Add(i, newValue);
+                }
+            }
+
+            return visibleTerrainChanges;
         }
     }
 }

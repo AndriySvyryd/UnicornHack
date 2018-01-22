@@ -609,6 +609,10 @@ namespace UnicornHack
         /// <returns>Returns <c>false</c> if the actor hasn't finished their turn.</returns>
         public abstract bool Act();
 
+        public abstract byte[] GetFOV();
+
+        public byte GetVisibility(Point p) => GetFOV()[Level.PointToIndex[p.X, p.Y]];
+
         public virtual void Sense(SensoryEvent @event)
         {
             @event.Game = Game;
@@ -636,7 +640,7 @@ namespace UnicornHack
 
         public virtual bool UseStairs(bool up, bool pretend = false)
         {
-            var stairs = Level.Connections.SingleOrDefault(s => s.LevelX == LevelX && s.LevelY == LevelY);
+            var stairs = Level.Connections.SingleOrDefault(s => s.LevelCell == LevelCell);
 
             var moveToLevel = stairs?.TargetLevel;
             if (moveToLevel == null)
@@ -650,8 +654,7 @@ namespace UnicornHack
             }
 
             NextActionTick += MovementDelay;
-            var moveToLevelX = stairs.TargetLevelX;
-            var moveToLevelY = stairs.TargetLevelY;
+            var moveToLevelCell = stairs.TargetLevelCell;
 
             if (!moveToLevel.Players.Any())
             {
@@ -667,7 +670,7 @@ namespace UnicornHack
             }
 
             var conflictingActor =
-                moveToLevel.Actors.SingleOrDefault(a => a.LevelX == moveToLevelX && a.LevelY == moveToLevelY);
+                moveToLevel.Actors.SingleOrDefault(a => a.LevelCell == moveToLevelCell);
             conflictingActor?.GetDisplaced();
 
             if (moveToLevel.BranchName == "surface")
@@ -680,8 +683,8 @@ namespace UnicornHack
             {
                 Level.Actors.Remove(this);
                 Level = moveToLevel;
-                LevelX = moveToLevelX.Value;
-                LevelY = moveToLevelY.Value;
+                LevelX = moveToLevelCell.X;
+                LevelY = moveToLevelCell.Y;
                 moveToLevel.Actors.Push(this);
 
                 ActorMoveEvent.New(this, movee: null, eventOrder: Game.EventOrder++);
@@ -774,15 +777,29 @@ namespace UnicornHack
                             case TargetingDirection.Front4Octants:
                                 maxOctantDifference = 1;
                                 break;
+                            case TargetingDirection.Omnidirectional:
+                                break;
                             default:
                                 throw new ArgumentOutOfRangeException(
                                     "Invalid ability direction " + ability.TargetingDirection);
                         }
 
-                        var targetCell = Point.Unpack(target.Value);
-                        context.TargetCell = targetCell;
-                        var targetDirection = new Point(context.Activator.LevelX, context.Activator.LevelY)
-                            .DifferenceTo(targetCell);
+                        Point targetCell;
+                        if (target.Value < 0)
+                        {
+                            var targetActor = Level.Actors.FirstOrDefault(a => a.Id == -target.Value);
+                            if (targetActor == null)
+                            {
+                                return;
+                            }
+
+                            targetCell = targetActor.LevelCell;
+                        }
+                        else
+                        {
+                            targetCell = Point.Unpack(target).Value;
+                        }
+                        var targetDirection = context.Activator.LevelCell.DifferenceTo(targetCell);
 
                         var octantsToTurn = 0;
                         var targetAngleDifference = (int)Math.Truncate(targetDirection.OctantsTo(Heading));
@@ -795,17 +812,22 @@ namespace UnicornHack
                             octantsToTurn = targetAngleDifference + maxOctantDifference;
                         }
 
-                        var newDirection = (int)Heading - octantsToTurn;
-                        if (newDirection < 0)
+                        if (octantsToTurn != 0)
                         {
-                            newDirection += 8;
-                        }
-                        else if (newDirection > 8)
-                        {
-                            newDirection -= 8;
+                            var newDirection = (int)Heading - octantsToTurn;
+                            if (newDirection < 0)
+                            {
+                                newDirection += 8;
+                            }
+                            else if (newDirection > 8)
+                            {
+                                newDirection -= 8;
+                            }
+
+                            Turn((Direction)newDirection);
                         }
 
-                        Turn((Direction)newDirection);
+                        context.TargetCell = targetCell;
 
                         break;
                     default:
@@ -834,7 +856,7 @@ namespace UnicornHack
 
             LevelX = targetCell.X;
             LevelY = targetCell.Y;
-            var itemsOnNewCell = Level.Items.Where(i => i.LevelX == targetCell.X && i.LevelY == targetCell.Y).ToList();
+            var itemsOnNewCell = Level.Items.Where(i => i.LevelCell == targetCell).ToList();
             foreach (var itemOnNewCell in itemsOnNewCell)
             {
                 PickUp(itemOnNewCell);
@@ -846,7 +868,7 @@ namespace UnicornHack
         public virtual bool GetDisplaced()
         {
             // TODO: displace other actors
-            var possibleDirectionsToMove = Level.GetPossibleMovementDirections(new Point(LevelX, LevelY), safe: true);
+            var possibleDirectionsToMove = Level.GetPossibleMovementDirections(LevelCell, safe: true);
             if (possibleDirectionsToMove.Count == 0)
             {
                 NextActionTick += DefaultActionDelay;

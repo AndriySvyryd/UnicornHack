@@ -11,6 +11,7 @@ namespace UnicornHack
     {
         private PathFinder _pathFinder;
         private BeveledFOV _fov;
+        private BeveledFOV _nonPlayerFov;
 
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public string BranchName { get; private set; }
@@ -21,9 +22,9 @@ namespace UnicornHack
         public byte Width { get; set; }
         public Rectangle BoundingRectangle => new Rectangle(new Point(0, 0), Width, Height);
         public byte[] VisibleTerrain { get; set; }
-        public Dictionary<int, byte> VisibleTerrainChanges { get; set; } = new Dictionary<int, byte>();
         public byte[] VisibleNeighbours { get; set; }
         public bool VisibleNeighboursChanged { get; set; }
+        public byte[] NonPlayerVisibleTerrain { get; set; }
         public byte[] Terrain { get; set; }
         public Dictionary<int, byte> TerrainChanges { get; set; } = new Dictionary<int, byte>();
         public byte[] WallNeighbours { get; set; }
@@ -83,6 +84,7 @@ namespace UnicornHack
             WallNeighbours = new byte[0];
             VisibleTerrain = new byte[0];
             VisibleNeighbours = new byte[0];
+            NonPlayerVisibleTerrain = new byte[0];
             GenerationRandom = new SimpleRandom {Seed = seed};
             Difficulty = branch.Difficulty + depth;
             if (Difficulty > MaxDifficulty)
@@ -97,7 +99,8 @@ namespace UnicornHack
             {
                 (PointToIndex, IndexToPoint) = Game.GetPointIndex(Width, Height);
                 _pathFinder = new PathFinder(CanMoveTo, PointToIndex, IndexToPoint);
-                _fov = new BeveledFOV(BlocksLight, GetVisibleNeighbours);
+                _fov = new BeveledFOV(BlocksLightPlayer, GetVisibleNeighbours);
+                _nonPlayerFov = new BeveledFOV(BlocksLightNonPlayer, GetVisibleNeighbours);
             }
         }
 
@@ -121,6 +124,7 @@ namespace UnicornHack
                 WallNeighbours = new byte[Height * Width];
                 VisibleTerrain = new byte[Height * Width];
                 VisibleNeighbours = new byte[Height * Width];
+                NonPlayerVisibleTerrain = new byte[Height * Width];
 
                 EnsureInitialized();
 
@@ -251,18 +255,8 @@ namespace UnicornHack
             return null;
         }
 
-        public static byte GridDistance(Actor origin, Actor target)
-        {
-            var xDelta = target.LevelX - origin.LevelX;
-            var yDelta = target.LevelY - origin.LevelY;
-            return (byte)Math.Max(Math.Abs(xDelta), Math.Abs(yDelta));
-        }
-
         public virtual Direction? GetFirstStepFromShortestPath(Actor origin, Actor target)
-            => GetFirstStepFromShortestPath(
-                new Point(origin.LevelX, origin.LevelY),
-                new Point(target.LevelX, target.LevelY),
-                origin.Heading);
+            => GetFirstStepFromShortestPath(origin.LevelCell, target.LevelCell, origin.Heading);
 
         public virtual Direction? GetFirstStepFromShortestPath(Point origin, Point target, Direction initialDirection)
         {
@@ -285,15 +279,10 @@ namespace UnicornHack
         }
 
         public List<Point> GetShortestPath(Actor origin, Actor target)
-        {
-            var firstPoint = new Point(origin.LevelX, origin.LevelY);
-            var lastPoint = new Point(target.LevelX, target.LevelY);
+            => GetShortestPath(origin.LevelCell, target.LevelCell, origin.Heading);
 
-            return GetShortestPath(firstPoint, lastPoint, origin.Heading);
-        }
-
-        public List<Point> GetShortestPath(Point start, Point target, Direction initialDirection) =>
-            _pathFinder.FindPath(start, target, initialDirection);
+        public List<Point> GetShortestPath(Point start, Point target, Direction initialDirection)
+            => _pathFinder.FindPath(start, target, initialDirection);
 
         private int? CanMoveTo(byte currentLocationX, byte currentLocationY, int directionIndex)
         {
@@ -330,39 +319,35 @@ namespace UnicornHack
             return ((MapFeature)Terrain[index]).CanMoveTo() ? (int?)index : null;
         }
 
-        public void RecomputeVisibility(Point location, byte visibilityFalloff)
+        public byte[] RecomputeVisibility(Point location, Direction heading, byte primaryFOV, byte secondaryFOV)
+            => RecomputeVisibility(location, heading, primaryFOV, 16, secondaryFOV, 8);
+
+        public byte[] RecomputeVisibility(
+            Point location, Direction heading,
+            byte primaryFOV, byte primaryRange,
+            byte secondaryFOV, byte secondaryRange,
+            bool noFalloff = false)
         {
-            var oldVisibleTerrain = VisibleTerrain;
-            VisibleTerrain = new byte[VisibleTerrain.Length];
-            _fov.Compute(location, 24, visibilityFalloff);
-            DetectVisibilityChanges(oldVisibleTerrain);
+            Array.Clear(VisibleTerrain, 0, VisibleTerrain.Length);
+            _fov.Compute(location, heading, primaryFOV, primaryRange, secondaryFOV, secondaryRange, noFalloff);
+            return VisibleTerrain;
         }
 
-        public void RecomputeVisibility(Point location, Direction heading, byte primaryFOV, byte secondaryFOV)
+        public byte[] GetNonPlayerFOV(Point location, Direction heading, byte primaryFOV, byte secondaryFOV)
+            => GetNonPlayerFOV(location, heading, primaryFOV, 16, secondaryFOV, 8);
+
+        public byte[] GetNonPlayerFOV(
+            Point location, Direction heading,
+            byte primaryFOV, byte primaryRange,
+            byte secondaryFOV, byte secondaryRange,
+            bool noFalloff = false)
         {
-            var oldVisibleTerrain = VisibleTerrain;
-            VisibleTerrain = new byte[VisibleTerrain.Length];
-            _fov.Compute(location, heading, primaryFOV, 16, secondaryFOV, 8);
-            DetectVisibilityChanges(oldVisibleTerrain);
+            Array.Clear(NonPlayerVisibleTerrain, 0, NonPlayerVisibleTerrain.Length);
+            _nonPlayerFov.Compute(location, heading, primaryFOV, primaryRange, secondaryFOV, secondaryRange, noFalloff);
+            return NonPlayerVisibleTerrain;
         }
 
-        private void DetectVisibilityChanges(byte[] oldVisibleTerrain)
-        {
-            if (VisibleTerrainChanges != null)
-            {
-                VisibleTerrainChanges.Clear();
-                for (int i = 0; i < VisibleTerrain.Length; i++)
-                {
-                    var newValue = VisibleTerrain[i];
-                    if (newValue != oldVisibleTerrain[i])
-                    {
-                        VisibleTerrainChanges.Add(i, newValue);
-                    }
-                }
-            }
-        }
-
-        private bool BlocksLight(byte x, byte y, byte visibility, int rangeFalloff)
+        private bool BlocksLightPlayer(byte x, byte y, byte visibility, int rangeFalloff)
         {
             if (x < Width && y < Height)
             {
@@ -386,14 +371,37 @@ namespace UnicornHack
             return true;
         }
 
+        private bool BlocksLightNonPlayer(byte x, byte y, byte visibility, int rangeFalloff)
+        {
+            if (x < Width && y < Height)
+            {
+                switch ((MapFeature)Terrain[PointToIndex[x, y]])
+                {
+                    // This is inlined for perf
+                    case MapFeature.Default:
+                    case MapFeature.StoneWall:
+                    case MapFeature.RockWall:
+                        visibility = byte.MaxValue;
+                        visibility = visibility < rangeFalloff ? (byte)0 : (byte)(visibility - rangeFalloff);
+                        NonPlayerVisibleTerrain[PointToIndex[x, y]] = visibility;
+                        return true;
+                    default:
+                        visibility = visibility < rangeFalloff ? (byte)0 : (byte)(visibility - rangeFalloff);
+                        NonPlayerVisibleTerrain[PointToIndex[x, y]] = visibility;
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
         private DirectionFlags GetVisibleNeighbours(byte x, byte y) => x < Width && y < Height
             ? (DirectionFlags)VisibleNeighbours[PointToIndex[x, y]]
             : DirectionFlags.None;
 
         public bool CanPlaceCorridor(Point location)
         {
-            var feature = (MapFeature)Terrain[PointToIndex[location.X, location.Y]];
-            switch (feature)
+            switch ((MapFeature)Terrain[PointToIndex[location.X, location.Y]])
             {
                 case MapFeature.Default:
                 case MapFeature.RockFloor:
@@ -416,8 +424,7 @@ namespace UnicornHack
                 }
 
                 var direction = MovementDirections[i];
-                if (Actors.Any(a =>
-                    a.LevelX == currentLocation.X + direction.X && a.LevelY == currentLocation.Y + direction.Y))
+                if (Actors.Any(a => a.LevelCell == currentLocation.Translate(direction)))
                 {
                     continue;
                 }

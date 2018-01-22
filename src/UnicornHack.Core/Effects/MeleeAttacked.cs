@@ -13,13 +13,13 @@ namespace UnicornHack.Effects
         {
         }
 
-        public int? WeaponId { get; set; }
+        public int WeaponId { get; set; }
         public Item Weapon { get; set; }
 
         protected override void Delete()
         {
             base.Delete();
-            Weapon?.RemoveReference();
+            Weapon.RemoveReference();
         }
     }
 }

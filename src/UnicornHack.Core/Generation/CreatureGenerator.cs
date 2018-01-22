@@ -20,7 +20,7 @@ namespace UnicornHack.Generation
                 for (var i = 0; i < creaturesPerRoom; i++)
                 {
                     if (!level.GenerationRandom.TryPick(room.InsidePoints,
-                        p => !level.Actors.Any(c => c.LevelX == p.X && c.LevelY == p.Y), out var point))
+                        p => level.Actors.All(c => c.LevelCell != p), out var point))
                     {
                         goto NextRoom;
                     }

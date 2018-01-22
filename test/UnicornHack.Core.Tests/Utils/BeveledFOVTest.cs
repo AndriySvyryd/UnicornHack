@@ -298,10 +298,14 @@ A#
 
             for (var i = 0; i < 10000; i++)
             {
-                level.RecomputeVisibility(new Point(11, 10), visibilityFalloff: 1);
-                level.RecomputeVisibility(new Point(11, 11), visibilityFalloff: 1);
-                level.RecomputeVisibility(new Point(11, 12), visibilityFalloff: 1);
-                level.RecomputeVisibility(new Point(12, 12), visibilityFalloff: 1);
+                level.RecomputeVisibility(new Point(11, 10), Direction.South,
+                    primaryFOV: 8, primaryRange: 24, secondaryFOV: 8, secondaryRange: 24, noFalloff: true);
+                level.RecomputeVisibility(new Point(11, 11), Direction.South,
+                    primaryFOV: 8, primaryRange: 24, secondaryFOV: 8, secondaryRange: 24, noFalloff: true);
+                level.RecomputeVisibility(new Point(11, 12), Direction.South,
+                    primaryFOV: 8, primaryRange: 24, secondaryFOV: 8, secondaryRange: 24, noFalloff: true);
+                level.RecomputeVisibility(new Point(12, 12), Direction.East,
+                    primaryFOV: 8, primaryRange: 24, secondaryFOV: 8, secondaryRange: 24, noFalloff: true);
             }
         }
 
@@ -310,7 +314,8 @@ A#
             var seed = Environment.TickCount;
             var level = TestHelper.BuildLevel(map, seed);
 
-            level.RecomputeVisibility(new Point(0, 0), visibilityFalloff: 0);
+            level.RecomputeVisibility(new Point(0, 0), Direction.Southeast,
+                primaryFOV: 8, primaryRange: 24, secondaryFOV: 8, secondaryRange: 24, noFalloff: true);
 
             var expectedFragment =
                 new NormalMapFragment {Map = expectedFOV, Width = level.Width, Height = level.Height};

@@ -32,13 +32,14 @@ namespace UnicornHack.Hubs
         {
             var player = FindOrCreateCharacter(name);
             return CompactLevel.Serialize(
-                player.Level, EntityState.Added, 0, new SerializationContext(_dbContext, player, _gameServices));
+                player.Level, EntityState.Added, 0, new SerializationContext(_dbContext, player, _gameServices), null);
         }
 
         public async Task PerformAction(string name, PlayerAction? action, int? target, int? target2)
         {
             var character = FindOrCreateCharacter(name);
             CompactLevel.Snapshot(character.Level);
+            var visibleTerrainSnapshot = (byte[])character.Level.VisibleTerrain.Clone();
 
             character.NextAction = action;
             character.NextActionTarget = target;
@@ -49,23 +50,27 @@ namespace UnicornHack.Hubs
 
             Turn(character);
 
+            var visibleTerrainChanges = CompactLevel.DetectVisibilityChanges(character.Level, visibleTerrainSnapshot);
             _dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
             var levelEntry = _dbContext.Entry(character.Level);
             if (character.Level.TerrainChanges == null
-                ||character.Level.TerrainChanges.Count > 0)
+                || character.Level.TerrainChanges.Count > 0)
             {
                 levelEntry.Property(l => l.Terrain).IsModified = true;
             }
+
             if (character.Level.WallNeighboursChanges == null
                 || character.Level.WallNeighboursChanges.Count > 0)
             {
                 levelEntry.Property(l => l.WallNeighbours).IsModified = true;
             }
-            if (character.Level.VisibleTerrainChanges == null
-                || character.Level.VisibleTerrainChanges.Count > 0)
+
+            if (visibleTerrainChanges == null
+                || visibleTerrainChanges.Count > 0)
             {
                 levelEntry.Property(l => l.VisibleTerrain).IsModified = true;
             }
+
             if (character.Level.VisibleNeighboursChanged)
             {
                 levelEntry.Property(l => l.VisibleNeighbours).IsModified = true;
@@ -84,7 +89,8 @@ namespace UnicornHack.Hubs
                     level,
                     levelChanged ? EntityState.Added : EntityState.Modified,
                     previousTick,
-                    new SerializationContext(_dbContext, player, _gameServices));
+                    new SerializationContext(_dbContext, player, _gameServices),
+                    visibleTerrainChanges);
 
                 // TODO: only send to clients watching the current player
                 await Clients.All.InvokeAsync("ReceiveState", serializedLevel);
@@ -209,8 +215,7 @@ namespace UnicornHack.Hubs
         private void LoadAdjacentLevel(Player character)
         {
             var connection = character.Level.Connections.SingleOrDefault(s =>
-                s.LevelX == character.LevelX
-                && s.LevelY == character.LevelY);
+                s.LevelCell == character.LevelCell);
             if (connection != null)
             {
                 if (connection.TargetLevel == null)
@@ -238,6 +243,7 @@ namespace UnicornHack.Hubs
             {
                 playerCharacter.DefaultAttack = null;
             }
+
             _dbContext.SaveChanges();
 
             game = _dbContext.Games
@@ -257,39 +263,48 @@ namespace UnicornHack.Hubs
             {
                 _dbContext.Effects.Remove(effect);
             }
+
             foreach (var appliedEffect in game.AppliedEffects.ToList())
             {
                 _dbContext.AppliedEffects.Remove(appliedEffect);
             }
+
             foreach (var ability in game.Abilities.ToList())
             {
                 _dbContext.Abilities.Remove(ability);
             }
+
             foreach (var trigger in game.Triggers.ToList())
             {
                 _dbContext.Triggers.Remove(trigger);
             }
+
             foreach (var abilityDefinition in game.AbilityDefinitions.ToList())
             {
                 _dbContext.AbilityDefinitions.Remove(abilityDefinition);
             }
+
             foreach (var sensoryEvent in game.SensoryEvents.ToList())
             {
                 _dbContext.SensoryEvents.Remove(sensoryEvent);
             }
+
             foreach (var entity in game.Entities.ToList())
             {
                 // TODO: Don't remove players and game
                 _dbContext.Entities.Remove(entity);
             }
+
             foreach (var level in game.Levels.ToList())
             {
                 _dbContext.Levels.Remove(level);
             }
+
             foreach (var stairs in game.Connections.ToList())
             {
                 _dbContext.Connections.Remove(stairs);
             }
+
             foreach (var branch in game.Branches.ToList())
             {
                 _dbContext.Branches.Remove(branch);

@@ -8,5 +8,6 @@
     ActivateItem,
     ChooseDefaultAttack,
     PerformDefaultAttack,
-    ActivateAbility
+    ActivateAbility,
+    ClearCommandQueue
 }

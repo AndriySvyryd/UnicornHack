@@ -45,8 +45,11 @@ namespace UnicornHack.Utils
             }
         }
 
-        public void Compute(Point origin, Direction heading, byte primaryFOV, byte primaryRange, byte secondaryFOV,
-            byte secondaryRange)
+        public void Compute(
+            Point origin, Direction heading,
+            byte primaryFOV, byte primaryRange,
+            byte secondaryFOV, byte secondaryRange,
+            bool noFalloff)
         {
             if (primaryFOV > secondaryFOV)
             {
@@ -61,7 +64,7 @@ namespace UnicornHack.Utils
             }
 
             octantShift = (byte)(8 + octantShift - secondaryFOV);
-            var visibilityFalloff = (byte)(byte.MaxValue / secondaryRange);
+            var visibilityFalloff = noFalloff ? (byte)0 : (byte)(byte.MaxValue / secondaryRange);
             for (var octant = 0; octant < secondaryFOV - primaryFOV; octant++)
             {
                 Compute((byte)((octant + octantShift) % 8), origin, secondaryRange, visibilityFalloff, x: 1,
@@ -73,7 +76,7 @@ namespace UnicornHack.Utils
                     top: new Slope(1, 1), bottom: new Slope(0, 1));
             }
 
-            visibilityFalloff = (byte)(byte.MaxValue / primaryRange);
+            visibilityFalloff = noFalloff ? (byte)0 : (byte)(byte.MaxValue / primaryRange);
             for (var octant = secondaryFOV - primaryFOV; octant < secondaryFOV + primaryFOV; octant++)
             {
                 Compute((byte)((octant + octantShift) % 8), origin, primaryRange, visibilityFalloff, x: 1,

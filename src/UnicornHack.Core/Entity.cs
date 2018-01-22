@@ -33,6 +33,8 @@ namespace UnicornHack
         public byte LevelX { get; set; }
         public byte LevelY { get; set; }
 
+        public Point LevelCell => new Point(LevelX, LevelY);
+
         protected int AbilitiesBeingActivated { get; set; }
 
         private static readonly Dictionary<string, List<object>> PropertyListeners = new Dictionary<string, List<object>>();

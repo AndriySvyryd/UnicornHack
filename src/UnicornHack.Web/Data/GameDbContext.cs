@@ -58,7 +58,6 @@ namespace UnicornHack.Data
                 eb.Ignore(l => l.PointToIndex);
                 eb.Ignore(l => l.TerrainChanges);
                 eb.Ignore(l => l.WallNeighboursChanges);
-                eb.Ignore(l => l.VisibleTerrainChanges);
                 eb.Ignore(l => l.VisibleNeighboursChanged);
                 eb.HasKey(l => new {l.GameId, l.BranchName, l.Depth});
                 eb.HasMany(l => l.Connections)

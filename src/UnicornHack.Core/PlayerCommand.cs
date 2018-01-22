@@ -6,8 +6,8 @@ namespace UnicornHack
         {
         }
 
-        public PlayerCommand(Player player, PlayerAction action, int? target, int? target2)
-            : base(++player.NextCommandId, player, action, target, target2)
+        public PlayerCommand(Player player, int tick, PlayerAction action, int? target, int? target2)
+            : base(++player.NextCommandId, tick, player, action, target, target2)
         {
         }
     }

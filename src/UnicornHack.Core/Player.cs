@@ -294,12 +294,30 @@ namespace UnicornHack
 
         public override bool Act()
         {
+            var result = ActWithoutFOV();
+            if (!result)
+            {
+                GetFOV();
+            }
+
+            return result;
+        }
+
+        private bool ActWithoutFOV()
+        {
+            var attacked = false;
             foreach (var @event in SensedEvents.OrderBy(e => e.EventOrder).ThenBy(e => e.Id).ToList())
             {
                 var logEntry = GetLogEntry(@event);
                 if (logEntry != null)
                 {
                     WriteLog(logEntry, @event.Tick);
+                }
+
+                if (@event is AttackEvent attack
+                    && attack.Victim == this)
+                {
+                    attacked = true;
                 }
 
                 SensedEvents.Remove(@event);
@@ -309,7 +327,6 @@ namespace UnicornHack
             var initialTick = NextActionTick;
             if (!IsAlive)
             {
-                RecomputeFOV();
                 return false;
             }
 
@@ -321,7 +338,6 @@ namespace UnicornHack
             {
                 if (QueuedCommands.Count == 0)
                 {
-                    RecomputeFOV();
                     return false;
                 }
 
@@ -331,13 +347,20 @@ namespace UnicornHack
                 queuedCommand = QueuedCommands.OrderBy(c => c.Id).First();
                 QueuedCommands.Remove(queuedCommand);
 
+                if ((Level.Actors.Any(a => LevelCell.DistanceTo(a.LevelCell) <= 2 && a is Creature)
+                     || attacked))
+                {
+                    // TODO: only cancel some queued commands
+                    return false;
+                }
+
                 action = queuedCommand.Action;
                 target = queuedCommand.Target;
                 target2 = queuedCommand.Target2;
             }
             else
             {
-                CommandHistory.Add(new PlayerCommand(this, action.Value, target, target2));
+                CommandHistory.Add(new PlayerCommand(this, Level.CurrentTick, action.Value, target, target2));
 
                 NextAction = null;
                 NextActionTarget = null;
@@ -368,24 +391,21 @@ namespace UnicornHack
                 case PlayerAction.MoveToCell:
                     var targetCell = Point.Unpack(target).Value;
 
-                    // TODO: cancel movement if attacked or enemy is adjacent
-                    var direction = Level.GetFirstStepFromShortestPath(
-                        new Point(LevelX, LevelY), targetCell, Heading);
-
+                    var direction = Level.GetFirstStepFromShortestPath(LevelCell, targetCell, Heading);
                     if (direction == null)
                     {
-                        WriteLog("No path", Level.CurrentTick);
+                        WriteLog("No path to target!", Level.CurrentTick);
                         break;
                     }
 
-                    if (Move(direction.Value))
+                    if (Move(direction.Value)
+                        && LevelCell != targetCell)
                     {
-                        if (LevelX != targetCell.X || LevelY != targetCell.Y)
-                        {
-                            QueuedCommands.Add(queuedCommand ??
-                                               new QueuedCommand(this, PlayerAction.MoveToCell, target, target2));
-                        }
+                        QueuedCommands.Add(queuedCommand ??
+                                           new QueuedCommand(this, Level.CurrentTick, PlayerAction.MoveToCell, target,
+                                               target2));
                     }
+
                     break;
                 case PlayerAction.DropItem:
                     Drop(GetItem(target.Value));
@@ -421,10 +441,8 @@ namespace UnicornHack
             return initialTick != NextActionTick;
         }
 
-        private void RecomputeFOV()
-        {
-            Level.RecomputeVisibility(new Point(LevelX, LevelY), Heading, primaryFOV: 1, secondaryFOV: 2);
-        }
+        public override byte[] GetFOV()
+            => Level.RecomputeVisibility(LevelCell, Heading, primaryFOV: 1, secondaryFOV: 2);
 
         public override void Sense(SensoryEvent @event)
         {
@@ -459,6 +477,71 @@ namespace UnicornHack
 
             WriteLog(Game.Services.Language.UnableToMove(direction), Level.CurrentTick);
             return false;
+        }
+
+        protected override void ActivateAbility(Ability ability, int? target)
+        {
+            if (ability.Activation == AbilityActivation.OnTarget)
+            {
+                Point targetCell;
+                Actor targetActor;
+                if (target.Value < 0)
+                {
+                    var id = -target.Value;
+                    targetActor = Level.Actors.FirstOrDefault(a => a.Id == id);
+                    if (targetActor == null
+                        || !targetActor.IsAlive)
+                    {
+                        return;
+                    }
+
+                    targetCell = targetActor.LevelCell;
+                }
+                else
+                {
+                    targetCell = Point.Unpack(target).Value;
+                    targetActor = Level.Actors.FirstOrDefault(a => a.LevelCell == targetCell);
+                }
+
+                var shouldMoveCloser = false;
+                switch (ability.TargetingType)
+                {
+                    case TargetingType.AdjacentSingle:
+                    case TargetingType.AdjacentArc:
+                        shouldMoveCloser = LevelCell.DistanceTo(targetCell) > 1;
+                        break;
+                    case TargetingType.Beam:
+                        shouldMoveCloser = GetFOV()[Level.PointToIndex[targetCell.X, targetCell.Y]] == 0;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+
+                if (shouldMoveCloser)
+                {
+                    var direction = Level.GetFirstStepFromShortestPath(LevelCell, targetCell, Heading);
+                    if (direction == null)
+                    {
+                        WriteLog("No path to target!", Level.CurrentTick);
+                        return;
+                    }
+
+                    if (Move(direction.Value))
+                    {
+                        if (targetActor != null)
+                        {
+                            target = -targetActor.Id;
+                        }
+
+                        QueuedCommands.Add(new QueuedCommand(
+                            this, Level.CurrentTick, PlayerAction.ActivateAbility, ability.Id, target));
+                    }
+
+                    return;
+                }
+            }
+
+            base.ActivateAbility(ability, target);
         }
 
         protected override bool? HandleBlockingActor(Actor actor, bool pretend)
