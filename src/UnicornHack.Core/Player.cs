@@ -510,6 +510,9 @@ namespace UnicornHack
                     case TargetingType.AdjacentArc:
                         shouldMoveCloser = LevelCell.DistanceTo(targetCell) > 1;
                         break;
+                    case TargetingType.Projectile:
+                    case TargetingType.GuidedProjectile:
+                    case TargetingType.LineOfSight:
                     case TargetingType.Beam:
                         shouldMoveCloser = GetFOV()[Level.PointToIndex[targetCell.X, targetCell.Y]] == 0;
                         break;

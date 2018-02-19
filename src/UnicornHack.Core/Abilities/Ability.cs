@@ -237,7 +237,10 @@ namespace UnicornHack.Abilities
                                                    || a.LevelCell == firstNeighbour
                                                    || a.LevelCell == secondNeighbour)
                         .ToList();
+                case Abilities.TargetingType.Projectile:
+                case Abilities.TargetingType.GuidedProjectile:
                 case Abilities.TargetingType.Beam:
+                case Abilities.TargetingType.LineOfSight:
                     // TODO: set abilityContext.TargetCell to the final projectile position
                     // TODO: check LOS
                     return level.Actors.Where(a => a.LevelCell == targetCell).ToList();

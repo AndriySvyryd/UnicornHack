@@ -145,7 +145,7 @@ namespace UnicornHack.Data
                 },
                 new ItemGroup
                 {
-                    Type = ItemType.ArmorBody,
+                    Type = ItemType.ArmorTorso,
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
@@ -189,7 +189,7 @@ namespace UnicornHack.Data
                 },
                 new ItemGroup
                 {
-                    Type = ItemType.ArmorBack,
+                    Type = ItemType.AccessoryBack,
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
@@ -200,7 +200,7 @@ namespace UnicornHack.Data
                 },
                 new ItemGroup
                 {
-                    Type = ItemType.Accessory,
+                    Type = ItemType.AccessoryNeck,
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {

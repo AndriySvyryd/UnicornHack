@@ -13,11 +13,9 @@ namespace UnicornHack
         GraspMouth = 1 << 3,
         Feet = 1 << 4,
         Back = 1 << 5,
-        Body = 1 << 6,
+        Torso = 1 << 6,
         Head = 1 << 7,
         Hands = 1 << 8,
-        Necklace = 1 << 9,
-        RingLeft = 1 << 10,
-        RingRight = 1 << 11
+        Neck = 1 << 9
     }
 }

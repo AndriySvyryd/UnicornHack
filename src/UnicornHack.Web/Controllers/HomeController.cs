@@ -18,6 +18,7 @@ namespace UnicornHack.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            // TODO: Validate name and that the character is not dead.
             return View(nameof(Game), model.Name);
         }
 

@@ -112,20 +112,16 @@ namespace UnicornHack.Services.English
                     return abbreviate ? "M" : "mouth";
                 case EquipmentSlot.Feet:
                     return abbreviate ? "F" : "feet";
-                case EquipmentSlot.Body:
-                    return abbreviate ? "B" : "body";
+                case EquipmentSlot.Torso:
+                    return abbreviate ? "T" : "torso";
                 case EquipmentSlot.Head:
                     return abbreviate ? "H" : "head";
                 case EquipmentSlot.Hands:
                     return abbreviate ? "G" : "hands";
-                case EquipmentSlot.Necklace:
+                case EquipmentSlot.Neck:
                     return abbreviate ? "N" : "neck";
-                case EquipmentSlot.RingLeft:
-                    return abbreviate ? "LF" : "left finger";
-                case EquipmentSlot.RingRight:
-                    return abbreviate ? "RF" : "right finger";
                 case EquipmentSlot.Back:
-                    return abbreviate ? "C" : "back";
+                    return abbreviate ? "B" : "back";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(slot), slot, null);
             }
@@ -142,12 +138,10 @@ namespace UnicornHack.Services.English
                 case EquipmentSlot.GraspBothExtremities:
                     return "in";
                 case EquipmentSlot.Feet:
-                case EquipmentSlot.Body:
+                case EquipmentSlot.Torso:
                 case EquipmentSlot.Head:
                 case EquipmentSlot.Hands:
-                case EquipmentSlot.Necklace:
-                case EquipmentSlot.RingLeft:
-                case EquipmentSlot.RingRight:
+                case EquipmentSlot.Neck:
                 case EquipmentSlot.Back:
                     return "on the";
                 default:

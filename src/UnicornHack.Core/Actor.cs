@@ -293,7 +293,7 @@ namespace UnicornHack
                     Name = PrimaryRangedWeaponAttackName,
                     Triggers = new ObservableSnapshotHashSet<Trigger> { new RangedWeaponTrigger(Game) },
                     Effects = new ObservableSnapshotHashSet<Effect> { new PhysicalDamage(Game) },
-                    TargetingType = TargetingType.Beam,
+                    TargetingType = TargetingType.Projectile,
                     TargetingDirection = TargetingDirection.Front2Octants
                 };
 
@@ -308,7 +308,7 @@ namespace UnicornHack
                     Name = SecondaryRangedWeaponAttackName,
                     Triggers = new ObservableSnapshotHashSet<Trigger> { new RangedWeaponTrigger(Game) },
                     Effects = new ObservableSnapshotHashSet<Effect> { new PhysicalDamage(Game) },
-                    TargetingType = TargetingType.Beam,
+                    TargetingType = TargetingType.Projectile,
                     TargetingDirection = TargetingDirection.Front2Octants
                 };
 
@@ -329,7 +329,7 @@ namespace UnicornHack
                         new AbilityTrigger(Game) {AbilityToTrigger = primaryRangedWeaponAttack.AddReference().Referenced}
                     },
                     Effects = new ObservableSnapshotHashSet<Effect> { new PhysicalDamage(Game) },
-                    TargetingType = TargetingType.Beam,
+                    TargetingType = TargetingType.Projectile,
                     TargetingDirection = TargetingDirection.Front2Octants
                 };
 
@@ -350,7 +350,7 @@ namespace UnicornHack
                         new AbilityTrigger(Game) {AbilityToTrigger = secondaryRangedWeaponAttack.AddReference().Referenced}
                     },
                     Effects = new ObservableSnapshotHashSet<Effect> { new PhysicalDamage(Game) },
-                    TargetingType = TargetingType.Beam,
+                    TargetingType = TargetingType.Projectile,
                     TargetingDirection = TargetingDirection.Front2Octants
                 };
 
@@ -375,7 +375,7 @@ namespace UnicornHack
                     {
                         new PhysicalDamage(Game)
                     },
-                    TargetingType = TargetingType.Beam,
+                    TargetingType = TargetingType.Projectile,
                     TargetingDirection = TargetingDirection.Front2Octants
                 };
 

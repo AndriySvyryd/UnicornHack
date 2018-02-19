@@ -10,9 +10,9 @@ namespace UnicornHack.Data.Items
         public static readonly ItemVariant MailArmor = new ItemVariant
         {
             Name = "mail armor",
-            Type = ItemType.ArmorBody,
+            Type = ItemType.ArmorTorso,
             Material = Material.Steel,
-            EquipableSlots = EquipmentSlot.Body,
+            EquipableSlots = EquipmentSlot.Torso,
             Abilities = new HashSet<AbilityDefinition>
             {
                 new AbilityDefinition

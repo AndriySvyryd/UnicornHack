@@ -195,7 +195,7 @@ namespace UnicornHack.Services.English
         [Fact]
         public void ItemEquipmentEvent()
         {
-            var armor = new Item {VariantName = "mail armor", EquippedSlot = EquipmentSlot.Body};
+            var armor = new Item {VariantName = "mail armor", EquippedSlot = EquipmentSlot.Torso};
             var nymph = new Creature {VariantName = "water nymph", Sex = Sex.Female};
             var player = new Player {VariantName = "human", Name = "Dudley", Sex = Sex.Male};
 
@@ -243,7 +243,7 @@ namespace UnicornHack.Services.English
         [Fact]
         public void ItemUnequipmentEvent()
         {
-            var armor = new Item {VariantName = "mail armor", EquippedSlot = EquipmentSlot.Body};
+            var armor = new Item {VariantName = "mail armor", EquippedSlot = EquipmentSlot.Torso};
             var nymph = new Creature {VariantName = "water nymph", Sex = Sex.Female};
             var player = new Player {VariantName = "human", Name = "Dudley", Sex = Sex.Male};
 

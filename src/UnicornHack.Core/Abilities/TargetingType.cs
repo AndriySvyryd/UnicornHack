@@ -4,6 +4,9 @@
     {
         AdjacentSingle,
         AdjacentArc,
-        Beam
+        Projectile,
+        GuidedProjectile,
+        Beam,
+        LineOfSight
     }
 }
