@@ -2,13 +2,13 @@ using UnicornHack.Abilities;
 
 namespace UnicornHack.Effects
 {
-    public class Damaged : AppliedEffect
+    public abstract class Damaged : AppliedEffect
     {
-        public Damaged()
+        protected Damaged()
         {
         }
 
-        public Damaged(AbilityActivationContext abilityContext, bool targetActivator)
+        protected Damaged(AbilityActivationContext abilityContext, bool targetActivator)
             : base(abilityContext, targetActivator)
         {
         }

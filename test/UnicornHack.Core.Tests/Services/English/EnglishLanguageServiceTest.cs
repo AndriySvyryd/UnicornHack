@@ -201,7 +201,7 @@ namespace UnicornHack.Services.English
 
             var languageService = CreateLanguageService();
 
-            Assert.Equal("The water nymph equips something on the body.",
+            Assert.Equal("The water nymph equips something on the torso.",
                 languageService.ToString(new ItemEquipmentEvent
                 {
                     Item = armor,
@@ -220,7 +220,7 @@ namespace UnicornHack.Services.English
                 Sensor = player
             }));
 
-            Assert.Equal("You equip something on the body.", languageService.ToString(new ItemEquipmentEvent
+            Assert.Equal("You equip something on the torso.", languageService.ToString(new ItemEquipmentEvent
             {
                 Item = armor,
                 ItemSensed = SenseType.Touch,

@@ -19,18 +19,7 @@ namespace UnicornHack.Effects
             Game = abilityContext.Activator?.Game
                    ?? abilityContext.TargetEntity.Game;
 
-            if (targetActivator)
-            {
-                Entity = abilityContext.Activator;
-                CellX = abilityContext.Activator.LevelX;
-                CellY = abilityContext.Activator.LevelY;
-            }
-            else
-            {
-                Entity = abilityContext.TargetEntity;
-                CellX = abilityContext.TargetCell?.X;
-                CellY = abilityContext.TargetCell?.Y;
-            }
+            Entity = targetActivator ? abilityContext.Activator : abilityContext.TargetEntity;
 
             Id = ++Game.NextAppliedEffectId;
         }
@@ -47,8 +36,6 @@ namespace UnicornHack.Effects
 
         public int? EntityId { get; private set; }
         public Entity Entity { get; set; }
-        public byte? CellX { get; set; }
-        public byte? CellY { get; set; }
 
         public int? SensorId { get; set; }
         public int? AttackEventId { get; set; }
@@ -88,8 +75,10 @@ namespace UnicornHack.Effects
 
         public virtual void Remove()
         {
-            Entity.ActiveEffects.Remove(this);
-            RemoveReference();
+            if (Entity.ActiveEffects.Remove(this))
+            {
+                RemoveReference();
+            }
         }
     }
 }

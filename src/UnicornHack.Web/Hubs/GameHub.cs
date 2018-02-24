@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -30,186 +30,210 @@ namespace UnicornHack.Hubs
 
         public List<object> GetState(string name)
         {
-            var player = FindOrCreateCharacter(name);
-            return CompactLevel.Serialize(
-                player.Level, EntityState.Added, 0, new SerializationContext(_dbContext, player, _gameServices), null);
+            var player = FindPlayer(name) ?? CreateGame(name);
+
+            _dbContext.SaveChanges();
+
+            return CompactPlayer.Serialize(player, EntityState.Added,
+                new SerializationContext(_dbContext, player, _gameServices));
         }
 
         public async Task PerformAction(string name, PlayerAction? action, int? target, int? target2)
         {
-            var character = FindOrCreateCharacter(name);
-            CompactLevel.Snapshot(character.Level);
-            var visibleTerrainSnapshot = (byte[])character.Level.VisibleTerrain.Clone();
 
-            character.NextAction = action;
-            character.NextActionTarget = target;
-            character.NextActionTarget2 = target2;
+            var currentPlayer = FindPlayer(name);
+            if (currentPlayer == null)
+            {
+                currentPlayer = CreateGame(name);
+                action = null;
+                target = null;
+                target2 = null;
+            }
 
-            var initialLevel = character.Level;
-            var previousTick = initialLevel.CurrentTick;
+            if (currentPlayer.Game.NextPlayerTick != currentPlayer.NextActionTick)
+            {
+                // TODO: Log action sent out of turn
+                return;
+            }
 
-            Turn(character);
+            currentPlayer.NextAction = action;
+            currentPlayer.NextActionTarget = target;
+            currentPlayer.NextActionTarget2 = target2;
 
-            var visibleTerrainChanges = CompactLevel.DetectVisibilityChanges(character.Level, visibleTerrainSnapshot);
+            var playerLevels = new HashSet<Level>();
+            foreach (var player in currentPlayer.Game.Players)
+            {
+                if (playerLevels.Add(player.Level))
+                {
+                    player.Level.Snapshot();
+                }
+
+                var connection = player.Level.Connections.SingleOrDefault(c => c.LevelCell == player.LevelCell);
+                if (connection != null
+                    && playerLevels.Add(connection.TargetLevel))
+                {
+                    connection.TargetLevel.Snapshot();
+                }
+            }
+
+            currentPlayer.Game.Turn();
+
+            if (!currentPlayer.IsAlive)
+            {
+                // Show the last events before death
+                currentPlayer.Act();
+            }
+
             _dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
-            var levelEntry = _dbContext.Entry(character.Level);
-            if (character.Level.TerrainChanges == null
-                || character.Level.TerrainChanges.Count > 0)
+            foreach (var playerLevel in playerLevels)
             {
-                levelEntry.Property(l => l.Terrain).IsModified = true;
-            }
+                playerLevel.DetectVisibilityChanges();
 
-            if (character.Level.WallNeighboursChanges == null
-                || character.Level.WallNeighboursChanges.Count > 0)
-            {
-                levelEntry.Property(l => l.WallNeighbours).IsModified = true;
-            }
+                var levelEntry = _dbContext.Entry(playerLevel);
+                if (playerLevel.TerrainChanges == null
+                    || playerLevel.TerrainChanges.Count > 0)
+                {
+                    levelEntry.Property(l => l.Terrain).IsModified = true;
+                }
 
-            if (visibleTerrainChanges == null
-                || visibleTerrainChanges.Count > 0)
-            {
-                levelEntry.Property(l => l.VisibleTerrain).IsModified = true;
-            }
+                if (playerLevel.KnownTerrainChanges == null
+                    || playerLevel.KnownTerrainChanges.Count > 0)
+                {
+                    levelEntry.Property(l => l.KnownTerrain).IsModified = true;
+                }
 
-            if (character.Level.VisibleNeighboursChanged)
-            {
-                levelEntry.Property(l => l.VisibleNeighbours).IsModified = true;
+                if (playerLevel.WallNeighboursChanges == null
+                    || playerLevel.WallNeighboursChanges.Count > 0)
+                {
+                    levelEntry.Property(l => l.WallNeighbours).IsModified = true;
+                }
+
+                if (playerLevel.VisibleTerrainChanges == null
+                    || playerLevel.VisibleTerrainChanges.Count > 0)
+                {
+                    levelEntry.Property(l => l.VisibleTerrain).IsModified = true;
+                }
+
+                if (playerLevel.VisibleNeighboursChanged)
+                {
+                    levelEntry.Property(l => l.VisibleNeighbours).IsModified = true;
+                }
             }
 
             _dbContext.ChangeTracker.DetectChanges();
             _dbContext.SaveChanges(acceptAllChangesOnSuccess: false);
 
-            var level = character.Level;
-            foreach (var player in level.Players)
+            foreach (var player in currentPlayer.Game.Players)
             {
-                var levelChanged = level != initialLevel
-                                   || character.Level.TerrainChanges == null
-                                   || previousTick == 0;
-                var serializedLevel = CompactLevel.Serialize(
-                    level,
-                    levelChanged ? EntityState.Added : EntityState.Modified,
-                    previousTick,
-                    new SerializationContext(_dbContext, player, _gameServices),
-                    visibleTerrainChanges);
+                var newPlayer = action == null;
+                var serializedPlayer = CompactPlayer.Serialize(
+                    player, newPlayer ? EntityState.Added : EntityState.Modified,
+                    new SerializationContext(_dbContext, player, _gameServices));
 
-                // TODO: only send to clients watching the current player
-                await Clients.All.InvokeAsync("ReceiveState", serializedLevel);
+                // TODO: only send to clients watching this player
+                await Clients.All.InvokeAsync("ReceiveState", serializedPlayer);
             }
 
             _dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
             _dbContext.ChangeTracker.AcceptAllChanges();
         }
 
-        private void Turn(Player character)
+        private Player CreateGame(string name)
         {
-            if (character.Game.NextPlayerTick == character.NextActionTick)
+            int seed;
+            using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
             {
-                character.Game.Turn();
+                var rngData = new byte[4];
+                rng.GetBytes(rngData);
+
+                seed = rngData[0] | rngData[1] << 8 | rngData[2] << 16 | rngData[3] << 24;
             }
 
-            if (!character.IsAlive)
+            var game = new Game
             {
-                // Show the last events before death
-                character.Act();
-            }
+                InitialSeed = seed,
+                Random = new SimpleRandom {Seed = seed}
+            };
+            Initialize(game);
+            _dbContext.Games.Add(game);
+            _dbContext.SaveChanges();
+
+            var surfaceBranch = BranchDefinition.Loader.Get("surface").Instantiate(game);
+            var surfaceLevel = new Level(surfaceBranch, depth: 1, seed: seed);
+            surfaceLevel.EnsureGenerated();
+            var initialLevel = surfaceLevel.Connections.Single().TargetLevel;
+            initialLevel.EnsureGenerated();
+            var upStairs = initialLevel.Connections.First(c => c.TargetBranchName == surfaceBranch.Name);
+            var player = new Player(initialLevel, upStairs.LevelX, upStairs.LevelY) {Name = name, PlayerName = name};
+
+            player.WriteLog(game.Services.Language.Welcome(player), player.Level.CurrentTick);
+            _dbContext.Players.Add(player);
+
+            // Avoid cyclical dependency
+            var attack = player.DefaultAttack;
+            player.DefaultAttack = null;
+            _dbContext.SaveChanges();
+
+            player.DefaultAttack = attack;
+            player.DefaultAttackId = attack?.Id;
+
+            player.Game.Turn();
+
+            _dbContext.SaveChanges();
+
+            _gameServices.SharedCache.Set(name, player,
+                new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
+
+            return player;
         }
 
-        private Player FindOrCreateCharacter(string name)
+        private Player FindPlayer(string name)
         {
-            var character = FindCharacter(name);
-            if (character == null)
-            {
-                int seed;
-                using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
-                {
-                    var rngData = new byte[4];
-                    rng.GetBytes(rngData);
-
-                    seed = rngData[0] | rngData[1] << 8 | rngData[2] << 16 | rngData[3] << 24;
-                }
-
-                var game = new Game
-                {
-                    InitialSeed = seed,
-                    Random = new SimpleRandom {Seed = seed}
-                };
-                Initialize(game);
-                _dbContext.Games.Add(game);
-                _dbContext.SaveChanges();
-
-                var surfaceBranch = BranchDefinition.Loader.Get("surface").Instantiate(game);
-                var surfaceLevel = new Level(surfaceBranch, depth: 1, seed: seed);
-                surfaceLevel.EnsureGenerated();
-                var initialLevel = surfaceLevel.Connections.Single().TargetLevel;
-                initialLevel.EnsureGenerated();
-                var upStairs = initialLevel.Connections.First(c => c.TargetBranchName == surfaceBranch.Name);
-                character = new Player(initialLevel, upStairs.LevelX, upStairs.LevelY) {Name = name, PlayerName = name};
-
-                character.WriteLog(game.Services.Language.Welcome(character), character.Level.CurrentTick);
-                _dbContext.Characters.Add(character);
-
-                // Avoid cyclical dependency
-                var attack = character.DefaultAttack;
-                character.DefaultAttack = null;
-                _dbContext.SaveChanges();
-
-                character.DefaultAttack = attack;
-                character.DefaultAttackId = attack?.Id;
-                Turn(character);
-
-                _dbContext.SaveChanges();
-
-                _gameServices.SharedCache.Set(name, character,
-                    new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
-            }
-
-            if (!character.IsAlive
-                && !character.Game.Players.Any(pc => pc.IsAlive))
-            {
-                Clean(character.Game);
-                character = FindOrCreateCharacter(name);
-            }
-
-            return character;
-        }
-
-        private Player FindCharacter(string name)
-        {
-            var character = _dbContext.Characters
+            var player = _dbContext.Players
                 .Include(c => c.Game)
                 .Include(c => c.Level)
                 .AsNoTracking()
                 .FirstOrDefault(c => c.PlayerName == name);
 
-            if (character?.Level == null)
+            if (player?.Level == null)
             {
                 return null;
             }
 
             // TODO: Use an object as the key
-            if (_gameServices.SharedCache.TryGetValue(name, out var cachedCharacterObject)
-                && cachedCharacterObject is Player cachedCharacter
-                && cachedCharacter.Game.NextPlayerTick == character.Game.NextPlayerTick)
+            if (_gameServices.SharedCache.TryGetValue(name, out var cachedPlayerObject)
+                && cachedPlayerObject is Player cachedPlayer
+                && cachedPlayer.Game.NextPlayerTick == player.Game.NextPlayerTick)
             {
                 _dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
-                EntityAttacher.Attach(cachedCharacter.Level, _dbContext);
+                EntityAttacher.Attach(cachedPlayer.Level, _dbContext);
                 _dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
 
-                LoadAdjacentLevel(cachedCharacter);
-                return cachedCharacter;
+                LoadAdjacentLevel(cachedPlayer);
+                player = cachedPlayer;
+            }
+            else
+            {
+                player = _dbContext.LoadPlayer(name);
+
+                Initialize(player.Game);
+
+                _dbContext.LoadLevel(player.Level.GameId, player.Level.BranchName, player.Level.Depth);
+
+                LoadAdjacentLevel(player);
+
+                _gameServices.SharedCache.Set(name, player,
+                    new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
             }
 
-            character = _dbContext.LoadPlayer(name);
+            if (!player.IsAlive
+                && !player.Game.Players.Any(pc => pc.IsAlive))
+            {
+                Clean(player.Game);
+                return null;
+            }
 
-            Initialize(character.Game);
-
-            _dbContext.LoadLevel(character.Level.GameId, character.Level.BranchName, character.Level.Depth);
-
-            LoadAdjacentLevel(character);
-
-            _gameServices.SharedCache.Set(name, character,
-                new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
-            return character;
+            return player;
         }
 
         private void LoadAdjacentLevel(Player character)
@@ -295,14 +319,14 @@ namespace UnicornHack.Hubs
                 _dbContext.Entities.Remove(entity);
             }
 
+            foreach (var connection in game.Connections.ToList())
+            {
+                _dbContext.Connections.Remove(connection);
+            }
+
             foreach (var level in game.Levels.ToList())
             {
                 _dbContext.Levels.Remove(level);
-            }
-
-            foreach (var stairs in game.Connections.ToList())
-            {
-                _dbContext.Connections.Remove(stairs);
             }
 
             foreach (var branch in game.Branches.ToList())
@@ -311,6 +335,7 @@ namespace UnicornHack.Hubs
             }
 
             _dbContext.Games.Remove(game);
+
             _dbContext.SaveChanges();
         }
     }

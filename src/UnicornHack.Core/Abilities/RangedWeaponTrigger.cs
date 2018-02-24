@@ -53,16 +53,17 @@ namespace UnicornHack.Abilities
 
             foreach (var target in targets)
             {
-                var hitContext = new AbilityActivationContext
+                using (var hitContext = new AbilityActivationContext
                 {
                     Activator = abilityContext.Activator,
                     TargetEntity = target,
                     EffectsToApply = abilityContext.EffectsToApply
-                };
+                })
+                {
+                    hitContext.Add(new RangeAttacked(hitContext) {Weapon = projectile.AddReference().Referenced});
 
-                hitContext.Add(new RangeAttacked(hitContext) {Weapon = projectile.AddReference().Referenced});
-
-                projectile.ActivateAbilities(AbilityActivation.OnRangedAttack, hitContext, useSameContext: true);
+                    projectile.ActivateAbilities(AbilityActivation.OnRangedAttack, hitContext, useSameContext: true);
+                }
             }
         }
     }

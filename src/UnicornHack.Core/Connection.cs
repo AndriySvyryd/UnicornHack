@@ -43,6 +43,7 @@ namespace UnicornHack
 
         // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Local
         public int Id { get; private set; }
+        public bool Known { get; set; }
 
         public byte LevelX { get; set; }
         public byte LevelY { get; set; }

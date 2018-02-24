@@ -21,6 +21,15 @@ namespace UnicornHack
         public virtual int Quantity => Items.Count;
         protected virtual bool CanContainStacks => true;
 
+        public override void Snapshot()
+        {
+            Items.CreateSnapshot();
+            foreach (var containedItem in Items)
+            {
+                containedItem.Snapshot();
+            }
+        }
+
         public virtual bool TryAdd(Item item)
         {
             if (!CanAdd(item))

@@ -11,8 +11,7 @@ export class StatusBar extends React.Component<IStatusBarProps, {}> {
 
         return (<div className="frame">
             {this.props.player.name} {racesStatus}XP:{learningRace.xP}/{learningRace.nextLevelXP
-            } $:{this.props.player.gold} {this.props.levelName}:{this.props.levelDepth} {
-                this.props.player.levelX},{this.props.player.levelY} AUT:{ this.props.player.nextActionTick / 100 }
+            } $:{this.props.player.gold} {this.props.levelName}:{this.props.levelDepth} AUT:{ this.props.player.nextActionTick / 100 }
 </div>);
     }
 }

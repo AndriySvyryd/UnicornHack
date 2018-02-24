@@ -6,7 +6,7 @@ using UnicornHack.Utils;
 
 namespace UnicornHack
 {
-    public class Item : Entity, IReferenceable
+    public class Item : Entity
     {
         public virtual bool Nameable { get; set; }
         public virtual ItemType Type { get; set; }
@@ -14,6 +14,8 @@ namespace UnicornHack
         public virtual SizeCategory EquipableSizes { get; set; }
         public virtual EquipmentSlot EquipableSlots { get; set; }
         public EquipmentSlot? EquippedSlot { get; set; }
+
+        public virtual ItemKnowledge PlayerKnowledge { get; set; }
 
         public int? ActorId { get; set; }
         public Actor Actor { get; set; }
@@ -30,8 +32,8 @@ namespace UnicornHack
             }
 
             var slots = EquipmentSlot.Default;
-            if ((EquipableSlots & EquipmentSlot.GraspBothExtremities) != 0 &&
-                (EquipableSlots & EquipmentSlot.GraspSingleExtremity) != 0)
+            if ((EquipableSlots & EquipmentSlot.GraspBothExtremities) != 0
+                && (EquipableSlots & EquipmentSlot.GraspSingleExtremity) != 0)
             {
                 if (category != SizeCategory.Tiny)
                 {
@@ -86,27 +88,38 @@ namespace UnicornHack
         {
         }
 
-        private int _referenceCount;
-
-        void IReferenceable.AddReference() => _referenceCount++;
-
         public TransientReference<Item> AddReference() => new TransientReference<Item>(this);
 
-        public void RemoveReference()
+        protected override void Delete()
         {
-            if (--_referenceCount <= 0)
-            {
-                Delete();
-            }
-        }
-
-        protected virtual void Delete()
-        {
+            base.Delete();
             foreach (var ability in Abilities.ToList())
             {
                 Remove(ability);
             }
-            Game.Repository.Delete(this);
+        }
+
+        public override void UpdateKnownPosition()
+        {
+            if (Level == null)
+            {
+                PlayerKnowledge = null;
+            }
+            else
+            {
+                if (PlayerKnowledge == null)
+                {
+                    PlayerKnowledge = new ItemKnowledge(this);
+                }
+
+                PlayerKnowledge.Level = Level;
+                PlayerKnowledge.LevelX = LevelX;
+                PlayerKnowledge.LevelY = LevelY;
+            }
+        }
+
+        public virtual void Snapshot()
+        {
         }
 
         public virtual bool MoveTo(IItemLocation location)
@@ -152,8 +165,6 @@ namespace UnicornHack
                 var added = level.TryAdd(item, levelX, levelY);
                 Debug.Assert(added);
             }
-
-            Debug.Assert(_referenceCount == 0);
         }
 
         public virtual Item StackWith(IEnumerable<Item> existingItems)
@@ -167,8 +178,7 @@ namespace UnicornHack
             {
                 if (existingItem.VariantName == VariantName)
                 {
-                    var stack = existingItem as ItemStack;
-                    if (stack == null)
+                    if (!(existingItem is ItemStack stack))
                     {
                         stack = new ItemStack(this, Game);
 

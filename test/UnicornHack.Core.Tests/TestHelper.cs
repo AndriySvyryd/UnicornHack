@@ -20,8 +20,9 @@ namespace UnicornHack
             };
             level.Terrain = new byte[level.Height * level.Width];
             level.WallNeighbours = new byte[level.Height * level.Width];
-            level.VisibleTerrain = new byte[level.Height * level.Width];
             level.VisibleNeighbours = new byte[level.Height * level.Width];
+            level.VisibleTerrain = new byte[level.Height * level.Width];
+            level.FOV = new byte[level.Height * level.Width];
             level.EnsureInitialized();
 
             return level;
@@ -53,11 +54,10 @@ namespace UnicornHack
             return level;
         }
 
-        public static string PrintMap(Level level, byte[] visibleTerrain = null)
+        public static string PrintMap(Level level, byte[] visibleTerrain)
         {
             var builder = new StringBuilder();
             var i = 0;
-            visibleTerrain = visibleTerrain ?? level.VisibleTerrain;
             for (var y = 0; y < level.Height; y++)
             {
                 for (var x = 0; x < level.Width; x++)

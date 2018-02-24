@@ -298,13 +298,13 @@ A#
 
             for (var i = 0; i < 10000; i++)
             {
-                level.RecomputeVisibility(new Point(11, 10), Direction.South,
+                level.GetFOV(new Point(11, 10), Direction.South,
                     primaryFOV: 8, primaryRange: 24, secondaryFOV: 8, secondaryRange: 24, noFalloff: true);
-                level.RecomputeVisibility(new Point(11, 11), Direction.South,
+                level.GetFOV(new Point(11, 11), Direction.South,
                     primaryFOV: 8, primaryRange: 24, secondaryFOV: 8, secondaryRange: 24, noFalloff: true);
-                level.RecomputeVisibility(new Point(11, 12), Direction.South,
+                level.GetFOV(new Point(11, 12), Direction.South,
                     primaryFOV: 8, primaryRange: 24, secondaryFOV: 8, secondaryRange: 24, noFalloff: true);
-                level.RecomputeVisibility(new Point(12, 12), Direction.East,
+                level.GetFOV(new Point(12, 12), Direction.East,
                     primaryFOV: 8, primaryRange: 24, secondaryFOV: 8, secondaryRange: 24, noFalloff: true);
             }
         }
@@ -314,7 +314,7 @@ A#
             var seed = Environment.TickCount;
             var level = TestHelper.BuildLevel(map, seed);
 
-            level.RecomputeVisibility(new Point(0, 0), Direction.Southeast,
+            var fov = level.GetFOV(new Point(0, 0), Direction.Southeast,
                 primaryFOV: 8, primaryRange: 24, secondaryFOV: 8, secondaryRange: 24, noFalloff: true);
 
             var expectedFragment =
@@ -332,7 +332,7 @@ A#
                     var expectedVisible = c == ' ' ? (byte)0 : (byte)1;
                     var i = l.PointToIndex[point.X, point.Y];
                     expectedVisibility[i] = expectedVisible;
-                    var actualVisibile = l.VisibleTerrain[i] == 0 ? 0 : 1;
+                    var actualVisibile = fov[i] == 0 ? 0 : 1;
                     visibilityMatched &= expectedVisible == actualVisibile;
                 },
                 (object)null);
@@ -340,7 +340,7 @@ A#
             Assert.True(visibilityMatched, @"Expected:
 " + TestHelper.PrintMap(level, expectedVisibility) + @"
 Actual:
-" + TestHelper.PrintMap(level) + @"
+" + TestHelper.PrintMap(level, fov) + @"
 Seed: " + seed);
         }
     }

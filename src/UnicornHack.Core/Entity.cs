@@ -7,7 +7,7 @@ using UnicornHack.Utils;
 
 namespace UnicornHack
 {
-    public class Entity
+    public abstract class Entity : IReferenceable
     {
         public string Name { get; set; }
         public string VariantName { get; set; }
@@ -39,16 +39,34 @@ namespace UnicornHack
 
         private static readonly Dictionary<string, List<object>> PropertyListeners = new Dictionary<string, List<object>>();
 
-        public Entity()
+        protected Entity()
         {
         }
 
-        public Entity(Game game) : this()
+        protected Entity(Game game) : this()
         {
             Game = game;
             Id = ++game.NextEntityId;
             game.Entities.Add(this);
         }
+
+        private int _referenceCount;
+
+        void IReferenceable.AddReference()
+        {
+            _referenceCount++;
+        }
+
+        public void RemoveReference()
+        {
+            if (--_referenceCount <= 0)
+            {
+                Delete();
+            }
+        }
+
+        protected virtual void Delete()
+            => Game.Repository.Delete(this);
 
         public T GetProperty<T>(string propertyName)
             => Properties.List.TryGetValue(propertyName, out var property)
@@ -99,7 +117,7 @@ namespace UnicornHack
             }
         }
 
-        public virtual bool HasListener(string propertyName)
+        protected virtual bool HasListener(string propertyName)
             => PropertyListeners.ContainsKey(propertyName);
 
         private static void AddPropertyListener<T>(string propertyName, Action<Entity, T, T> action)
@@ -112,6 +130,8 @@ namespace UnicornHack
 
             listeners.Add(action);
         }
+
+        public abstract void UpdateKnownPosition();
 
         public virtual void ActivateAbilities(AbilityActivation activation, Entity activator, Entity target)
         {

@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Linq;
 using UnicornHack.Abilities;
-using UnicornHack.Utils;
 
 namespace UnicornHack
 {
@@ -83,12 +82,11 @@ namespace UnicornHack
                 return true;
             }
 
-            var context = new AbilityActivationContext
+            using (var context = new AbilityActivationContext
             {
                 Activator = this,
                 TargetEntity = victim
-            };
-            using (context)
+            })
             {
                 return ability.Activate(context);
             }
@@ -118,22 +116,18 @@ namespace UnicornHack
             return false;
         }
 
-        public override byte[] GetFOV()
-            // TODO: use correct FOV
-            => Level.GetNonPlayerFOV(LevelCell, Heading, primaryFOV: 1, secondaryFOV: 2);
-
         public override bool ChangeCurrentHP(int hp)
         {
             var wasAlive = IsAlive;
+            var level = Level;
             var isAlive = base.ChangeCurrentHP(hp);
             if (wasAlive && !isAlive)
             {
                 // TODO: Track the last interacted player
-                var playerCharacter = Level.Players.Where(pc => pc.IsAlive).OrderBy(pc => LevelCell.DistanceTo(pc.LevelCell))
+                var playerCharacter = level.Players.Where(pc => pc.IsAlive).OrderBy(pc => LevelCell.DistanceTo(pc.LevelCell))
                     .FirstOrDefault();
 
-                // TODO: Calculate diminishing XP
-                playerCharacter?.AddXP(XP + DifficultyLevel * 10);
+                playerCharacter?.AddXP(XP + DifficultyLevel * 100);
             }
 
             return isAlive;
@@ -148,6 +142,7 @@ namespace UnicornHack
             }
             base.Die();
             Level.Actors.Remove(this);
+            Level = null;
             RemoveReference();
         }
     }

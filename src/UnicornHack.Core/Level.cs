@@ -11,7 +11,7 @@ namespace UnicornHack
     {
         private PathFinder _pathFinder;
         private BeveledFOV _fov;
-        private BeveledFOV _nonPlayerFov;
+        private BeveledFOV _visibility;
 
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public string BranchName { get; private set; }
@@ -22,13 +22,18 @@ namespace UnicornHack
         public byte Width { get; set; }
         public Rectangle BoundingRectangle => new Rectangle(new Point(0, 0), Width, Height);
         public byte[] VisibleTerrain { get; set; }
+        public byte[] VisibleTerrainSnapshot { get; set; }
+        public Dictionary<int, byte> VisibleTerrainChanges { get; set; }
         public byte[] VisibleNeighbours { get; set; }
         public bool VisibleNeighboursChanged { get; set; }
-        public byte[] NonPlayerVisibleTerrain { get; set; }
+        public byte[] FOV { get; set; }
         public byte[] Terrain { get; set; }
         public Dictionary<int, byte> TerrainChanges { get; set; } = new Dictionary<int, byte>();
+        // TODO: Track known neighbours as well
         public byte[] WallNeighbours { get; set; }
         public Dictionary<int, byte> WallNeighboursChanges { get; set; } = new Dictionary<int, byte>();
+        public byte[] KnownTerrain { get; set; }
+        public Dictionary<int, byte> KnownTerrainChanges { get; set; } = new Dictionary<int, byte>();
         public int NextRoomId { get; set; }
         public int CurrentTick { get; set; }
         public SimpleRandom GenerationRandom { get; set; }
@@ -39,7 +44,9 @@ namespace UnicornHack
         public virtual Game Game { get; set; }
         public virtual ObservableSnapshotHashSet<Room> Rooms { get; } = new ObservableSnapshotHashSet<Room>();
         public virtual ObservableSnapshotHashSet<Item> Items { get; } = new ObservableSnapshotHashSet<Item>();
+        public virtual ObservableSnapshotHashSet<ItemKnowledge> ItemsKnowledge { get; } = new ObservableSnapshotHashSet<ItemKnowledge>();
         public virtual PriorityQueue<Actor> Actors { get; } = new PriorityQueue<Actor>(Actor.TickComparer.Instance);
+        public virtual ObservableSnapshotHashSet<ActorKnowledge> ActorsKnowledge { get; } = new ObservableSnapshotHashSet<ActorKnowledge>();
 
         public virtual ObservableSnapshotHashSet<Connection> Connections { get; } =
             new ObservableSnapshotHashSet<Connection>();
@@ -81,10 +88,11 @@ namespace UnicornHack
 
             Game.Repository.Add(this);
             Terrain = new byte[0];
+            KnownTerrain = new byte[0];
             WallNeighbours = new byte[0];
             VisibleTerrain = new byte[0];
             VisibleNeighbours = new byte[0];
-            NonPlayerVisibleTerrain = new byte[0];
+            FOV = new byte[0];
             GenerationRandom = new SimpleRandom {Seed = seed};
             Difficulty = branch.Difficulty + depth;
             if (Difficulty > MaxDifficulty)
@@ -99,8 +107,14 @@ namespace UnicornHack
             {
                 (PointToIndex, IndexToPoint) = Game.GetPointIndex(Width, Height);
                 _pathFinder = new PathFinder(CanMoveTo, PointToIndex, IndexToPoint);
-                _fov = new BeveledFOV(BlocksLightPlayer, GetVisibleNeighbours);
-                _nonPlayerFov = new BeveledFOV(BlocksLightNonPlayer, GetVisibleNeighbours);
+                _visibility = new BeveledFOV(BlocksLightPlayer, GetVisibleNeighbours);
+                _fov = new BeveledFOV(BlocksLightFOV, GetVisibleNeighbours);
+            }
+
+            if (FOV == null
+                || FOV.Length != Height * Width)
+            {
+                FOV = new byte[Height * Width];
             }
         }
 
@@ -122,9 +136,13 @@ namespace UnicornHack
 
                 Terrain = new byte[Height * Width];
                 WallNeighbours = new byte[Height * Width];
-                VisibleTerrain = new byte[Height * Width];
                 VisibleNeighbours = new byte[Height * Width];
-                NonPlayerVisibleTerrain = new byte[Height * Width];
+                VisibleTerrain = new byte[Height * Width];
+                KnownTerrain = new byte[Height * Width];
+                for (var i = 0; i < KnownTerrain.Length; i++)
+                {
+                    KnownTerrain[i] = (byte)MapFeature.Unexplored;
+                }
 
                 EnsureInitialized();
 
@@ -144,41 +162,107 @@ namespace UnicornHack
             }
         }
 
+        public void Snapshot()
+        {
+            ActorsKnowledge.CreateSnapshot();
+            foreach (var player in Players)
+            {
+                player.Snapshot();
+            }
+
+            ItemsKnowledge.CreateSnapshot();
+            foreach (var item in Items)
+            {
+                item.Snapshot();
+            }
+
+            Connections.CreateSnapshot();
+
+            if (TerrainChanges != null)
+            {
+                TerrainChanges.Clear();
+            }
+            else
+            {
+                TerrainChanges = new Dictionary<int, byte>();
+            }
+
+            if (KnownTerrainChanges != null)
+            {
+                KnownTerrainChanges.Clear();
+            }
+            else
+            {
+                KnownTerrainChanges = new Dictionary<int, byte>();
+            }
+
+            if (WallNeighboursChanges != null)
+            {
+                WallNeighboursChanges.Clear();
+            }
+            else
+            {
+                WallNeighboursChanges = new Dictionary<int, byte>();
+            }
+
+            VisibleTerrainSnapshot = (byte[])VisibleTerrain.Clone();
+
+            VisibleNeighboursChanged = false;
+        }
+
         public void IncrementInstanceCounts(MapFragment fragment)
         {
             // Increment fragment instance count on level, branch, game
             // Increment each tag instance count on level, branch, game
         }
 
-        public void SetTerrain(Point point, byte feature)
+        public void SetTerrain(MapFeature feature, Point point)
         {
             var index = PointToIndex[point.X, point.Y];
-            Terrain[index] = feature;
+            Terrain[index] = (byte)feature;
             if (TerrainChanges != null)
             {
-                TerrainChanges[index] = feature;
+                TerrainChanges[index] = (byte)feature;
+                if (VisibleTerrain[index] != 0)
+                {
+                    KnownTerrain[index] = (byte)feature;
+                    KnownTerrainChanges[index] = (byte)feature;
+                }
             }
-        }
 
-        public void AddNeighbours(MapFeature feature, Point point)
-        {
             switch (feature)
             {
                 case MapFeature.Pool:
                 case MapFeature.RockFloor:
                 case MapFeature.StoneFloor:
-                    ModifyNeighbours(VisibleNeighbours, null, point, add: true);
-                    VisibleNeighboursChanged = true;
+                    if (ModifyNeighbours(VisibleNeighbours, null, point, add: true))
+                    {
+                        VisibleNeighboursChanged = true;
+                    }
+
+                    if (TerrainChanges != null)
+                    {
+                        ModifyNeighbours(WallNeighbours, WallNeighboursChanges, point, add: false);
+                    }
+
                     break;
                 case MapFeature.StoneArchway:
                 case MapFeature.StoneWall:
                     ModifyNeighbours(WallNeighbours, WallNeighboursChanges, point, add: true);
+
+                    if (TerrainChanges != null
+                        && ModifyNeighbours(VisibleNeighbours, null, point, add: false))
+                    {
+                        VisibleNeighboursChanged = true;
+                    }
+
                     break;
             }
         }
 
-        private void ModifyNeighbours(byte[] neighbours, Dictionary<int, byte> changes, Point point, bool add)
+        private bool ModifyNeighbours(byte[] neighbours, Dictionary<int, byte> changes, Point point, bool add)
         {
+            var changed = false;
             for (var directionIndex = 0; directionIndex < 8; directionIndex++)
             {
                 var direction = MovementDirections[directionIndex];
@@ -191,20 +275,23 @@ namespace UnicornHack
 
                 var newLocationIndex = PointToIndex[newLocation.X, newLocation.Y];
                 var neighbourBit = (byte)(1 << OppositeDirectionIndexes[directionIndex]);
-                if (add)
-                {
-                    neighbours[newLocationIndex] |= neighbourBit;
-                }
-                else
-                {
-                    neighbours[newLocationIndex] &= (byte)~neighbourBit;
-                }
+                var oldValue = neighbours[newLocationIndex];
+                var newValue = add
+                    ? (byte)(oldValue | neighbourBit)
+                    : (byte)(oldValue & (byte)~neighbourBit);
 
-                if (changes != null)
+                if (oldValue != newValue)
                 {
-                    changes[newLocationIndex] = neighbours[newLocationIndex];
+                    changed = true;
+                    neighbours[newLocationIndex] = newValue;
+                    if (changes != null)
+                    {
+                        changes[newLocationIndex] = newValue;
+                    }
                 }
             }
+
+            return changed;
         }
 
         public virtual Actor Turn()
@@ -319,51 +406,203 @@ namespace UnicornHack
             return ((MapFeature)Terrain[index]).CanMoveTo() ? (int?)index : null;
         }
 
-        public byte[] RecomputeVisibility(Point location, Direction heading, byte primaryFOV, byte secondaryFOV)
-            => RecomputeVisibility(location, heading, primaryFOV, 16, secondaryFOV, 8);
+        public void DetectVisibilityChanges()
+        {
+            if (VisibleTerrainChanges == null)
+            {
+                VisibleTerrainChanges = new Dictionary<int, byte>();
+            }
+            else
+            {
+                VisibleTerrainChanges.Clear();
+            }
 
-        public byte[] RecomputeVisibility(
-            Point location, Direction heading,
-            byte primaryFOV, byte primaryRange,
-            byte secondaryFOV, byte secondaryRange,
-            bool noFalloff = false)
+            for (var i = 0; i < VisibleTerrain.Length; i++)
+            {
+                var newValue = VisibleTerrain[i];
+                if (newValue != VisibleTerrainSnapshot[i])
+                {
+                    VisibleTerrainChanges.Add(i, newValue);
+                }
+            }
+        }
+
+        private int DetectExploration()
+        {
+            var exploredTiles = 0;
+            for (var i = 0; i < VisibleTerrain.Length; i++)
+            {
+                if (VisibleTerrain[i] != 0
+                    && KnownTerrain[i] == (byte)MapFeature.Unexplored)
+                {
+                    exploredTiles++;
+                    var terrain = Terrain[i];
+                    KnownTerrain[i] = terrain;
+                    if (KnownTerrainChanges != null)
+                    {
+                        KnownTerrainChanges[i] = terrain;
+                    }
+
+                    var point = IndexToPoint[i];
+                    foreach (var connection in Connections)
+                    {
+                        if (!connection.Known
+                            && connection.LevelX == point.X
+                            && connection.LevelY == point.Y)
+                        {
+                            connection.Known = true;
+                        }
+                    }
+                }
+            }
+
+            foreach (var actor in Actors)
+            {
+                var playerKnowledge = actor.PlayerKnowledge;
+                if (VisibleTerrain[PointToIndex[actor.LevelX, actor.LevelY]] != 0)
+                {
+                    actor.UpdateKnownPosition();
+                }
+                else if (playerKnowledge != null
+                         && VisibleTerrain[PointToIndex[playerKnowledge.LevelX, playerKnowledge.LevelY]] != 0)
+                {
+                    playerKnowledge.Delete();
+                    ActorsKnowledge.Remove(playerKnowledge);
+                }
+            }
+
+            List<ActorKnowledge> actorsToDelete = null;
+            foreach (var actorKnowledge in ActorsKnowledge)
+            {
+                if (actorKnowledge.Actor.Level == null
+                    && VisibleTerrain[PointToIndex[actorKnowledge.LevelX, actorKnowledge.LevelY]] != 0)
+                {
+                    actorKnowledge.Delete();
+                    if (actorsToDelete == null)
+                    {
+                        actorsToDelete = new List<ActorKnowledge>();
+                    }
+                    actorsToDelete.Add(actorKnowledge);
+                }
+            }
+
+            if (actorsToDelete != null)
+            {
+                foreach (var actorKnowledge in actorsToDelete)
+                {
+                    ActorsKnowledge.Remove(actorKnowledge);
+                }
+            }
+
+            foreach (var item in Items)
+            {
+                var playerKnowledge = item.PlayerKnowledge;
+                if (VisibleTerrain[PointToIndex[item.LevelX, item.LevelY]] != 0)
+                {
+                    item.UpdateKnownPosition();
+                }
+                else if (playerKnowledge != null
+                         && VisibleTerrain[PointToIndex[playerKnowledge.LevelX, playerKnowledge.LevelY]] != 0)
+                {
+                    playerKnowledge.Delete();
+                    ItemsKnowledge.Remove(playerKnowledge);
+                }
+            }
+
+            List<ItemKnowledge> itemsToDelete = null;
+            foreach (var playerKnowledge in ItemsKnowledge)
+            {
+                if (playerKnowledge.Item.Level == null
+                    && VisibleTerrain[PointToIndex[playerKnowledge.LevelX, playerKnowledge.LevelY]] != 0)
+                {
+                    playerKnowledge.Delete();
+                    if (itemsToDelete == null)
+                    {
+                        itemsToDelete = new List<ItemKnowledge>();
+                    }
+                    itemsToDelete.Add(playerKnowledge);
+                }
+            }
+
+            if (itemsToDelete != null)
+            {
+                foreach (var itemKnowledge in itemsToDelete)
+                {
+                    ItemsKnowledge.Remove(itemKnowledge);
+                }
+            }
+
+            return exploredTiles;
+        }
+
+        public byte[] RecomputeVisibility()
         {
             Array.Clear(VisibleTerrain, 0, VisibleTerrain.Length);
-            _fov.Compute(location, heading, primaryFOV, primaryRange, secondaryFOV, secondaryRange, noFalloff);
+
+            foreach (var player in Players)
+            {
+                _visibility.Compute(
+                    player.LevelCell, player.Heading,
+                    primaryFOV: 1, primaryRange: 16,
+                    secondaryFOV: 2, secondaryRange: 8,
+                    noFalloff: false);
+            }
+
+            var explored = DetectExploration();
+            if (explored > 0)
+            {
+
+                foreach (var player in Players)
+                {
+                    player.AddXP(explored);
+                }
+            }
+
             return VisibleTerrain;
         }
 
-        public byte[] GetNonPlayerFOV(Point location, Direction heading, byte primaryFOV, byte secondaryFOV)
-            => GetNonPlayerFOV(location, heading, primaryFOV, 16, secondaryFOV, 8);
+        public byte[] GetFOV(Point location, Direction heading, byte primaryFOV, byte secondaryFOV)
+            => GetFOV(location, heading, primaryFOV, 16, secondaryFOV, 8);
 
-        public byte[] GetNonPlayerFOV(
+        public byte[] GetFOV(
             Point location, Direction heading,
             byte primaryFOV, byte primaryRange,
             byte secondaryFOV, byte secondaryRange,
             bool noFalloff = false)
         {
-            Array.Clear(NonPlayerVisibleTerrain, 0, NonPlayerVisibleTerrain.Length);
-            _nonPlayerFov.Compute(location, heading, primaryFOV, primaryRange, secondaryFOV, secondaryRange, noFalloff);
-            return NonPlayerVisibleTerrain;
+            Array.Clear(FOV, 0, FOV.Length);
+            _fov.Compute(location, heading, primaryFOV, primaryRange, secondaryFOV, secondaryRange, noFalloff);
+            return FOV;
         }
 
         private bool BlocksLightPlayer(byte x, byte y, byte visibility, int rangeFalloff)
         {
             if (x < Width && y < Height)
             {
+                var index = 0;
                 switch ((MapFeature)Terrain[PointToIndex[x, y]])
                 {
                     // This is inlined for perf
                     case MapFeature.Default:
                     case MapFeature.StoneWall:
                     case MapFeature.RockWall:
-                        visibility = byte.MaxValue;
+                        //visibility = byte.MaxValue;
                         visibility = visibility < rangeFalloff ? (byte)0 : (byte)(visibility - rangeFalloff);
-                        VisibleTerrain[PointToIndex[x, y]] = visibility;
+                        index = PointToIndex[x, y];
+                        if (VisibleTerrain[index] < visibility)
+                        {
+                            VisibleTerrain[index] = visibility;
+                        }
+
                         return true;
                     default:
                         visibility = visibility < rangeFalloff ? (byte)0 : (byte)(visibility - rangeFalloff);
-                        VisibleTerrain[PointToIndex[x, y]] = visibility;
+                        index = PointToIndex[x, y];
+                        if (VisibleTerrain[index] < visibility)
+                        {
+                            VisibleTerrain[index] = visibility;
+                        }
+
                         return false;
                 }
             }
@@ -371,23 +610,20 @@ namespace UnicornHack
             return true;
         }
 
-        private bool BlocksLightNonPlayer(byte x, byte y, byte visibility, int rangeFalloff)
+        private bool BlocksLightFOV(byte x, byte y, byte visibility, int rangeFalloff)
         {
             if (x < Width && y < Height)
             {
+                visibility = visibility < rangeFalloff ? (byte)0 : (byte)(visibility - rangeFalloff);
+                FOV[PointToIndex[x, y]] = visibility;
                 switch ((MapFeature)Terrain[PointToIndex[x, y]])
                 {
                     // This is inlined for perf
                     case MapFeature.Default:
                     case MapFeature.StoneWall:
                     case MapFeature.RockWall:
-                        visibility = byte.MaxValue;
-                        visibility = visibility < rangeFalloff ? (byte)0 : (byte)(visibility - rangeFalloff);
-                        NonPlayerVisibleTerrain[PointToIndex[x, y]] = visibility;
                         return true;
                     default:
-                        visibility = visibility < rangeFalloff ? (byte)0 : (byte)(visibility - rangeFalloff);
-                        NonPlayerVisibleTerrain[PointToIndex[x, y]] = visibility;
                         return false;
                 }
             }

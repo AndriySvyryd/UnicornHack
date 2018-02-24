@@ -50,6 +50,8 @@ namespace UnicornHack
         public virtual ObservableSnapshotHashSet<SensoryEvent> SensedEvents { get; set; }
             = new ObservableSnapshotHashSet<SensoryEvent>();
 
+        public int SnapshotTick { get; set; }
+
         public Player()
         {
         }
@@ -64,11 +66,11 @@ namespace UnicornHack
                 Activation = AbilityActivation.OnActivation,
                 Effects = new ObservableSnapshotHashSet<Effect> {new ChangeRace(Game) {RaceName = "human"}}
             };
-            var context = new AbilityActivationContext
+
+            using (var context = new AbilityActivationContext
             {
                 TargetEntity = this
-            };
-            using (context)
+            })
             {
                 defaultRaceAbility.Activate(context);
             }
@@ -91,6 +93,25 @@ namespace UnicornHack
             ItemVariantData.PotionOfElfness.Instantiate(this);
             ItemVariantData.PotionOfDwarfness.Instantiate(this);
             ItemVariantData.PotionOfExperience.Instantiate(this, quantity: 5);
+        }
+
+        public override void Snapshot()
+        {
+            Properties.CreateSnapshot();
+
+            Inventory.CreateSnapshot();
+            foreach (var item in Inventory)
+            {
+                item.Snapshot();
+            }
+
+            Abilities.CreateSnapshot();
+
+            Log.CreateSnapshot();
+
+            ActiveEffects.CreateSnapshot();
+
+            SnapshotTick = Level.CurrentTick;
         }
 
         public void AddXP(int xp)
@@ -294,16 +315,14 @@ namespace UnicornHack
 
         public override bool Act()
         {
-            var result = ActWithoutFOV();
-            if (!result)
-            {
-                GetFOV();
-            }
+            var result = ActWithoutVisibility();
+
+            Level.RecomputeVisibility();
 
             return result;
         }
 
-        private bool ActWithoutFOV()
+        private bool ActWithoutVisibility()
         {
             var attacked = false;
             foreach (var @event in SensedEvents.OrderBy(e => e.EventOrder).ThenBy(e => e.Id).ToList())
@@ -314,6 +333,7 @@ namespace UnicornHack
                     WriteLog(logEntry, @event.Tick);
                 }
 
+                // TODO: Add a map mark for the unseen attacker
                 if (@event is AttackEvent attack
                     && attack.Victim == this)
                 {
@@ -441,9 +461,6 @@ namespace UnicornHack
             return initialTick != NextActionTick;
         }
 
-        public override byte[] GetFOV()
-            => Level.RecomputeVisibility(LevelCell, Heading, primaryFOV: 1, secondaryFOV: 2);
-
         public override void Sense(SensoryEvent @event)
         {
             @event.Sensor = this;
@@ -554,12 +571,11 @@ namespace UnicornHack
                 return true;
             }
 
-            var context = new AbilityActivationContext
+            using (var context = new AbilityActivationContext
             {
                 Activator = this,
                 TargetEntity = actor
-            };
-            using (context)
+            })
             {
                 return DefaultAttack.Activate(context);
             }

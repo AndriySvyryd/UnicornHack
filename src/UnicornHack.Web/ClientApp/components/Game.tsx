@@ -1,20 +1,19 @@
-import * as React from 'react';
+﻿import * as React from 'react';
 import * as SignalR from '@aspnet/signalr-client';
+import * as Mousetrap from 'mousetrap';
+import 'mousetrap/plugins/record/mousetrap-record';
 import { action, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { HotKeys } from 'react-hotkeys';
-import * as Mousetrap from 'mousetrap';
-import 'mousetrap/plugins/record/mousetrap-record';
 import { Chat, IMessage, MessageType } from './Chat';
 import { StatusBar } from './StatusBar';
 import { Inventory } from './Inventory';
 import { AbilityBar } from './AbilityBar';
 import { PropertyList } from './PropertyList';
 import { Map } from './Map';
-import { MapStyles } from '../styles/MapStyles';
-import { Player, Level } from '../transport/Model';
 import { GameLog } from './GameLog';
-import { PlayerRace } from '../transport/Model';
+import { MapStyles } from '../styles/MapStyles';
+import { Player, PlayerRace } from '../transport/Model';
 import { PlayerAction } from "../transport/PlayerAction";
 import { Direction } from "../transport/Direction";
 
@@ -25,12 +24,9 @@ interface IGameProps {
 
 @observer
 export class Game extends React.Component<IGameProps, {}> {
-    @observable
-    level: Level = new Level();
-    @observable
-    messages: IMessage[] = [];
-    @observable
-    waiting: boolean = true;
+    @observable player: Player = new Player();
+    @observable messages: IMessage[] = [];
+    @observable waiting: boolean = true;
     actionQueue: IAction[] = [];
     keyMap: any;
     keyHandlers: any;
@@ -57,33 +53,16 @@ export class Game extends React.Component<IGameProps, {}> {
 
         connection.on('ReceiveMessage',
             (userName: string, message: string) => this.addMessage(MessageType.Client, message, userName));
-        connection.on('ReceiveState',
-            action((level: any[]) => {
-                const newLevel = Level.expand(level, this.level);
-                if (newLevel == null) {
-                    console.log('Desync');
-                    this.getFullState();
-                    return;
-                }
-
-                this.level = newLevel;
-
-                this.performQueuedActions();
-            }));
+        connection.on('ReceiveState', this.processServerState);
 
         connection.start()
             .then(() => { this.getFullState() }) // TODO: wait for mount
             .catch(e => this.addError((e || '').toString()));
 
-        const level = new Level();
-
-        const player = new Player();
-        player.name = props.playerName;
-        new PlayerRace().addTo(player.races);
-        player.addTo(level.actors);
-
         this.connection = connection;
-        this.level = level;
+
+        this.player.name = props.playerName;
+        new PlayerRace().addTo(this.player.races);
 
         Mousetrap.addKeycodes({
             12: 'numpad5',
@@ -162,17 +141,22 @@ export class Game extends React.Component<IGameProps, {}> {
 
     private getFullState() {
         this.connection.invoke('GetState', this.props.playerName)
-            .then(action((level: any[]) => {
-                var newLevel = Level.expand(level);
-                if (newLevel == null) {
-                    return;
-                }
-
-                this.level = newLevel;
-
-                this.performQueuedActions();
-            }))
+            .then(this.processServerState)
             .catch(e => this.addError((e || '').toString()));
+    }
+
+    @action.bound
+    processServerState(compactPlayer: any[]) {
+        const newPlayer = Player.expand(compactPlayer, this.player);
+        if (newPlayer == null) {
+            console.log('Desync');
+            this.getFullState();
+            return;
+        }
+
+        this.player = newPlayer;
+
+        this.performQueuedActions();
     }
 
     private performAction(action: PlayerAction, target: (number | null) = null, target2: (number | null) = null) {
@@ -211,69 +195,61 @@ export class Game extends React.Component<IGameProps, {}> {
     }
 
     render() {
-        for (let actor of this.level.actors.values()) {
-            if (actor.baseName !== 'player' || actor.name !== this.props.playerName) {
-                continue;
-            }
+        const level = this.player.level;
+        const firstTimeLoading = level.depth === -1;
 
-            const player = actor as Player;
-            const firstTimeLoading = this.level.depth === -1;
+        return (
+            <div>
+                <HotKeys keyMap={this.keyMap} handlers={this.keyHandlers}>
+                    <div style={{
+                        display: firstTimeLoading ? 'block' : 'none'
+                    }}>Establishing connection, please wait...</div>
 
-            return (
-                <div>
-                    <HotKeys keyMap={this.keyMap} handlers={this.keyHandlers}>
-                        <div style={{
-                            display: firstTimeLoading ? 'block' : 'none'
-                        }}>Establishing connection, please wait...</div>
-
-                        <div className="col-md-9" style={{
-                            padding: 5,
-                            paddingTop: 0,
-                            display: firstTimeLoading ? 'none' : 'block'
-                        }}>
-                            <Map level={this.level} styles={this.styles} performAction={this.performAction} />
-                            <StatusBar player={player}
-                                levelName={this.level.branchName} levelDepth={this.level.depth} />
-                            <GameLog messages={player.log} />
-                        </div>
-
-                        <div className="col-md-3" style={{
-                            padding: 5,
-                            paddingTop: 0,
-                            display: firstTimeLoading ? 'none' : 'block'
-                        }}>
-                            <Inventory items={player.inventory} performAction={this.performAction} />
-                        </div>
-
-                        <div className="col-md-3" style={{
-                            padding: 5,
-                            paddingTop: 0,
-                            display: firstTimeLoading ? 'none' : 'block'
-                        }}>
-                            <AbilityBar abilities={player.abilities} performAction={this.performAction} />
-                        </div>
-
-                        <div className="col-md-3" style={{
-                            padding: 5,
-                            paddingTop: 0,
-                            display: firstTimeLoading ? 'none' : 'block'
-                        }}>
-                            <PropertyList properties={player.properties} />
-                        </div>
-                    </HotKeys>
+                    <div className="col-md-9" style={{
+                        padding: 5,
+                        paddingTop: 0,
+                        display: firstTimeLoading ? 'none' : 'block'
+                    }}>
+                        <Map level={level} styles={this.styles} performAction={this.performAction} />
+                        <StatusBar player={this.player}
+                            levelName={level.branchName} levelDepth={level.depth} />
+                        <GameLog messages={this.player.log} />
+                    </div>
 
                     <div className="col-md-3" style={{
                         padding: 5,
                         paddingTop: 0,
                         display: firstTimeLoading ? 'none' : 'block'
                     }}>
-                        <Chat sendMessage={this.sendMessage} messages={this.messages} />
+                        <Inventory items={this.player.inventory} performAction={this.performAction} />
                     </div>
-                </div>
-            );
-        }
 
-        return <div />;
+                    <div className="col-md-3" style={{
+                        padding: 5,
+                        paddingTop: 0,
+                        display: firstTimeLoading ? 'none' : 'block'
+                    }}>
+                        <AbilityBar abilities={this.player.abilities} performAction={this.performAction} />
+                    </div>
+
+                    <div className="col-md-3" style={{
+                        padding: 5,
+                        paddingTop: 0,
+                        display: firstTimeLoading ? 'none' : 'block'
+                    }}>
+                        <PropertyList properties={this.player.properties} />
+                    </div>
+                </HotKeys>
+
+                <div className="col-md-3" style={{
+                    padding: 5,
+                    paddingTop: 0,
+                    display: firstTimeLoading ? 'none' : 'block'
+                }}>
+                    <Chat sendMessage={this.sendMessage} messages={this.messages} />
+                </div>
+            </div>
+        );
     }
 }
 

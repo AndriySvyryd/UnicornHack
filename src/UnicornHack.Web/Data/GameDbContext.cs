@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using UnicornHack.Abilities;
 using UnicornHack.Effects;
 using UnicornHack.Events;
@@ -25,8 +24,9 @@ namespace UnicornHack.Data
         public DbSet<Branch> Branches { get; set; }
         public DbSet<Level> Levels { get; set; }
         public DbSet<Connection> Connections { get; set; }
-        public DbSet<Player> Characters { get; set; }
+        public DbSet<Player> Players { get; set; }
         public DbSet<Entity> Entities { get; set; }
+        public DbSet<EntityKnowledge> EntitiesKnowledge { get; set; }
         public DbSet<LogEntry> LogEntries { get; set; }
         public DbSet<AbilityDefinition> AbilityDefinitions { get; set; }
         public DbSet<Ability> Abilities { get; set; }
@@ -42,6 +42,7 @@ namespace UnicornHack.Data
             // modelBuilder.HasChangeTrackingStrategy(ChangeTrackingStrategy.ChangingAndChangedNotificationsWithOriginalValues);
 
             // TODO: Use non-shadow numerical discriminators
+            // TODO: Add index on the discriminator
 
             modelBuilder.Entity<Branch>(eb =>
             {
@@ -57,8 +58,12 @@ namespace UnicornHack.Data
                 eb.Ignore(l => l.IndexToPoint);
                 eb.Ignore(l => l.PointToIndex);
                 eb.Ignore(l => l.TerrainChanges);
+                eb.Ignore(l => l.KnownTerrainChanges);
                 eb.Ignore(l => l.WallNeighboursChanges);
+                eb.Ignore(l => l.VisibleTerrainSnapshot);
+                eb.Ignore(l => l.VisibleTerrainChanges);
                 eb.Ignore(l => l.VisibleNeighboursChanged);
+                eb.Ignore(l => l.FOV);
                 eb.HasKey(l => new {l.GameId, l.BranchName, l.Depth});
                 eb.HasMany(l => l.Connections)
                     .WithOne(s => s.Level)
@@ -70,6 +75,12 @@ namespace UnicornHack.Data
                     .WithOne(r => r.Level)
                     .HasForeignKey(r => new {r.GameId, r.BranchName, r.LevelDepth});
                 eb.OwnsOne(g => g.GenerationRandom);
+                eb.HasMany(l => l.ActorsKnowledge)
+                    .WithOne(a => a.Level)
+                    .HasForeignKey(a => new { a.GameId, a.BranchName, a.LevelDepth });
+                eb.HasMany(l => l.ItemsKnowledge)
+                    .WithOne(a => a.Level)
+                    .HasForeignKey(a => new { a.GameId, a.BranchName, a.LevelDepth });
             });
 
             modelBuilder.Entity<Connection>(eb =>
@@ -94,8 +105,12 @@ namespace UnicornHack.Data
                 eb.HasKey(b => new {b.GameId, b.BranchName, b.LevelDepth, b.Id});
             });
 
+            modelBuilder.Entity<EntityKnowledge>(eb =>
+                eb.HasKey(e => new {e.GameId, e.Id}));
+
             modelBuilder.Entity<Entity>(eb =>
             {
+                eb.Property("_referenceCount");
                 eb.HasKey(e => new {e.GameId, e.Id});
                 eb.HasMany(e => e.Abilities)
                     .WithOne(a => a.Entity)
@@ -110,16 +125,19 @@ namespace UnicornHack.Data
 
             modelBuilder.Entity<Actor>(eb =>
             {
-                eb.Property("_referenceCount");
                 eb.HasOne(a => a.Level)
                     .WithMany(l => l.Actors)
                     .HasForeignKey(a => new {a.GameId, a.BranchName, a.LevelDepth});
                 eb.HasOne(p => p.NaturalWeapon)
                     .WithOne()
                     .HasForeignKey<Actor>(a => new { a.GameId, a.NaturalWeaponId });
+                eb.HasOne(i => i.PlayerKnowledge)
+                    .WithOne(k => k.Actor)
+                    .HasForeignKey<ActorKnowledge>(k => new { k.GameId, k.Id })
+                    .HasConstraintName("FK_EntitiesKnowledge_Entities_GameId_Id");
             });
 
-            modelBuilder.Entity<Creature>(cb => { });
+            modelBuilder.Entity<Creature>();
 
             modelBuilder.Entity<Player>(pb =>
             {
@@ -129,6 +147,7 @@ namespace UnicornHack.Data
                 pb.Ignore(p => p.XPLevel);
                 pb.Ignore(p => p.NextLevelXP);
                 pb.Ignore(p => p.Races);
+                pb.Ignore(l => l.SnapshotTick);
                 pb.HasOne(p => p.DefaultAttack)
                     .WithOne()
                     .HasForeignKey<Player>(a => new {a.GameId, a.DefaultAttackId});
@@ -136,7 +155,6 @@ namespace UnicornHack.Data
 
             modelBuilder.Entity<Item>(eb =>
             {
-                eb.Property("_referenceCount");
                 eb.HasOne(i => i.Level)
                     .WithMany(l => l.Items)
                     .HasForeignKey(i => new {i.GameId, i.BranchName, i.LevelDepth});
@@ -146,6 +164,10 @@ namespace UnicornHack.Data
                 eb.HasOne(i => i.Container)
                     .WithMany(c => c.Items)
                     .HasForeignKey(i => new {i.GameId, i.ContainerId});
+                eb.HasOne(i => i.PlayerKnowledge)
+                    .WithOne(k => k.Item)
+                    .HasForeignKey<ItemKnowledge>(k => new {k.GameId, k.Id})
+                    .HasConstraintName("FK_EntitiesKnowledge_Entities_GameId_Id");
             });
 
             modelBuilder.Entity<ItemStack>();
@@ -206,6 +228,10 @@ namespace UnicornHack.Data
                     .HasForeignKey(l => l.GameId)
                     .OnDelete(DeleteBehavior.Restrict);
                 eb.HasMany(g => g.Entities)
+                    .WithOne(a => a.Game)
+                    .HasForeignKey(a => a.GameId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                eb.HasMany(g => g.EntitiesKnowledge)
                     .WithOne(a => a.Game)
                     .HasForeignKey(a => a.GameId)
                     .OnDelete(DeleteBehavior.Restrict);
@@ -528,7 +554,7 @@ namespace UnicornHack.Data
             if (_loadPlayer == null)
             {
                 _loadPlayer = EF.CompileQuery((GameDbContext context, string playerName) =>
-                    context.Characters
+                    context.Players
                         .Include(c => c.Game.Random)
                         .Include(c => c.Skills)
                         .Include(c => c.QueuedCommands)
@@ -590,6 +616,7 @@ namespace UnicornHack.Data
                         .ThenInclude(i => i.Abilities).ThenInclude(a => a.Effects)
                         .Include(l => l.Items).ThenInclude<Level, Item, Launcher, Item>(l => l.Projectile)
                         .ThenInclude(i => i.Properties)
+                        .Include(l => l.ItemsKnowledge)
                         .Include(l => l.Actors).ThenInclude(a => a.NaturalWeapon)
                         .ThenInclude(i => i.Abilities).ThenInclude(a => a.Triggers)
                         .Include(l => l.Actors).ThenInclude(a => a.NaturalWeapon)
@@ -629,6 +656,7 @@ namespace UnicornHack.Data
                         .Include(l => l.Actors).ThenInclude(a => a.Abilities).ThenInclude(a => a.ActiveEffects)
                         .Include(l => l.Actors).ThenInclude(a => a.ActiveEffects).ThenInclude(e => e.SourceAbility)
                         .Include(l => l.Actors).ThenInclude(a => a.Properties)
+                        .Include(l => l.ActorsKnowledge)
                         .Include(l => l.Connections)
                         .Include(l => l.IncomingConnections)
                         .Include(l => l.Rooms)

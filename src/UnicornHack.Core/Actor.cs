@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using UnicornHack.Abilities;
 using UnicornHack.Data.Properties;
@@ -11,7 +10,7 @@ using UnicornHack.Utils;
 
 namespace UnicornHack
 {
-    public abstract class Actor : Entity, IItemLocation, IReferenceable
+    public abstract class Actor : Entity, IItemLocation
     {
         public const int DefaultActionDelay = 100;
         public const string InnateAbilityName = "innate";
@@ -32,6 +31,8 @@ namespace UnicornHack
         private bool _weaponAbilitiesOutdated;
 
         public virtual Direction Heading { get; set; }
+
+        public virtual ActorKnowledge PlayerKnowledge { get; set; }
 
         // TODO: make these properties dynamic
         public Species Species { get; set; }
@@ -102,34 +103,27 @@ namespace UnicornHack
             }
         }
 
-        private int _referenceCount;
-
-        void IReferenceable.AddReference()
-        {
-            _referenceCount++;
-        }
-
         public TransientReference<Actor> AddReference() => new TransientReference<Actor>(this);
 
-        public void RemoveReference()
+        protected override void Delete()
         {
-            if (_referenceCount > 0
-                && --_referenceCount == 0)
+            base.Delete();
+
+            NaturalWeapon.RemoveReference();
+
+            foreach (var item in Inventory.ToList())
             {
-                NaturalWeapon.RemoveReference();
-
-                foreach (var item in Inventory.ToList())
-                {
-                    item.RemoveReference();
-                }
-
-                foreach (var ability in Abilities.ToList())
-                {
-                    Remove(ability);
-                }
-
-                Game.Repository.Delete(this);
+                item.RemoveReference();
             }
+
+            foreach (var ability in Abilities.ToList())
+            {
+                Remove(ability);
+            }
+        }
+
+        public virtual void Snapshot()
+        {
         }
 
         private void AddAttributeAbility()
@@ -609,7 +603,10 @@ namespace UnicornHack
         /// <returns>Returns <c>false</c> if the actor hasn't finished their turn.</returns>
         public abstract bool Act();
 
-        public abstract byte[] GetFOV();
+        public byte[] GetFOV()
+            // TODO: use correct FOV values
+            // TODO: cache the result
+            => Level.GetFOV(LevelCell, Heading, primaryFOV: 1, secondaryFOV: 2);
 
         public byte GetVisibility(Point p) => GetFOV()[Level.PointToIndex[p.X, p.Y]];
 
@@ -628,12 +625,40 @@ namespace UnicornHack
                 return sense;
             }
 
-            if (target == this) // Or is adjecent
+            // TODO: Also when touching (e.g. grappling)
+            if (target == this)
             {
                 sense |= SenseType.Touch;
             }
 
-            sense |= SenseType.Sight;
+            // TODO: Refactor this
+            if (target.Level == null
+                && target is Item item)
+            {
+                if (item.Actor != null)
+                {
+                    target = item.Actor;
+                }
+
+                if (item.Container != null)
+                {
+                    item = item.Container;
+                    if (item.Level != null)
+                    {
+                        target = item;
+                    }
+                    else if (item.Actor != null)
+                    {
+                        target = item.Actor;
+                    }
+                }
+            }
+
+            var targetIndex = Level.PointToIndex[target.LevelX, target.LevelY];
+                if (GetFOV()[targetIndex] > 0)
+                {
+                    sense |= SenseType.Sight;
+                }
 
             return sense;
         }
@@ -662,9 +687,7 @@ namespace UnicornHack
                 Game.NextPlayerTick = NextActionTick;
 
                 // Catch up the level to current turn
-                // TODO: Instead of this put actor in 'traveling' state till its next action
-                var waitedFor = moveToLevel.Turn();
-                Debug.Assert(waitedFor == null);
+                moveToLevel.Turn();
 
                 Game.NextPlayerTick = previousNextPlayerTick;
             }
@@ -987,9 +1010,11 @@ namespace UnicornHack
             {
                 var splitItem = reference.Referenced;
 
+                splitItem.MoveTo(this);
                 ItemConsumptionEvent.New(this, splitItem, Game.EventOrder++);
 
                 splitItem.ActivateAbilities(AbilityActivation.OnConsumption, this, this);
+                splitItem.Remove();
             }
 
             return true;
@@ -1132,7 +1157,7 @@ namespace UnicornHack
             base.OnPropertyChanged(propertyName, oldValue, newValue);
         }
 
-        public override bool HasListener(string propertyName)
+        protected override bool HasListener(string propertyName)
             => PropertyListeners.ContainsKey(propertyName)
                || base.HasListener(propertyName);
 
@@ -1178,6 +1203,19 @@ namespace UnicornHack
         private void OnQuicknessChanged(int oldValue, int newValue)
         {
             MovementDelay = DefaultActionDelay * 10 / GetProperty<int>(PropertyData.Quickness.Name);
+        }
+
+        public override void UpdateKnownPosition()
+        {
+            if (PlayerKnowledge == null)
+            {
+                PlayerKnowledge = new ActorKnowledge(this);
+            }
+
+            PlayerKnowledge.Level = Level;
+            PlayerKnowledge.LevelX = LevelX;
+            PlayerKnowledge.LevelY = LevelY;
+            PlayerKnowledge.Heading = Heading;
         }
 
         public virtual bool ChangeCurrentHP(int hp)

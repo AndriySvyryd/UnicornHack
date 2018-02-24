@@ -60,6 +60,7 @@ namespace UnicornHack.Data
 
             foreach (var element in collection)
             {
+                // TODO: Use key values to detect same element being added and removed to convert to modified
                 if (!removed.Remove(element))
                 {
                     if (predicate(element, currentState, additionalState))

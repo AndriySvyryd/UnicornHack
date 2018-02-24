@@ -25,9 +25,19 @@ namespace UnicornHack.Data
                 Attach(actor, context);
             }
 
+            foreach (var actorKnowledge in level.ActorsKnowledge)
+            {
+                Attach(actorKnowledge, context);
+            }
+
             foreach (var item in level.Items)
             {
                 Attach(item, context);
+            }
+
+            foreach (var itemKnowledge in level.ItemsKnowledge)
+            {
+                Attach(itemKnowledge, context);
             }
 
             foreach (var connection in level.Connections)
@@ -108,6 +118,17 @@ namespace UnicornHack.Data
             }
 
             roomEntry.State = EntityState.Unchanged;
+        }
+
+        public static void Attach(ActorKnowledge actorKnowledge, GameDbContext context)
+        {
+            var actorKnowledgeEntry = context.Entry(actorKnowledge);
+            if (actorKnowledgeEntry.State != EntityState.Detached)
+            {
+                return;
+            }
+
+            actorKnowledgeEntry.State = EntityState.Unchanged;
         }
 
         public static void Attach(Actor actor, GameDbContext context)
@@ -357,6 +378,17 @@ namespace UnicornHack.Data
             }
 
             triggerEntry.State = EntityState.Unchanged;
+        }
+
+        public static void Attach(ItemKnowledge itemKnowledge, GameDbContext context)
+        {
+            var itemKnowledgeEntry = context.Entry(itemKnowledge);
+            if (itemKnowledgeEntry.State != EntityState.Detached)
+            {
+                return;
+            }
+
+            itemKnowledgeEntry.State = EntityState.Unchanged;
         }
 
         public static void Attach(Item item, GameDbContext context)

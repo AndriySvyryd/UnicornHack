@@ -14,7 +14,6 @@ namespace UnicornHack.Effects
         {
         }
 
-        public bool Removed { get; set; }
         public string Name { get; set; }
         public Species Species { get; set; }
         public SpeciesClass SpeciesClass { get; set; }
@@ -32,7 +31,7 @@ namespace UnicornHack.Effects
             }
 
             var currentLevel = player.MaxXPLevel > XPLevel ? XPLevel : player.XPLevel;
-            NextLevelXP = (int)((1 + Math.Ceiling(Math.Pow(currentLevel, 1.5))) * 50);
+            NextLevelXP = (int)((1 + Math.Ceiling(Math.Pow(currentLevel, 1.5))) * 500);
         }
     }
 }

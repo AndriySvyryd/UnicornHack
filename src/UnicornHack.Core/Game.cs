@@ -23,6 +23,7 @@ namespace UnicornHack
 
         public virtual int NextEntityId { get; set; }
         public virtual ICollection<Entity> Entities { get; set; } = new HashSet<Entity>();
+        public virtual ICollection<EntityKnowledge> EntitiesKnowledge { get; set; } = new HashSet<EntityKnowledge>();
         public virtual ICollection<Branch> Branches { get; set; } = new HashSet<Branch>();
         public virtual ICollection<Level> Levels { get; set; } = new HashSet<Level>();
         public virtual ICollection<Room> Rooms { get; set; } = new HashSet<Room>();

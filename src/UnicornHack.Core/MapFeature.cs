@@ -8,7 +8,8 @@ namespace UnicornHack
         RockWall = 3,
         StoneWall = 4,
         StoneArchway = 5,
-        Pool = 14
+        Pool = 14,
+        Unexplored = 255
     }
 
     public static class MapFeatureExtensions

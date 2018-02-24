@@ -252,8 +252,7 @@ namespace UnicornHack.Generation.Map
                     throw new InvalidOperationException($"Unsupported map character '{c}' at {point.X},{point.Y}");
             }
 
-            level.Terrain[level.PointToIndex[point.X, point.Y]] = (byte)feature;
-            level.AddNeighbours(feature, point);
+            level.SetTerrain(feature, point);
         }
 
         protected virtual Room TryPlace(Level level, Rectangle boundingRectangle, DynamicMap map)
@@ -265,11 +264,9 @@ namespace UnicornHack.Generation.Map
 
             // TODO: Read the defaults from the defining fragment
             return BuildRoom(level, map.GetRoomPoints(level, boundingRectangle),
-                p => { level.Terrain[level.PointToIndex[p.X, p.Y]] = (byte)MapFeature.StoneFloor; }, p =>
-                {
-                    level.Terrain[level.PointToIndex[p.X, p.Y]] = (byte)MapFeature.StoneWall;
-                    level.AddNeighbours(MapFeature.StoneWall, p);
-                }, _ => { });
+                p => level.SetTerrain(MapFeature.StoneFloor, p),
+                p => level.SetTerrain(MapFeature.StoneWall, p),
+                _ => { });
         }
 
         public void WriteMap<TState>(Point target, Level level, Action<char, Point, Level, TState> write, TState state)
