@@ -171,7 +171,6 @@ nuget.exe
 *.nuget.props
 *.nuget.targets
 project.lock.json
-package-lock.json
 artifacts/
 
 # Microsoft Azure Build Output

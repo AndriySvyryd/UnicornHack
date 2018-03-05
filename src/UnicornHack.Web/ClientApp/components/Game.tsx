@@ -1,5 +1,6 @@
 ﻿import * as React from 'react';
-import * as SignalR from '@aspnet/signalr-client';
+import { HubConnection, ConsoleLogger, LogLevel, HttpConnection, TransportType } from '@aspnet/signalr';
+import { MessagePackHubProtocol } from '@aspnet/signalr-protocol-msgpack';
 import * as Mousetrap from 'mousetrap';
 import 'mousetrap/plugins/record/mousetrap-record';
 import { action, observable } from 'mobx';
@@ -30,18 +31,17 @@ export class Game extends React.Component<IGameProps, {}> {
     actionQueue: IAction[] = [];
     keyMap: any;
     keyHandlers: any;
-    connection: SignalR.HubConnection;
+    connection: HubConnection;
     styles: MapStyles = new MapStyles();
 
     constructor(props: IGameProps) {
         super(props);
 
-        const logger = new SignalR.ConsoleLogger(SignalR.LogLevel.Information);
-        const http = new SignalR.HttpConnection(`http://${document.location.host}/gameHub`,
-            { transport: SignalR.TransportType.WebSockets, logging: logger });
+        const logger = new ConsoleLogger(LogLevel.Information);
+        const http = new HttpConnection(`http://${document.location.host}/gameHub`,
+            { transport: TransportType.WebSockets, logger: logger });
         const connection =
-            new SignalR.HubConnection(http,
-                { logging: logger, protocol: new SignalR.MessagePackHubProtocol });
+            new HubConnection(http, { logger: logger, protocol: new MessagePackHubProtocol() });
 
         connection.onclose = e => {
             if (e) {

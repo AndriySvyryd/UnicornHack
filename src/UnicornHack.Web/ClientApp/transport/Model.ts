@@ -125,20 +125,16 @@ export class Player {
 }
 
 export class Level {
-    @observable branchName: string;
+    @observable branchName: string = '';
     @observable depth: number = -1;
     @observable height: number = 1;
     @observable width: number = 1;
-    @observable tiles: Array<Array<Tile>>;
+    @observable tiles: Array<Array<Tile>> = [[new Tile()]];
 
     actors: Map<string, MapActor> = new Map<string, MapActor>();
     items: Map<string, MapItem> = new Map<string, MapItem>();
     connections: Map<string, Connection> = new Map<string, Connection>();
-    indexToPoint: number[][];
-
-    constructor() {
-        this.tiles = [[new Tile()]];
-    }
+    indexToPoint: number[][] = [[0]];
 
     @action
     static expand(compactLevel: any[], currentLevel: Level, parentState: EntityState): Level {
@@ -429,12 +425,12 @@ export class MapActor {
 }
 
 export class MapItem {
-    @observable id: number;
-    @observable type: ItemType;
-    @observable baseName: string;
-    @observable name: string;
-    @observable levelX: number;
-    @observable levelY: number;
+    @observable id: number = -1;
+    @observable type: ItemType = ItemType.None;
+    @observable baseName: string = '';
+    @observable name: string = '';
+    @observable levelX: number = -1;
+    @observable levelY: number = -1;
 
     @action
     static expandToCollection(compactItem: any[], collection: Map<string, MapItem>, tiles: Tile[][] | null, parentState: EntityState) {
@@ -550,12 +546,12 @@ export class MapItem {
 }
 
 export class Item {
-    @observable id: number;
-    @observable type: ItemType;
-    @observable baseName: string;
-    @observable name: string;
+    @observable id: number = -1;
+    @observable type: ItemType = ItemType.None;
+    @observable baseName: string = '';
+    @observable name: string = '';
     @observable equippableSlots: Map<string, EquipableSlot> = new Map<string, EquipableSlot>();
-    @observable equippedSlot: string;
+    @observable equippedSlot: string = '';
 
     @action
     static expandToCollection(compactItem: any[], collection: Map<string, Item>, parentState: EntityState) {
@@ -644,8 +640,8 @@ export class Item {
 }
 
 export class EquipableSlot {
-    @observable id: number;
-    @observable name: string;
+    @observable id: number = -1;
+    @observable name: string = '';
 
     @action
     static expandToCollection(compactSlot: any[], collection: Map<string, EquipableSlot>, parentState: EntityState) {
@@ -668,8 +664,8 @@ export class EquipableSlot {
 }
 
 export class Property {
-    @observable name: string;
-    @observable displayName: string;
+    @observable name: string = '';
+    @observable displayName: string = '';
 
     @action
     static expandToCollection(compactProperty: any[], collection: Map<string, Property>, parentState: EntityState) {
@@ -735,8 +731,8 @@ export class Property {
 }
 
 export class Ability {
-    @observable id: number;
-    @observable name: string;
+    @observable id: number = -1;
+    @observable name: string = '';
     @observable isDefault: boolean | undefined;
 
     @action
@@ -808,8 +804,8 @@ export class Ability {
 }
 
 export class LogEntry {
-    @observable id: number;
-    @observable message: string;
+    @observable id: number = -1;
+    @observable message: string = '';
 
     @action
     static expandToCollection(compactLogEntry: any[], collection: Map<string, LogEntry>, parentState: EntityState) {
@@ -877,7 +873,7 @@ export class LogEntry {
 
 export class PlayerRace {
     @observable id: number = 0;
-    @observable name: string;
+    @observable name: string = '';
     @observable xPLevel: number = 0;
     @observable xP: number = 0;
     @observable nextLevelXP: number = 0;
@@ -959,10 +955,10 @@ export class PlayerRace {
 }
 
 export class Connection {
-    @observable id: number;
-    @observable levelX: number;
-    @observable levelY: number;
-    @observable isDown: boolean;
+    @observable id: number = -1;
+    @observable levelX: number = -1;
+    @observable levelY: number = -1;
+    @observable isDown: boolean = true;
 
     @action
     static expandToCollection(compactConnection: any[], collection: Map<string, Connection>, tiles: Tile[][], parentState: EntityState) {

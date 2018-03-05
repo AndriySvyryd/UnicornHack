@@ -37,7 +37,7 @@ namespace UnicornHack
 
             services.AddMvc();
 
-            services.AddSignalR();
+            services.AddSignalR().AddMessagePackProtocol();
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
@@ -85,8 +85,7 @@ namespace UnicornHack
                 {
                     using (var context = serviceScope.ServiceProvider.GetService<GameDbContext>())
                     {
-                        context.Database.EnsureDeleted();
-                        context.Database.EnsureCreated();
+                        new DatabaseCleaner().Clean(context.Database);
                     }
                 }
             }

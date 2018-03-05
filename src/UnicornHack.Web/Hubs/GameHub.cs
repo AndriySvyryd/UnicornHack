@@ -26,7 +26,7 @@ namespace UnicornHack.Hubs
         }
 
         public Task SendMessage(string message)
-            => Clients.All.InvokeAsync("ReceiveMessage", Context.User.Identity.Name, message);
+            => Clients.All.SendAsync("ReceiveMessage", Context.User.Identity.Name, message);
 
         public List<object> GetState(string name)
         {
@@ -131,7 +131,7 @@ namespace UnicornHack.Hubs
                     new SerializationContext(_dbContext, player, _gameServices));
 
                 // TODO: only send to clients watching this player
-                await Clients.All.InvokeAsync("ReceiveState", serializedPlayer);
+                await Clients.All.SendAsync("ReceiveState", serializedPlayer);
             }
 
             _dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
