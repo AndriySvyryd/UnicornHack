@@ -18,6 +18,7 @@
                 Item.PlayerKnowledge = null;
                 Item.RemoveReference();
             }
+
             Item = null;
         }
     }

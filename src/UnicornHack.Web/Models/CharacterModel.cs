@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace UnicornHack.Models.GameViewModels
+namespace UnicornHack.Models
 {
-    public class Character
+    public class CharacterModel
     {
         [Required]
         [RegularExpression("[w]+")]

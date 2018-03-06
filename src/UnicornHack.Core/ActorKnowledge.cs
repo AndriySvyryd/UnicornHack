@@ -20,6 +20,7 @@
                 Actor.PlayerKnowledge = null;
                 Actor.RemoveReference();
             }
+
             Actor = null;
         }
     }

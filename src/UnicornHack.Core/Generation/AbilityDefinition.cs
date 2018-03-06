@@ -121,6 +121,7 @@ namespace UnicornHack.Generation
             {
                 effect.Delete();
             }
+
             Effects.Clear();
         }
     }

@@ -34,6 +34,7 @@ namespace UnicornHack.Utils
             {
                 throw new ArgumentOutOfRangeException();
             }
+
             if (projection.Beginning == BoundingSegment.Beginning || projection.End == BoundingSegment.End)
             {
                 return Enumerable.Empty<Rectangle>();

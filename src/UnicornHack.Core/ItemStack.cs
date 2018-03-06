@@ -69,6 +69,7 @@ namespace UnicornHack
                         newStack.TryAdd(item);
                     }
                 }
+
                 result = newStack.AddReference();
             }
 

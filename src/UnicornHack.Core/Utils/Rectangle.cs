@@ -135,9 +135,11 @@ namespace UnicornHack.Utils
                                 yield return new Point(currentX, currentY);
                                 yield break;
                             }
+
                             direction = Direction.South;
                             break;
                         }
+
                         yield return new Point(currentX++, currentY);
                         break;
                     case Direction.South:
@@ -148,9 +150,11 @@ namespace UnicornHack.Utils
                                 yield return new Point(currentX, currentY);
                                 yield break;
                             }
+
                             direction = Direction.West;
                             break;
                         }
+
                         yield return new Point(currentX, currentY++);
                         break;
                     case Direction.West:
@@ -159,6 +163,7 @@ namespace UnicornHack.Utils
                             direction = Direction.North;
                             break;
                         }
+
                         yield return new Point(currentX--, currentY);
                         break;
                     case Direction.North:
@@ -166,6 +171,7 @@ namespace UnicornHack.Utils
                         {
                             yield break;
                         }
+
                         yield return new Point(currentX, currentY--);
                         break;
                 }

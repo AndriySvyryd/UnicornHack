@@ -44,10 +44,12 @@ namespace UnicornHack.Generation
                                     break;
                                 }
                             }
+
                             if (itemPlaced)
                             {
                                 break;
                             }
+
                             // TODO: Log no item of the chosen subgroup
                         }
                         else
@@ -65,6 +67,7 @@ namespace UnicornHack.Generation
                                 currentGroup = subgroups.Current;
                                 break;
                             }
+
                             enumeratorsStack.Pop();
                             subgroups.Dispose();
                         }

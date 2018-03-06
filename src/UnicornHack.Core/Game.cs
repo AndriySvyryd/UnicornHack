@@ -30,7 +30,10 @@ namespace UnicornHack
         public virtual int NextConnectionId { get; set; }
         public virtual ICollection<Connection> Connections { get; set; } = new HashSet<Connection>();
         public virtual int NextAbilityDefinitionId { get; set; }
-        public virtual ICollection<AbilityDefinition> AbilityDefinitions { get; set; } = new HashSet<AbilityDefinition>();
+
+        public virtual ICollection<AbilityDefinition> AbilityDefinitions { get; set; } =
+            new HashSet<AbilityDefinition>();
+
         public virtual int NextAbilityId { get; set; }
         public virtual ICollection<Ability> Abilities { get; set; } = new HashSet<Ability>();
         public virtual int NextTriggerId { get; set; }

@@ -33,7 +33,10 @@ namespace UnicornHack.Generation
             foreach (var abilityDefinition in Abilities)
             {
                 race.Ability.Effects.Add(
-                    new AddAbility(abilityContext.TargetEntity.Game) { Ability = abilityDefinition.Copy(abilityContext.TargetEntity.Game) });
+                    new AddAbility(abilityContext.TargetEntity.Game)
+                    {
+                        Ability = abilityDefinition.Copy(abilityContext.TargetEntity.Game)
+                    });
             }
 
             return race;

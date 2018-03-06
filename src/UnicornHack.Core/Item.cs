@@ -63,18 +63,22 @@ namespace UnicornHack
             {
                 return SizeCategory.Tiny;
             }
+
             if (size <= 4)
             {
                 return SizeCategory.Small;
             }
+
             if (size <= 8)
             {
                 return SizeCategory.Medium;
             }
+
             if (size <= 13)
             {
                 return SizeCategory.Large;
             }
+
             return size <= 25
                 ? SizeCategory.Huge
                 : SizeCategory.Gigantic;

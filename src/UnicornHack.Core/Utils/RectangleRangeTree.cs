@@ -39,6 +39,7 @@ namespace UnicornHack.Utils
             {
                 return false;
             }
+
             if (topLeft.Y != bottomRight.Y && !subtree.Insert(bottomRight.Y, (rectangle.BottomLeft, tracker)))
             {
                 return false;
@@ -56,6 +57,7 @@ namespace UnicornHack.Utils
                 {
                     return false;
                 }
+
                 if (topLeft.Y != bottomRight.Y && !subtree.Insert(topLeft.Y, (rectangle.TopRight, tracker)))
                 {
                     return false;
@@ -79,6 +81,7 @@ namespace UnicornHack.Utils
             {
                 return false;
             }
+
             if (topLeft.Y != bottomRight.Y &&
                 !subtree.Remove(bottomRight.Y, (new Point(topLeft.X, bottomRight.Y), tracker)))
             {
@@ -96,6 +99,7 @@ namespace UnicornHack.Utils
                 {
                     return false;
                 }
+
                 if (topLeft.Y != bottomRight.Y && !subtree.Remove(bottomRight.Y, (bottomRight, tracker)))
                 {
                     return false;
@@ -150,6 +154,7 @@ namespace UnicornHack.Utils
                 {
                     return true;
                 }
+
                 var tracker = obj as RectangleTracker;
                 if (ReferenceEquals(tracker, null))
                 {

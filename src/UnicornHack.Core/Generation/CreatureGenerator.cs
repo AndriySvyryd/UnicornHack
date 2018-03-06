@@ -37,6 +37,7 @@ namespace UnicornHack.Generation
                                 goto CreaturePlaced;
                             }
                         }
+
                         // TODO: Log no creatures of the chosen level
                     }
 

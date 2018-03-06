@@ -55,10 +55,12 @@ namespace UnicornHack.Generation
                 {
                     return _simpleProperties;
                 }
+
                 if (BaseActor != null)
                 {
                     return BaseActor.SimpleProperties;
                 }
+
                 return _simpleProperties = new HashSet<string>();
             }
             set => _simpleProperties = value;
@@ -72,10 +74,12 @@ namespace UnicornHack.Generation
                 {
                     return _valuedProperties;
                 }
+
                 if (BaseActor != null)
                 {
                     return BaseActor.ValuedProperties;
                 }
+
                 return _valuedProperties = new Dictionary<string, object>();
             }
             set => _valuedProperties = value;
@@ -199,6 +203,7 @@ namespace UnicornHack.Generation
                 {
                     _maxLevel = Loader.GetAllKeys().Max();
                 }
+
                 return _maxLevel.Value;
             }
         }

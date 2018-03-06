@@ -158,10 +158,12 @@ namespace UnicornHack.Utils
                 {
                     return 1;
                 }
+
                 if (_graph[a].EstimatedTotalCost < _graph[b].EstimatedTotalCost)
                 {
                     return -1;
                 }
+
                 return 0;
             }
         }

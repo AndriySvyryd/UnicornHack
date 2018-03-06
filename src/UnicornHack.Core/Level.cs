@@ -28,7 +28,9 @@ namespace UnicornHack
         public bool VisibleNeighboursChanged { get; set; }
         public byte[] FOV { get; set; }
         public byte[] Terrain { get; set; }
+
         public Dictionary<int, byte> TerrainChanges { get; set; } = new Dictionary<int, byte>();
+
         // TODO: Track known neighbours as well
         public byte[] WallNeighbours { get; set; }
         public Dictionary<int, byte> WallNeighboursChanges { get; set; } = new Dictionary<int, byte>();
@@ -44,9 +46,14 @@ namespace UnicornHack
         public virtual Game Game { get; set; }
         public virtual ObservableSnapshotHashSet<Room> Rooms { get; } = new ObservableSnapshotHashSet<Room>();
         public virtual ObservableSnapshotHashSet<Item> Items { get; } = new ObservableSnapshotHashSet<Item>();
-        public virtual ObservableSnapshotHashSet<ItemKnowledge> ItemsKnowledge { get; } = new ObservableSnapshotHashSet<ItemKnowledge>();
+
+        public virtual ObservableSnapshotHashSet<ItemKnowledge> ItemsKnowledge { get; } =
+            new ObservableSnapshotHashSet<ItemKnowledge>();
+
         public virtual PriorityQueue<Actor> Actors { get; } = new PriorityQueue<Actor>(Actor.TickComparer.Instance);
-        public virtual ObservableSnapshotHashSet<ActorKnowledge> ActorsKnowledge { get; } = new ObservableSnapshotHashSet<ActorKnowledge>();
+
+        public virtual ObservableSnapshotHashSet<ActorKnowledge> ActorsKnowledge { get; } =
+            new ObservableSnapshotHashSet<ActorKnowledge>();
 
         public virtual ObservableSnapshotHashSet<Connection> Connections { get; } =
             new ObservableSnapshotHashSet<Connection>();
@@ -482,6 +489,7 @@ namespace UnicornHack
                     {
                         actorsToDelete = new List<ActorKnowledge>();
                     }
+
                     actorsToDelete.Add(actorKnowledge);
                 }
             }
@@ -520,6 +528,7 @@ namespace UnicornHack
                     {
                         itemsToDelete = new List<ItemKnowledge>();
                     }
+
                     itemsToDelete.Add(playerKnowledge);
                 }
             }
@@ -551,7 +560,6 @@ namespace UnicornHack
             var explored = DetectExploration();
             if (explored > 0)
             {
-
                 foreach (var player in Players)
                 {
                     player.AddXP(explored);

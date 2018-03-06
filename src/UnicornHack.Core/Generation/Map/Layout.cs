@@ -112,6 +112,7 @@ namespace UnicornHack.Generation.Map
                     {
                         throw new InvalidOperationException("Couldn't connect all rooms");
                     }
+
                     connectedRooms.Add(unconnectedRoom);
                     unconnectedRooms.Remove(unconnectedRoom);
                 }
@@ -129,6 +130,7 @@ namespace UnicornHack.Generation.Map
                     return placedRoom;
                 }
             }
+
             return null;
         }
 

@@ -105,10 +105,12 @@ namespace UnicornHack.Utils
                 {
                     GetRange(node.Left, minKey, maxKey, compareMin, maxCompare <= 0, selector, result);
                 }
+
                 if (minCompare <= 0 && maxCompare >= 0)
                 {
                     result.Add(selector(node.Key, node.Value));
                 }
+
                 if (maxCompare >= 0)
                 {
                     node = node.Right;

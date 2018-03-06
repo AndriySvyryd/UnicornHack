@@ -26,6 +26,7 @@ namespace UnicornHack
         {
             services.AddSingleton<ILanguageService, EnglishLanguageService>();
             services.AddSingleton<GameServices>();
+            services.AddSingleton<GameTransmissionProtocol>();
 
             services.AddEntityFrameworkSqlServer();
             services.AddDbContextPool<GameDbContext>((p, options) =>

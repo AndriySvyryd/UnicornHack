@@ -15,7 +15,8 @@ namespace UnicornHack.Generation
         protected static readonly ParameterExpression BranchParameter =
             Expression.Parameter(typeof(string), name: "branch");
 
-        protected static readonly ParameterExpression DepthParameter = Expression.Parameter(typeof(byte), name: "depth");
+        protected static readonly ParameterExpression
+            DepthParameter = Expression.Parameter(typeof(byte), name: "depth");
 
         protected static readonly ParameterExpression InstancesParameter =
             Expression.Parameter(typeof(int), name: "instances");

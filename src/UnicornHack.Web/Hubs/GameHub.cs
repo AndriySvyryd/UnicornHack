@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using UnicornHack.Data;
 using UnicornHack.Generation;
-using UnicornHack.Models.GameHubModels;
 using UnicornHack.Services;
 using UnicornHack.Utils;
 
@@ -18,11 +17,13 @@ namespace UnicornHack.Hubs
     {
         private readonly GameDbContext _dbContext;
         private readonly GameServices _gameServices;
+        private readonly GameTransmissionProtocol _protocol;
 
-        public GameHub(GameDbContext dbContext, GameServices gameServices)
+        public GameHub(GameDbContext dbContext, GameServices gameServices, GameTransmissionProtocol protocol)
         {
             _dbContext = dbContext;
             _gameServices = gameServices;
+            _protocol = protocol;
         }
 
         public Task SendMessage(string message)
@@ -34,7 +35,7 @@ namespace UnicornHack.Hubs
 
             _dbContext.SaveChanges();
 
-            return CompactPlayer.Serialize(player, EntityState.Added,
+            return _protocol.Serialize(player, EntityState.Added,
                 new SerializationContext(_dbContext, player, _gameServices));
         }
 
@@ -126,7 +127,7 @@ namespace UnicornHack.Hubs
             foreach (var player in currentPlayer.Game.Players)
             {
                 var newPlayer = action == null;
-                var serializedPlayer = CompactPlayer.Serialize(
+                var serializedPlayer = _protocol.Serialize(
                     player, newPlayer ? EntityState.Added : EntityState.Modified,
                     new SerializationContext(_dbContext, player, _gameServices));
 

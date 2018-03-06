@@ -10,21 +10,22 @@ namespace UnicornHack
         {
         }
 
-        protected Connection(Level level, Point p, string targetBranchName, byte targetLevelDepth)
+        protected Connection(Level level, Point point, string targetBranchName, byte targetLevelDepth)
         {
             Game = level.Game;
             Id = ++Game.NextConnectionId;
             Level = level;
             BranchName = level.BranchName;
             LevelDepth = level.Depth;
-            LevelX = p.X;
-            LevelY = p.Y;
+            LevelX = point.X;
+            LevelY = point.Y;
             level.Connections.Add(this);
 
             TargetBranchName = targetBranchName;
             TargetLevelDepth = targetLevelDepth;
 
-            TargetBranch = Game.GetBranch(targetBranchName) ?? BranchDefinition.Loader.Get(TargetBranchName).Instantiate(Game);
+            TargetBranch = Game.GetBranch(targetBranchName) ??
+                           BranchDefinition.Loader.Get(TargetBranchName).Instantiate(Game);
 
             TargetLevel = Game.GetLevel(targetBranchName, TargetLevelDepth)
                           ?? new Level(TargetBranch, TargetLevelDepth, Level.GenerationRandom.Seed);
@@ -65,11 +66,12 @@ namespace UnicornHack
 
         public Game Game { get; set; }
 
-        public static Connection
-            CreateSourceConnection(Level level, Point p, string targetBranchName, byte depth = 1)
-            => new Connection(level, p, targetBranchName, depth);
+        public static Connection CreateSourceConnection(
+            Level level, Point p, string targetBranchName, byte targetDepth = 1)
+            => new Connection(level, p, targetBranchName, targetDepth);
 
-        public static Connection CreateReceivingConnection(Level level, Point p, Connection incoming)
+        public static Connection CreateReceivingConnection(
+            Level level, Point p, Connection incoming)
             => new Connection(level, p, incoming.BranchName, incoming.LevelDepth);
     }
 }

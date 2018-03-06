@@ -19,6 +19,7 @@ namespace UnicornHack
         public bool IsCurrent { get; set; }
 
         private T _currentValue;
+
         public override T CurrentValue
         {
             get
@@ -27,6 +28,7 @@ namespace UnicornHack
                 {
                     UpdateValue();
                 }
+
                 return _currentValue;
             }
             set => _currentValue = value;
@@ -102,10 +104,12 @@ namespace UnicornHack
                                     {
                                         return 1;
                                     }
+
                                     break;
                                 default:
                                     return -1;
                             }
+
                             break;
                         case AbilityActivation.WhileToggled:
                             switch (yAbility.Activation)
@@ -117,6 +121,7 @@ namespace UnicornHack
                                 default:
                                     return -1;
                             }
+
                             break;
                         case AbilityActivation.WhilePossessed:
                             switch (yAbility.Activation)
@@ -129,6 +134,7 @@ namespace UnicornHack
                                 default:
                                     return -1;
                             }
+
                             break;
                         case AbilityActivation.WhileEquipped:
                             switch (yAbility.Activation)
@@ -142,6 +148,7 @@ namespace UnicornHack
                                 default:
                                     return -1;
                             }
+
                             break;
                         default:
                             switch (yAbility.Activation)
@@ -152,6 +159,7 @@ namespace UnicornHack
                                 case AbilityActivation.WhileEquipped:
                                     return 1;
                             }
+
                             break;
                     }
                 }

@@ -21,7 +21,7 @@ namespace UnicornHack.Utils
             => new Vector(X == 0 ? X : (sbyte)(X / Math.Abs(X)), Y == 0 ? Y : (sbyte)(Y / Math.Abs(Y)));
 
         /// <summary>
-        /// Get the vector angle in octants (0-8)
+        ///     Get the vector angle in octants (0-8)
         /// </summary>
         /// <returns></returns>
         public float GetOctantAngle()
@@ -116,6 +116,7 @@ namespace UnicornHack.Utils
             {
                 throw new InvalidOperationException("Zero length vector");
             }
+
             var directionAngle = direction.AsOctants();
 
             var difference = directionAngle - vectorAngle;

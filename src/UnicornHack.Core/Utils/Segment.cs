@@ -13,6 +13,7 @@ namespace UnicornHack.Utils
             {
                 throw new ArgumentOutOfRangeException();
             }
+
             Beginning = beginning;
             End = end;
         }

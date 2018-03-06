@@ -333,6 +333,7 @@ namespace UnicornHack.Services.English
                     {
                         indexToPluralize = 0;
                     }
+
                     words[indexToPluralize] = _nounPluralizationMachine.Process(words[indexToPluralize]);
                     return string.Join(" ", words);
                 default:
@@ -359,6 +360,7 @@ namespace UnicornHack.Services.English
             {
                 firstWordLength = phrase.Length;
             }
+
             lastPart = phrase.Substring(firstWordLength);
             return phrase.Substring(startIndex: 0, length: firstWordLength);
         }
@@ -388,6 +390,7 @@ namespace UnicornHack.Services.English
                         nextState = new State();
                         state.AddNext(nextCharacter, nextState);
                     }
+
                     state = nextState;
                 }
 
@@ -413,6 +416,7 @@ namespace UnicornHack.Services.English
                         reachedEnd = false;
                         break;
                     }
+
                     state = nextState;
                     if (state.Replacement.HasValue)
                     {

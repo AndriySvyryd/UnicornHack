@@ -10,6 +10,7 @@ namespace UnicornHack
             => _currentValue = LastValue;
 
         private T _currentValue;
+
         public override T CurrentValue
         {
             get => _currentValue;

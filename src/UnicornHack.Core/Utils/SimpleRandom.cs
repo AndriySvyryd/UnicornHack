@@ -50,6 +50,7 @@ namespace UnicornHack.Utils
                     return true;
                 }
             }
+
             for (var i = 0; i < index; i++)
             {
                 item = items[i];
@@ -58,6 +59,7 @@ namespace UnicornHack.Utils
                     return true;
                 }
             }
+
             item = default;
             return false;
         }
@@ -94,6 +96,7 @@ namespace UnicornHack.Utils
                         selectedIndex = indexToProcess;
                         break;
                     }
+
                     if (weight < 0)
                     {
                         weight = 0;
@@ -134,6 +137,7 @@ namespace UnicornHack.Utils
                         cumulativeWeights[i] -= selectedWeight;
                     }
                 }
+
                 sum -= selectedWeight;
             }
         }

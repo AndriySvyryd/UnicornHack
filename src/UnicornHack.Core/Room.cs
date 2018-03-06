@@ -8,11 +8,14 @@ namespace UnicornHack
     {
         // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Local
         public virtual int Id { get; private set; }
+
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public virtual int GameId { get; private set; }
         public virtual Game Game { get; set; }
+
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public virtual string BranchName { get; private set; }
+
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public virtual byte LevelDepth { get; private set; }
         public virtual Level Level { get; set; }

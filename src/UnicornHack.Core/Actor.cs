@@ -98,7 +98,7 @@ namespace UnicornHack
                     // TODO: Use correct action for claws, etc.
                     Action = AbilityAction.Punch,
                     // TODO: Calculate h2h damage
-                    Effects = new ObservableSnapshotHashSet<Effect> { new PhysicalDamage(Game) { Damage = 20 } }
+                    Effects = new ObservableSnapshotHashSet<Effect> {new PhysicalDamage(Game) {Damage = 20}}
                 });
             }
         }
@@ -188,8 +188,8 @@ namespace UnicornHack
                 primaryMeleeWeaponAttack = new Ability(Game)
                 {
                     Name = PrimaryMeleeWeaponAttackName,
-                    Triggers = new ObservableSnapshotHashSet<Trigger> { new MeleeWeaponTrigger(Game) },
-                    Effects = new ObservableSnapshotHashSet<Effect> { new PhysicalDamage(Game) },
+                    Triggers = new ObservableSnapshotHashSet<Trigger> {new MeleeWeaponTrigger(Game)},
+                    Effects = new ObservableSnapshotHashSet<Effect> {new PhysicalDamage(Game)},
                     TargetingType = TargetingType.AdjacentSingle,
                     TargetingDirection = TargetingDirection.Front2Octants
                 };
@@ -203,8 +203,8 @@ namespace UnicornHack
                 secondaryMeleeWeaponAttack = new Ability(Game)
                 {
                     Name = SecondaryMeleeWeaponAttackName,
-                    Triggers = new ObservableSnapshotHashSet<Trigger> { new MeleeWeaponTrigger(Game) },
-                    Effects = new ObservableSnapshotHashSet<Effect> { new PhysicalDamage(Game) },
+                    Triggers = new ObservableSnapshotHashSet<Trigger> {new MeleeWeaponTrigger(Game)},
+                    Effects = new ObservableSnapshotHashSet<Effect> {new PhysicalDamage(Game)},
                     TargetingType = TargetingType.AdjacentSingle,
                     TargetingDirection = TargetingDirection.Front2Octants
                 };
@@ -225,7 +225,7 @@ namespace UnicornHack
                     {
                         new AbilityTrigger(Game) {AbilityToTrigger = primaryMeleeWeaponAttack.AddReference().Referenced}
                     },
-                    Effects = new ObservableSnapshotHashSet<Effect> { new PhysicalDamage(Game) },
+                    Effects = new ObservableSnapshotHashSet<Effect> {new PhysicalDamage(Game)},
                     TargetingType = TargetingType.AdjacentSingle,
                     TargetingDirection = TargetingDirection.Front2Octants
                 };
@@ -244,9 +244,12 @@ namespace UnicornHack
                     Delay = 100,
                     Triggers = new ObservableSnapshotHashSet<Trigger>
                     {
-                        new AbilityTrigger(Game) {AbilityToTrigger = secondaryMeleeWeaponAttack.AddReference().Referenced}
+                        new AbilityTrigger(Game)
+                        {
+                            AbilityToTrigger = secondaryMeleeWeaponAttack.AddReference().Referenced
+                        }
                     },
-                    Effects = new ObservableSnapshotHashSet<Effect> { new PhysicalDamage(Game) },
+                    Effects = new ObservableSnapshotHashSet<Effect> {new PhysicalDamage(Game)},
                     TargetingType = TargetingType.AdjacentSingle,
                     TargetingDirection = TargetingDirection.Front2Octants
                 };
@@ -265,8 +268,14 @@ namespace UnicornHack
                     Delay = 100,
                     Triggers = new ObservableSnapshotHashSet<Trigger>
                     {
-                        new AbilityTrigger(Game) {AbilityToTrigger = primaryMeleeWeaponAttack.AddReference().Referenced},
-                        new AbilityTrigger(Game) {AbilityToTrigger = secondaryMeleeWeaponAttack.AddReference().Referenced}
+                        new AbilityTrigger(Game)
+                        {
+                            AbilityToTrigger = primaryMeleeWeaponAttack.AddReference().Referenced
+                        },
+                        new AbilityTrigger(Game)
+                        {
+                            AbilityToTrigger = secondaryMeleeWeaponAttack.AddReference().Referenced
+                        }
                     },
                     Effects = new ObservableSnapshotHashSet<Effect>
                     {
@@ -285,8 +294,8 @@ namespace UnicornHack
                 primaryRangedWeaponAttack = new Ability(Game)
                 {
                     Name = PrimaryRangedWeaponAttackName,
-                    Triggers = new ObservableSnapshotHashSet<Trigger> { new RangedWeaponTrigger(Game) },
-                    Effects = new ObservableSnapshotHashSet<Effect> { new PhysicalDamage(Game) },
+                    Triggers = new ObservableSnapshotHashSet<Trigger> {new RangedWeaponTrigger(Game)},
+                    Effects = new ObservableSnapshotHashSet<Effect> {new PhysicalDamage(Game)},
                     TargetingType = TargetingType.Projectile,
                     TargetingDirection = TargetingDirection.Front2Octants
                 };
@@ -300,8 +309,8 @@ namespace UnicornHack
                 secondaryRangedWeaponAttack = new Ability(Game)
                 {
                     Name = SecondaryRangedWeaponAttackName,
-                    Triggers = new ObservableSnapshotHashSet<Trigger> { new RangedWeaponTrigger(Game) },
-                    Effects = new ObservableSnapshotHashSet<Effect> { new PhysicalDamage(Game) },
+                    Triggers = new ObservableSnapshotHashSet<Trigger> {new RangedWeaponTrigger(Game)},
+                    Effects = new ObservableSnapshotHashSet<Effect> {new PhysicalDamage(Game)},
                     TargetingType = TargetingType.Projectile,
                     TargetingDirection = TargetingDirection.Front2Octants
                 };
@@ -320,9 +329,12 @@ namespace UnicornHack
                     Delay = 100,
                     Triggers = new ObservableSnapshotHashSet<Trigger>
                     {
-                        new AbilityTrigger(Game) {AbilityToTrigger = primaryRangedWeaponAttack.AddReference().Referenced}
+                        new AbilityTrigger(Game)
+                        {
+                            AbilityToTrigger = primaryRangedWeaponAttack.AddReference().Referenced
+                        }
                     },
-                    Effects = new ObservableSnapshotHashSet<Effect> { new PhysicalDamage(Game) },
+                    Effects = new ObservableSnapshotHashSet<Effect> {new PhysicalDamage(Game)},
                     TargetingType = TargetingType.Projectile,
                     TargetingDirection = TargetingDirection.Front2Octants
                 };
@@ -341,9 +353,12 @@ namespace UnicornHack
                     Delay = 100,
                     Triggers = new ObservableSnapshotHashSet<Trigger>
                     {
-                        new AbilityTrigger(Game) {AbilityToTrigger = secondaryRangedWeaponAttack.AddReference().Referenced}
+                        new AbilityTrigger(Game)
+                        {
+                            AbilityToTrigger = secondaryRangedWeaponAttack.AddReference().Referenced
+                        }
                     },
-                    Effects = new ObservableSnapshotHashSet<Effect> { new PhysicalDamage(Game) },
+                    Effects = new ObservableSnapshotHashSet<Effect> {new PhysicalDamage(Game)},
                     TargetingType = TargetingType.Projectile,
                     TargetingDirection = TargetingDirection.Front2Octants
                 };
@@ -362,8 +377,14 @@ namespace UnicornHack
                     Delay = 100,
                     Triggers = new ObservableSnapshotHashSet<Trigger>
                     {
-                        new AbilityTrigger(Game) {AbilityToTrigger = primaryRangedWeaponAttack.AddReference().Referenced},
-                        new AbilityTrigger(Game) {AbilityToTrigger = secondaryRangedWeaponAttack.AddReference().Referenced}
+                        new AbilityTrigger(Game)
+                        {
+                            AbilityToTrigger = primaryRangedWeaponAttack.AddReference().Referenced
+                        },
+                        new AbilityTrigger(Game)
+                        {
+                            AbilityToTrigger = secondaryRangedWeaponAttack.AddReference().Referenced
+                        }
                     },
                     Effects = new ObservableSnapshotHashSet<Effect>
                     {
@@ -560,7 +581,7 @@ namespace UnicornHack
         }
 
         protected bool CanUseWeapons() => !GetProperty<bool>(PropertyData.Handlessness.Name)
-                                        && !GetProperty<bool>(PropertyData.Limblessness.Name);
+                                          && !GetProperty<bool>(PropertyData.Limblessness.Name);
 
         private void EnsureMeleeAttack(Item weapon)
         {
@@ -655,10 +676,10 @@ namespace UnicornHack
             }
 
             var targetIndex = Level.PointToIndex[target.LevelX, target.LevelY];
-                if (GetFOV()[targetIndex] > 0)
-                {
-                    sense |= SenseType.Sight;
-                }
+            if (GetFOV()[targetIndex] > 0)
+            {
+                sense |= SenseType.Sight;
+            }
 
             return sense;
         }
@@ -822,6 +843,7 @@ namespace UnicornHack
                         {
                             targetCell = Point.Unpack(target).Value;
                         }
+
                         var targetDirection = context.Activator.LevelCell.DifferenceTo(targetCell);
 
                         var octantsToTurn = 0;

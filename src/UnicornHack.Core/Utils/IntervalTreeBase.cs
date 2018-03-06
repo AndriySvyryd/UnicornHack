@@ -35,11 +35,13 @@ namespace UnicornHack.Utils
             {
                 throw new ArgumentOutOfRangeException();
             }
+
             if (projection.Length < 3)
             {
                 // Ignore short segments as they can't enclose anything
                 return true;
             }
+
             while (true)
             {
                 if (projection.End < node.Key)
@@ -49,9 +51,11 @@ namespace UnicornHack.Utils
                     {
                         node.Left = NewNode(boundingSegment.MidPoint);
                     }
+
                     node = node.Left;
                     continue;
                 }
+
                 if (projection.Beginning > node.Key)
                 {
                     boundingSegment = new Segment((byte)(node.Key + 1), boundingSegment.End);
@@ -59,6 +63,7 @@ namespace UnicornHack.Utils
                     {
                         node.Right = NewNode(boundingSegment.MidPoint);
                     }
+
                     node = node.Right;
                     continue;
                 }
@@ -76,22 +81,26 @@ namespace UnicornHack.Utils
                 // Ignore short segments as they can't enclose anything
                 return true;
             }
+
             var node = Root;
             if (!BoundingSegment.Contains(projection))
             {
                 throw new ArgumentOutOfRangeException();
             }
+
             while (true)
             {
                 if (node == null)
                 {
                     return false;
                 }
+
                 if (projection.End < node.Key)
                 {
                     node = node.Left;
                     continue;
                 }
+
                 if (projection.Beginning > node.Key)
                 {
                     node = node.Right;

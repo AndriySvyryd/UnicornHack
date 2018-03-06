@@ -79,10 +79,12 @@ namespace UnicornHack.Generation
                 {
                     return _simpleProperties;
                 }
+
                 if (Base != null)
                 {
                     return Base.SimpleProperties;
                 }
+
                 return _simpleProperties = new HashSet<string>();
             }
             set => _simpleProperties = value;
@@ -96,10 +98,12 @@ namespace UnicornHack.Generation
                 {
                     return _valuedProperties;
                 }
+
                 if (Base != null)
                 {
                     return Base.ValuedProperties;
                 }
+
                 return _valuedProperties = new Dictionary<string, object>();
             }
             set => _valuedProperties = value;
@@ -155,6 +159,7 @@ namespace UnicornHack.Generation
                     {
                         createdItem.Remove();
                     }
+
                     return new List<Item>();
                 }
             }

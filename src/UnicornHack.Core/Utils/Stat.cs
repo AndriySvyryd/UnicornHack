@@ -11,18 +11,22 @@ namespace UnicornHack.Utils
             {
                 throw new IndexOutOfRangeException();
             }
+
             if (k < 0)
             {
                 throw new IndexOutOfRangeException();
             }
+
             if (k > n)
             {
                 return 0;
             }
+
             if (n == k)
             {
                 return 1;
             }
+
             if (k > n - k)
             {
                 k = n - k;
@@ -34,6 +38,7 @@ namespace UnicornHack.Utils
                 c *= n--;
                 c /= i;
             }
+
             return c;
         }
 

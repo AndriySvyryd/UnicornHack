@@ -12,8 +12,12 @@ namespace UnicornHack
         public string Name { get; set; }
         public string VariantName { get; set; }
         public virtual Material Material { get; set; }
-        public virtual ObservableSnapshotHashSet<Ability> Abilities { get; set; } = new ObservableSnapshotHashSet<Ability>();
-        public ObservableSnapshotHashSet<AppliedEffect> ActiveEffects { get; set; } = new ObservableSnapshotHashSet<AppliedEffect>();
+
+        public virtual ObservableSnapshotHashSet<Ability> Abilities { get; set; } =
+            new ObservableSnapshotHashSet<Ability>();
+
+        public ObservableSnapshotHashSet<AppliedEffect> ActiveEffects { get; set; } =
+            new ObservableSnapshotHashSet<AppliedEffect>();
 
         public SortedListAdapter<string, Property> Properties { get; set; } = new SortedListAdapter<string, Property>(
             new SortedList<string, Property>(StringComparer.Ordinal), e => e.Name);
@@ -37,7 +41,8 @@ namespace UnicornHack
 
         protected int AbilitiesBeingActivated { get; set; }
 
-        private static readonly Dictionary<string, List<object>> PropertyListeners = new Dictionary<string, List<object>>();
+        private static readonly Dictionary<string, List<object>> PropertyListeners =
+            new Dictionary<string, List<object>>();
 
         protected Entity()
         {

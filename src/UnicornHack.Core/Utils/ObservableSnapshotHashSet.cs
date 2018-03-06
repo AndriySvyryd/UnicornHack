@@ -9,7 +9,8 @@ using JetBrains.Annotations;
 namespace UnicornHack.Utils
 {
     public class ObservableSnapshotHashSet<T> : ObservableSnapshotHashSet,
-        ISet<T>, IReadOnlyCollection<T>, ISnapshotableCollection<T>, INotifyCollectionChanged, INotifyPropertyChanged, INotifyPropertyChanging
+        ISet<T>, IReadOnlyCollection<T>, ISnapshotableCollection<T>, INotifyCollectionChanged, INotifyPropertyChanged,
+        INotifyPropertyChanging
     {
         private HashSet<T> _set;
         private HashSet<T> _snapshot;

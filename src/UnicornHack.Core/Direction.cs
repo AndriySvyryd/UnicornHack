@@ -66,7 +66,7 @@ namespace UnicornHack
             {
                 result += 8;
             }
-            else if(result > 7)
+            else if (result > 7)
             {
                 result -= 8;
             }
@@ -81,6 +81,7 @@ namespace UnicornHack
             {
                 throw new InvalidOperationException("Angleless direction");
             }
+
             return result;
         }
 

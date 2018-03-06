@@ -7,10 +7,12 @@ namespace UnicornHack.Events
     public class AttackEvent : SensoryEvent
     {
         public Actor Attacker { get; set; }
+
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public int AttackerId { get; private set; }
         public SenseType AttackerSensed { get; set; }
         public Actor Victim { get; set; }
+
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public int VictimId { get; private set; }
         public SenseType VictimSensed { get; set; }
@@ -40,7 +42,7 @@ namespace UnicornHack.Events
                         continue;
                     }
 
-                    if((victimSensed & (SenseType.Sight | SenseType.Touch)) == 0
+                    if ((victimSensed & (SenseType.Sight | SenseType.Touch)) == 0
                         && !abilityContext.Succeeded)
                     {
                         continue;

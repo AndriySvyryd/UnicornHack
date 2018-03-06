@@ -49,7 +49,8 @@ namespace UnicornHack.Services.English
                 var name = creature.VariantName + (creature.Name == null ? "" : " named \"" + creature.Name + "\"");
 
                 var proper = char.IsUpper(name[index: 0]);
-                return (proper ? "" : definiteDeterminer ? "the " : "a ") + name;
+                return (proper ? "" :
+                           definiteDeterminer ? "the " : "a ") + name;
             }
 
             return (actor as Player)?.Name;
@@ -292,8 +293,8 @@ namespace UnicornHack.Services.English
             var rangedWeapon = rangedAttack?.Weapon;
 
             if (@event.Sensor != @event.Victim && @event.Sensor != @event.Attacker
-                && (@event.AttackerSensed & (SenseType.Sight | SenseType.Touch)) == 0
-                && (rangedAttack == null || @event.VictimSensed == SenseType.None))
+                                               && (@event.AttackerSensed & (SenseType.Sight | SenseType.Touch)) == 0
+                                               && (rangedAttack == null || @event.VictimSensed == SenseType.None))
             {
                 if ((@event.AttackerSensed & SenseType.Sound) == 0 &&
                     (@event.AttackerSensed & SenseType.SoundDistant) == 0)
@@ -377,11 +378,11 @@ namespace UnicornHack.Services.English
             if (@event.AbilityAction == AbilityAction.Throw
                 || @event.AbilityAction == AbilityAction.Shoot)
             {
-
                 return ToSentence(attacker,
                     EnglishMorphologicalProcessor.ProcessVerb(attackVerb, mainVerbForm),
                     (@event.AttackerSensed & (SenseType.Sight | SenseType.Touch)) != 0
-                        ? ToString(rangedWeapon, definiteDeterminer: !isProjectile && attackerPerson == EnglishPerson.Second)
+                        ? ToString(rangedWeapon,
+                            definiteDeterminer: !isProjectile && attackerPerson == EnglishPerson.Second)
                         : "something");
             }
 
@@ -422,6 +423,7 @@ namespace UnicornHack.Services.English
             {
                 return victim == null ? "You are unaffected." : ToSentence(victim, "seems unaffected.");
             }
+
             return Format(victim == null ? "[{0} pts.]" : "({0} pts.)", damage);
         }
 
@@ -515,6 +517,7 @@ namespace UnicornHack.Services.English
             {
                 builder.Append(value: '.');
             }
+
             builder.Replace(oldValue: " ,", newValue: ",").Replace(oldValue: " .", newValue: ".")
                 .Replace(oldValue: " .", newValue: ".").Replace(oldValue: " !", newValue: "!");
 

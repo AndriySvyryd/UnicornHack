@@ -100,6 +100,7 @@ namespace UnicornHack.Utils
             {
                 BubbleDown(position);
             }
+
             return result;
         }
 
@@ -155,6 +156,7 @@ namespace UnicornHack.Utils
                 {
                     position = leftChildPosition;
                 }
+
                 if (_list.Count > rightChildPosition && CompareItemsAt(position, rightChildPosition) > 0)
                 {
                     position = rightChildPosition;

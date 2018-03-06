@@ -14,6 +14,7 @@ namespace UnicornHack
             {
                 Id = ++player.NextLogEntryId;
             }
+
             Player = player;
             Message = message;
             Tick = tick;

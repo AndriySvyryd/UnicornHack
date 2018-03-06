@@ -20,6 +20,7 @@ namespace UnicornHack.Utils
                 value = default;
                 return false;
             }
+
             value = node.Value;
             return true;
         }
@@ -60,12 +61,14 @@ namespace UnicornHack.Utils
                 {
                     node = node.Left;
                 }
+
                 if (compare > 0)
                 {
                     if (next == Sentinel || next.Key.CompareTo(node.Key) < 0)
                     {
                         next = node;
                     }
+
                     node = node.Right;
                 }
             }
@@ -91,8 +94,10 @@ namespace UnicornHack.Utils
                     {
                         next = node;
                     }
+
                     node = node.Left;
                 }
+
                 if (compare >= 0)
                 {
                     node = node.Right;
@@ -122,11 +127,13 @@ namespace UnicornHack.Utils
                     node = node.Left;
                     continue;
                 }
+
                 if (compare > 0)
                 {
                     node = node.Right;
                     continue;
                 }
+
                 return node;
             }
         }
@@ -152,6 +159,7 @@ namespace UnicornHack.Utils
                 {
                     Deleted = node;
                 }
+
                 if (!Remove(ref node.Right, key))
                 {
                     return false;

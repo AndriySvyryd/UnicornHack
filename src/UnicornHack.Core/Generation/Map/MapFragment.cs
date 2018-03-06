@@ -53,10 +53,12 @@ namespace UnicornHack.Generation.Map
                             {
                                 continue;
                             }
+
                             if (x > Width)
                             {
                                 Width = x;
                             }
+
                             x = 0;
                             y++;
                             continue;
@@ -72,6 +74,7 @@ namespace UnicornHack.Generation.Map
                     {
                         Width = x;
                     }
+
                     y++;
                 }
 
@@ -98,11 +101,13 @@ namespace UnicornHack.Generation.Map
                             {
                                 continue;
                             }
+
                             while (x != Width)
                             {
                                 ByteMap[PointToIndex[x, y]] = (byte)' ';
                                 x++;
                             }
+
                             x = 0;
                             y++;
                             continue;
@@ -153,6 +158,7 @@ namespace UnicornHack.Generation.Map
                         x++;
                     }
                 }
+
                 var payloadOrigin = new Point((byte)(ConditionalFirstColumn ? 1 : 0),
                     (byte)(ConditionalFirstRow ? 1 : 0));
                 PayloadArea = new Rectangle(payloadOrigin,
@@ -321,6 +327,7 @@ namespace UnicornHack.Generation.Map
                     right = Math.Max(right, lastPoint.X);
                     left = Math.Min(left, roomPoint.X);
                 }
+
                 lastPoint = roomPoint;
 
                 for (var directionIndex = 0; directionIndex < 8; directionIndex++)
@@ -347,6 +354,7 @@ namespace UnicornHack.Generation.Map
 
                     neighbours[newLocationIndex] = newNeighbours;
                 }
+
                 occupiedPointCount++;
             }
 
@@ -406,6 +414,7 @@ namespace UnicornHack.Generation.Map
 
                 doorwayPoints.Add(point);
             }
+
             return doorwayPoints;
         }
 
@@ -451,10 +460,12 @@ namespace UnicornHack.Generation.Map
                             {
                                 break;
                             }
+
                             if (perimeter == null)
                             {
                                 perimeter = new List<Point>();
                             }
+
                             if (perimeter.Count == 0 || !nextPoint.Equals(perimeter[0]))
                             {
                                 perimeter.Add(nextPoint);
@@ -476,6 +487,7 @@ namespace UnicornHack.Generation.Map
                         {
                             continue;
                         }
+
                         visitedIntersections[nextPoint] = directionIndexToCheck;
 
                         outsideAction.Invoke(nextPoint);

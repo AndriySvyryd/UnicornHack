@@ -22,11 +22,13 @@ namespace UnicornHack.Utils
                     finished = false;
                     yield return descending--;
                 }
+
                 if (ascending <= max)
                 {
                     finished = false;
                     yield return ascending++;
                 }
+
                 if (finished)
                 {
                     yield break;

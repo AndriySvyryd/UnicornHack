@@ -61,6 +61,7 @@ namespace UnicornHack
                 item.RemoveReference();
                 return true;
             }
+
             return false;
         }
 

@@ -60,7 +60,8 @@ namespace UnicornHack
 
         private bool TryAttackPlayerCharacter()
         {
-            var playerCharacter = Level.Players.FirstOrDefault(pc => LevelCell.DistanceTo(pc.LevelCell) <= 1 && pc.IsAlive);
+            var playerCharacter =
+                Level.Players.FirstOrDefault(pc => LevelCell.DistanceTo(pc.LevelCell) <= 1 && pc.IsAlive);
             if (playerCharacter == null)
             {
                 return false;
@@ -94,7 +95,8 @@ namespace UnicornHack
 
         private bool TryMoveToPlayerCharacter()
         {
-            var playerCharacter = Level.Players.FirstOrDefault(pc => LevelCell.DistanceTo(pc.LevelCell) <= 16 && pc.IsAlive);
+            var playerCharacter =
+                Level.Players.FirstOrDefault(pc => LevelCell.DistanceTo(pc.LevelCell) <= 16 && pc.IsAlive);
             if (playerCharacter == null)
             {
                 return false;
@@ -124,7 +126,8 @@ namespace UnicornHack
             if (wasAlive && !isAlive)
             {
                 // TODO: Track the last interacted player
-                var playerCharacter = level.Players.Where(pc => pc.IsAlive).OrderBy(pc => LevelCell.DistanceTo(pc.LevelCell))
+                var playerCharacter = level.Players.Where(pc => pc.IsAlive)
+                    .OrderBy(pc => LevelCell.DistanceTo(pc.LevelCell))
                     .FirstOrDefault();
 
                 playerCharacter?.AddXP(XP + DifficultyLevel * 100);
@@ -140,6 +143,7 @@ namespace UnicornHack
             {
                 Drop(item);
             }
+
             base.Die();
             Level.Actors.Remove(this);
             Level = null;
