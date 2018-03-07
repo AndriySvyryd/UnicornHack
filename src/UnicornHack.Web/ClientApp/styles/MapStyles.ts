@@ -17,14 +17,15 @@ export interface ITileStyle {
 class MapActorStyles {
     [index: string]: ITileStyle;
 
-    "player": ITileStyle = { char: '@', style: { color: 'black', backgroundColor: 'lightgrey' } };
-    "human": ITileStyle = { char: 'H', style: { color: 'lightgray' } };
-    "unicorn": ITileStyle = { char: 'U', style: { color: 'white' } };
-    "lightning bug": ITileStyle = { char: 'b', style: { color: 'aqua' } };
-    "firefly": ITileStyle = { char: 'F', style: { color: 'darkorange' } };
-    "giant ant": ITileStyle = { char: 'a', style: { color: 'gray' } };
-    "jaguar": ITileStyle = { char: 'j', style: { color: 'orange' } };
-    "default": ITileStyle = { char: 'x', style: { color: 'red' } };
+    '': ITileStyle = { char: '?', style: { color: 'lightgray' } };
+    'player': ITileStyle = { char: '@', style: { color: 'black', backgroundColor: 'lightgrey' } };
+    'human': ITileStyle = { char: 'H', style: { color: 'lightgray' } };
+    'unicorn': ITileStyle = { char: 'U', style: { color: 'white' } };
+    'lightning bug': ITileStyle = { char: 'b', style: { color: 'aqua' } };
+    'firefly': ITileStyle = { char: 'F', style: { color: 'darkorange' } };
+    'giant ant': ITileStyle = { char: 'a', style: { color: 'gray' } };
+    'jaguar': ITileStyle = { char: 'j', style: { color: 'orange' } };
+    'default': ITileStyle = { char: 'x', style: { color: 'red' } };
 }
 
 export class MapFeatureStyles {

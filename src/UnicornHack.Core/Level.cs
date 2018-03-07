@@ -13,8 +13,7 @@ namespace UnicornHack
         private BeveledFOV _fov;
         private BeveledFOV _visibility;
 
-        // ReSharper disable once UnusedAutoPropertyAccessor.Local
-        public string BranchName { get; private set; }
+        public string BranchName { get; set; }
         public Branch Branch { get; set; }
         public byte Depth { get; set; }
         public int Difficulty { get; set; }
@@ -40,8 +39,7 @@ namespace UnicornHack
         public int CurrentTick { get; set; }
         public SimpleRandom GenerationRandom { get; set; }
 
-        // ReSharper disable once UnusedAutoPropertyAccessor.Local
-        public virtual int GameId { get; private set; }
+        public virtual int GameId { get; set; }
 
         public virtual Game Game { get; set; }
         public virtual ObservableSnapshotHashSet<Room> Rooms { get; } = new ObservableSnapshotHashSet<Room>();
@@ -326,7 +324,7 @@ namespace UnicornHack
                 {
                     if (CurrentTick == actor.NextActionTick)
                     {
-                        Debug.Assert(false, nameof(Actor.NextActionTick) + " hasn't been updated!");
+                        Debug.Fail(nameof(Actor.NextActionTick) + " hasn't been updated!");
                         actor.NextActionTick += Actor.DefaultActionDelay;
                     }
 
@@ -469,6 +467,13 @@ namespace UnicornHack
                 if (VisibleTerrain[PointToIndex[actor.LevelX, actor.LevelY]] != 0)
                 {
                     actor.UpdateKnownPosition();
+                    var existingKnowledge = ActorsKnowledge.FirstOrDefault(
+                        k => k.Actor == null && k != actor.PlayerKnowledge && k.LevelCell == actor.LevelCell);
+                    if (existingKnowledge != null)
+                    {
+                        existingKnowledge.Delete();
+                        ActorsKnowledge.Remove(existingKnowledge);
+                    }
                 }
                 else if (playerKnowledge != null
                          && VisibleTerrain[PointToIndex[playerKnowledge.LevelX, playerKnowledge.LevelY]] != 0)
@@ -481,17 +486,16 @@ namespace UnicornHack
             List<ActorKnowledge> actorsToDelete = null;
             foreach (var actorKnowledge in ActorsKnowledge)
             {
-                if (actorKnowledge.Actor.Level == null
-                    && VisibleTerrain[PointToIndex[actorKnowledge.LevelX, actorKnowledge.LevelY]] != 0)
+                if (actorKnowledge.Actor == null
+                    || actorKnowledge.Actor.Level != null
+                    || VisibleTerrain[PointToIndex[actorKnowledge.LevelX, actorKnowledge.LevelY]] == 0)
                 {
-                    actorKnowledge.Delete();
-                    if (actorsToDelete == null)
-                    {
-                        actorsToDelete = new List<ActorKnowledge>();
-                    }
-
-                    actorsToDelete.Add(actorKnowledge);
+                    continue;
                 }
+
+                actorKnowledge.Delete();
+
+                (actorsToDelete ?? (actorsToDelete = new List<ActorKnowledge>())).Add(actorKnowledge);
             }
 
             if (actorsToDelete != null)
@@ -520,17 +524,15 @@ namespace UnicornHack
             List<ItemKnowledge> itemsToDelete = null;
             foreach (var playerKnowledge in ItemsKnowledge)
             {
-                if (playerKnowledge.Item.Level == null
-                    && VisibleTerrain[PointToIndex[playerKnowledge.LevelX, playerKnowledge.LevelY]] != 0)
+                if (playerKnowledge.Item?.Level != null
+                    || VisibleTerrain[PointToIndex[playerKnowledge.LevelX, playerKnowledge.LevelY]] == 0)
                 {
-                    playerKnowledge.Delete();
-                    if (itemsToDelete == null)
-                    {
-                        itemsToDelete = new List<ItemKnowledge>();
-                    }
-
-                    itemsToDelete.Add(playerKnowledge);
+                    continue;
                 }
+
+                playerKnowledge.Delete();
+
+                (itemsToDelete ?? (itemsToDelete = new List<ItemKnowledge>())).Add(playerKnowledge);
             }
 
             if (itemsToDelete != null)

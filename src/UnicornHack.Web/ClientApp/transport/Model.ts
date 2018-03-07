@@ -356,8 +356,10 @@ export class MapActor {
     static expand(compactActor: any[], i: number, tiles: Tile[][]): MapActor {
         const actor = new MapActor();
         actor.id = compactActor[i++];
-        actor.baseName = compactActor[i++];
-        actor.name = compactActor[i++];
+        let baseName = compactActor[i++];
+        actor.baseName = baseName === null ? '' : baseName;
+        let name = compactActor[i++];
+        actor.name = name === null ? '' : name;
         actor.levelX = compactActor[i++];
         actor.levelY = compactActor[i++];
         actor.heading = compactActor[i++];
@@ -372,7 +374,8 @@ export class MapActor {
         for (; i < compactActor.length;) {
             switch (compactActor[i++]) {
                 case 2:
-                    this.name = compactActor[i++];
+                    let name = compactActor[i++];
+                    this.name = name === null ? '' : name;
                     break;
                 case 3:
                     this.unset(tiles, this.levelX, this.levelY);

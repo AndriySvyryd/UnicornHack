@@ -333,11 +333,29 @@ namespace UnicornHack
                     WriteLog(logEntry, @event.Tick);
                 }
 
-                // TODO: Add a map mark for the unseen attacker
                 if (@event is AttackEvent attack
                     && attack.Victim == this)
                 {
                     attacked = true;
+                    if (!attack.AttackerSensed.HasFlag(SenseType.Sight))
+                    {
+                        var existingKnowledge = Level.ActorsKnowledge
+                            .FirstOrDefault(a => a.LevelCell == attack.Attacker.LevelCell);
+                        if (existingKnowledge != null)
+                        {
+                            existingKnowledge.Delete();
+                            Level.ActorsKnowledge.Remove(existingKnowledge);
+                        }
+
+                        var newKnowledge = new ActorKnowledge(Game)
+                        {
+                            Level = Level,
+                            LevelX = attack.Attacker.LevelX,
+                            LevelY = attack.Attacker.LevelY,
+                            Heading = attack.Attacker.Heading
+                        };
+                        Level.ActorsKnowledge.Add(newKnowledge);
+                    }
                 }
 
                 SensedEvents.Remove(@event);
@@ -367,8 +385,8 @@ namespace UnicornHack
                 queuedCommand = QueuedCommands.OrderBy(c => c.Id).First();
                 QueuedCommands.Remove(queuedCommand);
 
-                if ((Level.Actors.Any(a => LevelCell.DistanceTo(a.LevelCell) <= 2 && a is Creature)
-                     || attacked))
+                if (Level.Actors.Any(a => LevelCell.DistanceTo(a.LevelCell) <= 2 && a is Creature)
+                    || attacked)
                 {
                     // TODO: only cancel some queued commands
                     return false;

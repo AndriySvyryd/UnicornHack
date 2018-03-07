@@ -6,7 +6,13 @@
         {
         }
 
-        public ItemKnowledge(Item item) : base(item.Game) => Item = item.AddReference().Referenced;
+        public ItemKnowledge(Game game) : base(game) => Id = ++game.NextEntityId;
+
+        public ItemKnowledge(Item item) : base(item.Game)
+        {
+            Id = item.Id;
+            Item = item.AddReference().Referenced;
+        }
 
         public virtual Item Item { get; set; }
 

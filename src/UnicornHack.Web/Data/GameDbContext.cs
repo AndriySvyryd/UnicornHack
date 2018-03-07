@@ -77,10 +77,12 @@ namespace UnicornHack.Data
                 eb.OwnsOne(g => g.GenerationRandom);
                 eb.HasMany(l => l.ActorsKnowledge)
                     .WithOne(a => a.Level)
-                    .HasForeignKey(a => new { a.GameId, a.BranchName, a.LevelDepth });
+                    .HasForeignKey(a => new { a.GameId, a.BranchName, a.LevelDepth })
+                    .HasConstraintName("FK_EntitiesKnowledge_Levels_GameId_BranchName_LevelDepth");
                 eb.HasMany(l => l.ItemsKnowledge)
                     .WithOne(a => a.Level)
-                    .HasForeignKey(a => new { a.GameId, a.BranchName, a.LevelDepth });
+                    .HasForeignKey(a => new { a.GameId, a.BranchName, a.LevelDepth })
+                    .HasConstraintName("FK_EntitiesKnowledge_Levels_GameId_BranchName_LevelDepth");
             });
 
             modelBuilder.Entity<Connection>(eb =>
@@ -133,8 +135,8 @@ namespace UnicornHack.Data
                     .HasForeignKey<Actor>(a => new { a.GameId, a.NaturalWeaponId });
                 eb.HasOne(i => i.PlayerKnowledge)
                     .WithOne(k => k.Actor)
-                    .HasForeignKey<ActorKnowledge>(k => new { k.GameId, k.Id })
-                    .HasConstraintName("FK_EntitiesKnowledge_Entities_GameId_Id");
+                    .HasForeignKey<ActorKnowledge>(k => new { k.GameId, k.EntityId })
+                    .HasConstraintName("FK_EntitiesKnowledge_Entities_GameId_EntityId");
             });
 
             modelBuilder.Entity<Creature>();
@@ -166,8 +168,8 @@ namespace UnicornHack.Data
                     .HasForeignKey(i => new {i.GameId, i.ContainerId});
                 eb.HasOne(i => i.PlayerKnowledge)
                     .WithOne(k => k.Item)
-                    .HasForeignKey<ItemKnowledge>(k => new {k.GameId, k.Id})
-                    .HasConstraintName("FK_EntitiesKnowledge_Entities_GameId_Id");
+                    .HasForeignKey<ItemKnowledge>(k => new {k.GameId, k.EntityId })
+                    .HasConstraintName("FK_EntitiesKnowledge_Entities_GameId_EntityId");
             });
 
             modelBuilder.Entity<ItemStack>();

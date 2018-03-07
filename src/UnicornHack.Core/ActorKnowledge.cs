@@ -6,7 +6,13 @@
         {
         }
 
-        public ActorKnowledge(Actor actor) : base(actor.Game) => Actor = actor.AddReference().Referenced;
+        public ActorKnowledge(Game game) : base(game) => Id = ++game.NextEntityId;
+
+        public ActorKnowledge(Actor actor) : base(actor.Game)
+        {
+            Id = actor.Id;
+            Actor = actor.AddReference().Referenced;
+        }
 
         public virtual Direction Heading { get; set; }
 

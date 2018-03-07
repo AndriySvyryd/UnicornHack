@@ -95,7 +95,7 @@ namespace UnicornHack.Hubs
                         list.RemoveRange(0, Math.Max(0, list.Count - 10));
                         return list;
                     },
-                    (e, _) => player.Log.OrderBy(en => en, LogEntry.Comparer).Skip(Math.Max(0, player.Log.Count - 10))
+                    (e, _) => e.OrderBy(en => en, LogEntry.Comparer).Skip(Math.Max(0, player.Log.Count - 10))
                         .ToList(),
                     (entry, list, _) => list.BinarySearch(entry, LogEntry.Comparer) > list.Count - 10,
                     context,
@@ -386,8 +386,8 @@ namespace UnicornHack.Hubs
                         ? new List<object>(6)
                         : new List<object>(7) {(int)state};
                     properties.Add(actorKnowledge.Id);
-                    properties.Add(actorKnowledge.Actor.VariantName);
-                    properties.Add(actorKnowledge.Actor.Name);
+                    properties.Add(actorKnowledge.Actor?.VariantName);
+                    properties.Add(actorKnowledge.Actor?.Name);
                     properties.Add(actorKnowledge.LevelX);
                     properties.Add(actorKnowledge.LevelY);
                     properties.Add((byte)actorKnowledge.Heading);
@@ -399,15 +399,18 @@ namespace UnicornHack.Hubs
             properties = new List<object>(2) {(int)state, actorKnowledge.Id};
 
             var actorKnowledgeEntry = context.Context.Entry(actorKnowledge);
-            var actorEntry = context.Context.Entry(actorKnowledge.Actor);
             var i = 2;
             if (actorKnowledgeEntry.State != EntityState.Unchanged)
             {
-                var name = actorEntry.Property(nameof(Actor.Name));
-                if (name.IsModified)
+                if (actorKnowledge.Actor != null)
                 {
-                    properties.Add(i);
-                    properties.Add(actorKnowledge.Actor.Name);
+                    var actorEntry = context.Context.Entry(actorKnowledge.Actor);
+                    var name = actorEntry.Property(nameof(Actor.Name));
+                    if (name.IsModified)
+                    {
+                        properties.Add(i);
+                        properties.Add(actorKnowledge.Actor.Name);
+                    }
                 }
 
                 i++;

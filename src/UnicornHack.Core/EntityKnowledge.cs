@@ -10,18 +10,15 @@ namespace UnicornHack
 
         protected EntityKnowledge(Game game) => Game = game;
 
-        public virtual void Delete()
-        {
-        }
+        public virtual void Delete() => Game.Repository.Delete(this);
 
-        // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Local
-        // ReSharper disable once UnusedAutoPropertyAccessor.Local
-        public virtual int Id { get; private set; }
+        public virtual int Id { get; set; }
 
-        // ReSharper disable once UnusedAutoPropertyAccessor.Local
-        public int GameId { get; private set; }
+        public int GameId { get; set; }
 
         public Game Game { get; set; }
+
+        public virtual int? EntityId { get; set; }
 
         public string BranchName { get; set; }
         public byte? LevelDepth { get; set; }
