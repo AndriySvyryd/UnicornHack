@@ -21,9 +21,9 @@ interface IAbilityBarProps {
 export class AbilityLine extends React.Component<IAbilityProps, {}> {
     render() {
         if (this.props.ability.isDefault) {
-            return <div>{'*' + this.props.ability.name}</div>;
+            return <div className="font-weight-bold">{this.props.ability.name}</div>;
         } else {
-            return (<div><a onClick={
+            return (<div><a tabIndex={0} onClick={
                         () => this.props.performAction(PlayerAction.ChooseDefaultAttack, this.props.ability.id, null)
 }>{this.props.ability.name}</a>
                     </div>);

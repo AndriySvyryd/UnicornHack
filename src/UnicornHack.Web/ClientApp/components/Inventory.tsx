@@ -24,7 +24,7 @@ class InventoryLine extends React.Component<IItemProps, {}> {
         const itemLine: any[] = [];
         if (this.props.item.equippedSlot !== null) {
             itemLine.push(' [');
-            itemLine.push(<a className="itemAction" key="eqipped" onClick={
+            itemLine.push(<a tabIndex={0} key="eqipped" onClick={
                 () => this.props.performAction(PlayerAction.UnequipItem, this.props.item.id, null)
             }>{this.props.item.equippedSlot}</a>);
             itemLine.push('] ');
@@ -38,7 +38,7 @@ class InventoryLine extends React.Component<IItemProps, {}> {
                 }
                 first = false;
                 itemLine.push(
-                    <a className="itemAction" key={s.id} onClick={
+                    <a tabIndex={0} key={s.id} onClick={
                         () => this.props.performAction(PlayerAction.EquipItem, this.props.item.id, s.id)
                     }>{s.name}</a>);
             });
@@ -47,13 +47,13 @@ class InventoryLine extends React.Component<IItemProps, {}> {
 
         if (this.props.item.type & ItemType.Potion) {
             itemLine.push(' ');
-            itemLine.push(<a className="itemAction" key="quaff" onClick={
+            itemLine.push(<a tabIndex={0} key="quaff" onClick={
                 () => this.props.performAction(PlayerAction.ActivateItem, this.props.item.id, null)
             }>quaff</a>);
         }
 
         itemLine.push(' ');
-        itemLine.push(<a className="itemAction" key="drop" onClick={
+        itemLine.push(<a tabIndex={0} key="drop" onClick={
             () => this.props.performAction(PlayerAction.DropItem, this.props.item.id, null)
         }>drop</a>);
 

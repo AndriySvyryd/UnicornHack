@@ -7,7 +7,7 @@ namespace UnicornHack.Generation.Map
 {
     public abstract class Layout
     {
-        public virtual float Coverage { get; set; } = 0.4f;
+        public virtual float Coverage { get; set; } = 0.33f;
         public virtual byte MaxRoomCount { get; set; } = 16;
 
         public virtual void OnLoad()

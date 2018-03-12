@@ -1,15 +1,14 @@
-@using UnicornHack.Models
 @model UnicornHack.Models.CharacterModel
 @{
     ViewData["Title"] = "Welcome to UnicornHack";
 }
 
 <div class="container">
-    <h2>Welcome to UnicornHack</h2>
-
     <div class="row">
-        <div class="col-md-12">
-            <pre class="text-left" style="border: hidden; background-color: black;">
+        <div style="margin-right: auto; margin-left: auto">
+            <h1 class="text-center">UnicornHack</h1>
+            <br/>
+            <pre class="text-left">
     \
      \
       \\
@@ -34,15 +33,17 @@
            &lt;.'_.''
              &lt;'
 </pre>
+
+            <form asp-controller="Home" asp-action="Game" method="get" role="form">
+                <div asp-validation-summary="All" class="text-danger"></div>
+                @*TODO: Validate name and that the character is not dead. Autocomplete alive characters.*@
+                <div class="form-group">
+                    <input asp-for="Name" class="form-control" />
+                </div>
+                <div class="form-row">
+                    <button type="submit" class="form-inline btn-secondary" style="margin: auto">Play</button>
+                </div>
+            </form>
         </div>
     </div>
-
-    <form asp-controller="Home" asp-action="Game" method="get" class="form-inline" role="form">
-        <div asp-validation-summary="All" class="text-danger"></div>
-        @*TODO: Validate name and that the character is not dead. Autocomplete alive characters.*@
-        <div class="form-group">
-            <input asp-for="Name" class="form-control" />
-        </div>
-        <button type="submit" class="btn btn-default">Play</button>
-    </form>
 </div>

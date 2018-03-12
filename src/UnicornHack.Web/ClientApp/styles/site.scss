@@ -1,0 +1,73 @@
+@font-face {
+    font-family: DejaVuSansMono;
+    src: url('../fonts/DejaVuSansMono.woff2') format('woff2'), url('../fonts/DejaVuSansMono.woff') format('woff'), url('../fonts/DejaVuSansMono.ttf') format('truetype');
+}
+
+html {
+    font-size: 14px;
+}
+
+body {
+    padding-top: $grid-gutter-width;
+    padding-bottom: $grid-gutter-width;
+    padding-left: ($grid-gutter-width / 2);
+    padding-right: ($grid-gutter-width / 2);
+    font-family: DejaVuSansMono, Menlo, Consolas, monospace;
+}
+
+a {
+    cursor: pointer;
+}
+
+ul {
+    list-style-type: none;
+    padding: 10px;
+}
+
+pre {
+    color: inherit;
+    background-color: inherit;
+    font-family: inherit;
+    line-height: 22px;
+    font-size: 20px;
+}
+
+.mapContainer {
+    overflow: hidden;
+    height: 620px;
+}
+
+.map {
+    transform: scale(1.0, 0.75);
+    transform-origin: 0 0;
+    height: 810px;
+    align-items: center;
+    justify-content: center;
+    line-height: 20px;
+    font-size: 18px;
+    white-space: pre;
+    display: flex;
+}
+
+.map__inner-container {
+}
+
+.map__tile {
+    overflow: hidden;
+    float: left;
+}
+
+.chat__messages {
+    max-height: 10rem;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.frame {
+    border-width: 1px;
+    display: block;
+    padding: 10px;
+    margin: 0 0 10px;
+    border: 1px solid #CCC;
+    border-radius: 3px;
+}

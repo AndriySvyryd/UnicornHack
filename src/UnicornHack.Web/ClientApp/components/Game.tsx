@@ -199,53 +199,29 @@ export class Game extends React.Component<IGameProps, {}> {
         const firstTimeLoading = level.depth === -1;
 
         return (
-            <div>
-                <HotKeys keyMap={this.keyMap} handlers={this.keyHandlers}>
-                    <div style={{
-                        display: firstTimeLoading ? 'block' : 'none'
-                    }}>Establishing connection, please wait...</div>
-
-                    <div className="col-md-9" style={{
-                        padding: 5,
-                        paddingTop: 0,
-                        display: firstTimeLoading ? 'none' : 'block'
-                    }}>
+            <div className="row">
+                <div style={{
+                    display: firstTimeLoading ? 'block' : 'none'
+                }}>Establishing connection, please wait...</div>
+                <div className="col-9" style={{
+                    display: firstTimeLoading ? 'none' : 'block'
+                }}>
+                    <HotKeys keyMap={this.keyMap} handlers={this.keyHandlers}>
                         <Map level={level} styles={this.styles} performAction={this.performAction} />
                         <StatusBar player={this.player}
                             levelName={level.branchName} levelDepth={level.depth} />
                         <GameLog messages={this.player.log} />
-                    </div>
+                    </HotKeys>
+                </div>
 
-                    <div className="col-md-3" style={{
-                        padding: 5,
-                        paddingTop: 0,
-                        display: firstTimeLoading ? 'none' : 'block'
-                    }}>
-                        <Inventory items={this.player.inventory} performAction={this.performAction} />
-                    </div>
-
-                    <div className="col-md-3" style={{
-                        padding: 5,
-                        paddingTop: 0,
-                        display: firstTimeLoading ? 'none' : 'block'
-                    }}>
-                        <AbilityBar abilities={this.player.abilities} performAction={this.performAction} />
-                    </div>
-
-                    <div className="col-md-3" style={{
-                        padding: 5,
-                        paddingTop: 0,
-                        display: firstTimeLoading ? 'none' : 'block'
-                    }}>
-                        <PropertyList properties={this.player.properties} />
-                    </div>
-                </HotKeys>
-
-                <div className="col-md-3" style={{
-                    padding: 5,
-                    paddingTop: 0,
+                <div className="col-3" style={{
                     display: firstTimeLoading ? 'none' : 'block'
                 }}>
+                    <HotKeys keyMap={this.keyMap} handlers={this.keyHandlers}>
+                        <Inventory items={this.player.inventory} performAction={this.performAction} />
+                        <AbilityBar abilities={this.player.abilities} performAction={this.performAction} />
+                        <PropertyList properties={this.player.properties} />
+                    </HotKeys>
                     <Chat sendMessage={this.sendMessage} messages={this.messages} />
                 </div>
             </div>

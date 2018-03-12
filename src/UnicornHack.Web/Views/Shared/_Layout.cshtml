@@ -12,7 +12,7 @@
     </environment>
     @Html.Raw(JavaScriptSnippet.FullScript)
 </head>
-<body style="background-color: black">
+<body style="background-color: #002b36"> @*Avoid white flash before the style loads*@
     @RenderBody()
 
     <script src="~/dist/vendor.js" asp-append-version="true"></script>

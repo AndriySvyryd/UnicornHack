@@ -174,19 +174,19 @@ export class Level {
             dimensionChanged = true;
         }
 
-        let terrainIndex = 0;
+        let terrainIndex = -1;
         let terrainChangeIndex = 0;
-        if (terrainIndex < terrain.length) {
+        if (terrainChangeIndex < terrain.length) {
             terrainIndex = terrain[terrainChangeIndex++];
         }
 
-        let wallNeighboursIndex = 0;
+        let wallNeighboursIndex = -1;
         let wallNeighboursChangeIndex = 0;
-        if (wallNeighboursIndex < wallNeighbours.length) {
+        if (wallNeighboursChangeIndex < wallNeighbours.length) {
             wallNeighboursIndex = wallNeighbours[wallNeighboursChangeIndex++];
         }
 
-        let visibleIndex = 0;
+        let visibleIndex = -1;
         let visibleChangeIndex = 0;
         if (visibleChangeIndex < visibleTerrain.length) {
             visibleIndex = visibleTerrain[visibleChangeIndex++];

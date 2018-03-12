@@ -11,8 +11,8 @@ export class StatusBar extends React.Component<IStatusBarProps, {}> {
 
         return (<div className="frame">
             {this.props.player.name} {racesStatus}XP:{learningRace.xP}/{learningRace.nextLevelXP
-            } $:{this.props.player.gold} {this.props.levelName}:{this.props.levelDepth} AUT:{ this.props.player.nextActionTick / 100 }
-</div>);
+            } $:{this.props.player.gold} {this.props.levelName}:{this.props.levelDepth} AUT:{this.props.player.nextActionTick / 100}
+        </div>);
     }
 }
 
@@ -27,7 +27,7 @@ export class RaceStatus extends React.Component<IRaceStatusProps, {}> {
     render() {
         const raceString = `${this.props.race.name}(${this.props.race.xPLevel}) `;
         if (this.props.isLearning) {
-            return (<span><b>{raceString}</b></span>);
+            return (<span className="font-weight-bold">{raceString}</span>);
         }
         return (<span>{raceString}</span>);
     }

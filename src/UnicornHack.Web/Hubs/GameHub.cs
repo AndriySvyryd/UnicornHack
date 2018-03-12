@@ -33,15 +33,12 @@ namespace UnicornHack.Hubs
         {
             var player = FindPlayer(name) ?? CreateGame(name);
 
-            _dbContext.SaveChanges();
-
             return _protocol.Serialize(player, EntityState.Added,
                 new SerializationContext(_dbContext, player, _gameServices));
         }
 
         public async Task PerformAction(string name, PlayerAction? action, int? target, int? target2)
         {
-
             var currentPlayer = FindPlayer(name);
             if (currentPlayer == null)
             {
@@ -61,6 +58,26 @@ namespace UnicornHack.Hubs
             currentPlayer.NextActionTarget = target;
             currentPlayer.NextActionTarget2 = target2;
 
+            Turn(currentPlayer);
+
+            _dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
+            foreach (var player in currentPlayer.Game.Players)
+            {
+                var newPlayer = action == null;
+                var serializedPlayer = _protocol.Serialize(
+                    player, newPlayer ? EntityState.Added : EntityState.Modified,
+                    new SerializationContext(_dbContext, player, _gameServices));
+
+                // TODO: only send to clients watching this player
+                await Clients.All.SendAsync("ReceiveState", serializedPlayer);
+            }
+            _dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
+
+            _dbContext.ChangeTracker.AcceptAllChanges();
+        }
+
+        private void Turn(Player currentPlayer)
+        {
             var playerLevels = new HashSet<Level>();
             foreach (var player in currentPlayer.Game.Players)
             {
@@ -121,22 +138,9 @@ namespace UnicornHack.Hubs
                 }
             }
 
-            _dbContext.ChangeTracker.DetectChanges();
-            _dbContext.SaveChanges(acceptAllChangesOnSuccess: false);
-
-            foreach (var player in currentPlayer.Game.Players)
-            {
-                var newPlayer = action == null;
-                var serializedPlayer = _protocol.Serialize(
-                    player, newPlayer ? EntityState.Added : EntityState.Modified,
-                    new SerializationContext(_dbContext, player, _gameServices));
-
-                // TODO: only send to clients watching this player
-                await Clients.All.SendAsync("ReceiveState", serializedPlayer);
-            }
-
             _dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
-            _dbContext.ChangeTracker.AcceptAllChanges();
+
+            _dbContext.SaveChanges(acceptAllChangesOnSuccess: false);
         }
 
         private Player CreateGame(string name)
@@ -178,9 +182,9 @@ namespace UnicornHack.Hubs
             player.DefaultAttack = attack;
             player.DefaultAttackId = attack?.Id;
 
-            player.Game.Turn();
+            Turn(player);
 
-            _dbContext.SaveChanges();
+            _dbContext.ChangeTracker.AcceptAllChanges();
 
             _gameServices.SharedCache.Set(name, player,
                 new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
@@ -312,6 +316,11 @@ namespace UnicornHack.Hubs
             foreach (var sensoryEvent in game.SensoryEvents.ToList())
             {
                 _dbContext.SensoryEvents.Remove(sensoryEvent);
+            }
+
+            foreach (var entityKnowledge in game.EntitiesKnowledge.ToList())
+            {
+                _dbContext.EntitiesKnowledge.Remove(entityKnowledge);
             }
 
             foreach (var entity in game.Entities.ToList())

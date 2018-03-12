@@ -37,19 +37,20 @@ class MessageLine extends React.Component<IMessage, {}> {
         let color = '';
         switch (this.props.type) {
             case MessageType.Client:
-                color = 'lightgray';
+                color = 'text-light';
                 break;
             case MessageType.Error:
-                color = 'red';
+                color = 'text-danger';
                 break;
             case MessageType.Warning:
-                color = 'yellow';
+                color = 'text-warning';
                 break;
             case MessageType.Info:
-                color = 'gray';
+                color = 'text-muted font-italic';
                 break;
         }
-        return (<li key={this.props.id} style={{ color: color }}>{line}</li>);
+
+        return (<li className={color} key={this.props.id}>{line}</li>);
     }
 }
 
@@ -93,9 +94,9 @@ class InputForm extends React.Component<IInputFormProps, {}> {
 
     render() {
         return (
-            <form onSubmit={this.handleSubmit} autoComplete="off">
-                <input type="text" style={{ backgroundColor: 'black' }} value={this.outgoingMessage} onChange={this.handleChange} />
-                <input type="submit" style={{ backgroundColor: 'gray' }} value="Send" />
+            <form className="form-inline" onSubmit={this.handleSubmit} autoComplete="off">
+                <input className="form-control col-10" type="text" value={this.outgoingMessage} onChange={this.handleChange} />
+                <input className="btn btn-secondary" type="submit" value="Send" />
             </form>
         );
     }

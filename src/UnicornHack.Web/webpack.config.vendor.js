@@ -42,7 +42,7 @@ function getClientConfig(env) {
             vendor: [
                 '@aspnet/signalr', '@aspnet/signalr-protocol-msgpack', 'buffer', 'bootstrap-loader/extractStyles',
                 'event-source-polyfill', 'isomorphic-fetch', 'lodash', 'mobx', 'mobx-react', 'react', 'react-dom',
-                'react-hotkeys', 'mousetrap', 'url-search-params-polyfill', 'jquery'
+                'react-hotkeys', 'mousetrap', 'url-search-params-polyfill', 'jquery', 'popper.js'
             ]
         },
         plugins: [
@@ -52,9 +52,22 @@ function getClientConfig(env) {
             }),
             new ExtractTextPlugin({ filename: 'vendor.css', allChunks: true }),
             new webpack.ProvidePlugin({
-                $: 'jquery',
-                jQuery: 'jquery'
-            }), // Maps these identifiers to the jQuery package (because Bootstrap expects it to be a global variable)
+                $: "jquery",
+                jQuery: "jquery",
+                "window.jQuery": "jquery",
+                Popper: ['popper.js', 'default'],
+                Alert: "exports-loader?Alert!bootstrap/js/dist/alert",
+                Button: "exports-loader?Button!bootstrap/js/dist/button",
+                Carousel: "exports-loader?Carousel!bootstrap/js/dist/carousel",
+                Collapse: "exports-loader?Collapse!bootstrap/js/dist/collapse",
+                Dropdown: "exports-loader?Dropdown!bootstrap/js/dist/dropdown",
+                Modal: "exports-loader?Modal!bootstrap/js/dist/modal",
+                Popover: "exports-loader?Popover!bootstrap/js/dist/popover",
+                Scrollspy: "exports-loader?Scrollspy!bootstrap/js/dist/scrollspy",
+                Tab: "exports-loader?Tab!bootstrap/js/dist/tab",
+                Tooltip: "exports-loader?Tooltip!bootstrap/js/dist/tooltip",
+                Util: "exports-loader?Util!bootstrap/js/dist/util"
+            }), // Maps these identifiers for Bootstrap
             new webpack.DefinePlugin({
                 'process.env.NODE_ENV': isDevBuild ? '"development"' : '"production"'
             }),

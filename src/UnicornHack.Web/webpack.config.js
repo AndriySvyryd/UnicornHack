@@ -54,35 +54,47 @@ function getClientConfig(env) {
                     use: isDevBuild
                         ? [
                             'style-loader',
-                            { loader: 'css-loader', options: { sourceMap: true, importLoaders: 3 } },
+                            { loader: 'css-loader', options: { sourceMap: true, importLoaders: 4 } },
                             {
                                 loader: 'postcss-loader',
                                 options: {
                                     sourceMap: true,
                                     parser: 'postcss-scss',
-                                    plugins: () => [require('autoprefixer')()]
+                                    plugins: () => [require('precss'), require('autoprefixer')()]
                                 }
                             },
                             { loader: 'resolve-url-loader', options: { sourceMap: true } },
-                            { loader: 'sass-loader', options: { sourceMap: true } }
+                            { loader: 'sass-loader', options: { sourceMap: true } },
+                            {
+                                loader: 'sass-resources-loader',
+                                options: {
+                                    resources: './ClientApp/styles/sass-resources.scss'
+                                }
+                            }
                         ]
                         : ExtractTextPlugin.extract({
                             fallback: 'style-loader',
                             use: [
                                 {
                                     loader: 'css-loader',
-                                    options: { sourceMap: true, minimize: true, importLoaders: 3 }
+                                    options: { sourceMap: true, minimize: true, importLoaders: 4 }
                                 },
                                 {
                                     loader: 'postcss-loader',
                                     options: {
                                         sourceMap: true,
                                         parser: 'postcss-scss',
-                                        plugins: () => [require('autoprefixer')()]
+                                        plugins: () => [require('precss'), require('autoprefixer')()]
                                     }
                                 },
                                 { loader: 'resolve-url-loader', options: { sourceMap: true } },
-                                { loader: 'sass-loader', options: { sourceMap: true } }
+                                { loader: 'sass-loader', options: { sourceMap: true } },
+                                {
+                                    loader: 'sass-resources-loader',
+                                    options: {
+                                        resources: './ClientApp/styles/sass-resources.scss'
+                                    }
+                                }
                             ]
                         })
                 }
