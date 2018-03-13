@@ -18,7 +18,6 @@ namespace UnicornHack
         GemCollector = 1 << 9,
         WeaponCollector = 1 << 10,
         MagicUser = 1 << 11,
-        Covetous = 1 << 12,
-        Bribeable = 1 << 13
+        Covetous = 1 << 12
     }
 }

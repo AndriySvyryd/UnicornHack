@@ -7,9 +7,9 @@ namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Beholder = new CreatureVariant
+        public static readonly CreatureVariant Eyedra = new CreatureVariant
         {
-            Name = "beholder",
+            Name = "eyedra",
             Species = Species.FloatingSphere,
             SpeciesClass = SpeciesClass.Aberration,
             MovementDelay = 300,

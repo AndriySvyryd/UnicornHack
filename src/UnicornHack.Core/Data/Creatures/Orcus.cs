@@ -107,7 +107,7 @@ namespace UnicornHack.Data.Creatures
             CorpseName = "",
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
             Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector |
-                       MonsterBehavior.MagicUser | MonsterBehavior.Covetous,
+                       MonsterBehavior.MagicUser,
             Noise = ActorNoiseType.Grunt
         };
     }

@@ -7,9 +7,9 @@ namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Mumak = new CreatureVariant
+        public static readonly CreatureVariant DeepSheep = new CreatureVariant
         {
-            Name = "mumak",
+            Name = "deep sheep",
             Species = Species.Quadruped,
             SpeciesClass = SpeciesClass.Quadrupedal,
             MovementDelay = 133,
@@ -20,22 +20,29 @@ namespace UnicornHack.Data.Creatures
                     Activation = AbilityActivation.OnTarget,
                     Action = AbilityAction.Headbutt,
                     Timeout = 1,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 130}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 40}}
                 },
                 new AbilityDefinition
                 {
                     Activation = AbilityActivation.OnTarget,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 }
             },
-            SimpleProperties =
-                new HashSet<string> {"animal body", "infravisibility", "handlessness", "singular inventory"},
-            ValuedProperties = new Dictionary<string, object> {{"thick hide", 3}, {"size", 8}, {"weight", 2500}},
-            InitialLevel = 5,
+            SimpleProperties = new HashSet<string>
+            {
+                "blindness",
+                "animal body",
+                "infravisibility",
+                "handlessness",
+                "singular inventory"
+            },
+            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 13}, {"weight", 600}},
+            InitialLevel = 2,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
-            Noise = ActorNoiseType.Roar
+            GenerationFlags = GenerationFlags.SmallGroup,
+            Noise = ActorNoiseType.Bleat
         };
     }
 }

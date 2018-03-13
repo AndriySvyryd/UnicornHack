@@ -21,22 +21,10 @@ namespace UnicornHack
         Shriek,
         Howl,
         Rattle,
-        Speach = 1 << 5,
-        Guard, // TODO: Remove?
-        Soldier, // TODO: Remove?
-        Djinni, // TODO: Remove?
-        Nurse, // TODO: Remove?
-        Seduction, // TODO: Remove?
-        Vampire, // TODO: Remove?
+        Speach,
+        Seduction,
         Lycanthrope,
-        Oracle,
-        Priest,
-        Doctor,
         Bribe,
-        Sell,
-        Quest,
-        Prisoner,
-        Rider,
         Cuss,
         Mumble,
         Cast,

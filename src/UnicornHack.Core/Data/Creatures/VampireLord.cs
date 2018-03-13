@@ -64,7 +64,7 @@ namespace UnicornHack.Data.Creatures
             NextStageName = "vampire mage",
             CorpseName = "",
             Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector,
-            Noise = ActorNoiseType.Vampire
+            Noise = ActorNoiseType.Hiss
         };
     }
 }

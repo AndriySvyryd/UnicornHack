@@ -91,7 +91,7 @@ namespace UnicornHack.Data.Creatures
             GenerationWeight = new BranchWeight {Matched = new DefaultWeight(), Name = "hell"},
             PreviousStageName = "master lich",
             CorpseName = "",
-            Behavior = MonsterBehavior.MagicUser | MonsterBehavior.Covetous,
+            Behavior = MonsterBehavior.MagicUser,
             Noise = ActorNoiseType.Mumble
         };
     }

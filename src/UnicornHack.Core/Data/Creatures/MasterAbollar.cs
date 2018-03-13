@@ -7,10 +7,10 @@ namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant MindFlayer = new CreatureVariant
+        public static readonly CreatureVariant MasterAbollar = new CreatureVariant
         {
-            Name = "mind flayer",
-            Species = Species.Illithid,
+            Name = "master abollar",
+            Species = Species.Abollar,
             MovementDelay = 100,
             Abilities = new HashSet<AbilityDefinition>
             {
@@ -18,7 +18,7 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = AbilityActivation.OnMeleeAttack,
                     Action = AbilityAction.Modifier,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 40}}
                 },
                 new AbilityDefinition
                 {
@@ -26,6 +26,16 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
+                },
+                new AbilityDefinition
+                {
+                    Activation = AbilityActivation.OnTarget,
+                    Action = AbilityAction.Suck,
+                    Timeout = 1,
+                    Effects = new HashSet<Effect>
+                    {
+                        new ChangeProperty<int> {PropertyName = "intelligence", Value = -2, Duration = 10}
+                    }
                 },
                 new AbilityDefinition
                 {
@@ -47,17 +57,17 @@ namespace UnicornHack.Data.Creatures
                 "infravisibility",
                 "humanoidness"
             },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {"telepathy", 3},
-                {"size", 8},
-                {"physical deflection", 15},
-                {"magic resistance", 80},
-                {"weight", 1200}
-            },
-            InitialLevel = 9,
+            ValuedProperties =
+                new Dictionary<string, object>
+                {
+                    {"telepathy", 3},
+                    {"size", 8},
+                    {"magic resistance", 90},
+                    {"weight", 1200}
+                },
+            InitialLevel = 13,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},
-            NextStageName = "master mind flayer",
+            PreviousStageName = "abollar",
             Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
             Noise = ActorNoiseType.Gurgle
         };

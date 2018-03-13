@@ -7,9 +7,9 @@ namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant UmberHulk = new CreatureVariant
+        public static readonly CreatureVariant Hulker = new CreatureVariant
         {
-            Name = "umber hulk",
+            Name = "hulker",
             Species = Species.Hulk,
             SpeciesClass = SpeciesClass.MagicalBeast,
             MovementDelay = 200,

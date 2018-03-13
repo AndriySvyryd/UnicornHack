@@ -81,9 +81,8 @@ namespace UnicornHack.Data.Creatures
             GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 0F}, Name = "hell"},
             CorpseName = "",
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-            Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.Covetous |
-                       MonsterBehavior.Bribeable,
-            Noise = ActorNoiseType.Bribe
+            Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking,
+            Noise = ActorNoiseType.Cuss
         };
     }
 }

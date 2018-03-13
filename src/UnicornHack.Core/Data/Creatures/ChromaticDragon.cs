@@ -110,8 +110,8 @@ namespace UnicornHack.Data.Creatures
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
             Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.GoldCollector |
-                       MonsterBehavior.GemCollector | MonsterBehavior.Covetous,
-            Noise = ActorNoiseType.Quest
+                       MonsterBehavior.GemCollector,
+            Noise = ActorNoiseType.Roar
         };
     }
 }

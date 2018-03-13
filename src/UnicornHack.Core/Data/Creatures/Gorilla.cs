@@ -7,11 +7,11 @@ namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Sasquatch = new CreatureVariant
+        public static readonly CreatureVariant Gorilla = new CreatureVariant
         {
-            Name = "sasquatch",
+            Name = "gorilla",
             Species = Species.Simian,
-            MovementDelay = 80,
+            MovementDelay = 100,
             Abilities = new HashSet<AbilityDefinition>
             {
                 new AbilityDefinition
@@ -19,14 +19,14 @@ namespace UnicornHack.Data.Creatures
                     Activation = AbilityActivation.OnTarget,
                     Action = AbilityAction.Claw,
                     Timeout = 1,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
                 new AbilityDefinition
                 {
                     Activation = AbilityActivation.OnTarget,
                     Action = AbilityAction.Claw,
                     Timeout = 1,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
                 new AbilityDefinition
                 {
@@ -37,9 +37,9 @@ namespace UnicornHack.Data.Creatures
                 }
             },
             SimpleProperties = new HashSet<string> {"animal body", "infravisibility", "humanoidness"},
-            ValuedProperties =
-                new Dictionary<string, object> {{"size", 8}, {"physical deflection", 14}, {"weight", 1550}},
-            InitialLevel = 7,
+            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 14}, {"weight", 1250}},
+            InitialLevel = 6,
+            GenerationWeight = new DefaultWeight {Multiplier = 2F},
             Noise = ActorNoiseType.Growl
         };
     }

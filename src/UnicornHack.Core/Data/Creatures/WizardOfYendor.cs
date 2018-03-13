@@ -79,7 +79,7 @@ namespace UnicornHack.Data.Creatures
             InitialLevel = 30,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-            Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.MagicUser | MonsterBehavior.Covetous,
+            Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.MagicUser,
             Noise = ActorNoiseType.Cuss
         };
     }

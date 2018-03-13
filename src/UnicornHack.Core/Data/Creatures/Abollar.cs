@@ -7,10 +7,10 @@ namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant ArchPriest = new CreatureVariant
+        public static readonly CreatureVariant Abollar = new CreatureVariant
         {
-            Name = "Arch Priest",
-            Species = Species.Human,
+            Name = "abollar",
+            Species = Species.Abollar,
             MovementDelay = 100,
             Abilities = new HashSet<AbilityDefinition>
             {
@@ -30,26 +30,36 @@ namespace UnicornHack.Data.Creatures
                 new AbilityDefinition
                 {
                     Activation = AbilityActivation.OnTarget,
-                    Action = AbilityAction.Spell,
+                    Action = AbilityAction.Suck,
                     Timeout = 1,
-                    Effects = new HashSet<Effect> {new ScriptedEffect {Script = "DivineSpell"}}
+                    Effects = new HashSet<Effect>
+                    {
+                        new ChangeProperty<int> {PropertyName = "intelligence", Value = -2, Duration = 10}
+                    }
                 }
             },
-            SimpleProperties =
-                new HashSet<string> {"infravisibility", "humanoidness", "maleness", "stoning resistance"},
+            SimpleProperties = new HashSet<string>
+            {
+                "flight",
+                "flight control",
+                "invisibility detection",
+                "infravision",
+                "infravisibility",
+                "humanoidness"
+            },
             ValuedProperties = new Dictionary<string, object>
             {
-                {"poison resistance", 75},
-                {"physical deflection", 13},
-                {"magic resistance", 60},
-                {"weight", 1000}
+                {"telepathy", 3},
+                {"size", 8},
+                {"physical deflection", 15},
+                {"magic resistance", 80},
+                {"weight", 1200}
             },
-            InitialLevel = 16,
-            GenerationWeight = new DefaultWeight {Multiplier = 0F},
-            GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-            Behavior = MonsterBehavior.Peaceful | MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector |
-                       MonsterBehavior.MagicUser,
-            Noise = ActorNoiseType.Quest
+            InitialLevel = 9,
+            GenerationWeight = new DefaultWeight {Multiplier = 5F},
+            NextStageName = "master abollar",
+            Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
+            Noise = ActorNoiseType.Gurgle
         };
     }
 }

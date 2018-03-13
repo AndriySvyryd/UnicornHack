@@ -88,7 +88,7 @@ namespace UnicornHack.Data.Creatures
             PreviousStageName = "demilich",
             NextStageName = "arch-lich",
             CorpseName = "",
-            Behavior = MonsterBehavior.MagicUser | MonsterBehavior.Covetous,
+            Behavior = MonsterBehavior.MagicUser,
             Noise = ActorNoiseType.Mumble
         };
     }

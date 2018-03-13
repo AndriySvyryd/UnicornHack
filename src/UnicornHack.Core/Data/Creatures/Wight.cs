@@ -7,11 +7,11 @@ namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant MinionOfHuehueteotl = new CreatureVariant
+        public static readonly CreatureVariant Wight = new CreatureVariant
         {
-            Name = "Minion of Huehueteotl",
-            Species = Species.DemonMajor,
-            SpeciesClass = SpeciesClass.Demon,
+            Name = "wight",
+            Species = Species.Wraith,
+            SpeciesClass = SpeciesClass.Undead,
             MovementDelay = 100,
             Abilities = new HashSet<AbilityDefinition>
             {
@@ -19,7 +19,7 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = AbilityActivation.OnMeleeAttack,
                     Action = AbilityAction.Modifier,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 200}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
                 new AbilityDefinition
                 {
@@ -31,9 +31,9 @@ namespace UnicornHack.Data.Creatures
                 new AbilityDefinition
                 {
                     Activation = AbilityActivation.OnTarget,
-                    Action = AbilityAction.Punch,
+                    Action = AbilityAction.Claw,
                     Timeout = 1,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
+                    Effects = new HashSet<Effect> {new DrainLife {Amount = 2}}
                 },
                 new AbilityDefinition
                 {
@@ -45,53 +45,30 @@ namespace UnicornHack.Data.Creatures
                 new AbilityDefinition
                 {
                     Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Poison {Damage = 50}}
+                    Effects = new HashSet<Effect> {new Infect()}
                 }
             },
             SimpleProperties = new HashSet<string>
             {
-                "flight",
-                "flight control",
+                "sleep resistance",
                 "infravision",
-                "invisibility detection",
-                "infravisibility",
                 "humanoidness",
-                "stoning resistance",
+                "breathlessness",
                 "sickness resistance"
             },
             ValuedProperties = new Dictionary<string, object>
             {
-                {
-                    "fire resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "size",
-                    16
-                },
-                {
-                    "physical deflection",
-                    22
-                },
-                {
-                    "magic resistance",
-                    75
-                },
-                {
-                    "weight",
-                    2500
-                }
+                {"cold resistance", 75},
+                {"poison resistance", 75},
+                {"physical deflection", 15},
+                {"magic resistance", 5},
+                {"weight", 1200}
             },
-            InitialLevel = 16,
+            InitialLevel = 3,
+            GenerationWeight = new DefaultWeight {Multiplier = 2F},
             CorpseName = "",
-            GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-            Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector |
-                       MonsterBehavior.MagicUser | MonsterBehavior.Covetous,
-            Noise = ActorNoiseType.Growl
+            Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser,
+            Noise = ActorNoiseType.Howl
         };
     }
 }
