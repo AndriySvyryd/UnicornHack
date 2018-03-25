@@ -1,80 +1,49 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant SpottedJelly = new CreatureVariant
+        public static readonly Creature SpottedJelly = new Creature
         {
             Name = "spotted jelly",
             Species = Species.Jelly,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeHit,
+                    Activation = ActivationType.OnPhysicalMeleeHit,
                     Effects = new HashSet<Effect> {new Corrode {Damage = 30}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Corrode {Damage = 30}}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "breathlessness",
-                "amorphism",
-                "non animal",
-                "eyelessness",
-                "limblessness",
-                "headlessness",
-                "mindlessness",
-                "asexuality",
-                "no inventory",
-                "stoning resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "venom resistance",
-                    75
-                },
-                {
-                    "acid resistance",
-                    75
-                },
-                {
-                    "stealthiness",
-                    3
-                },
-                {
-                    "size",
-                    2
-                },
-                {
-                    "physical deflection",
-                    12
-                },
-                {
-                    "magic resistance",
-                    10
-                },
-                {
-                    "weight",
-                    100
                 }
             },
             InitialLevel = 5,
-            GenerationWeight = new DefaultWeight {Multiplier = 5F}
+            GenerationWeight = new DefaultWeight {Multiplier = 5F},
+            Sex = Sex.None,
+            Size = 2,
+            Weight = 100,
+            Agility = 3,
+            Constitution = 3,
+            Intelligence = 3,
+            Quickness = 3,
+            Strength = 3,
+            Willpower = 8,
+            MagicResistance = 10,
+            PhysicalDeflection = 12,
+            AcidResistance = 75,
+            StoningImmune = true,
+            HeadType = HeadType.None,
+            TorsoType = TorsoType.Amorphic,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.None,
+            RespirationType = RespirationType.None,
+            InventorySize = 0,
+            EyeCount = 0,
+            NoiseLevel = 0,
+            Mindless = true,
+            NonAnimal = true
         };
     }
 }

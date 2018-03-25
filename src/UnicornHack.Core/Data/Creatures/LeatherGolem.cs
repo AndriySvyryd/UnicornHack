@@ -1,71 +1,50 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant LeatherGolem = new CreatureVariant
+        public static readonly Creature LeatherGolem = new Creature
         {
             Name = "leather golem",
             Species = Species.Golem,
             MovementDelay = 200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "breathlessness",
-                "mindlessness",
-                "humanoidness",
-                "asexuality"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "venom resistance",
-                    75
-                },
-                {
-                    "hit point maximum",
-                    40
-                },
-                {
-                    "size",
-                    8
-                },
-                {
-                    "physical deflection",
-                    14
-                },
-                {
-                    "weight",
-                    800
                 }
             },
             InitialLevel = 6,
-            CorpseName = ""
+            Sex = Sex.None,
+            Size = 8,
+            Weight = 800,
+            Agility = 4,
+            Constitution = 4,
+            Intelligence = 4,
+            Quickness = 4,
+            Strength = 4,
+            Willpower = 9,
+            PhysicalDeflection = 14,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            RespirationType = RespirationType.None,
+            Mindless = true
         };
     }
 }

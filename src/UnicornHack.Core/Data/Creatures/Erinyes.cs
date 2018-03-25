@@ -1,56 +1,59 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Erinyes = new CreatureVariant
+        public static readonly Creature Erinyes = new Creature
         {
             Name = "erinyes",
             Species = Species.DemonMajor,
             SpeciesClass = SpeciesClass.Demon,
             MovementDelay = 100,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeAttack,
+                    Activation = ActivationType.OnPhysicalMeleeAttack,
                     Action = AbilityAction.Modifier,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
-                    Effects = new HashSet<Effect> {new Envenom {Damage = 10}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Poison {Damage = 30}}
+                    Effects = new HashSet<Effect> {new Blight {Damage = 10}}
                 }
             },
-            SimpleProperties =
-                new HashSet<string> {"infravision", "infravisibility", "humanoidness", "sickness resistance"},
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {"fire resistance", 75},
-                {"poison resistance", 75},
-                {"physical deflection", 18},
-                {"magic resistance", 30},
-                {"weight", 1000}
-            },
             InitialLevel = 7,
-            GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 2F}, Name = "hell"},
+            GenerationWeight = new BranchWeight
+            {
+                Matched = new DefaultWeight {Multiplier = 2F},
+                Name = "hell"
+            },
             NextStageName = "vrock",
-            CorpseName = "",
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable |
                               GenerationFlags.SmallGroup,
-            Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector
+            Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector,
+            Weight = 1000,
+            Agility = 4,
+            Constitution = 4,
+            Intelligence = 4,
+            Quickness = 4,
+            Strength = 4,
+            Willpower = 4,
+            MagicResistance = 30,
+            PhysicalDeflection = 18,
+            FireResistance = 75,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            Infravisible = true,
+            Infravision = true
         };
     }
 }

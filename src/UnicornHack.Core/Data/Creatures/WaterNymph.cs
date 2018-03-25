@@ -1,43 +1,57 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant WaterNymph = new CreatureVariant
+        public static readonly Creature WaterNymph = new Creature
         {
             Name = "water nymph",
             Species = Species.Nymph,
             SpeciesClass = SpeciesClass.Fey,
             MovementDelay = 100,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Sedate {Duration = 2}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
-                    Effects = new HashSet<Effect> {new StealItem()}
+                    Effects = new HashSet<Effect>
+                    {
+                        new StealItem()
+                    }
                 }
             },
-            SimpleProperties =
-                new HashSet<string> {"teleportation", "swimming", "humanoidness", "infravisibility", "femaleness"},
-            ValuedProperties =
-                new Dictionary<string, object> {{"physical deflection", 11}, {"magic resistance", 20}, {"weight", 600}},
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
-            Behavior = MonsterBehavior.WeaponCollector,
-            Noise = ActorNoiseType.Seduction
+            Behavior = AIBehavior.WeaponCollector,
+            Noise = ActorNoiseType.Seduction,
+            Sex = Sex.Female,
+            Weight = 600,
+            Agility = 2,
+            Constitution = 2,
+            Intelligence = 2,
+            Quickness = 2,
+            Strength = 2,
+            Willpower = 2,
+            MagicResistance = 20,
+            PhysicalDeflection = 11,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            LocomotionType = LocomotionType.Swimming,
+            Infravisible = true
         };
     }
 }

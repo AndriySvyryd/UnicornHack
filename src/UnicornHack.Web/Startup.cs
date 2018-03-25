@@ -16,6 +16,7 @@ using UnicornHack.Services.English;
 
 namespace UnicornHack
 {
+    // TODO: Separate into UnicornHack.Storage, UnicornHack.WebApp and UnicornHack.Spa
     public class Startup
     {
         public Startup(IConfiguration configuration) => Configuration = configuration;
@@ -29,16 +30,19 @@ namespace UnicornHack
             services.AddSingleton<GameTransmissionProtocol>();
 
             services.AddEntityFrameworkSqlServer();
-            services.AddDbContextPool<GameDbContext>((p, options) =>
+            // Workaround for #13087
+            // TODO: AddDbContextPool
+            services.AddDbContext<GameDbContext>((p, options) =>
                 options.UseSqlServer(Configuration.GetConnectionString(name: "DefaultConnection"))
                     .UseInternalServiceProvider(p)
                     .EnableSensitiveDataLogging()
                     .ConfigureWarnings(w => w.Default(WarningBehavior.Throw)
-                        .Log(CoreEventId.SensitiveDataLoggingEnabledWarning)));
+                        .Log(CoreEventId.SensitiveDataLoggingEnabledWarning)
+                        .Log(RelationalEventId.QueryClientEvaluationWarning)));
 
             services.AddMvc();
 
-            services.AddSignalR().AddMessagePackProtocol();
+            services.AddSignalR(o => o.EnableDetailedErrors = true).AddMessagePackProtocol();
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)

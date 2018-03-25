@@ -1,47 +1,55 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant OgreKing = new CreatureVariant
+        public static readonly Creature OgreKing = new Creature
         {
             Name = "ogre king",
             Species = Species.Ogre,
             MovementDelay = 85,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeAttack,
+                    Activation = ActivationType.OnPhysicalMeleeAttack,
                     Action = AbilityAction.Modifier,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 }
             },
-            SimpleProperties = new HashSet<string> {"infravision", "infravisibility", "humanoidness", "maleness"},
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {"size", 8},
-                {"physical deflection", 16},
-                {"magic resistance", 60},
-                {"weight", 1700}
-            },
             InitialLevel = 9,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},
             PreviousStageName = "ogre lord",
             GenerationFlags = GenerationFlags.Entourage,
-            Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
-            Noise = ActorNoiseType.Grunt
+            Behavior = AIBehavior.GoldCollector | AIBehavior.GemCollector | AIBehavior.WeaponCollector,
+            Noise = ActorNoiseType.Grunt,
+            Sex = Sex.Male,
+            Size = 8,
+            Weight = 1700,
+            Agility = 5,
+            Constitution = 5,
+            Intelligence = 5,
+            Quickness = 5,
+            Strength = 5,
+            Willpower = 5,
+            MagicResistance = 60,
+            PhysicalDeflection = 16,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            Infravisible = true,
+            Infravision = true
         };
     }
 }

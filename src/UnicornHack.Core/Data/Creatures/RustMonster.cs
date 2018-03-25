@@ -1,50 +1,55 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant RustMonster = new CreatureVariant
+        public static readonly Creature RustMonster = new Creature
         {
             Name = "rust monster",
             Species = Species.RustMonster,
             MovementDelay = 66,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Soak {Damage = 70}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Soak {Damage = 70}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeHit,
+                    Activation = ActivationType.OnPhysicalMeleeHit,
                     Effects = new HashSet<Effect> {new Soak {Damage = 100}}
                 }
             },
-            SimpleProperties = new HashSet<string>
-            {
-                "swimming",
-                "infravisibility",
-                "animal body",
-                "handlessness",
-                "singular inventory"
-            },
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 18}, {"weight", 1000}},
             InitialLevel = 5,
-            GenerationWeight = new DefaultWeight {Multiplier = 3F}
+            GenerationWeight = new DefaultWeight {Multiplier = 3F},
+            Weight = 1000,
+            Agility = 3,
+            Constitution = 3,
+            Intelligence = 3,
+            Quickness = 3,
+            Strength = 3,
+            Willpower = 3,
+            PhysicalDeflection = 18,
+            TorsoType = TorsoType.Quadruped,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.Claws,
+            LocomotionType = LocomotionType.Swimming,
+            InventorySize = 1,
+            Infravisible = true
         };
     }
 }

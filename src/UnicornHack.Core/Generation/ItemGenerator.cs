@@ -1,26 +1,31 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using UnicornHack.Generation.Map;
+using UnicornHack.Primitives;
+using UnicornHack.Systems.Levels;
 
 namespace UnicornHack.Generation
 {
     public class ItemGenerator
     {
-        public virtual byte ExpectedInitialCount { get; set; } = 6;
+        public byte ExpectedInitialCount { get; set; } = 6;
 
-        public virtual void Fill(Level level)
+        public virtual void Fill(LevelComponent level, List<Room> rooms)
         {
-            var itemsToPlace =
-                level.GenerationRandom.NextBinomial(0.5f, (ExpectedInitialCount - level.Items.Count) * 2);
-            var roomsToFill = level.Rooms.Count;
-            var difficultyFraction = (float)(level.Difficulty - 1) / Level.MaxDifficulty;
-            foreach (var room in level.GenerationRandom.WeightedOrder(level.Rooms.ToList(), r => r.InsidePoints.Count))
+            var manager = level.Entity.Manager;
+            var itemsToPlace = level.GenerationRandom.NextBinomial(0.5f,
+                (ExpectedInitialCount - manager.LevelItemsToLevelRelationship[level.EntityId].Count) * 2);
+            var roomsToFill = rooms.Count;
+            var difficultyFraction = (float)(level.Difficulty - 1) / LevelGenerator.MaxDifficulty;
+            foreach (var room in level.GenerationRandom.WeightedOrder(rooms, r => r.InsidePoints.Count))
             {
                 var itemsPerRoom = (int)Math.Ceiling((float)itemsToPlace / roomsToFill);
                 for (var i = 0; i < itemsPerRoom; i++)
                 {
-                    if (!level.GenerationRandom.TryPick(room.InsidePoints,
-                        p => level.Items.All(c => c.LevelCell != p), out var point))
+                    if (!level.GenerationRandom.TryPick(
+                        room.InsidePoints,
+                        p => manager.LevelItemsToLevelCellIndex[(level.EntityId, p.X, p.Y)] == null,
+                        out var point))
                     {
                         goto NextRoom;
                     }
@@ -33,12 +38,12 @@ namespace UnicornHack.Generation
                         if (currentGroup.SubGroups == null)
                         {
                             foreach (var itemVariant in level.GenerationRandom.WeightedOrder(
-                                ItemVariant.Loader.GetAllValues(currentGroup), c => c.GetWeight(level)))
+                                Item.Loader.GetAllValues(currentGroup), c => c.GetWeight(level)))
                             {
                                 var quantity = currentGroup.Type == ItemType.Coin
                                     ? level.GenerationRandom.NextBinomial(difficultyFraction, 49) + 1
                                     : 1;
-                                if (itemVariant.Instantiate(new LevelCell(level, point.X, point.Y), quantity) != null)
+                                if (itemVariant.Instantiate(level, point, quantity))
                                 {
                                     itemPlaced = true;
                                     break;

@@ -1,5 +1,8 @@
-using System;
 using UnicornHack.Generation.Map;
+using UnicornHack.Primitives;
+using UnicornHack.Systems.Levels;
+using UnicornHack.Systems.Senses;
+using UnicornHack.Utils.DataStructures;
 using Xunit;
 
 namespace UnicornHack.Utils
@@ -8,33 +11,25 @@ namespace UnicornHack.Utils
     public class BeveledFOVTest
     {
         [Fact]
-        public void Pattern1()
-        {
-            TestFOV(@"
+        public void Pattern1() => TestFOV(@"
 ..#
 ..#
 ###", @"
 ..#
 ..#
 ###");
-        }
 
         [Fact]
-        public void Pattern2()
-        {
-            TestFOV(@"
+        public void Pattern2() => TestFOV(@"
 .##
 ..#
 ...#", @"
 .#
 ..#
 ...#");
-        }
 
         [Fact]
-        public void Pattern3()
-        {
-            TestFOV(@"
+        public void Pattern3() => TestFOV(@"
 .###...
 #......
 ...#...
@@ -43,12 +38,9 @@ namespace UnicornHack.Utils
 #...
  ..#
  .#..");
-        }
 
         [Fact]
-        public void Pattern4()
-        {
-            TestFOV(@"
+        public void Pattern4() => TestFOV(@"
 A###
 #...
 ...#
@@ -57,12 +49,9 @@ A#
 #..
  ..#
   #.");
-        }
 
         [Fact]
-        public void Pattern5()
-        {
-            TestFOV(@"
+        public void Pattern5() => TestFOV(@"
 .........#
 .#.......#
 #....#...#
@@ -71,12 +60,9 @@ A#
 .#.......#
 #. ..#...#
  ..  .  .#");
-        }
 
         [Fact]
-        public void Pattern6()
-        {
-            TestFOV(@"
+        public void Pattern6() => TestFOV(@"
 ........#
 .#......#
 ......#.#
@@ -87,12 +73,9 @@ A#
 .. ...#.#
 .#.  ...#
 ..     .#");
-        }
 
         [Fact]
-        public void Pattern7()
-        {
-            TestFOV(@"
+        public void Pattern7() => TestFOV(@"
 ......#..#
 .........#
 .#.......#
@@ -105,24 +88,18 @@ A#
 ..#....#.#
 .# ......#
 ..  ......");
-        }
 
         [Fact]
-        public void Pattern8()
-        {
-            TestFOV(@"
+        public void Pattern8() => TestFOV(@"
 .........##############
 ########..............#
        ################", @"
 .........#
 ########..............#
                      ##");
-        }
 
         [Fact]
-        public void Pattern9()
-        {
-            TestFOV(@"
+        public void Pattern9() => TestFOV(@"
 ......
 ......
 
@@ -131,12 +108,9 @@ A#
 ......
 ######
  ");
-        }
 
         [Fact]
-        public void Pattern10()
-        {
-            TestFOV(@"
+        public void Pattern10() => TestFOV(@"
 ......#..#
 .........#
 .........#
@@ -151,12 +125,9 @@ A#
 .........#
 ##########
  ");
-        }
 
         [Fact]
-        public void Pattern11()
-        {
-            TestFOV(@"
+        public void Pattern11() => TestFOV(@"
 .........#
 .....#...#
 .........#
@@ -171,12 +142,9 @@ A#
 .........#
 ..#..#....
 #..... ...");
-        }
 
         [Fact]
-        public void Pattern12()
-        {
-            TestFOV(@"
+        public void Pattern12() => TestFOV(@"
 .........#
 .#.......#
 ..#......#
@@ -191,12 +159,9 @@ A#
 ...    ..#
 ....     #
 ....");
-        }
 
         [Fact]
-        public void Pattern13()
-        {
-            TestFOV(@"
+        public void Pattern13() => TestFOV(@"
 .........#
 .........#
 ..#......#
@@ -211,12 +176,9 @@ A#
 ....  ...#
 ....   ..#
 .....    #");
-        }
 
         [Fact]
-        public void Pattern14()
-        {
-            TestFOV(@"
+        public void Pattern14() => TestFOV(@"
 .........#
 .........#
 .........#
@@ -231,12 +193,9 @@ A#
 .... ....#
 ..... ...#
 ......  .#");
-        }
 
         [Fact]
-        public void Pattern15()
-        {
-            TestFOV(@"
+        public void Pattern15() => TestFOV(@"
 .........#
 .........#
 .........#
@@ -251,24 +210,20 @@ A#
 ....#....#
 ..... ...#
 ...... ..#");
-        }
 
         [Fact]
-        public void Pattern16()
-        {
-            TestFOV(@"
+        public void Pattern16() => TestFOV(@"
 ..........######
 #A#A#A#A#......#
 ################", @"
 ..........#
 #A#A#A#A#......#
  ##");
-        }
 
         [Fact]
         public void Benchmark()
         {
-            var map = @"
+            const string map = @"
      #############
      #...#...#...#
      #..#.....#..#
@@ -293,32 +248,31 @@ A#
 ........#.#.#.#.#.#.#..
 ..#####................";
 
-            var seed = Environment.TickCount;
-            var level = TestHelper.BuildLevel(map, seed);
+            var level = TestHelper.BuildLevel(map);
 
             for (var i = 0; i < 10000; i++)
             {
-                level.GetFOV(new Point(11, 10), Direction.South,
-                    primaryFOV: 8, primaryRange: 24, secondaryFOV: 8, secondaryRange: 24, noFalloff: true);
-                level.GetFOV(new Point(11, 11), Direction.South,
-                    primaryFOV: 8, primaryRange: 24, secondaryFOV: 8, secondaryRange: 24, noFalloff: true);
-                level.GetFOV(new Point(11, 12), Direction.South,
-                    primaryFOV: 8, primaryRange: 24, secondaryFOV: 8, secondaryRange: 24, noFalloff: true);
-                level.GetFOV(new Point(12, 12), Direction.East,
-                    primaryFOV: 8, primaryRange: 24, secondaryFOV: 8, secondaryRange: 24, noFalloff: true);
+                GetVisibleTerrain(level, new Point(11, 10), Direction.South);
+                GetVisibleTerrain(level, new Point(11, 11), Direction.South);
+                GetVisibleTerrain(level, new Point(11, 12), Direction.South);
+                GetVisibleTerrain(level, new Point(12, 12), Direction.East);
             }
         }
 
         private void TestFOV(string map, string expectedFOV)
         {
-            var seed = Environment.TickCount;
-            var level = TestHelper.BuildLevel(map, seed);
-
-            var fov = level.GetFOV(new Point(0, 0), Direction.Southeast,
-                primaryFOV: 8, primaryRange: 24, secondaryFOV: 8, secondaryRange: 24, noFalloff: true);
+            var level = TestHelper.BuildLevel(map);
+            var origin = new Point(0, 0);
+            var heading = Direction.Southeast;
+            var visibleTerrain = GetVisibleTerrain(level, origin, heading);
 
             var expectedFragment =
-                new NormalMapFragment {Map = expectedFOV, Width = level.Width, Height = level.Height};
+                new NormalMapFragment
+                {
+                    Map = expectedFOV,
+                    Width = level.Width,
+                    Height = level.Height
+                };
             expectedFragment.EnsureInitialized(level.Game);
 
             var expectedVisibility = new byte[level.Height * level.Width];
@@ -327,12 +281,12 @@ A#
             expectedFragment.WriteMap(
                 new Point(0, 0),
                 level,
-                (c, point, l, v) =>
+                (c, point, l, _) =>
                 {
                     var expectedVisible = c == ' ' ? (byte)0 : (byte)1;
                     var i = l.PointToIndex[point.X, point.Y];
                     expectedVisibility[i] = expectedVisible;
-                    var actualVisibile = fov[i] == 0 ? 0 : 1;
+                    var actualVisibile = visibleTerrain[i] == 0 ? 0 : 1;
                     visibilityMatched &= expectedVisible == actualVisibile;
                 },
                 (object)null);
@@ -340,8 +294,19 @@ A#
             Assert.True(visibilityMatched, @"Expected:
 " + TestHelper.PrintMap(level, expectedVisibility) + @"
 Actual:
-" + TestHelper.PrintMap(level, fov) + @"
-Seed: " + seed);
+" + TestHelper.PrintMap(level, visibleTerrain) + @"
+Seed: " + level.Game.InitialSeed);
+        }
+
+        private byte[] GetVisibleTerrain(LevelComponent level, Point origin, Direction heading)
+        {
+            var visibleTerrain = new byte[level.Height * level.Width];
+
+            level.VisibilityCalculator.Compute(origin, heading,
+                primaryFOVQuadrants: 8, primaryRange: 24, totalFOVQuadrants: 8, secondaryRange: 24,
+                SensorySystem.TileBlocksVisibility,
+                (level, visibleTerrain), noFalloff: true);
+            return visibleTerrain;
         }
     }
 }

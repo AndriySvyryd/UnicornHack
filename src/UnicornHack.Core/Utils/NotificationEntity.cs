@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace UnicornHack.Utils
 {
-    public class NotificationEntity : INotifyPropertyChanged, INotifyPropertyChanging
+    public abstract class NotificationEntity : INotifyPropertyChanged, INotifyPropertyChanging
     {
         public static readonly PropertyChangedEventArgs CountPropertyChanged
             = new PropertyChangedEventArgs("Count");
@@ -14,14 +14,25 @@ namespace UnicornHack.Utils
         public event PropertyChangedEventHandler PropertyChanged;
         public event PropertyChangingEventHandler PropertyChanging;
 
-        protected void SetWithNotify<T>(T value, ref T field, [CallerMemberName] string propertyName = "")
+        protected void SetWithNotify<T>(
+            T value,
+            ref T field,
+            [CallerMemberName] string propertyName = "")
         {
-            if (!Equals(field, value))
+            if (Equals(field, value))
             {
-                PropertyChanging?.Invoke(this, new PropertyChangingEventArgs(propertyName));
-                field = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+                return;
             }
+
+            FirePropertyChanging(propertyName);
+            field = value;
+            FirePropertyChanged(propertyName);
         }
+
+        protected void FirePropertyChanging(string propertyName)
+            => PropertyChanging?.Invoke(this, new PropertyChangingEventArgs(propertyName));
+
+        protected void FirePropertyChanged(string propertyName)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

@@ -1,37 +1,47 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant GiantRat = new CreatureVariant
+        public static readonly Creature GiantRat = new Creature
         {
             Name = "giant rat",
             Species = Species.Rat,
             SpeciesClass = SpeciesClass.Rodent,
             MovementDelay = 120,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 }
             },
-            SimpleProperties =
-                new HashSet<string> {"animal body", "infravisibility", "handlessness", "singular inventory"},
-            ValuedProperties =
-                new Dictionary<string, object> {{"size", 2}, {"physical deflection", 13}, {"weight", 150}},
             InitialLevel = 2,
             GenerationWeight = new DefaultWeight {Multiplier = 6F},
             PreviousStageName = "sewer rat",
             GenerationFlags = GenerationFlags.SmallGroup,
-            Noise = ActorNoiseType.Sqeek
+            Noise = ActorNoiseType.Sqeek,
+            Size = 2,
+            Weight = 150,
+            Agility = 2,
+            Constitution = 2,
+            Intelligence = 2,
+            Quickness = 2,
+            Strength = 2,
+            Willpower = 2,
+            PhysicalDeflection = 13,
+            TorsoType = TorsoType.Quadruped,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.Claws,
+            InventorySize = 1,
+            Infravisible = true
         };
     }
 }

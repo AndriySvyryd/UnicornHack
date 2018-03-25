@@ -1,83 +1,60 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant AirElemental = new CreatureVariant
+        public static readonly Creature AirElemental = new Creature
         {
             Name = "air elemental",
             Species = Species.Elemental,
             SpeciesClass = SpeciesClass.Extraplanar,
             MovementDelay = 33,
-            Abilities = new HashSet<AbilityDefinition>
+            Material = Material.Air,
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Engulf {Duration = 5}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnDigestion,
+                    Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Deafen {Duration = 2}}
                 }
             },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "flight",
-                "flight control",
-                "invisibility",
-                "non animal",
-                "non solid body",
-                "breathlessness",
-                "limblessness",
-                "eyelessness",
-                "headlessness",
-                "mindlessness",
-                "asexuality",
-                "stoning resistance",
-                "sliming resistance",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "venom resistance",
-                    75
-                },
-                {
-                    "size",
-                    16
-                },
-                {
-                    "physical deflection",
-                    18
-                },
-                {
-                    "magic resistance",
-                    30
-                },
-                {
-                    "weight",
-                    0
-                }
-            },
             InitialLevel = 8,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
-            CorpseName = ""
+            Sex = Sex.None,
+            Size = 16,
+            Weight = 0,
+            Agility = 5,
+            Constitution = 5,
+            Intelligence = 5,
+            Quickness = 5,
+            Strength = 5,
+            Willpower = 10,
+            MagicResistance = 30,
+            PhysicalDeflection = 18,
+            SlimingImmune = true,
+            StoningImmune = true,
+            HeadType = HeadType.None,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.None,
+            RespirationType = RespirationType.None,
+            LocomotionType = LocomotionType.Flying,
+            EyeCount = 0,
+            VisibilityLevel = 0,
+            Mindless = true,
+            NonAnimal = true
         };
     }
 }

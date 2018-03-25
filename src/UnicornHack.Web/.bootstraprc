@@ -1,6 +1,6 @@
 ﻿---
 # Output debugging info
-# loglevel: debug
+#loglevel: debug
 
 # Major version of Bootstrap: 3 or 4
 bootstrapVersion: 4
@@ -10,7 +10,6 @@ useCustomIconFontPath: false
 
 # Webpack loaders, order matters
 styleLoaders:
-  - style-loader
   - css-loader?sourceMap
   - postcss-loader?sourceMap
   - resolve-url-loader?sourceMap

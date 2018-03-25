@@ -1,41 +1,52 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Giant = new CreatureVariant
+        public static readonly Creature Giant = new Creature
         {
             Name = "giant",
             Species = Species.Giant,
             MovementDelay = 200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeAttack,
+                    Activation = ActivationType.OnPhysicalMeleeAttack,
                     Action = AbilityAction.Modifier,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 110}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 }
             },
-            SimpleProperties = new HashSet<string> {"infravision", "infravisibility", "humanoidness"},
-            ValuedProperties =
-                new Dictionary<string, object> {{"size", 16}, {"physical deflection", 14}, {"weight", 2250}},
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.NonGenocidable,
-            Behavior = MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
-            Noise = ActorNoiseType.Boast
+            Behavior = AIBehavior.GemCollector | AIBehavior.WeaponCollector,
+            Noise = ActorNoiseType.Boast,
+            Size = 16,
+            Weight = 2250,
+            Agility = 4,
+            Constitution = 4,
+            Intelligence = 4,
+            Quickness = 4,
+            Strength = 4,
+            Willpower = 4,
+            PhysicalDeflection = 14,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            Infravisible = true,
+            Infravision = true
         };
     }
 }

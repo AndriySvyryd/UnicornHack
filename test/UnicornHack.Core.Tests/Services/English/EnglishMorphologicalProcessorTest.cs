@@ -112,11 +112,8 @@ namespace UnicornHack.Services.English
         [InlineData("alga", "algae")]
         [InlineData("larva", "larvae")]
         [InlineData("focus", "foci")]
-        public void Nouns_are_pluralized(string noun, string expectedPlural)
-        {
-            Assert.Equal(expectedPlural,
-                Fixture.EnglishMorphologicalProcessor.ProcessNoun(noun, EnglishNounForm.Plural));
-        }
+        public void Nouns_are_pluralized(string noun, string expectedPlural) => Assert.Equal(expectedPlural,
+            Fixture.EnglishMorphologicalProcessor.ProcessNoun(noun, EnglishNounForm.Plural));
 
         [Theory]
         [InlineData("be", "is")]
@@ -134,11 +131,8 @@ namespace UnicornHack.Services.English
         [InlineData("slay", "slays")]
         [InlineData("spit at", "spits at")]
         [InlineData("run to", "runs to")]
-        public void Verbs_3SPresent(string verb, string expectedPlural)
-        {
-            Assert.Equal(expectedPlural,
-                Fixture.EnglishMorphologicalProcessor.ProcessVerb(verb, EnglishVerbForm.ThirdPersonSingularPresent));
-        }
+        public void Verbs_3SPresent(string verb, string expectedPlural) => Assert.Equal(expectedPlural,
+            Fixture.EnglishMorphologicalProcessor.ProcessVerb(verb, EnglishVerbForm.ThirdPersonSingularPresent));
 
         protected TestFixture Fixture { get; }
 

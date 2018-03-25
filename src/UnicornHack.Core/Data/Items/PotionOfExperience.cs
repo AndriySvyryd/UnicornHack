@@ -1,28 +1,28 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Items
 {
-    public static partial class ItemVariantData
+    public static partial class ItemData
     {
-        public static readonly ItemVariant PotionOfExperience = new ItemVariant
+        public static readonly Item PotionOfExperience = new Item
         {
             Name = "potion of experience",
             Type = ItemType.Potion,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             Material = Material.Glass,
+            Weight = 1,
             StackSize = 20,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnConsumption,
+                    Activation = ActivationType.ManualActivation,
                     Effects = new HashSet<Effect> {new GainXP {Amount = 500}}
                 }
-            },
-            ValuedProperties = new Dictionary<string, object> {{"weight", 1}}
+            }
         };
     }
 }

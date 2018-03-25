@@ -1,41 +1,45 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant CaveSpider = new CreatureVariant
+        public static readonly Creature CaveSpider = new Creature
         {
             Name = "cave spider",
             Species = Species.Spider,
             SpeciesClass = SpeciesClass.Vermin,
             MovementDelay = 100,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 }
             },
-            SimpleProperties =
-                new HashSet<string> {"concealment", "clinginess", "animal body", "handlessness", "oviparity"},
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {"poison resistance", 75},
-                {"venom resistance", 75},
-                {"size", 2},
-                {"physical deflection", 17},
-                {"weight", 50}
-            },
             InitialLevel = 1,
             GenerationWeight = new DefaultWeight {Multiplier = 6F},
-            GenerationFlags = GenerationFlags.SmallGroup
+            GenerationFlags = GenerationFlags.SmallGroup,
+            Size = 2,
+            Weight = 50,
+            Agility = 1,
+            Constitution = 1,
+            Intelligence = 1,
+            Quickness = 1,
+            Strength = 1,
+            Willpower = 1,
+            PhysicalDeflection = 17,
+            TorsoType = TorsoType.Quadruped,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.Claws,
+            VisibilityLevel = 2,
+            Clingy = true
         };
     }
 }

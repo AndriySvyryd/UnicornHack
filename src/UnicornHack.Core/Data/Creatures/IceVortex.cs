@@ -1,97 +1,75 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant IceVortex = new CreatureVariant
+        public static readonly Creature IceVortex = new Creature
         {
             Name = "ice vortex",
             Species = Species.Vortex,
             SpeciesClass = SpeciesClass.Extraplanar,
             MovementDelay = 60,
-            Abilities = new HashSet<AbilityDefinition>
+            Material = Material.Air,
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Engulf {Duration = 4}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnDigestion,
+                    Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Freeze {Damage = 30}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeHit,
+                    Activation = ActivationType.OnPhysicalMeleeHit,
                     Effects = new HashSet<Effect> {new Freeze {Damage = 30}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnRangedHit,
+                    Activation = ActivationType.OnPhysicalRangedHit,
                     Effects = new HashSet<Effect> {new Freeze {Damage = 30}}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "flight",
-                "flight control",
-                "infravisibility",
-                "non animal",
-                "non solid body",
-                "breathlessness",
-                "limblessness",
-                "eyelessness",
-                "headlessness",
-                "mindlessness",
-                "asexuality",
-                "stoning resistance",
-                "sliming resistance",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "cold resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "venom resistance",
-                    75
-                },
-                {
-                    "size",
-                    16
-                },
-                {
-                    "physical deflection",
-                    18
-                },
-                {
-                    "magic resistance",
-                    30
-                },
-                {
-                    "weight",
-                    0
                 }
             },
             InitialLevel = 5,
-            GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight {Multiplier = 5F}, Name = "hell"},
-            CorpseName = ""
+            GenerationWeight = new BranchWeight
+            {
+                NotMatched = new DefaultWeight {Multiplier = 5F},
+                Name = "hell"
+            },
+            Sex = Sex.None,
+            Size = 16,
+            Weight = 0,
+            Agility = 3,
+            Constitution = 3,
+            Intelligence = 3,
+            Quickness = 3,
+            Strength = 3,
+            Willpower = 8,
+            MagicResistance = 30,
+            PhysicalDeflection = 18,
+            ColdResistance = 75,
+            SlimingImmune = true,
+            StoningImmune = true,
+            HeadType = HeadType.None,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.None,
+            RespirationType = RespirationType.None,
+            LocomotionType = LocomotionType.Flying,
+            EyeCount = 0,
+            Infravisible = true,
+            Mindless = true,
+            NonAnimal = true
         };
     }
 }

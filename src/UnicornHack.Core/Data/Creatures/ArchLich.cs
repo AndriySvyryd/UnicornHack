@@ -1,98 +1,62 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant ArchLich = new CreatureVariant
+        public static readonly Creature ArchLich = new Creature
         {
             Name = "arch-lich",
             Species = Species.Lich,
             SpeciesClass = SpeciesClass.Undead,
             MovementDelay = 133,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Freeze {Damage = 170}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spell,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Infect()}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Poison {Damage = 180}}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "infravision",
-                "humanoidness",
-                "breathlessness",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "fire resistance",
-                    75
-                },
-                {
-                    "cold resistance",
-                    75
-                },
-                {
-                    "electricity resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "venom resistance",
-                    75
-                },
-                {
-                    "regeneration",
-                    3
-                },
-                {
-                    "physical deflection",
-                    26
-                },
-                {
-                    "magic resistance",
-                    90
-                },
-                {
-                    "weight",
-                    600
                 }
             },
             InitialLevel = 25,
-            GenerationWeight = new BranchWeight {Matched = new DefaultWeight(), Name = "hell"},
+            GenerationWeight = new BranchWeight
+            {
+                Matched = new DefaultWeight(),
+                Name = "hell"
+            },
             PreviousStageName = "master lich",
-            CorpseName = "",
-            Behavior = MonsterBehavior.MagicUser,
-            Noise = ActorNoiseType.Mumble
+            Behavior = AIBehavior.MagicUser,
+            Noise = ActorNoiseType.Mumble,
+            Weight = 600,
+            Agility = 13,
+            Constitution = 13,
+            Intelligence = 13,
+            Quickness = 13,
+            Strength = 13,
+            Willpower = 18,
+            Regeneration = 3,
+            MagicResistance = 90,
+            PhysicalDeflection = 26,
+            ColdResistance = 75,
+            ElectricityResistance = 75,
+            FireResistance = 75,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            RespirationType = RespirationType.None,
+            Infravision = true
         };
     }
 }

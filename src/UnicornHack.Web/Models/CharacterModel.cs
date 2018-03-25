@@ -6,7 +6,8 @@ namespace UnicornHack.Models
     {
         [Required]
         [RegularExpression("[w]+")]
-        [Display(Name = "Character Name", Prompt = "Character Name")]
+        [StringLength(32)]
+        [Display(Name = "Character Name", Prompt = "Type in your character name")]
         public string Name { get; set; }
     }
 }

@@ -1,48 +1,53 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant GreyElf = new CreatureVariant
+        public static readonly Creature GreyElf = new Creature
         {
             Name = "grey-elf",
             Species = Species.Elf,
             MovementDelay = 100,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeAttack,
+                    Activation = ActivationType.OnPhysicalMeleeAttack,
                     Action = AbilityAction.Modifier,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 }
             },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "invisibility detection",
-                "infravision",
-                "infravisibility",
-                "humanoidness"
-            },
-            ValuedProperties =
-                new Dictionary<string, object> {{"physical deflection", 10}, {"magic resistance", 10}, {"weight", 800}},
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},
             GenerationFlags = GenerationFlags.SmallGroup,
-            Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.WeaponCollector,
-            Noise = ActorNoiseType.Speach
+            Behavior = AIBehavior.AlignmentAware | AIBehavior.WeaponCollector,
+            Noise = ActorNoiseType.Speach,
+            Weight = 800,
+            Agility = 4,
+            Constitution = 4,
+            Intelligence = 4,
+            Quickness = 4,
+            Strength = 4,
+            Willpower = 9,
+            MagicResistance = 10,
+            PhysicalDeflection = 10,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            Infravisible = true,
+            Infravision = true,
+            InvisibilityDetection = true
         };
     }
 }

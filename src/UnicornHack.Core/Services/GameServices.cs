@@ -10,7 +10,7 @@ namespace UnicornHack.Services
             SharedCache = sharedCache;
         }
 
-        public virtual ILanguageService Language { get; }
-        public virtual IMemoryCache SharedCache { get; }
+        public ILanguageService Language { get; }
+        public IMemoryCache SharedCache { get; }
     }
 }

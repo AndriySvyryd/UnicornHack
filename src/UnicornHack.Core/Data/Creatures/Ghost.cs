@@ -1,76 +1,54 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Ghost = new CreatureVariant
+        public static readonly Creature Ghost = new Creature
         {
             Name = "ghost",
             Species = Species.Ghost,
             SpeciesClass = SpeciesClass.Undead,
             MovementDelay = 400,
-            Abilities = new HashSet<AbilityDefinition>
+            Material = Material.Air,
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 }
             },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "flight",
-                "flight control",
-                "phasing",
-                "infravision",
-                "non solid body",
-                "humanoidness",
-                "breathlessness",
-                "no inventory",
-                "stoning resistance",
-                "sliming resistance",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "cold resistance",
-                    75
-                },
-                {
-                    "disintegration resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "physical deflection",
-                    25
-                },
-                {
-                    "magic resistance",
-                    15
-                },
-                {
-                    "weight",
-                    0
-                }
-            },
             InitialLevel = 10,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             NextStageName = "shade",
-            CorpseName = "",
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-            Behavior = MonsterBehavior.Wandering | MonsterBehavior.Stalking
+            Behavior = AIBehavior.Wandering | AIBehavior.Stalking,
+            Weight = 0,
+            Agility = 6,
+            Constitution = 6,
+            Intelligence = 6,
+            Quickness = 6,
+            Strength = 6,
+            Willpower = 11,
+            MagicResistance = 15,
+            PhysicalDeflection = 25,
+            ColdResistance = 75,
+            DisintegrationResistance = 75,
+            SlimingImmune = true,
+            StoningImmune = true,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            RespirationType = RespirationType.None,
+            LocomotionType = LocomotionType.Walking | LocomotionType.Phasing,
+            InventorySize = 0,
+            Infravision = true
         };
     }
 }

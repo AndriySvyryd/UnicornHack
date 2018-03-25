@@ -1,101 +1,79 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Yeenoghu = new CreatureVariant
+        public static readonly Creature Yeenoghu = new Creature
         {
             Name = "Yeenoghu",
             Species = Species.DemonMajor,
             SpeciesClass = SpeciesClass.Demon,
             MovementDelay = 66,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeAttack,
+                    Activation = ActivationType.OnPhysicalMeleeAttack,
                     Action = AbilityAction.Modifier,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Confuse {Duration = 9}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Paralyze {Duration = 3}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spell,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new MagicalDamage {Damage = 70}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Poison {Damage = 100}}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "infravision",
-                "invisibility detection",
-                "infravisibility",
-                "maleness",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "fire resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "size",
-                    8
-                },
-                {
-                    "physical deflection",
-                    25
-                },
-                {
-                    "magic resistance",
-                    80
-                },
-                {
-                    "weight",
-                    1500
                 }
             },
             InitialLevel = 30,
-            GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 0F}, Name = "hell"},
-            CorpseName = "",
+            GenerationWeight = new BranchWeight
+            {
+                Matched = new DefaultWeight {Multiplier = 0F},
+                Name = "hell"
+            },
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-            Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector | MonsterBehavior.MagicUser,
-            Noise = ActorNoiseType.Gurgle
+            Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector | AIBehavior.MagicUser,
+            Noise = ActorNoiseType.Gurgle,
+            Sex = Sex.Male,
+            Size = 8,
+            Weight = 1500,
+            Agility = 16,
+            Constitution = 16,
+            Intelligence = 16,
+            Quickness = 16,
+            Strength = 16,
+            Willpower = 16,
+            MagicResistance = 80,
+            PhysicalDeflection = 25,
+            FireResistance = 75,
+            Infravisible = true,
+            Infravision = true,
+            InvisibilityDetection = true
         };
     }
 }

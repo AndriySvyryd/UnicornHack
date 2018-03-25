@@ -6,12 +6,14 @@ export class Player {
     @observable id: number = 0;
     @observable name: string = '';
     @observable currentTick: number = -1;
+    @observable nextActionTick: number = 0;
+    @observable hp: number = 0;
+    @observable maxHp: number = 0;
+    @observable ep: number = 0;
+    @observable maxEp: number = 0;
     @observable level: Level = new Level();
-    @observable properties: Map<string, Property> = new Map<string, Property>();
     @observable inventory: Map<string, Item> = new Map<string, Item>();
     @observable abilities: Map<string, Ability> = new Map<string, Ability>();
-    @observable nextActionTick: number = 0;
-    @observable gold: number = 0;
     @observable log: Map<string, LogEntry> = new Map<string, LogEntry>();
     @observable races: Map<string, PlayerRace> = new Map<string, PlayerRace>();
 
@@ -70,18 +72,19 @@ export class Player {
         currentPlayer.name = compactPlayer[i++];
         currentPlayer.currentTick = compactPlayer[i++];
         currentPlayer.level = Level.expand(compactPlayer[i++], currentPlayer.level, EntityState.Added);
-        currentPlayer.properties.clear();
-        compactPlayer[i++].map((a: any[]) => Property.expandToCollection(a, currentPlayer.properties, EntityState.Added));
+        currentPlayer.races.clear();
+        compactPlayer[i++].map((a: any[]) => PlayerRace.expandToCollection(a, currentPlayer.races, EntityState.Added));
         currentPlayer.inventory.clear();
         compactPlayer[i++].map((a: any[]) => Item.expandToCollection(a, currentPlayer.inventory, EntityState.Added));
         currentPlayer.abilities.clear();
         compactPlayer[i++].map((a: any[]) => Ability.expandToCollection(a, currentPlayer.abilities, EntityState.Added));
         currentPlayer.log.clear();
         compactPlayer[i++].map((a: any[]) => LogEntry.expandToCollection(a, currentPlayer.log, EntityState.Added));
-        currentPlayer.races.clear();
-        compactPlayer[i++].map((a: any[]) => PlayerRace.expandToCollection(a, currentPlayer.races, EntityState.Added));
         currentPlayer.nextActionTick = compactPlayer[i++];
-        currentPlayer.gold = compactPlayer[i++];
+        currentPlayer.hp = compactPlayer[i++];
+        currentPlayer.maxHp = compactPlayer[i++];
+        currentPlayer.ep = compactPlayer[i++];
+        currentPlayer.maxEp = compactPlayer[i++];
         return currentPlayer;
     }
 
@@ -93,8 +96,7 @@ export class Player {
                     this.level = Level.expand(compactPlayer[i++], this.level, EntityState.Modified);
                     break;
                 case 3:
-                    compactPlayer[i++].map(
-                        (a: any[]) => Property.expandToCollection(a, this.properties, EntityState.Modified));
+                    compactPlayer[i++].map((a: any[]) => PlayerRace.expandToCollection(a, this.races, EntityState.Modified));
                     break;
                 case 4:
                     compactPlayer[i++].map((a: any[]) => Item.expandToCollection(a, this.inventory, EntityState.Modified));
@@ -107,13 +109,19 @@ export class Player {
                     compactPlayer[i++].map((a: any[]) => LogEntry.expandToCollection(a, this.log, EntityState.Modified));
                     break;
                 case 7:
-                    compactPlayer[i++].map((a: any[]) => PlayerRace.expandToCollection(a, this.races, EntityState.Modified));
-                    break;
-                case 8:
                     this.nextActionTick = compactPlayer[i++];
                     break;
+                case 8:
+                    this.hp = compactPlayer[i++];
+                    break;
                 case 9:
-                    this.gold = compactPlayer[i++];
+                    this.maxHp = compactPlayer[i++];
+                    break;
+                case 10:
+                    this.ep = compactPlayer[i++];
+                    break;
+                case 11:
+                    this.maxEp = compactPlayer[i++];
                     break;
                 default:
                     return i - 1;
@@ -663,73 +671,6 @@ export class EquipableSlot {
     @action.bound
     addTo(map: Map<string, EquipableSlot>) {
         map.set(this.id.toString(), this);
-    }
-}
-
-export class Property {
-    @observable name: string = '';
-    @observable displayName: string = '';
-
-    @action
-    static expandToCollection(compactProperty: any[], collection: Map<string, Property>, parentState: EntityState) {
-        let i = 0;
-        if (parentState === EntityState.Added) {
-            this.expand(compactProperty, i).addTo(collection);
-            return;
-        }
-
-        const state = compactProperty[i++];
-        switch (state) {
-            case EntityState.Added:
-                this.expand(compactProperty, i).addTo(collection);
-                break;
-            case EntityState.Deleted:
-                const id = compactProperty[i++];
-                if (!collection.delete(id)) {
-                    throw 'Property ' + id + ' not deleted';
-                }
-                break;
-            case EntityState.Modified:
-                {
-                    const id = compactProperty[i++];
-                    const existingProperty = collection.get(id);
-                    if (existingProperty == undefined) {
-                        throw 'Property ' + id + ' not found';
-                    }
-                    existingProperty.update(compactProperty);
-                    break;
-                }
-        }
-    }
-
-    @action
-    static expand(compactProperty: any[], i: number): Property {
-        const property = new Property();
-        property.name = compactProperty[i++];
-        property.displayName = compactProperty[i++];
-
-        return property;
-    }
-
-    @action.bound
-    update(compactProperty: any[]): number {
-        let i = 2;
-        for (; i < compactProperty.length;) {
-            switch (compactProperty[i++]) {
-                case 1:
-                    this.displayName = compactProperty[i++];
-                    break;
-                default:
-                    return i - 1;
-            }
-        }
-
-        return i;
-    }
-
-    @action.bound
-    addTo(map: Map<string, Property>) {
-        map.set(this.name, this);
     }
 }
 

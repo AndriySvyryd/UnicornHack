@@ -1,83 +1,54 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant GoldGolem = new CreatureVariant
+        public static readonly Creature GoldGolem = new Creature
         {
             Name = "gold golem",
             Species = Species.Golem,
             MovementDelay = 133,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "non animal",
-                "breathlessness",
-                "mindlessness",
-                "humanoidness",
-                "asexuality",
-                "stoning resistance",
-                "sliming resistance",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "acid resistance",
-                    75
-                },
-                {
-                    "cold resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "venom resistance",
-                    75
-                },
-                {
-                    "thick hide",
-                    3
-                },
-                {
-                    "hit point maximum",
-                    40
-                },
-                {
-                    "physical deflection",
-                    14
-                },
-                {
-                    "weight",
-                    2000
                 }
             },
             InitialLevel = 5,
-            CorpseName = ""
+            Sex = Sex.None,
+            Weight = 2000,
+            Agility = 3,
+            Constitution = 3,
+            Intelligence = 3,
+            Quickness = 3,
+            Strength = 3,
+            Willpower = 8,
+            PhysicalDeflection = 14,
+            AcidResistance = 75,
+            ColdResistance = 75,
+            SlimingImmune = true,
+            StoningImmune = true,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            RespirationType = RespirationType.None,
+            Mindless = true,
+            NonAnimal = true
         };
     }
 }

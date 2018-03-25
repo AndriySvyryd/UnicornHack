@@ -65,7 +65,7 @@ namespace UnicornHack.Utils
 
         private void TestPick(float[] itemWeights, float weightSum)
         {
-            var seed = Environment.TickCount;
+            var seed = (uint)Environment.TickCount;
             var random = new SimpleRandom {Seed = seed};
             var selectedCounts = new int[itemWeights.Length];
             var selectionCount = 100000;
@@ -95,7 +95,7 @@ namespace UnicornHack.Utils
                 weightSum += itemWeights[i];
             }
 
-            var seed = Environment.TickCount;
+            var seed = (uint)Environment.TickCount;
             var random = new SimpleRandom {Seed = seed};
             var selectedCounts = new int[itemWeights.Length];
             var selectionCount = 500000;
@@ -109,7 +109,7 @@ namespace UnicornHack.Utils
         }
 
         private static void AssertDistribution(
-            float[] itemWeights, float weightSum, int[] selectedCounts, int selectionCount, int seed)
+            float[] itemWeights, float weightSum, int[] selectedCounts, int selectionCount, uint seed)
         {
             var toleranceFraction = itemWeights.Length / Math.Sqrt(selectionCount);
             var uniformTolerance = toleranceFraction / (itemWeights.Length * 10);
@@ -149,7 +149,7 @@ namespace UnicornHack.Utils
                 weightSum += items[i];
             }
 
-            var seed = Environment.TickCount;
+            var seed = (uint)Environment.TickCount;
             var random = new SimpleRandom {Seed = seed};
             var selectedCounts = new int[items.Length];
             var selectionCount = 10000;

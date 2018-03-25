@@ -1,88 +1,56 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant BlackPudding = new CreatureVariant
+        public static readonly Creature BlackPudding = new Creature
         {
             Name = "black pudding",
             Species = Species.Pudding,
             MovementDelay = 200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Corrode {Damage = 130}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeHit,
+                    Activation = ActivationType.OnPhysicalMeleeHit,
                     Effects = new HashSet<Effect> {new Corrode {Damage = 30}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Corrode {Damage = 130}}
                 }
             },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "decay resistance",
-                "breathlessness",
-                "amorphism",
-                "non animal",
-                "eyelessness",
-                "limblessness",
-                "headlessness",
-                "mindlessness",
-                "asexuality",
-                "reanimation",
-                "stoning resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "cold resistance",
-                    75
-                },
-                {
-                    "electricity resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "venom resistance",
-                    75
-                },
-                {
-                    "acid resistance",
-                    75
-                },
-                {
-                    "stealthiness",
-                    3
-                },
-                {
-                    "physical deflection",
-                    14
-                },
-                {
-                    "weight",
-                    512
-                }
-            },
-            InitialLevel = 10
+            InitialLevel = 10,
+            Sex = Sex.None,
+            Weight = 512,
+            Agility = 6,
+            Constitution = 6,
+            Intelligence = 6,
+            Quickness = 6,
+            Strength = 6,
+            Willpower = 11,
+            PhysicalDeflection = 14,
+            AcidResistance = 75,
+            ColdResistance = 75,
+            ElectricityResistance = 75,
+            StoningImmune = true,
+            HeadType = HeadType.None,
+            TorsoType = TorsoType.Amorphic,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.None,
+            RespirationType = RespirationType.None,
+            EyeCount = 0,
+            NoiseLevel = 0,
+            Mindless = true,
+            NonAnimal = true,
+            Reanimation = true
         };
     }
 }

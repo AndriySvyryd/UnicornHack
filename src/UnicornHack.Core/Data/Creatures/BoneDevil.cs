@@ -1,81 +1,66 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant BoneDevil = new CreatureVariant
+        public static readonly Creature BoneDevil = new Creature
         {
             Name = "bone devil",
             Species = Species.DemonMajor,
             SpeciesClass = SpeciesClass.Demon,
             MovementDelay = 80,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeAttack,
+                    Activation = ActivationType.OnPhysicalMeleeAttack,
                     Action = AbilityAction.Modifier,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 60}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Sting,
                     Timeout = 1,
-                    Effects = new HashSet<Effect> {new Envenom {Damage = 50}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Poison {Damage = 30}}
-                }
-            },
-            SimpleProperties =
-                new HashSet<string> {"infravision", "infravisibility", "humanoidness", "sickness resistance"},
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "fire resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "size",
-                    8
-                },
-                {
-                    "physical deflection",
-                    21
-                },
-                {
-                    "magic resistance",
-                    40
-                },
-                {
-                    "weight",
-                    1600
+                    Effects = new HashSet<Effect> {new Blight {Damage = 50}}
                 }
             },
             InitialLevel = 9,
-            GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 2F}, Name = "hell"},
+            GenerationWeight = new BranchWeight
+            {
+                Matched = new DefaultWeight {Multiplier = 2F},
+                Name = "hell"
+            },
             NextStageName = "ice devil",
-            CorpseName = "",
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.SmallGroup,
-            Behavior = MonsterBehavior.Stalking | MonsterBehavior.WeaponCollector
+            Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector,
+            Size = 8,
+            Weight = 1600,
+            Agility = 5,
+            Constitution = 5,
+            Intelligence = 5,
+            Quickness = 5,
+            Strength = 5,
+            Willpower = 5,
+            MagicResistance = 40,
+            PhysicalDeflection = 21,
+            FireResistance = 75,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            Infravisible = true,
+            Infravision = true
         };
     }
 }

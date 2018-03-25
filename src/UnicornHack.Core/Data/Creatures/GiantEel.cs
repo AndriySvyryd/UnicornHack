@@ -1,41 +1,51 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant GiantEel = new CreatureVariant
+        public static readonly Creature GiantEel = new Creature
         {
             Name = "giant eel",
             Species = Species.Eel,
             MovementDelay = 133,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Hug,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Bind {Duration = 7}}
                 }
             },
-            SimpleProperties =
-                new HashSet<string> {"swimming", "water breathing", "limblessness", "oviparity", "no inventory"},
-            ValuedProperties =
-                new Dictionary<string, object> {{"size", 8}, {"physical deflection", 21}, {"weight", 600}},
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
-            NextStageName = "electric eel"
+            NextStageName = "electric eel",
+            Size = 8,
+            Weight = 600,
+            Agility = 3,
+            Constitution = 3,
+            Intelligence = 3,
+            Quickness = 3,
+            Strength = 3,
+            Willpower = 3,
+            PhysicalDeflection = 21,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.None,
+            RespirationType = RespirationType.Water,
+            LocomotionType = LocomotionType.Swimming,
+            InventorySize = 0
         };
     }
 }

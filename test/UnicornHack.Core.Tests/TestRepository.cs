@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnicornHack.Services;
 
 namespace UnicornHack
@@ -11,7 +12,19 @@ namespace UnicornHack
         {
         }
 
-        public void Delete<T>(T entity) where T : class
+        public void DeleteTracked<T>(T entity) where T : class
+        {
+        }
+
+        public void Remove(object entity)
+        {
+        }
+
+        public void RemoveTracked(object entity)
+        {
+        }
+
+        public void LoadLevels(IReadOnlyList<int> levelIds)
         {
         }
     }

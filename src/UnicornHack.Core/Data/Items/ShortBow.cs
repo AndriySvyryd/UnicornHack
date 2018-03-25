@@ -1,30 +1,33 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Items
 {
-    public static partial class ItemVariantData
+    public static partial class ItemData
     {
-        public static readonly LauncherVariant Shortbow = new LauncherVariant
+        public static readonly Item Shortbow = new Item
         {
             Name = "shortbow",
             Type = ItemType.WeaponRangedBow,
             Material = Material.Wood,
+            Weight = 5,
             EquipableSizes = SizeCategory.Small | SizeCategory.Medium,
             EquipableSlots = EquipmentSlot.GraspSingleExtremity | EquipmentSlot.GraspBothExtremities,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnRangedAttack,
+                    Activation = ActivationType.OnPhysicalRangedAttack,
                     Action = AbilityAction.Shoot,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
+                    Effects = new HashSet<Effect>
+                    {
+                        new PhysicalDamage {Damage = 30},
+                        new Activate {Projectile = "arrow"}
+                    }
                 }
-            },
-            ValuedProperties = new Dictionary<string, object> {{"weight", 5}},
-            Projectile = "arrow"
+            }
         };
     }
 }

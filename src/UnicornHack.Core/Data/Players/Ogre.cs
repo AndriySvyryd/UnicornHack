@@ -1,33 +1,70 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Players
 {
     public static partial class PlayerRaceData
     {
-        public static readonly PlayerRaceDefinition Ogre = new PlayerRaceDefinition
+        public static readonly PlayerRace Ogre = new PlayerRace
         {
             Name = "ogre",
             Species = Species.Ogre,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Name = "innate",
-                    Activation = AbilityActivation.Always,
+                    Name = "ogre innate",
+                    Activation = ActivationType.Always,
                     Effects = new HashSet<Effect>
                     {
-                        new ChangeProperty<bool> {PropertyName = "infravisibility", Value = true},
-                        new ChangeProperty<bool> {PropertyName = "humanoidness", Value = true},
-                        new ChangeProperty<int> {PropertyName = "strength", Value = 2},
-                        new ChangeProperty<int> {PropertyName = "agility", Value = -2},
-                        new ChangeProperty<int> {PropertyName = "constitution", Value = 2},
-                        new ChangeProperty<int> {PropertyName = "quickness", Value = -2},
+                        new ChangeProperty<bool>
+                        {
+                            PropertyName = "Infravisible",
+                            Value = true
+                        },
+                        new ChangeProperty<TorsoType>
+                        {
+                            PropertyName = "TorsoType",
+                            Value = TorsoType.Humanoid,
+                            Function = ValueCombinationFunction.Override
+                        },
+                        new ChangeProperty<ExtremityType>
+                        {
+                            PropertyName = "UpperExtremeties",
+                            Value = ExtremityType.GraspingFingers,
+                            Function = ValueCombinationFunction.Override
+                        },
+                        new ChangeProperty<ExtremityType>
+                        {
+                            PropertyName = "LowerExtremeties",
+                            Value = ExtremityType.Fingers,
+                            Function = ValueCombinationFunction.Override
+                        },
                         new ChangeProperty<int>
                         {
-                            PropertyName = "size",
+                            PropertyName = "Strength",
+                            Value = 2
+                        },
+                        new ChangeProperty<int>
+                        {
+                            PropertyName = "Agility",
+                            Value = -2
+                        },
+                        new ChangeProperty<int>
+                        {
+                            PropertyName = "Constitution",
+                            Value = 2
+                        },
+                        new ChangeProperty<int>
+                        {
+                            PropertyName = "Quickness",
+                            Value = -2
+                        },
+                        new ChangeProperty<int>
+                        {
+                            PropertyName = "Size",
                             Value = 9,
                             Function = ValueCombinationFunction.MeanRoundUp
                         }

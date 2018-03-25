@@ -5,11 +5,17 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.Caching.Memory;
 using UnicornHack.Data;
+using UnicornHack.Data.Items;
 using UnicornHack.Generation;
+using UnicornHack.Primitives;
 using UnicornHack.Services;
+using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Time;
 using UnicornHack.Utils;
+using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Hubs
 {
@@ -31,27 +37,37 @@ namespace UnicornHack.Hubs
 
         public List<object> GetState(string name)
         {
-            var player = FindPlayer(name) ?? CreateGame(name);
+            var player = FindPlayer(name) ?? CreatePlayer(name);
 
-            return _protocol.Serialize(player, EntityState.Added,
-                new SerializationContext(_dbContext, player, _gameServices));
+            return _protocol.Serialize(player.Entity, EntityState.Added, null,
+                new SerializationContext(_dbContext, player.Entity, _gameServices));
         }
 
-        public async Task PerformAction(string name, PlayerAction? action, int? target, int? target2)
+        public async Task PerformAction(string name, int? intAction, int? target, int? target2)
         {
+            var action = (PlayerAction?)intAction;
             var currentPlayer = FindPlayer(name);
             if (currentPlayer == null)
             {
-                currentPlayer = CreateGame(name);
+                currentPlayer = CreatePlayer(name);
                 action = null;
                 target = null;
                 target2 = null;
             }
-
-            if (currentPlayer.Game.NextPlayerTick != currentPlayer.NextActionTick)
+            else
             {
-                // TODO: Log action sent out of turn
-                return;
+                if (currentPlayer.Game.CurrentTick != currentPlayer.NextActionTick)
+                {
+                    // TODO: Log action sent out of turn
+                    return;
+                }
+
+                if (_dbContext.Snapshot == null)
+                {
+                    _dbContext.Snapshot = new GameSnapshot();
+                }
+
+                _dbContext.Snapshot.Snapshot(_dbContext, _gameServices);
             }
 
             currentPlayer.NextAction = action;
@@ -61,78 +77,126 @@ namespace UnicornHack.Hubs
             Turn(currentPlayer);
 
             _dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
-            foreach (var player in currentPlayer.Game.Players)
+            foreach (var playerEntity in currentPlayer.Game.Manager.Players)
             {
                 var newPlayer = action == null;
                 var serializedPlayer = _protocol.Serialize(
-                    player, newPlayer ? EntityState.Added : EntityState.Modified,
-                    new SerializationContext(_dbContext, player, _gameServices));
+                    playerEntity, newPlayer ? EntityState.Added : EntityState.Modified, _dbContext.Snapshot,
+                    new SerializationContext(_dbContext, playerEntity, _gameServices));
 
                 // TODO: only send to clients watching this player
                 await Clients.All.SendAsync("ReceiveState", serializedPlayer);
             }
+
             _dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
 
             _dbContext.ChangeTracker.AcceptAllChanges();
         }
 
-        private void Turn(Player currentPlayer)
+        private void Turn(PlayerComponent currentPlayer)
         {
-            var playerLevels = new HashSet<Level>();
-            foreach (var player in currentPlayer.Game.Players)
+            var manager = currentPlayer.Game.Manager;
+            foreach (var levelEntity in manager.Levels)
             {
-                if (playerLevels.Add(player.Level))
+                var level = levelEntity.Level;
+                if (level.TerrainChanges != null)
                 {
-                    player.Level.Snapshot();
+                    level.TerrainChanges.Clear();
+                }
+                else
+                {
+                    level.TerrainChanges = new Dictionary<int, byte>();
                 }
 
-                var connection = player.Level.Connections.SingleOrDefault(c => c.LevelCell == player.LevelCell);
-                if (connection != null
-                    && playerLevels.Add(connection.TargetLevel))
+                if (level.KnownTerrainChanges != null)
                 {
-                    connection.TargetLevel.Snapshot();
+                    level.KnownTerrainChanges.Clear();
                 }
+                else
+                {
+                    level.KnownTerrainChanges = new Dictionary<int, byte>();
+                }
+
+                if (level.WallNeighboursChanges != null)
+                {
+                    level.WallNeighboursChanges.Clear();
+                }
+                else
+                {
+                    level.WallNeighboursChanges = new Dictionary<int, byte>();
+                }
+
+                if (_dbContext.Snapshot?.LevelSnapshots.ContainsKey(levelEntity.Id) != true)
+                {
+                    level.VisibleTerrainSnapshot = null;
+                }
+
+                level.VisibleNeighboursChanged = false;
             }
 
-            currentPlayer.Game.Turn();
+            currentPlayer.Game.ActingPlayer = null;
+            TimeSystem.AdvanceToNextPlayerTurn(manager);
 
-            if (!currentPlayer.IsAlive)
-            {
-                // Show the last events before death
-                currentPlayer.Act();
-            }
+            //TODO: If all players are dead end the game
 
             _dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
-            foreach (var playerLevel in playerLevels)
+            foreach (var levelEntity in manager.Levels)
             {
-                playerLevel.DetectVisibilityChanges();
+                var level = levelEntity.Level;
 
-                var levelEntry = _dbContext.Entry(playerLevel);
-                if (playerLevel.TerrainChanges == null
-                    || playerLevel.TerrainChanges.Count > 0)
+                var levelEntry = _dbContext.Entry(level);
+                if (levelEntry.State == EntityState.Added)
+                {
+                    continue;
+                }
+
+                if (level.TerrainChanges == null
+                    || level.TerrainChanges.Count > 0)
                 {
                     levelEntry.Property(l => l.Terrain).IsModified = true;
                 }
 
-                if (playerLevel.KnownTerrainChanges == null
-                    || playerLevel.KnownTerrainChanges.Count > 0)
+                if (level.KnownTerrainChanges == null
+                    || level.KnownTerrainChanges.Count > 0)
                 {
                     levelEntry.Property(l => l.KnownTerrain).IsModified = true;
                 }
 
-                if (playerLevel.WallNeighboursChanges == null
-                    || playerLevel.WallNeighboursChanges.Count > 0)
+                if (level.WallNeighboursChanges == null
+                    || level.WallNeighboursChanges.Count > 0)
                 {
                     levelEntry.Property(l => l.WallNeighbours).IsModified = true;
                 }
 
-                if (playerLevel.VisibleTerrainChanges == null
-                    || playerLevel.VisibleTerrainChanges.Count > 0)
+                // TODO: Move VisibleTerrainSnapshot and VisibleTerrainChanges to the snapshot
+                if (level.VisibleTerrainChanges == null)
+                {
+                    level.VisibleTerrainChanges = new Dictionary<int, byte>();
+                }
+                else
+                {
+                    level.VisibleTerrainChanges.Clear();
+                }
+
+                if (level.VisibleTerrainSnapshot != null)
+                {
+                    for (var i = 0; i < level.VisibleTerrain.Length; i++)
+                    {
+                        var newValue = level.VisibleTerrain[i];
+                        if (newValue != level.VisibleTerrainSnapshot[i])
+                        {
+                            level.VisibleTerrainChanges.Add(i, newValue);
+                        }
+                    }
+                }
+
+                if (level.VisibleTerrainSnapshot == null
+                    || level.VisibleTerrainChanges.Count > 0)
                 {
                     levelEntry.Property(l => l.VisibleTerrain).IsModified = true;
                 }
 
-                if (playerLevel.VisibleNeighboursChanged)
+                if (level.VisibleNeighboursChanged)
                 {
                     levelEntry.Property(l => l.VisibleNeighbours).IsModified = true;
                 }
@@ -143,15 +207,15 @@ namespace UnicornHack.Hubs
             _dbContext.SaveChanges(acceptAllChangesOnSuccess: false);
         }
 
-        private Player CreateGame(string name)
+        private PlayerComponent CreatePlayer(string name)
         {
-            int seed;
+            uint seed;
             using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
             {
                 var rngData = new byte[4];
                 rng.GetBytes(rngData);
 
-                seed = rngData[0] | rngData[1] << 8 | rngData[2] << 16 | rngData[3] << 24;
+                seed = (uint)(rngData[0] | rngData[1] << 8 | rngData[2] << 16 | rngData[3] << 24);
             }
 
             var game = new Game
@@ -163,190 +227,138 @@ namespace UnicornHack.Hubs
             _dbContext.Games.Add(game);
             _dbContext.SaveChanges();
 
-            var surfaceBranch = BranchDefinition.Loader.Get("surface").Instantiate(game);
-            var surfaceLevel = new Level(surfaceBranch, depth: 1, seed: seed);
-            surfaceLevel.EnsureGenerated();
-            var initialLevel = surfaceLevel.Connections.Single().TargetLevel;
-            initialLevel.EnsureGenerated();
-            var upStairs = initialLevel.Connections.First(c => c.TargetBranchName == surfaceBranch.Name);
-            var player = new Player(initialLevel, upStairs.LevelX, upStairs.LevelY) {Name = name, PlayerName = name};
+            var manager = game.Manager;
+            var surfaceBranch = Branch.Loader.Find("surface").Instantiate(game);
+            var surfaceLevel = LevelGenerator.CreateEmpty(surfaceBranch, depth: 1, seed, manager);
+            LevelGenerator.EnsureGenerated(surfaceLevel);
 
-            player.WriteLog(game.Services.Language.Welcome(player), player.Level.CurrentTick);
-            _dbContext.Players.Add(player);
+            var initialLevelConnection =
+                manager.ConnectionsToLevelRelationship[surfaceLevel.EntityId].Single().Connection;
+            var initialLevelEntity = manager.FindEntity(initialLevelConnection.TargetLevelId);
+            LevelGenerator.EnsureGenerated(initialLevelEntity.Level);
 
-            // Avoid cyclical dependency
-            var attack = player.DefaultAttack;
-            player.DefaultAttack = null;
-            _dbContext.SaveChanges();
+            // TODO: Set correct sex
+            var playerEntity = PlayerRace.InstantiatePlayer(
+                name, Sex.Male, initialLevelEntity, initialLevelConnection.TargetLevelCell.Value);
 
-            player.DefaultAttack = attack;
-            player.DefaultAttackId = attack?.Id;
+            ItemData.PotionOfHealing.Instantiate(playerEntity);
+            ItemData.MailArmor.Instantiate(playerEntity);
+            ItemData.LongSword.Instantiate(playerEntity);
+            ItemData.Dagger.Instantiate(playerEntity);
+            ItemData.Shortbow.Instantiate(playerEntity);
+            ItemData.ThrowingKnives.Instantiate(playerEntity);
+            ItemData.FireStaff.Instantiate(playerEntity);
+            ItemData.FreezingFocus.Instantiate(playerEntity);
+            ItemData.PotionOfOgreness.Instantiate(playerEntity);
+            ItemData.PotionOfElfness.Instantiate(playerEntity);
+            ItemData.PotionOfDwarfness.Instantiate(playerEntity);
+            ItemData.PotionOfExperience.Instantiate(playerEntity, quantity: 5);
 
-            Turn(player);
+            manager.KnowledgeSystem.WriteLog(game.Services.Language.Welcome(playerEntity), playerEntity, manager);
 
+            Turn(playerEntity.Player);
             _dbContext.ChangeTracker.AcceptAllChanges();
 
-            _gameServices.SharedCache.Set(name, player,
+            _gameServices.SharedCache.Set(game, game,
                 new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
 
-            return player;
+            return playerEntity.Player;
         }
 
-        private Player FindPlayer(string name)
+        private PlayerComponent FindPlayer(string name)
         {
-            var player = _dbContext.Players
-                .Include(c => c.Game)
-                .Include(c => c.Level)
+            var loadedGame = _dbContext.PlayerComponents.Where(playerComponent => playerComponent.ProperName == name)
+                .Join(_dbContext.Games,
+                    playerComponent => playerComponent.GameId, game => game.Id,
+                    (_, game) => game)
                 .AsNoTracking()
-                .FirstOrDefault(c => c.PlayerName == name);
+                .FirstOrDefault();
 
-            if (player?.Level == null)
+            if (loadedGame == null)
             {
                 return null;
             }
 
-            // TODO: Use an object as the key
-            if (_gameServices.SharedCache.TryGetValue(name, out var cachedPlayerObject)
-                && cachedPlayerObject is Player cachedPlayer
-                && cachedPlayer.Game.NextPlayerTick == player.Game.NextPlayerTick)
+            // TODO: Perf: Cache the DbContext as well to avoid reattaching
+            if (_gameServices.SharedCache.TryGetValue(loadedGame, out var cachedGameObject)
+                && cachedGameObject is Game cachedGame
+                && cachedGame.CurrentTick == loadedGame.CurrentTick)
             {
-                _dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
-                EntityAttacher.Attach(cachedPlayer.Level, _dbContext);
-                _dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
+                // TODO: Unload non-adjacent levels when too many loaded
+                loadedGame = cachedGame;
 
-                LoadAdjacentLevel(cachedPlayer);
-                player = cachedPlayer;
+                Initialize(loadedGame);
+
+                _dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
+                EntityAttacher.Attach(cachedGame, _dbContext);
+                _dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
             }
             else
             {
-                player = _dbContext.LoadPlayer(name);
+                Initialize(loadedGame);
+                _dbContext.Entry(loadedGame).State = EntityState.Unchanged;
+                loadedGame.Manager.IsLoading = true;
 
-                Initialize(player.Game);
+                loadedGame = _dbContext.LoadGame(loadedGame.Id);
 
-                _dbContext.LoadLevel(player.Level.GameId, player.Level.BranchName, player.Level.Depth);
+                foreach (var gameEntity in _dbContext.Entities.Local)
+                {
+                    loadedGame.Manager.AddEntity(gameEntity);
+                }
 
-                LoadAdjacentLevel(player);
+                foreach (var level in _dbContext.LevelComponents.Local)
+                {
+                    // TODO: Remove?
+                    level.EnsureInitialized();
+                }
 
-                _gameServices.SharedCache.Set(name, player,
+                loadedGame.Manager.IsLoading = false;
+                _gameServices.SharedCache.Set(loadedGame, loadedGame,
                     new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
             }
 
-            if (!player.IsAlive
-                && !player.Game.Players.Any(pc => pc.IsAlive))
+            // TODO: Preserve old games
+            if (!_dbContext.PlayerComponents.Local.Any(pc => pc.Entity.Being.IsAlive))
             {
-                Clean(player.Game);
+                _dbContext.Clean(loadedGame);
                 return null;
             }
 
-            return player;
-        }
-
-        private void LoadAdjacentLevel(Player character)
-        {
-            var connection = character.Level.Connections.SingleOrDefault(s =>
-                s.LevelCell == character.LevelCell);
-            if (connection != null)
-            {
-                if (connection.TargetLevel == null)
-                {
-                    _dbContext.LoadLevel(connection.GameId, connection.TargetBranchName, connection.TargetLevelDepth);
-                }
-
-                // TODO: Unload non-adjacent levels
-
-                // TODO: Pregenerate all connected levels to ensure the order is deterministic
-                connection.TargetLevel.EnsureGenerated();
-            }
+            return _dbContext.PlayerComponents.Local.First(p => p.ProperName == name);
         }
 
         private void Initialize(Game game)
         {
             game.Services = _gameServices;
-            game.Repository = new Repository(_dbContext);
+            game.Repository = _dbContext;
+            if (game.Manager == null)
+            {
+                var queue = new SequentialMessageQueue<GameManager>();
+                var gameManager = new GameManager {Game = game};
+                gameManager.Initialize(queue);
+                game.Manager = gameManager;
+            }
+
+            _dbContext.Manager = game.Manager;
+
+            _dbContext.ChangeTracker.Tracked += OnTracked;
+            _dbContext.ChangeTracker.StateChanged += OnStateChanged;
         }
 
-        private void Clean(Game game)
+        private void OnTracked(object sender, EntityTrackedEventArgs args)
         {
-            // Avoid cyclical dependency
-            foreach (var playerCharacter in game.Players)
+            if (args.Entry.State == EntityState.Added && args.Entry.Entity is ITrackable trackable)
             {
-                playerCharacter.DefaultAttack = null;
+                trackable.StartTracking(sender);
             }
+        }
 
-            _dbContext.SaveChanges();
-
-            game = _dbContext.Games
-                .Include(g => g.Branches)
-                .Include(g => g.Levels)
-                .Include(g => g.Connections)
-                .Include(g => g.Entities)
-                .Include(g => g.AbilityDefinitions)
-                .Include(g => g.Effects)
-                .Include(g => g.Abilities)
-                .Include(g => g.Triggers)
-                .Include(g => g.AppliedEffects)
-                .Include(g => g.SensoryEvents)
-                .Single(g => g.Id == game.Id);
-
-            foreach (var effect in game.Effects.ToList())
+        private void OnStateChanged(object sender, EntityStateChangedEventArgs args)
+        {
+            if (args.NewState == EntityState.Detached && args.Entry.Entity is ITrackable trackable)
             {
-                _dbContext.Effects.Remove(effect);
+                trackable.StopTracking(sender);
             }
-
-            foreach (var appliedEffect in game.AppliedEffects.ToList())
-            {
-                _dbContext.AppliedEffects.Remove(appliedEffect);
-            }
-
-            foreach (var ability in game.Abilities.ToList())
-            {
-                _dbContext.Abilities.Remove(ability);
-            }
-
-            foreach (var trigger in game.Triggers.ToList())
-            {
-                _dbContext.Triggers.Remove(trigger);
-            }
-
-            foreach (var abilityDefinition in game.AbilityDefinitions.ToList())
-            {
-                _dbContext.AbilityDefinitions.Remove(abilityDefinition);
-            }
-
-            foreach (var sensoryEvent in game.SensoryEvents.ToList())
-            {
-                _dbContext.SensoryEvents.Remove(sensoryEvent);
-            }
-
-            foreach (var entityKnowledge in game.EntitiesKnowledge.ToList())
-            {
-                _dbContext.EntitiesKnowledge.Remove(entityKnowledge);
-            }
-
-            foreach (var entity in game.Entities.ToList())
-            {
-                // TODO: Don't remove players and game
-                _dbContext.Entities.Remove(entity);
-            }
-
-            foreach (var connection in game.Connections.ToList())
-            {
-                _dbContext.Connections.Remove(connection);
-            }
-
-            foreach (var level in game.Levels.ToList())
-            {
-                _dbContext.Levels.Remove(level);
-            }
-
-            foreach (var branch in game.Branches.ToList())
-            {
-                _dbContext.Branches.Remove(branch);
-            }
-
-            _dbContext.Games.Remove(game);
-
-            _dbContext.SaveChanges();
         }
     }
 }

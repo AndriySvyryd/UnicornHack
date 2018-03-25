@@ -1,93 +1,58 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant YellowLight = new CreatureVariant
+        public static readonly Creature YellowLight = new Creature
         {
             Name = "yellow light",
             Species = Species.FloatingSphere,
             SpeciesClass = SpeciesClass.Extraplanar,
             MovementDelay = 80,
-            Abilities = new HashSet<AbilityDefinition>
+            Material = Material.Air,
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Explosion,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Blind {Duration = 27}}
                 }
             },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "flight",
-                "flight control",
-                "infravisibility",
-                "invisibility detection",
-                "non animal",
-                "non solid body",
-                "breathlessness",
-                "limblessness",
-                "eyelessness",
-                "headlessness",
-                "mindlessness",
-                "asexuality",
-                "no inventory",
-                "sliming resistance",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "fire resistance",
-                    75
-                },
-                {
-                    "cold resistance",
-                    75
-                },
-                {
-                    "electricity resistance",
-                    75
-                },
-                {
-                    "acid resistance",
-                    75
-                },
-                {
-                    "disintegration resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "venom resistance",
-                    75
-                },
-                {
-                    "stealthiness",
-                    3
-                },
-                {
-                    "size",
-                    2
-                },
-                {
-                    "weight",
-                    0
-                }
-            },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
-            CorpseName = ""
+            Sex = Sex.None,
+            Size = 2,
+            Weight = 0,
+            Agility = 2,
+            Constitution = 2,
+            Intelligence = 2,
+            Quickness = 2,
+            Strength = 2,
+            Willpower = 7,
+            AcidResistance = 75,
+            ColdResistance = 75,
+            DisintegrationResistance = 75,
+            ElectricityResistance = 75,
+            FireResistance = 75,
+            SlimingImmune = true,
+            HeadType = HeadType.None,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.None,
+            RespirationType = RespirationType.None,
+            LocomotionType = LocomotionType.Flying,
+            InventorySize = 0,
+            EyeCount = 0,
+            NoiseLevel = 0,
+            Infravisible = true,
+            InvisibilityDetection = true,
+            Mindless = true,
+            NonAnimal = true
         };
     }
 }

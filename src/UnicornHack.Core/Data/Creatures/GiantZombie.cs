@@ -1,56 +1,49 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant GiantZombie = new CreatureVariant
+        public static readonly Creature GiantZombie = new Creature
         {
             Name = "giant zombie",
             Species = Species.Giant,
             SpeciesClass = SpeciesClass.Undead,
             MovementDelay = 200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 110}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Infect()}
                 }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "infravision",
-                "humanoidness",
-                "breathlessness",
-                "mindlessness",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {"cold resistance", 75},
-                {"poison resistance", 75},
-                {"size", 16},
-                {"physical deflection", 16},
-                {"weight", 2250}
             },
             InitialLevel = 8,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
-            CorpseName = "giant",
             GenerationFlags = GenerationFlags.SmallGroup,
-            Behavior = MonsterBehavior.Stalking,
-            Noise = ActorNoiseType.Moan
+            Behavior = AIBehavior.Stalking,
+            Noise = ActorNoiseType.Moan,
+            Size = 16,
+            Weight = 2250,
+            Agility = 5,
+            Constitution = 5,
+            Intelligence = 5,
+            Quickness = 5,
+            Strength = 5,
+            Willpower = 10,
+            PhysicalDeflection = 16,
+            ColdResistance = 75,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            RespirationType = RespirationType.None,
+            Infravision = true,
+            Mindless = true
         };
     }
 }

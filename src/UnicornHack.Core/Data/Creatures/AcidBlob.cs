@@ -1,78 +1,49 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant AcidBlob = new CreatureVariant
+        public static readonly Creature AcidBlob = new Creature
         {
             Name = "acid blob",
             Species = Species.Blob,
             MovementDelay = 400,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeHit,
+                    Activation = ActivationType.OnPhysicalMeleeHit,
                     Effects = new HashSet<Effect> {new Corrode {Damage = 40}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Corrode {Damage = 40}}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "decay resistance",
-                "breathlessness",
-                "amorphism",
-                "non animal",
-                "eyelessness",
-                "limblessness",
-                "headlessness",
-                "mindlessness",
-                "asexuality",
-                "stoning resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "venom resistance",
-                    75
-                },
-                {
-                    "acid resistance",
-                    75
-                },
-                {
-                    "stealthiness",
-                    3
-                },
-                {
-                    "size",
-                    1
-                },
-                {
-                    "physical deflection",
-                    12
-                },
-                {
-                    "weight",
-                    30
                 }
             },
             InitialLevel = 1,
             GenerationWeight = new DefaultWeight {Multiplier = 6F},
-            Behavior = MonsterBehavior.Wandering
+            Behavior = AIBehavior.Wandering,
+            Sex = Sex.None,
+            Size = 1,
+            Weight = 30,
+            Agility = 1,
+            Constitution = 1,
+            Intelligence = 1,
+            Quickness = 1,
+            Strength = 1,
+            Willpower = 6,
+            PhysicalDeflection = 12,
+            AcidResistance = 75,
+            StoningImmune = true,
+            HeadType = HeadType.None,
+            TorsoType = TorsoType.Amorphic,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.None,
+            RespirationType = RespirationType.None,
+            EyeCount = 0,
+            NoiseLevel = 0,
+            Mindless = true,
+            NonAnimal = true
         };
     }
 }

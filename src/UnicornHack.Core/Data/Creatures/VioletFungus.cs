@@ -1,80 +1,58 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant VioletFungus = new CreatureVariant
+        public static readonly Creature VioletFungus = new Creature
         {
             Name = "violet fungus",
             Species = Species.Fungus,
             MovementDelay = 1200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
-                    Effects = new HashSet<Effect> {new Poison {Damage = 30}}
+                    Effects = new HashSet<Effect> {new Blight {Damage = 30}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
-                    Effects = new HashSet<Effect> {new Stick()}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Poison {Damage = 30}}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "breathlessness",
-                "non animal",
-                "eyelessness",
-                "limblessness",
-                "headlessness",
-                "mindlessness",
-                "asexuality",
-                "no inventory"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "venom resistance",
-                    75
-                },
-                {
-                    "stealthiness",
-                    3
-                },
-                {
-                    "size",
-                    2
-                },
-                {
-                    "physical deflection",
-                    13
-                },
-                {
-                    "weight",
-                    100
+                    Effects = new HashSet<Effect>
+                    {
+                        new Stick()
+                    }
                 }
             },
             InitialLevel = 3,
-            GenerationWeight = new DefaultWeight {Multiplier = 2F}
+            GenerationWeight = new DefaultWeight {Multiplier = 2F},
+            Sex = Sex.None,
+            Size = 2,
+            Weight = 100,
+            Agility = 2,
+            Constitution = 2,
+            Intelligence = 2,
+            Quickness = 2,
+            Strength = 2,
+            Willpower = 7,
+            PhysicalDeflection = 13,
+            HeadType = HeadType.None,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.None,
+            RespirationType = RespirationType.None,
+            InventorySize = 0,
+            EyeCount = 0,
+            NoiseLevel = 0,
+            Mindless = true,
+            NonAnimal = true
         };
     }
 }

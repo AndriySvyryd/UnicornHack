@@ -8,18 +8,13 @@ namespace UnicornHack.Utils
     /// <summary>
     ///     Implementation of a xorshift pseudo-random number generator with period 2^32-1.
     /// </summary>
-    public class SimpleRandom
+    public class SimpleRandom : NotificationEntity
     {
         private const float IntToFloat = 1.0f / int.MaxValue;
-        private uint _x = 1;
 
-        public int Seed
-        {
-            get => (int)_x;
-            set => _x = (uint)value;
-        }
+        public uint Seed { get; set; } = 1;
 
-        public virtual int Roll(int diceCount, int diceSides)
+        public int Roll(int diceCount, int diceSides)
         {
             var result = 0;
             for (var i = 0; i < diceCount; i++)
@@ -30,16 +25,16 @@ namespace UnicornHack.Utils
             return result;
         }
 
-        public virtual TInput Pick<TInput>(IReadOnlyList<TInput> items) => items[Next(0, items.Count)];
+        public TInput Pick<TInput>(IReadOnlyList<TInput> items) => items[Next(0, items.Count)];
 
-        public virtual TInput Pick<TInput>(IReadOnlyList<TInput> items, Func<TInput, bool> condition) =>
+        public TInput Pick<TInput>(IReadOnlyList<TInput> items, Func<TInput, bool> condition) =>
             !TryPick(items, condition, out var item)
                 ? throw new InvalidOperationException("No elements meet the condition")
                 : item;
 
-        public virtual TInput TryPick<TInput>(IReadOnlyList<TInput> items) => items[Next(0, items.Count)];
+        public TInput TryPick<TInput>(IReadOnlyList<TInput> items) => items[Next(0, items.Count)];
 
-        public virtual bool TryPick<TInput>(IReadOnlyList<TInput> items, Func<TInput, bool> condition, out TInput item)
+        public bool TryPick<TInput>(IReadOnlyList<TInput> items, Func<TInput, bool> condition, out TInput item)
         {
             var index = Next(0, items.Count);
             for (var i = index; i < items.Count; i++)
@@ -64,16 +59,16 @@ namespace UnicornHack.Utils
             return false;
         }
 
-        public virtual TInput Pick<TInput>(IReadOnlyList<TInput> items, Func<TInput, float> getWeight) =>
+        public TInput Pick<TInput>(IReadOnlyList<TInput> items, Func<TInput, float> getWeight) =>
             WeightedOrder(items, getWeight).First();
 
-        public virtual TResult Pick<TInput, TResult>(IReadOnlyList<TInput> items, Func<TInput, float> getWeight,
+        public TResult Pick<TInput, TResult>(IReadOnlyList<TInput> items, Func<TInput, float> getWeight,
             Func<TInput, int, TResult> selector) => WeightedOrder(items, getWeight, selector).First();
 
-        public virtual IEnumerable<TInput> WeightedOrder<TInput>(IReadOnlyList<TInput> items,
+        public IEnumerable<TInput> WeightedOrder<TInput>(IReadOnlyList<TInput> items,
             Func<TInput, float> getWeight) => WeightedOrder(items, getWeight, (item, index) => item);
 
-        public virtual IEnumerable<TResult> WeightedOrder<TInput, TResult>(IReadOnlyList<TInput> items,
+        public IEnumerable<TResult> WeightedOrder<TInput, TResult>(IReadOnlyList<TInput> items,
             Func<TInput, float> getWeight, Func<TInput, int, TResult> selector)
         {
             if (items == null || items.Count == 0)
@@ -184,7 +179,7 @@ namespace UnicornHack.Utils
             return first == numbers.Length ? first - 1 : first;
         }
 
-        public int Next(int maxValue) => Next(minValue: 0, maxValue: maxValue);
+        public int Next(int maxValue) => Next(minValue: 0, maxValue);
         public int Next(int minValue, int maxValue) => (int)Next(minValue, (float)maxValue);
 
         public float Next(float minValue, float maxValue)
@@ -228,10 +223,10 @@ namespace UnicornHack.Utils
 
         private uint NextUInt()
         {
-            _x ^= _x << 13;
-            _x ^= _x >> 17;
-            _x ^= _x << 5;
-            return _x;
+            Seed ^= Seed << 13;
+            Seed ^= Seed >> 17;
+            Seed = Seed ^ Seed << 5;
+            return Seed;
         }
     }
 }

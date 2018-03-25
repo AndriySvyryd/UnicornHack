@@ -1,23 +1,23 @@
-using UnicornHack.Abilities;
-using UnicornHack.Events;
+using UnicornHack.Primitives;
+using UnicornHack.Services.LogEvents;
+using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Items;
 
 namespace UnicornHack.Services
 {
     public interface ILanguageService
     {
-        string ToString(AttackEvent @event);
-        string ToString(DeathEvent @event);
-        string ToString(ItemConsumptionEvent @event);
-        string ToString(ItemPickUpEvent @event);
-        string ToString(ItemDropEvent @event);
-        string ToString(ItemEquipmentEvent @event);
-        string ToString(ItemUnequipmentEvent @event);
-        string ToString(Item item);
-        string ToString(Property property);
-        string ToString(Ability ability);
-        string ToString(EquipmentSlot slot, Actor actor, bool abbreviate);
-        string Welcome(Player character);
-        string InvalidTarget();
+        string GetPropertyString(string propertyName, bool abbreviate);
+        string GetString(ItemComponent item, int quantity, SenseType sense);
+        string GetString(AbilityComponent ability);
+        string GetString(EquipmentSlot slot, GameEntity actorEntity, bool abbreviate);
+        string GetString(in ItemPickUpEvent @event);
+        string GetString(in ItemDropEvent @event);
+        string GetString(in ItemEquipmentEvent @event);
+        string GetString(in ItemActivationEvent @event);
+        string GetString(in AttackEvent @event);
+        string GetString(in DeathEvent @event);
+        string Welcome(GameEntity playerEntity);
         string UnableToMove(Direction direction);
     }
 }

@@ -1,7 +1,9 @@
 using System;
 using CSharpScriptSerialization;
 using UnicornHack.Data.Fragments;
-using UnicornHack.Utils;
+using UnicornHack.Systems.Levels;
+using UnicornHack.Utils.DataLoading;
+using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Generation.Map
 {
@@ -9,7 +11,7 @@ namespace UnicornHack.Generation.Map
     {
         private Func<string, byte, int, int, float> _weightFunction;
 
-        public virtual float GetWeight(Level level, Rectangle boundingRectangle)
+        public float GetWeight(LevelComponent level, Rectangle boundingRectangle)
         {
             // TODO: take transformations into account
             if (PayloadArea.Width > boundingRectangle.Width || PayloadArea.Height > boundingRectangle.Height)

@@ -1,94 +1,124 @@
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using Microsoft.Extensions.Caching.Memory;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
-using UnicornHack.Events;
 using UnicornHack.Generation;
 using UnicornHack.Services;
+using UnicornHack.Systems.Levels;
 using UnicornHack.Utils;
+using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack
 {
-    public class Game
+    public class Game : NotificationEntity
     {
-        // ReSharper disable once UnusedAutoPropertyAccessor.Local
-        public virtual int Id { get; private set; }
+        private int _id;
+        private int _currentTick;
+        private int _nextEntityId;
+        private int _nextLogId;
+        private int _nextCommandId;
+        private uint? _initialSeed;
+        private SimpleRandom _random;
+        private int? _actingPlayerId;
+        private GameEntity _actingPlayer;
 
-        public virtual int NextPlayerTick { get; set; }
-        public virtual int EventOrder { get; set; }
-        public virtual int? InitialSeed { get; set; }
-        public virtual SimpleRandom Random { get; set; }
-
-        public virtual int NextEntityId { get; set; }
-        public virtual ICollection<Entity> Entities { get; set; } = new HashSet<Entity>();
-        public virtual ICollection<EntityKnowledge> EntitiesKnowledge { get; set; } = new HashSet<EntityKnowledge>();
-        public virtual ICollection<Branch> Branches { get; set; } = new HashSet<Branch>();
-        public virtual ICollection<Level> Levels { get; set; } = new HashSet<Level>();
-        public virtual ICollection<Room> Rooms { get; set; } = new HashSet<Room>();
-        public virtual int NextConnectionId { get; set; }
-        public virtual ICollection<Connection> Connections { get; set; } = new HashSet<Connection>();
-        public virtual int NextAbilityDefinitionId { get; set; }
-
-        public virtual ICollection<AbilityDefinition> AbilityDefinitions { get; set; } =
-            new HashSet<AbilityDefinition>();
-
-        public virtual int NextAbilityId { get; set; }
-        public virtual ICollection<Ability> Abilities { get; set; } = new HashSet<Ability>();
-        public virtual int NextTriggerId { get; set; }
-        public virtual ICollection<Trigger> Triggers { get; set; } = new HashSet<Trigger>();
-        public virtual int NextEffectId { get; set; }
-        public virtual ICollection<Effect> Effects { get; set; } = new HashSet<Effect>();
-        public int NextAppliedEffectId { get; set; }
-        public virtual ICollection<AppliedEffect> AppliedEffects { get; set; } = new HashSet<AppliedEffect>();
-        public virtual ICollection<SensoryEvent> SensoryEvents { get; set; } = new HashSet<SensoryEvent>();
-        public virtual GameServices Services { get; set; }
-        public virtual IRepository Repository { get; set; }
-        public virtual IEnumerable<Player> Players => Entities.OfType<Player>();
-
-        public virtual Actor Turn()
+        public int Id
         {
-            var orderedPlayers = new PriorityQueue<Player>(Players, Actor.TickComparer.Instance);
-            while (orderedPlayers.Any(pc => pc.IsAlive))
-            {
-                var player = orderedPlayers.Peek();
-                NextPlayerTick = player.NextActionTick;
-                var actingActor = player.Level.Turn();
-                if (actingActor != null)
-                {
-                    NextPlayerTick = player.NextActionTick;
-                    return actingActor;
-                }
-
-                Debug.Assert(NextPlayerTick != player.NextActionTick,
-                    nameof(Player.NextActionTick) + " hasn't been updated!");
-                orderedPlayers.Update(0);
-            }
-
-            return null;
+            get => _id;
+            // ReSharper disable once UnusedMember.Local
+            private set => SetWithNotify(value, ref _id);
         }
 
-        public virtual (int[,], Point[]) GetPointIndex(byte width, byte height) => Services.SharedCache.GetOrCreate(
-            nameof(GetPointIndex).GetHashCode() ^ (width << 8 + height), e =>
+        public int CurrentTick
+        {
+            get => _currentTick;
+            set => SetWithNotify(value, ref _currentTick);
+        }
+
+        public int NextEntityId
+        {
+            get => _nextEntityId;
+            set => SetWithNotify(value, ref _nextEntityId);
+        }
+
+        public int NextLogId
+        {
+            get => _nextLogId;
+            set => SetWithNotify(value, ref _nextLogId);
+        }
+
+        public int NextCommandId
+        {
+            get => _nextCommandId;
+            set => SetWithNotify(value, ref _nextCommandId);
+        }
+
+        public uint? InitialSeed
+        {
+            get => _initialSeed;
+            set => SetWithNotify(value, ref _initialSeed);
+        }
+
+        public SimpleRandom Random
+        {
+            get => _random;
+            set => SetWithNotify(value, ref _random);
+        }
+
+        public int? ActingPlayerId
+        {
+            get => _actingPlayerId;
+            set => SetWithNotify(value, ref _actingPlayerId);
+        }
+
+        public GameEntity ActingPlayer
+        {
+            get => _actingPlayer;
+            set => SetWithNotify(value, ref _actingPlayer);
+        }
+
+        public ICollection<GameBranch> Branches { get; set; } = new ObservableHashSet<GameBranch>();
+
+        // Unmapped properties
+        public GameServices Services { get; set; }
+        public GameManager Manager { get; set; }
+        public IRepository Repository { get; set; }
+
+        public GameBranch GetBranch(string branchName)
+            => Branches.FirstOrDefault(b => b.Name == branchName) ??
+               Repository.Find<GameBranch>(Id, branchName);
+
+        public GameEntity LoadLevel(int levelId)
+        {
+            var levelEntity = Manager.FindEntity(levelId);
+            if (!LevelGenerator.EnsureGenerated(levelEntity.Level))
             {
-                var pointToIndex = new int[width, height];
-                var indexToPoint = new Point[width * height];
-                var i = 0;
-                for (byte y = 0; y < height; y++)
+                var levelsToLoad = Manager.ConnectionsToLevelRelationship[levelId]
+                    .Select(c => c.Connection.TargetLevelId)
+                    .Where(id => Manager.FindEntity(id) == null)
+                    .ToList();
+                if (levelsToLoad.Count > 0)
                 {
-                    for (byte x = 0; x < width; x++)
-                    {
-                        pointToIndex[x, y] = i;
-                        indexToPoint[i++] = new Point(x, y);
-                    }
+                    Repository.LoadLevels(levelsToLoad);
                 }
+            }
 
-                return (pointToIndex, indexToPoint);
-            });
+            return levelEntity;
+        }
 
-        public virtual Branch GetBranch(string branchName) => Repository.Find<Branch>(Id, branchName);
+        public override bool Equals(object obj)
+        {
+            if (!(obj is Game otherGame))
+            {
+                return false;
+            }
 
-        public virtual Level GetLevel(string branchName, byte depth) => Repository.Find<Level>(Id, branchName, depth);
+            if (ReferenceEquals(this, otherGame))
+            {
+                return true;
+            }
+
+            return Id == otherGame.Id;
+        }
+
+        public override int GetHashCode() => ~Id;
     }
 }

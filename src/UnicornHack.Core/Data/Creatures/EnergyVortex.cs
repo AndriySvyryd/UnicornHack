@@ -1,107 +1,78 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant EnergyVortex = new CreatureVariant
+        public static readonly Creature EnergyVortex = new Creature
         {
             Name = "energy vortex",
             Species = Species.Vortex,
             SpeciesClass = SpeciesClass.Extraplanar,
             MovementDelay = 60,
-            Abilities = new HashSet<AbilityDefinition>
+            Material = Material.Air,
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Engulf {Duration = 4}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnDigestion,
+                    Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Shock {Damage = 30}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnDigestion,
+                    Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new DrainEnergy {Amount = 3}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeHit,
+                    Activation = ActivationType.OnPhysicalMeleeHit,
                     Effects = new HashSet<Effect> {new Shock {Damage = 30}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnRangedHit,
+                    Activation = ActivationType.OnPhysicalRangedHit,
                     Effects = new HashSet<Effect> {new Shock {Damage = 30}}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "flight",
-                "flight control",
-                "non animal",
-                "non solid body",
-                "breathlessness",
-                "limblessness",
-                "eyelessness",
-                "headlessness",
-                "mindlessness",
-                "asexuality",
-                "stoning resistance",
-                "sliming resistance",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "electricity resistance",
-                    75
-                },
-                {
-                    "disintegration resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "venom resistance",
-                    75
-                },
-                {
-                    "size",
-                    16
-                },
-                {
-                    "physical deflection",
-                    18
-                },
-                {
-                    "magic resistance",
-                    30
-                },
-                {
-                    "weight",
-                    0
                 }
             },
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},
-            CorpseName = ""
+            Sex = Sex.None,
+            Size = 16,
+            Weight = 0,
+            Agility = 4,
+            Constitution = 4,
+            Intelligence = 4,
+            Quickness = 4,
+            Strength = 4,
+            Willpower = 9,
+            MagicResistance = 30,
+            PhysicalDeflection = 18,
+            DisintegrationResistance = 75,
+            ElectricityResistance = 75,
+            SlimingImmune = true,
+            StoningImmune = true,
+            HeadType = HeadType.None,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.None,
+            RespirationType = RespirationType.None,
+            LocomotionType = LocomotionType.Flying,
+            EyeCount = 0,
+            Mindless = true,
+            NonAnimal = true
         };
     }
 }

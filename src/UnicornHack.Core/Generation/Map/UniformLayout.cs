@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CSharpScriptSerialization;
+using UnicornHack.Systems.Levels;
 using UnicornHack.Utils;
+using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Generation.Map
 {
@@ -10,14 +12,14 @@ namespace UnicornHack.Generation.Map
     {
         private Dimensions _lotSize;
 
-        public virtual Dimensions MaxLotSize { get; set; } = new Dimensions(20, 20);
-        public virtual Dimensions MinLotSize { get; set; } = new Dimensions(6, 6);
-        protected virtual int LotPlacementAttempts { get; set; } = 16;
+        public Dimensions MaxLotSize { get; set; } = new Dimensions(20, 20);
+        public Dimensions MinLotSize { get; set; } = new Dimensions(6, 6);
+        protected int LotPlacementAttempts { get; set; } = 16;
 
-        public override void Fill(Level level, DefiningMapFragment fragment)
+        public override List<Room> Fill(LevelComponent level, DefiningMapFragment fragment)
         {
             _lotSize = MaxLotSize;
-            base.Fill(level, fragment);
+            return base.Fill(level, fragment);
         }
 
         protected override Rectangle? SelectNextLot(RectangleIntervalTree placedFragments, SimpleRandom random)
@@ -59,18 +61,15 @@ namespace UnicornHack.Generation.Map
             new PropertyCSScriptSerializer<UniformLayout>(GetPropertyConditions<UniformLayout>());
 
         protected static Dictionary<string, Func<TUniformLayout, object, bool>> GetPropertyConditions<TUniformLayout>()
-            where TUniformLayout : UniformLayout
+            where TUniformLayout : UniformLayout => new Dictionary<string, Func<TUniformLayout, object, bool>>
         {
-            return new Dictionary<string, Func<TUniformLayout, object, bool>>
-            {
-                // ReSharper disable once CompareOfFloatsByEqualityOperator
-                {nameof(Coverage), (o, v) => (float)v != 0.4f},
-                {nameof(MaxRoomCount), (o, v) => (byte)v != 16},
-                {nameof(MaxLotSize), (o, v) => !new Dimensions(20, 20).Equals(v)},
-                {nameof(MinLotSize), (o, v) => !new Dimensions(6, 6).Equals(v)}
-            };
-        }
+            // ReSharper disable once CompareOfFloatsByEqualityOperator
+            {nameof(Coverage), (o, v) => (float)v != 0.4f},
+            {nameof(MaxRoomCount), (o, v) => (byte)v != 16},
+            {nameof(MaxLotSize), (o, v) => !new Dimensions(20, 20).Equals(v)},
+            {nameof(MinLotSize), (o, v) => !new Dimensions(6, 6).Equals(v)}
+        };
 
-        public virtual ICSScriptSerializer GetSerializer() => Serializer;
+        ICSScriptSerializer ICSScriptSerializable.GetSerializer() => Serializer;
     }
 }

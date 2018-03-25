@@ -2,7 +2,7 @@ using System;
 
 namespace UnicornHack.Utils
 {
-    public class TransientReference<T> : IDisposable where T : IReferenceable
+    public struct TransientReference<T> : IDisposable where T : IReferenceable
     {
         public TransientReference(T referenced)
         {

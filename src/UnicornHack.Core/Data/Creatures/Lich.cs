@@ -1,85 +1,54 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Lich = new CreatureVariant
+        public static readonly Creature Lich = new Creature
         {
             Name = "lich",
             Species = Species.Lich,
             SpeciesClass = SpeciesClass.Undead,
             MovementDelay = 200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Freeze {Damage = 50}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spell,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Infect()}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Poison {Damage = 100}}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "infravision",
-                "humanoidness",
-                "breathlessness",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "cold resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "venom resistance",
-                    75
-                },
-                {
-                    "regeneration",
-                    3
-                },
-                {
-                    "magic resistance",
-                    30
-                },
-                {
-                    "weight",
-                    600
                 }
             },
             InitialLevel = 11,
             NextStageName = "demilich",
-            CorpseName = "",
-            Behavior = MonsterBehavior.MagicUser,
-            Noise = ActorNoiseType.Mumble
+            Behavior = AIBehavior.MagicUser,
+            Noise = ActorNoiseType.Mumble,
+            Weight = 600,
+            Agility = 6,
+            Constitution = 6,
+            Intelligence = 6,
+            Quickness = 6,
+            Strength = 6,
+            Willpower = 11,
+            Regeneration = 3,
+            MagicResistance = 30,
+            ColdResistance = 75,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            RespirationType = RespirationType.None,
+            Infravision = true
         };
     }
 }

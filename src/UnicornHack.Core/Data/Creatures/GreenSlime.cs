@@ -1,89 +1,66 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant GreenSlime = new CreatureVariant
+        public static readonly Creature GreenSlime = new Creature
         {
             Name = "green slime",
             Species = Species.Ooze,
             MovementDelay = 200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
-                    Effects = new HashSet<Effect> {new Slime()}
+                    Effects = new HashSet<Effect>
+                    {
+                        new Slime()
+                    }
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeHit,
-                    Effects = new HashSet<Effect> {new Slime()}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Slime()}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "decay resistance",
-                "breathlessness",
-                "amorphism",
-                "non animal",
-                "eyelessness",
-                "limblessness",
-                "headlessness",
-                "mindlessness",
-                "asexuality",
-                "stoning resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "cold resistance",
-                    75
-                },
-                {
-                    "electricity resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "venom resistance",
-                    75
-                },
-                {
-                    "acid resistance",
-                    75
-                },
-                {
-                    "stealthiness",
-                    3
-                },
-                {
-                    "physical deflection",
-                    14
-                },
-                {
-                    "weight",
-                    400
+                    Activation = ActivationType.OnPhysicalMeleeHit,
+                    Effects = new HashSet<Effect>
+                    {
+                        new Slime()
+                    }
                 }
             },
             InitialLevel = 6,
-            GenerationWeight = new BranchWeight {Matched = new DefaultWeight(), Name = "hell"},
-            CorpseName = ""
+            GenerationWeight = new BranchWeight
+            {
+                Matched = new DefaultWeight(),
+                Name = "hell"
+            },
+            Sex = Sex.None,
+            Weight = 400,
+            Agility = 4,
+            Constitution = 4,
+            Intelligence = 4,
+            Quickness = 4,
+            Strength = 4,
+            Willpower = 9,
+            PhysicalDeflection = 14,
+            AcidResistance = 75,
+            ColdResistance = 75,
+            ElectricityResistance = 75,
+            StoningImmune = true,
+            HeadType = HeadType.None,
+            TorsoType = TorsoType.Amorphic,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.None,
+            RespirationType = RespirationType.None,
+            EyeCount = 0,
+            NoiseLevel = 0,
+            Mindless = true,
+            NonAnimal = true
         };
     }
 }

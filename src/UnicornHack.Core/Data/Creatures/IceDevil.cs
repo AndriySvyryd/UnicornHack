@@ -1,99 +1,76 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant IceDevil = new CreatureVariant
+        public static readonly Creature IceDevil = new Creature
         {
             Name = "ice devil",
             Species = Species.DemonMajor,
             SpeciesClass = SpeciesClass.Demon,
             MovementDelay = 200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Sting,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Freeze {Damage = 70}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Poison {Damage = 40}}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "infravision",
-                "invisibility detection",
-                "infravisibility",
-                "humanoidness",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "fire resistance",
-                    75
-                },
-                {
-                    "cold resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "size",
-                    8
-                },
-                {
-                    "physical deflection",
-                    24
-                },
-                {
-                    "magic resistance",
-                    55
-                },
-                {
-                    "weight",
-                    1800
                 }
             },
             InitialLevel = 11,
-            GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 2F}, Name = "hell"},
+            GenerationWeight = new BranchWeight
+            {
+                Matched = new DefaultWeight {Multiplier = 2F},
+                Name = "hell"
+            },
             PreviousStageName = "bone devil",
-            CorpseName = "",
             GenerationFlags = GenerationFlags.NonGenocidable,
-            Behavior = MonsterBehavior.Stalking
+            Behavior = AIBehavior.Stalking,
+            Size = 8,
+            Weight = 1800,
+            Agility = 6,
+            Constitution = 6,
+            Intelligence = 6,
+            Quickness = 6,
+            Strength = 6,
+            Willpower = 6,
+            MagicResistance = 55,
+            PhysicalDeflection = 24,
+            ColdResistance = 75,
+            FireResistance = 75,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            Infravisible = true,
+            Infravision = true,
+            InvisibilityDetection = true
         };
     }
 }

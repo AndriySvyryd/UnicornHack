@@ -1,49 +1,47 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Magpie = new CreatureVariant
+        public static readonly Creature Magpie = new Creature
         {
             Name = "magpie",
             Species = Species.Crow,
             SpeciesClass = SpeciesClass.Bird,
             MovementDelay = 60,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 }
             },
-            SimpleProperties = new HashSet<string>
-            {
-                "flight",
-                "flight control",
-                "infravisibility",
-                "animal body",
-                "handlessness",
-                "oviparity",
-                "singular inventory"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {"poison resistance", 75},
-                {"size", 1},
-                {"physical deflection", 14},
-                {"weight", 50}
-            },
             InitialLevel = 2,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
-            Behavior = MonsterBehavior.Wandering | MonsterBehavior.GemCollector,
-            Noise = ActorNoiseType.Squawk
+            Behavior = AIBehavior.Wandering | AIBehavior.GemCollector,
+            Noise = ActorNoiseType.Squawk,
+            Size = 1,
+            Weight = 50,
+            Agility = 2,
+            Constitution = 2,
+            Intelligence = 2,
+            Quickness = 2,
+            Strength = 2,
+            Willpower = 2,
+            PhysicalDeflection = 14,
+            TorsoType = TorsoType.Quadruped,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.Claws,
+            LocomotionType = LocomotionType.Flying,
+            InventorySize = 1,
+            Infravisible = true
         };
     }
 }

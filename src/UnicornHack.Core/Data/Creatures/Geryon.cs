@@ -1,92 +1,69 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Geryon = new CreatureVariant
+        public static readonly Creature Geryon = new Creature
         {
             Name = "Geryon",
             Species = Species.DemonMajor,
             SpeciesClass = SpeciesClass.Demon,
             MovementDelay = 400,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Sting,
                     Timeout = 1,
-                    Effects = new HashSet<Effect> {new Envenom {Damage = 50}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Poison {Damage = 130}}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "flight",
-                "flight control",
-                "infravisibility",
-                "infravision",
-                "invisibility detection",
-                "serpentlike body",
-                "humanoid torso",
-                "maleness",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "fire resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "size",
-                    16
-                },
-                {
-                    "physical deflection",
-                    23
-                },
-                {
-                    "magic resistance",
-                    75
-                },
-                {
-                    "weight",
-                    2500
+                    Effects = new HashSet<Effect> {new Blight {Damage = 50}}
                 }
             },
             InitialLevel = 30,
-            GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 0F}, Name = "hell"},
-            CorpseName = "",
+            GenerationWeight = new BranchWeight
+            {
+                Matched = new DefaultWeight {Multiplier = 0F},
+                Name = "hell"
+            },
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-            Behavior = MonsterBehavior.Stalking,
-            Noise = ActorNoiseType.Cuss
+            Behavior = AIBehavior.Stalking,
+            Noise = ActorNoiseType.Cuss,
+            Sex = Sex.Male,
+            Size = 16,
+            Weight = 2500,
+            Agility = 16,
+            Constitution = 16,
+            Intelligence = 16,
+            Quickness = 16,
+            Strength = 16,
+            Willpower = 16,
+            MagicResistance = 75,
+            PhysicalDeflection = 23,
+            FireResistance = 75,
+            TorsoType = TorsoType.Humanoid,
+            LowerExtremeties = ExtremityType.None,
+            LocomotionType = LocomotionType.Flying,
+            Infravisible = true,
+            Infravision = true,
+            InvisibilityDetection = true
         };
     }
 }

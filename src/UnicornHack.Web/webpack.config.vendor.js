@@ -1,12 +1,14 @@
 const path = require('path');
 const webpack = require('webpack');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
 
 function getClientConfig(env) {
     const isDevBuild = !(env && env.prod);
     return {
         stats: { modules: false },
+        mode: isDevBuild ? 'development' : 'production',
         resolve: {
             extensions: ['*', '.js']
         },
@@ -14,7 +16,8 @@ function getClientConfig(env) {
             path: path.join(__dirname, 'wwwroot', 'dist'),
             publicPath: 'dist/',
             filename: '[name].js',
-            library: '[name]_[hash]'
+            library: '[name]_[hash]',
+            globalObject: 'this'
         },
         module: {
             rules: [
@@ -22,25 +25,26 @@ function getClientConfig(env) {
                 { test: /\.(png|jpg|jpeg|gif|svg)$/, use: 'url-loader?limit=25000' },
                 {
                     test: /\.css(\?|$)/,
-                    use: ExtractTextPlugin.extract({
-                        fallback: 'style-loader',
-                        use: isDevBuild ? 'css-loader' : 'css-loader?minimize'
-                    })
+                    use: [
+                        MiniCssExtractPlugin.loader,
+                        isDevBuild ? 'css-loader' : 'css-loader?minimize'
+                    ]
                 },
                 {
                     test: /\.scss(\?|$)/,
-                    use: ExtractTextPlugin.extract({
-                        fallback: 'style-loader',
-                        use: isDevBuild
-                            ? [{ loader: 'css-loader', options: { importLoaders: 1 } }, 'sass-loader']
-                            : [{ loader: 'css-loader', options: { minimize: true, importLoaders: 1 } }, 'sass-loader']
-                    })
+                    use: [
+                        MiniCssExtractPlugin.loader,
+                        isDevBuild
+                        ? { loader: 'css-loader', options: { importLoaders: 1 } }
+                        : { loader: 'css-loader', options: { minimize: true, importLoaders: 1 } },
+                        'sass-loader'
+                    ]
                 }
             ]
         },
         entry: {
             vendor: [
-                '@aspnet/signalr', '@aspnet/signalr-protocol-msgpack', 'buffer', 'bootstrap-loader/extractStyles',
+                '@aspnet/signalr', '@aspnet/signalr-protocol-msgpack', 'buffer', 'bootstrap-loader',
                 'event-source-polyfill', 'isomorphic-fetch', 'lodash', 'mobx', 'mobx-react', 'react', 'react-dom',
                 'react-hotkeys', 'mousetrap', 'url-search-params-polyfill', 'jquery', 'popper.js'
             ]
@@ -50,7 +54,7 @@ function getClientConfig(env) {
                 path: path.join(__dirname, 'wwwroot', 'dist', '[name]-manifest.json'),
                 name: '[name]_[hash]'
             }),
-            new ExtractTextPlugin({ filename: 'vendor.css', allChunks: true }),
+            new MiniCssExtractPlugin({ filename: 'vendor.css' }),
             new webpack.ProvidePlugin({
                 $: "jquery",
                 jQuery: "jquery",
@@ -67,21 +71,34 @@ function getClientConfig(env) {
                 Tab: "exports-loader?Tab!bootstrap/js/dist/tab",
                 Tooltip: "exports-loader?Tooltip!bootstrap/js/dist/tooltip",
                 Util: "exports-loader?Util!bootstrap/js/dist/util"
-            }), // Maps these identifiers for Bootstrap
-            new webpack.DefinePlugin({
-                'process.env.NODE_ENV': isDevBuild ? '"development"' : '"production"'
-            }),
-            new webpack.optimize.ModuleConcatenationPlugin()
-        ].concat(isDevBuild
-            ? []
-            : [
-                new UglifyJsPlugin({
-                    uglifyOptions: {
-                        ie8: false,
-                        ecma: 6
+            }) // Maps these identifiers for Bootstrap
+        ],
+        optimization: {
+            concatenateModules: true,
+            noEmitOnErrors: true,
+            splitChunks: {
+                cacheGroups: {
+                    styles: {
+                        name: 'styles',
+                        test: /\.css$/,
+                        chunks: 'all',
+                        enforce: true
                     }
-                })
-            ])
+                }
+            },
+            minimizer: isDevBuild
+                ? []
+                : [
+                    new UglifyJsPlugin({
+                        ie8: false,
+                        ecma: 6,
+                    cache: true,
+                    parallel: true,
+                    sourceMap: true
+                }),
+                new OptimizeCSSAssetsPlugin({})
+            ]
+        }
     };
 }
 

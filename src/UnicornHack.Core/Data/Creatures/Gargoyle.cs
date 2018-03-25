@@ -1,48 +1,58 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Gargoyle = new CreatureVariant
+        public static readonly Creature Gargoyle = new Creature
         {
             Name = "gargoyle",
             Species = Species.Gargoyle,
             MovementDelay = 120,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
                 }
             },
-            SimpleProperties = new HashSet<string> {"humanoidness", "breathlessness", "stoning resistance"},
-            ValuedProperties =
-                new Dictionary<string, object> {{"thick hide", 3}, {"physical deflection", 24}, {"weight", 1000}},
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},
             NextStageName = "winged gargoyle",
-            Noise = ActorNoiseType.Grunt
+            Noise = ActorNoiseType.Grunt,
+            Weight = 1000,
+            Agility = 4,
+            Constitution = 4,
+            Intelligence = 4,
+            Quickness = 4,
+            Strength = 4,
+            Willpower = 4,
+            PhysicalDeflection = 24,
+            StoningImmune = true,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            RespirationType = RespirationType.None
         };
     }
 }

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnicornHack.Utils;
+using UnicornHack.Utils.DataStructures;
 using Xunit;
 
 namespace UnicornHack.Generation.Map
@@ -9,136 +9,109 @@ namespace UnicornHack.Generation.Map
     public class MapFragmentTest
     {
         [Fact]
-        public void BuildRoom_Point()
-        {
-            BuildRoomTest(@"
+        public void BuildRoom_Point() => BuildRoomTest(@"
 O");
-        }
 
         [Fact]
-        public void BuildRoom_Hairy_Point()
-        {
-            BuildRoomTest(@"
+        public void BuildRoom_Hairy_Point() => BuildRoomTest(@"
  O
 OOO
  O");
-        }
 
         [Fact]
-        public void BuildRoom_Small_Square()
-        {
-            BuildRoomTest(@"
+        public void BuildRoom_Small_Square() => BuildRoomTest(@"
 PP
 PP");
-        }
 
         [Fact]
-        public void BuildRoom_Hairy_Small_Square()
-        {
-            BuildRoomTest(@"
+        public void BuildRoom_Hairy_Small_Square() => BuildRoomTest(@"
 OO O
  PPO
 OPP
 O OO");
-        }
 
         [Fact]
-        public void BuildRoom_Rectangle()
-        {
-            BuildRoomTest(@"
+        public void BuildRoom_Rectangle() => BuildRoomTest(@"
 PPP
 PIP
 PPP");
-        }
 
         [Fact]
-        public void BuildRoom_Hairy_Rectangle()
-        {
-            BuildRoomTest(@"
+        public void BuildRoom_Hairy_Rectangle() => BuildRoomTest(@"
  O O
 OPPPO
  PIP
 OPPPO
  O O");
-        }
 
         [Fact]
-        public void BuildRoom_Hollow_Rectangle()
-        {
-            BuildRoomTest(@"
+        public void BuildRoom_Hollow_Rectangle() => BuildRoomTest(@"
 PPP OOO
 PIPOO O
 PPP OOO");
-        }
 
         [Fact]
-        public void BuildRoom_I()
-        {
-            BuildRoomTest(@"
+        public void BuildRoom_I() => BuildRoomTest(@"
 OOOOO
 O O O
   O  X
 O O O
 OOOOO");
-        }
 
         [Fact]
-        public void BuildRoom_Ring()
-        {
-            BuildRoomTest(@"
+        public void BuildRoom_Ring() => BuildRoomTest(@"
 OOO
 O O
 OOPP
   PP");
-        }
 
         [Fact]
-        public void BuildRoom_Thick_Rectangle()
-        {
-            BuildRoomTest(@"
+        public void BuildRoom_Thick_Rectangle() => BuildRoomTest(@"
 PPPPPP
 PXXXXP
 PX  XP
 PX  XP
 PXXXXP
 PPPPPP");
-        }
 
         [Fact]
-        public void BuildRoom_Touching_Squares()
-        {
-            BuildRoomTest(@"
+        public void BuildRoom_Touching_Squares() => BuildRoomTest(@"
 PP X
 PP
  PP
  PP");
-        }
 
         private void BuildRoomTest(string map)
         {
-            var level = TestHelper.CreateLevel();
-
-            var fragment = new NormalMapFragment
+            var game = TestHelper.CreateGame((uint)Environment.TickCount);
+            var fragment = new DefiningMapFragment
             {
-                Map = map
+                Map = map,
+                Layout = new EmptyLayout {Coverage = 0},
+                CreatureGenerator = new CreatureGenerator {ExpectedInitialCount = 0},
+                ItemGenerator = new ItemGenerator {ExpectedInitialCount = 0}
             };
-            fragment.EnsureInitialized(level.Game);
+
+            fragment.EnsureInitialized(game);
+            var byteMap = fragment.ByteMap;
+            fragment.ByteMap = new byte[0];
+            var level = TestHelper.CreateLevel(fragment, game);
 
             var input = new List<Point>();
             var expectedInside = new List<Point>();
             var expectedPerimeter = new List<Point>();
             var expectedOutside = new List<Point>();
 
-            var seed = Environment.TickCount;
-            fragment.WriteMap(
-                level.BoundingRectangle.PlaceInside(fragment.PayloadArea, new SimpleRandom {Seed = seed}).Value,
+            fragment.ByteMap = byteMap;
+            fragment.WriteMap(new Point(0, 0),
                 level,
-                (c, point, l, s) =>
+                (c, point, _, s) =>
                 {
                     if (c != ' ')
                     {
                         input.Add(point);
                     }
+
                     switch (c)
                     {
                         case 'I':
@@ -182,6 +155,7 @@ PP
                         lastPoint = point;
                     }
                 }
+
                 if (perimeter.Count > 1)
                 {
                     Assert.Equal(1, firstPoint.Value.OrthogonalDistanceTo(lastPoint.Value));
@@ -189,7 +163,7 @@ PP
             }
             catch (Exception e)
             {
-                throw new InvalidOperationException("Seed: " + seed, e);
+                throw new InvalidOperationException("Seed: " + level.Game.InitialSeed, e);
             }
         }
     }

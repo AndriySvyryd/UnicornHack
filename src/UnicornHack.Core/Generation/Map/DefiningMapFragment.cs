@@ -2,25 +2,26 @@
 using System.Collections.Generic;
 using CSharpScriptSerialization;
 using UnicornHack.Data.Fragments;
-using UnicornHack.Utils;
+using UnicornHack.Primitives;
+using UnicornHack.Utils.DataLoading;
 
 namespace UnicornHack.Generation.Map
 {
     public class DefiningMapFragment : ConnectingMapFragment
     {
-        public virtual byte LevelHeight { get; set; } = 40;
-        public virtual byte LevelWidth { get; set; } = 80;
-        public virtual Layout Layout { get; set; } = new EmptyLayout();
-        public virtual CreatureGenerator CreatureGenerator { get; set; } = new CreatureGenerator();
-        public virtual ItemGenerator ItemGenerator { get; set; } = new ItemGenerator();
-        public virtual MapFeature DefaultTerrain { get; set; }
-        public virtual MapFeature DefaultPathTerrain { get; set; }
+        public byte LevelHeight { get; set; } = 40;
+        public byte LevelWidth { get; set; } = 80;
+        public Layout Layout { get; set; } = new EmptyLayout();
+        public CreatureGenerator CreatureGenerator { get; set; } = new CreatureGenerator();
+        public ItemGenerator ItemGenerator { get; set; } = new ItemGenerator();
+        public MapFeature DefaultTerrain { get; set; }
+        public MapFeature DefaultPathTerrain { get; set; }
 
         // TODO: Subfragment, item and creature generation weight and distribution modifiers
 
         private Func<string, byte, int, int, float> _weightFunction;
 
-        public virtual float GetWeight(string branchName, byte depth)
+        public float GetWeight(string branchName, byte depth)
         {
             if (_weightFunction == null)
             {
@@ -31,13 +32,13 @@ namespace UnicornHack.Generation.Map
             return _weightFunction(branchName, depth, 0, 0);
         }
 
-        public new static readonly CSScriptLoader<DefiningMapFragment> Loader =
+        public static new readonly CSScriptLoader<DefiningMapFragment> Loader =
             new CSScriptLoader<DefiningMapFragment>(@"Data\Fragments\Defining\", typeof(DefiningMapFragmentData));
 
         private static readonly CSScriptSerializer Serializer =
             new PropertyCSScriptSerializer<DefiningMapFragment>(GetPropertyConditions<DefiningMapFragment>());
 
-        protected new static Dictionary<string, Func<TDefiningMapFragment, object, bool>>
+        protected static new Dictionary<string, Func<TDefiningMapFragment, object, bool>>
             GetPropertyConditions<TDefiningMapFragment>() where TDefiningMapFragment : DefiningMapFragment
         {
             var propertyConditions = ConnectingMapFragment.GetPropertyConditions<TDefiningMapFragment>();

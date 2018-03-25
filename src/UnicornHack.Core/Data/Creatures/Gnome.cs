@@ -1,46 +1,53 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Gnome = new CreatureVariant
+        public static readonly Creature Gnome = new Creature
         {
             Name = "gnome",
             Species = Species.Gnome,
             MovementDelay = 200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeAttack,
+                    Activation = ActivationType.OnPhysicalMeleeAttack,
                     Action = AbilityAction.Modifier,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 }
             },
-            SimpleProperties = new HashSet<string> {"infravision", "infravisibility", "humanoidness"},
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {"size", 2},
-                {"physical deflection", 10},
-                {"magic resistance", 5},
-                {"weight", 650}
-            },
             InitialLevel = 1,
             NextStageName = "gnome lord",
             GenerationFlags = GenerationFlags.NonPolymorphable | GenerationFlags.SmallGroup,
-            Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.WeaponCollector,
-            Noise = ActorNoiseType.Speach
+            Behavior = AIBehavior.GoldCollector | AIBehavior.WeaponCollector,
+            Noise = ActorNoiseType.Speach,
+            Size = 2,
+            Weight = 650,
+            Agility = 1,
+            Constitution = 1,
+            Intelligence = 1,
+            Quickness = 1,
+            Strength = 1,
+            Willpower = 1,
+            MagicResistance = 5,
+            PhysicalDeflection = 10,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            Infravisible = true,
+            Infravision = true
         };
     }
 }

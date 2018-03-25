@@ -1,41 +1,45 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Crocodile = new CreatureVariant
+        public static readonly Creature Crocodile = new Creature
         {
             Name = "crocodile",
             Species = Species.Crocodile,
             SpeciesClass = SpeciesClass.Reptile,
             MovementDelay = 133,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 }
             },
-            SimpleProperties =
-                new HashSet<string> {"swimming", "amphibiousness", "handlessness", "oviparity", "singular inventory"},
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {"thick hide", 3},
-                {"size", 8},
-                {"physical deflection", 16},
-                {"magic resistance", 10},
-                {"weight", 1500}
-            },
             InitialLevel = 8,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
-            PreviousStageName = "baby crocodile"
+            PreviousStageName = "baby crocodile",
+            Size = 8,
+            Weight = 1500,
+            Agility = 5,
+            Constitution = 5,
+            Intelligence = 5,
+            Quickness = 5,
+            Strength = 5,
+            Willpower = 5,
+            MagicResistance = 10,
+            PhysicalDeflection = 16,
+            UpperExtremeties = ExtremityType.None,
+            RespirationType = RespirationType.Amphibious,
+            LocomotionType = LocomotionType.Swimming,
+            InventorySize = 1
         };
     }
 }

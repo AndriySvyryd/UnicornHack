@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnicornHack.Generation.Map;
+using UnicornHack.Primitives;
+using UnicornHack.Systems.Levels;
+using UnicornHack.Utils.DataStructures;
 using Xunit;
 
 namespace UnicornHack.Utils
@@ -10,37 +13,26 @@ namespace UnicornHack.Utils
     public class PathFinderTest
     {
         [Fact]
-        public void Pattern1()
-        {
-            TestPath(@"
+        public void Pattern1() => TestPath(@"
 **.
 ##*
 **.",
-                Direction.North);
-        }
+            Direction.North);
 
         [Fact]
-        public void Pattern2()
-        {
-            TestPath(@"
+        public void Pattern2() => TestPath(@"
 **.
 ..*",
-                Direction.North);
-        }
+            Direction.North);
 
         [Fact]
-        public void Pattern3()
-        {
-            TestPath(@"
+        public void Pattern3() => TestPath(@"
 *..
 .**",
-                Direction.South);
-        }
+            Direction.South);
 
         [Fact]
-        public void Pattern4()
-        {
-            TestPath(@"
+        public void Pattern4() => TestPath(@"
 *.#
 #*##
 .#*#
@@ -48,8 +40,7 @@ namespace UnicornHack.Utils
 #*##.
 #.*.#*
 ...**",
-                Direction.North);
-        }
+            Direction.North);
 
         [Fact]
         public void Benchmark()
@@ -67,32 +58,32 @@ namespace UnicornHack.Utils
 .*********************.#...#...#*#*#*#*#####",
                 Direction.North);
 
+            var travelSystem = level.Entity.Manager.TravelSystem;
             for (var i = 0; i < 10000; i++)
             {
-                level.GetShortestPath(new Point(0, 0), target, Direction.North);
+                travelSystem.GetShortestPath(level, new Point(0, 0), target, Direction.North);
             }
         }
 
-        private (Level, Point) TestPath(string expectedPathMap, Direction initialDirection)
+        private (LevelComponent, Point) TestPath(string expectedPathMap, Direction initialDirection)
         {
-            var seed = Environment.TickCount;
+            var seed = (uint)Environment.TickCount;
             var map = expectedPathMap.Replace('*', '.');
             var level = TestHelper.BuildLevel(map, seed);
 
-            var expectedFragment = new NormalMapFragment { Map = expectedPathMap};
+            var expectedFragment = new NormalMapFragment {Map = expectedPathMap};
             expectedFragment.EnsureInitialized(level.Game);
             var expectedPathArray = new byte[level.Height * level.Width];
             expectedFragment.WriteMap(
                 new Point(0, 0),
                 level,
-                (c, point, l, v) =>
-                {
-                    expectedPathArray[l.PointToIndex[point.X, point.Y]] = c == '*' ? (byte)1 : (byte)0;
-                },
+                (c, point, l, _) => expectedPathArray[l.PointToIndex[point.X, point.Y]] = c == '*' ? (byte)1 : (byte)0,
                 (object)null);
 
+            var manager = level.Entity.Manager;
             var expectedPath = ExtractPath(level, expectedPathArray, 1);
-            var actualPath = level.GetShortestPath(new Point(0, 0), expectedPath.Last(), initialDirection);
+            var actualPath = manager.TravelSystem.GetShortestPath(
+                level, new Point(0, 0), expectedPath.Last(), initialDirection);
             actualPath.Reverse();
 
             var actualPathArray = new byte[level.Height * level.Width];
@@ -105,6 +96,7 @@ namespace UnicornHack.Utils
                 {
                     pathMatches = pathMatches && point.Equals(expectedPath[i]);
                 }
+
                 actualPathArray[level.PointToIndex[point.X, point.Y]] = 1;
             }
 
@@ -117,7 +109,7 @@ Seed: " + seed);
             return (level, expectedPath.Last());
         }
 
-        private List<Point> ExtractPath(Level level, byte[] expectedPathArray, byte pathValue)
+        private List<Point> ExtractPath(LevelComponent level, byte[] expectedPathArray, byte pathValue)
         {
             var expectedPath = new List<Point>();
             var currentPathPoint = new Point(0, 0);
@@ -131,7 +123,7 @@ Seed: " + seed);
                         continue;
                     }
 
-                    var direction = Level.MovementDirections[directionIndex];
+                    var direction = Vector.MovementDirections[directionIndex];
                     var newLocationX = (byte)(currentPathPoint.X + direction.X);
                     var newLocationY = (byte)(currentPathPoint.Y + direction.Y);
 
@@ -148,14 +140,14 @@ Seed: " + seed);
 
                     currentPathPoint = new Point(newLocationX, newLocationY);
                     expectedPath.Add(currentPathPoint);
-                    previousPointDirectionIndex = Level.OppositeDirectionIndexes[directionIndex];
+                    previousPointDirectionIndex = Vector.OppositeDirectionIndexes[directionIndex];
                     goto NextPointFound;
                 }
 
                 previousPointDirectionIndex = byte.MaxValue;
-                NextPointFound:
-                ;
+                NextPointFound: ;
             }
+
             return expectedPath;
         }
     }

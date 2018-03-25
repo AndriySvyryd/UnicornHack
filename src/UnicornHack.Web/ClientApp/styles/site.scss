@@ -32,6 +32,10 @@ pre {
     font-size: 20px;
 }
 
+input::placeholder {
+    text-align: center;
+}
+
 .mapContainer {
     overflow: hidden;
     height: 620px;

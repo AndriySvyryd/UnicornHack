@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using UnicornHack.Utils;
+using UnicornHack.Utils.DataStructures;
 using Xunit;
 
 namespace UnicornHack
@@ -25,12 +25,13 @@ namespace UnicornHack
                     }
                 }
             }
+
             Assert.True(match,
                 "Expected:" + Environment.NewLine
-                + ToString(sortedExpected)
-                + "Actual:" + Environment.NewLine
-                + ToString(sortedActual)
-                + message);
+                            + ToString(sortedExpected)
+                            + "Actual:" + Environment.NewLine
+                            + ToString(sortedActual)
+                            + message);
         }
 
         public static string ToString(IEnumerable<Point> points)
@@ -40,6 +41,7 @@ namespace UnicornHack
             {
                 sb.Append(point).AppendLine(", ");
             }
+
             return sb.ToString();
         }
 
@@ -67,12 +69,13 @@ namespace UnicornHack
                     }
                 }
             }
+
             Assert.True(match,
                 "Expected:" + Environment.NewLine
-                + ToString(sortedExpected)
-                + "Actual:" + Environment.NewLine
-                + ToString(sortedActual)
-                + message);
+                            + ToString(sortedExpected)
+                            + "Actual:" + Environment.NewLine
+                            + ToString(sortedActual)
+                            + message);
         }
 
         public static string ToString(IEnumerable<Rectangle> rectangles)
@@ -82,6 +85,7 @@ namespace UnicornHack
             {
                 sb.Append(rectangle).AppendLine(", ");
             }
+
             return sb.ToString();
         }
     }

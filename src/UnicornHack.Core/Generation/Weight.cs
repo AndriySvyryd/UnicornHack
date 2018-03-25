@@ -5,6 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using CSharpScriptSerialization;
+using UnicornHack.Systems.Levels;
 
 namespace UnicornHack.Generation
 {
@@ -25,9 +26,9 @@ namespace UnicornHack.Generation
             Expression.Parameter(typeof(int), name: "tagInstances");
 
         protected static readonly ParameterExpression ConnectionParameter =
-            Expression.Parameter(typeof(Connection), name: "connection");
+            Expression.Parameter(typeof(ConnectionComponent), name: "connection");
 
-        public virtual Func<string, byte, int, int, float> CreateFragmentWeightFunction()
+        public Func<string, byte, int, int, float> CreateFragmentWeightFunction()
         {
             var parameters = new[] {BranchParameter, DepthParameter, InstancesParameter, TagInstancesParameter};
 
@@ -35,24 +36,24 @@ namespace UnicornHack.Generation
                 .Compile();
         }
 
-        public virtual Func<string, byte, int, int, Connection, float> CreateConnectingFragmentWeightFunction()
+        public Func<string, byte, int, int, ConnectionComponent, float> CreateConnectingFragmentWeightFunction()
         {
             var parameters = new[]
                 {BranchParameter, DepthParameter, InstancesParameter, TagInstancesParameter, ConnectionParameter};
 
             return Expression
-                .Lambda<Func<string, byte, int, int, Connection, float>>(GetExpression(parameters), parameters)
+                .Lambda<Func<string, byte, int, int, ConnectionComponent, float>>(GetExpression(parameters), parameters)
                 .Compile();
         }
 
-        public virtual Func<string, byte, int, float> CreateCreatureWeightFunction()
+        public Func<string, byte, int, float> CreateCreatureWeightFunction()
         {
             var parameters = new[] {BranchParameter, DepthParameter, InstancesParameter};
 
             return Expression.Lambda<Func<string, byte, int, float>>(GetExpression(parameters), parameters).Compile();
         }
 
-        public virtual Func<string, byte, int, float> CreateItemWeightFunction()
+        public Func<string, byte, int, float> CreateItemWeightFunction()
         {
             var parameters = new[] {BranchParameter, DepthParameter, InstancesParameter};
 
@@ -85,7 +86,7 @@ namespace UnicornHack.Generation
 
     public class DefaultWeight : Weight, ICSScriptSerializable
     {
-        public virtual float Multiplier { get; set; } = 1;
+        public float Multiplier { get; set; } = 1;
 
         public override Expression GetExpression(IReadOnlyDictionary<string, ParameterExpression> parameters) =>
             Expression.Multiply(Expression.Constant(Multiplier), Expression.Constant((float)DefaultWeight));
@@ -111,11 +112,11 @@ namespace UnicornHack.Generation
 
     public class BranchWeight : Weight
     {
-        public virtual Weight Matched { get; set; }
-        public virtual Weight NotMatched { get; set; }
-        public virtual string Name { get; set; }
-        public virtual short MinDepth { get; set; }
-        public virtual short MaxDepth { get; set; }
+        public Weight Matched { get; set; }
+        public Weight NotMatched { get; set; }
+        public string Name { get; set; }
+        public short MinDepth { get; set; }
+        public short MaxDepth { get; set; }
 
         //TODO: Distribution
 
@@ -146,8 +147,8 @@ namespace UnicornHack.Generation
 
     public class InstancesWeight : Weight
     {
-        public virtual Weight W { get; set; }
-        public virtual int Max { get; set; }
+        public Weight W { get; set; }
+        public int Max { get; set; }
 
         //TODO: Distribution
         //TODO: Scope: Game, Branch, Level
@@ -163,10 +164,10 @@ namespace UnicornHack.Generation
 
     public class TagInstancesWeight : Weight
     {
-        public virtual Weight W { get; set; }
+        public Weight W { get; set; }
 
-        public virtual string Name { get; set; }
-        public virtual int Max { get; set; }
+        public string Name { get; set; }
+        public int Max { get; set; }
 
         //TODO: Distribution
         //TODO: Scope: Game, Branch, Level
@@ -182,9 +183,9 @@ namespace UnicornHack.Generation
 
     public class MaxWeight : Weight, ICollection<Weight>
     {
-        public virtual IList<Weight> W { get; set; } = new List<Weight>();
+        public IList<Weight> W { get; set; } = new List<Weight>();
 
-        public virtual void Add(Weight item) => W.Add(item);
+        public void Add(Weight item) => W.Add(item);
         IEnumerator<Weight> IEnumerable<Weight>.GetEnumerator() => W.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)W).GetEnumerator();
         void ICollection<Weight>.Clear() => W.Clear();
@@ -216,9 +217,9 @@ namespace UnicornHack.Generation
 
     public class MinWeight : Weight, ICollection<Weight>
     {
-        public virtual IList<Weight> W { get; set; } = new List<Weight>();
+        public IList<Weight> W { get; set; } = new List<Weight>();
 
-        public virtual void Add(Weight item) => W.Add(item);
+        public void Add(Weight item) => W.Add(item);
         IEnumerator<Weight> IEnumerable<Weight>.GetEnumerator() => W.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => W.GetEnumerator();
         void ICollection<Weight>.Clear() => W.Clear();

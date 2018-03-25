@@ -1,29 +1,29 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Items
 {
-    public static partial class ItemVariantData
+    public static partial class ItemData
     {
-        public static readonly ItemVariant Dagger = new ItemVariant
+        public static readonly Item Dagger = new Item
         {
             Name = "dagger",
             Type = ItemType.WeaponMeleeShort,
             Material = Material.Steel,
+            Weight = 5,
             EquipableSizes = SizeCategory.Tiny | SizeCategory.Small,
             EquipableSlots = EquipmentSlot.GraspSingleExtremity | EquipmentSlot.GraspBothExtremities,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeAttack,
+                    Activation = ActivationType.OnPhysicalMeleeAttack,
                     Action = AbilityAction.Slash,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 40}}
                 }
-            },
-            ValuedProperties = new Dictionary<string, object> {{"weight", 5}}
+            }
         };
     }
 }

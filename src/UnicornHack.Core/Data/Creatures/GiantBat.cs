@@ -1,51 +1,50 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant GiantBat = new CreatureVariant
+        public static readonly Creature GiantBat = new Creature
         {
             Name = "giant bat",
             Species = Species.Bat,
             SpeciesClass = SpeciesClass.Bird,
             MovementDelay = 54,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
                 }
             },
-            SimpleProperties = new HashSet<string>
-            {
-                "flight",
-                "flight control",
-                "infravisibility",
-                "animal body",
-                "handlessness",
-                "singular inventory"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {"poison resistance", 75},
-                {"stealthiness", 3},
-                {"size", 1},
-                {"physical deflection", 13},
-                {"weight", 100}
-            },
             InitialLevel = 2,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},
             PreviousStageName = "bat",
             NextStageName = "vampire bat",
-            Behavior = MonsterBehavior.Wandering,
-            Noise = ActorNoiseType.Sqeek
+            Behavior = AIBehavior.Wandering,
+            Noise = ActorNoiseType.Sqeek,
+            Size = 1,
+            Weight = 100,
+            Agility = 2,
+            Constitution = 2,
+            Intelligence = 2,
+            Quickness = 2,
+            Strength = 2,
+            Willpower = 2,
+            PhysicalDeflection = 13,
+            TorsoType = TorsoType.Quadruped,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.Claws,
+            LocomotionType = LocomotionType.Flying,
+            InventorySize = 1,
+            NoiseLevel = 0,
+            Infravisible = true
         };
     }
 }

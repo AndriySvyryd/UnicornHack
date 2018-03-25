@@ -1,68 +1,54 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant BlackUnicorn = new CreatureVariant
+        public static readonly Creature BlackUnicorn = new Creature
         {
             Name = "black unicorn",
             Species = Species.Unicorn,
             SpeciesClass = SpeciesClass.Quadrupedal,
             MovementDelay = 50,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Headbutt,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 60}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Kick,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
                 }
             },
-            SimpleProperties = new HashSet<string> {"animal body", "infravisibility", "handlessness"},
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "venom resistance",
-                    75
-                },
-                {
-                    "size",
-                    8
-                },
-                {
-                    "physical deflection",
-                    18
-                },
-                {
-                    "magic resistance",
-                    70
-                },
-                {
-                    "weight",
-                    1300
-                }
-            },
             InitialLevel = 4,
             GenerationWeight = new DefaultWeight {Multiplier = 6F},
-            Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.RangedPeaceful | MonsterBehavior.Wandering |
-                       MonsterBehavior.GemCollector,
-            Noise = ActorNoiseType.Neigh
+            Behavior = AIBehavior.AlignmentAware | AIBehavior.RangedPeaceful | AIBehavior.Wandering |
+                       AIBehavior.GemCollector,
+            Noise = ActorNoiseType.Neigh,
+            Size = 8,
+            Weight = 1300,
+            Agility = 3,
+            Constitution = 3,
+            Intelligence = 3,
+            Quickness = 3,
+            Strength = 3,
+            Willpower = 3,
+            MagicResistance = 70,
+            PhysicalDeflection = 18,
+            TorsoType = TorsoType.Quadruped,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.Claws,
+            Infravisible = true
         };
     }
 }

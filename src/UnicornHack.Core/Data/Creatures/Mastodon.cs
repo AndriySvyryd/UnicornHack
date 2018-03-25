@@ -1,47 +1,52 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Mastodon = new CreatureVariant
+        public static readonly Creature Mastodon = new Creature
         {
             Name = "mastodon",
             Species = Species.Quadruped,
             SpeciesClass = SpeciesClass.Quadrupedal,
             MovementDelay = 100,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Headbutt,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 180}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Headbutt,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 180}}
                 }
             },
-            SimpleProperties =
-                new HashSet<string> {"animal body", "infravisibility", "handlessness", "singular inventory"},
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {"thick hide", 3},
-                {"size", 8},
-                {"physical deflection", 15},
-                {"weight", 3800}
-            },
             InitialLevel = 20,
             GenerationWeight = new DefaultWeight {Multiplier = 6F},
-            Noise = ActorNoiseType.Roar
+            Noise = ActorNoiseType.Roar,
+            Size = 8,
+            Weight = 3800,
+            Agility = 11,
+            Constitution = 11,
+            Intelligence = 11,
+            Quickness = 11,
+            Strength = 11,
+            Willpower = 11,
+            PhysicalDeflection = 15,
+            TorsoType = TorsoType.Quadruped,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.Claws,
+            InventorySize = 1,
+            Infravisible = true
         };
     }
 }

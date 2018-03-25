@@ -1,51 +1,51 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant FloatingEye = new CreatureVariant
+        public static readonly Creature FloatingEye = new Creature
         {
             Name = "floating eye",
             Species = Species.FloatingSphere,
             SpeciesClass = SpeciesClass.Aberration,
             MovementDelay = 1200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeHit,
+                    Activation = ActivationType.OnPhysicalMeleeHit,
                     Effects = new HashSet<Effect> {new Paralyze {Duration = 35}}
                 }
             },
-            SimpleProperties = new HashSet<string>
-            {
-                "flight",
-                "flight control",
-                "infravision",
-                "infravisibility",
-                "non animal",
-                "breathlessness",
-                "limblessness",
-                "headlessness",
-                "mindlessness",
-                "asexuality",
-                "no inventory"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {"stealthiness", 3},
-                {"size", 2},
-                {"physical deflection", 11},
-                {"magic resistance", 10},
-                {"weight", 10}
-            },
             InitialLevel = 2,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},
-            Behavior = MonsterBehavior.Wandering
+            Behavior = AIBehavior.Wandering,
+            Sex = Sex.None,
+            Size = 2,
+            Weight = 10,
+            Agility = 2,
+            Constitution = 2,
+            Intelligence = 2,
+            Quickness = 2,
+            Strength = 2,
+            Willpower = 2,
+            MagicResistance = 10,
+            PhysicalDeflection = 11,
+            HeadType = HeadType.None,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.None,
+            RespirationType = RespirationType.None,
+            LocomotionType = LocomotionType.Flying,
+            InventorySize = 0,
+            NoiseLevel = 0,
+            Infravisible = true,
+            Infravision = true,
+            Mindless = true,
+            NonAnimal = true
         };
     }
 }

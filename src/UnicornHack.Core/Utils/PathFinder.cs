@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using UnicornHack.Primitives;
+using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Utils
 {
     // A* implementation
     public class PathFinder
     {
-        private readonly Func<byte, byte, int?> _canMoveTo;
         private readonly int[,] _pointToIndex;
         private readonly Point[] _indexToPoint;
 
@@ -17,9 +18,8 @@ namespace UnicornHack.Utils
         private byte _openNodeStatus = 1;
         private byte _closedNodeStatus = 2;
 
-        public PathFinder(Func<byte, byte, int?> canMoveTo, int[,] pointToIndex, Point[] indexToPoint)
+        public PathFinder(int[,] pointToIndex, Point[] indexToPoint)
         {
-            _canMoveTo = canMoveTo;
             _pointToIndex = pointToIndex;
             _indexToPoint = indexToPoint;
 
@@ -28,7 +28,8 @@ namespace UnicornHack.Utils
         }
 
         // Not thread safe
-        public List<Point> FindPath(Point start, Point target, Direction initialDirection)
+        public List<Point> FindPath<TState>(Point start, Point target, Direction initialDirection,
+            Func<byte, byte, TState, int?> canMoveTo, TState state)
         {
             var found = false;
 
@@ -38,20 +39,22 @@ namespace UnicornHack.Utils
             _openNodes.Clear();
 
             var currentLocationIndex = _pointToIndex[start.X, start.Y];
-            var targetLocation = _pointToIndex[target.X, target.Y];
-            _graph[currentLocationIndex].CostFromStart = 0;
-            _graph[currentLocationIndex].EstimatedTotalCost = start.DistanceTo(target);
-            _graph[currentLocationIndex].ArrivalDirection = initialDirection;
-            _graph[currentLocationIndex].PreviousX = start.X;
-            _graph[currentLocationIndex].PreviousY = start.Y;
-            _graph[currentLocationIndex].Status = _openNodeStatus;
+            var targetLocationIndex = _pointToIndex[target.X, target.Y];
+            ref var currentLocationNode = ref _graph[currentLocationIndex];
+            currentLocationNode.CostFromStart = 0;
+            currentLocationNode.EstimatedTotalCost = start.DistanceTo(target);
+            currentLocationNode.ArrivalDirection = initialDirection;
+            currentLocationNode.PreviousX = start.X;
+            currentLocationNode.PreviousY = start.Y;
+            currentLocationNode.Status = _openNodeStatus;
 
             _openNodes.Push(currentLocationIndex);
             while (_openNodes.Count > 0)
             {
                 currentLocationIndex = _openNodes.Pop();
 
-                if (_graph[currentLocationIndex].Status == _closedNodeStatus)
+                currentLocationNode =  ref _graph[currentLocationIndex];
+                if (currentLocationNode.Status == _closedNodeStatus)
                 {
                     continue;
                 }
@@ -61,54 +64,55 @@ namespace UnicornHack.Utils
                 Debug.Assert(currentLocation.Y * (_pointToIndex.GetUpperBound(dimension: 0) + 1) + currentLocation.X ==
                              currentLocationIndex);
 
-                if (currentLocationIndex == targetLocation)
+                if (currentLocationIndex == targetLocationIndex)
                 {
-                    _graph[currentLocationIndex].Status = _closedNodeStatus;
+                    currentLocationNode.Status = _closedNodeStatus;
                     found = true;
                     break;
                 }
 
-                var previousDirection = _graph[currentLocationIndex].ArrivalDirection;
+                var previousDirection = currentLocationNode.ArrivalDirection;
                 for (var i = 0; i < 8; i++)
                 {
-                    var direction = Level.MovementDirections[i];
+                    var direction = Vector.MovementDirections[i];
                     var newLocationX = (byte)(currentLocation.X + direction.X);
                     var newLocationY = (byte)(currentLocation.Y + direction.Y);
 
-                    var possibleNewLocation = _canMoveTo(newLocationX, newLocationY);
+                    var possibleNewLocation = canMoveTo(newLocationX, newLocationY, state);
                     if (possibleNewLocation == null)
                     {
                         continue;
                     }
 
                     var newLocationIndex = possibleNewLocation.Value;
-                    var newCostFromStart = _graph[currentLocationIndex].CostFromStart + 1;
+                    var newCostFromStart = currentLocationNode.CostFromStart + 1;
                     if ((Direction)i != previousDirection)
                     {
                         var octants = ((Direction)i).ClosestOctantsTo(previousDirection);
                         newCostFromStart += octants / 4f;
                     }
 
-                    if ((_graph[newLocationIndex].Status == _openNodeStatus ||
-                         _graph[newLocationIndex].Status == _closedNodeStatus) &&
-                        _graph[newLocationIndex].CostFromStart <= newCostFromStart)
+                    ref var newLocationNode = ref _graph[newLocationIndex];
+                    if ((newLocationNode.Status == _openNodeStatus ||
+                         newLocationNode.Status == _closedNodeStatus) &&
+                        newLocationNode.CostFromStart <= newCostFromStart)
                     {
                         continue;
                     }
 
                     var distanceToTarget = (byte)Math.Max(Math.Abs(target.X - newLocationX),
                         Math.Abs(target.Y - newLocationY));
-                    _graph[newLocationIndex].ArrivalDirection = (Direction)i;
-                    _graph[newLocationIndex].PreviousX = currentLocation.X;
-                    _graph[newLocationIndex].PreviousY = currentLocation.Y;
-                    _graph[newLocationIndex].CostFromStart = newCostFromStart;
-                    _graph[newLocationIndex].EstimatedTotalCost = newCostFromStart + distanceToTarget;
-                    _graph[newLocationIndex].Status = _openNodeStatus;
+                    newLocationNode.ArrivalDirection = (Direction)i;
+                    newLocationNode.PreviousX = currentLocation.X;
+                    newLocationNode.PreviousY = currentLocation.Y;
+                    newLocationNode.CostFromStart = newCostFromStart;
+                    newLocationNode.EstimatedTotalCost = newCostFromStart + distanceToTarget;
+                    newLocationNode.Status = _openNodeStatus;
 
                     _openNodes.Push(newLocationIndex);
                 }
 
-                _graph[currentLocationIndex].Status = _closedNodeStatus;
+                currentLocationNode.Status = _closedNodeStatus;
             }
 
             if (found)

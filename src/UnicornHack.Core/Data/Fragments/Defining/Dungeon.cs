@@ -8,9 +8,13 @@ namespace UnicornHack.Data.Fragments
         public static readonly DefiningMapFragment Dungeon = new DefiningMapFragment
         {
             Name = "dungeon",
-            GenerationWeight = new BranchWeight {Matched = new DefaultWeight(), Name = "dungeon"},
+            GenerationWeight = new BranchWeight
+            {
+                Matched = new DefaultWeight(),
+                Name = "dungeon"
+            },
             NoRandomDoorways = true,
-            Layout = new UniformLayout()
+            Layout = new UniformLayout {Coverage = 0.33F}
         };
     }
 }

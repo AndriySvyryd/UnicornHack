@@ -1,83 +1,56 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant GoldenNaga = new CreatureVariant
+        public static readonly Creature GoldenNaga = new Creature
         {
             Name = "golden naga",
             Species = Species.Naga,
             SpeciesClass = SpeciesClass.Aberration,
             MovementDelay = 85,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spell,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new MagicalDamage {Damage = 140}}
                 }
             },
-            SimpleProperties = new HashSet<string>
-            {
-                "infravision",
-                "serpentlike body",
-                "limblessness",
-                "oviparity",
-                "singular inventory",
-                "stoning resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "acid resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "venom resistance",
-                    75
-                },
-                {
-                    "thick hide",
-                    3
-                },
-                {
-                    "size",
-                    16
-                },
-                {
-                    "physical deflection",
-                    18
-                },
-                {
-                    "magic resistance",
-                    70
-                },
-                {
-                    "weight",
-                    1500
-                }
-            },
             InitialLevel = 10,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
             PreviousStageName = "golden naga hatchling",
-            Noise = ActorNoiseType.Hiss
+            Noise = ActorNoiseType.Hiss,
+            Size = 16,
+            Weight = 1500,
+            Agility = 6,
+            Constitution = 6,
+            Intelligence = 6,
+            Quickness = 6,
+            Strength = 6,
+            Willpower = 6,
+            MagicResistance = 70,
+            PhysicalDeflection = 18,
+            AcidResistance = 75,
+            StoningImmune = true,
+            TorsoType = TorsoType.Serpentine,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.None,
+            InventorySize = 1,
+            Infravision = true
         };
     }
 }

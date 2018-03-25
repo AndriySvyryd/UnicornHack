@@ -1,66 +1,47 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Pyrolisk = new CreatureVariant
+        public static readonly Creature Pyrolisk = new Creature
         {
             Name = "pyrolisk",
             Species = Species.Cockatrice,
             SpeciesClass = SpeciesClass.MagicalBeast,
             MovementDelay = 200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Gaze,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Burn {Damage = 70}}
                 }
             },
-            SimpleProperties = new HashSet<string>
-            {
-                "animal body",
-                "infravisibility",
-                "handlessness",
-                "oviparity",
-                "singular inventory"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "fire resistance",
-                    75
-                },
-                {
-                    "size",
-                    2
-                },
-                {
-                    "physical deflection",
-                    14
-                },
-                {
-                    "magic resistance",
-                    30
-                },
-                {
-                    "weight",
-                    30
-                }
-            },
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
-            Noise = ActorNoiseType.Hiss
+            Noise = ActorNoiseType.Hiss,
+            Size = 2,
+            Weight = 30,
+            Agility = 4,
+            Constitution = 4,
+            Intelligence = 4,
+            Quickness = 4,
+            Strength = 4,
+            Willpower = 4,
+            MagicResistance = 30,
+            PhysicalDeflection = 14,
+            FireResistance = 75,
+            TorsoType = TorsoType.Quadruped,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.Claws,
+            InventorySize = 1,
+            Infravisible = true
         };
     }
 }

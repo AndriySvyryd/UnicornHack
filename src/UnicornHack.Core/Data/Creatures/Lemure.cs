@@ -1,60 +1,57 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Lemure = new CreatureVariant
+        public static readonly Creature Lemure = new Creature
         {
             Name = "lemure",
             Species = Species.Homunculus,
             SpeciesClass = SpeciesClass.Demon,
             MovementDelay = 400,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Poison {Damage = 20}}
                 }
-            },
-            SimpleProperties = new HashSet<string> {"sleep resistance", "infravision", "infravisibility"},
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {"poison resistance", 75},
-                {"regeneration", 3},
-                {"physical deflection", 13},
-                {"weight", 500}
             },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
-            CorpseName = "",
-            Behavior = MonsterBehavior.Stalking,
-            Noise = ActorNoiseType.Hiss
+            Behavior = AIBehavior.Stalking,
+            Noise = ActorNoiseType.Hiss,
+            Weight = 500,
+            Agility = 2,
+            Constitution = 2,
+            Intelligence = 2,
+            Quickness = 2,
+            Strength = 2,
+            Willpower = 7,
+            Regeneration = 3,
+            PhysicalDeflection = 13,
+            Infravisible = true,
+            Infravision = true
         };
     }
 }

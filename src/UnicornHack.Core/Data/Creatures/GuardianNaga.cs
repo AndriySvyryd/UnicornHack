@@ -1,56 +1,53 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant GuardianNaga = new CreatureVariant
+        public static readonly Creature GuardianNaga = new Creature
         {
             Name = "guardian naga",
             Species = Species.Naga,
             SpeciesClass = SpeciesClass.Aberration,
             MovementDelay = 75,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spit,
                     Timeout = 1,
-                    Effects = new HashSet<Effect> {new Envenom {Damage = 140}}
+                    Effects = new HashSet<Effect> {new Blight {Damage = 140}}
                 }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "infravision",
-                "serpentlike body",
-                "limblessness",
-                "oviparity",
-                "singular inventory"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {"poison resistance", 75},
-                {"venom resistance", 75},
-                {"thick hide", 3},
-                {"size", 16},
-                {"magic resistance", 50},
-                {"weight", 1500}
             },
             InitialLevel = 12,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
             PreviousStageName = "guardian naga hatchling",
-            Noise = ActorNoiseType.Hiss
+            Noise = ActorNoiseType.Hiss,
+            Size = 16,
+            Weight = 1500,
+            Agility = 7,
+            Constitution = 7,
+            Intelligence = 7,
+            Quickness = 7,
+            Strength = 7,
+            Willpower = 7,
+            MagicResistance = 50,
+            TorsoType = TorsoType.Serpentine,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.None,
+            InventorySize = 1,
+            Infravision = true
         };
     }
 }

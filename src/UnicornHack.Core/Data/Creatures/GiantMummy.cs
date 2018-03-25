@@ -1,72 +1,47 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant GiantMummy = new CreatureVariant
+        public static readonly Creature GiantMummy = new Creature
         {
             Name = "giant mummy",
             Species = Species.Giant,
             SpeciesClass = SpeciesClass.Undead,
             MovementDelay = 200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 130}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Infect()}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "infravision",
-                "humanoidness",
-                "breathlessness",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "cold resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "size",
-                    16
-                },
-                {
-                    "physical deflection",
-                    17
-                },
-                {
-                    "magic resistance",
-                    20
-                },
-                {
-                    "weight",
-                    2250
                 }
             },
             InitialLevel = 10,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
-            CorpseName = "giant",
-            Noise = ActorNoiseType.Moan
+            Noise = ActorNoiseType.Moan,
+            Size = 16,
+            Weight = 2250,
+            Agility = 6,
+            Constitution = 6,
+            Intelligence = 6,
+            Quickness = 6,
+            Strength = 6,
+            Willpower = 11,
+            MagicResistance = 20,
+            PhysicalDeflection = 17,
+            ColdResistance = 75,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            RespirationType = RespirationType.None,
+            Infravision = true
         };
     }
 }

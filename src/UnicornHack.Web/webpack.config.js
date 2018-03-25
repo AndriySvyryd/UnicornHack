@@ -1,21 +1,24 @@
 const path = require('path');
 const webpack = require('webpack');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const CheckerPlugin = require('awesome-typescript-loader').CheckerPlugin;
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
 const bundleOutputDir = './wwwroot/dist';
 
 function getClientConfig(env) {
     const isDevBuild = !(env && env.prod);
     return {
         stats: { modules: false },
+        mode: isDevBuild ? 'development' : 'production',
         devtool: isDevBuild ? 'eval-source-map' : 'source-map',
         resolve: { extensions: ['.js', '.jsx', '.ts', '.tsx'] },
         entry: { 'main': './ClientApp/boot.tsx' },
         output: {
             path: path.join(__dirname, bundleOutputDir),
             filename: '[name].js',
-            publicPath: 'dist/'
+            publicPath: 'dist/',
+            globalObject: 'this'
         },
         module: {
             rules: [
@@ -34,20 +37,18 @@ function getClientConfig(env) {
                             },
                             { loader: 'resolve-url-loader', options: { sourceMap: true } }
                         ]
-                        : ExtractTextPlugin.extract({
-                            fallback: 'style-loader',
-                            use: [
-                                {
-                                    loader: 'css-loader',
-                                    options: { sourceMap: true, minimize: true, importLoaders: 2 }
-                                },
-                                {
-                                    loader: 'postcss-loader',
-                                    options: { sourceMap: true, plugins: () => [require('autoprefixer')()] }
-                                },
-                                { loader: 'resolve-url-loader', options: { sourceMap: true } }
-                            ]
-                        })
+                        : [
+                            MiniCssExtractPlugin.loader,
+                            {
+                                loader: 'css-loader',
+                                options: { sourceMap: true, minimize: true, importLoaders: 2 }
+                            },
+                            {
+                                loader: 'postcss-loader',
+                                options: { sourceMap: true, plugins: () => [require('autoprefixer')()] }
+                            },
+                            { loader: 'resolve-url-loader', options: { sourceMap: true } }
+                        ]
                 },
                 {
                     test: /\.scss(\?|$)/,
@@ -55,14 +56,7 @@ function getClientConfig(env) {
                         ? [
                             'style-loader',
                             { loader: 'css-loader', options: { sourceMap: true, importLoaders: 4 } },
-                            {
-                                loader: 'postcss-loader',
-                                options: {
-                                    sourceMap: true,
-                                    parser: 'postcss-scss',
-                                    plugins: () => [require('precss'), require('autoprefixer')()]
-                                }
-                            },
+                            { loader: 'postcss-loader',options: { sourceMap: true } },
                             { loader: 'resolve-url-loader', options: { sourceMap: true } },
                             { loader: 'sass-loader', options: { sourceMap: true } },
                             {
@@ -72,31 +66,22 @@ function getClientConfig(env) {
                                 }
                             }
                         ]
-                        : ExtractTextPlugin.extract({
-                            fallback: 'style-loader',
-                            use: [
-                                {
-                                    loader: 'css-loader',
-                                    options: { sourceMap: true, minimize: true, importLoaders: 4 }
-                                },
-                                {
-                                    loader: 'postcss-loader',
-                                    options: {
-                                        sourceMap: true,
-                                        parser: 'postcss-scss',
-                                        plugins: () => [require('precss'), require('autoprefixer')()]
-                                    }
-                                },
-                                { loader: 'resolve-url-loader', options: { sourceMap: true } },
-                                { loader: 'sass-loader', options: { sourceMap: true } },
-                                {
-                                    loader: 'sass-resources-loader',
-                                    options: {
-                                        resources: './ClientApp/styles/sass-resources.scss'
-                                    }
+                        : [
+                            MiniCssExtractPlugin.loader,
+                            {
+                                loader: 'css-loader',
+                                options: { sourceMap: true, minimize: true, importLoaders: 4 }
+                            },
+                            { loader: 'postcss-loader', options: { sourceMap: true } },
+                            { loader: 'resolve-url-loader', options: { sourceMap: true } },
+                            { loader: 'sass-loader', options: { sourceMap: true } },
+                            {
+                                loader: 'sass-resources-loader',
+                                options: {
+                                    resources: './ClientApp/styles/sass-resources.scss'
                                 }
-                            ]
-                        })
+                            }
+                        ]
                 }
             ]
         },
@@ -106,8 +91,7 @@ function getClientConfig(env) {
                 manifest: require('./wwwroot/dist/vendor-manifest.json')
             }),
             new CheckerPlugin(),
-            require('autoprefixer'),
-            new webpack.optimize.ModuleConcatenationPlugin()
+            require('autoprefixer')
         ].concat(isDevBuild
             ? [
                 new webpack.SourceMapDevToolPlugin({
@@ -117,15 +101,32 @@ function getClientConfig(env) {
                             '[resourcePath]') // Point sourcemap entries to the original file locations on disk
                 })
             ]
-            : [
-                new UglifyJsPlugin({
-                    uglifyOptions: {
-                        ie8: false,
-                        ecma: 6
+            : [new MiniCssExtractPlugin({ filename: 'site.css' })]),
+        optimization: {
+            noEmitOnErrors: true,
+            splitChunks: {
+                cacheGroups: {
+                    styles: {
+                        name: 'styles',
+                        test: /\.css$/,
+                        chunks: 'all',
+                        enforce: true
                     }
-                }),
-                new ExtractTextPlugin('site.css')
-            ])
+                }
+            },
+            minimizer: isDevBuild
+                ? []
+                : [
+                    new UglifyJsPlugin({
+                        ie8: false,
+                        ecma: 6,
+                        cache: true,
+                        parallel: true,
+                        sourceMap: true
+                    }),
+                    new OptimizeCSSAssetsPlugin({})
+                ]
+        }
     };
 }
 

@@ -1,56 +1,49 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant GnomeZombie = new CreatureVariant
+        public static readonly Creature GnomeZombie = new Creature
         {
             Name = "gnome zombie",
             Species = Species.Gnome,
             SpeciesClass = SpeciesClass.Undead,
             MovementDelay = 200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Infect()}
                 }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "infravision",
-                "humanoidness",
-                "breathlessness",
-                "mindlessness",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {"cold resistance", 75},
-                {"poison resistance", 75},
-                {"size", 2},
-                {"physical deflection", 11},
-                {"weight", 650}
             },
             InitialLevel = 2,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
-            CorpseName = "gnome",
             GenerationFlags = GenerationFlags.SmallGroup,
-            Behavior = MonsterBehavior.Stalking,
-            Noise = ActorNoiseType.Moan
+            Behavior = AIBehavior.Stalking,
+            Noise = ActorNoiseType.Moan,
+            Size = 2,
+            Weight = 650,
+            Agility = 2,
+            Constitution = 2,
+            Intelligence = 2,
+            Quickness = 2,
+            Strength = 2,
+            Willpower = 7,
+            PhysicalDeflection = 11,
+            ColdResistance = 75,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            RespirationType = RespirationType.None,
+            Infravision = true,
+            Mindless = true
         };
     }
 }

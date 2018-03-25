@@ -95,7 +95,11 @@ namespace UnicornHack.Generation
         public void InstancesWeight()
         {
             var weightFunction =
-                new InstancesWeight {Max = 1, W = new DefaultWeight {Multiplier = 1}}.CreateFragmentWeightFunction();
+                new InstancesWeight
+                {
+                    Max = 1,
+                    W = new DefaultWeight {Multiplier = 1}
+                }.CreateFragmentWeightFunction();
 
             Assert.Equal(1, weightFunction("foo", 2, 0, 0));
             Assert.Equal(0, weightFunction("foo", 2, 1, 0));
@@ -105,7 +109,11 @@ namespace UnicornHack.Generation
         public void TagInstancesWeight()
         {
             var weightFunction =
-                new TagInstancesWeight {Max = 1, W = new DefaultWeight {Multiplier = 1}}.CreateFragmentWeightFunction();
+                new TagInstancesWeight
+                {
+                    Max = 1,
+                    W = new DefaultWeight {Multiplier = 1}
+                }.CreateFragmentWeightFunction();
 
             Assert.Equal(1, weightFunction("foo", 2, 0, 0));
             Assert.Equal(0, weightFunction("foo", 2, 0, 1));
@@ -114,12 +122,20 @@ namespace UnicornHack.Generation
         [Fact]
         public void MaxWeight()
         {
-            var weightFunction = new MaxWeight {new DefaultWeight {Multiplier = 1}, new DefaultWeight {Multiplier = 2}}
+            var weightFunction = new MaxWeight
+                {
+                    new DefaultWeight {Multiplier = 1},
+                    new DefaultWeight {Multiplier = 2}
+                }
                 .CreateFragmentWeightFunction();
 
             Assert.Equal(2, weightFunction("foo", 1, 0, 0));
 
-            weightFunction = new MaxWeight {new DefaultWeight {Multiplier = 1}, new InfiniteWeight()}
+            weightFunction = new MaxWeight
+                {
+                    new DefaultWeight {Multiplier = 1},
+                    new InfiniteWeight()
+                }
                 .CreateFragmentWeightFunction();
 
             Assert.True(float.IsPositiveInfinity(weightFunction("foo", 1, 0, 0)));
@@ -128,12 +144,20 @@ namespace UnicornHack.Generation
         [Fact]
         public void MinWeight()
         {
-            var weightFunction = new MinWeight {new DefaultWeight {Multiplier = 1}, new DefaultWeight {Multiplier = 2}}
+            var weightFunction = new MinWeight
+                {
+                    new DefaultWeight {Multiplier = 1},
+                    new DefaultWeight {Multiplier = 2}
+                }
                 .CreateFragmentWeightFunction();
 
             Assert.Equal(1, weightFunction("foo", 1, 0, 0));
 
-            weightFunction = new MinWeight {new DefaultWeight {Multiplier = 1}, new InfiniteWeight()}
+            weightFunction = new MinWeight
+                {
+                    new DefaultWeight {Multiplier = 1},
+                    new InfiniteWeight()
+                }
                 .CreateFragmentWeightFunction();
 
             Assert.Equal(1, weightFunction("foo", 1, 0, 0));

@@ -1,102 +1,71 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Juiblex = new CreatureVariant
+        public static readonly Creature Juiblex = new Creature
         {
             Name = "Juiblex",
             Species = Species.DemonMajor,
             SpeciesClass = SpeciesClass.Demon,
             MovementDelay = 400,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Engulf {Duration = 20}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnDigestion,
+                    Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Corrode {Damage = 220}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spit,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Corrode {Damage = 100}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Poison {Damage = 100}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Corrode {Damage = 100}}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "amphibiousness",
-                "flight",
-                "flight control",
-                "amorphism",
-                "headlessness",
-                "infravision",
-                "invisibility detection",
-                "maleness",
-                "stoning resistance",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "fire resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "acid resistance",
-                    75
-                },
-                {
-                    "size",
-                    8
-                },
-                {
-                    "physical deflection",
-                    27
-                },
-                {
-                    "magic resistance",
-                    65
-                },
-                {
-                    "weight",
-                    1500
                 }
             },
             InitialLevel = 30,
-            GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 0F}, Name = "hell"},
-            CorpseName = "",
+            GenerationWeight = new BranchWeight
+            {
+                Matched = new DefaultWeight {Multiplier = 0F},
+                Name = "hell"
+            },
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-            Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking,
-            Noise = ActorNoiseType.Gurgle
+            Behavior = AIBehavior.RangedPeaceful | AIBehavior.Stalking,
+            Noise = ActorNoiseType.Gurgle,
+            Sex = Sex.Male,
+            Size = 8,
+            Weight = 1500,
+            Agility = 16,
+            Constitution = 16,
+            Intelligence = 16,
+            Quickness = 16,
+            Strength = 16,
+            Willpower = 16,
+            MagicResistance = 65,
+            PhysicalDeflection = 27,
+            AcidResistance = 75,
+            FireResistance = 75,
+            StoningImmune = true,
+            HeadType = HeadType.None,
+            TorsoType = TorsoType.Amorphic,
+            RespirationType = RespirationType.Amphibious,
+            LocomotionType = LocomotionType.Flying,
+            Infravision = true,
+            InvisibilityDetection = true
         };
     }
 }

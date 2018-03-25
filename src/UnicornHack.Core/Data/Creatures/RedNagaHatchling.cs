@@ -1,67 +1,47 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant RedNagaHatchling = new CreatureVariant
+        public static readonly Creature RedNagaHatchling = new Creature
         {
             Name = "red naga hatchling",
             Species = Species.Naga,
             SpeciesClass = SpeciesClass.Aberration,
             MovementDelay = 120,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 }
             },
-            SimpleProperties = new HashSet<string>
-            {
-                "infravision",
-                "serpentlike body",
-                "limblessness",
-                "singular inventory",
-                "sliming resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "fire resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "venom resistance",
-                    75
-                },
-                {
-                    "thick hide",
-                    3
-                },
-                {
-                    "physical deflection",
-                    14
-                },
-                {
-                    "weight",
-                    500
-                }
-            },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
             NextStageName = "red naga",
-            Noise = ActorNoiseType.Hiss
+            Noise = ActorNoiseType.Hiss,
+            Weight = 500,
+            Agility = 2,
+            Constitution = 2,
+            Intelligence = 2,
+            Quickness = 2,
+            Strength = 2,
+            Willpower = 2,
+            PhysicalDeflection = 14,
+            FireResistance = 75,
+            SlimingImmune = true,
+            TorsoType = TorsoType.Serpentine,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.None,
+            InventorySize = 1,
+            Infravision = true
         };
     }
 }

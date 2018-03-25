@@ -1,20 +1,25 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
 using UnicornHack.Generation;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Items
 {
-    public static partial class ItemVariantData
+    public static partial class ItemData
     {
-        public static readonly ItemVariant FireBolt = new ItemVariant
+        public static readonly Item FireBolt = new Item
         {
             Name = "fire bolt",
             Type = ItemType.WeaponProjectile,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             Material = Material.Plasma,
-            Abilities = new HashSet<AbilityDefinition>
+            Weight = 0,
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition {Activation = AbilityActivation.OnRangedAttack, Action = AbilityAction.Hit}
+                new Ability
+                {
+                    Activation = ActivationType.OnPhysicalRangedAttack,
+                    Action = AbilityAction.Hit
+                }
             }
         };
     }

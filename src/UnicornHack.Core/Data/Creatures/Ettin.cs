@@ -1,47 +1,58 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Ettin = new CreatureVariant
+        public static readonly Creature Ettin = new Creature
         {
             Name = "ettin",
             Species = Species.Giant,
             MovementDelay = 100,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeAttack,
+                    Activation = ActivationType.OnPhysicalMeleeAttack,
                     Action = AbilityAction.Modifier,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 }
             },
-            SimpleProperties = new HashSet<string> {"infravision", "infravisibility", "humanoidness"},
-            ValuedProperties =
-                new Dictionary<string, object> {{"size", 16}, {"physical deflection", 17}, {"weight", 2250}},
             InitialLevel = 10,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
-            Behavior = MonsterBehavior.GemCollector | MonsterBehavior.WeaponCollector,
-            Noise = ActorNoiseType.Boast
+            Behavior = AIBehavior.GemCollector | AIBehavior.WeaponCollector,
+            Noise = ActorNoiseType.Boast,
+            Size = 16,
+            Weight = 2250,
+            Agility = 6,
+            Constitution = 6,
+            Intelligence = 6,
+            Quickness = 6,
+            Strength = 6,
+            Willpower = 6,
+            PhysicalDeflection = 17,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            Infravisible = true,
+            Infravision = true
         };
     }
 }

@@ -1,35 +1,45 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant DireWolf = new CreatureVariant
+        public static readonly Creature DireWolf = new Creature
         {
             Name = "dire wolf",
             Species = Species.Wolf,
             SpeciesClass = SpeciesClass.Canine,
             MovementDelay = 100,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
                 }
             },
-            SimpleProperties =
-                new HashSet<string> {"animal body", "infravisibility", "handlessness", "singular inventory"},
-            ValuedProperties = new Dictionary<string, object> {{"physical deflection", 17}, {"weight", 1200}},
             InitialLevel = 7,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
             GenerationFlags = GenerationFlags.SmallGroup,
-            Noise = ActorNoiseType.Bark
+            Noise = ActorNoiseType.Bark,
+            Weight = 1200,
+            Agility = 4,
+            Constitution = 4,
+            Intelligence = 4,
+            Quickness = 4,
+            Strength = 4,
+            Willpower = 4,
+            PhysicalDeflection = 17,
+            TorsoType = TorsoType.Quadruped,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.Claws,
+            InventorySize = 1,
+            Infravisible = true
         };
     }
 }

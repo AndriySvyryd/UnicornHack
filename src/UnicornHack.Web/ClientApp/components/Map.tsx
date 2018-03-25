@@ -63,7 +63,7 @@ class MapTile extends React.Component<ITileProps, {}> {
         let glyph: ITileStyle;
         let onClick: ((() => void) | undefined) =
             () => this.props.performAction(PlayerAction.MoveToCell, Level.pack(this.props.x, this.props.y), null);
-        // TODO: also change pointer
+        // TODO: Also change pointer
 
         if (tile.actor != null) {
             glyph = styles.actors[tile.actor.baseName];
@@ -75,6 +75,7 @@ class MapTile extends React.Component<ITileProps, {}> {
                 throw `Actor type ${tile.actor.baseName} not supported.`;
             }
 
+            // TODO: check position instead of base name
             if (tile.actor.baseName == 'player') {
                 onClick = () => this.props.performAction(
                     PlayerAction.Wait, null, null);

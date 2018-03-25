@@ -1,65 +1,57 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Wraith = new CreatureVariant
+        public static readonly Creature Wraith = new Creature
         {
             Name = "wraith",
             Species = Species.Wraith,
             SpeciesClass = SpeciesClass.Undead,
             MovementDelay = 100,
-            Abilities = new HashSet<AbilityDefinition>
+            Material = Material.Air,
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new DrainLife {Amount = 2}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeHit,
-                    Effects = new HashSet<Effect> {new DrainLife {Amount = 1}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
+                    Activation = ActivationType.OnPhysicalMeleeHit,
                     Effects = new HashSet<Effect> {new DrainLife {Amount = 1}}
                 }
             },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "flight",
-                "flight control",
-                "infravision",
-                "non solid body",
-                "humanoidness",
-                "breathlessness",
-                "no inventory",
-                "stoning resistance",
-                "sliming resistance",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {"cold resistance", 75},
-                {"poison resistance", 75},
-                {"physical deflection", 16},
-                {"magic resistance", 15},
-                {"weight", 0}
-            },
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},
-            CorpseName = "",
-            Behavior = MonsterBehavior.Stalking,
-            Noise = ActorNoiseType.Howl
+            Behavior = AIBehavior.Stalking,
+            Noise = ActorNoiseType.Howl,
+            Weight = 0,
+            Agility = 4,
+            Constitution = 4,
+            Intelligence = 4,
+            Quickness = 4,
+            Strength = 4,
+            Willpower = 9,
+            MagicResistance = 15,
+            PhysicalDeflection = 16,
+            ColdResistance = 75,
+            SlimingImmune = true,
+            StoningImmune = true,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            RespirationType = RespirationType.None,
+            LocomotionType = LocomotionType.Flying,
+            InventorySize = 0,
+            Infravision = true
         };
     }
 }

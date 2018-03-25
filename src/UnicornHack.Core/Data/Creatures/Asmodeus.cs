@@ -1,88 +1,64 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Asmodeus = new CreatureVariant
+        public static readonly Creature Asmodeus = new Creature
         {
             Name = "Asmodeus",
             Species = Species.DemonMajor,
             SpeciesClass = SpeciesClass.Demon,
             MovementDelay = 100,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
                     Timeout = 1,
-                    Effects = new HashSet<Effect> {new Envenom {Damage = 100}}
+                    Effects = new HashSet<Effect> {new Blight {Damage = 100}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spell,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Freeze {Damage = 210}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Poison {Damage = 180}}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "flight",
-                "flight control",
-                "infravisibility",
-                "infravision",
-                "invisibility detection",
-                "humanoidness",
-                "maleness",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "fire resistance",
-                    75
-                },
-                {
-                    "cold resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "size",
-                    8
-                },
-                {
-                    "physical deflection",
-                    27
-                },
-                {
-                    "magic resistance",
-                    90
-                },
-                {
-                    "weight",
-                    1500
                 }
             },
             InitialLevel = 30,
-            GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 0F}, Name = "hell"},
-            CorpseName = "",
+            GenerationWeight = new BranchWeight
+            {
+                Matched = new DefaultWeight {Multiplier = 0F},
+                Name = "hell"
+            },
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-            Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking,
-            Noise = ActorNoiseType.Cuss
+            Behavior = AIBehavior.RangedPeaceful | AIBehavior.Stalking,
+            Noise = ActorNoiseType.Cuss,
+            Sex = Sex.Male,
+            Size = 8,
+            Weight = 1500,
+            Agility = 16,
+            Constitution = 16,
+            Intelligence = 16,
+            Quickness = 16,
+            Strength = 16,
+            Willpower = 16,
+            MagicResistance = 90,
+            PhysicalDeflection = 27,
+            ColdResistance = 75,
+            FireResistance = 75,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            LocomotionType = LocomotionType.Flying,
+            Infravisible = true,
+            Infravision = true,
+            InvisibilityDetection = true
         };
     }
 }

@@ -1,43 +1,44 @@
 using System;
 using System.Collections.Generic;
 using CSharpScriptSerialization;
-using UnicornHack.Utils;
+using UnicornHack.Primitives;
+using UnicornHack.Systems.Levels;
+using UnicornHack.Utils.DataLoading;
+using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Generation.Map
 {
     public abstract class MapFragment : ICSScriptSerializable, ILoadable
     {
-        public virtual string Name { get; set; }
-        public virtual string Map { get; set; } = "";
-        public virtual DynamicMap DynamicMap { get; set; }
-        public virtual byte[] ByteMap { get; set; }
-        public virtual byte Width { get; set; }
-        public virtual byte Height { get; set; }
-        public virtual Rectangle PayloadArea { get; set; }
-        public virtual Weight GenerationWeight { get; set; }
-        public virtual ICollection<string> Tags { get; set; }
+        public string Name { get; set; }
+        public string Map { get; set; } = "";
+        public DynamicMap DynamicMap { get; set; }
+        public byte[] ByteMap { get; set; }
+        public byte Width { get; set; }
+        public byte Height { get; set; }
+        public Rectangle PayloadArea { get; set; }
+        public Weight GenerationWeight { get; set; }
+        public ICollection<string> Tags { get; set; }
+        public bool NoRandomDoorways { get; set; }
 
-        public virtual bool NoRandomDoorways { get; set; }
         // TODO: properties: NoMirror (for reflection symmetry, only 3 turns),
         // NoTurnOver(for rotational symmetry, only mirror and half-turn),
         // NoTransform(implies previous two), NoOverwrite
 
-        public virtual bool ConditionalFirstRow { get; set; }
-        public virtual bool ConditionalLastRow { get; set; }
-        public virtual bool ConditionalFirstColumn { get; set; }
-        public virtual bool ConditionalLastColumn { get; set; }
-
-        public virtual int[,] PointToIndex { get; private set; }
-        public virtual Point[] IndexToPoint { get; private set; }
+        public bool ConditionalFirstRow { get; set; }
+        public bool ConditionalLastRow { get; set; }
+        public bool ConditionalFirstColumn { get; set; }
+        public bool ConditionalLastColumn { get; set; }
+        public int[,] PointToIndex { get; private set; }
+        public Point[] IndexToPoint { get; private set; }
 
         // Characters that can be used as conditions for neighbors:
         // ~ - marks the edge row and/or column as conditional
         // X - should be outside the level
         // # - wall or other unpassable terrain
         // . - floor or other passable terrain
-        public virtual void EnsureInitialized(Game game)
+        public void EnsureInitialized(Game game)
         {
-            // TODO: make this thread-safe
             if (ByteMap == null)
             {
                 byte x = 0, y = 0;
@@ -83,7 +84,7 @@ namespace UnicornHack.Generation.Map
                     Height = y;
                 }
 
-                (PointToIndex, IndexToPoint) = game.GetPointIndex(Width, Height);
+                (PointToIndex, IndexToPoint) = Rectangle.GetPointIndex(game.Services.SharedCache, Width, Height);
 
                 x = 0;
                 y = 0;
@@ -168,26 +169,19 @@ namespace UnicornHack.Generation.Map
 
             if (PointToIndex == null)
             {
-                (PointToIndex, IndexToPoint) = game.GetPointIndex(Width, Height);
+                (PointToIndex, IndexToPoint) = Rectangle.GetPointIndex(game.Services.SharedCache, Width, Height);
             }
         }
 
-        public Room TryPlace(Level level, Rectangle boundingRectangle)
+        public Room TryPlace(LevelComponent level, Rectangle boundingRectangle)
         {
             try
             {
                 EnsureInitialized(level.Game);
 
-                var room = ByteMap.Length != 0
+                return ByteMap.Length != 0
                     ? TryPlaceStaticMap(level, boundingRectangle)
                     : TryPlace(level, boundingRectangle, DynamicMap);
-
-                if (room != null)
-                {
-                    level.Rooms.Add(room);
-                }
-
-                return room;
             }
             catch (Exception ex)
             {
@@ -195,7 +189,7 @@ namespace UnicornHack.Generation.Map
             }
         }
 
-        protected virtual Room TryPlaceStaticMap(Level level, Rectangle boundingRectangle)
+        protected virtual Room TryPlaceStaticMap(LevelComponent level, Rectangle boundingRectangle)
         {
             // TODO: take transformations into account
             var target = boundingRectangle.PlaceInside(PayloadArea, level.GenerationRandom);
@@ -219,7 +213,7 @@ namespace UnicornHack.Generation.Map
                 insidePoints);
         }
 
-        protected virtual void Write(char c, Point point, Level level,
+        protected virtual void Write(char c, Point point, LevelComponent level,
             (List<Point> doorwayPoints, List<Point> perimeterPoints, List<Point> insidePoints, List<Point> points)
                 state)
         {
@@ -258,10 +252,10 @@ namespace UnicornHack.Generation.Map
                     throw new InvalidOperationException($"Unsupported map character '{c}' at {point.X},{point.Y}");
             }
 
-            level.SetTerrain(feature, point);
+            TerrainSystem.SetTerrain(feature, point, level);
         }
 
-        protected virtual Room TryPlace(Level level, Rectangle boundingRectangle, DynamicMap map)
+        protected Room TryPlace(LevelComponent level, Rectangle boundingRectangle, DynamicMap map)
         {
             if (map == null || !boundingRectangle.Contains(map.MinSize))
             {
@@ -270,12 +264,13 @@ namespace UnicornHack.Generation.Map
 
             // TODO: Read the defaults from the defining fragment
             return BuildRoom(level, map.GetRoomPoints(level, boundingRectangle),
-                p => level.SetTerrain(MapFeature.StoneFloor, p),
-                p => level.SetTerrain(MapFeature.StoneWall, p),
+                p => TerrainSystem.SetTerrain(MapFeature.StoneFloor, p, level),
+                p => TerrainSystem.SetTerrain(MapFeature.StoneWall, p, level),
                 _ => { });
         }
 
-        public void WriteMap<TState>(Point target, Level level, Action<char, Point, Level, TState> write, TState state)
+        public void WriteMap<TState>(Point target, LevelComponent level,
+            Action<char, Point, LevelComponent, TState> write, TState state)
         {
             var map = ByteMap;
             var x = target.X;
@@ -297,7 +292,7 @@ namespace UnicornHack.Generation.Map
             }
         }
 
-        public virtual Room BuildRoom(Level level, IEnumerable<Point> points, Action<Point> insideAction,
+        public virtual Room BuildRoom(LevelComponent level, IEnumerable<Point> points, Action<Point> insideAction,
             Action<Point> perimeterAction, Action<Point> outsideAction)
         {
             void Noop(Point _)
@@ -332,7 +327,7 @@ namespace UnicornHack.Generation.Map
 
                 for (var directionIndex = 0; directionIndex < 8; directionIndex++)
                 {
-                    var direction = Level.MovementDirections[directionIndex];
+                    var direction = Vector.MovementDirections[directionIndex];
                     var newLocationX = (byte)(roomPoint.X + direction.X);
                     var newLocationY = (byte)(roomPoint.Y + direction.Y);
 
@@ -343,7 +338,7 @@ namespace UnicornHack.Generation.Map
 
                     var newLocationIndex = level.PointToIndex[newLocationX, newLocationY];
                     var newNeighbours = (byte)(neighbours[newLocationIndex] |
-                                               1 << Level.OppositeDirectionIndexes[directionIndex]);
+                                               1 << Vector.OppositeDirectionIndexes[directionIndex]);
                     if (newNeighbours == (byte)DirectionFlags.Circle &&
                         (neighbours[level.PointToIndex[roomPoint.X, roomPoint.Y]] & 1 << directionIndex) != 0)
                     {
@@ -371,8 +366,8 @@ namespace UnicornHack.Generation.Map
                 doorwayPoints, insidePoints);
         }
 
-        private static List<Point> FindDoorwayPoints(IReadOnlyList<Point> perimeter, Level level,
-            bool allowCorners = false)
+        private static List<Point> FindDoorwayPoints(
+            IReadOnlyList<Point> perimeter, LevelComponent level, bool allowCorners = false)
         {
             var doorwayPoints = new List<Point>();
             for (var i = 0; i < perimeter.Count; i++)
@@ -401,13 +396,13 @@ namespace UnicornHack.Generation.Map
                 var secondOrthogonal = firstOrthogonal.GetInverse();
 
                 var corridorCandidatePoint = point.Translate(firstOrthogonal);
-                if (!level.IsValid(corridorCandidatePoint) || !level.CanPlaceCorridor(corridorCandidatePoint))
+                if (!level.IsValid(corridorCandidatePoint) || !Layout.CanPlaceCorridor(corridorCandidatePoint, level))
                 {
                     continue;
                 }
 
                 var doorwayCandidatePoint = point.Translate(secondOrthogonal);
-                if (!level.IsValid(doorwayCandidatePoint) || !level.CanPlaceCorridor(doorwayCandidatePoint))
+                if (!level.IsValid(doorwayCandidatePoint) || !Layout.CanPlaceCorridor(doorwayCandidatePoint, level))
                 {
                     continue;
                 }
@@ -434,7 +429,7 @@ namespace UnicornHack.Generation.Map
             var previousPointDirectionIndex = (int)previousPointDirection;
             var perimeterLooped = false;
 
-            for (var j = 0; j < neighbours.Length; j++)
+            for (var j = 0; j < neighbours.Length + 2; j++)
             {
                 var perimeterPointFound = false;
                 for (var i = 3; i > 0; i--)
@@ -443,7 +438,7 @@ namespace UnicornHack.Generation.Map
                     var neighbourDirection = (DirectionFlags)(1 << directionIndexToCheck);
                     if ((currentNeighbourMap & neighbourDirection) == neighbourDirection)
                     {
-                        var directionToCheck = Level.MovementDirections[directionIndexToCheck];
+                        var directionToCheck = Vector.MovementDirections[directionIndexToCheck];
                         var newLocationX = (byte)(currentPoint.X + directionToCheck.X);
                         var newLocationY = (byte)(currentPoint.Y + directionToCheck.Y);
                         var nextPoint = new Point(newLocationX, newLocationY);
@@ -478,7 +473,7 @@ namespace UnicornHack.Generation.Map
 
                             currentPoint = nextPoint;
                             currentNeighbourMap = nextNeighbourMap;
-                            previousPointDirectionIndex = Level.OppositeDirectionIndexes[directionIndexToCheck];
+                            previousPointDirectionIndex = Vector.OppositeDirectionIndexes[directionIndexToCheck];
                             perimeterPointFound = true;
                             break;
                         }
@@ -493,7 +488,7 @@ namespace UnicornHack.Generation.Map
                         outsideAction.Invoke(nextPoint);
 
                         var subPerimeter = WalkPerimeter(nextPoint, nextNeighbourMap,
-                            (Direction)Level.OppositeDirectionIndexes[directionIndexToCheck], visitedIntersections,
+                            (Direction)Vector.OppositeDirectionIndexes[directionIndexToCheck], visitedIntersections,
                             neighbours, pointToIndex, perimeterAction, outsideAction);
 
                         if (subPerimeter != null)
@@ -514,7 +509,7 @@ namespace UnicornHack.Generation.Map
                 }
             }
 
-            throw new InvalidOperationException("Infinite loop");
+            throw new InvalidOperationException("Infinite loop finding the reoom perimeter");
         }
 
         private static bool IsPerimeter(DirectionFlags neighbourMap) =>
@@ -524,27 +519,24 @@ namespace UnicornHack.Generation.Map
             (neighbourMap & DirectionFlags.SouthwestCorner) == DirectionFlags.SouthwestCorner;
 
         protected static Dictionary<string, Func<TMapFragment, object, bool>> GetPropertyConditions<TMapFragment>()
-            where TMapFragment : MapFragment
+            where TMapFragment : MapFragment => new Dictionary<string, Func<TMapFragment, object, bool>>
         {
-            return new Dictionary<string, Func<TMapFragment, object, bool>>
+            {nameof(Name), (o, v) => v != null},
+            // ReSharper disable once CompareOfFloatsByEqualityOperator
             {
-                {nameof(Name), (o, v) => v != null},
-                // ReSharper disable once CompareOfFloatsByEqualityOperator
-                {
-                    nameof(GenerationWeight),
-                    (o, v) => (Weight)v != null && (!(v is DefaultWeight def) || def.Multiplier != 1)
-                },
-                {nameof(Map), (o, v) => !string.IsNullOrEmpty((string)v)},
-                {nameof(ByteMap), (o, v) => false},
-                {nameof(PayloadArea), (o, v) => false},
-                {nameof(Width), (o, v) => false},
-                {nameof(Height), (o, v) => false},
-                {nameof(ConditionalFirstColumn), (o, v) => false},
-                {nameof(ConditionalFirstRow), (o, v) => false},
-                {nameof(ConditionalLastColumn), (o, v) => false},
-                {nameof(ConditionalLastRow), (o, v) => false}
-            };
-        }
+                nameof(GenerationWeight),
+                (o, v) => (Weight)v != null && (!(v is DefaultWeight def) || def.Multiplier != 1)
+            },
+            {nameof(Map), (o, v) => !string.IsNullOrEmpty((string)v)},
+            {nameof(ByteMap), (o, v) => false},
+            {nameof(PayloadArea), (o, v) => false},
+            {nameof(Width), (o, v) => false},
+            {nameof(Height), (o, v) => false},
+            {nameof(ConditionalFirstColumn), (o, v) => false},
+            {nameof(ConditionalFirstRow), (o, v) => false},
+            {nameof(ConditionalLastColumn), (o, v) => false},
+            {nameof(ConditionalLastRow), (o, v) => false}
+        };
 
         public abstract ICSScriptSerializer GetSerializer();
     }

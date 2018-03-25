@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
-using UnicornHack.Utils;
+using UnicornHack.Utils.DataLoading;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace UnicornHack.Editor
@@ -22,7 +22,7 @@ namespace UnicornHack.Editor
             string targetClassName)
         {
             var expression = CompilationUnit()
-                .WithUsings(List(CSScriptLoaderBase.Namespaces.Select(n => UsingDirective(ParseName(n)))))
+                .WithUsings(List(CSScriptLoaderHelpers.Namespaces.Select(n => UsingDirective(ParseName(n)))))
                 .WithMembers(
                     SingletonList<MemberDeclarationSyntax>(
                         NamespaceDeclaration(ParseName(targetNamespace))
@@ -36,7 +36,7 @@ namespace UnicornHack.Editor
                                                 VariableDeclaration(GetTypeSyntax(obj.GetType()))
                                                     .WithVariables(SingletonSeparatedList(
                                                         VariableDeclarator(Identifier(
-                                                                CSScriptLoaderBase.GenerateIdentifier(
+                                                                CSScriptLoaderHelpers.GenerateIdentifier(
                                                                     targetPropertyName)))
                                                             .WithInitializer(
                                                                 EqualsValueClause(GetCreationExpression(obj))))))

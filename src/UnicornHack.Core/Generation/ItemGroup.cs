@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
 using UnicornHack.Data;
-using UnicornHack.Utils;
+using UnicornHack.Primitives;
+using UnicornHack.Utils.DataLoading;
 
 namespace UnicornHack.Generation
 {
@@ -18,7 +19,7 @@ namespace UnicornHack.Generation
             new SingleCSScriptLoader<ItemGroup>("Data", typeof(ItemGroupData));
 
         // TODO: Make more complex items more frequent on lower levels
-        public IEnumerable<ItemGroup> GetGroups(ItemVariant item)
+        public IEnumerable<ItemGroup> GetGroups(Item item)
         {
             var queue = new Queue<ItemGroup>();
             queue.Enqueue(this);

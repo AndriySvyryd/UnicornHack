@@ -1,40 +1,46 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant RockMole = new CreatureVariant
+        public static readonly Creature RockMole = new Creature
         {
             Name = "rock mole",
             Species = Species.Mole,
             SpeciesClass = SpeciesClass.Rodent,
             MovementDelay = 400,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
                 }
             },
-            SimpleProperties = new HashSet<string>
-            {
-                "tunneling",
-                "animal body",
-                "infravisibility",
-                "handlessness",
-                "singular inventory"
-            },
-            ValuedProperties = new Dictionary<string, object> {{"size", 2}, {"magic resistance", 20}, {"weight", 100}},
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
-            Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector
+            Behavior = AIBehavior.GoldCollector | AIBehavior.GemCollector,
+            Size = 2,
+            Weight = 100,
+            Agility = 2,
+            Constitution = 2,
+            Intelligence = 2,
+            Quickness = 2,
+            Strength = 2,
+            Willpower = 2,
+            MagicResistance = 20,
+            TorsoType = TorsoType.Quadruped,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.Claws,
+            LocomotionType = LocomotionType.Walking | LocomotionType.Tunneling,
+            InventorySize = 1,
+            Infravisible = true
         };
     }
 }

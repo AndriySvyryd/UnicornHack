@@ -1,27 +1,28 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnicornHack.Primitives;
+using UnicornHack.Systems.Levels;
 using UnicornHack.Utils;
+using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Generation.Map
 {
     public abstract class Layout
     {
-        public virtual float Coverage { get; set; } = 0.33f;
-        public virtual byte MaxRoomCount { get; set; } = 16;
+        public float Coverage { get; set; } = 0.33f;
+        public byte MaxRoomCount { get; set; } = 16;
 
-        public virtual void OnLoad()
-        {
-        }
-
-        public virtual void Fill(Level level, DefiningMapFragment fragment)
+        public virtual List<Room> Fill(LevelComponent level, DefiningMapFragment fragment)
         {
             InitializeTerrain(level, fragment);
-            PlaceDefiningMapFragment(level, fragment);
-            PlaceSurroundingFragments(level);
+            var rooms = PlaceDefiningMapFragment(level, fragment);
+            PlaceSurroundingFragments(level, rooms);
+
+            return rooms;
         }
 
-        protected virtual void InitializeTerrain(Level level, DefiningMapFragment fragment)
+        protected void InitializeTerrain(LevelComponent level, DefiningMapFragment fragment)
         {
             level.TerrainChanges = null;
             level.WallNeighboursChanges = null;
@@ -34,19 +35,27 @@ namespace UnicornHack.Generation.Map
             }
         }
 
-        protected virtual void PlaceDefiningMapFragment(Level level, DefiningMapFragment fragment)
+        protected List<Room> PlaceDefiningMapFragment(LevelComponent level, DefiningMapFragment fragment)
         {
-            fragment.TryPlace(level, level.BoundingRectangle);
+            var rooms = new List<Room>();
+            var room = fragment.TryPlace(level, level.BoundingRectangle);
+            if (room != null)
+            {
+                rooms.Add(room);
+            }
             // TODO: place nested fragments if needed
+
+            return rooms;
         }
 
-        protected virtual void PlaceSurroundingFragments(Level level)
+        protected void PlaceSurroundingFragments(LevelComponent level, List<Room> rooms)
         {
+            var manager = level.Entity.Manager;
             var levelBoundingRectangle = level.BoundingRectangle;
             var placedFragments = new RectangleIntervalTree(levelBoundingRectangle);
             var filledArea = 0;
 
-            var placedRoom = level.Rooms.FirstOrDefault();
+            var placedRoom = rooms.FirstOrDefault();
             if (placedRoom != null)
             {
                 placedFragments.Insert(placedRoom.BoundingRectangle);
@@ -54,7 +63,7 @@ namespace UnicornHack.Generation.Map
             }
 
             var placingConnections = true;
-            while (filledArea / (float)levelBoundingRectangle.Area < Coverage && level.Rooms.Count < MaxRoomCount)
+            while (filledArea / (float)levelBoundingRectangle.Area < Coverage && rooms.Count < MaxRoomCount)
             {
                 var nextLot = SelectNextLot(placedFragments, level.GenerationRandom);
                 if (nextLot == null)
@@ -65,13 +74,18 @@ namespace UnicornHack.Generation.Map
                 // For every existing connection to this level that hasn't been connected yet generate a destination fragment.
                 // Then generate up to 3 source fragments, depending on the number of incoming connections
                 //     At least 2 to the next branch level if not final
-                var danglingConnection = level.IncomingConnections.FirstOrDefault(c => c.TargetLevelX == null);
-                placingConnections = placingConnections && (danglingConnection != null ||
-                                                            level.Connections.Count(c => c.TargetLevelX == null) < 3 ||
-                                                            (level.Branch.Length > level.Depth &&
-                                                             level.Connections.Count(c =>
-                                                                 c.TargetBranchName == level.BranchName &&
-                                                                 c.TargetLevelDepth == level.Depth + 1) < 2));
+                var danglingConnection = manager.IncomingConnectionsToLevelRelationship[level.EntityId]
+                    .Select(c => c.Connection).FirstOrDefault(c => c.TargetLevelX == null);
+                placingConnections = placingConnections &&
+                                     (danglingConnection != null
+                                      || manager.ConnectionsToLevelRelationship[level.EntityId]
+                                          .Count(c => c.Connection.TargetLevelX == null) < 3
+                                      || (level.Branch.Length > level.Depth &&
+                                          manager.ConnectionsToLevelRelationship[level.EntityId]
+                                              .Select(c => manager.FindEntity(c.Connection.TargetLevelId).Level)
+                                              .Count(l =>
+                                                  l.BranchName == level.BranchName
+                                                  && l.Depth == level.Depth + 1) < 2));
                 var sortedFragments = placingConnections
                     ? level.GenerationRandom.WeightedOrder(
                         ConnectingMapFragment.Loader.GetAsList(),
@@ -92,17 +106,18 @@ namespace UnicornHack.Generation.Map
                     throw new InvalidOperationException("No suitable fragments");
                 }
 
+                rooms.Add(placedRoom);
                 placedFragments.Insert(placedRoom.BoundingRectangle);
                 filledArea += placedRoom.BoundingRectangle.Area;
             }
 
-            // TODO: Fill the empty space with snapping fragments and connect them to ovewritable fragments
+            // TODO: Fill the empty space with snapping fragments and connect them to overwritable fragments
 
-            if (level.Rooms.Count > 1)
+            if (rooms.Count > 1)
             {
                 // TODO: Perf: use a different data structure
-                var connectedRooms = new List<Room> {level.Rooms.First()};
-                var unconnectedRooms = new List<Room>(level.Rooms.Skip(1).Where(r => r.DoorwayPoints.Count > 0));
+                var connectedRooms = new List<Room> {rooms.First()};
+                var unconnectedRooms = new List<Room>(rooms.Skip(1).Where(r => r.DoorwayPoints.Count > 0));
                 while (unconnectedRooms.Count > 0)
                 {
                     var randomConnectedRoom = level.GenerationRandom.Pick(connectedRooms);
@@ -119,14 +134,14 @@ namespace UnicornHack.Generation.Map
             }
         }
 
-        private Room TryPlace(Level level, Rectangle nextLot, IEnumerable<MapFragment> sortedFragments)
+        private Room TryPlace(LevelComponent level, Rectangle nextLot, IEnumerable<MapFragment> sortedFragments)
         {
             foreach (var nextFragment in sortedFragments)
             {
                 var placedRoom = nextFragment.TryPlace(level, nextLot);
                 if (placedRoom != null)
                 {
-                    level.IncrementInstanceCounts(nextFragment);
+                    IncrementInstanceCounts(level, nextFragment);
                     return placedRoom;
                 }
             }
@@ -134,8 +149,14 @@ namespace UnicornHack.Generation.Map
             return null;
         }
 
-        private bool Connect(Room source, Room target, bool allowDiagonals = false, bool avoidTurns = true,
-            int width = 1, bool addColumns = false)
+        public static void IncrementInstanceCounts(LevelComponent levelComponent, MapFragment fragment)
+        {
+            // TODO: Increment fragment instance count on level, branch, game
+            // TODO: Increment each tag instance count on level, branch, game
+        }
+
+        private bool Connect(Room source, Room target,
+            bool allowDiagonals = false, bool avoidTurns = true, int width = 1, bool addColumns = false)
         {
             var from = source.GetGoodConnectionPoint(target);
             var to = target.GetGoodConnectionPoint(source);
@@ -155,7 +176,8 @@ namespace UnicornHack.Generation.Map
             return true;
         }
 
-        private Corridor FindCorridorPath(Point source, Point target, Level level, bool allowDiagonals, bool avoidTurns)
+        private Corridor FindCorridorPath(Point source, Point target, LevelComponent level, bool allowDiagonals,
+            bool avoidTurns)
         {
             // TODO: Use A* to tunnel arround fragments
             var path = new List<Point>();
@@ -183,18 +205,18 @@ namespace UnicornHack.Generation.Map
                 if (heading.X != 0)
                 {
                     horizontalMove = new Point((byte)(current.X + heading.X), current.Y);
-                    isHorizontalFree = level.CanPlaceCorridor(horizontalMove.Value);
+                    isHorizontalFree = CanPlaceCorridor(horizontalMove.Value, level);
                 }
 
                 if (heading.Y != 0)
                 {
                     verticalMove = new Point(current.X, (byte)(current.Y + heading.Y));
-                    isVerticalFree = level.CanPlaceCorridor(verticalMove.Value);
+                    isVerticalFree = CanPlaceCorridor(verticalMove.Value, level);
 
                     if (allowDiagonals && heading.X != 0)
                     {
                         diagonalMove = current.Translate(heading);
-                        isDiagonalFree = level.CanPlaceCorridor(diagonalMove.Value);
+                        isDiagonalFree = CanPlaceCorridor(diagonalMove.Value, level);
                     }
                 }
 
@@ -257,7 +279,21 @@ namespace UnicornHack.Generation.Map
             return new Corridor(path, fragmentFeaturesHit, fragmentFeaturesAlmostHit);
         }
 
-        private void WriteCorridor(IReadOnlyList<Point> path, Level level, int width, bool addColumns)
+        public static bool CanPlaceCorridor(Point location, LevelComponent levelComponent)
+        {
+            switch ((MapFeature)levelComponent.Terrain[levelComponent.PointToIndex[location.X, location.Y]])
+            {
+                case MapFeature.Default:
+                case MapFeature.RockFloor:
+                case MapFeature.StoneFloor:
+                case MapFeature.RockWall:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private void WriteCorridor(IReadOnlyList<Point> path, LevelComponent level, int width, bool addColumns)
         {
             // TODO: Try to place connecting fragments instead of plain corridors
             foreach (var point in path)

@@ -1,60 +1,90 @@
 ﻿using System;
 using System.Text;
 using Microsoft.Extensions.Caching.Memory;
+using UnicornHack.Generation;
 using UnicornHack.Generation.Map;
+using UnicornHack.Primitives;
 using UnicornHack.Services;
 using UnicornHack.Services.English;
+using UnicornHack.Systems.Levels;
 using UnicornHack.Utils;
+using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack
 {
     public static class TestHelper
     {
-        public static Level CreateLevel(byte height = 10, byte width = 10, Game game = null)
+        public static Game CreateGame(uint? seed = null)
         {
-            var level = new Level
+            var game = new Game
             {
-                Height = height,
-                Width = width,
-                Game = game ?? CreateGame()
-            };
-            level.Terrain = new byte[level.Height * level.Width];
-            level.WallNeighbours = new byte[level.Height * level.Width];
-            level.VisibleNeighbours = new byte[level.Height * level.Width];
-            level.VisibleTerrain = new byte[level.Height * level.Width];
-            level.FOV = new byte[level.Height * level.Width];
-            level.EnsureInitialized();
-
-            return level;
-        }
-
-        public static Game CreateGame()
-            => new Game
-            {
+                Random = new SimpleRandom {Seed = seed ?? (uint)Environment.TickCount},
+                InitialSeed = seed,
+                Repository = new TestRepository(),
                 Services = new GameServices(new EnglishLanguageService(), new MemoryCache(new MemoryCacheOptions()))
             };
 
-        public static Level BuildLevel(string map, int seed)
+            game.Manager = CreateGameManager(game);
+
+            return game;
+        }
+
+        public static GameManager CreateGameManager(Game game = null)
         {
-            var game = CreateGame();
-            game.Random = new SimpleRandom { Seed = seed };
-            game.InitialSeed = seed;
-            game.Repository = new TestRepository();
+            var manager = new GameManager {Game = game ?? CreateGame()};
+            manager.Initialize(new SequentialMessageQueue<GameManager>());
+            return manager;
+        }
 
-            var fragment = new NormalMapFragment
+        public static LevelComponent BuildLevel(string map = "", uint? seed = null)
+        {
+            var game = CreateGame(seed);
+
+            var fragment = new DefiningMapFragment
             {
-                Map = map
+                Map = map,
+                Layout = new EmptyLayout {Coverage = 0},
+                CreatureGenerator = new CreatureGenerator {ExpectedInitialCount = 0},
+                ItemGenerator = new ItemGenerator {ExpectedInitialCount = 0}
             };
-            fragment.EnsureInitialized(game);
 
-            var level = CreateLevel(fragment.Height, fragment.Width, game);
-            level.GenerationRandom = new SimpleRandom {Seed = seed};
+            var level = CreateLevel(fragment, game);
+            level.GenerationRandom = new SimpleRandom {Seed = game.Random.Seed};
 
             fragment.TryPlace(level, level.BoundingRectangle);
             return level;
         }
 
-        public static string PrintMap(Level level, byte[] visibleTerrain)
+        public static LevelComponent CreateLevel(DefiningMapFragment fragment, Game game)
+        {
+            var branch = new GameBranch
+            {
+                Game = game,
+                Name = "test branch",
+                Length = 1,
+                Difficulty = 1
+            };
+            game.Branches.Add(branch);
+
+            fragment.EnsureInitialized(game);
+            if (fragment.Height != 0)
+            {
+                fragment.LevelHeight = fragment.Height;
+            }
+
+            if (fragment.Width != 0)
+            {
+                fragment.LevelWidth = fragment.Width;
+            }
+
+            var level = LevelGenerator.CreateEmpty(branch, 0, game.Random.Seed, game.Manager);
+            LevelGenerator.Generate(level, fragment);
+
+            return level;
+        }
+
+
+        public static string PrintMap(LevelComponent level, byte[] visibleTerrain)
         {
             var builder = new StringBuilder();
             var i = 0;
@@ -136,6 +166,7 @@ namespace UnicornHack
                                     default:
                                         throw new InvalidOperationException("Invalid wall neighbours: " + neighbours);
                                 }
+
                                 break;
                             case MapFeature.StoneArchway:
                                 symbol = '∩';
@@ -152,6 +183,7 @@ namespace UnicornHack
 
                     i++;
                 }
+
                 builder.AppendLine();
             }
 

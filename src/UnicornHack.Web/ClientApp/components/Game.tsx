@@ -1,5 +1,5 @@
 ﻿import * as React from 'react';
-import { HubConnection, ConsoleLogger, LogLevel, HttpConnection, TransportType } from '@aspnet/signalr';
+import * as signalR from '@aspnet/signalr';
 import { MessagePackHubProtocol } from '@aspnet/signalr-protocol-msgpack';
 import * as Mousetrap from 'mousetrap';
 import 'mousetrap/plugins/record/mousetrap-record';
@@ -31,17 +31,17 @@ export class Game extends React.Component<IGameProps, {}> {
     actionQueue: IAction[] = [];
     keyMap: any;
     keyHandlers: any;
-    connection: HubConnection;
+    connection: signalR.HubConnection;
     styles: MapStyles = new MapStyles();
 
     constructor(props: IGameProps) {
         super(props);
 
-        const logger = new ConsoleLogger(LogLevel.Information);
-        const http = new HttpConnection(`http://${document.location.host}/gameHub`,
-            { transport: TransportType.WebSockets, logger: logger });
-        const connection =
-            new HubConnection(http, { logger: logger, protocol: new MessagePackHubProtocol() });
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl(`http://${document.location.host}/gameHub`, { transport: signalR.HttpTransportType.WebSockets, skipNegotiation: true })
+            .configureLogging(signalR.LogLevel.Information)
+            .withHubProtocol(new MessagePackHubProtocol())
+            .build();
 
         connection.onclose = e => {
             if (e) {
@@ -187,6 +187,9 @@ export class Game extends React.Component<IGameProps, {}> {
 
     @action.bound
     private addMessage(type: MessageType, text: string, userName: string | null = null) {
+        if (this.player.level.depth === -1) {
+            this.player.level.depth = 0;
+        }
         this.messages.push({ id: this.messages.length, userName: userName, text: text, type: type } as IMessage);
     };
 
@@ -202,7 +205,7 @@ export class Game extends React.Component<IGameProps, {}> {
             <div className="row">
                 <div style={{
                     display: firstTimeLoading ? 'block' : 'none'
-                }}>Establishing connection, please wait...</div>
+                }}>Loading, please wait...</div>
                 <div className="col-9" style={{
                     display: firstTimeLoading ? 'none' : 'block'
                 }}>
@@ -220,7 +223,7 @@ export class Game extends React.Component<IGameProps, {}> {
                     <HotKeys keyMap={this.keyMap} handlers={this.keyHandlers}>
                         <Inventory items={this.player.inventory} performAction={this.performAction} />
                         <AbilityBar abilities={this.player.abilities} performAction={this.performAction} />
-                        <PropertyList properties={this.player.properties} />
+                        <PropertyList player={this.player} />
                     </HotKeys>
                     <Chat sendMessage={this.sendMessage} messages={this.messages} />
                 </div>

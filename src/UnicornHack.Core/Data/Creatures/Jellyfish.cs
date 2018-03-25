@@ -1,37 +1,43 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Jellyfish = new CreatureVariant
+        public static readonly Creature Jellyfish = new Creature
         {
             Name = "jellyfish",
             Species = Species.Jellyfish,
             MovementDelay = 400,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Sting,
                     Timeout = 1,
-                    Effects = new HashSet<Effect> {new Envenom {Damage = 60}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Poison {Damage = 20}}
+                    Effects = new HashSet<Effect> {new Blight {Damage = 60}}
                 }
             },
-            SimpleProperties = new HashSet<string> {"swimming", "water breathing", "limblessness", "no inventory"},
-            ValuedProperties =
-                new Dictionary<string, object> {{"size", 2}, {"physical deflection", 14}, {"weight", 80}},
             InitialLevel = 3,
-            GenerationWeight = new DefaultWeight {Multiplier = 4F}
+            GenerationWeight = new DefaultWeight {Multiplier = 4F},
+            Size = 2,
+            Weight = 80,
+            Agility = 2,
+            Constitution = 2,
+            Intelligence = 2,
+            Quickness = 2,
+            Strength = 2,
+            Willpower = 2,
+            PhysicalDeflection = 14,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.None,
+            RespirationType = RespirationType.Water,
+            LocomotionType = LocomotionType.Swimming,
+            InventorySize = 0
         };
     }
 }

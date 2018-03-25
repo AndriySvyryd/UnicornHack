@@ -1,33 +1,41 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Lizard = new CreatureVariant
+        public static readonly Creature Lizard = new Creature
         {
             Name = "lizard",
             Species = Species.Lizard,
             SpeciesClass = SpeciesClass.Reptile,
             MovementDelay = 200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
                 }
             },
-            SimpleProperties = new HashSet<string> {"handlessness", "oviparity", "singular inventory"},
-            ValuedProperties =
-                new Dictionary<string, object> {{"size", 2}, {"physical deflection", 14}, {"weight", 50}},
             InitialLevel = 4,
-            GenerationWeight = new DefaultWeight {Multiplier = 4F}
+            GenerationWeight = new DefaultWeight {Multiplier = 4F},
+            Size = 2,
+            Weight = 50,
+            Agility = 3,
+            Constitution = 3,
+            Intelligence = 3,
+            Quickness = 3,
+            Strength = 3,
+            Willpower = 3,
+            PhysicalDeflection = 14,
+            UpperExtremeties = ExtremityType.None,
+            InventorySize = 1
         };
     }
 }

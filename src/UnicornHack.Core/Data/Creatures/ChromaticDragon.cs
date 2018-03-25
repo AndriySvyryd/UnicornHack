@@ -1,117 +1,83 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant ChromaticDragon = new CreatureVariant
+        public static readonly Creature ChromaticDragon = new Creature
         {
             Name = "Chromatic Dragon",
             Species = Species.Dragon,
             SpeciesClass = SpeciesClass.Reptile,
             MovementDelay = 100,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Breath,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ElementalDamage"}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 180}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spell,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
                 }
             },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "flight",
-                "flight control",
-                "invisibility detection",
-                "infravision",
-                "animal body",
-                "handlessness",
-                "femaleness",
-                "stoning resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "fire resistance",
-                    75
-                },
-                {
-                    "cold resistance",
-                    75
-                },
-                {
-                    "electricity resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "acid resistance",
-                    75
-                },
-                {
-                    "danger awareness",
-                    3
-                },
-                {
-                    "thick hide",
-                    3
-                },
-                {
-                    "size",
-                    32
-                },
-                {
-                    "magic resistance",
-                    30
-                },
-                {
-                    "weight",
-                    4500
-                }
-            },
             InitialLevel = 16,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-            Behavior = MonsterBehavior.RangedPeaceful | MonsterBehavior.Stalking | MonsterBehavior.GoldCollector |
-                       MonsterBehavior.GemCollector,
-            Noise = ActorNoiseType.Roar
+            Behavior = AIBehavior.RangedPeaceful | AIBehavior.Stalking | AIBehavior.GoldCollector |
+                       AIBehavior.GemCollector,
+            Noise = ActorNoiseType.Roar,
+            Sex = Sex.Female,
+            Size = 32,
+            Weight = 4500,
+            Agility = 9,
+            Constitution = 9,
+            Intelligence = 9,
+            Quickness = 9,
+            Strength = 9,
+            Willpower = 14,
+            MagicResistance = 30,
+            AcidResistance = 75,
+            ColdResistance = 75,
+            ElectricityResistance = 75,
+            FireResistance = 75,
+            StoningImmune = true,
+            TorsoType = TorsoType.Quadruped,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.Claws,
+            LocomotionType = LocomotionType.Flying,
+            Infravision = true,
+            InvisibilityDetection = true
         };
     }
 }

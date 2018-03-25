@@ -1,95 +1,57 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant IronGolem = new CreatureVariant
+        public static readonly Creature IronGolem = new Creature
         {
             Name = "iron golem",
             Species = Species.Golem,
             MovementDelay = 200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 220}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Breath,
                     Timeout = 5,
-                    Effects = new HashSet<Effect> {new Poison {Damage = 140}}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "non animal",
-                "breathlessness",
-                "mindlessness",
-                "humanoidness",
-                "asexuality",
-                "stoning resistance",
-                "sliming resistance",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "water resistance",
-                    50
-                },
-                {
-                    "cold resistance",
-                    75
-                },
-                {
-                    "fire resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "venom resistance",
-                    75
-                },
-                {
-                    "thick hide",
-                    3
-                },
-                {
-                    "hit point maximum",
-                    80
-                },
-                {
-                    "size",
-                    8
-                },
-                {
-                    "physical deflection",
-                    17
-                },
-                {
-                    "magic resistance",
-                    60
-                },
-                {
-                    "weight",
-                    2000
+                    Effects = new HashSet<Effect> {new Blight {Damage = 140}}
                 }
             },
             InitialLevel = 18,
-            CorpseName = ""
+            Sex = Sex.None,
+            Size = 8,
+            Weight = 2000,
+            Agility = 10,
+            Constitution = 10,
+            Intelligence = 10,
+            Quickness = 10,
+            Strength = 10,
+            Willpower = 15,
+            MagicResistance = 60,
+            PhysicalDeflection = 17,
+            ColdResistance = 75,
+            FireResistance = 75,
+            WaterResistance = 50,
+            SlimingImmune = true,
+            StoningImmune = true,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            RespirationType = RespirationType.None,
+            Mindless = true,
+            NonAnimal = true
         };
     }
 }

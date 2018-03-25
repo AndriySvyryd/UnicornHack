@@ -1,85 +1,63 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Shade = new CreatureVariant
+        public static readonly Creature Shade = new Creature
         {
             Name = "shade",
             Species = Species.Ghost,
             SpeciesClass = SpeciesClass.Undead,
             MovementDelay = 120,
-            Abilities = new HashSet<AbilityDefinition>
+            Material = Material.Air,
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Paralyze {Duration = 7}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Slow {Duration = 3}}
                 }
             },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "flight",
-                "flight control",
-                "phasing",
-                "infravision",
-                "invisibility detection",
-                "non solid body",
-                "humanoidness",
-                "breathlessness",
-                "no inventory",
-                "stoning resistance",
-                "sliming resistance",
-                "sickness resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "cold resistance",
-                    75
-                },
-                {
-                    "disintegration resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "physical deflection",
-                    10
-                },
-                {
-                    "magic resistance",
-                    25
-                },
-                {
-                    "weight",
-                    0
-                }
-            },
             InitialLevel = 12,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             PreviousStageName = "ghost",
-            CorpseName = "",
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-            Behavior = MonsterBehavior.Wandering | MonsterBehavior.Stalking,
-            Noise = ActorNoiseType.Howl
+            Behavior = AIBehavior.Wandering | AIBehavior.Stalking,
+            Noise = ActorNoiseType.Howl,
+            Weight = 0,
+            Agility = 7,
+            Constitution = 7,
+            Intelligence = 7,
+            Quickness = 7,
+            Strength = 7,
+            Willpower = 12,
+            MagicResistance = 25,
+            PhysicalDeflection = 10,
+            ColdResistance = 75,
+            DisintegrationResistance = 75,
+            SlimingImmune = true,
+            StoningImmune = true,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            RespirationType = RespirationType.None,
+            LocomotionType = LocomotionType.Walking | LocomotionType.Phasing,
+            InventorySize = 0,
+            Infravision = true,
+            InvisibilityDetection = true
         };
     }
 }

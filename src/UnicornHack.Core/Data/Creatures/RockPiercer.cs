@@ -1,38 +1,45 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant RockPiercer = new CreatureVariant
+        public static readonly Creature RockPiercer = new Creature
         {
             Name = "rock piercer",
             Species = Species.Piercer,
             MovementDelay = 1200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
                 }
             },
-            SimpleProperties =
-                new HashSet<string> {"camouflage", "eyelessness", "limblessness", "clinginess", "no inventory"},
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {"stealthiness", 3},
-                {"size", 2},
-                {"physical deflection", 17},
-                {"weight", 200}
-            },
             InitialLevel = 3,
-            GenerationWeight = new DefaultWeight {Multiplier = 3F}
+            GenerationWeight = new DefaultWeight {Multiplier = 3F},
+            Size = 2,
+            Weight = 200,
+            Agility = 2,
+            Constitution = 2,
+            Intelligence = 2,
+            Quickness = 2,
+            Strength = 2,
+            Willpower = 2,
+            PhysicalDeflection = 17,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.None,
+            InventorySize = 0,
+            EyeCount = 0,
+            NoiseLevel = 0,
+            VisibilityLevel = 1,
+            Clingy = true
         };
     }
 }

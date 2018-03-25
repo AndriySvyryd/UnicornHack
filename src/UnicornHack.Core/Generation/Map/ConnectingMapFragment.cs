@@ -3,17 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using CSharpScriptSerialization;
 using UnicornHack.Data.Fragments;
-using UnicornHack.Utils;
+using UnicornHack.Primitives;
+using UnicornHack.Systems.Levels;
+using UnicornHack.Utils.DataLoading;
+using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Generation.Map
 {
     public class ConnectingMapFragment : MapFragment
     {
-        public virtual ICollection<LevelConnection> Connections { get; set; } = new HashSet<LevelConnection>();
+        public ICollection<LevelConnection> Connections { get; set; } = new HashSet<LevelConnection>();
 
-        private Func<string, byte, int, int, Connection, float> _weightFunction;
+        private Func<string, byte, int, int, ConnectionComponent, float> _weightFunction;
 
-        public virtual float GetWeight(Level level, Rectangle boundingRectangle, Connection target)
+        public float GetWeight(LevelComponent level, Rectangle boundingRectangle, ConnectionComponent target)
         {
             // TODO: take transformations into account
             if (PayloadArea.Width > boundingRectangle.Width || PayloadArea.Height > boundingRectangle.Height)
@@ -29,10 +32,15 @@ namespace UnicornHack.Generation.Map
             return _weightFunction(level.Branch.Name, level.Depth, 0, 0, target);
         }
 
-        public override Room BuildRoom(Level level, IEnumerable<Point> points, Action<Point> insideAction,
+        public override Room BuildRoom(LevelComponent level, IEnumerable<Point> points, Action<Point> insideAction,
             Action<Point> perimeterAction, Action<Point> outsideAction)
         {
             var room = base.BuildRoom(level, points, insideAction, perimeterAction, outsideAction);
+            if (room == null
+                || room.InsidePoints.Count == 0)
+            {
+                return room;
+            }
 
             var connectionDefinitions = Connections;
             if (connectionDefinitions.Count == 0)
@@ -40,17 +48,19 @@ namespace UnicornHack.Generation.Map
                 connectionDefinitions = new[] {new LevelConnection()};
             }
 
+            var manager = level.Entity.Manager;
             foreach (var levelConnection in connectionDefinitions.Where(c => c.Glyph == null))
             {
-                CreateConnection(level,
-                    level.GenerationRandom.Pick(room.InsidePoints,
-                        p => !level.Connections.Any(c => c.LevelX == p.X && c.LevelY == p.Y)), levelConnection);
+                var connectionPoint = level.GenerationRandom.Pick(room.InsidePoints,
+                    p => manager.ConnectionsToLevelRelationship[level.EntityId]
+                        .All(c => c.Position.LevelCell != p));
+                CreateConnection(level, connectionPoint, levelConnection);
             }
 
             return room;
         }
 
-        protected override void Write(char c, Point point, Level level,
+        protected override void Write(char c, Point point, LevelComponent level,
             (List<Point> doorwayPoints, List<Point> perimeterPoints, List<Point> insidePoints, List<Point> points)
                 state)
         {
@@ -75,23 +85,35 @@ namespace UnicornHack.Generation.Map
             level.Terrain[level.PointToIndex[point.X, point.Y]] = (byte)feature;
         }
 
-        protected virtual void CreateConnection(Level level, Point point, char? glyph) =>
-            CreateConnection(level, point, Connections.FirstOrDefault(c => c.Glyph == glyph));
+        protected virtual void CreateConnection(LevelComponent level, Point point, char? glyph)
+            => CreateConnection(level, point, Connections.FirstOrDefault(c => c.Glyph == glyph));
 
-        protected virtual Connection CreateConnection(Level level, Point point, LevelConnection connectionDefinition)
+        protected virtual ConnectionComponent CreateConnection(LevelComponent level, Point point,
+            LevelConnection connectionDefinition)
         {
-            var danglingConnection = level.IncomingConnections.FirstOrDefault(c =>
-                c.TargetLevelX == null &&
-                (connectionDefinition?.BranchName == null || connectionDefinition.BranchName == c.BranchName) &&
-                (connectionDefinition?.Depth == null || connectionDefinition.Depth == c.LevelDepth));
+            var manager = level.Entity.Manager;
 
-            return danglingConnection != null
-                ? Connection.CreateReceivingConnection(level, point, danglingConnection)
-                : connectionDefinition?.BranchName != null
-                    ? Connection.CreateSourceConnection(level, point, connectionDefinition.BranchName,
-                        connectionDefinition.Depth ?? 1)
-                    : Connection.CreateSourceConnection(level, point, level.BranchName,
-                        connectionDefinition?.Depth ?? (byte)(level.Depth + 1));
+            foreach (var connectionEntity in manager.IncomingConnectionsToLevelRelationship[level.EntityId])
+            {
+                var connection = connectionEntity.Connection;
+                if (connection.TargetLevelX == null)
+                {
+                    var target = manager.FindEntity(connection.TargetLevelId).Level;
+                    if ((connectionDefinition?.BranchName == null ||
+                         connectionDefinition.BranchName == target.BranchName)
+                        && (connectionDefinition?.Depth == null ||
+                            connectionDefinition.Depth == target.Depth))
+                    {
+                        return LevelConnection.CreateReceivingConnection(level, point, connection);
+                    }
+                }
+            }
+
+            return connectionDefinition?.BranchName != null
+                ? LevelConnection.CreateSourceConnection(level, point, connectionDefinition.BranchName,
+                    connectionDefinition.Depth ?? 1)
+                : LevelConnection.CreateSourceConnection(level, point, level.BranchName,
+                    connectionDefinition?.Depth ?? (byte)(level.Depth + 1));
         }
 
         public static readonly CSScriptLoader<ConnectingMapFragment> Loader =
@@ -100,7 +122,7 @@ namespace UnicornHack.Generation.Map
         private static readonly CSScriptSerializer Serializer =
             new PropertyCSScriptSerializer<ConnectingMapFragment>(GetPropertyConditions<ConnectingMapFragment>());
 
-        protected new static Dictionary<string, Func<TConnectingMapFragment, object, bool>>
+        protected static new Dictionary<string, Func<TConnectingMapFragment, object, bool>>
             GetPropertyConditions<TConnectingMapFragment>() where TConnectingMapFragment : ConnectingMapFragment
         {
             var propertyConditions = MapFragment.GetPropertyConditions<TConnectingMapFragment>();

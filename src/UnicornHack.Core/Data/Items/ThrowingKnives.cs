@@ -1,30 +1,33 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Items
 {
-    public static partial class ItemVariantData
+    public static partial class ItemData
     {
-        public static readonly LauncherVariant ThrowingKnives = new LauncherVariant
+        public static readonly Item ThrowingKnives = new Item
         {
             Name = "throwing knives",
             Type = ItemType.WeaponRangedThrown,
             Material = Material.Steel,
+            Weight = 5,
             EquipableSizes = SizeCategory.Small | SizeCategory.Medium,
             EquipableSlots = EquipmentSlot.GraspSingleExtremity,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnRangedAttack,
+                    Activation = ActivationType.OnPhysicalRangedAttack,
                     Action = AbilityAction.Throw,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
+                    Effects = new HashSet<Effect>
+                    {
+                        new PhysicalDamage {Damage = 30},
+                        new Activate {Projectile = "throwing knife"}
+                    }
                 }
-            },
-            ValuedProperties = new Dictionary<string, object> {{"weight", 5}},
-            Projectile = "throwing knife"
+            }
         };
     }
 }

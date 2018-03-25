@@ -1,39 +1,45 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant OrcShaman = new CreatureVariant
+        public static readonly Creature OrcShaman = new Creature
         {
             Name = "orc shaman",
             Species = Species.Orc,
             MovementDelay = 133,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spell,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
                 }
             },
-            SimpleProperties = new HashSet<string> {"infravision", "infravisibility", "humanoidness"},
-            ValuedProperties =
-                new Dictionary<string, object>
-                {
-                    {"physical deflection", 10},
-                    {"magic resistance", 10},
-                    {"weight", 1000}
-                },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},
-            Behavior = MonsterBehavior.GoldCollector | MonsterBehavior.MagicUser,
-            Noise = ActorNoiseType.Grunt
+            Behavior = AIBehavior.GoldCollector | AIBehavior.MagicUser,
+            Noise = ActorNoiseType.Grunt,
+            Weight = 1000,
+            Agility = 2,
+            Constitution = 2,
+            Intelligence = 2,
+            Quickness = 2,
+            Strength = 2,
+            Willpower = 2,
+            MagicResistance = 10,
+            PhysicalDeflection = 10,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            Infravisible = true,
+            Infravision = true
         };
     }
 }

@@ -1,72 +1,52 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Homunculus = new CreatureVariant
+        public static readonly Creature Homunculus = new Creature
         {
             Name = "homunculus",
             Species = Species.Homunculus,
             MovementDelay = 100,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Sedate {Duration = 2}}
                 }
             },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "infravision",
-                "infravisibility",
-                "mindlessness",
-                "asexuality"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "regeneration",
-                    3
-                },
-                {
-                    "size",
-                    2
-                },
-                {
-                    "physical deflection",
-                    14
-                },
-                {
-                    "magic resistance",
-                    10
-                },
-                {
-                    "weight",
-                    60
-                }
-            },
             InitialLevel = 2,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
-            Behavior = MonsterBehavior.Stalking
+            Behavior = AIBehavior.Stalking,
+            Sex = Sex.None,
+            Size = 2,
+            Weight = 60,
+            Agility = 2,
+            Constitution = 2,
+            Intelligence = 2,
+            Quickness = 2,
+            Strength = 2,
+            Willpower = 7,
+            Regeneration = 3,
+            MagicResistance = 10,
+            PhysicalDeflection = 14,
+            Infravisible = true,
+            Infravision = true,
+            Mindless = true
         };
     }
 }

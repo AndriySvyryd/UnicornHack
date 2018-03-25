@@ -1,78 +1,60 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant Wererat = new CreatureVariant
+        public static readonly Creature Wererat = new Creature
         {
             Name = "wererat",
             Species = Species.Human,
             SpeciesClass = SpeciesClass.ShapeChanger,
             MovementDelay = 100,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeAttack,
+                    Activation = ActivationType.OnPhysicalMeleeAttack,
                     Action = AbilityAction.Modifier,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 5,
                     Effects = new HashSet<Effect> {new ConferLycanthropy {VariantName = "ratwere"}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new ConferLycanthropy {VariantName = "ratwere"}}
-                }
-            },
-            SimpleProperties = new HashSet<string> {"infravisibility", "humanoidness"},
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "regeneration",
-                    3
-                },
-                {
-                    "lycanthropy",
-                    "ratwere"
-                },
-                {
-                    "physical deflection",
-                    10
-                },
-                {
-                    "magic resistance",
-                    10
-                },
-                {
-                    "weight",
-                    1000
                 }
             },
             InitialLevel = 3,
             GenerationFlags = GenerationFlags.NonPolymorphable,
-            Behavior = MonsterBehavior.WeaponCollector,
-            Noise = ActorNoiseType.Lycanthrope
+            Behavior = AIBehavior.WeaponCollector,
+            Noise = ActorNoiseType.Lycanthrope,
+            Weight = 1000,
+            Agility = 2,
+            Constitution = 2,
+            Intelligence = 2,
+            Quickness = 2,
+            Strength = 2,
+            Willpower = 2,
+            Regeneration = 3,
+            MagicResistance = 10,
+            PhysicalDeflection = 10,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            Infravisible = true,
+            Lycanthropy = "ratwere"
         };
     }
 }

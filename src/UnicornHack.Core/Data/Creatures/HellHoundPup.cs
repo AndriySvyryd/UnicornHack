@@ -1,50 +1,60 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant HellHoundPup = new CreatureVariant
+        public static readonly Creature HellHoundPup = new Creature
         {
             Name = "hell hound pup",
             Species = Species.Dog,
             SpeciesClass = SpeciesClass.Canine,
             MovementDelay = 100,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Breath,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Burn {Damage = 70}}
                 }
             },
-            SimpleProperties =
-                new HashSet<string> {"animal body", "infravisibility", "handlessness", "singular inventory"},
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {"fire resistance", 75},
-                {"size", 2},
-                {"physical deflection", 16},
-                {"magic resistance", 20},
-                {"weight", 250}
-            },
             InitialLevel = 7,
-            GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 4F}, Name = "hell"},
+            GenerationWeight = new BranchWeight
+            {
+                Matched = new DefaultWeight {Multiplier = 4F},
+                Name = "hell"
+            },
             NextStageName = "hell hound",
             GenerationFlags = GenerationFlags.SmallGroup,
-            Noise = ActorNoiseType.Bark
+            Noise = ActorNoiseType.Bark,
+            Size = 2,
+            Weight = 250,
+            Agility = 4,
+            Constitution = 4,
+            Intelligence = 4,
+            Quickness = 4,
+            Strength = 4,
+            Willpower = 4,
+            MagicResistance = 20,
+            PhysicalDeflection = 16,
+            FireResistance = 75,
+            TorsoType = TorsoType.Quadruped,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.Claws,
+            InventorySize = 1,
+            Infravisible = true
         };
     }
 }

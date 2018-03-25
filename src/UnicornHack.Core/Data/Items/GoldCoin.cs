@@ -1,17 +1,18 @@
-using System.Collections.Generic;
 using UnicornHack.Generation;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Items
 {
-    public static partial class ItemVariantData
+    public static partial class ItemData
     {
-        public static readonly GoldVariant GoldCoin = new GoldVariant
+        public static readonly Item GoldCoin = new Item
         {
             Name = "gold coin",
             Type = ItemType.Coin,
-            Nameable = false,
+            Weight = 0,
             StackSize = 2147483647,
-            ValuedProperties = new Dictionary<string, object> {{"weight", 0}}
+            Countable = true,
+            Nameable = false
         };
     }
 }

@@ -1,50 +1,62 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant DwarfKing = new CreatureVariant
+        public static readonly Creature DwarfKing = new Creature
         {
             Name = "dwarf king",
             Species = Species.Dwarf,
             MovementDelay = 200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeAttack,
+                    Activation = ActivationType.OnPhysicalMeleeAttack,
                     Action = AbilityAction.Modifier,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 }
             },
-            SimpleProperties =
-                new HashSet<string> {"tool tunneling", "infravision", "infravisibility", "humanoidness", "maleness"},
-            ValuedProperties =
-                new Dictionary<string, object> {{"physical deflection", 10}, {"magic resistance", 20}, {"weight", 900}},
             InitialLevel = 6,
             PreviousStageName = "dwarf lord",
             GenerationFlags = GenerationFlags.NonPolymorphable | GenerationFlags.Entourage,
-            Behavior = MonsterBehavior.AlignmentAware | MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector |
-                       MonsterBehavior.WeaponCollector,
-            Noise = ActorNoiseType.Speach
+            Behavior = AIBehavior.AlignmentAware | AIBehavior.GoldCollector | AIBehavior.GemCollector |
+                       AIBehavior.WeaponCollector,
+            Noise = ActorNoiseType.Speach,
+            Sex = Sex.Male,
+            Weight = 900,
+            Agility = 4,
+            Constitution = 4,
+            Intelligence = 4,
+            Quickness = 4,
+            Strength = 4,
+            Willpower = 4,
+            MagicResistance = 20,
+            PhysicalDeflection = 10,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            LocomotionType = LocomotionType.Walking | LocomotionType.ToolTunneling,
+            Infravisible = true,
+            Infravision = true
         };
     }
 }

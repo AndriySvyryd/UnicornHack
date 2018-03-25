@@ -1,97 +1,71 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant OrangeDragon = new CreatureVariant
+        public static readonly Creature OrangeDragon = new Creature
         {
             Name = "orange dragon",
             Species = Species.Dragon,
             SpeciesClass = SpeciesClass.Reptile,
             MovementDelay = 133,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Breath,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Sedate {Duration = 14}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "flight",
-                "flight control",
-                "invisibility detection",
-                "infravision",
-                "animal body",
-                "handlessness",
-                "oviparity",
-                "singular inventory"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "danger awareness",
-                    3
-                },
-                {
-                    "thick hide",
-                    3
-                },
-                {
-                    "size",
-                    32
-                },
-                {
-                    "physical deflection",
-                    21
-                },
-                {
-                    "magic resistance",
-                    20
-                },
-                {
-                    "weight",
-                    4500
                 }
             },
             InitialLevel = 15,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
             PreviousStageName = "baby orange dragon",
-            Behavior = MonsterBehavior.Mountable | MonsterBehavior.GoldCollector | MonsterBehavior.GemCollector,
-            Noise = ActorNoiseType.Roar
+            Behavior = AIBehavior.Mountable | AIBehavior.GoldCollector | AIBehavior.GemCollector,
+            Noise = ActorNoiseType.Roar,
+            Size = 32,
+            Weight = 4500,
+            Agility = 8,
+            Constitution = 8,
+            Intelligence = 8,
+            Quickness = 8,
+            Strength = 8,
+            Willpower = 13,
+            MagicResistance = 20,
+            PhysicalDeflection = 21,
+            TorsoType = TorsoType.Quadruped,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.Claws,
+            LocomotionType = LocomotionType.Flying,
+            InventorySize = 1,
+            Infravision = true,
+            InvisibilityDetection = true
         };
     }
 }

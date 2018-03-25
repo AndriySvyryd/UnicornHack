@@ -1,52 +1,53 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant LargeKobold = new CreatureVariant
+        public static readonly Creature LargeKobold = new Creature
         {
             Name = "large kobold",
             Species = Species.Kobold,
             MovementDelay = 200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeAttack,
+                    Activation = ActivationType.OnPhysicalMeleeAttack,
                     Action = AbilityAction.Modifier,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
-                },
-                new AbilityDefinition
-                {
-                    Activation = AbilityActivation.OnConsumption,
-                    Effects = new HashSet<Effect> {new Poison {Damage = 60}}
                 }
-            },
-            SimpleProperties = new HashSet<string> {"infravision", "infravisibility", "humanoidness"},
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {"poison resistance", 75},
-                {"size", 2},
-                {"physical deflection", 10},
-                {"weight", 450}
             },
             InitialLevel = 2,
             GenerationWeight = new DefaultWeight {Multiplier = 6F},
             PreviousStageName = "kobold",
             NextStageName = "kobold lord",
-            Behavior = MonsterBehavior.WeaponCollector,
-            Noise = ActorNoiseType.Grunt
+            Behavior = AIBehavior.WeaponCollector,
+            Noise = ActorNoiseType.Grunt,
+            Size = 2,
+            Weight = 450,
+            Agility = 2,
+            Constitution = 2,
+            Intelligence = 2,
+            Quickness = 2,
+            Strength = 2,
+            Willpower = 2,
+            PhysicalDeflection = 10,
+            TorsoType = TorsoType.Humanoid,
+            UpperExtremeties = ExtremityType.GraspingFingers,
+            LowerExtremeties = ExtremityType.Fingers,
+            Infravisible = true,
+            Infravision = true
         };
     }
 }

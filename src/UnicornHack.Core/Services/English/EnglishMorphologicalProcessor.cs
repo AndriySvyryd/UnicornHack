@@ -302,13 +302,13 @@ namespace UnicornHack.Services.English
             _verbSFormMachine.AddRule(suffix: "", replacement: "s", charactersToReplace: 0);
         }
 
-        public virtual string ProcessVerbSimplePresent(string verbPhrase, EnglishPerson person) => ProcessVerb(
+        public string ProcessVerbSimplePresent(string verbPhrase, EnglishPerson person) => ProcessVerb(
             verbPhrase,
             person == EnglishPerson.Third
                 ? EnglishVerbForm.ThirdPersonSingularPresent
                 : EnglishVerbForm.BareInfinitive);
 
-        public virtual string ProcessVerb(string verbPhrase, EnglishVerbForm form)
+        public string ProcessVerb(string verbPhrase, EnglishVerbForm form)
         {
             switch (form)
             {
@@ -322,7 +322,7 @@ namespace UnicornHack.Services.English
             }
         }
 
-        public virtual string ProcessNoun(string nounPhrase, EnglishNounForm form)
+        public string ProcessNoun(string nounPhrase, EnglishNounForm form)
         {
             switch (form)
             {
@@ -342,7 +342,7 @@ namespace UnicornHack.Services.English
         }
 
         public bool IsPlural(string noun)
-            => noun.Substring(noun.Length - 2, 2) == "es";
+            => noun.Length > 2 && noun.Substring(noun.Length - 2, 2) == "es";
 
         public string GetPronoun(EnglishPronounForm form, EnglishNumber number, EnglishPerson person,
             EnglishGender? gender)

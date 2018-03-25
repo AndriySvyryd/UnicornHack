@@ -32,7 +32,7 @@ export class MapFeatureStyles {
     [index: number]: ITileStyle;
 
     constructor() {
-        this[MapFeature.Default] = { char: '█', style: { color: '#333' } };
+        this[MapFeature.Default] = { char: '█', style: { color: '#666' } };
         this[MapFeature.StoneFloor] = { char: '·', style: { color: 'grey' } };
         this[MapFeature.RockFloor] = { char: '◦', style: { color: 'dimgrey' } };
         this[MapFeature.StoneArchway] = { char: '∩', style: { color: 'grey' } };

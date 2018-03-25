@@ -1,112 +1,79 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
-using UnicornHack.Effects;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
 {
     public static partial class CreatureData
     {
-        public static readonly CreatureVariant GelatinousCube = new CreatureVariant
+        public static readonly Creature GelatinousCube = new Creature
         {
             Name = "gelatinous cube",
             Species = Species.Blob,
             MovementDelay = 200,
-            Abilities = new HashSet<AbilityDefinition>
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Paralyze {Duration = 4}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnTarget,
+                    Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Timeout = 7,
                     Effects = new HashSet<Effect> {new Engulf {Duration = 7}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnDigestion,
+                    Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
                     Timeout = 1,
-                    Effects = new HashSet<Effect> {new Poison {Damage = 10}}
+                    Effects = new HashSet<Effect> {new Blight {Damage = 10}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnDigestion,
+                    Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
                     Timeout = 1,
                     Effects = new HashSet<Effect> {new Corrode {Damage = 10}}
                 },
-                new AbilityDefinition
+                new Ability
                 {
-                    Activation = AbilityActivation.OnMeleeHit,
+                    Activation = ActivationType.OnPhysicalMeleeHit,
                     Effects = new HashSet<Effect> {new Paralyze {Duration = 4}}
-                }
-            },
-            SimpleProperties = new HashSet<string>
-            {
-                "sleep resistance",
-                "decay resistance",
-                "breathlessness",
-                "non animal",
-                "eyelessness",
-                "limblessness",
-                "headlessness",
-                "mindlessness",
-                "asexuality",
-                "stoning resistance"
-            },
-            ValuedProperties = new Dictionary<string, object>
-            {
-                {
-                    "fire resistance",
-                    75
-                },
-                {
-                    "cold resistance",
-                    75
-                },
-                {
-                    "electricity resistance",
-                    75
-                },
-                {
-                    "poison resistance",
-                    75
-                },
-                {
-                    "venom resistance",
-                    75
-                },
-                {
-                    "acid resistance",
-                    75
-                },
-                {
-                    "stealthiness",
-                    3
-                },
-                {
-                    "size",
-                    8
-                },
-                {
-                    "physical deflection",
-                    12
-                },
-                {
-                    "weight",
-                    600
                 }
             },
             InitialLevel = 6,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},
-            Behavior = MonsterBehavior.Wandering | MonsterBehavior.WeaponCollector
+            Behavior = AIBehavior.Wandering | AIBehavior.WeaponCollector,
+            Sex = Sex.None,
+            Size = 8,
+            Weight = 600,
+            Agility = 4,
+            Constitution = 4,
+            Intelligence = 4,
+            Quickness = 4,
+            Strength = 4,
+            Willpower = 9,
+            PhysicalDeflection = 12,
+            AcidResistance = 75,
+            ColdResistance = 75,
+            ElectricityResistance = 75,
+            FireResistance = 75,
+            StoningImmune = true,
+            HeadType = HeadType.None,
+            UpperExtremeties = ExtremityType.None,
+            LowerExtremeties = ExtremityType.None,
+            RespirationType = RespirationType.None,
+            EyeCount = 0,
+            NoiseLevel = 0,
+            Mindless = true,
+            NonAnimal = true
         };
     }
 }

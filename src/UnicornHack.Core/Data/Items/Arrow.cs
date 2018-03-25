@@ -1,22 +1,26 @@
 using System.Collections.Generic;
-using UnicornHack.Abilities;
 using UnicornHack.Generation;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Items
 {
-    public static partial class ItemVariantData
+    public static partial class ItemData
     {
-        public static readonly ItemVariant Arrow = new ItemVariant
+        public static readonly Item Arrow = new Item
         {
             Name = "arrow",
             Type = ItemType.WeaponProjectile,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             Material = Material.Steel,
-            Abilities = new HashSet<AbilityDefinition>
+            Weight = 1,
+            Abilities = new HashSet<Ability>
             {
-                new AbilityDefinition {Activation = AbilityActivation.OnRangedAttack, Action = AbilityAction.Hit}
-            },
-            ValuedProperties = new Dictionary<string, object> {{"weight", 1}}
+                new Ability
+                {
+                    Activation = ActivationType.OnPhysicalRangedAttack,
+                    Action = AbilityAction.Hit
+                }
+            }
         };
     }
 }
