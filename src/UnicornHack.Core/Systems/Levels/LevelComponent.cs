@@ -115,7 +115,8 @@ namespace UnicornHack.Systems.Levels
 
         public void EnsureInitialized()
         {
-            if (PathFinder == null)
+            if (PointToIndex == null
+                && Width != 0)
             {
                 (PointToIndex, IndexToPoint) = Rectangle.GetPointIndex(Game.Services.SharedCache, Width, Height);
                 PathFinder = new PathFinder(PointToIndex, IndexToPoint);

@@ -31,6 +31,8 @@ namespace UnicornHack.Utils.MessagingECS
 
         public virtual void Initialize(int id, int componentCount, IEntityManager manager)
         {
+            Debug.Assert(Manager == null);
+
             Id = id;
             Manager = manager;
             if (_components == null
@@ -84,7 +86,7 @@ namespace UnicornHack.Utils.MessagingECS
 
         protected virtual void InitializeComponent(Component component)
         {
-            Debug.Assert(component.Entity == null,
+            Debug.Assert(component.Entity == null || component.Entity == this,
                 $"Component {component.GetType().Name} is already owned by entity {component.Entity?.Id}");
 
             component.Entity = this;

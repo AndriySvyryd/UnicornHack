@@ -206,6 +206,7 @@ namespace UnicornHack.Data
             {
                 eb.Ignore(e => e.Manager);
                 eb.Property("_referenceCount");
+                eb.Property("_tracked");
                 eb.HasKey(e => new
                 {
                     e.GameId,
@@ -278,17 +279,25 @@ namespace UnicornHack.Data
                 });
             });
 
-            modelBuilder.Entity<AbilityComponent>(eb => eb.HasKey(c => new
+            modelBuilder.Entity<AbilityComponent>(eb =>
             {
-                c.GameId,
-                c.EntityId
-            }));
+                eb.Property("_tracked");
+                eb.HasKey(c => new
+                {
+                    c.GameId,
+                    c.EntityId
+                });
+            });
 
-            modelBuilder.Entity<AIComponent>(eb => eb.HasKey(c => new
+            modelBuilder.Entity<AIComponent>(eb =>
             {
-                c.GameId,
-                c.EntityId
-            }));
+                eb.Property("_tracked");
+                eb.HasKey(c => new
+                {
+                    c.GameId,
+                    c.EntityId
+                });
+            });
 
             modelBuilder.Entity<PlayerComponent>(pb =>
             {
@@ -300,39 +309,59 @@ namespace UnicornHack.Data
                 });
             });
 
-            modelBuilder.Entity<BeingComponent>(eb => eb.HasKey(c => new
+            modelBuilder.Entity<BeingComponent>(eb =>
             {
-                c.GameId,
-                c.EntityId
-            }));
 
-            modelBuilder.Entity<PhysicalComponent>(eb => eb.HasKey(c => new
-            {
-                c.GameId,
-                c.EntityId
-            }));
+                eb.Property("_tracked");
+                eb.HasKey(c => new
+                {
+                    c.GameId,
+                    c.EntityId
+                });
+            });
 
-            modelBuilder.Entity<RaceComponent>(eb => eb.HasKey(c => new
+            modelBuilder.Entity<PhysicalComponent>(eb =>
             {
-                c.GameId,
-                c.EntityId
-            }));
+                eb.Property("_tracked");
+                eb.HasKey(c => new
+                {
+                    c.GameId,
+                    c.EntityId
+                });
+            });
 
-            modelBuilder.Entity<EffectComponent>(eb => eb.HasKey(c => new
-            {
-                c.GameId,
-                c.EntityId
-            }));
+            modelBuilder.Entity<RaceComponent>(eb => {
+                eb.Property("_tracked");
+                eb.HasKey(c => new
+                {
+                    c.GameId,
+                    c.EntityId
+                });
+            });
 
-            modelBuilder.Entity<ItemComponent>(eb => eb.HasKey(c => new
+            modelBuilder.Entity<EffectComponent>(eb =>
             {
-                c.GameId,
-                c.EntityId
-            }));
+                eb.Property("_tracked");
+                eb.HasKey(c => new
+                {
+                    c.GameId,
+                    c.EntityId
+                });
+            });
+
+            modelBuilder.Entity<ItemComponent>(eb => {
+                eb.Property("_tracked");
+                eb.HasKey(c => new
+                {
+                    c.GameId,
+                    c.EntityId
+                });
+            });
 
             modelBuilder.Entity<KnowledgeComponent>(eb =>
             {
                 eb.Ignore(c => c.KnownEntity);
+                eb.Property("_tracked");
                 eb.HasKey(c => new
                 {
                     c.GameId,
@@ -343,6 +372,7 @@ namespace UnicornHack.Data
             modelBuilder.Entity<ConnectionComponent>(eb =>
             {
                 eb.Ignore(c => c.TargetLevelCell);
+                eb.Property("_tracked");
                 eb.HasKey(c => new
                 {
                     c.GameId,
@@ -362,6 +392,7 @@ namespace UnicornHack.Data
                 eb.Ignore(l => l.VisibleNeighboursChanged);
                 eb.Ignore(l => l.PathFinder);
                 eb.Ignore(l => l.VisibilityCalculator);
+                eb.Property("_tracked");
 
                 eb.HasKey(l => new
                 {
@@ -375,6 +406,7 @@ namespace UnicornHack.Data
             {
                 eb.Ignore(c => c.LevelCell);
                 eb.Ignore(c => c.LevelEntity);
+                eb.Property("_tracked");
                 eb.HasKey(c => new
                 {
                     c.GameId,
@@ -386,6 +418,7 @@ namespace UnicornHack.Data
             {
                 eb.Ignore(c => c.VisibleTerrain);
                 eb.Ignore(c => c.VisibleTerrainIsCurrent);
+                eb.Property("_tracked");
                 eb.HasKey(c => new
                 {
                     c.GameId,
@@ -412,13 +445,25 @@ namespace UnicornHack.Data
                                 positionComponent.GameId,
                                 positionComponent.EntityId
                             },
+                            (_, positionComponent) => positionComponent.LevelId)
+                        .Join(context.PositionComponents,
+                            levelId => new
+                            {
+                                GameId = id,
+                                LevelId = levelId
+                            },
+                            positionComponent => new
+                            {
+                                positionComponent.GameId,
+                                positionComponent.LevelId
+                            },
                             (_, positionComponent) => positionComponent)
                         .Join(context.ConnectionComponents,
                             positionComponent
                                 => new
                                 {
                                     positionComponent.GameId,
-                                    EntityId = positionComponent.LevelId
+                                    positionComponent.EntityId
                                 },
                             connectionComponent => new
                             {
@@ -432,7 +477,7 @@ namespace UnicornHack.Data
 
             LoadLevels(_getLevels(this, gameId).ToList());
 
-            foreach (var player in PlayerComponents.Local)
+            foreach (var player in PlayerComponents.Local.ToList())
             {
                 LogEntries
                     .Where(e => e.GameId == player.GameId && e.PlayerId == player.EntityId)
@@ -447,15 +492,16 @@ namespace UnicornHack.Data
 
         public void LoadLevels(IReadOnlyList<int> levelIds)
         {
+            Manager.IsLoading = true;
             // TODO: Perf: Compile queries
-            var levelEntities = AggregateEntities.Where(levelEntity
+            var levelEntities = Entities.Where(levelEntity
                 => levelIds.Contains(levelEntity.Id) || levelIds.Contains(levelEntity.Position.LevelId));
 
             var containedItems = levelEntities
                 .Join(ItemComponents,
                     levelEntity => levelEntity.Id, itemComponent => itemComponent.ContainerId,
                     (_, itemComponent) => itemComponent)
-                .Join(AggregateEntities,
+                .Join(Entities,
                     itemComponent => itemComponent.EntityId, containedEntity => containedEntity.Id,
                     (_, containedEntity) => containedEntity);
 
@@ -463,54 +509,166 @@ namespace UnicornHack.Data
                 .Join(ItemComponents,
                     levelEntity => levelEntity.Id, itemComponent => itemComponent.ContainerId,
                     (_, itemComponent) => itemComponent)
-                .Join(AggregateEntities,
+                .Join(Entities,
                     itemComponent => itemComponent.EntityId, containedEntity => containedEntity.Id,
                     (_, containedEntity) => containedEntity);
 
             // TODO: Query additional nested items
 
-            var affectableEntities = levelEntities.Concat(containedItems).Concat(nestedContainedItems);
+            var primaryNaturalWeapons = levelEntities
+                .Join(BeingComponents,
+                    levelEntity => levelEntity.Id, beingComponent => beingComponent.EntityId,
+                    (_, beingComponent) => beingComponent)
+                .Join(Entities,
+                    beingComponent => beingComponent.PrimaryNaturalWeaponId, weaponEntity => weaponEntity.Id,
+                    (_, weaponEntity) => weaponEntity);
+
+            var secondaryNaturalWeapons = levelEntities
+                .Join(BeingComponents,
+                    levelEntity => levelEntity.Id, beingComponent => beingComponent.EntityId,
+                    (_, beingComponent) => beingComponent)
+                .Join(Entities,
+                    beingComponent => beingComponent.SecondaryNaturalWeaponId, weaponEntity => weaponEntity.Id,
+                    (_, weaponEntity) => weaponEntity);
+
+            var affectableEntities = levelEntities
+                .Concat(containedItems)
+                .Concat(nestedContainedItems)
+                .Concat(primaryNaturalWeapons)
+                .Concat(secondaryNaturalWeapons);
 
             var appliedEffects = affectableEntities
-                .Join(EffectComponents, affectableEntity => affectableEntity.Id,
-                    effectComponent => effectComponent.AffectedEntityId,
+                .Join(EffectComponents,
+                    affectableEntity => affectableEntity.Id, effectComponent => effectComponent.AffectedEntityId,
                     (_, effectComponent) => effectComponent);
 
-            var abilityEntities = affectableEntities
-                .Join(AbilityComponents, affectableEntity => affectableEntity.Id,
-                    abilityComponent => abilityComponent.OwnerId,
-                    (_, abilityComponent) => abilityComponent)
-                .Join(AggregateEntities, abilityComponent => abilityComponent.EntityId,
-                    abilityEntity => abilityEntity.Id,
-                    (_, abilityEntity) => abilityEntity);
+            var abilities = affectableEntities
+                .Join(AbilityComponents,
+                    affectableEntity => affectableEntity.Id, abilityComponent => abilityComponent.OwnerId,
+                    (_, abilityComponent) => abilityComponent);
 
-            var abilityDefinitionEntities = appliedEffects
-                .Join(AbilityComponents, abilityEffect => abilityEffect.SourceAbilityId,
-                    abilityComponent => abilityComponent.EntityId,
-                    (_, abilityComponent) => abilityComponent)
+            var effects = abilities
+                .Join(EffectComponents,
+                    abilityComponent => abilityComponent.EntityId, effectComponent => effectComponent.ContainingAbilityId,
+                    (_, effectComponent) => effectComponent);
+
+            var nestedAbilityEffects = effects
+                .Join(EffectComponents,
+                    effectComponent => effectComponent.EntityId, nestedEffectComponent => nestedEffectComponent.ContainingAbilityId,
+                    (_, nestedEffectComponent) => nestedEffectComponent);
+
+            var effectItemAppliedEffects = effects
+                .Join(EffectComponents,
+                    effectComponent => effectComponent.EntityId, appliedEffectComponent => appliedEffectComponent.AffectedEntityId,
+                    (_, effectComponent) => effectComponent);
+
+            var effectItemAbilities = effects
+                .Join(AbilityComponents,
+                    effectComponent => effectComponent.EntityId, abilityComponent => abilityComponent.OwnerId,
+                    (_, abilityComponent) => abilityComponent);
+
+            var effectItemAbilityEffects = effectItemAbilities
+                .Join(EffectComponents,
+                    abilityComponent => abilityComponent.EntityId, effectComponent => effectComponent.ContainingAbilityId,
+                    (_, effectComponent) => effectComponent);
+
+            levelEntities
+                .Include(e => e.Level).ThenInclude(l => l.Branch)
+                .Include(e => e.Position)
+                .Include(e => e.Connection)
+                .Include(e => e.Being)
+                .Include(e => e.Player)
+                .Include(e => e.AI)
+                .Include(e => e.Sensor)
+                .Include(e => e.Physical)
+                .Include(e => e.Item)
+                .Include(e => e.Knowledge)
+                .Load();
+
+            containedItems
+                .Include(e => e.Physical)
+                .Include(e => e.Item)
+                .Load();
+
+            nestedContainedItems
+                .Include(e => e.Physical)
+                .Include(e => e.Item)
+                .Load();
+
+            primaryNaturalWeapons
+                .Include(e => e.Physical)
+                .Include(e => e.Item)
+                .Load();
+
+            secondaryNaturalWeapons
+                .Include(e => e.Physical)
+                .Include(e => e.Item)
+                .Load();
+
+            abilities
                 .Join(Entities, abilityComponent => abilityComponent.EntityId,
                     abilityEntity => abilityEntity.Id,
-                    (_, abilityEntity) => abilityEntity);
+                    (_, abilityEntity) => abilityEntity)
+                .Include(e => e.Ability)
+                .Load();
 
-            var effects = abilityEntities.Concat(abilityDefinitionEntities)
-                .Join(EffectComponents,
-                    abilityEntity => abilityEntity.Id, effectComponent => effectComponent.ContainingAbilityId,
-                    (_, effectComponent) => effectComponent)
-                .Where(effectComponent => effectComponent.AffectedEntityId == null);
-
-            // TODO: Query nested ability definitions
-
-            var allEntities = appliedEffects.Concat(effects)
-                .Join(AggregateEntities,
+            appliedEffects
+                .Join(Entities,
                     effectComponent => effectComponent.EntityId, effectEntity => effectEntity.Id,
                     (_, effectEntity) => effectEntity)
-                .Concat(affectableEntities)
-                .Concat(abilityEntities)
-                .Concat(abilityDefinitionEntities);
+                .Include(e => e.Effect)
+                .Include(e => e.Race)
+                .Include(e => e.Ability)
+                .Load();
 
-            allEntities.Load();
+            effects
+                .Join(Entities,
+                    effectComponent => effectComponent.EntityId, effectEntity => effectEntity.Id,
+                    (_, effectEntity) => effectEntity)
+                .Include(e => e.Effect)
+                .Include(e => e.Physical)
+                .Include(e => e.Item)
+                .Include(e => e.Ability)
+                .Load();
+
+            nestedAbilityEffects
+                .Join(Entities,
+                    effectComponent => effectComponent.EntityId, effectEntity => effectEntity.Id,
+                    (_, effectEntity) => effectEntity)
+                .Include(e => e.Effect)
+                .Include(e => e.Ability)
+                .Load();
+
+            effectItemAppliedEffects
+                .Join(Entities,
+                    effectComponent => effectComponent.EntityId, effectEntity => effectEntity.Id,
+                    (_, effectEntity) => effectEntity)
+                .Include(e => e.Effect)
+                .Include(e => e.Ability)
+                .Load();
+
+            effectItemAbilities
+                .Join(Entities,
+                    abilityComponent => abilityComponent.EntityId, abilityEntity => abilityEntity.Id,
+                    (_, effectEntity) => effectEntity)
+                .Include(e => e.Ability)
+                .Load();
+
+            effectItemAbilityEffects
+                .Join(Entities,
+                    effectComponent => effectComponent.EntityId, effectEntity => effectEntity.Id,
+                    (_, effectEntity) => effectEntity)
+                .Include(e => e.Effect)
+                .Include(e => e.Ability)
+                .Load();
+
+            Manager.IsLoading = false;
+
+            foreach (var level in LevelComponents.Local)
+            {
+                level.EnsureInitialized();
+            }
         }
-
 
         void IRepository.Add<T>(T entity)
             => Add(entity);
@@ -614,6 +772,8 @@ namespace UnicornHack.Data
             {
                 SensorComponents.Remove(sensorComponent);
             }
+
+            SaveChanges();
 
             Games.Remove(game);
 

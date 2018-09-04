@@ -296,23 +296,10 @@ namespace UnicornHack.Hubs
             else
             {
                 Initialize(loadedGame);
-                _dbContext.Entry(loadedGame).State = EntityState.Unchanged;
-                loadedGame.Manager.IsLoading = true;
+                _dbContext.Attach(loadedGame);
 
                 loadedGame = _dbContext.LoadGame(loadedGame.Id);
 
-                foreach (var gameEntity in _dbContext.Entities.Local)
-                {
-                    loadedGame.Manager.AddEntity(gameEntity);
-                }
-
-                foreach (var level in _dbContext.LevelComponents.Local)
-                {
-                    // TODO: Remove?
-                    level.EnsureInitialized();
-                }
-
-                loadedGame.Manager.IsLoading = false;
                 _gameServices.SharedCache.Set(loadedGame, loadedGame,
                     new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
             }
@@ -347,9 +334,17 @@ namespace UnicornHack.Hubs
 
         private void OnTracked(object sender, EntityTrackedEventArgs args)
         {
-            if (args.Entry.State == EntityState.Added && args.Entry.Entity is ITrackable trackable)
+            var entry = args.Entry;
+            if (entry.State == EntityState.Added
+                && entry.Entity is ITrackable trackable)
             {
                 trackable.StartTracking(sender);
+            }
+
+            if (args.FromQuery
+                && entry.Entity is GameEntity entity)
+            {
+                ((GameDbContext)entry.Context).Manager.AddEntity(entity);
             }
         }
 

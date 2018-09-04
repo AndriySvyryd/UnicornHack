@@ -83,14 +83,14 @@ namespace UnicornHack.Utils.MessagingECS
             return entity;
         }
 
+        /// <summary>
+        ///     <paramref name="entity"/> should be empty
+        /// </summary>
+        /// <param name="entity"></param>
         public void AddEntity(TEntity entity)
         {
-            var id = entity.Id;
-            entity.Initialize(id, ComponentCount, this);
-            _entities[id] = entity;
-
-            entity.ForEachComponent(this, (manager, componentId, component) =>
-                manager.HandleComponentAdded(componentId, component));
+            _entities[entity.Id] = entity;
+            entity.Initialize(entity.Id, ComponentCount, this);
         }
 
         /// <summary>

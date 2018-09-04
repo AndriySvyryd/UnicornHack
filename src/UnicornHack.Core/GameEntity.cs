@@ -282,7 +282,7 @@ namespace UnicornHack
         public new OwnerTransientReference<GameEntity, TOwner> AddReference<TOwner>(TOwner owner)
             => new OwnerTransientReference<GameEntity, TOwner>(this, owner);
 
-        public class RelationshipsView
+        private class RelationshipsView
         {
             public RelationshipsView(GameEntity entity) => Entity = entity;
             private GameEntity Entity { get; }
