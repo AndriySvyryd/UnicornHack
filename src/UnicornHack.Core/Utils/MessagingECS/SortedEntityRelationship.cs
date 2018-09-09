@@ -67,7 +67,7 @@ namespace UnicornHack.Utils.MessagingECS
                 ? entities
                 : EmptyDictionary;
 
-        public override int Count => Index.Count;
+        public override int Count => Index.Values.Sum(v => v.Count);
 
         private SortedDictionary<TKey, TEntity> GetOrAddEntities(int key)
         {
@@ -127,20 +127,38 @@ namespace UnicornHack.Utils.MessagingECS
             return false;
         }
 
-        protected override bool TryRemoveEntity(int key, TEntity entity, int changedComponentId,
-            Component changedComponent)
+        protected override bool TryRemoveEntity(
+            int key, TEntity entity, int changedComponentId, Component changedComponent)
         {
-            if (_sortValueGetter.TryGetKey(entity, Component.NullId, null, null, default, out var sortKey)
-                && GetOrAddEntities(key).Remove(sortKey))
+            if (Index.TryGetValue(key, out var referencingEntities))
             {
-                OnEntityRemoved(entity, changedComponentId, changedComponent,
-                    FindReferenced(key, entity, fallback: true));
-                return true;
+                if (!_sortValueGetter.TryGetKey(entity, Component.NullId, null, null, default, out var sortKey))
+                {
+                    sortKey = referencingEntities.Where(p => p.Value == entity).Select(p => p.Key).FirstOrDefault();
+                }
+
+                if (sortKey != default
+                    && referencingEntities.Remove(sortKey))
+                {
+                    if(referencingEntities.Count == 0)
+                    {
+                        Index.Remove(key);
+                    }
+
+                    OnEntityRemoved(entity, changedComponentId, changedComponent,
+                        FindReferenced(key, entity, fallback: true));
+                    return true;
+                }
             }
 
-            if (OrphanedEntities != null)
+            if (OrphanedEntities != null
+                && OrphanedEntities.TryGetValue(key, out var orphanedEntities))
             {
-                GetOrAddOrphanedEntities(key).Remove(entity);
+                orphanedEntities.Remove(entity);
+                if (orphanedEntities.Count == 0)
+                {
+                    OrphanedEntities.Remove(key);
+                }
             }
 
             return false;
@@ -213,12 +231,6 @@ namespace UnicornHack.Utils.MessagingECS
                 {
                     _relationship.HandleReferencedEntityRemoved(
                         referencingEntity, entity, removedComponentId, removedComponent);
-                }
-
-                if (_relationship.OrphanedEntities != null
-                    && _relationship.OrphanedEntities.ContainsKey(entity.Id))
-                {
-                    _relationship.OrphanedEntities.Remove(entity.Id);
                 }
             }
 

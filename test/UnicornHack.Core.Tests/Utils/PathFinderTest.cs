@@ -42,30 +42,7 @@ namespace UnicornHack.Utils
 ...**",
             Direction.North);
 
-        [Fact]
-        public void Benchmark()
-        {
-            var (level, target) = TestPath(@"
-*##..............#...#.#.*.#..#.#.#.#.#.#...
-.*############.#.#.#.#.#*#*#.#.#.#.#.#.#....
-##*..........#.#.#.#.#.#*#*##.############..
-.*############.#.#.#.#.#*#*#.##.#...#...#...
-*##............#.#.#.#.*.#.*....#.#.#.#.#*..
-*...############.#.#.#*#.#.#*##...#.#.#.#*..
-*####..............#.#*#.#.##*##..#...#.#*..
-*.....##############.#*#.#.#.#*########.*...
-*######..............#*#...#..#*#*#*#*#*....
-.*********************.#...#...#*#*#*#*#####",
-                Direction.North);
-
-            var travelSystem = level.Entity.Manager.TravelSystem;
-            for (var i = 0; i < 10000; i++)
-            {
-                travelSystem.GetShortestPath(level, new Point(0, 0), target, Direction.North);
-            }
-        }
-
-        private (LevelComponent, Point) TestPath(string expectedPathMap, Direction initialDirection)
+        public static (LevelComponent, Point) TestPath(string expectedPathMap, Direction initialDirection)
         {
             var seed = (uint)Environment.TickCount;
             var map = expectedPathMap.Replace('*', '.');
@@ -109,7 +86,7 @@ Seed: " + seed);
             return (level, expectedPath.Last());
         }
 
-        private List<Point> ExtractPath(LevelComponent level, byte[] expectedPathArray, byte pathValue)
+        private static List<Point> ExtractPath(LevelComponent level, byte[] expectedPathArray, byte pathValue)
         {
             var expectedPath = new List<Point>();
             var currentPathPoint = new Point(0, 0);

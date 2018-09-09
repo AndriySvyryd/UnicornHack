@@ -1,6 +1,6 @@
 ﻿using BenchmarkDotNet.Attributes;
 using UnicornHack.Systems.Actors;
-using UnicornHack.Systems.Levels;
+using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Senses;
 using UnicornHack.Utils.MessagingECS;
 
@@ -25,7 +25,7 @@ namespace UnicornHack.PerformanceTests.Utils.MessagingECS
             for (var i = 0; i < EntityCount; i++)
             {
                 var entity = manager.CreateEntity().Referenced;
-                entity.AddComponent<PositionComponent>((int)EntityComponent.Position);
+                entity.AddComponent<KnowledgeComponent>((int)EntityComponent.Knowledge);
                 entity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
                 _entities[i] = entity;
             }

@@ -153,9 +153,8 @@ namespace UnicornHack.Systems.Knowledge
                     entityReference.Referenced.Knowledge = knowledgeComponent;
 
                     var knowledgePosition = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
-                    knowledgePosition.LevelId = position.LevelId;
+                    knowledgePosition.SetLevelPosition(position.LevelId, position.LevelCell);
                     knowledgePosition.Heading = position.Heading;
-                    knowledgePosition.LevelCell = position.LevelCell;
 
                     entityReference.Referenced.Position = knowledgePosition;
                 }
@@ -163,9 +162,8 @@ namespace UnicornHack.Systems.Knowledge
             else
             {
                 var knowledgePosition = knowledge.Position;
-                knowledgePosition.LevelId = position.LevelId;
+                knowledgePosition.SetLevelPosition(position.LevelId, position.LevelCell);
                 knowledgePosition.Heading = position.Heading;
-                knowledgePosition.LevelCell = position.LevelCell;
             }
         }
 

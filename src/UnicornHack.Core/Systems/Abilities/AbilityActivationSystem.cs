@@ -456,6 +456,8 @@ namespace UnicornHack.Systems.Abilities
                 activation.AbilityEntity = message.Entity;
 
                 Process(activation, manager);
+
+                manager.Queue.ReturnMessage(activation);
             }
 
             return MessageProcessingResult.ContinueProcessing;
@@ -466,7 +468,8 @@ namespace UnicornHack.Systems.Abilities
         public MessageProcessingResult Process(EntityRemovedMessage<GameEntity> message, GameManager manager)
         {
             var ability = message.Entity.Ability;
-            if ((ability.Activation & ActivationType.Always) != 0)
+            if (ability != null
+                && (ability.Activation & ActivationType.Always) != 0)
             {
                 Debug.Assert(ability.IsActive);
 

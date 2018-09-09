@@ -19,7 +19,7 @@ namespace UnicornHack
                 nameof(BeingToPrimaryNaturalWeaponRelationship),
                 Beings,
                 EntityItems,
-                new SimpleNonNullableKeyValueGetter<GameEntity, int>(
+                new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((BeingComponent)component).PrimaryNaturalWeaponId,
                     (int)EntityComponent.Being),
                 (effectEntity, _, __, ___) => effectEntity.Being.PrimaryNaturalWeaponId = null,
@@ -30,7 +30,7 @@ namespace UnicornHack
                 nameof(BeingToSecondaryNaturalWeaponRelationship),
                 Beings,
                 EntityItems,
-                new SimpleNonNullableKeyValueGetter<GameEntity, int>(
+                new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((BeingComponent)component).SecondaryNaturalWeaponId,
                     (int)EntityComponent.Being),
                 (effectEntity, _, __, ___) => effectEntity.Being.SecondaryNaturalWeaponId = null,

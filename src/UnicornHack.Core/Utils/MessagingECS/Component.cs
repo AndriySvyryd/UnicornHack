@@ -17,19 +17,44 @@ namespace UnicornHack.Utils.MessagingECS
         public int ComponentId { get; protected set; }
         public Entity Entity { get; set; }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void SetWithNotify<T>(
             T value,
             ref T field,
             [CallerMemberName] string propertyName = "")
         {
+            if (StartSettingWithNotify(value, ref field, propertyName, out var oldValue))
+            {
+                FinishSetttingWithNotify(oldValue, value, propertyName);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected bool StartSettingWithNotify<T>(
+            T value,
+            ref T field,
+            string propertyName,
+            out T oldValue)
+        {
             if (Equals(field, value))
             {
-                return;
+                oldValue = default;
+                return false;
             }
 
             PropertyChanging?.Invoke(this, new PropertyChangingEventArgs(propertyName));
-            var oldValue = field;
+            oldValue = field;
             field = value;
+
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected void FinishSetttingWithNotify<T>(
+            T oldValue,
+            T value,
+            string propertyName)
+        {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             Entity?.HandlePropertyValueChanged(propertyName, oldValue, value, ComponentId, this);
         }
@@ -59,6 +84,7 @@ namespace UnicornHack.Utils.MessagingECS
                 Debug.Assert(PropertyChanged == null);
                 Debug.Assert(PropertyChanging == null);
 
+                Entity = null;
                 Clean();
             }
             else

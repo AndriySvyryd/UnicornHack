@@ -24,7 +24,7 @@ namespace UnicornHack
                 nameof(AppliedEffectsToAffectableEntityRelationship),
                 Effects,
                 AffectableEntities,
-                new SimpleNonNullableKeyValueGetter<GameEntity, int>(
+                new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((EffectComponent)component).AffectedEntityId,
                     (int)EntityComponent.Effect),
                 (effectEntity, _, __, ___) => effectEntity.RemoveComponent((int)EntityComponent.Effect),
@@ -34,7 +34,7 @@ namespace UnicornHack
                 nameof(EffectsToContainingAbilityRelationship),
                 Effects,
                 Abilities,
-                new SimpleNonNullableKeyValueGetter<GameEntity, int>(
+                new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((EffectComponent)component).ContainingAbilityId,
                     (int)EntityComponent.Effect),
                 (effectEntity, _, __, ___) => effectEntity.RemoveComponent((int)EntityComponent.Effect),
@@ -44,7 +44,7 @@ namespace UnicornHack
                 nameof(AppliedEffectsToSourceAbilityRelationship),
                 Effects,
                 Abilities,
-                new SimpleNonNullableKeyValueGetter<GameEntity, int>(
+                new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((EffectComponent)component).SourceAbilityId,
                     (int)EntityComponent.Effect),
                 (effectEntity, _, __, ___) => effectEntity.Effect.SourceAbilityId = null);

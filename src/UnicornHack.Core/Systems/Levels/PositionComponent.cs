@@ -70,8 +70,40 @@ namespace UnicornHack.Systems.Levels
             get => new Point(LevelX, LevelY);
             set
             {
-                LevelX = value.X;
-                LevelY = value.Y;
+                var levelXSet = StartSettingWithNotify(value.X, ref _levelX, nameof(LevelX), out var oldLevelX);
+                var levelYSet = StartSettingWithNotify(value.Y, ref _levelY, nameof(LevelY), out var oldLevelY);
+
+                if (levelXSet)
+                {
+                    FinishSetttingWithNotify(oldLevelX, value.X, nameof(LevelX));
+                }
+                if (levelYSet)
+                {
+                    FinishSetttingWithNotify(oldLevelY, value.Y, nameof(LevelY));
+                }
+            }
+        }
+
+        /// <summary>
+        ///     Sets <see cref="LevelId"/> and <see cref="LevelCell"/> atomically.
+        /// </summary>
+        public void SetLevelPosition(int levelId, Point levelCell)
+        {
+            var levelIdSet = StartSettingWithNotify(levelId, ref _levelId, nameof(LevelId), out var oldLevelId);
+            var levelXSet = StartSettingWithNotify(levelCell.X, ref _levelX, nameof(LevelX), out var oldLevelX);
+            var levelYSet = StartSettingWithNotify(levelCell.Y, ref _levelY, nameof(LevelY), out var oldLevelY);
+
+            if (levelIdSet)
+            {
+                FinishSetttingWithNotify(oldLevelId, levelId, nameof(LevelId));
+            }
+            if (levelXSet)
+            {
+                FinishSetttingWithNotify(oldLevelX, levelCell.X, nameof(LevelX));
+            }
+            if (levelYSet)
+            {
+                FinishSetttingWithNotify(oldLevelY, levelCell.Y, nameof(LevelY));
             }
         }
     }

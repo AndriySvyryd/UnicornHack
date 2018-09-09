@@ -19,7 +19,7 @@ namespace UnicornHack
 
             AffectableEntities = CreateGroup(nameof(AffectableEntities),
                 new EntityMatcher<GameEntity>().AnyOf(
-                    (int)EntityComponent.Being, (int)EntityComponent.Physical, (int)EntityComponent.Item));
+                    (int)EntityComponent.Being, (int)EntityComponent.Item, (int)EntityComponent.Physical, (int)EntityComponent.Sensor));
 
             Abilities = CreateGroup(nameof(Abilities),
                 new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Ability));
@@ -28,7 +28,7 @@ namespace UnicornHack
                 nameof(AbilitiesToAffectableRelationship),
                 Abilities,
                 AffectableEntities,
-                new SimpleNonNullableKeyValueGetter<GameEntity, int>(
+                new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((AbilityComponent)component).OwnerId,
                     (int)EntityComponent.Ability),
                 (effectEntity, _, __, ___) => effectEntity.RemoveComponent((int)EntityComponent.Ability),

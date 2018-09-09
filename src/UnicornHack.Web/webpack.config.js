@@ -118,8 +118,9 @@ function getClientConfig(env) {
                 ? []
                 : [
                     new UglifyJsPlugin({
-                        ie8: false,
-                        ecma: 6,
+                        uglifyOptions: {
+                            ecma: 6
+                        },
                         cache: true,
                         parallel: true,
                         sourceMap: true

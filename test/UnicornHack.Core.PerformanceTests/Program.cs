@@ -1,5 +1,6 @@
 ﻿using System;
 using BenchmarkDotNet.Running;
+using UnicornHack.PerformanceTests.Utils;
 using UnicornHack.PerformanceTests.Utils.MessagingECS;
 
 namespace UnicornHack
@@ -8,7 +9,9 @@ namespace UnicornHack
     {
         public static void Main()
         {
-            var summary = BenchmarkRunner.Run<EntityPerfTest>();
+            BenchmarkRunner.Run<EntityPerfTest>();
+            BenchmarkRunner.Run<BeveledFOVPerfTest>();
+            var summary = BenchmarkRunner.Run<PathFinderPerfTest>();
 
             Console.WriteLine();
             Console.WriteLine("See all results in " + summary.ResultsDirectoryPath);

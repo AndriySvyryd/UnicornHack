@@ -1,3 +1,4 @@
+using System;
 using UnicornHack.Generation.Map;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Levels;
@@ -220,45 +221,6 @@ A#
 #A#A#A#A#......#
  ##");
 
-        [Fact]
-        public void Benchmark()
-        {
-            const string map = @"
-     #############
-     #...#...#...#
-     #..#.....#..#
-     #.#...#...#.#
-   ####.........####
-  ##.A.....#.....A.##
- ##.###.........##..##
-##.###.#...#...#.##..##
-#.## #..#.....#..###..#
-.##  #...#.#.#...# ##..
-##   #....#.#....#  ##.
-###########A###########
-.......................
-........#.#.#.#.#.#.#..
-.......................
-........#.#.#.#.#.#.#..
-..#####................
-........#.#.#.#.#.#.#..
-.#.....#...............
-.#.....##.#.#.#.#.#.#..
-.#.....#...............
-........#.#.#.#.#.#.#..
-..#####................";
-
-            var level = TestHelper.BuildLevel(map);
-
-            for (var i = 0; i < 10000; i++)
-            {
-                GetVisibleTerrain(level, new Point(11, 10), Direction.South);
-                GetVisibleTerrain(level, new Point(11, 11), Direction.South);
-                GetVisibleTerrain(level, new Point(11, 12), Direction.South);
-                GetVisibleTerrain(level, new Point(12, 12), Direction.East);
-            }
-        }
-
         private void TestFOV(string map, string expectedFOV)
         {
             var level = TestHelper.BuildLevel(map);
@@ -298,14 +260,17 @@ Actual:
 Seed: " + level.Game.InitialSeed);
         }
 
-        private byte[] GetVisibleTerrain(LevelComponent level, Point origin, Direction heading)
+        public static byte[] GetVisibleTerrain(LevelComponent level, Point origin, Direction heading)
         {
             var visibleTerrain = new byte[level.Height * level.Width];
+            return GetVisibleTerrain(level, origin, heading, visibleTerrain);
+        }
 
-            level.VisibilityCalculator.Compute(origin, heading,
-                primaryFOVQuadrants: 8, primaryRange: 24, totalFOVQuadrants: 8, secondaryRange: 24,
-                SensorySystem.TileBlocksVisibility,
-                (level, visibleTerrain), noFalloff: true);
+        public static byte[] GetVisibleTerrain(LevelComponent level, Point origin, Direction heading, byte[] visibleTerrain)
+        {
+            level.VisibilityCalculator.Compute(
+                origin, heading, primaryFOVQuadrants: 8, primaryRange: 24, totalFOVQuadrants: 8, secondaryRange: 24,
+                SensorySystem.TileBlocksVisibility, (level, visibleTerrain), noFalloff: true);
             return visibleTerrain;
         }
     }

@@ -29,7 +29,7 @@ namespace UnicornHack
                 nameof(RacesToBeingRelationship),
                 Races,
                 Beings,
-                new SimpleNonNullableKeyValueGetter<GameEntity, int>(
+                new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((EffectComponent)component).AffectedEntityId,
                     (int)EntityComponent.Effect),
                 new KeyValueGetter<GameEntity, (byte Level, int Id)>(
@@ -45,6 +45,10 @@ namespace UnicornHack
                         else
                         {
                             changedComponent = entity.Race;
+                            if(changedComponent == null)
+                            {
+                                return ((0, 0), false);
+                            }
                         }
 
                         return ((((RaceComponent)changedComponent).Level, entity.Id), true);

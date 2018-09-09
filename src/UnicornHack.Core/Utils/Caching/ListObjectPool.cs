@@ -45,7 +45,7 @@ namespace UnicornHack.Utils.Caching
 
             var item = _factory();
             (item as IPoolable)?.SetPool(this);
-            return _factory();
+            return item;
         }
 
         public void Return(object obj) => Return((T)obj);

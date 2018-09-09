@@ -127,9 +127,7 @@ namespace UnicornHack.Systems.Items
                     item.ContainerId = null;
                     position = position ?? manager.CreateComponent<PositionComponent>(EntityComponent.Position);
 
-                    position.LevelId = message.TargetLevelEntity.Id;
-                    position.LevelX = levelX;
-                    position.LevelY = levelY;
+                    position.SetLevelPosition(message.TargetLevelEntity.Id, message.TargetCell.Value);
 
                     itemEntity.Position = position;
 

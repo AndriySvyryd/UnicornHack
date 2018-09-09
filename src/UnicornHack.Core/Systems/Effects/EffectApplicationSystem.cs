@@ -396,6 +396,11 @@ namespace UnicornHack.Systems.Effects
             }
 
             var targetEntity = manager.FindEntity(appliedEffectComponent.AffectedEntityId.Value);
+            if (targetEntity == null)
+            {
+                return MessageProcessingResult.ContinueProcessing;
+            }
+
             switch (appliedEffectComponent.EffectType)
             {
                 case EffectType.ChangeProperty:

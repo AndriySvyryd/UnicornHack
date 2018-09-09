@@ -1,9 +1,5 @@
-using System;
-using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SpaServices.Webpack;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -16,7 +12,7 @@ using UnicornHack.Services.English;
 
 namespace UnicornHack
 {
-    // TODO: Separate into UnicornHack.Storage, UnicornHack.WebApp and UnicornHack.Spa
+    // TODO: Separate into UnicornHack.Storage and UnicornHack.Web
     public class Startup
     {
         public Startup(IConfiguration configuration) => Configuration = configuration;
@@ -50,32 +46,6 @@ namespace UnicornHack
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseExceptionHandler(errorApp =>
-                {
-                    errorApp.Run(async context =>
-                    {
-                        // Override default exception page for json requests
-                        var error = context.Features.Get<IExceptionHandlerFeature>();
-                        if (error != null)
-                            //&& context.Request.Path == "/PerformAction")
-                        {
-                            context.Response.StatusCode = 200;
-                            context.Response.ContentType = "text/html";
-                            await context.Response.WriteAsync("<html><body><br>Error<br>" + Environment.NewLine);
-
-                            await context.Response.WriteAsync(
-                                ReplaceNewLines(HtmlEncoder.Default.Encode(error.Error.ToString())) +
-                                "<br>" + Environment.NewLine);
-
-                            await context.Response.WriteAsync("</body></html>" + Environment.NewLine);
-                        }
-                        else
-                        {
-                            throw new Exception();
-                        }
-                        //ExceptionDispatchInfo.Capture(error.Error).Throw();
-                    });
-                });
 
                 app.UseDatabaseErrorPage();
 
@@ -135,15 +105,6 @@ namespace UnicornHack
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
-        }
-
-        private string ReplaceNewLines(string text)
-        {
-            var newLine = HtmlEncoder.Default.Encode(Environment.NewLine);
-            return "<p>" + text
-                       .Replace(newLine + newLine, "</p><p>")
-                       .Replace(newLine, Environment.NewLine + "<br />" + Environment.NewLine)
-                       .Replace("</p><p>", "</p>" + Environment.NewLine + "<p>") + "</p>";
         }
     }
 }

@@ -53,7 +53,6 @@ namespace UnicornHack.Utils.MessagingECS
             {
                 if (fallback)
                 {
-                    // TODO: log
                     var manager = entity.Manager;
                     // TODO: If loaded entity is to be deleted load all components as well
                     referenced = (manager.FindEntity(key) ?? manager.LoadEntity(key)) as TEntity;
@@ -61,8 +60,8 @@ namespace UnicornHack.Utils.MessagingECS
                 else if (!ReferencedGroup.IsLoading)
                 {
                     throw new InvalidOperationException(
-                        $"Couldn't find entity '{key}' in '{ReferencedGroup.Name}' referenced from '{entity.Id}'"
-                        + $" in '{ReferencingGroup.Name}'");
+                        $"Couldn't find entity '{key}' in '{ReferencedGroup.Name}' referenced from entity '{entity.Id}'"
+                        + $" in '{ReferencingGroup.Name}' through '{Name}'");
                 }
             }
 
@@ -141,8 +140,12 @@ namespace UnicornHack.Utils.MessagingECS
 
             foreach (var entityIndex in _changeListeners)
             {
-                entityIndex.HandlePropertyValueChanged(propertyName, oldValue, newValue, componentId, component,
-                    entity, group);
+                // The component might have been removed by the previous change listener
+                if (entity.HasComponent(componentId))
+                {
+                    entityIndex.HandlePropertyValueChanged(
+                    propertyName, oldValue, newValue, componentId, component, entity, this);
+                }
             }
 
             if (_propertyValueChangedMessageNames != null

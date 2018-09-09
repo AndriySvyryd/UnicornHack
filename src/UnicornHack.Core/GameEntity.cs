@@ -274,7 +274,7 @@ namespace UnicornHack
             => RemoveComponent((int)componentId);
 
         public void RemoveComponent(EntityComponent componentId, GameComponent component)
-            => RemoveComponent((int)componentId, component);
+            => RemoveComponent(component);
 
         public bool HasComponent(EntityComponent componentId)
             => HasComponent((int)componentId);

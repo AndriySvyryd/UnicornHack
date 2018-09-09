@@ -2,6 +2,7 @@
 {
     public enum EffectType
     {
+        Default = 0,
         Activate,
         Move,
         AddAbility,

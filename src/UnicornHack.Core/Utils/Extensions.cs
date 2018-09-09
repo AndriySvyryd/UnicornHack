@@ -53,20 +53,20 @@ namespace UnicornHack.Utils
             return values;
         }
 
-        public static TList With<TList, T>(this TList list, T item) where TList : ICollection<T>
+        public static ICollection<T> With<T>(this ICollection<T> list, T item)
         {
             list.Add(item);
             return list;
         }
 
-        public static TList AddRange<TList, T>(this TList list, IEnumerable<T> items) where TList : ICollection<T>
+        public static ICollection<T> AddRange<T>(this ICollection<T> collection, IEnumerable<T> items)
         {
             foreach (var item in items)
             {
-                list.Add(item);
+                collection.Add(item);
             }
 
-            return list;
+            return collection;
         }
 
         public static Dictionary<TKey, TValue> AddRange<TKey, TValue>(
@@ -80,7 +80,7 @@ namespace UnicornHack.Utils
             return dictionary;
         }
 
-        public static TQueue EnqueueRange<TQueue, T>(this TQueue queue, IEnumerable<T> items) where TQueue : Queue<T>
+        public static Queue<T> EnqueueRange<T>(this Queue<T> queue, IEnumerable<T> items)
         {
             foreach (var item in items)
             {

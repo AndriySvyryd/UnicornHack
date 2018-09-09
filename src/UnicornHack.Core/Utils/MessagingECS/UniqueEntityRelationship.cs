@@ -22,7 +22,8 @@ namespace UnicornHack.Utils.MessagingECS
                 keyValueGetter,
                 handleReferencedDeleted,
                 referencedKeepAlive,
-                referencingKeepAlive) => referencedGroup.AddListener(new ReferencedGroupListener(this));
+                referencingKeepAlive)
+            => referencedGroup.AddListener(new ReferencedGroupListener(this));
 
         protected Dictionary<int, TEntity> Index { get; } = new Dictionary<int, TEntity>();
         protected Dictionary<int, TEntity> OrphanedEntities { get; private set; }
@@ -42,8 +43,12 @@ namespace UnicornHack.Utils.MessagingECS
             {
                 OrphanedEntities = new Dictionary<int, TEntity>();
             }
+            else if (OrphanedEntities.ContainsKey(key))
+            {
+                throw new InvalidOperationException(
+                    $"The key { key } already exists in the unique relationship for { Group.Name }");
+            }
 
-            Debug.Assert(!OrphanedEntities.TryGetValue(key, out _));
             OrphanedEntities[key] = entity;
 
             return false;
@@ -52,12 +57,16 @@ namespace UnicornHack.Utils.MessagingECS
         private bool AddEntity(
             int key, TEntity entity, int changedComponentId, Component changedComponent, TEntity referenced)
         {
-            Debug.Assert(!Index.TryGetValue(key, out _));
+            if (Index.ContainsKey(key))
+            {
+                throw new InvalidOperationException(
+                    $"The key { key } already exists in the unique relationship for { Group.Name }");
+            }
+
             Index[key] = entity;
             OnEntityAdded(entity, changedComponentId, changedComponent, referenced);
             return true;
         }
-
 
         protected override bool TryRemoveEntity(
             int key, TEntity entity, int changedComponentId, Component changedComponent)
@@ -104,12 +113,6 @@ namespace UnicornHack.Utils.MessagingECS
                 {
                     _relationship.HandleReferencedEntityRemoved(
                         referencingEntity, entity, removedComponentId, removedComponent);
-                }
-
-                if (_relationship.OrphanedEntities != null
-                    && _relationship.OrphanedEntities.ContainsKey(entity.Id))
-                {
-                    _relationship.OrphanedEntities.Remove(entity.Id);
                 }
             }
 

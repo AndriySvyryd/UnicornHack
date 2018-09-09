@@ -133,10 +133,14 @@ namespace UnicornHack.Utils.MessagingECS
         {
             if (Matcher.Matches(entity))
             {
-                foreach (var entityIndex in _changeListeners)
+                foreach (var changeListener in _changeListeners)
                 {
-                    entityIndex.HandlePropertyValueChanged(propertyName, oldValue, newValue, componentId, component,
-                        entity, this);
+                    // The component might have been removed by the previous change listener
+                    if (entity.HasComponent(componentId))
+                    {
+                        changeListener.HandlePropertyValueChanged(
+                            propertyName, oldValue, newValue, componentId, component, entity, this);
+                    }
                 }
 
                 if (_propertyValueChangedMessageNames != null

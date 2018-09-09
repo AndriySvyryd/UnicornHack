@@ -107,15 +107,22 @@ namespace UnicornHack.Utils.MessagingECS
                 return null;
             }
 
-            RemoveComponent(componentId, component);
+            RemoveComponent(component);
             return component;
         }
 
-        public void RemoveComponent(int componentId, Component component)
+        public void RemoveComponent(Component component)
         {
             if (component.Entity == null)
             {
                 return;
+            }
+
+            var componentId = component.ComponentId;
+            if (component.Entity != this)
+            {
+                throw new InvalidOperationException(
+                    $"The component '{componentId}' cannot be removed from entity '{Id}' as it belongs to the entity '{component.Entity.Id}'");
             }
 
             var propertyName = GetComponentPropertyName(componentId);
@@ -217,18 +224,14 @@ namespace UnicornHack.Utils.MessagingECS
                 case 1:
                     if (_tracked)
                     {
-                        ForEachComponent(this, (e, i, c) => e.RemoveComponent(i, c));
-                        Manager.RemoveEntity(this);
+                        ForEachComponent(this, (e, _, c) => e.RemoveComponent(c));
                         Manager.RemoveFromSecondaryTracker(this);
                     }
 
                     break;
                 case 0:
-                    if (!_tracked)
-                    {
-                        ForEachComponent(this, (e, i, c) => e.RemoveComponent(i, c));
-                        Manager.RemoveEntity(this);
-                    }
+                    ForEachComponent(this, (e, _, c) => e.RemoveComponent(c));
+                    Manager.RemoveEntity(this);
 
                     _id = 0;
                     Manager = null;
@@ -243,14 +246,14 @@ namespace UnicornHack.Utils.MessagingECS
 
         void ITrackable.StartTracking(object tracker)
         {
-            ((IOwnerReferenceable)this).AddReference(tracker);
             _tracked = true;
+            ((IOwnerReferenceable)this).AddReference(tracker);
         }
 
         void ITrackable.StopTracking(object tracker)
         {
-            RemoveReference(tracker);
             _tracked = false;
+            RemoveReference(tracker);
         }
     }
 }

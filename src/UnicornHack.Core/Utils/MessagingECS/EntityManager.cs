@@ -145,8 +145,8 @@ namespace UnicornHack.Utils.MessagingECS
 
                 foreach (var group in groups)
                 {
-                    group.HandlePropertyValueChanged(propertyName, oldValue, newValue, componentId, component,
-                        typedEntity);
+                    group.HandlePropertyValueChanged(
+                        propertyName, oldValue, newValue, componentId, component, typedEntity);
                 }
             }
         }

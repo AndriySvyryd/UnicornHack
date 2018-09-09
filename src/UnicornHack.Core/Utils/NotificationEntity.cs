@@ -14,6 +14,7 @@ namespace UnicornHack.Utils
         public event PropertyChangedEventHandler PropertyChanged;
         public event PropertyChangingEventHandler PropertyChanging;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void SetWithNotify<T>(
             T value,
             ref T field,
@@ -29,9 +30,11 @@ namespace UnicornHack.Utils
             FirePropertyChanged(propertyName);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void FirePropertyChanging(string propertyName)
             => PropertyChanging?.Invoke(this, new PropertyChangingEventArgs(propertyName));
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void FirePropertyChanged(string propertyName)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }

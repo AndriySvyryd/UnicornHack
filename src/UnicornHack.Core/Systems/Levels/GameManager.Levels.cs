@@ -31,7 +31,7 @@ namespace UnicornHack
                 nameof(ConnectionsToLevelRelationship),
                 Connections,
                 Levels,
-                new SimpleNonNullableKeyValueGetter<GameEntity, int>(
+                new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((PositionComponent)component).LevelId,
                     (int)EntityComponent.Position),
                 (effectEntity, _, __, ___) => effectEntity.RemoveComponent(EntityComponent.Position));
@@ -40,7 +40,7 @@ namespace UnicornHack
                 nameof(IncomingConnectionsToLevelRelationship),
                 Connections,
                 Levels,
-                new SimpleNonNullableKeyValueGetter<GameEntity, int>(
+                new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((ConnectionComponent)component).TargetLevelId,
                     (int)EntityComponent.Connection),
                 (effectEntity, _, __, ___) => effectEntity.RemoveComponent(EntityComponent.Position));

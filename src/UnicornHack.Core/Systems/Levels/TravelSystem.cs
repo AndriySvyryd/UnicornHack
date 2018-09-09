@@ -77,8 +77,16 @@ namespace UnicornHack.Systems.Levels
             {
                 var connection = connectionEntity.Connection;
                 targetLevelId = connection.TargetLevelId;
-                manager.Game.LoadLevel(targetLevelId);
+                var targetLevelEntity = manager.Game.LoadLevel(targetLevelId);
                 targetCell = connection.TargetLevelCell.Value;
+
+                // TODO: Remove connection to the surface
+                if (targetLevelEntity.Level.BranchName == "surface")
+                {
+                    var being = message.Entity.Being;
+                    manager.LivingSystem.ChangeCurrentHP(being, -1 * being.HitPoints);
+                    return traveledMessage;
+                }
             }
 
             var conflictingActor = manager.LevelActorToLevelCellIndex[(targetLevelId, targetCell.X, targetCell.Y)];
@@ -96,19 +104,11 @@ namespace UnicornHack.Systems.Levels
 
             if (position.LevelId != targetLevelId)
             {
-                // Avoid a collision in the unique index
-                position.LevelCell = new Point(255, 255);
-                position.LevelId = targetLevelId;
+                position.SetLevelPosition(targetLevelId, targetCell);
             }
-
-            position.LevelCell = targetCell;
-
-            // TODO: Remove connection to the surface
-            if (connectionEntity != null
-                && position.LevelEntity.Level.BranchName == "surface")
+            else
             {
-                var being = message.Entity.Being;
-                manager.LivingSystem.ChangeCurrentHP(being, -1 * being.HitPoints);
+                position.LevelCell = targetCell;
             }
 
             // TODO: take terrain into account

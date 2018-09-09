@@ -67,7 +67,7 @@ namespace UnicornHack
                 nameof(LevelKnowledgesToLevelRelationship),
                 LevelKnowledges,
                 Levels,
-                new SimpleNonNullableKeyValueGetter<GameEntity, int>(
+                new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((PositionComponent)component).LevelId,
                     (int)EntityComponent.Position),
                 (effectEntity, _, __, ___) =>
@@ -80,7 +80,7 @@ namespace UnicornHack
                 nameof(LevelKnowledgeToLevelEntityRelationship),
                 LevelKnowledges,
                 LevelEntities,
-                new SimpleNonNullableKeyValueGetter<GameEntity, int>(
+                new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((KnowledgeComponent)component).KnownEntityId,
                     (int)EntityComponent.Knowledge),
                 (effectEntity, _, __, ___) =>
