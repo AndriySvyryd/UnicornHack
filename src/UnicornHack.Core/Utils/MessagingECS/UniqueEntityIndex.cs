@@ -24,8 +24,7 @@ namespace UnicornHack.Utils.MessagingECS
 
         public TEntity this[TKey key] => Index.TryGetValue(key, out var entity) ? entity : null;
 
-        protected override bool TryAddEntity(TKey key, TEntity entity, int changedComponentId,
-            Component changedComponent)
+        protected override bool TryAddEntity(TKey key, TEntity entity, Component changedComponent)
         {
             if (Index.ContainsKey(key))
             {
@@ -38,8 +37,7 @@ namespace UnicornHack.Utils.MessagingECS
             return true;
         }
 
-        protected override bool TryRemoveEntity(TKey key, TEntity entity, int changedComponentId,
-            Component changedComponent)
+        protected override bool TryRemoveEntity(TKey key, TEntity entity, Component changedComponent)
         {
             var removed = Index.Remove(key);
             Debug.Assert(removed);

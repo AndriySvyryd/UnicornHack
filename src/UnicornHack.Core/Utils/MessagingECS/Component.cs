@@ -23,14 +23,15 @@ namespace UnicornHack.Utils.MessagingECS
             ref T field,
             [CallerMemberName] string propertyName = "")
         {
-            if (StartSettingWithNotify(value, ref field, propertyName, out var oldValue))
+            if (NotifyChanging(value, ref field, propertyName, out var oldValue))
             {
-                FinishSetttingWithNotify(oldValue, value, propertyName);
+                NotifyChanged(propertyName);
+                Entity?.HandlePropertyValueChanged(propertyName, oldValue, value, ComponentId, this);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected bool StartSettingWithNotify<T>(
+        protected bool NotifyChanging<T>(
             T value,
             ref T field,
             string propertyName,
@@ -50,13 +51,9 @@ namespace UnicornHack.Utils.MessagingECS
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void FinishSetttingWithNotify<T>(
-            T oldValue,
-            T value,
-            string propertyName)
+        protected void NotifyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-            Entity?.HandlePropertyValueChanged(propertyName, oldValue, value, ComponentId, this);
         }
 
         void ITrackable.StartTracking(object tracker)

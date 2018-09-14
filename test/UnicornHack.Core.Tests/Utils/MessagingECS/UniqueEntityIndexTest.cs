@@ -28,9 +28,9 @@ namespace UnicornHack.Utils.MessagingECS
 
                     Assert.Same(firstPositionEntity, manager.LevelActorToLevelCellIndex[(levelEntity.Id, 2, 3)]);
 
-                    firstPosition.LevelCell = new Point(1, 3);
+                    firstPosition.LevelCell = new Point(1, 2);
 
-                    Assert.Same(firstPositionEntity, manager.LevelActorToLevelCellIndex[(levelEntity.Id, 1, 3)]);
+                    Assert.Same(firstPositionEntity, manager.LevelActorToLevelCellIndex[(levelEntity.Id, 1, 2)]);
                     Assert.Null(manager.LevelActorToLevelCellIndex[(levelEntity.Id, 2, 3)]);
 
                     using (var secondPositionEntityReference = manager.CreateEntity())
@@ -50,7 +50,7 @@ namespace UnicornHack.Utils.MessagingECS
                         Assert.Null(manager.LevelActorToLevelCellIndex[(levelEntity.Id, 2, 3)]);
                     }
 
-                    Assert.Same(firstPositionEntity, manager.LevelActorToLevelCellIndex[(levelEntity.Id, 1, 3)]);
+                    Assert.Same(firstPositionEntity, manager.LevelActorToLevelCellIndex[(levelEntity.Id, 1, 2)]);
 
                     using (var secondLevelEntityReference = manager.CreateEntity())
                     {
@@ -58,7 +58,7 @@ namespace UnicornHack.Utils.MessagingECS
                         secondLevelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
                         firstPosition.LevelId = secondLevelEntity.Id;
 
-                        Assert.Null(manager.LevelActorToLevelCellIndex[(levelEntity.Id, 1, 3)]);
+                        Assert.Null(manager.LevelActorToLevelCellIndex[(levelEntity.Id, 1, 2)]);
 
                         secondLevelEntity.Level = null;
                     }

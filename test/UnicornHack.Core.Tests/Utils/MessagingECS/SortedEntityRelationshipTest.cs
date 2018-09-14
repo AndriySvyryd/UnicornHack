@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Beings;
@@ -202,7 +203,6 @@ namespace UnicornHack.Utils.MessagingECS
             public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager state)
             {
                 Assert.Same(_testEntity, message.Entity);
-                Assert.Equal(_testComponent.ComponentId, message.ChangedComponentId);
                 Assert.Same(_testComponent, message.ChangedComponent);
 
                 MessagesProcessed++;
@@ -212,7 +212,6 @@ namespace UnicornHack.Utils.MessagingECS
             public MessageProcessingResult Process(EntityRemovedMessage<GameEntity> message, GameManager state)
             {
                 Assert.Same(_testEntity, message.Entity);
-                Assert.Equal(_testComponent.ComponentId, message.ChangedComponentId);
                 Assert.Same(_testComponent, message.ChangedComponent);
 
                 MessagesProcessed++;
@@ -222,9 +221,9 @@ namespace UnicornHack.Utils.MessagingECS
             public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, Species> message, GameManager state)
             {
                 Assert.Same(_testEntity, message.Entity);
-                Assert.Equal(_testComponent.ComponentId, message.ComponentId);
-                Assert.Same(_testComponent, message.Component);
-                Assert.Equal(nameof(RaceComponent.Species), message.Property);
+                Assert.Equal(_testComponent.ComponentId, message.ChangedComponent?.ComponentId);
+                Assert.Same(_testComponent, message.ChangedComponent);
+                Assert.Equal(nameof(RaceComponent.Species), message.ChangedPropertyName);
                 Assert.Equal(Species.Default, message.OldValue);
                 Assert.Equal(Species.Dragon, message.NewValue);
 
@@ -233,10 +232,9 @@ namespace UnicornHack.Utils.MessagingECS
             }
 
             public void HandleEntityAdded(
-                GameEntity entity, int addedComponentId, Component addedComponent, IEntityGroup<GameEntity> group)
+                GameEntity entity, Component addedComponent, IEntityGroup<GameEntity> group)
             {
                 Assert.Same(_testEntity, entity);
-                Assert.Equal(_testComponent.ComponentId, addedComponentId);
                 Assert.Same(_testComponent, addedComponent);
                 Assert.Same(_group, group);
 
@@ -244,26 +242,26 @@ namespace UnicornHack.Utils.MessagingECS
             }
 
             public void HandleEntityRemoved(
-                GameEntity entity, int removedComponentId, Component removedComponent, IEntityGroup<GameEntity> group)
+                GameEntity entity, Component removedComponent, IEntityGroup<GameEntity> group)
             {
                 Assert.Same(_testEntity, entity);
-                Assert.Equal(_testComponent.ComponentId, removedComponentId);
                 Assert.Same(_testComponent, removedComponent);
                 Assert.Same(_group, group);
 
                 GroupChangesDetected++;
             }
 
-            public bool HandlePropertyValueChanged<T>(
-                string propertyName, T oldValue, T newValue, int componentId, Component component,
-                GameEntity entity, IEntityGroup<GameEntity> group)
+            public bool HandlePropertyValuesChanged(
+                IReadOnlyList<IPropertyValueChange> changes, GameEntity entity, IEntityGroup<GameEntity> group)
             {
+                var change = (PropertyValueChange<Species>)changes[0];
+
                 Assert.Same(_testEntity, entity);
-                Assert.Equal(_testComponent.ComponentId, componentId);
-                Assert.Same(_testComponent, component);
-                Assert.Equal(nameof(RaceComponent.Species), propertyName);
-                Assert.Equal(Species.Default, (Species)(object)oldValue);
-                Assert.Equal(Species.Dragon, (Species)(object)newValue);
+                Assert.Equal(_testComponent.ComponentId, change.ChangedComponent?.ComponentId);
+                Assert.Same(_testComponent, change.ChangedComponent);
+                Assert.Equal(nameof(RaceComponent.Species), change.ChangedPropertyName);
+                Assert.Equal(Species.Default, change.OldValue);
+                Assert.Equal(Species.Dragon, change.NewValue);
                 Assert.Same(_group, group);
 
                 GroupChangesDetected++;

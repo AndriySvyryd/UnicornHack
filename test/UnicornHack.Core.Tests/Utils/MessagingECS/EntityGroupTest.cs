@@ -97,7 +97,6 @@ namespace UnicornHack.Utils.MessagingECS
             public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager state)
             {
                 Assert.Same(_testEntity, message.Entity);
-                Assert.Equal(_testComponent.ComponentId, message.ChangedComponentId);
                 Assert.Same(_testComponent, message.ChangedComponent);
 
                 MessagesProcessed++;
@@ -107,7 +106,6 @@ namespace UnicornHack.Utils.MessagingECS
             public MessageProcessingResult Process(EntityRemovedMessage<GameEntity> message, GameManager state)
             {
                 Assert.Same(_testEntity, message.Entity);
-                Assert.Equal(_testComponent.ComponentId, message.ChangedComponentId);
                 Assert.Same(_testComponent, message.ChangedComponent);
 
                 MessagesProcessed++;
@@ -117,9 +115,9 @@ namespace UnicornHack.Utils.MessagingECS
             public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, int> message, GameManager state)
             {
                 Assert.Same(_testEntity, message.Entity);
-                Assert.Equal(_testComponent.ComponentId, message.ComponentId);
-                Assert.Same(_testComponent, message.Component);
-                Assert.Equal(nameof(EffectComponent.DurationTicks), message.Property);
+                Assert.Equal(_testComponent.ComponentId, message.ChangedComponent?.ComponentId);
+                Assert.Same(_testComponent, message.ChangedComponent);
+                Assert.Equal(nameof(EffectComponent.DurationTicks), message.ChangedPropertyName);
                 Assert.Equal(0, message.OldValue);
                 Assert.Equal(10, message.NewValue);
 

@@ -27,7 +27,7 @@ namespace UnicornHack
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((EffectComponent)component).AffectedEntityId,
                     (int)EntityComponent.Effect),
-                (effectEntity, _, __, ___) => effectEntity.RemoveComponent((int)EntityComponent.Effect),
+                (effectEntity, _, __) => effectEntity.RemoveComponent((int)EntityComponent.Effect),
                 referencedKeepAlive: false, referencingKeepAlive: true);
 
             EffectsToContainingAbilityRelationship = new EntityRelationship<GameEntity>(
@@ -37,7 +37,7 @@ namespace UnicornHack
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((EffectComponent)component).ContainingAbilityId,
                     (int)EntityComponent.Effect),
-                (effectEntity, _, __, ___) => effectEntity.RemoveComponent((int)EntityComponent.Effect),
+                (effectEntity, _, __) => effectEntity.RemoveComponent((int)EntityComponent.Effect),
                 referencedKeepAlive: false, referencingKeepAlive: true);
 
             AppliedEffectsToSourceAbilityRelationship = new EntityRelationship<GameEntity>(
@@ -47,7 +47,7 @@ namespace UnicornHack
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((EffectComponent)component).SourceAbilityId,
                     (int)EntityComponent.Effect),
-                (effectEntity, _, __, ___) => effectEntity.Effect.SourceAbilityId = null);
+                (effectEntity, _, __) => effectEntity.Effect.SourceAbilityId = null);
 
             EffectApplicationSystem = new EffectApplicationSystem(new PropertyValueCalculator());
             queue.Add<AbilityActivatedMessage>(EffectApplicationSystem,

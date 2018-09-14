@@ -5,9 +5,9 @@ using System.Collections.Generic;
 namespace UnicornHack.Utils.MessagingECS
 {
     public abstract class EntityRelationshipBase<TEntity> : EntityIndexBase<TEntity, int>, IEntityGroup<TEntity>
-        where TEntity : Entity
+        where TEntity : Entity, new()
     {
-        private readonly Action<TEntity, TEntity, int, Component> _handleReferencedDeleted;
+        private readonly Action<TEntity, TEntity, Component> _handleReferencedDeleted;
         private readonly bool _referencedKeepAlive;
         private readonly bool _referencingKeepAlive;
 
@@ -26,8 +26,8 @@ namespace UnicornHack.Utils.MessagingECS
             string name,
             IEntityGroup<TEntity> referencingGroup,
             IEntityGroup<TEntity> referencedGroup,
-            KeyValueGetter<TEntity, int> keyValueGetter,
-            Action<TEntity, TEntity, int, Component> handleReferencedDeleted,
+            IKeyValueGetter<TEntity, int> keyValueGetter,
+            Action<TEntity, TEntity, Component> handleReferencedDeleted,
             bool referencedKeepAlive,
             bool referencingKeepAlive)
             : base(referencingGroup, keyValueGetter)
@@ -68,8 +68,7 @@ namespace UnicornHack.Utils.MessagingECS
             return referenced;
         }
 
-        protected virtual void OnEntityAdded(
-            TEntity entity, int changedComponentId, Component changedComponent, TEntity referenced)
+        protected virtual void OnEntityAdded(TEntity entity, Component changedComponent, TEntity referenced)
         {
             if (_referencedKeepAlive)
             {
@@ -83,7 +82,7 @@ namespace UnicornHack.Utils.MessagingECS
 
             foreach (var entityIndex in _changeListeners)
             {
-                entityIndex.HandleEntityAdded(entity, changedComponentId, changedComponent, this);
+                entityIndex.HandleEntityAdded(entity, changedComponent, this);
             }
 
             if (_entityAddedMessageName != null
@@ -91,15 +90,13 @@ namespace UnicornHack.Utils.MessagingECS
             {
                 var message = entity.Manager.Queue.CreateMessage<EntityAddedMessage<TEntity>>(_entityAddedMessageName);
                 message.Entity = entity;
-                message.ChangedComponentId = changedComponentId;
                 message.ChangedComponent = changedComponent;
 
                 entity.Manager.Queue.Enqueue(message);
             }
         }
 
-        protected void OnEntityRemoved(
-            TEntity entity, int changedComponentId, Component changedComponent, TEntity referenced)
+        protected void OnEntityRemoved(TEntity entity, Component changedComponent, TEntity referenced)
         {
             var manager = entity.Manager;
             if (referenced != null
@@ -115,24 +112,23 @@ namespace UnicornHack.Utils.MessagingECS
 
             foreach (var entityIndex in _changeListeners)
             {
-                entityIndex.HandleEntityRemoved(entity, changedComponentId, changedComponent, this);
+                entityIndex.HandleEntityRemoved(entity, changedComponent, this);
             }
 
             if (_entityRemovedMessageName != null)
             {
                 var message = manager.Queue.CreateMessage<EntityRemovedMessage<TEntity>>(_entityRemovedMessageName);
                 message.Entity = entity;
-                message.ChangedComponentId = changedComponentId;
                 message.ChangedComponent = changedComponent;
 
                 manager.Queue.Enqueue(message);
             }
         }
 
-        public override bool HandlePropertyValueChanged<T>(string propertyName, T oldValue, T newValue, int componentId,
-            Component component, TEntity entity, IEntityGroup<TEntity> group)
+        public override bool HandlePropertyValuesChanged(
+            IReadOnlyList<IPropertyValueChange> changes, TEntity entity, IEntityGroup<TEntity> group)
         {
-            if (base.HandlePropertyValueChanged(propertyName, oldValue, newValue, componentId, component, entity, group)
+            if (base.HandlePropertyValuesChanged(changes, entity, group)
                 || !ContainsEntity(entity))
             {
                 return true;
@@ -140,34 +136,27 @@ namespace UnicornHack.Utils.MessagingECS
 
             foreach (var entityIndex in _changeListeners)
             {
-                // The component might have been removed by the previous change listener
-                if (entity.HasComponent(componentId))
-                {
-                    entityIndex.HandlePropertyValueChanged(
-                    propertyName, oldValue, newValue, componentId, component, entity, this);
-                }
+                entityIndex.HandlePropertyValuesChanged(changes, entity, this);
             }
 
-            if (_propertyValueChangedMessageNames != null
-                && _propertyValueChangedMessageNames.TryGetValue(propertyName, out var messageName))
+            if (_propertyValueChangedMessageNames != null)
             {
-                var message = entity.Manager.Queue.CreateMessage<PropertyValueChangedMessage<TEntity, T>>(messageName);
-                message.Property = propertyName;
-                message.OldValue = oldValue;
-                message.NewValue = newValue;
-                message.ComponentId = componentId;
-                message.Component = component;
-                message.Entity = entity;
-
-                entity.Manager.Queue.Enqueue(message);
+                foreach (var change in changes)
+                {
+                    if (_propertyValueChangedMessageNames.TryGetValue(change.ChangedPropertyName, out var messageName)
+                        && entity.HasComponent(change.ChangedComponent.ComponentId))
+                    {
+                        change.EnqueuePropertyValueChangedMessage<TEntity>(messageName, entity.Manager);
+                    }
+                }
             }
 
             return false;
         }
 
         protected void HandleReferencedEntityRemoved(
-            TEntity referencingEntity, TEntity referencedEntity, int removedComponentId, Component removedComponent)
-            => _handleReferencedDeleted(referencingEntity, referencedEntity, removedComponentId, removedComponent);
+            TEntity referencingEntity, TEntity referencedEntity, Component removedComponent)
+            => _handleReferencedDeleted(referencingEntity, referencedEntity, removedComponent);
 
         public string GetEntityAddedMessageName()
             => _entityAddedMessageName
@@ -225,7 +214,7 @@ namespace UnicornHack.Utils.MessagingECS
         }
 
         public bool ContainsEntity(TEntity entity)
-            => KeyValueGetter.TryGetKey(entity, Component.NullId, null, null, default, out var referencedId)
+            => KeyValueGetter.TryGetKey(entity, new IPropertyValueChange[0], getOldValue: false, out var referencedId)
                && ReferencedGroup.ContainsEntity(referencedId);
 
         public abstract IEnumerator<TEntity> GetEnumerator();

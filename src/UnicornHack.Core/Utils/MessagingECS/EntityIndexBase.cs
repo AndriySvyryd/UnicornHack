@@ -1,63 +1,88 @@
-﻿namespace UnicornHack.Utils.MessagingECS
+﻿using System.Collections.Generic;
+
+namespace UnicornHack.Utils.MessagingECS
 {
     public abstract class EntityIndexBase<TEntity, TKey> : IGroupChangesListener<TEntity>
         where TEntity : Entity
     {
         protected EntityIndexBase(
             IEntityGroup<TEntity> group,
-            KeyValueGetter<TEntity, TKey> keyValueGetter)
+            IKeyValueGetter<TEntity, TKey> keyValueGetter)
         {
             KeyValueGetter = keyValueGetter;
             group.AddListener(this);
             Group = group;
         }
 
-        protected KeyValueGetter<TEntity, TKey> KeyValueGetter { get; }
+        protected IKeyValueGetter<TEntity, TKey> KeyValueGetter { get; }
         protected IEntityGroup<TEntity> Group { get; }
 
         public void HandleEntityAdded(
-            TEntity entity, int addedComponentId, Component addedComponent, IEntityGroup<TEntity> group)
+            TEntity entity, Component addedComponent, IEntityGroup<TEntity> group)
         {
-            if (KeyValueGetter.TryGetKey(entity, addedComponentId, addedComponent, null, default, out var keyValue))
+            if (KeyValueGetter.TryGetKey(
+                entity,
+                new IPropertyValueChange[] { new PropertyValueChange<object>(addedComponent)},
+                getOldValue: false,
+                out var keyValue))
             {
-                TryAddEntity(keyValue, entity, addedComponentId, addedComponent);
+                TryAddEntity(keyValue, entity, addedComponent);
             }
         }
 
         public void HandleEntityRemoved(
-            TEntity entity, int removedComponentId, Component removedComponent, IEntityGroup<TEntity> group)
+            TEntity entity, Component removedComponent, IEntityGroup<TEntity> group)
         {
-            if (KeyValueGetter.TryGetKey(entity, removedComponentId, removedComponent, null, default, out var keyValue))
+            if (KeyValueGetter.TryGetKey(
+                entity,
+                new IPropertyValueChange[] {new PropertyValueChange<object>(removedComponent)},
+                getOldValue: false,
+                out var keyValue))
             {
-                TryRemoveEntity(keyValue, entity, removedComponentId, removedComponent);
+                TryRemoveEntity(keyValue, entity, removedComponent);
             }
         }
 
-        public virtual bool HandlePropertyValueChanged<T>(string propertyName, T oldValue, T newValue, int componentId,
-            Component component, TEntity entity, IEntityGroup<TEntity> group)
+        public virtual bool HandlePropertyValuesChanged(
+            IReadOnlyList<IPropertyValueChange> changes, TEntity entity, IEntityGroup<TEntity> group)
         {
-            if (!KeyValueGetter.PropertyUsed(componentId, propertyName))
+            Component componentUsed = null;
+            for (var i = 0; i < changes.Count; i++)
+            {
+                var change = changes[i];
+                if (KeyValueGetter.PropertyUsed(change.ChangedComponent.ComponentId, change.ChangedPropertyName))
+                {
+                    componentUsed = change.ChangedComponent;
+                    break;
+                }
+
+                // The component might have been removed by the previous change listener
+                if (!entity.HasComponent(change.ChangedComponent.ComponentId))
+                {
+                    return true;
+                }
+            }
+
+            if (componentUsed == null)
             {
                 return false;
             }
 
-            if (KeyValueGetter.TryGetKey(entity, componentId, component, propertyName, oldValue, out var oldKey))
+            if (KeyValueGetter.TryGetKey(entity, changes, getOldValue: true, out var oldKey))
             {
-                TryRemoveEntity(oldKey, entity, componentId, component);
+                TryRemoveEntity(oldKey, entity, componentUsed);
             }
 
-            if (KeyValueGetter.TryGetKey(entity, componentId, component, propertyName, newValue, out var newKey))
+            if (KeyValueGetter.TryGetKey(entity, changes, getOldValue: false, out var newKey))
             {
-                TryAddEntity(newKey, entity, componentId, component);
+                TryAddEntity(newKey, entity, componentUsed);
             }
 
             return true;
         }
 
-        protected abstract bool TryAddEntity(
-            TKey key, TEntity entity, int changedComponentId, Component changedComponent);
+        protected abstract bool TryAddEntity(TKey key, TEntity entity, Component changedComponent);
 
-        protected abstract bool TryRemoveEntity(
-            TKey key, TEntity entity, int changedComponentId, Component changedComponent);
+        protected abstract bool TryRemoveEntity(TKey key, TEntity entity, Component changedComponent);
     }
 }

@@ -31,7 +31,7 @@ namespace UnicornHack
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((AbilityComponent)component).OwnerId,
                     (int)EntityComponent.Ability),
-                (effectEntity, _, __, ___) => effectEntity.RemoveComponent((int)EntityComponent.Ability),
+                (effectEntity, _, __) => effectEntity.RemoveComponent((int)EntityComponent.Ability),
                 referencedKeepAlive: false,
                 referencingKeepAlive: true);
 

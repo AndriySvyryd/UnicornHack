@@ -15,6 +15,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Utils\MessagingECS\SortedEntityRelationship.cs~RFa5f9911.TMP" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="CSharpScriptSerializer" Version="1.5.0" />
     <PackageReference Include="JetBrains.Annotations" Version="11.1.0" />
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />

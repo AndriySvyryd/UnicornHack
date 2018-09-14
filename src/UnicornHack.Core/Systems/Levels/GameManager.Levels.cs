@@ -34,7 +34,7 @@ namespace UnicornHack
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((PositionComponent)component).LevelId,
                     (int)EntityComponent.Position),
-                (effectEntity, _, __, ___) => effectEntity.RemoveComponent(EntityComponent.Position));
+                (effectEntity, _, __) => effectEntity.RemoveComponent(EntityComponent.Position));
 
             IncomingConnectionsToLevelRelationship = new EntityRelationship<GameEntity>(
                 nameof(IncomingConnectionsToLevelRelationship),
@@ -43,7 +43,7 @@ namespace UnicornHack
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((ConnectionComponent)component).TargetLevelId,
                     (int)EntityComponent.Connection),
-                (effectEntity, _, __, ___) => effectEntity.RemoveComponent(EntityComponent.Position));
+                (effectEntity, _, __) => effectEntity.RemoveComponent(EntityComponent.Position));
 
             TravelSystem = new TravelSystem();
             queue.Add<TravelMessage>(TravelSystem, TravelSystem.TravelMessageName, 0);

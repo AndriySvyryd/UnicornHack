@@ -54,7 +54,7 @@ namespace UnicornHack.Systems.Time
             var appliedEffect = entity.Effect;
             if (appliedEffect != null)
             {
-                entity.RemoveComponent(EntityComponent.Effect, appliedEffect);
+                entity.RemoveComponent(appliedEffect);
                 return MessageProcessingResult.ContinueProcessing;
             }
 

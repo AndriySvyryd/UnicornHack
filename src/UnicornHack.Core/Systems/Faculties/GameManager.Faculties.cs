@@ -22,7 +22,7 @@ namespace UnicornHack
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((BeingComponent)component).PrimaryNaturalWeaponId,
                     (int)EntityComponent.Being),
-                (effectEntity, _, __, ___) => effectEntity.Being.PrimaryNaturalWeaponId = null,
+                (effectEntity, _, __) => effectEntity.Being.PrimaryNaturalWeaponId = null,
                 referencedKeepAlive: true,
                 referencingKeepAlive: false);
 
@@ -33,7 +33,7 @@ namespace UnicornHack
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((BeingComponent)component).SecondaryNaturalWeaponId,
                     (int)EntityComponent.Being),
-                (effectEntity, _, __, ___) => effectEntity.Being.SecondaryNaturalWeaponId = null,
+                (effectEntity, _, __) => effectEntity.Being.SecondaryNaturalWeaponId = null,
                 referencedKeepAlive: true,
                 referencingKeepAlive: false);
 

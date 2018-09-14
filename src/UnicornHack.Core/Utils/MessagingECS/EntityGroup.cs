@@ -64,25 +64,25 @@ namespace UnicornHack.Utils.MessagingECS
         public bool ContainsEntity(int id) => _entities.ContainsKey(id);
         public bool IsLoading => _manager.IsLoading;
 
-        public void HandleEntityComponentChanged(TEntity entity, int changedComponentId, Component changedComponent)
+        public void HandleEntityComponentChanged(TEntity entity, Component changedComponent)
         {
             if (_entities.ContainsKey(entity.Id))
             {
                 if (!Matcher.Matches(entity))
                 {
-                    RemoveEntity(entity, changedComponentId, changedComponent);
+                    RemoveEntity(entity, changedComponent);
                 }
             }
             else
             {
                 if (Matcher.Matches(entity))
                 {
-                    AddEntity(entity, changedComponentId, changedComponent);
+                    AddEntity(entity, changedComponent);
                 }
             }
         }
 
-        private void AddEntity(TEntity entity, int changedComponentId, Component changedComponent)
+        private void AddEntity(TEntity entity, Component changedComponent)
         {
             Debug.Assert(!_entities.ContainsKey(entity.Id));
 
@@ -90,7 +90,7 @@ namespace UnicornHack.Utils.MessagingECS
 
             foreach (var entityIndex in _changeListeners)
             {
-                entityIndex.HandleEntityAdded(entity, changedComponentId, changedComponent, this);
+                entityIndex.HandleEntityAdded(entity, changedComponent, this);
             }
 
             if (_entityAddedMessageName != null
@@ -98,14 +98,13 @@ namespace UnicornHack.Utils.MessagingECS
             {
                 var message = entity.Manager.Queue.CreateMessage<EntityAddedMessage<TEntity>>(_entityAddedMessageName);
                 message.Entity = entity;
-                message.ChangedComponentId = changedComponentId;
                 message.ChangedComponent = changedComponent;
 
                 entity.Manager.Queue.Enqueue(message);
             }
         }
 
-        private void RemoveEntity(TEntity entity, int changedComponentId, Component changedComponent)
+        private void RemoveEntity(TEntity entity, Component changedComponent)
         {
             Debug.Assert(_entities.ContainsKey(entity.Id));
 
@@ -114,48 +113,39 @@ namespace UnicornHack.Utils.MessagingECS
 
             foreach (var entityIndex in _changeListeners)
             {
-                entityIndex.HandleEntityRemoved(entity, changedComponentId, changedComponent, this);
+                entityIndex.HandleEntityRemoved(entity, changedComponent, this);
             }
 
             if (_entityRemovedMessageName != null)
             {
                 var message = manager.Queue.CreateMessage<EntityRemovedMessage<TEntity>>(_entityRemovedMessageName);
                 message.Entity = entity;
-                message.ChangedComponentId = changedComponentId;
                 message.ChangedComponent = changedComponent;
 
                 manager.Queue.Enqueue(message);
             }
         }
 
-        public void HandlePropertyValueChanged<T>(
-            string propertyName, T oldValue, T newValue, int componentId, Component component, TEntity entity)
+        public void HandlePropertyValuesChanged(IReadOnlyList<IPropertyValueChange> changes)
         {
+            var entity = (TEntity)changes[0].ChangedComponent.Entity;
             if (Matcher.Matches(entity))
             {
                 foreach (var changeListener in _changeListeners)
                 {
-                    // The component might have been removed by the previous change listener
-                    if (entity.HasComponent(componentId))
-                    {
-                        changeListener.HandlePropertyValueChanged(
-                            propertyName, oldValue, newValue, componentId, component, entity, this);
-                    }
+                    changeListener.HandlePropertyValuesChanged(changes, entity, this);
                 }
 
-                if (_propertyValueChangedMessageNames != null
-                    && _propertyValueChangedMessageNames.TryGetValue(propertyName, out var messageName))
+                if (_propertyValueChangedMessageNames != null)
                 {
-                    var message =
-                        entity.Manager.Queue.CreateMessage<PropertyValueChangedMessage<TEntity, T>>(messageName);
-                    message.Property = propertyName;
-                    message.OldValue = oldValue;
-                    message.NewValue = newValue;
-                    message.ComponentId = componentId;
-                    message.Component = component;
-                    message.Entity = entity;
-
-                    entity.Manager.Queue.Enqueue(message);
+                    foreach (var change in changes)
+                    {
+                        if (_propertyValueChangedMessageNames.TryGetValue(change.ChangedPropertyName, out var messageName)
+                            && entity.HasComponent(change.ChangedComponent.ComponentId))
+                        {
+                            change.EnqueuePropertyValueChangedMessage<TEntity>(messageName, entity.Manager);
+                        }
+                    }
                 }
             }
         }

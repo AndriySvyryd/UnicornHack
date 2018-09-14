@@ -38,7 +38,7 @@ namespace UnicornHack
                 }
                 else
                 {
-                    AddComponent(EntityComponent.AI, value);
+                    AddComponent(value);
                 }
             }
         }
@@ -54,7 +54,7 @@ namespace UnicornHack
                 }
                 else
                 {
-                    AddComponent(EntityComponent.Player, value);
+                    AddComponent(value);
                 }
             }
         }
@@ -70,7 +70,7 @@ namespace UnicornHack
                 }
                 else
                 {
-                    AddComponent(EntityComponent.Effect, value);
+                    AddComponent(value);
                 }
             }
         }
@@ -86,7 +86,7 @@ namespace UnicornHack
                 }
                 else
                 {
-                    AddComponent(EntityComponent.Ability, value);
+                    AddComponent(value);
                 }
             }
         }
@@ -102,7 +102,7 @@ namespace UnicornHack
                 }
                 else
                 {
-                    AddComponent(EntityComponent.Being, value);
+                    AddComponent(value);
                 }
             }
         }
@@ -118,7 +118,7 @@ namespace UnicornHack
                 }
                 else
                 {
-                    AddComponent(EntityComponent.Physical, value);
+                    AddComponent(value);
                 }
             }
         }
@@ -134,7 +134,7 @@ namespace UnicornHack
                 }
                 else
                 {
-                    AddComponent(EntityComponent.Race, value);
+                    AddComponent(value);
                 }
             }
         }
@@ -150,7 +150,7 @@ namespace UnicornHack
                 }
                 else
                 {
-                    AddComponent(EntityComponent.Item, value);
+                    AddComponent(value);
                 }
             }
         }
@@ -166,7 +166,7 @@ namespace UnicornHack
                 }
                 else
                 {
-                    AddComponent(EntityComponent.Level, value);
+                    AddComponent(value);
                 }
             }
         }
@@ -182,7 +182,7 @@ namespace UnicornHack
                 }
                 else
                 {
-                    AddComponent(EntityComponent.Connection, value);
+                    AddComponent(value);
                 }
             }
         }
@@ -198,7 +198,7 @@ namespace UnicornHack
                 }
                 else
                 {
-                    AddComponent(EntityComponent.Position, value);
+                    AddComponent(value);
                 }
             }
         }
@@ -214,7 +214,7 @@ namespace UnicornHack
                 }
                 else
                 {
-                    AddComponent(EntityComponent.Sensor, value);
+                    AddComponent(value);
                 }
             }
         }
@@ -230,7 +230,7 @@ namespace UnicornHack
                 }
                 else
                 {
-                    AddComponent(EntityComponent.Knowledge, value);
+                    AddComponent(value);
                 }
             }
         }
@@ -254,10 +254,6 @@ namespace UnicornHack
             gameComponent.EntityId = Id;
         }
 
-        protected Component AddComponent<TComponent>(EntityComponent componentId, TComponent component)
-            where TComponent : GameComponent, new()
-            => AddComponent((int)componentId, component);
-
         protected override string GetComponentPropertyName(int componentId)
         {
             var name = Manager.GetComponentPropertyName(componentId);
@@ -272,9 +268,6 @@ namespace UnicornHack
 
         public void RemoveComponent(EntityComponent componentId)
             => RemoveComponent((int)componentId);
-
-        public void RemoveComponent(EntityComponent componentId, GameComponent component)
-            => RemoveComponent(component);
 
         public bool HasComponent(EntityComponent componentId)
             => HasComponent((int)componentId);

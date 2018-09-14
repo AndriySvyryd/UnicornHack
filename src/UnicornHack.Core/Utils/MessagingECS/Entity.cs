@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using UnicornHack.Utils.Caching;
-#if DEBUG
 using System.Collections.Generic;
-
-#endif
 
 namespace UnicornHack.Utils.MessagingECS
 {
@@ -53,12 +50,13 @@ namespace UnicornHack.Utils.MessagingECS
             }
 #endif
 
-            return AddComponent(componentId, Manager.CreateComponent<TComponent>(componentId));
+            return AddComponent(Manager.CreateComponent<TComponent>(componentId));
         }
 
-        public TComponent AddComponent<TComponent>(int componentId, TComponent component)
+        public TComponent AddComponent<TComponent>(TComponent component)
             where TComponent : Component, new()
         {
+            var componentId = component.ComponentId;
             var propertyName = GetComponentPropertyName(componentId);
 
             if (propertyName != null)
@@ -80,7 +78,7 @@ namespace UnicornHack.Utils.MessagingECS
                 FirePropertyChanged(propertyName);
             }
 
-            Manager?.HandleComponentAdded(componentId, component);
+            Manager?.HandleComponentAdded(component);
             return component;
         }
 
@@ -135,7 +133,7 @@ namespace UnicornHack.Utils.MessagingECS
 
             var manager = Manager;
 
-            manager?.HandleComponentRemoved(componentId, component);
+            manager?.HandleComponentRemoved(component);
 
             component.HandleRemovedFromEntity(manager);
 
@@ -194,6 +192,9 @@ namespace UnicornHack.Utils.MessagingECS
         public void HandlePropertyValueChanged<T>(
             string propertyName, T oldValue, T newValue, int componentId, Component component)
             => Manager.HandlePropertyValueChanged(propertyName, oldValue, newValue, componentId, component);
+
+        public void HandlePropertyValuesChanged(IReadOnlyList<IPropertyValueChange> changes)
+            => Manager.HandlePropertyValuesChanged(changes);
 
         protected virtual string GetComponentPropertyName(int componentId) => null;
 

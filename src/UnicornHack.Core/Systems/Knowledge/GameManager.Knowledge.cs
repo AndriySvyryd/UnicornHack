@@ -27,40 +27,24 @@ namespace UnicornHack
             LevelKnowledgeToLevelCellIndex = new EntityIndex<GameEntity, (int, byte, byte)>(
                 LevelKnowledges,
                 new KeyValueGetter<GameEntity, (int, byte, byte)>(
-                    (entity, changedComponentId, changedComponent, changedProperty, changedValue) =>
+                    (entity, changes, getOldValue, matcher) =>
                     {
-                        PositionComponent position;
-                        if (changedComponentId == (int)EntityComponent.Position)
+                        if (!matcher.TryGetValue<int>(
+                            entity, (int)EntityComponent.Position, nameof(PositionComponent.LevelId), changes, getOldValue, out var levelId)
+                         || !matcher.TryGetValue<byte>(
+                             entity, (int)EntityComponent.Position, nameof(PositionComponent.LevelX), changes, getOldValue, out var levelX)
+                         || !matcher.TryGetValue<byte>(
+                             entity, (int)EntityComponent.Position, nameof(PositionComponent.LevelY), changes, getOldValue, out var levelY))
                         {
-                            position = (PositionComponent)changedComponent;
-                        }
-                        else
-                        {
-                            position = entity.Position;
-                        }
-
-                        var levelId = position.LevelId;
-                        var levelX = position.LevelX;
-                        var levelY = position.LevelY;
-
-                        switch (changedProperty)
-                        {
-                            case nameof(PositionComponent.LevelId):
-                                levelId = (int)changedValue;
-                                break;
-                            case nameof(PositionComponent.LevelX):
-                                levelX = (byte)changedValue;
-                                break;
-                            case nameof(PositionComponent.LevelY):
-                                levelY = (byte)changedValue;
-                                break;
+                            return ((0, 0, 0), false);
                         }
 
                         return ((levelId, levelX, levelY), true);
                     },
-                    new PropertyMatcher((int)EntityComponent.Position, nameof(PositionComponent.LevelId))
-                        .With((int)EntityComponent.Position, nameof(PositionComponent.LevelX))
-                        .With((int)EntityComponent.Position, nameof(PositionComponent.LevelY))
+                    new PropertyMatcher()
+                        .With(component => ((PositionComponent)component).LevelId, (int)EntityComponent.Position)
+                        .With(component => ((PositionComponent)component).LevelX, (int)EntityComponent.Position)
+                        .With(component => ((PositionComponent)component).LevelY, (int)EntityComponent.Position)
                 ));
 
             LevelKnowledgesToLevelRelationship = new EntityRelationship<GameEntity>(
@@ -70,7 +54,7 @@ namespace UnicornHack
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((PositionComponent)component).LevelId,
                     (int)EntityComponent.Position),
-                (effectEntity, _, __, ___) =>
+                (effectEntity, _, __) =>
                 {
                     effectEntity.RemoveComponent(EntityComponent.Knowledge);
                     effectEntity.RemoveComponent(EntityComponent.Position);
@@ -83,7 +67,7 @@ namespace UnicornHack
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((KnowledgeComponent)component).KnownEntityId,
                     (int)EntityComponent.Knowledge),
-                (effectEntity, _, __, ___) =>
+                (effectEntity, _, __) =>
                 {
                     effectEntity.RemoveComponent(EntityComponent.Knowledge);
                     effectEntity.RemoveComponent(EntityComponent.Position);

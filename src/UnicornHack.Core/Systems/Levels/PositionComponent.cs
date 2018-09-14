@@ -1,4 +1,5 @@
-﻿using UnicornHack.Generation;
+﻿using System.Collections.Generic;
+using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
@@ -70,16 +71,25 @@ namespace UnicornHack.Systems.Levels
             get => new Point(LevelX, LevelY);
             set
             {
-                var levelXSet = StartSettingWithNotify(value.X, ref _levelX, nameof(LevelX), out var oldLevelX);
-                var levelYSet = StartSettingWithNotify(value.Y, ref _levelY, nameof(LevelY), out var oldLevelY);
+                var levelXSet = NotifyChanging(value.X, ref _levelX, nameof(LevelX), out var oldLevelX);
+                var levelYSet = NotifyChanging(value.Y, ref _levelY, nameof(LevelY), out var oldLevelY);
 
+                var changes = new List<IPropertyValueChange>();
                 if (levelXSet)
                 {
-                    FinishSetttingWithNotify(oldLevelX, value.X, nameof(LevelX));
+                    NotifyChanged(nameof(LevelX));
+                    changes.Add(new PropertyValueChange<byte>(this, nameof(LevelX), oldLevelX, value.X));
                 }
+
                 if (levelYSet)
                 {
-                    FinishSetttingWithNotify(oldLevelY, value.Y, nameof(LevelY));
+                    NotifyChanged(nameof(LevelY));
+                    changes.Add(new PropertyValueChange<byte>(this, nameof(LevelY), oldLevelY, value.Y));
+                }
+
+                if (changes.Count > 0)
+                {
+                    Entity?.HandlePropertyValuesChanged(changes);
                 }
             }
         }
@@ -89,21 +99,32 @@ namespace UnicornHack.Systems.Levels
         /// </summary>
         public void SetLevelPosition(int levelId, Point levelCell)
         {
-            var levelIdSet = StartSettingWithNotify(levelId, ref _levelId, nameof(LevelId), out var oldLevelId);
-            var levelXSet = StartSettingWithNotify(levelCell.X, ref _levelX, nameof(LevelX), out var oldLevelX);
-            var levelYSet = StartSettingWithNotify(levelCell.Y, ref _levelY, nameof(LevelY), out var oldLevelY);
+            var levelIdSet = NotifyChanging(levelId, ref _levelId, nameof(LevelId), out var oldLevelId);
+            var levelXSet = NotifyChanging(levelCell.X, ref _levelX, nameof(LevelX), out var oldLevelX);
+            var levelYSet = NotifyChanging(levelCell.Y, ref _levelY, nameof(LevelY), out var oldLevelY);
 
+            var changes = new List<IPropertyValueChange>();
             if (levelIdSet)
             {
-                FinishSetttingWithNotify(oldLevelId, levelId, nameof(LevelId));
+                NotifyChanged(nameof(LevelId));
+                changes.Add(new PropertyValueChange<int>(this, nameof(LevelId), oldLevelId, levelId));
             }
+
             if (levelXSet)
             {
-                FinishSetttingWithNotify(oldLevelX, levelCell.X, nameof(LevelX));
+                NotifyChanged(nameof(LevelX));
+                changes.Add(new PropertyValueChange<byte>(this, nameof(LevelX), oldLevelX, levelCell.X));
             }
+
             if (levelYSet)
             {
-                FinishSetttingWithNotify(oldLevelY, levelCell.Y, nameof(LevelY));
+                NotifyChanged(nameof(LevelY));
+                changes.Add(new PropertyValueChange<byte>(this, nameof(LevelY), oldLevelY, levelCell.Y));
+            }
+
+            if (changes.Count > 0)
+            {
+                Entity?.HandlePropertyValuesChanged(changes);
             }
         }
     }

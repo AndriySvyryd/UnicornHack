@@ -33,29 +33,20 @@ namespace UnicornHack
                     component => ((EffectComponent)component).AffectedEntityId,
                     (int)EntityComponent.Effect),
                 new KeyValueGetter<GameEntity, (byte Level, int Id)>(
-                    (entity, changedComponentId, changedComponent, changedProperty, changedValue) =>
+                    (entity, changes, getOldValue, matcher) =>
                     {
-                        if (changedComponentId == (int)EntityComponent.Race)
+                        if (!matcher.TryGetValue<byte>(
+                            entity, (int)EntityComponent.Race, nameof(RaceComponent.Level), changes, getOldValue, out var level))
                         {
-                            if (changedProperty != null)
-                            {
-                                return (((byte)changedValue, entity.Id), true);
-                            }
-                        }
-                        else
-                        {
-                            changedComponent = entity.Race;
-                            if(changedComponent == null)
-                            {
-                                return ((0, 0), false);
-                            }
+                            return ((0, 0), false);
                         }
 
-                        return ((((RaceComponent)changedComponent).Level, entity.Id), true);
+                        return ((level, entity.Id), true);
                     },
-                    new PropertyMatcher((int)EntityComponent.Race, nameof(RaceComponent.Level))
+                    new PropertyMatcher()
+                        .With(component => ((RaceComponent)component).Level, (int)EntityComponent.Race)
                 ),
-                (effectEntity, _, __, ___) => effectEntity.RemoveComponent((int)EntityComponent.Race));
+                (effectEntity, _, __) => effectEntity.RemoveComponent((int)EntityComponent.Race));
 
             LivingSystem = new LivingSystem();
             queue.Add<XPGainedMessage>(LivingSystem, KnowledgeSystem.XPGainedMessageName, 0);

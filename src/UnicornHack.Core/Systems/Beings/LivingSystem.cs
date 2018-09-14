@@ -91,7 +91,7 @@ namespace UnicornHack.Systems.Beings
             PropertyValueChangedMessage<GameEntity, int> message, GameManager manager)
         {
             var being = message.Entity.Being;
-            switch (message.Property)
+            switch (message.ChangedPropertyName)
             {
                 case nameof(BeingComponent.HitPointMaximum):
                     being.HitPoints = message.OldValue == 0

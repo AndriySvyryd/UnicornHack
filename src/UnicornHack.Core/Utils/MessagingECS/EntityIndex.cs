@@ -35,12 +35,10 @@ namespace UnicornHack.Utils.MessagingECS
             return entities;
         }
 
-        protected override bool TryAddEntity(TKey key, TEntity entity, int changedComponentId,
-            Component changedComponent)
+        protected override bool TryAddEntity(TKey key, TEntity entity, Component changedComponent)
             => GetOrAddEntities(key).Add(entity);
 
-        protected override bool TryRemoveEntity(TKey key, TEntity entity, int changedComponentId,
-            Component changedComponent)
+        protected override bool TryRemoveEntity(TKey key, TEntity entity, Component changedComponent)
             => GetOrAddEntities(key).Remove(entity);
     }
 }

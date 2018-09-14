@@ -359,7 +359,7 @@ namespace UnicornHack.Systems.Effects
 
         public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager manager)
         {
-            if (message.ChangedComponentId == (int)EntityComponent.Effect)
+            if (message.ChangedComponent?.ComponentId == (int)EntityComponent.Effect)
             {
                 return ProcessEffectChanges(
                     message.Entity, (EffectComponent)message.ChangedComponent, manager, State.Added);

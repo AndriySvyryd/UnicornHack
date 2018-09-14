@@ -69,8 +69,7 @@ namespace UnicornHack.Utils.MessagingECS
 
         public abstract int GetNextEntityId();
 
-        ITransientReference<Entity> IEntityManager.CreateEntity()
-            => CreateEntity();
+        ITransientReference<Entity> IEntityManager.CreateEntity() => CreateEntity();
 
         public OwnerTransientReference<TEntity, EntityManager<TEntity>> CreateEntity()
             => new OwnerTransientReference<TEntity, EntityManager<TEntity>>(CreateEntityNoReference(), this);
@@ -115,22 +114,22 @@ namespace UnicornHack.Utils.MessagingECS
         public TComponent CreateComponent<TComponent>(int componentId)
             where TComponent : Component, new() => ((ListObjectPool<TComponent>)_componentPools[componentId]).Get();
 
-        public void HandleComponentAdded(int id, Component component)
-            => HandleAddedOrRemoved(component.Entity, id, component);
+        public void HandleComponentAdded(Component component)
+            => HandleComponentAddedOrRemoved(component.Entity, component);
 
-        public void HandleComponentRemoved(int id, Component component)
-            => HandleAddedOrRemoved(component.Entity, id, component);
+        public void HandleComponentRemoved(Component component)
+            => HandleComponentAddedOrRemoved(component.Entity, component);
 
-        private void HandleAddedOrRemoved(Entity entity, int id, Component component)
+        private void HandleComponentAddedOrRemoved(Entity entity, Component component)
         {
-            var groups = _groupsByComponentId[id];
+            var groups = _groupsByComponentId[component.ComponentId];
             if (groups != null)
             {
                 var typedEntity = (TEntity)entity;
 
                 foreach (var group in groups)
                 {
-                    group.HandleEntityComponentChanged(typedEntity, id, component);
+                    group.HandleEntityComponentChanged(typedEntity, component);
                 }
             }
         }
@@ -141,13 +140,22 @@ namespace UnicornHack.Utils.MessagingECS
             var groups = _groupsByComponentId[componentId];
             if (groups != null)
             {
-                var typedEntity = (TEntity)component.Entity;
-
+                var changes = new IPropertyValueChange[]{new PropertyValueChange<T>(component, propertyName, oldValue, newValue)};
                 foreach (var group in groups)
                 {
-                    group.HandlePropertyValueChanged(
-                        propertyName, oldValue, newValue, componentId, component, typedEntity);
+                    group.HandlePropertyValuesChanged(changes);
                 }
+            }
+        }
+
+        public void HandlePropertyValuesChanged(IReadOnlyList<IPropertyValueChange> changes)
+        {
+            foreach (var group in changes.SelectMany(c =>
+                    _groupsByComponentId[c.ChangedComponent.ComponentId]
+                        ?? Enumerable.Empty<EntityGroup<TEntity>>())
+                .Distinct())
+            {
+                group.HandlePropertyValuesChanged(changes);
             }
         }
 

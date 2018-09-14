@@ -6,9 +6,9 @@ using System.Linq;
 namespace UnicornHack.Utils.MessagingECS
 {
     public class SortedEntityRelationship<TEntity, TKey> : EntityRelationshipBase<TEntity>
-        where TEntity : Entity
+        where TEntity : Entity, new()
     {
-        private readonly KeyValueGetter<TEntity, TKey> _sortValueGetter;
+        private readonly IKeyValueGetter<TEntity, TKey> _sortValueGetter;
         private readonly IComparer<TKey> _comparer;
         private static readonly IReadOnlyDictionary<TKey, TEntity> EmptyDictionary = new Dictionary<TKey, TEntity>();
 
@@ -16,9 +16,9 @@ namespace UnicornHack.Utils.MessagingECS
             string name,
             IEntityGroup<TEntity> referencingGroup,
             IEntityGroup<TEntity> referencedGroup,
-            KeyValueGetter<TEntity, int> keyValueGetter,
-            KeyValueGetter<TEntity, TKey> sortValueGetter,
-            Action<TEntity, TEntity, int, Component> handleReferencedDeleted,
+            IKeyValueGetter<TEntity, int> keyValueGetter,
+            IKeyValueGetter<TEntity, TKey> sortValueGetter,
+            Action<TEntity, TEntity, Component> handleReferencedDeleted,
             bool referencedKeepAlive = false,
             bool referencingKeepAlive = false)
             : this(
@@ -37,9 +37,9 @@ namespace UnicornHack.Utils.MessagingECS
         public SortedEntityRelationship(string name,
             IEntityGroup<TEntity> referencingGroup,
             IEntityGroup<TEntity> referencedGroup,
-            KeyValueGetter<TEntity, int> keyValueGetter,
-            KeyValueGetter<TEntity, TKey> sortValueGetter,
-            Action<TEntity, TEntity, int, Component> handleReferencedDeleted,
+            IKeyValueGetter<TEntity, int> keyValueGetter,
+            IKeyValueGetter<TEntity, TKey> sortValueGetter,
+            Action<TEntity, TEntity, Component> handleReferencedDeleted,
             bool referencedKeepAlive,
             bool referencingKeepAlive,
             IComparer<TKey> comparer)
@@ -93,13 +93,12 @@ namespace UnicornHack.Utils.MessagingECS
             return entities;
         }
 
-        protected override bool TryAddEntity(
-            int key, TEntity entity, int changedComponentId, Component changedComponent)
+        protected override bool TryAddEntity(int key, TEntity entity, Component changedComponent)
         {
             var referenced = FindReferenced(key, entity, fallback: false);
             if (referenced != null)
             {
-                return AddEntity(key, entity, changedComponentId, changedComponent, referenced);
+                return AddEntity(key, entity, changedComponent, referenced);
             }
 
             if (OrphanedEntities == null)
@@ -114,25 +113,24 @@ namespace UnicornHack.Utils.MessagingECS
         }
 
         private bool AddEntity(
-            int key, TEntity entity, int changedComponentId, Component changedComponent, TEntity referenced)
+            int key, TEntity entity, Component changedComponent, TEntity referenced)
         {
-            if (_sortValueGetter.TryGetKey(entity, Component.NullId, null, null, default, out var sortKey))
+            if (_sortValueGetter.TryGetKey(entity, new IPropertyValueChange[0], getOldValue: false, out var sortKey))
             {
                 GetOrAddEntities(key).Add(sortKey, entity);
 
-                OnEntityAdded(entity, changedComponentId, changedComponent, referenced);
+                OnEntityAdded(entity, changedComponent, referenced);
                 return true;
             }
 
             return false;
         }
 
-        protected override bool TryRemoveEntity(
-            int key, TEntity entity, int changedComponentId, Component changedComponent)
+        protected override bool TryRemoveEntity(int key, TEntity entity, Component changedComponent)
         {
             if (Index.TryGetValue(key, out var referencingEntities))
             {
-                if (!_sortValueGetter.TryGetKey(entity, Component.NullId, null, null, default, out var sortKey))
+                if (!_sortValueGetter.TryGetKey(entity, new IPropertyValueChange[0], getOldValue: false, out var sortKey))
                 {
                     sortKey = referencingEntities.Where(p => p.Value == entity).Select(p => p.Key).FirstOrDefault();
                 }
@@ -145,8 +143,7 @@ namespace UnicornHack.Utils.MessagingECS
                         Index.Remove(key);
                     }
 
-                    OnEntityRemoved(entity, changedComponentId, changedComponent,
-                        FindReferenced(key, entity, fallback: true));
+                    OnEntityRemoved(entity, changedComponent, FindReferenced(key, entity, fallback: true));
                     return true;
                 }
             }
@@ -164,35 +161,56 @@ namespace UnicornHack.Utils.MessagingECS
             return false;
         }
 
-        public override bool HandlePropertyValueChanged<T>(string propertyName, T oldValue, T newValue, int componentId,
-            Component component, TEntity entity, IEntityGroup<TEntity> group)
+        public override bool HandlePropertyValuesChanged(
+            IReadOnlyList<IPropertyValueChange> changes, TEntity entity, IEntityGroup<TEntity> group)
         {
-            if (base.HandlePropertyValueChanged(propertyName, oldValue, newValue, componentId, component, entity,
-                group))
+            if (base.HandlePropertyValuesChanged(changes, entity, group))
             {
                 return true;
             }
 
-            if (!_sortValueGetter.PropertyUsed(componentId, propertyName))
+            Component componentUsed = null;
+            for (var i = 0; i < changes.Count; i++)
+            {
+                var change = changes[i];
+                if (_sortValueGetter.PropertyUsed(change.ChangedComponent.ComponentId, change.ChangedPropertyName))
+                {
+                    componentUsed = change.ChangedComponent;
+                    break;
+                }
+
+                // The component might have been removed by the previous change listener
+                if (!entity.HasComponent(change.ChangedComponent.ComponentId))
+                {
+                    return true;
+                }
+            }
+
+            if (componentUsed == null)
             {
                 return false;
             }
 
-            if (!KeyValueGetter.TryGetKey(entity, Component.NullId, null, null, default, out var key))
+            if (!KeyValueGetter.TryGetKey(entity, new IPropertyValueChange[0], getOldValue: false, out var key))
             {
                 return true;
             }
 
             var entities = GetOrAddEntities(key);
 
-            if (_sortValueGetter.TryGetKey(entity, componentId, component, propertyName, oldValue, out var oldSortKey))
+            if (_sortValueGetter.TryGetKey(entity, changes, getOldValue: true, out var oldSortKey))
             {
                 entities.Remove(oldSortKey);
             }
 
-            if (_sortValueGetter.TryGetKey(entity, componentId, component, propertyName, newValue, out var newSortKey))
+            if (_sortValueGetter.TryGetKey(entity, changes, getOldValue: false, out var newSortKey))
             {
                 entities.Add(newSortKey, entity);
+            }
+
+            if (entities.Count == 0)
+            {
+                Index.Remove(key);
             }
 
             return true;
@@ -208,8 +226,7 @@ namespace UnicornHack.Utils.MessagingECS
             public ReferencedGroupListener(SortedEntityRelationship<TEntity, TKey> relationship)
                 => _relationship = relationship;
 
-            public void HandleEntityAdded
-                (TEntity entity, int addedComponentId, Component addedComponent, IEntityGroup<TEntity> group)
+            public void HandleEntityAdded(TEntity entity, Component addedComponent, IEntityGroup<TEntity> group)
             {
                 if (_relationship.OrphanedEntities != null
                     && _relationship.OrphanedEntities.TryGetValue(entity.Id, out var orphanedEntities))
@@ -219,23 +236,21 @@ namespace UnicornHack.Utils.MessagingECS
                     foreach (var orphanedEntity in orphanedEntities)
                     {
                         _relationship.AddEntity(
-                            entity.Id, orphanedEntity, Component.NullId, changedComponent: null, entity);
+                            entity.Id, orphanedEntity, changedComponent: null, entity);
                     }
                 }
             }
 
-            public void HandleEntityRemoved(
-                TEntity entity, int removedComponentId, Component removedComponent, IEntityGroup<TEntity> group)
+            public void HandleEntityRemoved(TEntity entity, Component removedComponent, IEntityGroup<TEntity> group)
             {
                 foreach (var referencingEntity in _relationship[entity.Id].Values.ToList())
                 {
                     _relationship.HandleReferencedEntityRemoved(
-                        referencingEntity, entity, removedComponentId, removedComponent);
+                        referencingEntity, entity, removedComponent);
                 }
             }
 
-            public bool HandlePropertyValueChanged<T>(string propertyName, T oldValue, T newValue,
-                int componentId, Component component, TEntity entity, IEntityGroup<TEntity> group)
+            public bool HandlePropertyValuesChanged(IReadOnlyList<IPropertyValueChange> changes, TEntity entity, IEntityGroup<TEntity> group)
                 => false;
         }
     }

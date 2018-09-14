@@ -1,4 +1,6 @@
-﻿namespace UnicornHack.Utils.MessagingECS
+﻿using System.Collections.Generic;
+
+namespace UnicornHack.Utils.MessagingECS
 {
     public interface IEntityManager
     {
@@ -12,11 +14,13 @@
         TComponent CreateComponent<TComponent>(int componentId)
             where TComponent : Component, new();
 
-        void HandleComponentAdded(int id, Component component);
-        void HandleComponentRemoved(int id, Component component);
+        void HandleComponentAdded(Component component);
+        void HandleComponentRemoved(Component component);
 
         void HandlePropertyValueChanged<T>(
             string propertyName, T oldValue, T newValue, int componentId, Component component);
+
+        void HandlePropertyValuesChanged(IReadOnlyList<IPropertyValueChange> changes);
 
         void RemoveFromSecondaryTracker(ITrackable trackable);
     }
