@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace UnicornHack.Utils.DataLoading
@@ -6,8 +7,8 @@ namespace UnicornHack.Utils.DataLoading
     public abstract class Loader<T>
         where T : class, ILoadable
     {
-        protected Dictionary<string, T> NameLookup { get; } =
-            new Dictionary<string, T>(StringComparer.OrdinalIgnoreCase);
+        protected ConcurrentDictionary<string, T> NameLookup { get; } =
+            new ConcurrentDictionary<string, T>(StringComparer.OrdinalIgnoreCase);
 
         public T Get(string name)
         {

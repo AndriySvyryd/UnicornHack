@@ -381,6 +381,10 @@ export class MapActor {
         let unset = false;
         for (; i < compactActor.length;) {
             switch (compactActor[i++]) {
+                case 1:
+                    let baseName = compactActor[i++];
+                    this.baseName = baseName === null ? '' : baseName;
+                    break;
                 case 2:
                     let name = compactActor[i++];
                     this.name = name === null ? '' : name;

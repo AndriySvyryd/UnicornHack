@@ -6,6 +6,7 @@ using UnicornHack.Primitives;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Senses;
 using UnicornHack.Utils.DataLoading;
@@ -41,11 +42,13 @@ namespace UnicornHack.Generation
 
                 playerEntity.Being = being;
 
-                playerEntity.Sensor = manager.CreateComponent<SensorComponent>(EntityComponent.Sensor);
+                var sensor = manager.CreateComponent<SensorComponent>(EntityComponent.Sensor);
+
+                playerEntity.Sensor = sensor;
 
                 var physical = manager.CreateComponent<PhysicalComponent>(EntityComponent.Physical);
                 physical.Material = Material.Flesh;
-                physical.Capacity = 52;
+                physical.Capacity = ItemMovingSystem.DefaultInventorySize;
 
                 playerEntity.Physical = physical;
 

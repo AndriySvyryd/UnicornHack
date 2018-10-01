@@ -69,6 +69,18 @@ namespace UnicornHack.Utils
                 throw new ArgumentOutOfRangeException(nameof(primaryFOVQuadrants));
             }
 
+            if (totalFOVQuadrants > primaryFOVQuadrants
+                && secondaryRange <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(secondaryRange));
+            }
+
+            if (totalFOVQuadrants > 0
+                && primaryRange <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(primaryRange));
+            }
+
             blocksVisibility(origin.X, origin.Y, MaxVisibility, state);
             var octantShift = Direction.East.OctantsTo(heading);
             if (octantShift == -1)
@@ -77,7 +89,8 @@ namespace UnicornHack.Utils
             }
 
             octantShift = (byte)(8 + octantShift - totalFOVQuadrants);
-            var visibilityFalloff = noFalloff ? (byte)0 : (byte)(byte.MaxValue / secondaryRange);
+            var visibilityFalloff = noFalloff || secondaryRange == 0
+                ? (byte)0 : (byte)(byte.MaxValue / secondaryRange);
             for (var octant = 0; octant < totalFOVQuadrants - primaryFOVQuadrants; octant++)
             {
                 Compute((byte)((octant + octantShift) % 8), origin, secondaryRange, visibilityFalloff,
@@ -98,7 +111,8 @@ namespace UnicornHack.Utils
                     state);
             }
 
-            visibilityFalloff = noFalloff ? (byte)0 : (byte)(byte.MaxValue / primaryRange);
+            visibilityFalloff = noFalloff || primaryRange == 0
+                ? (byte)0 : (byte)(byte.MaxValue / primaryRange);
             for (var octant = totalFOVQuadrants - primaryFOVQuadrants;
                 octant < totalFOVQuadrants + primaryFOVQuadrants;
                 octant++)

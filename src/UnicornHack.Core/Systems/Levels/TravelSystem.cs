@@ -91,7 +91,8 @@ namespace UnicornHack.Systems.Levels
 
             var conflictingActor = manager.LevelActorToLevelCellIndex[(targetLevelId, targetCell.X, targetCell.Y)];
             if (conflictingActor != null
-                && !MoveOffCell(connectionEntity, manager))
+                && (!message.MoveOffConflicting
+                    || !MoveOffCell(conflictingActor, manager)))
             {
                 return traveledMessage;
             }

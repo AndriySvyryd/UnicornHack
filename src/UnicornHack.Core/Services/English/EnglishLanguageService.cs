@@ -26,11 +26,11 @@ namespace UnicornHack.Services.English
             => GetString(
                 beingEntity,
                 person,
-                canSense: (sense & (SenseType.Sight | SenseType.Telepathy | SenseType.Touch)) != 0,
+                canIdentify: sense.CanIdentify(),
                 definiteDeterminer: true);
 
         protected virtual string GetString(
-            GameEntity beingEntity, EnglishPerson person, bool canSense, bool definiteDeterminer = false)
+            GameEntity beingEntity, EnglishPerson person, bool canIdentify, bool definiteDeterminer = false)
         {
             if (beingEntity == null)
             {
@@ -43,7 +43,7 @@ namespace UnicornHack.Services.English
                     EnglishPronounForm.Normal, EnglishNumber.Singular, person, gender: null);
             }
 
-            if (!canSense)
+            if (!canIdentify)
             {
                 return "something";
             }
@@ -79,7 +79,7 @@ namespace UnicornHack.Services.English
                        ? ""
                        : definiteDeterminer
                            ? "the "
-                           : IsVocal(itemName[0])
+                           : EnglishMorphologicalProcessor.IsVocal(itemName[0])
                                ? "an "
                                : "a ") + itemName;
         }
@@ -275,21 +275,6 @@ namespace UnicornHack.Services.English
             }
         }
 
-        protected virtual bool IsVocal(char c)
-        {
-            switch (char.ToLowerInvariant(c))
-            {
-                case 'a':
-                case 'e':
-                case 'i':
-                case 'o':
-                case 'u':
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
         #endregion
 
         #region Events
@@ -300,7 +285,7 @@ namespace UnicornHack.Services.English
 
             if (@event.SensorEntity != @event.VictimEntity
                 && @event.SensorEntity != @event.AttackerEntity
-                && (@event.AttackerSensed & (SenseType.Sight | SenseType.Touch)) == 0)
+                && !@event.AttackerSensed.CanIdentify())
             {
                 if ((!@event.Ranged
                      || (@event.VictimSensed &
@@ -312,7 +297,7 @@ namespace UnicornHack.Services.English
                 }
 
                 if (!@event.Ranged
-                    || (@event.VictimSensed & (SenseType.Sight | SenseType.Touch)) == 0)
+                    || !@event.VictimSensed.CanIdentify())
                 {
                     return ToSentence(
                         "You hear a",
@@ -346,7 +331,7 @@ namespace UnicornHack.Services.English
                 var meleeWeaponPhrase = weapon == null || weapon.TemplateName == ""
                     ? ""
                     : "with " +
-                      ((@event.AttackerSensed & (SenseType.Sight | SenseType.Touch)) != 0
+                      (@event.AttackerSensed.CanIdentify()
                           ? GetString(weapon, 1, definiteDeterminer: attackerPerson == EnglishPerson.Second)
                           : "something");
 
@@ -371,7 +356,7 @@ namespace UnicornHack.Services.English
                         meleeWeaponPhrase,
                         @event.SensorEntity == @event.VictimEntity ? "!" : ".");
 
-                    if ((@event.VictimSensed & (SenseType.Sight | SenseType.Touch)) == 0)
+                    if (!@event.VictimSensed.CanIdentify())
                     {
                         return attackSentence;
                     }
@@ -395,7 +380,7 @@ namespace UnicornHack.Services.English
             {
                 return ToSentence(attacker,
                     EnglishMorphologicalProcessor.ProcessVerb(attackVerb, mainVerbForm),
-                    (@event.AttackerSensed & (SenseType.Sight | SenseType.Touch)) != 0
+                    @event.AttackerSensed.CanIdentify()
                         ? GetString(weapon, 1,
                             definiteDeterminer: !isProjectile && attackerPerson == EnglishPerson.Second)
                         : "something");
@@ -413,7 +398,7 @@ namespace UnicornHack.Services.English
                             EnglishPronounForm.Reflexive, EnglishNumber.Singular, attackerPerson, victimGender),
                     @event.SensorEntity == @event.VictimEntity ? "!" : ".");
 
-                if ((@event.VictimSensed & (SenseType.Sight | SenseType.Touch)) == 0)
+                if (!@event.VictimSensed.CanIdentify())
                 {
                     return attackSentence;
                 }
@@ -434,7 +419,7 @@ namespace UnicornHack.Services.English
         protected virtual string FormatDamage(IReadOnlyList<GameEntity> effects, string victim)
         {
             // TODO: Differentiate damage types
-            var damage = effects.Select(e => e.Effect).Where(IsDamage)
+            var damage = effects.Select(e => e.Effect).Where(e => e.EffectType.IsDamage())
                 .Aggregate(0, (d, e) => d + e.Amount.Value);
 
             if (damage == 0)
@@ -443,26 +428,6 @@ namespace UnicornHack.Services.English
             }
 
             return Format(victim == null ? "[{0} pts.]" : "({0} pts.)", damage);
-        }
-
-        protected bool IsDamage(EffectComponent effect)
-        {
-            switch (effect.EffectType)
-            {
-                case EffectType.Burn:
-                case EffectType.Corrode:
-                case EffectType.Disintegrate:
-                case EffectType.Blight:
-                case EffectType.Freeze:
-                case EffectType.Bleed:
-                case EffectType.Shock:
-                case EffectType.Soak:
-                case EffectType.MagicalDamage:
-                case EffectType.PhysicalDamage:
-                    return true;
-                default:
-                    return false;
-            }
         }
 
         public virtual string GetString(in DeathEvent @event)

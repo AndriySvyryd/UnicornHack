@@ -344,6 +344,21 @@ namespace UnicornHack.Services.English
         public bool IsPlural(string noun)
             => noun.Length > 2 && noun.Substring(noun.Length - 2, 2) == "es";
 
+        public bool IsVocal(char c)
+        {
+            switch (char.ToLowerInvariant(c))
+            {
+                case 'a':
+                case 'e':
+                case 'i':
+                case 'o':
+                case 'u':
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         public string GetPronoun(EnglishPronounForm form, EnglishNumber number, EnglishPerson person,
             EnglishGender? gender)
         {

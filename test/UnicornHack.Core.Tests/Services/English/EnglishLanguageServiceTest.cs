@@ -33,7 +33,7 @@ namespace UnicornHack.Services.English
             Verify(blob, nymph, player, SenseType.Sound, SenseType.Sight, AbilityAction.Sting, 11,
                 expectedMessage: "You hear a noise.");
 
-            Verify(blob, nymph, player, SenseType.Sight, SenseType.SoundDistant | SenseType.Danger | SenseType.Touch,
+            Verify(blob, nymph, player, SenseType.Sight, SenseType.SoundDistant | SenseType.Danger | SenseType.Telepathy,
                 AbilityAction.Headbutt, 11,
                 expectedMessage: "The acid blob headbutts the water nymph. (11 pts.)");
 
@@ -71,10 +71,10 @@ namespace UnicornHack.Services.English
 
             var dagger = ItemData.Dagger.Instantiate(player.Manager).Referenced;
 
-            Verify(player, blob, player, SenseType.Touch, SenseType.Sight, AbilityAction.Slash, 11, weapon: dagger,
+            Verify(player, blob, player, SenseType.Touch | SenseType.Telepathy, SenseType.Sight, AbilityAction.Slash, 11, weapon: dagger,
                 expectedMessage: "You slash the acid blob with the dagger. (11 pts.)");
 
-            Verify(player, null, player, SenseType.Touch, SenseType.Sight, AbilityAction.Slash, null, weapon: dagger,
+            Verify(player, null, player, SenseType.Touch | SenseType.Telepathy, SenseType.Sight, AbilityAction.Slash, null, weapon: dagger,
                 expectedMessage: "You slash the air with the dagger.");
 
             var bow = ItemData.Shortbow.Instantiate(player.Manager).Referenced;

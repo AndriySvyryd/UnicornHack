@@ -1,4 +1,5 @@
 ﻿using UnicornHack.Generation;
+using UnicornHack.Primitives;
 
 namespace UnicornHack.Systems.Knowledge
 {
@@ -7,6 +8,7 @@ namespace UnicornHack.Systems.Knowledge
     {
         private GameEntity _knownEntity;
         private int _knownEntityId;
+        private SenseType _sensedType;
 
         public KnowledgeComponent()
             => ComponentId = (int)EntityComponent.Knowledge;
@@ -17,9 +19,14 @@ namespace UnicornHack.Systems.Knowledge
             set => SetWithNotify(value, ref _knownEntityId);
         }
 
-        // TODO: Perception level
+        public SenseType SensedType
+        {
+            get => _sensedType;
+            set => SetWithNotify(value, ref _sensedType);
+        }
 
         // Unmapped properties
+
         public GameEntity KnownEntity
         {
             get => _knownEntity ?? (_knownEntity = Entity.Manager.FindEntity(_knownEntityId));

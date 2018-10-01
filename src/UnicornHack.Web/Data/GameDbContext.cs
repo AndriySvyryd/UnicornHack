@@ -773,6 +773,8 @@ namespace UnicornHack.Data
                 SensorComponents.Remove(sensorComponent);
             }
 
+            game.ActingPlayerId = null;
+
             SaveChanges();
 
             Games.Remove(game);

@@ -2,7 +2,9 @@
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using UnicornHack.Primitives;
 using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 
 namespace UnicornHack.Hubs
@@ -27,14 +29,22 @@ namespace UnicornHack.Hubs
                         ? new List<object>(6)
                         : new List<object>(7) {(int)state};
                     properties.Add(actorKnowledge.EntityId);
-                    // TODO: Move to language service and take sense into account
-                    properties.Add(ai != null
-                        ? manager.RacesToBeingRelationship[actorKnowledge.KnownEntityId].Values.First().Race
-                            .TemplateName
-                        : "player");
-                    properties.Add(ai != null
-                        ? ai.ProperName
-                        : knownEntity.Player.ProperName);
+                    // TODO: Move to language service
+                    if ((actorKnowledge.SensedType & SenseType.Sight) != SenseType.None)
+                    {
+                        properties.Add(ai != null
+                            ? manager.RacesToBeingRelationship[actorKnowledge.KnownEntityId].Values.First().Race
+                                .TemplateName
+                            : "player");
+                        properties.Add(ai != null
+                            ? ai.ProperName
+                            : knownEntity.Player.ProperName);
+                    }
+                    else
+                    {
+                        properties.Add(null);
+                        properties.Add(null);
+                    }
                     properties.Add(position.LevelX);
                     properties.Add(position.LevelY);
                     properties.Add((byte)position.Heading);
@@ -59,17 +69,31 @@ namespace UnicornHack.Hubs
                         actorKnowledge.EntityId
                     };
 
-                    var actorEntry = ai != null
-                        ? (EntityEntry)context.DbContext.Entry(ai)
-                        : context.DbContext.Entry(knownEntity.Player);
-                    var i = 2;
-                    var name = actorEntry.Property(nameof(AIComponent.ProperName));
-                    if (name.IsModified)
+                    var knowledgeEntry = context.DbContext.Entry(actorKnowledge);
+                    var i = 1;
+                    var sensedType = knowledgeEntry.Property(nameof(KnowledgeComponent.SensedType));
+                    if (sensedType.IsModified)
                     {
+                        var canIdentify = (actorKnowledge.SensedType & SenseType.Sight) != SenseType.None;
                         properties.Add(i);
-                        properties.Add(ai != null
-                            ? ai.ProperName
-                            : knownEntity.Player.ProperName);
+                        properties.Add(!canIdentify
+                            ? null
+                            : ai != null
+                                ? manager.RacesToBeingRelationship[actorKnowledge.KnownEntityId].Values.First().Race
+                                    .TemplateName
+                                : "player");
+
+                        i++;
+                        properties.Add(i);
+                        properties.Add(!canIdentify
+                            ? null
+                            : ai != null
+                                ? ai.ProperName
+                                : knownEntity.Player.ProperName);
+                    }
+                    else
+                    {
+                        i++;
                     }
 
                     var positionEntry = context.DbContext.Entry(position);

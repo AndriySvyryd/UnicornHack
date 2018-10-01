@@ -250,6 +250,7 @@ namespace UnicornHack.Systems.Actors
             travelMessage.TargetCell = onlyChangeHeading
                 ? position.LevelCell
                 : position.LevelCell.Translate(Vector.Convert(travelMessage.TargetHeading));
+            travelMessage.MoveOffConflicting = true;
 
             if (!manager.TravelSystem.CanTravel(travelMessage, manager))
             {

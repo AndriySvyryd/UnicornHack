@@ -14,6 +14,7 @@ namespace UnicornHack.Systems.Items
     {
         public const string MoveItemMessageName = "MoveItem";
         public const string ItemMovedMessageName = "ItemMoved";
+        public static readonly int DefaultInventorySize = 26;
 
         public MoveItemMessage CreateMoveItemMessage(GameManager manager)
             => manager.Queue.CreateMessage<MoveItemMessage>(MoveItemMessageName);

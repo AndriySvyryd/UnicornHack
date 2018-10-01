@@ -8,7 +8,9 @@ using UnicornHack.Services;
 using UnicornHack.Services.English;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils;
+using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
+using Xunit;
 
 namespace UnicornHack
 {
@@ -48,11 +50,7 @@ namespace UnicornHack
                 ItemGenerator = new ItemGenerator {ExpectedInitialCount = 0}
             };
 
-            var level = CreateLevel(fragment, game);
-            level.GenerationRandom = new SimpleRandom {Seed = game.Random.Seed};
-
-            fragment.TryPlace(level, level.BoundingRectangle);
-            return level;
+            return CreateLevel(fragment, game);
         }
 
         public static LevelComponent CreateLevel(DefiningMapFragment fragment, Game game)
@@ -83,27 +81,135 @@ namespace UnicornHack
             return level;
         }
 
-
-        public static string PrintMap(LevelComponent level, byte[] visibleTerrain)
+        public static void AssertVisibility(LevelComponent level, string expectedVisbileMap, byte[] actualVisibility)
         {
+            var expectedFragment =
+                new NormalMapFragment
+                {
+                    Map = expectedVisbileMap,
+                    Width = level.Width,
+                    Height = level.Height
+                };
+            expectedFragment.EnsureInitialized(level.Game);
+
+            var expected = new byte[level.Height * level.Width];
+            var matched = true;
+
+            expectedFragment.WriteMap(
+                new Point(0, 0),
+                level,
+                (c, point, l, _) =>
+                {
+                    var expectedVisible = c == ' ' ? (byte)0 : (byte)1;
+                    var i = l.PointToIndex[point.X, point.Y];
+                    expected[i] = expectedVisible;
+                    var actualVisibile = actualVisibility[i] == 0 ? 0 : 1;
+                    matched &= expectedVisible == actualVisibile;
+                },
+                (object)null);
+
+            Assert.True(matched, @"Expected:
+" + PrintMap(level, expected) + @"
+Actual:
+" + PrintMap(level, actualVisibility) + @"
+Seed: " + level.Game.InitialSeed);
+        }
+
+        public static void AssertTerrain(LevelComponent level, string expectedMap, byte[] actualTerrain)
+        {
+            var expectedFragment =
+                new NormalMapFragment
+                {
+                    Map = expectedMap,
+                    Width = level.Width,
+                    Height = level.Height
+                };
+            expectedFragment.EnsureInitialized(level.Game);
+
+            var expected = new byte[level.Height * level.Width];
+            var matched = true;
+
+            expectedFragment.WriteMap(
+                new Point(0, 0),
+                level,
+                (c, point, l, _) =>
+                {
+                    var expectedFeature = (byte)ToMapFeature(c);
+                    var i = l.PointToIndex[point.X, point.Y];
+                    expected[i] = expectedFeature;
+                    if (expectedFeature != actualTerrain[i]
+                        && (expectedFeature == (byte)MapFeature.Default
+                            || expectedFeature == (byte)MapFeature.Unexplored)
+                        && !(actualTerrain[i] == (byte)MapFeature.Default
+                            || actualTerrain[i] == (byte)MapFeature.Unexplored))
+                    {
+                        matched = false;
+                    }
+                },
+                (object)null);
+
+            Assert.True(matched, @"Expected:
+" + PrintMap(level, null, expected) + @"
+Actual:
+" + PrintMap(level, null, actualTerrain) + @"
+Seed: " + level.Game.InitialSeed);
+        }
+
+        public static MapFeature ToMapFeature(char c)
+        {
+            var feature = MapFeature.Default;
+            switch (c)
+            {
+                case '.':
+                    feature = MapFeature.StoneFloor;
+                    goto case '\u0001';
+                case ',':
+                    feature = MapFeature.RockFloor;
+                    goto case '\u0001';
+                case '?':
+                    feature = MapFeature.StoneFloor;
+                    goto case '\u0001';
+                case '#':
+                    feature = MapFeature.StoneWall;
+                    goto case '\u0001';
+                case 'A':
+                    feature = MapFeature.StoneArchway;
+                    goto case '\u0001';
+                case '=':
+                    feature = MapFeature.Pool;
+                    goto case '\u0001';
+                case '\u0001':
+                    break;
+                case ' ':
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unsupported map character '{c}'");
+            }
+
+            return feature;
+        }
+
+        public static string PrintMap(LevelComponent level, byte[] visibleTerrain, byte[] terrain = null)
+        {
+            terrain = terrain ?? level.Terrain;
             var builder = new StringBuilder();
             var i = 0;
             for (var y = 0; y < level.Height; y++)
             {
                 for (var x = 0; x < level.Width; x++)
                 {
-                    var isVisible = visibleTerrain[i];
-                    if (isVisible == 0)
+                    if (visibleTerrain != null && visibleTerrain[i] == 0)
                     {
                         builder.Append(' ');
                     }
                     else
                     {
-                        var feature = (MapFeature)level.Terrain[i];
+                        var feature = (MapFeature)terrain[i];
                         var symbol = ' ';
                         switch (feature)
                         {
                             case MapFeature.Default:
+                            case MapFeature.Unexplored:
                                 break;
                             case MapFeature.StoneFloor:
                                 symbol = '·';

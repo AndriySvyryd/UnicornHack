@@ -136,7 +136,7 @@ namespace UnicornHack.Systems.Senses
 
                     level.VisibleTerrain[i] = visibility;
 
-                    // KnownTerrain updated here for performance
+                    // KnownTerrain updated here instead of a separate method for performance
                     if (level.KnownTerrain[i] == (byte)MapFeature.Unexplored)
                     {
                         tilesExplored++;
@@ -160,7 +160,25 @@ namespace UnicornHack.Systems.Senses
             return level.VisibleTerrain;
         }
 
-        public SenseType CanSense(GameEntity sensor, GameEntity target, GameManager manager)
+        public SenseType SensedByPlayer(GameEntity target, Point targetPosition)
+        {
+            var sensed = SenseType.None;
+            if (target.HasComponent(EntityComponent.Player))
+            {
+                sensed |= SenseType.Telepathy | SenseType.Touch;
+            }
+
+            var manager = target.Manager;
+            var level = manager.ItemMovingSystem.GetTopContainer(target, manager).Position.LevelEntity.Level;
+            if (level.VisibleTerrain[level.PointToIndex[targetPosition.X, targetPosition.Y]] != 0)
+            {
+                sensed |= SenseType.Sight;
+            }
+
+            return sensed;
+        }
+
+        public SenseType CanSense(GameEntity sensor, GameEntity target)
         {
             var sense = SenseType.None;
             if (target == null)
@@ -168,6 +186,7 @@ namespace UnicornHack.Systems.Senses
                 return sense;
             }
 
+            var manager = sensor.Manager;
             target = manager.ItemMovingSystem.GetTopContainer(target, manager);
             if (target.Position == null
                 || sensor.Position?.LevelId != target.Position.LevelId)
@@ -176,9 +195,10 @@ namespace UnicornHack.Systems.Senses
             }
 
             // TODO: Also when touching (e.g. grappling)
+
             if (target == sensor)
             {
-                sense |= SenseType.Touch;
+                sense |= SenseType.Telepathy | SenseType.Touch;
             }
 
             return sense | CanSense(sensor, target, target.Position.LevelCell);

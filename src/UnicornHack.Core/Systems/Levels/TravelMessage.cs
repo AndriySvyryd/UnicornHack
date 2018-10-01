@@ -21,6 +21,7 @@ namespace UnicornHack.Systems.Levels
 
         public Direction TargetHeading { get; set; }
         public Point TargetCell { get; set; }
+        public bool MoveOffConflicting { get; set; }
 
         string IMessage.MessageName { get; set; }
 

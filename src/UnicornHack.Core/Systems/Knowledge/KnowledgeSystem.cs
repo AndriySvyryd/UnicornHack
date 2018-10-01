@@ -12,7 +12,7 @@ using UnicornHack.Utils.MessagingECS;
 namespace UnicornHack.Systems.Knowledge
 {
     /// <summary>
-    ///     Tracks the entities on the level that the player knows about
+    ///     Tracks the entities on the level that the player knows about and player XP
     /// </summary>
     public class KnowledgeSystem :
         IGameSystem<VisibleTerrainChangedMessage>,
@@ -79,9 +79,10 @@ namespace UnicornHack.Systems.Knowledge
                 level = level ?? position.LevelEntity.Level;
             }
 
-            // TODO: Use CanSense
+            SenseType sensedType;
             if (position != null
-                && level.VisibleTerrain[level.PointToIndex[position.LevelX, position.LevelY]] != 0)
+                && (sensedType = manager.SensorySystem.SensedByPlayer(entity, position.LevelCell)) !=
+                    SenseType.None)
             {
                 foreach (var conflictingKnowledge in
                     manager.LevelKnowledgeToLevelCellIndex[(position.LevelId, position.LevelX, position.LevelY)])
@@ -116,7 +117,7 @@ namespace UnicornHack.Systems.Knowledge
                     }
                 }
 
-                UpdateKnowledge(position, manager);
+                UpdateKnowledge(position, sensedType, manager);
             }
             else
             {
@@ -130,10 +131,9 @@ namespace UnicornHack.Systems.Knowledge
                     }
 
                     if (level != knowledgePosition.LevelEntity?.Level
-                        || level.VisibleTerrain
-                            [level.PointToIndex[knowledge.Position.LevelX, knowledge.Position.LevelY]] != 0)
+                        || (manager.SensorySystem.SensedByPlayer(knowledge, knowledgePosition.LevelCell)
+                                & knowledge.Knowledge.SensedType) != SenseType.None)
                     {
-                        // TODO: Only if the perception level matches
                         knowledge.RemoveComponent(EntityComponent.Knowledge);
                         knowledge.RemoveComponent(EntityComponent.Position);
                     }
@@ -141,26 +141,30 @@ namespace UnicornHack.Systems.Knowledge
             }
         }
 
-        private void UpdateKnowledge(PositionComponent position, GameManager manager)
+        private void UpdateKnowledge(PositionComponent position, SenseType sensedType, GameManager manager)
         {
             var knowledge = manager.LevelKnowledgeToLevelEntityRelationship[position.EntityId];
             if (knowledge == null)
             {
                 using (var entityReference = manager.CreateEntity())
                 {
+                    var knowledgeEntityReference = entityReference.Referenced;
                     var knowledgeComponent = manager.CreateComponent<KnowledgeComponent>(EntityComponent.Knowledge);
                     knowledgeComponent.KnownEntityId = position.EntityId;
-                    entityReference.Referenced.Knowledge = knowledgeComponent;
+                    knowledgeComponent.SensedType = sensedType;
+                    knowledgeEntityReference.Knowledge = knowledgeComponent;
 
                     var knowledgePosition = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
                     knowledgePosition.SetLevelPosition(position.LevelId, position.LevelCell);
                     knowledgePosition.Heading = position.Heading;
 
-                    entityReference.Referenced.Position = knowledgePosition;
+                    knowledgeEntityReference.Position = knowledgePosition;
                 }
             }
             else
             {
+                knowledge.Knowledge.SensedType = sensedType;
+
                 var knowledgePosition = knowledge.Position;
                 knowledgePosition.SetLevelPosition(position.LevelId, position.LevelCell);
                 knowledgePosition.Heading = position.Heading;
@@ -233,7 +237,7 @@ namespace UnicornHack.Systems.Knowledge
                 var position = itemEntity.Position;
                 foreach (var playerEntity in manager.Players)
                 {
-                    var finalSensed = manager.SensorySystem.CanSense(playerEntity, itemEntity, manager);
+                    var finalSensed = manager.SensorySystem.CanSense(playerEntity, itemEntity);
 
                     var initialTopContainer = message.InitialContainer != null
                         ? manager.ItemMovingSystem.GetTopContainer(message.InitialContainer, manager)
@@ -299,8 +303,8 @@ namespace UnicornHack.Systems.Knowledge
                         continue;
                     }
 
-                    var actorSensed = manager.SensorySystem.CanSense(playerEntity, message.ActorEntity, manager);
-                    var itemSensed = manager.SensorySystem.CanSense(playerEntity, message.ItemEntity, manager);
+                    var actorSensed = manager.SensorySystem.CanSense(playerEntity, message.ActorEntity);
+                    var itemSensed = manager.SensorySystem.CanSense(playerEntity, message.ItemEntity);
 
                     var logMessage = manager.Game.Services.Language.GetString(new ItemEquipmentEvent(
                         playerEntity, message.ActorEntity, message.ItemEntity,
@@ -324,11 +328,9 @@ namespace UnicornHack.Systems.Knowledge
                         continue;
                     }
 
-                    var itemSensed = manager.SensorySystem.CanSense(playerEntity, message.ItemEntity, manager);
-                    var activatorSensed =
-                        manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity, manager);
-                    var targetSensed =
-                        manager.SensorySystem.CanSense(playerEntity, message.TargetEntity, manager);
+                    var itemSensed = manager.SensorySystem.CanSense(playerEntity, message.ItemEntity);
+                    var activatorSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity);
+                    var targetSensed = manager.SensorySystem.CanSense(playerEntity, message.TargetEntity);
 
                     var logMessage = manager.Game.Services.Language.GetString(new ItemActivationEvent(
                         playerEntity, message.ItemEntity, message.ActivatorEntity, message.TargetEntity,
@@ -356,20 +358,17 @@ namespace UnicornHack.Systems.Knowledge
                     continue;
                 }
 
-                var attackerSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity, manager);
+                var attackerSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity);
                 if (message.TargetEntity == playerEntity)
                 {
                     // TODO: Interrupt current action
 
-                    if ((attackerSensed & SenseType.Sight) == 0)
-                    {
-                        var position = message.TargetEntity.Position;
-                        // TODO: partial perception level
-                        UpdateKnowledge(position, manager);
-                    }
+                    attackerSensed |= SenseType.Touch;
+
+                    UpdateKnowledge(message.ActivatorEntity.Position, attackerSensed, manager);
                 }
 
-                var victimSensed = manager.SensorySystem.CanSense(playerEntity, message.TargetEntity, manager);
+                var victimSensed = manager.SensorySystem.CanSense(playerEntity, message.TargetEntity);
                 if (victimSensed != SenseType.None)
                 {
                     var weaponId = message.AppliedEffects
@@ -403,7 +402,7 @@ namespace UnicornHack.Systems.Knowledge
                     continue;
                 }
 
-                var deceasedSensed = manager.SensorySystem.CanSense(playerEntity, message.BeingEntity, manager);
+                var deceasedSensed = manager.SensorySystem.CanSense(playerEntity, message.BeingEntity);
                 if (deceasedSensed != SenseType.None)
                 {
                     var logMessage = manager.Game.Services.Language.GetString(

@@ -228,45 +228,16 @@ A#
             var heading = Direction.Southeast;
             var visibleTerrain = GetVisibleTerrain(level, origin, heading);
 
-            var expectedFragment =
-                new NormalMapFragment
-                {
-                    Map = expectedFOV,
-                    Width = level.Width,
-                    Height = level.Height
-                };
-            expectedFragment.EnsureInitialized(level.Game);
-
-            var expectedVisibility = new byte[level.Height * level.Width];
-            var visibilityMatched = true;
-
-            expectedFragment.WriteMap(
-                new Point(0, 0),
-                level,
-                (c, point, l, _) =>
-                {
-                    var expectedVisible = c == ' ' ? (byte)0 : (byte)1;
-                    var i = l.PointToIndex[point.X, point.Y];
-                    expectedVisibility[i] = expectedVisible;
-                    var actualVisibile = visibleTerrain[i] == 0 ? 0 : 1;
-                    visibilityMatched &= expectedVisible == actualVisibile;
-                },
-                (object)null);
-
-            Assert.True(visibilityMatched, @"Expected:
-" + TestHelper.PrintMap(level, expectedVisibility) + @"
-Actual:
-" + TestHelper.PrintMap(level, visibleTerrain) + @"
-Seed: " + level.Game.InitialSeed);
+            TestHelper.AssertVisibility(level, expectedFOV, visibleTerrain);
         }
 
-        public static byte[] GetVisibleTerrain(LevelComponent level, Point origin, Direction heading)
+        private static byte[] GetVisibleTerrain(LevelComponent level, Point origin, Direction heading)
         {
             var visibleTerrain = new byte[level.Height * level.Width];
             return GetVisibleTerrain(level, origin, heading, visibleTerrain);
         }
 
-        public static byte[] GetVisibleTerrain(LevelComponent level, Point origin, Direction heading, byte[] visibleTerrain)
+        private static byte[] GetVisibleTerrain(LevelComponent level, Point origin, Direction heading, byte[] visibleTerrain)
         {
             level.VisibilityCalculator.Compute(
                 origin, heading, primaryFOVQuadrants: 8, primaryRange: 24, totalFOVQuadrants: 8, secondaryRange: 24,

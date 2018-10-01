@@ -214,11 +214,9 @@ namespace UnicornHack.Generation.Map
         }
 
         protected virtual void Write(char c, Point point, LevelComponent level,
-            (List<Point> doorwayPoints, List<Point> perimeterPoints, List<Point> insidePoints, List<Point> points)
-                state)
+            (List<Point> doorwayPoints, List<Point> perimeterPoints, List<Point> insidePoints, List<Point> points) state)
         {
-            (List<Point> doorwayPoints, List<Point> perimeterPoints, List<Point> insidePoints, List<Point> points) =
-                state;
+            var (doorwayPoints, perimeterPoints, insidePoints, points) = state;
             var feature = MapFeature.Default;
             switch (c)
             {
