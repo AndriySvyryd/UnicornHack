@@ -345,7 +345,8 @@ namespace UnicornHack.Systems.Knowledge
 
         public MessageProcessingResult Process(EffectsAppliedMessage message, GameManager manager)
         {
-            if ((message.AbilityType & ActivationType.OnAttack) == 0)
+            if ((message.AbilityType & ActivationType.OnAttack) == 0
+                || message.TargetEntity == null)
             {
                 return MessageProcessingResult.ContinueProcessing;
             }

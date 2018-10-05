@@ -11,7 +11,7 @@ namespace UnicornHack.PerformanceTests
         {
             BenchmarkRunner.Run<EntityPerfTest>();
             BenchmarkRunner.Run<EntityRelationshipPerfTest>();
-            BenchmarkRunner.Run<BeveledFOVPerfTest>();
+            BenchmarkRunner.Run<BeveledVisibilityCalculatorPerfTest>();
             var summary = BenchmarkRunner.Run<PathFinderPerfTest>();
 
             Console.WriteLine();

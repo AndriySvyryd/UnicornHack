@@ -9,6 +9,7 @@ using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
+using UnicornHack.Utils;
 using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
@@ -171,12 +172,12 @@ namespace UnicornHack.Systems.Abilities
                     EnqueueAbilityActivated(activation.ActivationMessage, manager);
                 }
 
-                foreach (var target in GetTargets(activation.ActivationMessage))
+                foreach (var (target, exposure) in GetTargets(activation.ActivationMessage))
                 {
                     var targetMessage = (activation.TargetMessage ?? activation.ActivationMessage).Clone(manager);
                     targetMessage.TargetEntity = target;
 
-                    DetermineSuccess(targetMessage, manager);
+                    DetermineSuccess(targetMessage, exposure, manager);
                     // TODO: Trigger abilities on target
                     EnqueueAbilityActivated(targetMessage, manager);
                 }
@@ -228,15 +229,14 @@ namespace UnicornHack.Systems.Abilities
                     }
 
                     var octantsToTurn = 0;
-                    var targetAngleDifference =
-                        (int)Math.Truncate(targetDirection.OctantsTo(activatorPosition.Heading.Value));
-                    if (targetAngleDifference > maxOctantDifference)
+                    var targetOctantDifference = targetDirection.OctantsTo(activatorPosition.Heading.Value);
+                    if (targetOctantDifference > maxOctantDifference)
                     {
-                        octantsToTurn = targetAngleDifference - maxOctantDifference;
+                        octantsToTurn = targetOctantDifference - maxOctantDifference;
                     }
-                    else if (targetAngleDifference < -maxOctantDifference)
+                    else if (targetOctantDifference < -maxOctantDifference)
                     {
-                        octantsToTurn = targetAngleDifference + maxOctantDifference;
+                        octantsToTurn = targetOctantDifference + maxOctantDifference;
                     }
 
                     var newDirection = (int)activatorPosition.Heading.Value - octantsToTurn;
@@ -603,55 +603,61 @@ namespace UnicornHack.Systems.Abilities
             }
         }
 
-        private IReadOnlyCollection<GameEntity> GetTargets(in AbilityActivatedMessage activationMessage)
+        private IReadOnlyCollection<(GameEntity, byte)> GetTargets(in AbilityActivatedMessage activationMessage)
         {
             if (activationMessage.TargetEntity != null)
             {
-                return new[] {activationMessage.TargetEntity};
+                return new[] { (activationMessage.TargetEntity, BeveledVisibilityCalculator.MaxVisibility) };
             }
 
-            var manager = activationMessage.ActivatorEntity.Manager;
-            var levelId = activationMessage.ActivatorEntity.Position.LevelId;
+            var activator = activationMessage.ActivatorEntity;
             var targetCell = activationMessage.TargetCell.Value;
-            var vectorToTarget = activationMessage.ActivatorEntity.Position.LevelCell.DifferenceTo(targetCell);
+            var vectorToTarget = activator.Position.LevelCell.DifferenceTo(targetCell);
+            if (vectorToTarget.Length() == 0)
+            {
+                return new[] { (activator, BeveledVisibilityCalculator.MaxVisibility) };
+            }
+
+            var manager = activator.Manager;
+            var levelId = activator.Position.LevelId;
             var ability = activationMessage.AbilityEntity.Ability;
             switch (ability.TargetingType)
             {
                 case TargetingType.AdjacentSingle:
                     if (vectorToTarget.Length() > 1)
                     {
-                        return new GameEntity[0];
+                        return new (GameEntity, byte)[0];
                     }
 
                     var target = manager.LevelActorToLevelCellIndex[(levelId, targetCell.X, targetCell.Y)];
-                    return target == null ? new GameEntity[0] : new[] {target};
+                    return target == null ? new (GameEntity, byte)[0] : new[] { (target, BeveledVisibilityCalculator.MaxVisibility) };
                 case TargetingType.AdjacentArc:
                     if (vectorToTarget.Length() > 1)
                     {
-                        return new GameEntity[0];
+                        return new (GameEntity, byte)[0];
                     }
 
                     var direction = vectorToTarget.AsDirection();
                     var firstNeighbour = targetCell.Translate(Vector.Convert(direction.Rotate(1)));
                     var secondNeighbour = targetCell.Translate(Vector.Convert(direction.Rotate(-1)));
 
-                    var targets = new List<GameEntity>();
+                    var targets = new List<(GameEntity, byte)>();
                     var arcTarget = manager.LevelActorToLevelCellIndex[(levelId, targetCell.X, targetCell.Y)];
                     if (arcTarget != null)
                     {
-                        targets.Add(arcTarget);
+                        targets.Add((arcTarget, BeveledVisibilityCalculator.MaxVisibility));
                     }
 
                     arcTarget = manager.LevelActorToLevelCellIndex[(levelId, firstNeighbour.X, firstNeighbour.Y)];
                     if (arcTarget != null)
                     {
-                        targets.Add(arcTarget);
+                        targets.Add((arcTarget, BeveledVisibilityCalculator.MaxVisibility));
                     }
 
                     arcTarget = manager.LevelActorToLevelCellIndex[(levelId, secondNeighbour.X, secondNeighbour.Y)];
                     if (arcTarget != null)
                     {
-                        targets.Add(arcTarget);
+                        targets.Add((arcTarget, BeveledVisibilityCalculator.MaxVisibility));
                     }
 
                     return targets;
@@ -659,76 +665,122 @@ namespace UnicornHack.Systems.Abilities
                 case TargetingType.GuidedProjectile:
                 case TargetingType.Beam:
                 case TargetingType.LineOfSight:
-                    // TODO: set message.TargetCell to the final projectile position
-                    // TODO: check LOS
-                    var beamTarget = manager.LevelActorToLevelCellIndex[(levelId, targetCell.X, targetCell.Y)];
-                    return beamTarget == null ? new GameEntity[0] : new[] {beamTarget};
+                    return GetLOSTargets(
+                        activator,
+                        targetCell,
+                        activator.Position.LevelEntity,
+                        ability.TargetingType);
                 default:
                     throw new ArgumentOutOfRangeException("TargetingType " + ability.TargetingType + " not supported");
             }
         }
 
-        private void DetermineSuccess(AbilityActivatedMessage message, GameManager manager)
+        private static IReadOnlyCollection<(GameEntity, byte)> GetLOSTargets(
+            GameEntity sensor, Point targetCell, GameEntity levelEntity, TargetingType targetingType)
+        {
+            var manager = levelEntity.Manager;
+            var los = manager.SensorySystem.GetLOS(sensor, targetCell);
+            var level = levelEntity.Level;
+            switch (targetingType)
+            {
+                case TargetingType.Beam:
+                    var targets = new List<(GameEntity, byte)>();
+                    foreach (var (index, beamExposure) in los)
+                    {
+                        var beamTarget = manager.LevelActorToLevelCellIndex[(levelEntity.Id, targetCell.X, targetCell.Y)];
+                        if (beamTarget != null)
+                        {
+                            targets.Add((beamTarget, beamExposure));
+                        }
+                    }
+
+                    return targets;
+                case TargetingType.Projectile:
+                case TargetingType.GuidedProjectile:
+                case TargetingType.LineOfSight:
+                    // TODO: Target visibility for Projectile should be affected by previous entities
+                    // TODO: Allow GuidedProjectile to hit out of LOS in some cases
+
+                    var (lastIndex, exposure) = los.Last();
+                    var target = manager.LevelActorToLevelCellIndex[(levelEntity.Id, targetCell.X, targetCell.Y)];
+                    if (level.IndexToPoint[lastIndex] != targetCell
+                        || target == null)
+                    {
+                        return new (GameEntity, byte)[0];
+                    }
+                    return new[] { (target, exposure) };
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        private void DetermineSuccess(AbilityActivatedMessage message, byte exposure, GameManager manager)
         {
             var game = manager.Game;
             var ability = message.AbilityEntity.Ability;
             var successCondition = ability.SuccessCondition;
             if (successCondition == AbilitySuccessCondition.Default)
             {
-                switch (ability.Activation)
+                var activation = ability.Activation;
+                if ((activation & ActivationType.OnPhysicalAttack) != ActivationType.Default)
                 {
-                    case ActivationType.OnPhysicalMeleeAttack:
-                    case ActivationType.OnPhysicalRangedAttack:
-                    case ActivationType.OnPhysicalAttack:
+                    successCondition = AbilitySuccessCondition.PhysicalAttack;
+                }
+                else if ((activation & ActivationType.OnMagicalAttack) != ActivationType.Default)
+                {
+                    successCondition = AbilitySuccessCondition.MagicAttack;
+                }
+                else
+                {
+                    var trigger = GetTrigger(ability);
+                    if ((trigger & ActivationType.OnPhysicalAttack) != ActivationType.Default)
+                    {
                         successCondition = AbilitySuccessCondition.PhysicalAttack;
-                        break;
-                    case ActivationType.OnMagicalMeleeAttack:
-                    case ActivationType.OnMagicalRangedAttack:
-                    case ActivationType.OnMagicalAttack:
+                    }
+                    else if ((trigger & ActivationType.OnMagicalAttack) != ActivationType.Default)
+                    {
                         successCondition = AbilitySuccessCondition.MagicAttack;
-                        break;
-                    default:
-                        switch (GetTrigger(ability))
-                        {
-                            case ActivationType.OnPhysicalMeleeAttack:
-                            case ActivationType.OnPhysicalRangedAttack:
-                            case ActivationType.OnPhysicalAttack:
-                                successCondition = AbilitySuccessCondition.PhysicalAttack;
-                                break;
-                            case ActivationType.OnMagicalMeleeAttack:
-                            case ActivationType.OnMagicalRangedAttack:
-                            case ActivationType.OnMagicalAttack:
-                                successCondition = AbilitySuccessCondition.MagicAttack;
-                                break;
-                            default:
-                                successCondition = AbilitySuccessCondition.Always;
-                                break;
-                        }
-                        break;
+                    }
+                    else
+                    {
+                        successCondition = AbilitySuccessCondition.Always;
+                    }
                 }
             }
 
-            // TODO: Allow hit even if attacker doesn't see the victim, but it's in LOS
             var success = true;
-            var targetPosition = message.TargetEntity.Position;
-            switch (successCondition)
+            if (message.TargetEntity == null)
             {
-                case AbilitySuccessCondition.Always:
-                    break;
-                case AbilitySuccessCondition.PhysicalAttack:
-                    success =
-                        message.TargetEntity != null
-                        && manager.SensorySystem.GetVisibility(message.ActivatorEntity, targetPosition.LevelCell) > 0
-                        && game.Random.Next(message.TargetEntity.Being.PhysicalDeflection + 20) < 15;
-                    break;
-                case AbilitySuccessCondition.MagicAttack:
-                    success =
-                        message.TargetEntity != null
-                        && manager.SensorySystem.GetVisibility(message.ActivatorEntity, targetPosition.LevelCell) > 0
-                        && game.Random.Next(message.TargetEntity.Being.MagicDeflection + 20) < 15;
-                    break;
-                default:
+                success = false;
+            }
+            else if (successCondition != AbilitySuccessCondition.Always)
+            {
+                var deflection = 0;
+                var targetPosition = message.TargetEntity.Position;
+                if (successCondition == AbilitySuccessCondition.PhysicalAttack)
+                {
+                    deflection = message.TargetEntity.Being.PhysicalDeflection;
+                }
+                else if (successCondition == AbilitySuccessCondition.MagicAttack)
+                {
+                    deflection = message.TargetEntity.Being.MagicDeflection;
+                }
+                else
+                {
                     throw new ArgumentOutOfRangeException();
+                }
+
+                if (exposure < BeveledVisibilityCalculator.MaxVisibility)
+                {
+                    deflection += (BeveledVisibilityCalculator.MaxVisibility - exposure) * 10 / BeveledVisibilityCalculator.MaxVisibility;
+                }
+
+                if (manager.SensorySystem.GetVisibility(message.ActivatorEntity, targetPosition.LevelCell) == 0)
+                {
+                    deflection += 10;
+                }
+
+                success = game.Random.Next(deflection + 20) < 15;
             }
 
             message.SuccessfulApplication = success;

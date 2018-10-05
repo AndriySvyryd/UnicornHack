@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnicornHack.Generation.Map;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Levels;
@@ -56,7 +57,7 @@ namespace UnicornHack.Generation
                 var fragment = levelComponent.GenerationRandom.Pick(DefiningMapFragment.Loader.GetAsList(),
                     f => f.GetWeight(levelComponent.BranchName, levelComponent.Depth));
 
-                return Generate(levelComponent, fragment);
+                return Generate(levelComponent, fragment) != null;
             }
             catch (Exception e)
             {
@@ -71,7 +72,7 @@ namespace UnicornHack.Generation
             }
         }
 
-        public static bool Generate(LevelComponent levelComponent, DefiningMapFragment fragment)
+        public static List<Room> Generate(LevelComponent levelComponent, DefiningMapFragment fragment)
         {
             levelComponent.Height = fragment.LevelHeight;
             levelComponent.Width = fragment.LevelWidth;
@@ -92,7 +93,7 @@ namespace UnicornHack.Generation
             fragment.CreatureGenerator.Fill(levelComponent, rooms);
             fragment.ItemGenerator.Fill(levelComponent, rooms);
 
-            return true;
+            return rooms;
         }
     }
 }

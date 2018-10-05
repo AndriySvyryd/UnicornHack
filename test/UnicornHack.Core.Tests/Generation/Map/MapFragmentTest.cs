@@ -95,7 +95,7 @@ PP
             fragment.EnsureInitialized(game);
             var byteMap = fragment.ByteMap;
             fragment.ByteMap = new byte[0];
-            var level = TestHelper.CreateLevel(fragment, game);
+            var (level, rooms) = TestHelper.CreateLevel(fragment, game);
 
             var input = new List<Point>();
             var expectedInside = new List<Point>();

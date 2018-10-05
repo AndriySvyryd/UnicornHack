@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -12,7 +13,6 @@ namespace UnicornHack.Utils.DataLoading
         public string RelativePath { get; }
         public Type DataType { get; }
         protected string FilePattern { get; set; } = "*" + CSScriptLoaderHelpers.ScriptExtension;
-
         private readonly object _lockRoot = new object();
 
         // Loader shouldn't be declared on dataType to allow it to be loaded lazily
@@ -25,17 +25,19 @@ namespace UnicornHack.Utils.DataLoading
 
         protected override void EnsureLoaded()
         {
-            if (NameLookup.Count != 0)
+            if (NameLookup != null)
             {
                 return;
             }
 
             lock (_lockRoot)
             {
-                if (NameLookup.Count != 0)
+                if (NameLookup != null)
                 {
                     return;
                 }
+
+                var lookup = new Dictionary<string, T>(StringComparer.OrdinalIgnoreCase);
 
                 if (CSScriptLoaderHelpers.LoadScripts && Directory.Exists(BasePath))
                 {
@@ -45,7 +47,7 @@ namespace UnicornHack.Utils.DataLoading
                         try
                         {
                             var instance = CSScriptLoaderHelpers.LoadFile<T>(file);
-                            NameLookup[instance.Name] = instance;
+                            lookup[instance.Name] = instance;
                         }
                         catch (Exception e)
                         {
@@ -60,9 +62,11 @@ namespace UnicornHack.Utils.DataLoading
                         .Where(f => typeof(T).GetTypeInfo().IsAssignableFrom(f.FieldType)))
                     {
                         var instance = (T)field.GetValue(null);
-                        NameLookup[instance.Name] = instance;
+                        lookup[instance.Name] = instance;
                     }
                 }
+
+                NameLookup = lookup;
             }
         }
     }

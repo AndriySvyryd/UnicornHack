@@ -20,20 +20,22 @@ namespace UnicornHack.Utils.DataLoading
 
             if (_objects == null)
             {
-                _objects = new Dictionary<TKey, List<T>>();
+                var objects = new Dictionary<TKey, List<T>>();
                 foreach (var value in NameLookup.Values)
                 {
                     foreach (var key in _keySelector(value))
                     {
-                        if (!_objects.TryGetValue(key, out var list))
+                        if (!objects.TryGetValue(key, out var list))
                         {
                             list = new List<T>();
-                            _objects[key] = list;
+                            objects[key] = list;
                         }
 
                         list.Add(value);
                     }
                 }
+
+                _objects = objects;
             }
         }
 

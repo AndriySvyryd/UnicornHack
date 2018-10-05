@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using Microsoft.Extensions.Caching.Memory;
 using UnicornHack.Generation;
@@ -39,6 +40,9 @@ namespace UnicornHack
         }
 
         public static LevelComponent BuildLevel(string map = "", uint? seed = null)
+            => BuildLevelWithRooms(map, seed).Item1;
+
+        public static (LevelComponent, IReadOnlyList<Room>) BuildLevelWithRooms(string map = "", uint? seed = null)
         {
             var game = CreateGame(seed);
 
@@ -53,7 +57,7 @@ namespace UnicornHack
             return CreateLevel(fragment, game);
         }
 
-        public static LevelComponent CreateLevel(DefiningMapFragment fragment, Game game)
+        public static (LevelComponent, IReadOnlyList<Room>) CreateLevel(DefiningMapFragment fragment, Game game)
         {
             var branch = new GameBranch
             {
@@ -76,54 +80,79 @@ namespace UnicornHack
             }
 
             var level = LevelGenerator.CreateEmpty(branch, 0, game.Random.Seed, game.Manager);
-            LevelGenerator.Generate(level, fragment);
+            var rooms = LevelGenerator.Generate(level, fragment);
 
-            return level;
+            return (level, rooms);
         }
 
-        public static void AssertVisibility(LevelComponent level, string expectedVisbileMap, byte[] actualVisibility)
+        public static void AssertVisibility(LevelComponent level, string expectedVisibleMap, byte[] actualVisibility)
         {
             var expectedFragment =
                 new NormalMapFragment
                 {
-                    Map = expectedVisbileMap,
+                    Map = expectedVisibleMap,
                     Width = level.Width,
                     Height = level.Height
                 };
             expectedFragment.EnsureInitialized(level.Game);
 
-            var expected = new byte[level.Height * level.Width];
-            var matched = true;
+            var expectedVisibility = new byte[level.Height * level.Width];
 
+            Point? mismatchedPoint = null;
             expectedFragment.WriteMap(
                 new Point(0, 0),
                 level,
                 (c, point, l, _) =>
                 {
-                    var expectedVisible = c == ' ' ? (byte)0 : (byte)1;
+                    var expectedVisible = c == ' ' ? (byte)0 : (byte)255;
                     var i = l.PointToIndex[point.X, point.Y];
-                    expected[i] = expectedVisible;
-                    var actualVisibile = actualVisibility[i] == 0 ? 0 : 1;
-                    matched &= expectedVisible == actualVisibile;
+                    expectedVisibility[i] = expectedVisible;
+                    var actualVisible = actualVisibility[i] == 0 ? 0 : 255;
+                    if (expectedVisible != actualVisible
+                        && mismatchedPoint == null)
+                    {
+                        mismatchedPoint = point;
+                    }
                 },
                 (object)null);
 
-            Assert.True(matched, @"Expected:
-" + PrintMap(level, expected) + @"
-Actual:
+            if (mismatchedPoint.HasValue)
+            {
+                Assert.False(true, $"Mismatch at ({mismatchedPoint.Value.X}, {mismatchedPoint.Value.Y})" + @"
+Expected map:
+" + PrintMap(level, expectedVisibility) + @"
+Actual map:
 " + PrintMap(level, actualVisibility) + @"
 Seed: " + level.Game.InitialSeed);
+            }
+        }
+
+        public static void AssertVisibility(LevelComponent level, byte[] expectedVisibility, byte[] actualVisibility)
+        {
+            for (var i = 0; i < actualVisibility.Length; i++)
+            {
+                if (actualVisibility[i] != expectedVisibility[i])
+                {
+                    var point = level.IndexToPoint[i];
+                    Assert.True(false, $"Mismatch at ({point.X}, {point.Y}) expected {expectedVisibility[i]}, got {actualVisibility[i]}" + @"
+Expected map:
+" + PrintMap(level, expectedVisibility) + @"
+Actual map:
+" + PrintMap(level, actualVisibility) +
+PrintVisibility(level, actualVisibility) + @"
+Seed: " + level.Game.InitialSeed);
+                }
+            }
         }
 
         public static void AssertTerrain(LevelComponent level, string expectedMap, byte[] actualTerrain)
         {
-            var expectedFragment =
-                new NormalMapFragment
-                {
-                    Map = expectedMap,
-                    Width = level.Width,
-                    Height = level.Height
-                };
+            var expectedFragment = new NormalMapFragment
+            {
+                Map = expectedMap,
+                Width = level.Width,
+                Height = level.Height
+            };
             expectedFragment.EnsureInitialized(level.Game);
 
             var expected = new byte[level.Height * level.Width];
@@ -286,6 +315,26 @@ Seed: " + level.Game.InitialSeed);
 
                         builder.Append(symbol);
                     }
+
+                    i++;
+                }
+
+                builder.AppendLine();
+            }
+
+            return builder.ToString();
+        }
+
+        public static string PrintVisibility(LevelComponent level, byte[] visibleTerrain)
+        {
+            var builder = new StringBuilder();
+            var i = 0;
+            for (var y = 0; y < level.Height; y++)
+            {
+                for (var x = 0; x < level.Width; x++)
+                {
+                    builder.Append(visibleTerrain[i].ToString().PadLeft(4));
+                    builder.Append(',');
 
                     i++;
                 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace UnicornHack.Utils.DataLoading
@@ -10,6 +11,7 @@ namespace UnicornHack.Utils.DataLoading
     {
         private readonly Func<PropertyInfo, Type, TPropertyAttribute, TClassAttribute, TLoadable> _createLoadable;
         private readonly Assembly _targetAssembly;
+        private readonly object _lockRoot = new object();
 
         public AttributeLoader(
             Func<PropertyInfo, Type, TPropertyAttribute, TClassAttribute, TLoadable> createLoadable,
@@ -21,30 +23,42 @@ namespace UnicornHack.Utils.DataLoading
 
         protected override void EnsureLoaded()
         {
-            if (NameLookup.Count != 0)
+            if (NameLookup != null)
             {
                 return;
             }
 
-            foreach (var type in _targetAssembly.GetTypes())
+            lock (_lockRoot)
             {
-                var typeAttribute = (TClassAttribute)type.GetCustomAttribute(typeof(TClassAttribute), inherit: true);
-                if (typeAttribute == null)
+                if (NameLookup != null)
                 {
-                    continue;
+                    return;
                 }
 
-                foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+                var lookup = new Dictionary<string, TLoadable>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var type in _targetAssembly.GetTypes())
                 {
-                    var propertyAttribute = property.GetCustomAttribute<TPropertyAttribute>(inherit: true);
-                    if (propertyAttribute == null)
+                    var typeAttribute = (TClassAttribute)type.GetCustomAttribute(typeof(TClassAttribute), inherit: true);
+                    if (typeAttribute == null)
                     {
                         continue;
                     }
 
-                    var instance = _createLoadable(property, type, propertyAttribute, typeAttribute);
-                    NameLookup[instance.Name] = instance;
+                    foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+                    {
+                        var propertyAttribute = property.GetCustomAttribute<TPropertyAttribute>(inherit: true);
+                        if (propertyAttribute == null)
+                        {
+                            continue;
+                        }
+
+                        var instance = _createLoadable(property, type, propertyAttribute, typeAttribute);
+                        lookup[instance.Name] = instance;
+                    }
                 }
+
+                NameLookup = lookup;
             }
         }
     }

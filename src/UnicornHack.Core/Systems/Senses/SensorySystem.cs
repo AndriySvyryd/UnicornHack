@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.DataStructures;
@@ -58,7 +59,7 @@ namespace UnicornHack.Systems.Senses
             if (sensor.VisibleTerrain == null
                 || sensor.VisibleTerrain.Length != tileCount)
             {
-                // TODO: Use pooling
+                // TODO: Perf: Use pooling
                 // TODO: Perf: Use a smaller array
                 sensor.VisibleTerrain = new byte[tileCount];
             }
@@ -72,43 +73,59 @@ namespace UnicornHack.Systems.Senses
                 Array.Clear(sensor.VisibleTerrain, 0, sensor.VisibleTerrain.Length);
             }
 
-            level.VisibilityCalculator.Compute(
+            level.VisibilityCalculator.ComputeDirected(
                 position.LevelCell,
                 position.Heading.Value,
                 sensor.PrimaryFOVQuadrants,
                 sensor.PrimaryVisionRange,
                 sensor.TotalFOVQuadrants,
                 sensor.SecondaryVisionRange,
+                noFalloff: false,
                 TileBlocksVisibility,
-                (level, sensor.VisibleTerrain),
-                noFalloff: false);
+                sensor.VisibleTerrain);
 
             sensor.VisibleTerrainIsCurrent = true;
 
             return sensor.VisibleTerrain;
         }
 
-        public static bool TileBlocksVisibility(
-            byte x, byte y, byte visibility, (LevelComponent Level, byte[] VisibleTerrain) state)
+        public IReadOnlyList<(int, byte)> GetLOS(GameEntity sensorEntity, Point target)
         {
-            var (level, visibleTerrain) = state;
+            var position = sensorEntity.Position;
+            var level = position.LevelEntity.Level;
+
+            // TODO: Perf: Use pooling
+            var losTiles = new List<(int, byte)>();
+
+            level.VisibilityCalculator.ComputeLOS(
+                position.LevelCell,
+                target,
+                TileBlocksVisibility,
+                losTiles);
+
+            return losTiles;
+        }
+
+        public static (bool, int) TileBlocksVisibility(byte x, byte y, LevelComponent level)
+        {
             if (x < level.Width && y < level.Height)
             {
                 var index = level.PointToIndex[x, y];
-                visibleTerrain[index] = visibility;
+                var blocking = false;
                 switch ((MapFeature)level.Terrain[index])
                 {
                     // This is inlined for perf
                     case MapFeature.Default:
                     case MapFeature.StoneWall:
                     case MapFeature.RockWall:
-                        return true;
-                    default:
-                        return false;
+                        blocking = true;
+                        break;
                 }
+
+                return (blocking, index);
             }
 
-            return true;
+            return (true, -1);
         }
 
         private byte[] UpdateVisibleTerrain(LevelComponent level, GameManager manager)

@@ -1,9 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using UnicornHack.Primitives;
-using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 

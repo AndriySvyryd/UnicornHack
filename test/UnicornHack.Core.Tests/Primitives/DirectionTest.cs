@@ -1,7 +1,7 @@
 using UnicornHack.Primitives;
 using Xunit;
 
-namespace UnicornHack
+namespace UnicornHack.Primitives
 {
     public class DirectionTest
     {

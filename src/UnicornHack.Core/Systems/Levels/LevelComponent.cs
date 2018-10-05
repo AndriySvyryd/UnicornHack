@@ -107,7 +107,7 @@ namespace UnicornHack.Systems.Levels
         public Dictionary<int, byte> KnownTerrainChanges { get; set; } = new Dictionary<int, byte>();
         public Dictionary<int, byte> WallNeighboursChanges { get; set; } = new Dictionary<int, byte>();
 
-        public BeveledFOVCalculator VisibilityCalculator { get; private set; }
+        public BeveledVisibilityCalculator VisibilityCalculator { get; private set; }
         public PathFinder PathFinder { get; private set; }
         public int[,] PointToIndex { get; private set; }
         public Point[] IndexToPoint { get; private set; }
@@ -120,7 +120,7 @@ namespace UnicornHack.Systems.Levels
             {
                 (PointToIndex, IndexToPoint) = Rectangle.GetPointIndex(Game.Services.SharedCache, Width, Height);
                 PathFinder = new PathFinder(PointToIndex, IndexToPoint);
-                VisibilityCalculator = new BeveledFOVCalculator(GetVisibleNeighbours);
+                VisibilityCalculator = new BeveledVisibilityCalculator(GetVisibleNeighbours, this);
             }
         }
 
