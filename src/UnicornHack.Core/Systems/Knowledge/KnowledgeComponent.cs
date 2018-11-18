@@ -16,7 +16,11 @@ namespace UnicornHack.Systems.Knowledge
         public int KnownEntityId
         {
             get => _knownEntityId;
-            set => SetWithNotify(value, ref _knownEntityId);
+            set
+            {
+                SetWithNotify(value, ref _knownEntityId);
+                _knownEntity = null;
+            }
         }
 
         public SenseType SensedType
@@ -35,6 +39,15 @@ namespace UnicornHack.Systems.Knowledge
                 KnownEntityId = value.Id;
                 _knownEntity = value;
             }
+        }
+
+        protected override void Clean()
+        {
+            _knownEntity = default;
+            _knownEntityId = default;
+            _sensedType = default;
+
+            base.Clean();
         }
     }
 }

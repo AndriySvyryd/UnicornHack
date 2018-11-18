@@ -313,5 +313,53 @@ namespace UnicornHack.Systems.Actors
             get => _leadership;
             set => SetWithNotify(value, ref _leadership);
         }
+
+        protected override void Clean()
+        {
+            _properName = default;
+            _nextAction = default;
+            _nextActionTarget = default;
+            _nextActionTarget2 = default;
+            _queuedAction = default;
+            _nextActionTick = default;
+            _defaultAttackId = default;
+            _maxXPLevel = default;
+            _unspentSkillPoints = default;
+            _oneHanded = default;
+            _twoHanded = default;
+            _dualWielding = default;
+            _fistWeapons = default;
+            _shortWeapons = default;
+            _mediumWeapons = default;
+            _longWeapons = default;
+            _thrown = default;
+            _slingshots = default;
+            _bows = default;
+            _crossbows = default;
+            _armorless = default;
+            _lightArmor = default;
+            _heavyArmor = default;
+            _stealth = default;
+            _assessination = default;
+            _meleeMagicWeapons = default;
+            _rangedMagicWeapons = default;
+            _fireSourcery = default;
+            _airSourcery = default;
+            _waterSourcery = default;
+            _earthSourcery = default;
+            _lifeSourcery = default;
+            _spiritSourcery = default;
+            _evocation = default;
+            _conjuration = default;
+            _transmutation = default;
+            _enhancement = default;
+            _malediction = default;
+            _illusion = default;
+            _survival = default;
+            _artifice = default;
+            _leadership = default;
+
+            base.Clean();
+        }
     }
 }

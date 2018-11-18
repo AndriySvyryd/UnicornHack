@@ -286,5 +286,46 @@ namespace UnicornHack.Systems.Beings
 
         // Unmapped properties
         public bool IsAlive => HitPoints > 0;
+
+        protected override void Clean()
+        {
+            _sex = default;
+            _energyPointMaximum = default;
+            _energyPoints = default;
+            _hitPointMaximum = default;
+            _hitPoints = default;
+            _agility = default;
+            _constitution = default;
+            _intelligence = default;
+            _quickness = default;
+            _strength = default;
+            _willpower = default;
+            _energyRegeneration = default;
+            _regeneration = default;
+            _magicAbsorption = default;
+            _magicDeflection = default;
+            _magicResistance = default;
+            _physicalAbsorption = default;
+            _physicalDeflection = default;
+            _physicalResistance = default;
+            _acidResistance = default;
+            _bleedingResistance = default;
+            _blightResistance = default;
+            _coldResistance = default;
+            _disintegrationResistance = default;
+            _electricityResistance = default;
+            _fireResistance = default;
+            _waterResistance = default;
+            _headType = default;
+            _torsoType = default;
+            _upperExtremeties = default;
+            _lowerExtremeties = default;
+            _backExtremeties = default;
+            _leftoverRegenerationXP = default;
+            _primaryNaturalWeaponId = default;
+            _secondaryNaturalWeaponId = default;
+
+            base.Clean();
+        }
     }
 }

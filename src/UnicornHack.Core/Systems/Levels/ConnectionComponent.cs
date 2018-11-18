@@ -42,5 +42,14 @@ namespace UnicornHack.Systems.Levels
                 TargetLevelY = value?.Y;
             }
         }
+
+        protected override void Clean()
+        {
+            _targetLevelId = default;
+            _targetLevelX = default;
+            _targetLevelY = default;
+
+            base.Clean();
+        }
     }
 }

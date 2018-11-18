@@ -130,5 +130,23 @@ namespace UnicornHack.Systems.Levels
 
         public bool IsValid(Point point)
             => point.X < Width && point.Y < Height; // Since byte is unsigned there is no need to compare with 0
+
+        protected override void Clean()
+        {
+            _branchName = default;
+            _branch = default;
+            _difficulty = default;
+            _depth = default;
+            _height = default;
+            _width = default;
+            _generationRandom = default;
+            _visibleTerrain = default;
+            _visibleNeighbours = default;
+            _terrain = default;
+            _knownTerrain = default;
+            _wallNeighbours = default;
+
+            base.Clean();
+        }
     }
 }

@@ -51,5 +51,16 @@ namespace UnicornHack.Systems.Beings
             get => _infravisible;
             set => SetWithNotify(value, ref _infravisible);
         }
+
+        protected override void Clean()
+        {
+            _material = default;
+            _weight = default;
+            _size = default;
+            _capacity = default;
+            _infravisible = default;
+
+            base.Clean();
+        }
     }
 }

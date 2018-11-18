@@ -51,5 +51,17 @@ namespace UnicornHack.Systems.Beings
             get => _nextLevelXP;
             set => SetWithNotify(value, ref _nextLevelXP);
         }
+
+        protected override void Clean()
+        {
+            _templateName = default;
+            _species = default;
+            _speciesClass = default;
+            _level = default;
+            _experiencePoints = default;
+            _nextLevelXP = default;
+
+            base.Clean();
+        }
     }
 }

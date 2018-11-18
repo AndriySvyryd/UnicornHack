@@ -86,5 +86,21 @@ namespace UnicornHack.Systems.Items
             => Count ?? (Entity.Physical.Capacity == null
                    ? 1
                    : manager.EntityItemsToContainerRelationship[EntityId].Count() + 1);
+
+        protected override void Clean()
+        {
+            _containerId = default;
+            _type = default;
+            _templateName = default;
+            _name = default;
+            _equipableSizes = default;
+            _equipableSlots = default;
+            _equippedSlot = default;
+            _maxStackSize = default;
+            _count = default;
+            _hindrance = default;
+
+            base.Clean();
+        }
     }
 }

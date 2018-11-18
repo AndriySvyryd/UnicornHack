@@ -106,6 +106,7 @@ namespace UnicornHack.Systems.Levels
             var changes = new List<IPropertyValueChange>();
             if (levelIdSet)
             {
+                _level = null;
                 NotifyChanged(nameof(LevelId));
                 changes.Add(new PropertyValueChange<int>(this, nameof(LevelId), oldLevelId, levelId));
             }
@@ -126,6 +127,18 @@ namespace UnicornHack.Systems.Levels
             {
                 Entity?.HandlePropertyValuesChanged(changes);
             }
+        }
+
+        protected override void Clean()
+        {
+            _level = default;
+            _levelId = default;
+            _levelX = default;
+            _levelY = default;
+            _heading = default;
+            _movementDelay = default;
+
+            base.Clean();
         }
     }
 }

@@ -9,7 +9,7 @@ namespace UnicornHack.PerformanceTests.Utils
 {
     public class BeveledVisibilityCalculatorPerfTest
     {
-        public int Iterations = 10000;
+        private const int Iterations = 10000;
 
         [Benchmark]
         public void Mixed_terrain_omnidirectional_FOV()
@@ -45,16 +45,16 @@ namespace UnicornHack.PerformanceTests.Utils
             for (var i = 0; i < Iterations; i++)
             {
                 Array.Clear(visibleTerrain, 0, visibleTerrain.Length);
-                BeveledVisibilityCalculatorTest.GetVisibleTerrain(level, new Point(11, 10), visibleTerrain);
+                BeveledVisibilityCalculatorTest.GetVisibleTerrain(level, new Point(11, 10), visibleTerrain, noFalloff: false);
 
                 Array.Clear(visibleTerrain, 0, visibleTerrain.Length);
-                BeveledVisibilityCalculatorTest.GetVisibleTerrain(level, new Point(11, 11), visibleTerrain);
+                BeveledVisibilityCalculatorTest.GetVisibleTerrain(level, new Point(11, 11), visibleTerrain, noFalloff: false);
 
                 Array.Clear(visibleTerrain, 0, visibleTerrain.Length);
-                BeveledVisibilityCalculatorTest.GetVisibleTerrain(level, new Point(11, 12), visibleTerrain);
+                BeveledVisibilityCalculatorTest.GetVisibleTerrain(level, new Point(11, 12), visibleTerrain, noFalloff: false);
 
                 Array.Clear(visibleTerrain, 0, visibleTerrain.Length);
-                BeveledVisibilityCalculatorTest.GetVisibleTerrain(level, new Point(12, 12), visibleTerrain);
+                BeveledVisibilityCalculatorTest.GetVisibleTerrain(level, new Point(12, 12), visibleTerrain, noFalloff: false);
             }
         }
 
@@ -89,19 +89,19 @@ namespace UnicornHack.PerformanceTests.Utils
             var level = TestHelper.BuildLevel(map);
 
             var visibleTerrain = new byte[level.Height * level.Width];
-            for (var i = 0; i < Iterations; i++)
+            for (var i = 0; i < Iterations * 2; i++)
             {
                 Array.Clear(visibleTerrain, 0, visibleTerrain.Length);
-                BeveledVisibilityCalculatorTest.GetVisibleTerrain(level, new Point(11, 10), Direction.South, visibleTerrain);
+                BeveledVisibilityCalculatorTest.GetVisibleTerrain(level, new Point(11, 10), Direction.South, visibleTerrain, noFalloff: false);
 
                 Array.Clear(visibleTerrain, 0, visibleTerrain.Length);
-                BeveledVisibilityCalculatorTest.GetVisibleTerrain(level, new Point(11, 11), Direction.South, visibleTerrain);
+                BeveledVisibilityCalculatorTest.GetVisibleTerrain(level, new Point(11, 11), Direction.South, visibleTerrain, noFalloff: false);
 
                 Array.Clear(visibleTerrain, 0, visibleTerrain.Length);
-                BeveledVisibilityCalculatorTest.GetVisibleTerrain(level, new Point(11, 12), Direction.South, visibleTerrain);
+                BeveledVisibilityCalculatorTest.GetVisibleTerrain(level, new Point(11, 12), Direction.South, visibleTerrain, noFalloff: false);
 
                 Array.Clear(visibleTerrain, 0, visibleTerrain.Length);
-                BeveledVisibilityCalculatorTest.GetVisibleTerrain(level, new Point(12, 12), Direction.East, visibleTerrain);
+                BeveledVisibilityCalculatorTest.GetVisibleTerrain(level, new Point(12, 12), Direction.East, visibleTerrain, noFalloff: false);
             }
         }
 

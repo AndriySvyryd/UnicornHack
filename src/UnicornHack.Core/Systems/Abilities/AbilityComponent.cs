@@ -134,5 +134,25 @@ namespace UnicornHack.Systems.Abilities
 
             ability.OwnerId = affectedEntityId;
         }
+
+        protected override void Clean()
+        {
+            _name = default;
+            _ownerId = default;
+            _activation = default;
+            _targetingType = default;
+            _targetingAngle = default;
+            _action = default;
+            _trigger = default;
+            _successCondition = default;
+            _timeout = default;
+            _timeoutTick = default;
+            _energyPointCost = default;
+            _delay = default;
+            _isActive = default;
+            _isUsable = true;
+
+            base.Clean();
+        }
     }
 }

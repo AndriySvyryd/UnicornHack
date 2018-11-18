@@ -108,5 +108,22 @@ namespace UnicornHack.Systems.Effects
                 return clone;
             }
         }
+
+        protected override void Clean()
+        {
+            _affectedEntityId = default;
+            _sourceAbilityId = default;
+            _containingAbilityId = default;
+            _durationTicks = default;
+            _expirationTick = default;
+            _shouldTargetActivator = default;
+            _amount = default;
+            _effectType = default;
+            _function = default;
+            _propertyName = default;
+            _activatableEntityId = default;
+
+            base.Clean();
+        }
     }
 }

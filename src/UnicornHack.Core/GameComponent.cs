@@ -12,8 +12,9 @@ namespace UnicornHack
 
         protected override void Clean()
         {
-            GameId = 0;
-            EntityId = 0;
+            GameId = default;
+            EntityId = default;
+
             base.Clean();
         }
     }

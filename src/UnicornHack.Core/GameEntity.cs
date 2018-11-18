@@ -292,6 +292,9 @@ namespace UnicornHack
             public IReadOnlyCollection<GameEntity> AbilityEffects
                 => Entity.Manager.EffectsToContainingAbilityRelationship[Entity.Id];
 
+            public IEnumerable<GameEntity> Races
+                => Entity.Manager.RacesToBeingRelationship[Entity.Id].Values;
+
             public IReadOnlyCollection<GameEntity> ContainerItems
                 => Entity.Manager.EntityItemsToContainerRelationship[Entity.Id];
 

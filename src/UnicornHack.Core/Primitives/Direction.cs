@@ -54,7 +54,7 @@ namespace UnicornHack.Primitives
         EastSemicircle = NortheastCorner | SoutheastCorner,
         SouthSemicircle = SoutheastCorner | SouthwestCorner,
         WestSemicircle = SouthwestCorner | NorthwestCorner,
-        Circle = NorthSemicircle | SouthSemicircle
+        All = NorthSemicircle | SouthSemicircle
     }
 
     public static class DirectionExtentions

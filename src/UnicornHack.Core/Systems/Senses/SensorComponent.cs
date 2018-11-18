@@ -60,5 +60,19 @@ namespace UnicornHack.Systems.Senses
         // Untracked properties
         public byte[] VisibleTerrain { get; set; }
         public bool VisibleTerrainIsCurrent { get; set; }
+
+        protected override void Clean()
+        {
+            _primaryFOVQuadrants = default;
+            _totalFOVQuadrants = default;
+            _primaryVisionRange = default;
+            _secondaryVisionRange = default;
+            _infravision = default;
+            _invisibilityDetection = default;
+            VisibleTerrain = default;
+            VisibleTerrainIsCurrent = default;
+
+            base.Clean();
+        }
     }
 }

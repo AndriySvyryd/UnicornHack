@@ -42,7 +42,7 @@ namespace UnicornHack.Utils
         /// </summary>
         /// <param name="origin"> The location of the observer </param>
         /// <param name="range"> The maximum visibility range </param>
-        /// <param name="visibilityFalloff"> The visibility falloff per tile </param>
+        /// <param name="noFalloff"> Disables visibility falloff if set to <c>true</c> </param>
         /// <param name="blocksVisibility">
         ///     A function that determines whether the tile at the given X and Y coordinates blocks the passage of light.
         ///     The function also returns the index of the tile if it's within valid range.
@@ -51,15 +51,19 @@ namespace UnicornHack.Utils
         public void ComputeOmnidirectional(
             Point origin,
             byte range,
-            byte visibilityFalloff,
+            bool noFalloff,
             Func<byte, byte, LevelComponent, (bool, int)> blocksVisibility,
             byte[] visibleTerrain)
         {
             var (_, index) = blocksVisibility(origin.X, origin.Y, _level);
+            var linearFalloff = noFalloff
+                ? (byte)0
+                : (byte)(MaxVisibility / range);
             visibleTerrain[index] = MaxVisibility;
             for (var octant = 0; octant < 8; octant++)
             {
-                Compute(octant, origin, range, visibilityFalloff,
+                Compute(octant, origin, range, linearFalloff,
+                    doubleMarginalBlocks: DirectionFlags.None,
                     x: 1, top: new Slope(1, 1), bottom: new Slope(0, 1),
                     blocksVisibility, visibleTerrain,
                     visibleTerrainList: null);
@@ -75,7 +79,7 @@ namespace UnicornHack.Utils
         /// <param name="primaryRange"> The maximum visibility range for the primary FOV </param>
         /// <param name="totalFOVQuadrants"> The number of quadrants for the secondary FOV and the primary FOV </param>
         /// <param name="secondaryRange"> The maximum visibility range for the secondary FOV  </param>
-        /// <param name="noFalloff"> Disables visibility falloff is set to <c>true</c> </param>
+        /// <param name="noFalloff"> Disables visibility falloff if set to <c>true</c> </param>
         /// <param name="blocksVisibility">
         ///     A function that determines whether the tile at the given X and Y coordinates blocks the passage of light.
         ///     The function also returns the index of the tile if it's within valid range.
@@ -115,11 +119,13 @@ namespace UnicornHack.Utils
             }
 
             octantShift = 8 + octantShift - totalFOVQuadrants;
-            var visibilityFalloff = noFalloff || secondaryRange == 0
-                ? (byte)0 : (byte)(byte.MaxValue / secondaryRange);
+            var linearFalloff = noFalloff || secondaryRange == 0
+                ? (byte)0
+                : (byte)(MaxVisibility / secondaryRange);
             for (var octant = 0; octant < totalFOVQuadrants - primaryFOVQuadrants; octant++)
             {
-                Compute((octant + octantShift) % 8, origin, secondaryRange, visibilityFalloff,
+                Compute((octant + octantShift) % 8, origin, secondaryRange, linearFalloff,
+                    doubleMarginalBlocks: DirectionFlags.None,
                     x: 1,
                     top: new Slope(1, 1),
                     bottom: new Slope(0, 1),
@@ -130,7 +136,8 @@ namespace UnicornHack.Utils
 
             for (var octant = totalFOVQuadrants + primaryFOVQuadrants; octant < totalFOVQuadrants * 2; octant++)
             {
-                Compute((octant + octantShift) % 8, origin, secondaryRange, visibilityFalloff,
+                Compute((octant + octantShift) % 8, origin, secondaryRange, linearFalloff,
+                    doubleMarginalBlocks: DirectionFlags.None,
                     x: 1,
                     top: new Slope(1, 1),
                     bottom: new Slope(0, 1),
@@ -139,13 +146,15 @@ namespace UnicornHack.Utils
                     visibleTerrainList: null);
             }
 
-            visibilityFalloff = noFalloff || primaryRange == 0
-                ? (byte)0 : (byte)(byte.MaxValue / primaryRange);
+            linearFalloff = noFalloff || primaryRange == 0
+                ? (byte)0
+                : (byte)(MaxVisibility / primaryRange);
             for (var octant = totalFOVQuadrants - primaryFOVQuadrants;
                 octant < totalFOVQuadrants + primaryFOVQuadrants;
                 octant++)
             {
-                Compute((octant + octantShift) % 8, origin, primaryRange, visibilityFalloff,
+                Compute((octant + octantShift) % 8, origin, primaryRange, linearFalloff,
+                    doubleMarginalBlocks: DirectionFlags.None,
                     x: 1,
                     top: new Slope(1, 1),
                     bottom: new Slope(0, 1),
@@ -176,7 +185,8 @@ namespace UnicornHack.Utils
             if (targetVector.IsCardinalAligned())
             {
                 Compute(targetOctant, origin,
-                    rangeLimit: octantTarget.X, visibilityFalloff: 0,
+                    rangeLimit: octantTarget.X, linearFalloff: 0,
+                    doubleMarginalBlocks: DirectionFlags.None,
                     x: 1,
                     top: new Slope((octantTarget.Y << 1) + 1, (octantTarget.X << 1) - 1), // Top left corner
                     bottom: new Slope(0, 1),
@@ -188,13 +198,14 @@ namespace UnicornHack.Utils
                 for (var i = 0; i < visibleTerrainList.Count; i++)
                 {
                     var (index, visibility) = visibleTerrainList[i];
-                    visibleTerrainList[i] = (index, visibility == MaxVisibility ? visibility : (byte)(visibility << 1));
+                    visibleTerrainList[i] = (index, (byte)(visibility << 1));
                 }
             }
             else if (targetVector.IsIntercardinalAligned())
             {
                 Compute(targetOctant, origin,
-                    rangeLimit: octantTarget.X, visibilityFalloff: 0,
+                    rangeLimit: octantTarget.X, linearFalloff: 0,
+                    doubleMarginalBlocks: DirectionFlags.Cross,
                     x: 1,
                     top: new Slope(1, 1),
                     bottom: new Slope((octantTarget.Y << 1) - 1, (octantTarget.X << 1) + 1), // Bottom right corner
@@ -207,7 +218,8 @@ namespace UnicornHack.Utils
                 var adjacentVisibleTerrain = new List<(int, byte)>();
 
                 Compute(adjacentOctant, origin,
-                    rangeLimit: adjacentTarget.X, visibilityFalloff: 0,
+                    rangeLimit: adjacentTarget.X, linearFalloff: 0,
+                    doubleMarginalBlocks: DirectionFlags.Cross,
                     x: 1,
                     top: new Slope(1, 1),
                     bottom: new Slope((adjacentTarget.Y << 1) - 1, (adjacentTarget.X << 1) + 1), // Bottom right corner
@@ -255,10 +267,7 @@ namespace UnicornHack.Utils
                     if (firstIndex == secondIndex)
                     {
                         // Combine diagonal tiles
-                        visibleTerrainList[i--] = (firstIndex,
-                            firstVisibility == MaxVisibility || secondVisibility == MaxVisibility
-                                ? MaxVisibility
-                                : (byte)(firstVisibility + secondVisibility));
+                        visibleTerrainList[i--] = (firstIndex, (byte)(firstVisibility + secondVisibility));
                     }
                     else
                     {
@@ -273,8 +282,11 @@ namespace UnicornHack.Utils
             }
             else
             {
+                // Since the target is a single tile the beam will never be split into smaller beams,
+                // so the visible tiles will always be returned in order
                 Compute(targetOctant, origin,
-                    rangeLimit: octantTarget.X, visibilityFalloff: 0,
+                    rangeLimit: octantTarget.X, linearFalloff: 0,
+                    doubleMarginalBlocks: DirectionFlags.All,
                     x: 1,
                     top: new Slope((octantTarget.Y << 1) + 1, (octantTarget.X << 1) - 1), // Top left corner
                     bottom: new Slope((octantTarget.Y << 1) - 1, (octantTarget.X << 1) + 1), // Bottom right corner
@@ -311,7 +323,7 @@ namespace UnicornHack.Utils
 
         private void Compute(
             int octant, Point origin,
-            int rangeLimit, int visibilityFalloff,
+            int rangeLimit, byte linearFalloff, DirectionFlags doubleMarginalBlocks,
             int x, Slope top, Slope bottom,
             Func<byte, byte, LevelComponent, (bool, int)> blocksVisibility,
             byte[] visibleTerrain,
@@ -398,15 +410,11 @@ namespace UnicornHack.Utils
                     bottomY = (int)(bottomIntersectionY + 0.5f);
                 }
 
-                float? horizontalTopIntersectionY = null;
-                float? horizontalTopIntersectionX = null;
-                float? horizontalBottomIntersectionY = null;
-                float? horizontalBottomIntersectionX = null;
-                var rangeFalloff = x * visibilityFalloff;
+                var rangeFalloff = linearFalloff * x;
 
-                // Go through the tiles in the column now that we know which ones could possibly be visible
+                // Go through the tiles in the current column of the choosen sector
                 var wasOpaque = -1; // 0:false, 1:true, -1:not applicable
-                for (var y = topY; y >= bottomY; y--)
+                for (var y = bottomY; y <= topY; y++)
                 {
                     var (lightBlocked, index) = BlocksVisibility(x, y, octant, origin, blocksVisibility);
 
@@ -417,137 +425,29 @@ namespace UnicornHack.Utils
 
                     if (lightBlocked)
                     {
-                        var visibility = MaxVisibility;
+                        // There's something completely blocking the light, so we treat it as fully visible
 
-                        visibility = visibility < rangeFalloff ? (byte)0 : (byte)(visibility - rangeFalloff);
-                        if (visibleTerrain != null)
-                        {
-                            visibleTerrain[index] = visibility;
-                        }
-                        else
-                        {
-                            visibleTerrainList.Add((index, visibility));
-                        }
-                    }
-                    // Calculate how much of the tile is visible. It can only be partially visible for the first
-                    // and the last row in the sector.
-                    else
-                    {
                         var visibility = NormalizedMaxVisibility;
-                        if (y == topY)
+                        if (visibility <= rangeFalloff)
                         {
-                            float visibleArea;
-                            if (top.X == 1)
-                            {
-                                // Top vector is diagonal
-
-                                visibleArea = 0.5f;
-                            }
-                            else if ((int)(topIntersectionY + 0.5f) != topY)
-                            {
-                                // Top vector intersects bottom and right side
-
-                                var bottomSideIntersectionY = y - 0.5f;
-                                horizontalTopIntersectionY = bottomSideIntersectionY;
-                                var bottomSideIntersectionX = bottomSideIntersectionY * top.X / top.Y;
-                                horizontalTopIntersectionX = bottomSideIntersectionX;
-
-                                // The length of right side that is below the top slope
-                                var rB = nextTopIntersectionY - bottomSideIntersectionY;
-
-                                // The length of the bottom side that is to the right of the top slope
-                                var bR = x + 0.5f - bottomSideIntersectionX;
-                                visibleArea = rB * bR * 0.5f;
-                            }
-                            else
-                            {
-                                // Top vector intersects left and right side
-
-                                var bottomSideY = y - 0.5f;
-
-                                // The length of left side that is below the top slope
-                                var lB = topIntersectionY - bottomSideY;
-
-                                // The length of right side that is below the top slope
-                                var rB = nextTopIntersectionY - bottomSideY;
-                                visibleArea = (lB + rB) * 0.5f;
-                            }
-
-                            visibility = (byte)(visibility * visibleArea);
-                        }
-                        else if (y == topY - 1 && horizontalTopIntersectionY.HasValue)
-                        {
-                            var topSideY = horizontalTopIntersectionY.Value;
-
-                            // The length of left side of the tile that is above the top slope
-                            var lT = topSideY - topIntersectionY;
-
-                            // The length of the top side of the tile that is to the left of the top slope
-                            var tL = horizontalTopIntersectionX.Value - x + 0.5f;
-                            var blockedArea = lT * tL * 0.5f;
-
-                            visibility = (byte)(visibility - visibility * blockedArea);
+                            return;
                         }
 
-                        if (y == bottomY + 1 && bottomY != (int)(nextBottomIntersectionY + 0.5f))
+                        visibility = (byte)(visibility - rangeFalloff + MinVisibility);
+                        if (((doubleMarginalBlocks & DirectionFlags.East) == 0 && y == 0)
+                            || (doubleMarginalBlocks & DirectionFlags.Northeast) == 0 && x == y)
                         {
-                            var bottomSideIntersectionY = y - 0.5f;
-                            horizontalBottomIntersectionY = bottomSideIntersectionY;
-                            var bottomSideIntersectionX = bottomSideIntersectionY * bottom.X / bottom.Y;
-                            horizontalBottomIntersectionX = bottomSideIntersectionX;
-
-                            // The length of right side that is below the bottom slope
-                            var rB = nextBottomIntersectionY - bottomSideIntersectionY;
-
-                            // The length of the bottom side that is to the right of the bottom slope
-                            var bR = x + 0.5f - bottomSideIntersectionX;
-                            var blockedArea = rB * bR * 0.5f;
-
-                            visibility = (byte)(visibility - NormalizedMaxVisibility * blockedArea);
-                        }
-                        else if (y == bottomY)
-                        {
-                            float visibleArea;
-                            if (bottom.Y == 0)
-                            {
-                                // Bottom vector is horizontal
-
-                                visibleArea = 0.5f;
-                            }
-                            else if (horizontalBottomIntersectionY.HasValue)
-                            {
-                                // Bottom vector intersects bottom and right side
-
-                                var topSideY = horizontalBottomIntersectionY.Value;
-
-                                // The length of left side that is above the bottom slope
-                                var lT = topSideY - bottomIntersectionY;
-
-                                // The length of the top side o that is to the left of the bottom slope
-                                var tL = horizontalBottomIntersectionX.Value - x + 0.5f;
-
-                                visibleArea = lT * tL * 0.5f;
-                            }
-                            else
-                            {
-                                // Bottom vector intersects left and right side
-
-                                var topSideY = y + 0.5f;
-
-                                // The length of left side of the tile that is above the bottom slope
-                                var lT = topSideY - bottomIntersectionY;
-
-                                // The length of right side of the tile that is above the bottom slope
-                                var rT = topSideY - bottomIntersectionY;
-
-                                visibleArea = (lT + rT) * 0.5f;
-                            }
-
-                            visibility = (byte)(visibility - (NormalizedMaxVisibility - (byte)(NormalizedMaxVisibility * visibleArea)));
+                            visibility >>= 1;
                         }
 
-                        visibility += MinVisibility;
-                        visibility = visibility < rangeFalloff ? (byte)0 : (byte)(visibility - rangeFalloff);
+                        if (wasOpaque == 1
+                            && top.Less(new Slope((y << 1) - 1, (x << 1) - 1)))
+                        {
+                            // The tile below blocks visibility completely
+                            // But don't block visibility for the corner tiles when seen diagonally
+                            visibility = 0;
+                        }
+
                         if (visibleTerrain != null)
                         {
                             visibleTerrain[index] += visibility;
@@ -556,58 +456,51 @@ namespace UnicornHack.Utils
                         {
                             visibleTerrainList.Add((index, visibility));
                         }
-                    }
 
-                    if (x == rangeLimit || rangeFalloff >= MaxVisibility)
-                    {
-                        continue;
-                    }
-
-                    if (lightBlocked)
-                    {
                         if (wasOpaque == 0)
                         {
                             // If we found a transition from clear to opaque, this sector is done in this column,
-                            // so adjust the bottom vector upward and continue processing it in the next column.
-                            // If the opaque tile has a beveled top-left corner, move the bottom vector up to the top center.
-                            // Otherwise, move it up to the top left midpoint.
-                            // The corner is beveled if the tiles above and to the left are clear.
-                            var newBottomY = y * 4 + 2;
-                            var newBottomX = x * 4;
-                            if (!TopLeftBeveled(x, y, octant, origin))
+                            // so adjust the top vector downwards. If the opaque tile
+                            // has a beveled bottom-right corner, move the top vector down to the bottom center. Otherwise, move it
+                            // down to the bottom right midpoint. The corner is beveled if the tiles below and to the right are clear.
+                            var newTopY = (y << 2) - 2;
+                            var newTopX = x << 2;
+                            if (!BottomRightBeveled(x, y, octant, origin))
                             {
-                                // Top left midpoint since the corner is not beveled to allow peaking through corner doors
-                                newBottomX--;
+                                // Bottom right midpoint since the corner is not beveled
+                                newTopX++;
                             }
 
-                            var newBottom = new Slope(newBottomY, newBottomX);
-                            if (bottom.Greater(newBottom))
+                            var newTop = new Slope(newTopY, newTopX);
+                            if (top.Less(newTop))
                             {
-                                newBottom = bottom;
+                                newTop = top;
                             }
 
-                            if (top.Greater(newBottom))
+                            if (newTop.Greater(bottom))
                             {
                                 // We have to maintain the invariant that top > bottom, so the new sector
-                                // created by adjusting the bottom is only valid if that's the case
-                                // if we're at the bottom of the column, then just adjust the current sector rather than recursing
-                                // since there's no chance that this sector can be split in two by a later transition back to clear
-                                if (y == bottomY)
+                                // created by adjusting the top is only valid if that's the case.
+                                if (y == topY)
                                 {
-                                    bottom = newBottom;
-                                    nextBottomIntersectionY = ((x << 1) + 1) * bottom.Y / (float)(bottom.X << 1);
+                                    // We're at the top of the column, then just adjust the current sector rather than recursing
+                                    // since there's no chance that this sector can be split in two by a later transition back to clear
+                                    top = newTop;
+                                    nextTopIntersectionY = ((x << 1) + 1) * top.Y / (float)(top.X << 1);
                                     break;
                                 }
-
-                                Compute(octant, origin, rangeLimit, visibilityFalloff, x + 1, top,
-                                    newBottom, blocksVisibility, visibleTerrain, visibleTerrainList);
+                                else
+                                {
+                                    Compute(octant, origin, rangeLimit, linearFalloff, doubleMarginalBlocks,
+                                        x + 1, newTop, bottom, blocksVisibility, visibleTerrain, visibleTerrainList);
+                                }
                             }
                             else
                             {
-                                // The new bottom is greater than or equal to the top, so the new sector is empty and we'll ignore
-                                // it. If we're at the bottom of the column, we'd normally adjust the current sector rather than
+                                // The bottom is greater than or equal to the new top, so the new sector is empty and we'll ignore
+                                // it. If we're at the top of the column, we'd normally adjust the current sector rather than
                                 // recursing, so that invalidates the current sector and we're done
-                                if (y == bottomY)
+                                if (y == topY)
                                 {
                                     return;
                                 }
@@ -620,33 +513,168 @@ namespace UnicornHack.Utils
                     {
                         if (wasOpaque == 1)
                         {
-                            // If we found a transition from opaque to clear, adjust the top vector downwards. If the opaque tile
-                            // has a beveled bottom-right corner, move the top vector down to the top center. Otherwise, move it
-                            // down to the top right midpoint. The corner is beveled if the tiles below and to the right are clear.
-                            var newTopY = y * 4 + 2;
-                            var newTopX = x * 4;
-                            var bottomRightBeveled = BottomRightBeveled(x, y + 1, octant, origin);
-                            if (!bottomRightBeveled)
+                            // We found a transition from opaque to clear, so adjust the bottom vector upward.
+                            // If the opaque tile has a beveled top-left corner, move the bottom vector up to the bottom center.
+                            // Otherwise, move it up to the bottom left midpoint.
+                            // The corner is beveled if the tiles above and to the left are clear.
+                            var newBottomY = (y << 2) - 2;
+                            var newBottomX = x << 2;
+                            if (!TopLeftBeveled(x, y - 1, octant, origin))
                             {
-                                // Top right midpoint since the corner is not beveled
-                                newTopX++;
+                                // Bottom left midpoint since the corner is not beveled to allow peaking through corner doors
+                                newBottomX--;
                             }
 
-                            if (top.Greater(newTopY, newTopX))
+                            var newBottom = new Slope(newBottomY, newBottomX);
+                            if (bottom.Less(newBottom))
                             {
-                                top = new Slope(newTopY, newTopX);
-                            }
+                                bottom = newBottom;
 
-                            // We have to maintain the invariant that top > bottom. If not, the sector is empty and we're done.
-                            if (bottom.GreaterOrEqual(top))
-                            {
-                                return;
-                            }
+                                // We have to maintain the invariant that top > bottom. If not, the sector is empty and we're done.
+                                if (top.LessOrEqual(bottom))
+                                {
+                                    return;
+                                }
 
-                            nextTopIntersectionY = ((x << 1) + 1) * top.Y / (float)(top.X << 1);
+                                bottomIntersectionY = (x << 1) * bottom.Y / (float)(bottom.X << 1);
+                                nextBottomIntersectionY = ((x << 1) + 1) * bottom.Y / (float)(bottom.X << 1);
+                                bottomY = (int)(bottomIntersectionY + 0.5f);
+                            }
                         }
 
                         wasOpaque = 0;
+
+                        // Calculate how much of the tile is visible. It can only be partially visible for
+                        // the first two and the last two rows in the sector.
+                        var adjustedMaxVisibility = NormalizedMaxVisibility;
+                        if (adjustedMaxVisibility <= rangeFalloff)
+                        {
+                            return;
+                        }
+                        adjustedMaxVisibility = (byte)(adjustedMaxVisibility - rangeFalloff);
+
+                        var visibility = adjustedMaxVisibility;
+
+                        if (y == bottomY)
+                        {
+                            float visibleArea;
+                            if (bottom.Y == 0)
+                            {
+                                // Bottom vector is horizontal
+
+                                visibleArea = 0.5f;
+                            }
+                            else if (bottomY != (int)(nextBottomIntersectionY + 0.5f))
+                            {
+                                // Bottom vector intersects bottom and right side
+
+                                var bottomSideIntersectionY = y + 0.5f;
+                                var bottomSideIntersectionX = bottomSideIntersectionY * bottom.X / bottom.Y;
+
+                                // The length of the left side that is above the bottom slope
+                                var lT = bottomSideIntersectionY - bottomIntersectionY;
+
+                                // The length of the top side that is to the left of the bottom slope
+                                var tL = bottomSideIntersectionX - x + 0.5f;
+
+                                visibleArea = lT * tL * 0.5f;
+                            }
+                            else
+                            {
+                                // Bottom vector intersects left and right side
+
+                                var topSideY = y + 0.5f;
+
+                                // The length of the left side that is above the bottom slope
+                                var lT = topSideY - bottomIntersectionY;
+
+                                // The length of the right side that is above the bottom slope
+                                var rT = topSideY - nextBottomIntersectionY;
+
+                                visibleArea = (lT + rT) * 0.5f;
+                            }
+
+                            visibility = (byte)(visibility * visibleArea);
+                        }
+                        else if (y == bottomY + 1 && bottomY != (int)(nextBottomIntersectionY + 0.5f))
+                        {
+                            var bottomSideIntersectionY = y - 0.5f;
+                            var bottomSideIntersectionX = bottomSideIntersectionY * bottom.X / bottom.Y;
+
+                            // The length of the right side that is below the bottom slope
+                            var rB = nextBottomIntersectionY - bottomSideIntersectionY;
+
+                            // The length of the bottom side that is to the right of the bottom slope
+                            var bR = x + 0.5f - bottomSideIntersectionX;
+                            var blockedArea = rB * bR * 0.5f;
+
+                            visibility = (byte)(visibility - adjustedMaxVisibility * blockedArea);
+                        }
+
+                        if (y == topY - 1 && topY != (int)(topIntersectionY + 0.5f))
+                        {
+                            var bottomSideIntersectionY = y + 0.5f;
+                            var bottomSideIntersectionX = bottomSideIntersectionY * top.X / top.Y;
+
+                            // The length of the left side that is above the top slope
+                            var lT = bottomSideIntersectionY - topIntersectionY;
+
+                            // The length of the top side that is to the left of the top slope
+                            var tL = bottomSideIntersectionX - x + 0.5f;
+                            var blockedArea = lT * tL * 0.5f;
+
+                            visibility = (byte)(visibility - adjustedMaxVisibility * blockedArea);
+                        }
+                        else if (y == topY)
+                        {
+                            float visibleArea;
+                            if (top.X == 1)
+                            {
+                                // Top vector is diagonal
+
+                                visibleArea = 0.5f;
+                            }
+                            else if (topY != (int)(topIntersectionY + 0.5f))
+                            {
+                                // Top vector intersects bottom and right side
+
+                                var bottomSideIntersectionY = y - 0.5f;
+                                var bottomSideIntersectionX = bottomSideIntersectionY * top.X / top.Y;
+
+                                // The length of the right side that is below the top slope
+                                var rB = nextTopIntersectionY - bottomSideIntersectionY;
+
+                                // The length of the bottom side that is to the right of the top slope
+                                var bR = x + 0.5f - bottomSideIntersectionX;
+                                visibleArea = rB * bR * 0.5f;
+                            }
+                            else
+                            {
+                                // Top vector intersects left and right side
+
+                                var bottomSideY = y - 0.5f;
+
+                                // The length of the left side that is below the top slope
+                                var lB = topIntersectionY - bottomSideY;
+
+                                // The length of the right side that is below the top slope
+                                var rB = nextTopIntersectionY - bottomSideY;
+                                visibleArea = (lB + rB) * 0.5f;
+                            }
+
+                            visibility = (byte)(visibility - (adjustedMaxVisibility - (byte)(adjustedMaxVisibility * visibleArea)));
+                        }
+
+                        visibility += MinVisibility;
+
+                        if (visibleTerrain != null)
+                        {
+                            visibleTerrain[index] += visibility;
+                        }
+                        else
+                        {
+                            visibleTerrainList.Add((index, visibility));
+                        }
                     }
                 }
 
@@ -857,21 +885,23 @@ namespace UnicornHack.Utils
         [DebuggerDisplay("{Y}/{X}")]
         private struct Slope // represents the slope Y/X as a rational number
         {
+            public readonly int X, Y;
+
             public Slope(int y, int x)
             {
                 Y = y;
                 X = x;
             }
 
-            public bool Greater(Slope other) => Greater(other.Y, other.X);
+            public bool Greater(Slope other) => Y * other.X > X * other.Y;
 
-            public bool Greater(int y, int x) => Y * x > X * y;
+            public bool GreaterOrEqual(Slope other) => Y * other.X >= X * other.Y;
 
-            public bool GreaterOrEqual(Slope other) => GreaterOrEqual(other.Y, other.X);
+            public bool Less(Slope other) => Y * other.X < X * other.Y;
 
-            public bool GreaterOrEqual(int y, int x) => Y * x >= X * y;
+            public bool LessOrEqual(Slope other) =>  Y * other.X <= X * other.Y;
 
-            public readonly int X, Y;
+            public int CompareTo(Slope other) => Y * other.X - X * other.Y;
         }
     }
 }

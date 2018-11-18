@@ -38,6 +38,11 @@ namespace UnicornHack.Utils
             _closedNodeStatus += 2;
             _openNodes.Clear();
 
+            // TODO: Perf: Use Jump Point Search for uniform grids
+            // https://gamedevelopment.tutsplus.com/tutorials/how-to-speed-up-a-pathfinding-with-the-jump-point-search-algorithm--gamedev-5818
+
+            // TODO: Perf: Precompute Dijkstra Maps for sharing
+            // http://www.roguebasin.com/index.php?title=The_Incredible_Power_of_Dijkstra_Maps
             var currentLocationIndex = _pointToIndex[start.X, start.Y];
             var targetLocationIndex = _pointToIndex[target.X, target.Y];
             ref var currentLocationNode = ref _graph[currentLocationIndex];

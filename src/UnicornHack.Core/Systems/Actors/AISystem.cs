@@ -49,7 +49,6 @@ namespace UnicornHack.Systems.Actors
             var travelMessage = manager.TravelSystem.CreateTravelMessage(manager);
             travelMessage.Entity = actor;
 
-            // TODO: Avoid connections
             var directionToMove = TryGetDirectionToPlayer(actor, manager);
             if (directionToMove != null)
             {
@@ -65,7 +64,6 @@ namespace UnicornHack.Systems.Actors
                 }
             }
 
-            // TODO: Avoid connections
             var possibleDirectionsToMove =
                 manager.TravelSystem.GetPossibleMovementDirections(position, safe: true, manager);
             if (possibleDirectionsToMove.Count == 0)
@@ -175,12 +173,14 @@ namespace UnicornHack.Systems.Actors
                 }
 
                 var level = aiPosition.LevelEntity.Level;
+
                 // TODO: Check memory and senses
                 //if (manager.SensorySystem.GetVisibility(aiEntity, playerPosition.LevelCell, level) == 0)
                 //{
                 //    continue;
                 //}
 
+                // TODO: Avoid connections and creatures
                 return manager.TravelSystem.GetFirstStepFromShortestPath(
                     level, aiPosition.LevelCell, playerPosition.LevelCell, aiPosition.Heading.Value);
             }

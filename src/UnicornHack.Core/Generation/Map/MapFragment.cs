@@ -337,7 +337,7 @@ namespace UnicornHack.Generation.Map
                     var newLocationIndex = level.PointToIndex[newLocationX, newLocationY];
                     var newNeighbours = (byte)(neighbours[newLocationIndex] |
                                                1 << Vector.OppositeDirectionIndexes[directionIndex]);
-                    if (newNeighbours == (byte)DirectionFlags.Circle &&
+                    if (newNeighbours == (byte)DirectionFlags.All &&
                         (neighbours[level.PointToIndex[roomPoint.X, roomPoint.Y]] & 1 << directionIndex) != 0)
                     {
                         var insidePoint = new Point(newLocationX, newLocationY);

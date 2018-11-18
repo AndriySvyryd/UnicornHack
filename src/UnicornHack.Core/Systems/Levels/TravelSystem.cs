@@ -80,6 +80,12 @@ namespace UnicornHack.Systems.Levels
                 var targetLevelEntity = manager.Game.LoadLevel(targetLevelId);
                 targetCell = connection.TargetLevelCell.Value;
 
+                if (pretend)
+                {
+                    traveledMessage.Successful = true;
+                    return traveledMessage;
+                }
+
                 // TODO: Remove connection to the surface
                 if (targetLevelEntity.Level.BranchName == "surface")
                 {
@@ -202,6 +208,14 @@ namespace UnicornHack.Systems.Levels
 
                 var direction = Vector.MovementDirections[i];
                 var targetCell = currentPosition.LevelCell.Translate(direction);
+
+                var connectionEntity = manager.ConnectionsToLevelRelationship[currentPosition.LevelId]
+                    .SingleOrDefault(c => c.Position.LevelCell == targetCell);
+                if (connectionEntity != null)
+                {
+                    continue;
+                }
+
                 if (safe
                     && manager.LevelActorToLevelCellIndex[(currentPosition.LevelId, targetCell.X, targetCell.Y)] !=
                     null)

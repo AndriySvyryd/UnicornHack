@@ -274,8 +274,8 @@ namespace UnicornHack.Systems.Knowledge
                         if (item.ContainerId != null)
                         {
                             logMessage = manager.Game.Services.Language.GetString(new ItemPickUpEvent(
-                                playerEntity, manager.FindEntity(item.ContainerId.Value), message.ItemEntity,
-                                message.InitialCount, finalSensed, initialSensed));
+                                playerEntity, manager.ItemMovingSystem.GetTopContainer(itemEntity, manager),
+                                message.ItemEntity, message.InitialCount, finalSensed, initialSensed));
                         }
                         else if (position != null)
                         {

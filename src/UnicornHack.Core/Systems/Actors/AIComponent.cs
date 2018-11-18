@@ -37,5 +37,15 @@ namespace UnicornHack.Systems.Actors
             get => _noise;
             set => SetWithNotify(value, ref _noise);
         }
+
+        protected override void Clean()
+        {
+            _properName = default;
+            _nextActionTick = default;
+            _behavior = default;
+            _noise = default;
+
+            base.Clean();
+        }
     }
 }
