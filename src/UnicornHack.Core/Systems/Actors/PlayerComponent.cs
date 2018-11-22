@@ -16,7 +16,8 @@ namespace UnicornHack.Systems.Actors
         private bool _queuedAction;
         private int? _nextActionTick;
         private int? _defaultAttackId;
-        private int _maxXPLevel;
+        private int _maxLevel;
+        private int _nextLevelXP;
         private int _unspentSkillPoints;
         private int _oneHanded;
         private int _twoHanded;
@@ -101,15 +102,20 @@ namespace UnicornHack.Systems.Actors
         }
 
         /// <summary>
-        ///     The maximum level ever reached by an associated race
+        ///     The maximum level ever reached
         /// </summary>
-        public int MaxXPLevel
+        public int MaxLevel
         {
-            get => _maxXPLevel;
-            set => SetWithNotify(value, ref _maxXPLevel);
+            get => _maxLevel;
+            set => SetWithNotify(value, ref _maxLevel);
         }
 
-        // Skills
+        public int NextLevelXP
+        {
+            get => _nextLevelXP;
+            set => SetWithNotify(value, ref _nextLevelXP);
+        }
+
         public int UnspentSkillPoints
         {
             get => _unspentSkillPoints;
@@ -323,7 +329,8 @@ namespace UnicornHack.Systems.Actors
             _queuedAction = default;
             _nextActionTick = default;
             _defaultAttackId = default;
-            _maxXPLevel = default;
+            _maxLevel = default;
+            _nextLevelXP = default;
             _unspentSkillPoints = default;
             _oneHanded = default;
             _twoHanded = default;

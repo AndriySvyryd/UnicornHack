@@ -12,6 +12,8 @@ export class Player {
     @observable ep: number = 0;
     @observable maxEp: number = 0;
     @observable level: Level = new Level();
+    @observable xP: number = 0;
+    @observable nextLevelXP: number = 0;
     @observable inventory: Map<string, Item> = new Map<string, Item>();
     @observable abilities: Map<string, Ability> = new Map<string, Ability>();
     @observable log: Map<string, LogEntry> = new Map<string, LogEntry>();
@@ -81,6 +83,8 @@ export class Player {
         currentPlayer.log.clear();
         compactPlayer[i++].map((a: any[]) => LogEntry.expandToCollection(a, currentPlayer.log, EntityState.Added));
         currentPlayer.nextActionTick = compactPlayer[i++];
+        currentPlayer.nextLevelXP = compactPlayer[i++];
+        currentPlayer.xP = compactPlayer[i++];
         currentPlayer.hp = compactPlayer[i++];
         currentPlayer.maxHp = compactPlayer[i++];
         currentPlayer.ep = compactPlayer[i++];
@@ -112,15 +116,21 @@ export class Player {
                     this.nextActionTick = compactPlayer[i++];
                     break;
                 case 8:
-                    this.hp = compactPlayer[i++];
+                    this.nextLevelXP = compactPlayer[i++];
                     break;
                 case 9:
-                    this.maxHp = compactPlayer[i++];
+                    this.xP = compactPlayer[i++];
                     break;
                 case 10:
-                    this.ep = compactPlayer[i++];
+                    this.hp = compactPlayer[i++];
                     break;
                 case 11:
+                    this.maxHp = compactPlayer[i++];
+                    break;
+                case 12:
+                    this.ep = compactPlayer[i++];
+                    break;
+                case 13:
                     this.maxEp = compactPlayer[i++];
                     break;
                 default:
@@ -823,8 +833,6 @@ export class PlayerRace {
     @observable id: number = 0;
     @observable name: string = '';
     @observable xPLevel: number = 0;
-    @observable xP: number = 0;
-    @observable nextLevelXP: number = 0;
 
     @action
     static expandToCollection(compactPlayerRace: any[], collection: Map<string, PlayerRace>, parentState: EntityState) {
@@ -864,8 +872,6 @@ export class PlayerRace {
         playerRace.id = compactPlayerRace[i++];
         playerRace.name = compactPlayerRace[i++];
         playerRace.xPLevel = compactPlayerRace[i++];
-        playerRace.xP = compactPlayerRace[i++];
-        playerRace.nextLevelXP = compactPlayerRace[i++];
 
         return playerRace;
     }
@@ -881,12 +887,6 @@ export class PlayerRace {
                     break;
                 case 2:
                     this.xPLevel = compactPlayerRace[i++];
-                    break;
-                case 3:
-                    this.xP = compactPlayerRace[i++];
-                    break;
-                case 4:
-                    this.nextLevelXP = compactPlayerRace[i++];
                     break;
                 default:
                     return i - 1;

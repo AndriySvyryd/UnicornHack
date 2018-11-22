@@ -105,7 +105,7 @@ namespace UnicornHack.Systems.Effects
                                         addedRaceEntityReference.Referenced, message.TargetEntity.Id);
 
                                     addedRaceEffect.AffectedEntityId = message.TargetEntity.Id;
-                                    manager.KnowledgeSystem.UpdateNextLevelXP(addedRace, message.TargetEntity);
+                                    manager.KnowledgeSystem.UpdateNextLevelXP(message.TargetEntity);
                                 }
                             }
 

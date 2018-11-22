@@ -22,8 +22,6 @@ namespace UnicornHack.Hubs
                     properties.Add(raceEntity.Id);
                     properties.Add(race.TemplateName);
                     properties.Add(race.Level);
-                    properties.Add(race.ExperiencePoints);
-                    properties.Add(race.NextLevelXP);
                     return properties;
                 }
                 case EntityState.Deleted:
@@ -59,22 +57,6 @@ namespace UnicornHack.Hubs
                         {
                             properties.Add(i);
                             properties.Add(race.Level);
-                        }
-
-                        i++;
-                        var xp = raceEntry.Property(nameof(RaceComponent.ExperiencePoints));
-                        if (xp.IsModified)
-                        {
-                            properties.Add(i);
-                            properties.Add(race.ExperiencePoints);
-                        }
-
-                        i++;
-                        var nextLevelXP = raceEntry.Property(nameof(RaceComponent.NextLevelXP));
-                        if (nextLevelXP.IsModified)
-                        {
-                            properties.Add(i);
-                            properties.Add(race.NextLevelXP);
                         }
                     }
 

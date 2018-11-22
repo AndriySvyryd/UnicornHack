@@ -10,7 +10,7 @@ namespace UnicornHack
     {
         public EntityGroup<GameEntity> Beings { get; private set; }
         public EntityGroup<GameEntity> Races { get; private set; }
-        public SortedEntityRelationship<GameEntity, (byte Level, int Id)> RacesToBeingRelationship { get; private set; }
+        public SortedEntityRelationship<GameEntity, (int Level, int Id)> RacesToBeingRelationship { get; private set; }
         public LivingSystem LivingSystem { get; private set; }
 
         private void InitializeBeings(SequentialMessageQueue<GameManager> queue)
@@ -25,17 +25,17 @@ namespace UnicornHack
             Races = CreateGroup(nameof(Races), new EntityMatcher<GameEntity>()
                 .AllOf((int)EntityComponent.Race, (int)EntityComponent.Effect));
 
-            RacesToBeingRelationship = new SortedEntityRelationship<GameEntity, (byte Level, int Id)>(
+            RacesToBeingRelationship = new SortedEntityRelationship<GameEntity, (int Level, int Id)>(
                 nameof(RacesToBeingRelationship),
                 Races,
                 Beings,
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((EffectComponent)component).AffectedEntityId,
                     (int)EntityComponent.Effect),
-                new KeyValueGetter<GameEntity, (byte Level, int Id)>(
+                new KeyValueGetter<GameEntity, (int Level, int Id)>(
                     (entity, changes, getOldValue, matcher) =>
                     {
-                        if (!matcher.TryGetValue<byte>(
+                        if (!matcher.TryGetValue<int>(
                             entity, (int)EntityComponent.Race, nameof(RaceComponent.Level), changes, getOldValue, out var level))
                         {
                             return ((0, 0), false);

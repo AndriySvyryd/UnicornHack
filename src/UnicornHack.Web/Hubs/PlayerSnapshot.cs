@@ -75,6 +75,8 @@ namespace UnicornHack.Hubs
                 properties.Add(GetLogEntries(player)
                     .Select(e => LogEntrySnapshot.Serialize(e, null, context)).ToList());
                 properties.Add(player.NextActionTick);
+                properties.Add(player.NextLevelXP);
+                properties.Add(being.ExperiencePoints);
                 properties.Add(being.HitPoints);
                 properties.Add(being.HitPointMaximum);
                 properties.Add(being.EnergyPoints);
@@ -153,9 +155,25 @@ namespace UnicornHack.Hubs
                 properties.Add(player.NextActionTick);
             }
 
+            i++;
+            var nextLevelXP = playerEntry.Property(nameof(PlayerComponent.NextLevelXP));
+            if (nextLevelXP.IsModified)
+            {
+                properties.Add(i);
+                properties.Add(player.NextLevelXP);
+            }
+
             var beingEntry = context.DbContext.Entry(being);
             if (beingEntry.State != EntityState.Unchanged)
             {
+                i++;
+                var xp = beingEntry.Property(nameof(BeingComponent.ExperiencePoints));
+                if (xp.IsModified)
+                {
+                    properties.Add(i);
+                    properties.Add(being.ExperiencePoints);
+                }
+
                 i++;
                 var hitPoints = beingEntry.Property(nameof(BeingComponent.HitPoints));
                 if (hitPoints.IsModified)

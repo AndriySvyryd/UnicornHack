@@ -180,7 +180,7 @@ namespace UnicornHack.Systems.Knowledge
         }
 
         public RaceComponent GetLearningRace(GameEntity actorEntity, GameManager manager)
-            => manager.RacesToBeingRelationship[actorEntity.Id].Values.Last().Race;
+            => manager.RacesToBeingRelationship[actorEntity.Id].Values.First().Race;
 
         public byte GetXPLevel(GameEntity actorEntity, GameManager manager)
             => (byte)manager.RacesToBeingRelationship[actorEntity.Id].Values.Sum(r => r.Race.Level);
@@ -188,23 +188,21 @@ namespace UnicornHack.Systems.Knowledge
         private void AddXP(GameEntity actorEntity, int xp, GameManager manager)
         {
             var player = actorEntity.Player;
+            var being = actorEntity.Being;
             var leftoverXP = xp;
             while (leftoverXP != 0)
             {
-                var race = GetLearningRace(actorEntity, manager);
-                race.ExperiencePoints += leftoverXP;
-                if (race.ExperiencePoints >= race.NextLevelXP)
+                being.ExperiencePoints += leftoverXP;
+                if (being.ExperiencePoints >= player.NextLevelXP)
                 {
-                    leftoverXP = race.ExperiencePoints - race.NextLevelXP;
-                    race.ExperiencePoints = 0;
-                    // TODO: fire an event and trigger abilities
-                    race.Level++;
-                    if (race.Level > player.MaxXPLevel)
-                    {
-                        player.MaxXPLevel = race.Level;
-                    }
+                    leftoverXP = being.ExperiencePoints - player.NextLevelXP;
+                    being.ExperiencePoints = 0;
 
-                    UpdateNextLevelXP(race, actorEntity);
+                    // TODO: fire an event and trigger abilities
+                    var race = GetLearningRace(actorEntity, manager);
+                    race.Level++;
+
+                    UpdateNextLevelXP(actorEntity);
                 }
                 else
                 {
@@ -218,12 +216,17 @@ namespace UnicornHack.Systems.Knowledge
             manager.Enqueue(xpGained);
         }
 
-        public void UpdateNextLevelXP(RaceComponent race, GameEntity entity)
+        public void UpdateNextLevelXP(GameEntity actorEntity)
         {
-            var entityLevel = GetXPLevel(entity, entity.Manager);
-            var player = entity.Player;
-            var currentLevel = player.MaxXPLevel > race.Level ? race.Level : entityLevel;
-            race.NextLevelXP = (int)((1 + Math.Ceiling(Math.Pow(currentLevel, 1.5))) * 500);
+            var player = actorEntity.Player;
+            var playerLevel = GetXPLevel(actorEntity, actorEntity.Manager);
+            if (playerLevel > player.MaxLevel)
+            {
+                player.MaxLevel = playerLevel;
+            }
+
+            var effectiveLevel = player.MaxLevel > playerLevel ? player.MaxLevel - playerLevel : playerLevel;
+            player.NextLevelXP = (int)((1 + Math.Ceiling(Math.Pow(effectiveLevel, 1.5))) * 500);
         }
 
         public MessageProcessingResult Process(ItemMovedMessage message, GameManager manager)

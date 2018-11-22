@@ -450,6 +450,7 @@ namespace UnicornHack.Generation
                 being.Sex = Sex ?? (level.GenerationRandom.Roll(1, 2) > 1
                                 ? Primitives.Sex.Female
                                 : Primitives.Sex.Male);
+                being.ExperiencePoints = XP;
 
                 creatureEntity.Being = being;
 
@@ -481,7 +482,6 @@ namespace UnicornHack.Generation
 
                     var race = AddRace(appliedEffectEntity);
                     race.Level = InitialLevel;
-                    race.ExperiencePoints = XP;
 
                     using (var abilityEntityReference = manager.CreateEntity())
                     {

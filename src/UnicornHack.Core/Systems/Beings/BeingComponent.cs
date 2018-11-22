@@ -38,6 +38,7 @@ namespace UnicornHack.Systems.Beings
         private ExtremityType _upperExtremeties;
         private ExtremityType _lowerExtremeties;
         private ExtremityType _backExtremeties;
+        private int _experiencePoints;
         private float _leftoverRegenerationXP;
         private int? _primaryNaturalWeaponId;
         private int? _secondaryNaturalWeaponId;
@@ -266,6 +267,12 @@ namespace UnicornHack.Systems.Beings
             set => SetWithNotify(value, ref _backExtremeties);
         }
 
+        public int ExperiencePoints
+        {
+            get => _experiencePoints;
+            set => SetWithNotify(value, ref _experiencePoints);
+        }
+
         public float LeftoverRegenerationXP
         {
             get => _leftoverRegenerationXP;
@@ -321,6 +328,7 @@ namespace UnicornHack.Systems.Beings
             _upperExtremeties = default;
             _lowerExtremeties = default;
             _backExtremeties = default;
+            _experiencePoints = default;
             _leftoverRegenerationXP = default;
             _primaryNaturalWeaponId = default;
             _secondaryNaturalWeaponId = default;

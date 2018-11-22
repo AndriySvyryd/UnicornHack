@@ -9,9 +9,7 @@ namespace UnicornHack.Systems.Beings
         private string _templateName;
         private Species _species;
         private SpeciesClass _speciesClass;
-        private byte _level;
-        private int _experiencePoints;
-        private int _nextLevelXP;
+        private int _level;
 
         public RaceComponent()
             => ComponentId = (int)EntityComponent.Race;
@@ -34,22 +32,10 @@ namespace UnicornHack.Systems.Beings
             set => SetWithNotify(value, ref _speciesClass);
         }
 
-        public byte Level
+        public int Level
         {
             get => _level;
             set => SetWithNotify(value, ref _level);
-        }
-
-        public int ExperiencePoints
-        {
-            get => _experiencePoints;
-            set => SetWithNotify(value, ref _experiencePoints);
-        }
-
-        public int NextLevelXP
-        {
-            get => _nextLevelXP;
-            set => SetWithNotify(value, ref _nextLevelXP);
         }
 
         protected override void Clean()
@@ -58,8 +44,6 @@ namespace UnicornHack.Systems.Beings
             _species = default;
             _speciesClass = default;
             _level = default;
-            _experiencePoints = default;
-            _nextLevelXP = default;
 
             base.Clean();
         }

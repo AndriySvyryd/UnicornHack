@@ -21,9 +21,9 @@ namespace UnicornHack.Systems.Beings
 
         public MessageProcessingResult Process(XPGainedMessage message, GameManager manager)
         {
-            var race = manager.KnowledgeSystem.GetLearningRace(message.Entity, manager);
+            var player = message.Entity.Player;
             var being = message.Entity.Being;
-            var regenerationRate = (float)race.NextLevelXP / (being.HitPointMaximum * 4);
+            var regenerationRate = (float)player.NextLevelXP / (being.HitPointMaximum * 4);
             var regeneratingXp = message.ExperiencePoints + being.LeftoverRegenerationXP;
             var hpRegenerated = (int)Math.Floor(regeneratingXp / regenerationRate);
             being.LeftoverRegenerationXP = regeneratingXp % regenerationRate;
