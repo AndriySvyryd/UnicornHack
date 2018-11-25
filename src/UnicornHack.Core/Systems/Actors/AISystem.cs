@@ -54,7 +54,7 @@ namespace UnicornHack.Systems.Actors
             {
                 travelMessage.TargetCell = position.Heading != directionToMove
                     ? position.LevelCell
-                    : position.LevelCell.Translate(Vector.Convert(directionToMove.Value));
+                    : position.LevelCell.Translate(directionToMove.Value.AsVector());
                 travelMessage.TargetHeading = directionToMove.Value;
 
                 if (manager.TravelSystem.CanTravel(travelMessage, manager))
@@ -85,10 +85,10 @@ namespace UnicornHack.Systems.Actors
 
             travelMessage.TargetCell = position.Heading != directionToMove
                 ? position.LevelCell
-                : position.LevelCell.Translate(Vector.Convert(directionToMove.Value));
+                : position.LevelCell.Translate(directionToMove.Value.AsVector());
             travelMessage.TargetHeading = directionToMove.Value;
 
-            travelMessage.TargetCell = position.LevelCell.Translate(Vector.Convert(travelMessage.TargetHeading));
+            travelMessage.TargetCell = position.LevelCell.Translate(travelMessage.TargetHeading.AsVector());
 
             Debug.Assert(manager.TravelSystem.CanTravel(travelMessage, manager));
 

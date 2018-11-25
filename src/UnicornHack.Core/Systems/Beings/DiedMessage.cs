@@ -19,6 +19,6 @@ namespace UnicornHack.Systems.Beings
 
         string IMessage.MessageName { get; set; }
 
-        public void Dispose() => BeingEntity = null;
+        public void Dispose() => BeingEntity = default;
     }
 }

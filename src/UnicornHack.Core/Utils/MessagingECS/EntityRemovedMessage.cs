@@ -10,6 +10,8 @@
 
         public void Dispose()
         {
+            Entity = default;
+            ChangedComponent = default;
         }
     }
 }

@@ -638,8 +638,8 @@ namespace UnicornHack.Systems.Abilities
                     }
 
                     var direction = vectorToTarget.AsDirection();
-                    var firstNeighbour = targetCell.Translate(Vector.Convert(direction.Rotate(1)));
-                    var secondNeighbour = targetCell.Translate(Vector.Convert(direction.Rotate(-1)));
+                    var firstNeighbour = targetCell.Translate(direction.Rotate(1).AsVector());
+                    var secondNeighbour = targetCell.Translate(direction.Rotate(-1).AsVector());
 
                     var targets = new List<(GameEntity, byte)>();
                     var arcTarget = manager.LevelActorToLevelCellIndex[(levelId, targetCell.X, targetCell.Y)];

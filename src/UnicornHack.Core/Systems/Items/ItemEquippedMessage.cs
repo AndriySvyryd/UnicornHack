@@ -33,13 +33,18 @@ namespace UnicornHack.Systems.Items
         public EquipmentSlot Slot { get; set; }
         public bool Successful { get; set; }
         public int Delay { get; set; }
+        public bool SuppressLog { get; set; }
 
         string IMessage.MessageName { get; set; }
 
         public void Dispose()
         {
-            ItemEntity = null;
-            ActorEntity = null;
+            ItemEntity = default;
+            ActorEntity = default;
+            Slot = default;
+            Successful = default;
+            Delay = default;
+            SuppressLog = default;
         }
     }
 }

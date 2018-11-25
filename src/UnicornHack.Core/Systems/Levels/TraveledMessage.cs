@@ -40,6 +40,12 @@ namespace UnicornHack.Systems.Levels
 
         public void Dispose()
         {
+            Entity = default;
+            InitialLevel = default;
+            InitialHeading = default;
+            InitialPosition = default;
+            Successful = default;
+            Delay = default;
         }
     }
 }

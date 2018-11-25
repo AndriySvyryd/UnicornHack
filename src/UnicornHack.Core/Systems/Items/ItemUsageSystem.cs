@@ -39,6 +39,7 @@ namespace UnicornHack.Systems.Items
             equippedMessage.ItemEntity = message.ItemEntity;
             equippedMessage.ActorEntity = message.ActorEntity;
             equippedMessage.Slot = message.Slot;
+            equippedMessage.SuppressLog = message.SuppressLog;
 
             if (message.Slot != EquipmentSlot.None)
             {

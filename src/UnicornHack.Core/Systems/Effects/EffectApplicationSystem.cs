@@ -145,6 +145,7 @@ namespace UnicornHack.Systems.Effects
                         {
                             var moveItemMessage = manager.ItemMovingSystem.CreateMoveItemMessage(manager);
                             moveItemMessage.ItemEntity = movee;
+                            moveItemMessage.SuppressLog = true;
 
                             if (message.TargetEntity != null)
                             {
@@ -428,8 +429,11 @@ namespace UnicornHack.Systems.Effects
                         if (!manager.RacesToBeingRelationship[targetEntity.Id].Any())
                         {
                             var combatComponent = targetEntity.Being;
-                            // TODO: Add death cause
-                            manager.LivingSystem.ChangeCurrentHP(combatComponent, -1 * combatComponent.HitPoints);
+                            if (combatComponent != null)
+                            {
+                                // TODO: Add death cause
+                                manager.LivingSystem.ChangeCurrentHP(combatComponent, -1 * combatComponent.HitPoints);
+                            }
                         }
                     }
 

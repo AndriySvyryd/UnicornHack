@@ -236,7 +236,7 @@ namespace UnicornHack.Systems.Actors
         {
             // TODO: only attack on move if hostile
             var position = playerEntity.Position;
-            var targetCell = position.LevelCell.Translate(Vector.Convert(direction));
+            var targetCell = position.LevelCell.Translate(direction.AsVector());
             var conflictingActor = manager.LevelActorToLevelCellIndex[(position.LevelId, targetCell.X, targetCell.Y)];
             if (conflictingActor != null)
             {
@@ -249,7 +249,7 @@ namespace UnicornHack.Systems.Actors
             travelMessage.TargetHeading = direction;
             travelMessage.TargetCell = onlyChangeHeading
                 ? position.LevelCell
-                : position.LevelCell.Translate(Vector.Convert(travelMessage.TargetHeading));
+                : position.LevelCell.Translate(travelMessage.TargetHeading.AsVector());
             travelMessage.MoveOffConflicting = true;
 
             if (!manager.TravelSystem.CanTravel(travelMessage, manager))

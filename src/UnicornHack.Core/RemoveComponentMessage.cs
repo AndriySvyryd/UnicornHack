@@ -11,6 +11,8 @@ namespace UnicornHack
 
         public void Dispose()
         {
+            Entity = default;
+            Component = default;
         }
     }
 }

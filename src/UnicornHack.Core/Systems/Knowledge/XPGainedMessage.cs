@@ -21,6 +21,10 @@ namespace UnicornHack.Systems.Knowledge
 
         string IMessage.MessageName { get; set; }
 
-        public void Dispose() => Entity = null;
+        public void Dispose()
+        {
+            Entity = default;
+            ExperiencePoints = default;
+        }
     }
 }

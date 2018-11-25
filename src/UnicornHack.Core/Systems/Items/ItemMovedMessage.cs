@@ -34,13 +34,19 @@ namespace UnicornHack.Systems.Items
         public int InitialCount { get; set; }
         public bool Successful { get; set; }
         public int Delay { get; set; }
+        public bool SuppressLog { get; set; }
 
         string IMessage.MessageName { get; set; }
 
         public void Dispose()
         {
-            ItemEntity = null;
-            InitialContainer = null;
+            ItemEntity = default;
+            InitialContainer = default;
+            InitialPosition = default;
+            InitialCount = default;
+            Successful = default;
+            Delay = default;
+            SuppressLog = default;
         }
     }
 }

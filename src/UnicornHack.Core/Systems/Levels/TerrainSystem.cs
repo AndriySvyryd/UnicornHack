@@ -86,5 +86,24 @@ namespace UnicornHack.Systems.Levels
 
             return changed;
         }
+
+        public static IEnumerable<Point> GetAdjacentPoints(
+            LevelComponent level, Point point, Direction startingDirection, bool includeInitial = false)
+        {
+            if (includeInitial)
+            {
+                yield return point;
+            }
+
+            for (var i = 0; i < 8; i++)
+            {
+                var newPoint = point.Translate(startingDirection.Rotate(i).AsVector());
+                if (newPoint.X < level.Width
+                    && newPoint.Y < level.Height)
+                {
+                    yield return newPoint;
+                }
+            }
+        }
     }
 }

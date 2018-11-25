@@ -61,10 +61,12 @@ namespace UnicornHack.Systems.Effects
 
         public void Dispose()
         {
-            ActivatorEntity = null;
-            AbilityEntity = null;
-            TargetEntity = null;
-            AppliedEffects = null;
+            ActivatorEntity = default;
+            AbilityEntity = default;
+            TargetEntity = default;
+            AppliedEffects = default;
+            AbilityType = default;
+            SuccessfulApplication = default;
         }
     }
 }

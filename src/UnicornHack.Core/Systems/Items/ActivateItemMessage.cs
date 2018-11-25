@@ -50,9 +50,11 @@ namespace UnicornHack.Systems.Items
 
         public void Dispose()
         {
-            ActivatorEntity = null;
-            ItemEntity = null;
-            TargetEntity = null;
+            ActivatorEntity = default;
+            ItemEntity = default;
+            TargetEntity = default;
+            ActivationType = default;
+            TargetCell = default;
         }
     }
 }

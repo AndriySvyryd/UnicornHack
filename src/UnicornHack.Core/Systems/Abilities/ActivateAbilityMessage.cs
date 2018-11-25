@@ -61,9 +61,10 @@ namespace UnicornHack.Systems.Abilities
 
         public void Dispose()
         {
-            ActivatorEntity = null;
-            AbilityEntity = null;
-            TargetEntity = null;
+            ActivatorEntity = default;
+            AbilityEntity = default;
+            TargetEntity = default;
+            TargetCell = default;
         }
     }
 }

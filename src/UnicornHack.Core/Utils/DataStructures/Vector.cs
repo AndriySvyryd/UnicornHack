@@ -117,31 +117,6 @@ namespace UnicornHack.Utils.DataStructures
             throw new InvalidOperationException("Not a cardinal direction: " + this);
         }
 
-        public static Vector Convert(Direction direction)
-        {
-            switch (direction)
-            {
-                case Direction.North:
-                    return new Vector(0, -1);
-                case Direction.South:
-                    return new Vector(0, 1);
-                case Direction.West:
-                    return new Vector(-1, 0);
-                case Direction.East:
-                    return new Vector(1, 0);
-                case Direction.Northwest:
-                    return new Vector(-1, -1);
-                case Direction.Northeast:
-                    return new Vector(1, -1);
-                case Direction.Southwest:
-                    return new Vector(-1, 1);
-                case Direction.Southeast:
-                    return new Vector(1, 1);
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(direction), direction, message: null);
-            }
-        }
-
         /// <summary>
         ///     Get the vector octant (0-7)
         /// </summary>

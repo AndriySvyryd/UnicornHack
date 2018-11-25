@@ -43,14 +43,17 @@ namespace UnicornHack.Systems.Items
         }
 
         public Point? TargetCell { get; set; }
+        public bool SuppressLog { get; set; }
 
         string IMessage.MessageName { get; set; }
 
         public void Dispose()
         {
-            ItemEntity = null;
-            TargetContainerEntity = null;
-            TargetLevelEntity = null;
+            ItemEntity = default;
+            TargetContainerEntity = default;
+            TargetLevelEntity = default;
+            TargetCell = default;
+            SuppressLog = default;
         }
     }
 }

@@ -150,7 +150,7 @@ namespace UnicornHack.Systems.Levels
 
             var directionIndex = manager.Game.Random.Next(minValue: 0, maxValue: possibleDirectionsToMove.Count);
 
-            position.LevelCell = position.LevelCell.Translate(Vector.Convert(possibleDirectionsToMove[directionIndex]));
+            position.LevelCell = position.LevelCell.Translate(possibleDirectionsToMove[directionIndex].AsVector());
 
             using (var travelMessage = manager.TravelSystem.CreateTravelMessage(manager))
             {

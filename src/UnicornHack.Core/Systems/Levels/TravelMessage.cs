@@ -25,6 +25,12 @@ namespace UnicornHack.Systems.Levels
 
         string IMessage.MessageName { get; set; }
 
-        public void Dispose() => Entity = null;
+        public void Dispose()
+        {
+            Entity = default;
+            TargetHeading = default;
+            TargetCell = default;
+            MoveOffConflicting = default;
+        }
     }
 }

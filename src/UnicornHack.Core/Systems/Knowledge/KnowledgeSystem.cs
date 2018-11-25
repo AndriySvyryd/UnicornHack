@@ -260,7 +260,7 @@ namespace UnicornHack.Systems.Knowledge
                     {
                         if (position != null)
                         {
-                            if (message.InitialContainer.Being?.IsAlive != false)
+                            if (!message.SuppressLog)
                             {
                                 logMessage = manager.Game.Services.Language.GetString(new ItemDropEvent(
                                     playerEntity, message.InitialContainer, message.ItemEntity,
@@ -306,13 +306,16 @@ namespace UnicornHack.Systems.Knowledge
                         continue;
                     }
 
-                    var actorSensed = manager.SensorySystem.CanSense(playerEntity, message.ActorEntity);
-                    var itemSensed = manager.SensorySystem.CanSense(playerEntity, message.ItemEntity);
+                    if (!message.SuppressLog)
+                    {
+                        var actorSensed = manager.SensorySystem.CanSense(playerEntity, message.ActorEntity);
+                        var itemSensed = manager.SensorySystem.CanSense(playerEntity, message.ItemEntity);
 
-                    var logMessage = manager.Game.Services.Language.GetString(new ItemEquipmentEvent(
-                        playerEntity, message.ActorEntity, message.ItemEntity,
-                        actorSensed, itemSensed, message.Slot));
-                    WriteLog(logMessage, playerEntity, manager);
+                        var logMessage = manager.Game.Services.Language.GetString(new ItemEquipmentEvent(
+                            playerEntity, message.ActorEntity, message.ItemEntity,
+                            actorSensed, itemSensed, message.Slot));
+                        WriteLog(logMessage, playerEntity, manager);
+                    }
                 }
             }
 

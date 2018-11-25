@@ -21,6 +21,10 @@ namespace UnicornHack.Systems.Senses
 
         string IMessage.MessageName { get; set; }
 
-        public void Dispose() => LevelEntity = null;
+        public void Dispose()
+        {
+            LevelEntity = default;
+            TilesExplored = default;
+        }
     }
 }

@@ -13,6 +13,11 @@
 
         public void Dispose()
         {
+            ChangedPropertyName = default;
+            OldValue = default;
+            NewValue = default;
+            ChangedComponent = default;
+            Entity = default;
         }
     }
 }

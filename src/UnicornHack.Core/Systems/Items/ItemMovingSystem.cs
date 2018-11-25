@@ -66,6 +66,7 @@ namespace UnicornHack.Systems.Items
                 moveMessage.ItemEntity = item;
                 moveMessage.TargetCell = position.LevelCell;
                 moveMessage.TargetLevelEntity = position.LevelEntity;
+                moveMessage.SuppressLog = true;
 
                 manager.Enqueue(moveMessage);
             }
@@ -85,6 +86,7 @@ namespace UnicornHack.Systems.Items
                 ? manager.FindEntity(item.ContainerId.Value)
                 : null;
             itemMovedMessage.InitialCount = item.GetQuantity(manager);
+            itemMovedMessage.SuppressLog = message.SuppressLog;
 
             if (item.ContainerId != null
                 && (item.ContainerId == message.TargetContainerEntity?.Id
@@ -103,6 +105,7 @@ namespace UnicornHack.Systems.Items
                     equipMessage.ActorEntity = manager.FindEntity(item.ContainerId.Value);
                     equipMessage.ItemEntity = itemEntity;
                     equipMessage.Slot = EquipmentSlot.None;
+                    equipMessage.SuppressLog = true;
 
                     if (!manager.ItemUsageSystem.CanEquipItem(equipMessage, manager))
                     {
@@ -115,30 +118,58 @@ namespace UnicornHack.Systems.Items
 
                 itemMovedMessage.Delay += TimeSystem.DefaultActionDelay;
 
-                var (levelX, levelY) = message.TargetCell.Value;
-                var existingItem = manager.LevelItemsToLevelCellIndex[(message.TargetLevelEntity.Id, levelX, levelY)];
-                if (existingItem == null)
+                var initialPosition = itemMovedMessage.InitialPosition;
+                if (initialPosition == null)
                 {
-                    itemMovedMessage.Successful = true;
-                    if (pretend)
+                    var initialTopContainer = itemMovedMessage.InitialContainer != null
+                        ? manager.ItemMovingSystem.GetTopContainer(itemMovedMessage.InitialContainer, manager)
+                        : itemEntity;
+                    initialPosition = initialTopContainer.Position?.LevelCell;
+                }
+
+                var spilloverDirection = Direction.South;
+                if (initialPosition != null
+                    && initialPosition != message.TargetCell.Value)
+                {
+                    spilloverDirection = message.TargetCell.Value.DifferenceTo(initialPosition.Value).GetUnit().AsDirection();
+                }
+
+                ItemComponent leftover = null;
+                foreach (var targetPoint in TerrainSystem.GetAdjacentPoints(
+                    message.TargetLevelEntity.Level, message.TargetCell.Value, spilloverDirection, includeInitial: true))
+                {
+                    var (levelX, levelY) = targetPoint;
+                    var existingItem = manager.LevelItemsToLevelCellIndex[(message.TargetLevelEntity.Id, levelX, levelY)];
+                    if (existingItem == null)
                     {
+                        itemMovedMessage.Successful = true;
+                        if (pretend)
+                        {
+                            return itemMovedMessage;
+                        }
+
+                        item.ContainerId = null;
+                        position = position ?? manager.CreateComponent<PositionComponent>(EntityComponent.Position);
+
+                        position.SetLevelPosition(message.TargetLevelEntity.Id, targetPoint);
+
+                        itemEntity.Position = position;
+
                         return itemMovedMessage;
                     }
 
-                    item.ContainerId = null;
-                    position = position ?? manager.CreateComponent<PositionComponent>(EntityComponent.Position);
+                    leftover = TryStackWith(itemMovedMessage, existingItem.Item, pretend);
+                    if (leftover == null)
+                    {
+                        break;
+                    }
 
-                    position.SetLevelPosition(message.TargetLevelEntity.Id, message.TargetCell.Value);
-
-                    itemEntity.Position = position;
-
-                    return itemMovedMessage;
+                    itemMovedMessage.ItemEntity = leftover.Entity;
                 }
 
-                var leftover = TryStackWith(itemMovedMessage, existingItem.Item, pretend);
                 if (leftover != null)
                 {
-                    // TODO: Slide to the next available space, if none available create a sack
+                    // TODO: Create a sack
                     return itemMovedMessage;
                 }
             }
@@ -188,8 +219,8 @@ namespace UnicornHack.Systems.Items
             return itemMovedMessage;
         }
 
-        private static ItemComponent TryStackWith(ItemMovedMessage itemMovedMessage, ItemComponent existingItem,
-            bool pretend)
+        private static ItemComponent TryStackWith(
+            ItemMovedMessage itemMovedMessage, ItemComponent existingItem, bool pretend)
         {
             var item = itemMovedMessage.ItemEntity.Item;
             if (item.TemplateName != existingItem.TemplateName
@@ -212,11 +243,11 @@ namespace UnicornHack.Systems.Items
                 return null;
             }
 
-            var game = item.Entity.Manager;
-            var stack = game.EntityItemsToContainerRelationship[item.EntityId].ToList();
+            var manager = item.Entity.Manager;
+            var stack = manager.EntityItemsToContainerRelationship[item.EntityId].ToList();
             var stackSize = stack.Count + 1;
 
-            var existingStackSize = game.EntityItemsToContainerRelationship[existingItem.EntityId].Count() + 1;
+            var existingStackSize = manager.EntityItemsToContainerRelationship[existingItem.EntityId].Count() + 1;
 
             if (stackSize > 1 && existingStackSize < existingItem.MaxStackSize)
             {
