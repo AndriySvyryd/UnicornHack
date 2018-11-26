@@ -70,7 +70,7 @@ namespace UnicornHack.Generation
 
                     var race = PlayerRaceData.Human.AddRace(raceEffectEntity);
 
-                    raceEffectEntity.Ability.OwnerId = playerEntity.Id;
+                    raceEffectEntity.Ability.OwnerEntity = playerEntity;
                     raceEffect.AffectedEntityId = playerEntity.Id;
 
                     manager.KnowledgeSystem.UpdateNextLevelXP(playerEntity);

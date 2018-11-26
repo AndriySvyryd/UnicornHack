@@ -2,11 +2,22 @@ using System;
 using System.Linq;
 using System.Text;
 using Xunit;
+using FactAttribute = System.Runtime.CompilerServices.CompilerGeneratedAttribute;
+using TheoryAttribute = System.Runtime.CompilerServices.CompilerGeneratedAttribute;
+using InlineDataAttribute = DummyDataAttribute;
+
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+internal class DummyDataAttribute : Attribute
+{
+    public DummyDataAttribute(params object[] data)
+    {
+    }
+}
 
 namespace UnicornHack.Utils
 {
     // These tests are flaky
-    internal class SimpleRandomTest
+    public class SimpleRandomTest
     {
         [Fact]
         public void Pick_uniform()

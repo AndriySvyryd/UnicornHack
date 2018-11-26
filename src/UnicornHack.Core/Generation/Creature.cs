@@ -548,7 +548,7 @@ namespace UnicornHack.Generation
                             abilityEntity.Id, manager);
                     }
 
-                    appliedEffectEntity.Ability.OwnerId = creatureEntity.Id;
+                    appliedEffectEntity.Ability.OwnerEntity = creatureEntity;
                     appliedEffect.AffectedEntityId = creatureEntity.Id;
                 }
 

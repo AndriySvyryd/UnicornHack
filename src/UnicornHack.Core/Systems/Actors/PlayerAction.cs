@@ -11,8 +11,8 @@
         EquipItem,
         UnequipItem,
         ActivateItem,
-        ChooseDefaultAttack,
         PerformDefaultAttack,
-        ActivateAbility
+        SetAbilitySlot,
+        UseAbilitySlot
     }
 }

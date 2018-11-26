@@ -24,7 +24,7 @@ export class AbilityLine extends React.Component<IAbilityProps, {}> {
             return <div className="font-weight-bold">{this.props.ability.name}</div>;
         } else {
             return (<div><a tabIndex={0} onClick={
-                        () => this.props.performAction(PlayerAction.ChooseDefaultAttack, this.props.ability.id, null)
+                        () => this.props.performAction(PlayerAction.SetAbilitySlot, this.props.ability.id, -1)
 }>{this.props.ability.name}</a>
                     </div>);
         }

@@ -55,13 +55,13 @@ namespace UnicornHack.Utils.DataStructures
             Assert.Equal(new Rectangle(new Point(3, 3), new Point(7, 7)),
                 new Rectangle(new Point(3, 0), new Point(7, 10))
                     .Intersection(new Rectangle(new Point(3, 3), new Point(7, 7))));
-            Assert.Equal(null,
+            Assert.Null(
                 new Rectangle(new Point(1, 1), new Point(8, 2))
                     .Intersection(new Rectangle(new Point(3, 3), new Point(7, 7))));
-            Assert.Equal(null,
+            Assert.Null(
                 new Rectangle(new Point(1, 4), new Point(2, 6))
                     .Intersection(new Rectangle(new Point(3, 3), new Point(7, 7))));
-            Assert.Equal(null,
+            Assert.Null(
                 new Rectangle(new Point(8, 2), new Point(10, 9))
                     .Intersection(new Rectangle(new Point(3, 3), new Point(7, 7))));
         }

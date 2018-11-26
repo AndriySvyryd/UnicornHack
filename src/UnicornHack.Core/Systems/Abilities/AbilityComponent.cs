@@ -7,6 +7,7 @@ namespace UnicornHack.Systems.Abilities
     public class AbilityComponent : GameComponent
     {
         private string _name;
+        private GameEntity _ownerEntity;
         private int? _ownerId;
         private ActivationType _activation;
         private TargetingType _targetingType;
@@ -20,6 +21,7 @@ namespace UnicornHack.Systems.Abilities
         private int _delay;
         private bool _isActive;
         private bool _isUsable = true;
+        private int? _slot;
 
         public AbilityComponent()
             => ComponentId = (int)EntityComponent.Ability;
@@ -33,7 +35,11 @@ namespace UnicornHack.Systems.Abilities
         public int? OwnerId
         {
             get => _ownerId;
-            set => SetWithNotify(value, ref _ownerId);
+            set
+            {
+                _ownerEntity = null;
+                SetWithNotify(value, ref _ownerId);
+            }
         }
 
         public ActivationType Activation
@@ -108,9 +114,26 @@ namespace UnicornHack.Systems.Abilities
             set => SetWithNotify(value, ref _isUsable);
         }
 
+        public int? Slot
+        {
+            get => _slot;
+            set => SetWithNotify(value, ref _slot);
+        }
+
         // TODO: Whether it can be interrupted
         // TODO: Activation condition
         // TODO: Success condition
+
+        // Unmapped properties
+        public GameEntity OwnerEntity
+        {
+            get => _ownerEntity ?? (_ownerEntity = Entity.Manager.FindEntity(_ownerId));
+            set
+            {
+                OwnerId = value?.Id;
+                _ownerEntity = value;
+            }
+        }
 
         public void AddToAppliedEffect(GameEntity appliedEffectEntity, int affectedEntityId)
         {
@@ -151,6 +174,7 @@ namespace UnicornHack.Systems.Abilities
             _delay = default;
             _isActive = default;
             _isUsable = true;
+            _slot = default;
 
             base.Clean();
         }

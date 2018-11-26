@@ -42,6 +42,7 @@ namespace UnicornHack.Systems.Beings
         private float _leftoverRegenerationXP;
         private int? _primaryNaturalWeaponId;
         private int? _secondaryNaturalWeaponId;
+        private int _abilitySlotCount;
 
         public BeingComponent()
             => ComponentId = (int)EntityComponent.Being;
@@ -291,6 +292,13 @@ namespace UnicornHack.Systems.Beings
             set => SetWithNotify(value, ref _secondaryNaturalWeaponId);
         }
 
+        [Property(IsCalculated = true, DefaultValue = 8)]
+        public int AbilitySlotCount
+        {
+            get => _abilitySlotCount;
+            set => SetWithNotify(value, ref _abilitySlotCount);
+        }
+
         // Unmapped properties
         public bool IsAlive => HitPoints > 0;
 
@@ -332,6 +340,7 @@ namespace UnicornHack.Systems.Beings
             _leftoverRegenerationXP = default;
             _primaryNaturalWeaponId = default;
             _secondaryNaturalWeaponId = default;
+            _abilitySlotCount = default;
 
             base.Clean();
         }

@@ -22,8 +22,8 @@ namespace UnicornHack
 
             InitializeLevels(gameQueue);
             InitializeActors(gameQueue);
-            InitializeAbilities(gameQueue);
             InitializeBeings(gameQueue);
+            InitializeAbilities(gameQueue);
             InitializeItems(gameQueue);
             InitializeFaculties(gameQueue);
             InitializeSenses(gameQueue);

@@ -241,12 +241,15 @@ namespace UnicornHack.Systems.Faculties
                     secondaryMeleeWeapon == null ? 0 : GetMeleeSkill(secondaryMeleeWeapon.Type, player);
                 SetDamage(secondaryMeleeWeaponAttack, secondaryMeleeWeaponSkill ?? 0, manager);
 
+                var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+                setSlotMessage.Slot = AbilitySlottingSystem.DefaultAttackSlot;
+
                 if (secondaryMeleeAttack.IsUsable)
                 {
                     SetDamage(secondaryMeleeAttack, player.OneHanded, manager);
                     if (secondaryMeleeWeaponSkill != null)
                     {
-                        player.DefaultAttackId = secondaryMeleeAttack.EntityId;
+                        setSlotMessage.AbilityEntity = secondaryMeleeAttack.Entity;
                     }
                 }
 
@@ -256,10 +259,9 @@ namespace UnicornHack.Systems.Faculties
                             ? player.TwoHanded
                             : player.OneHanded,
                         manager);
-                    if (primaryMeleeWeaponSkill != null
-                        && (primaryMeleeWeapon != null || player.DefaultAttackId == null))
+                    if (primaryMeleeWeaponSkill != null)
                     {
-                        player.DefaultAttackId = primaryMeleeAttack.EntityId;
+                        setSlotMessage.AbilityEntity = primaryMeleeAttack.Entity;
                     }
                 }
 
@@ -268,7 +270,7 @@ namespace UnicornHack.Systems.Faculties
                     SetDamage(doubleMeleeAttack, player.DualWielding, manager);
                     if (primaryMeleeWeaponSkill != null && secondaryMeleeWeaponSkill != null)
                     {
-                        player.DefaultAttackId = doubleMeleeAttack.EntityId;
+                        setSlotMessage.AbilityEntity = doubleMeleeAttack.Entity;
                     }
                 }
 
@@ -286,7 +288,7 @@ namespace UnicornHack.Systems.Faculties
                     SetDamage(secondaryRangedAttack, player.OneHanded, manager);
                     if (secondaryRangedSkill != null)
                     {
-                        player.DefaultAttackId = secondaryRangedAttack.EntityId;
+                        setSlotMessage.AbilityEntity = secondaryRangedAttack.Entity;
                     }
                 }
 
@@ -299,7 +301,7 @@ namespace UnicornHack.Systems.Faculties
                         manager);
                     if (primaryRangedSkill != null)
                     {
-                        player.DefaultAttackId = primaryRangedAttack.EntityId;
+                        setSlotMessage.AbilityEntity = primaryRangedAttack.Entity;
                     }
                 }
 
@@ -308,8 +310,17 @@ namespace UnicornHack.Systems.Faculties
                     SetDamage(doubleRangedAttack, player.DualWielding, manager);
                     if (primaryRangedSkill != null && secondaryRangedSkill != null)
                     {
-                        player.DefaultAttackId = doubleRangedAttack.EntityId;
+                        setSlotMessage.AbilityEntity = doubleRangedAttack.Entity;
                     }
+                }
+
+                if(setSlotMessage.AbilityEntity != null)
+                {
+                    manager.Enqueue(setSlotMessage);
+                }
+                else
+                {
+                    manager.Queue.ReturnMessage(setSlotMessage);
                 }
             }
 

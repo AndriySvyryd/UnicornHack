@@ -35,8 +35,8 @@ namespace UnicornHack.Utils.DataStructures
         public void Intersection()
         {
             Assert.Equal(new Segment(0, 0), new Segment(0, 0).Intersection(new Segment(0, 0)));
-            Assert.Equal(null, new Segment(2, 3).Intersection(new Segment(0, 1)));
-            Assert.Equal(null, new Segment(2, 4).Intersection(new Segment(5, 6)));
+            Assert.Null(new Segment(2, 3).Intersection(new Segment(0, 1)));
+            Assert.Null(new Segment(2, 4).Intersection(new Segment(5, 6)));
             Assert.Equal(new Segment(2, 2), new Segment(2, 3).Intersection(new Segment(0, 2)));
             Assert.Equal(new Segment(4, 4), new Segment(2, 4).Intersection(new Segment(4, 6)));
             Assert.Equal(new Segment(2, 3), new Segment(1, 4).Intersection(new Segment(2, 3)));

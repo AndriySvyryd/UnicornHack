@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using UnicornHack.Systems.Abilities;
-using UnicornHack.Systems.Actors;
 
 namespace UnicornHack.Hubs
 {
@@ -28,7 +27,7 @@ namespace UnicornHack.Hubs
                     properties.Add(context.Services.Language.GetString(ability));
                     if (canBeDefault)
                     {
-                        properties.Add(player.DefaultAttackId == abilityEntity.Id);
+                        properties.Add(abilityEntity.Ability.Slot == AbilitySlottingSystem.DefaultAttackSlot);
                     }
 
                     return properties;
@@ -60,12 +59,11 @@ namespace UnicornHack.Hubs
                     i++;
                     if (context.Manager.SkillAbilitiesSystem.CanBeDefaultAttack(ability))
                     {
-                        var defaultAttack =
-                            abilityEntry.Context.Entry(player).Property(nameof(PlayerComponent.DefaultAttackId));
-                        if (defaultAttack.IsModified)
+                        var slot = abilityEntry.Property(nameof(AbilityComponent.Slot));
+                        if (slot.IsModified)
                         {
                             properties.Add(i);
-                            properties.Add(player.DefaultAttackId == ability.EntityId);
+                            properties.Add(abilityEntity.Ability.Slot == AbilitySlottingSystem.DefaultAttackSlot);
                         }
                     }
 

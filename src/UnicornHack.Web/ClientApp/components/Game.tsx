@@ -38,7 +38,8 @@ export class Game extends React.Component<IGameProps, {}> {
         super(props);
 
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl(`http://${document.location.host}/gameHub`, { transport: signalR.HttpTransportType.WebSockets, skipNegotiation: true })
+            .withUrl(`http://${(document.location || new Location()).host}/gameHub`,
+                { transport: signalR.HttpTransportType.WebSockets, skipNegotiation: true })
             .configureLogging(signalR.LogLevel.Information)
             .withHubProtocol(new MessagePackHubProtocol())
             .build();

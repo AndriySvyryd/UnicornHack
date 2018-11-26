@@ -182,28 +182,28 @@ namespace UnicornHack.Systems.Actors
 
                     manager.Enqueue(activateItemMessage);
                     break;
-                case PlayerAction.ChooseDefaultAttack:
-                    var defaultAttackEntity = manager.FindEntity(target);
-                    if (defaultAttackEntity == null
-                        || defaultAttackEntity.Ability.OwnerId != playerEntity.Id
-                        || !defaultAttackEntity.Ability.IsUsable
-                        || !manager.SkillAbilitiesSystem.CanBeDefaultAttack(defaultAttackEntity.Ability))
+                case PlayerAction.PerformDefaultAttack:
+                    var defaultAbilityEntity = manager.AbilitySlottingSystem.GetAbility(
+                        playerEntity.Id, AbilitySlottingSystem.DefaultAttackSlot, manager);
+                    ActivateAbility(defaultAbilityEntity, playerEntity, target, manager);
+                    break;
+                case PlayerAction.SetAbilitySlot:
+                    var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+                    setSlotMessage.AbilityEntity = manager.FindEntity(target);
+                    setSlotMessage.Slot = target2;
+
+                    manager.Enqueue(setSlotMessage);
+                    break;
+                case PlayerAction.UseAbilitySlot:
+                    if (target == null)
                     {
-                        throw new InvalidOperationException(
-                            "Ability " + target + " cannot be the default attack for player " + playerEntity.Id);
+                        throw new InvalidOperationException("Must specify ability slot number");
                     }
 
-                    player.DefaultAttackId = defaultAttackEntity.Id;
-                    break;
-                case PlayerAction.PerformDefaultAttack:
-                    ActivateAbility(manager.FindEntity(player.DefaultAttackId), playerEntity, target, manager);
-                    break;
-                case PlayerAction.ActivateAbility:
-                    var abilityEntity = manager.FindEntity(target.Value);
-                    if (abilityEntity == null
-                        || abilityEntity.Ability.OwnerId != playerEntity.Id)
+                    var abilityEntity = manager.AbilitySlottingSystem.GetAbility(playerEntity.Id, target2.Value, manager);
+                    if (abilityEntity == null)
                     {
-                        throw new InvalidOperationException("Invalid ability " + target);
+                        throw new InvalidOperationException("No ability in slot" + target);
                     }
 
                     ActivateAbility(abilityEntity, playerEntity, target2, manager);
@@ -240,8 +240,10 @@ namespace UnicornHack.Systems.Actors
             var conflictingActor = manager.LevelActorToLevelCellIndex[(position.LevelId, targetCell.X, targetCell.Y)];
             if (conflictingActor != null)
             {
-                return ActivateAbility(manager.FindEntity(playerEntity.Player.DefaultAttackId),
-                    playerEntity, targetCell, conflictingActor, manager);
+                var abilityEntity = manager.AbilitySlottingSystem.GetAbility(
+                    playerEntity.Id, AbilitySlottingSystem.DefaultAttackSlot, manager);
+                return ActivateAbility(
+                    abilityEntity, playerEntity, targetCell, conflictingActor, manager);
             }
 
             var travelMessage = manager.TravelSystem.CreateTravelMessage(manager);
@@ -294,8 +296,8 @@ namespace UnicornHack.Systems.Actors
             return itemEntity;
         }
 
-        private bool ActivateAbility(GameEntity abilityEntity, GameEntity playerEntity, int? target,
-            GameManager manager)
+        private bool ActivateAbility(
+            GameEntity abilityEntity, GameEntity playerEntity, int? target, GameManager manager)
         {
             Point targetCell;
             GameEntity targetActor;
@@ -356,7 +358,7 @@ namespace UnicornHack.Systems.Actors
                 }
 
                 var player = playerEntity.Player;
-                player.NextAction = PlayerAction.ActivateAbility;
+                player.NextAction = PlayerAction.UseAbilitySlot;
                 player.NextActionTarget = abilityEntity.Id;
                 player.NextActionTarget2 = (-targetEntity?.Id) ?? targetCell.ToInt32();
                 player.QueuedAction = true;

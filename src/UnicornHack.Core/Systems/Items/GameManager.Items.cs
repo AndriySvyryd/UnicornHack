@@ -10,8 +10,8 @@ namespace UnicornHack
     {
         public EntityGroup<GameEntity> LevelItems { get; private set; }
         public EntityGroup<GameEntity> EntityItems { get; private set; }
-        public EntityRelationship<GameEntity> EntityItemsToContainerRelationship { get; private set; }
         public UniqueEntityIndex<GameEntity, (int, byte, byte)> LevelItemsToLevelCellIndex { get; private set; }
+        public EntityRelationship<GameEntity> EntityItemsToContainerRelationship { get; private set; }
         public EntityRelationship<GameEntity> LevelItemsToLevelRelationship { get; private set; }
         public ItemMovingSystem ItemMovingSystem { get; private set; }
         public ItemUsageSystem ItemUsageSystem { get; private set; }

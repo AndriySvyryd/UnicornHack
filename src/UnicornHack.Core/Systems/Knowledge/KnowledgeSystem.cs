@@ -25,6 +25,8 @@ namespace UnicornHack.Systems.Knowledge
     {
         public const string XPGainedMessageName = "XPGained";
 
+        // TODO: Move log writing to a different system
+
         public MessageProcessingResult Process(VisibleTerrainChangedMessage message, GameManager manager)
         {
             if (message.TilesExplored > 0)

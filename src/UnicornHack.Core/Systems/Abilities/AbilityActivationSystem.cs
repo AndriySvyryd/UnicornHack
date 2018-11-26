@@ -72,7 +72,9 @@ namespace UnicornHack.Systems.Abilities
             targetEffectsMessage.TargetEntity = activateMessage.TargetEntity;
 
             var ability = activateMessage.AbilityEntity.Ability;
-            if (!ability.IsUsable)
+            if (!ability.IsUsable
+                || (ability.Slot == null
+                    && (ability.Activation & ActivationType.Slottable) != 0))
             {
                 return targetEffectsMessage;
             }
@@ -80,8 +82,8 @@ namespace UnicornHack.Systems.Abilities
             targetEffectsMessage.SuccessfulActivation = true;
 
             var activator = activateMessage.ActivatorEntity;
-            if (ability.Activation == ActivationType.ManualActivation
-                || ability.Activation == ActivationType.Targeted)
+            if ((ability.Activation & ActivationType.ManualActivation) != 0
+                || (ability.Activation & ActivationType.Targeted) != 0)
             {
                 if (ability.EnergyPointCost > 0)
                 {
@@ -435,8 +437,7 @@ namespace UnicornHack.Systems.Abilities
             }
             else
             {
-                var activatableId = message.ItemEntity.Id;
-                DeactivateAbilities(activatableId, ActivationType.WhileEquipped, manager);
+                DeactivateAbilities(message.ItemEntity.Id, ActivationType.WhileEquipped, manager);
             }
 
             return MessageProcessingResult.ContinueProcessing;
@@ -450,9 +451,8 @@ namespace UnicornHack.Systems.Abilities
                 Debug.Assert(!ability.IsActive);
 
                 var activation = CreateActivateAbilityMessage(manager);
-                var owner = manager.FindEntity(ability.OwnerId);
-                activation.ActivatorEntity = owner;
-                activation.TargetEntity = owner;
+                activation.ActivatorEntity = ability.OwnerEntity;
+                activation.TargetEntity = ability.OwnerEntity;
                 activation.AbilityEntity = message.Entity;
 
                 Process(activation, manager);
@@ -800,7 +800,7 @@ namespace UnicornHack.Systems.Abilities
             }
         }
 
-        private void Deactivate(AbilityComponent ability, GameManager manager)
+        public void Deactivate(AbilityComponent ability, GameManager manager)
         {
             Debug.Assert((ability.Activation & ActivationType.Continuous) != 0);
             Debug.Assert(ability.IsActive);

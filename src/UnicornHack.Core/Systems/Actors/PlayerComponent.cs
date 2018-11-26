@@ -15,7 +15,6 @@ namespace UnicornHack.Systems.Actors
         private int? _nextActionTarget2;
         private bool _queuedAction;
         private int? _nextActionTick;
-        private int? _defaultAttackId;
         private int _maxLevel;
         private int _nextLevelXP;
         private int _unspentSkillPoints;
@@ -93,12 +92,6 @@ namespace UnicornHack.Systems.Actors
         {
             get => _nextActionTick;
             set => SetWithNotify(value, ref _nextActionTick);
-        }
-
-        public int? DefaultAttackId
-        {
-            get => _defaultAttackId;
-            set => SetWithNotify(value, ref _defaultAttackId);
         }
 
         /// <summary>
@@ -328,7 +321,6 @@ namespace UnicornHack.Systems.Actors
             _nextActionTarget2 = default;
             _queuedAction = default;
             _nextActionTick = default;
-            _defaultAttackId = default;
             _maxLevel = default;
             _nextLevelXP = default;
             _unspentSkillPoints = default;

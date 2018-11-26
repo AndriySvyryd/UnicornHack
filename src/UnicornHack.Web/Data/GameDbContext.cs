@@ -281,6 +281,7 @@ namespace UnicornHack.Data
 
             modelBuilder.Entity<AbilityComponent>(eb =>
             {
+                eb.Ignore(c => c.OwnerEntity);
                 eb.Property("_tracked");
                 eb.HasKey(c => new
                 {

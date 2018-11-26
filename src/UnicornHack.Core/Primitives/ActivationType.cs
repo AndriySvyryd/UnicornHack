@@ -13,6 +13,7 @@ namespace UnicornHack.Primitives
         Continuous = Always | WhileToggled | WhilePossessed | WhileEquipped,
         ManualActivation = 1 << 4,
         Targeted = 1 << 5,
+        Slottable = WhileToggled | ManualActivation | Targeted,
         OnPhysicalMeleeAttack = 1 << 6,
         OnPhysicalRangedAttack = 1 << 7,
         OnPhysicalAttack = OnPhysicalMeleeAttack | OnPhysicalRangedAttack,
