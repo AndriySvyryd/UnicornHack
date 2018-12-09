@@ -38,7 +38,7 @@ namespace UnicornHack.Hubs
             ItemsSnapshot.Clear();
             ItemsSnapshot.AddRange(items, i => new InventoryItemSnapshot().Snapshot(i, context));
 
-            var abilities = GetAbilities(playerEntity, manager);
+            var abilities = GetSlottedAbilities(playerEntity, manager);
             AbilitiesSnapshot.Clear();
             AbilitiesSnapshot.AddRange(abilities);
 
@@ -68,7 +68,7 @@ namespace UnicornHack.Hubs
                     .Select(r => RaceSnapshot.Serialize(r, null, context)).ToList());
                 properties.Add(manager.EntityItemsToContainerRelationship[playerEntity.Id]
                     .Select(t => InventoryItemSnapshot.Serialize(t, null, null, context)).ToList());
-                properties.Add(GetAbilities(playerEntity, manager)
+                properties.Add(GetSlottedAbilities(playerEntity, manager)
                     .Select(a => AbilitySnapshot.Serialize(a, null, context)).ToList());
                 // TODO: Group log entries for the same tick
                 // TODO: Only send entries since last player turn
@@ -125,7 +125,7 @@ namespace UnicornHack.Hubs
 
             i++;
             var serializedAbilities = GameTransmissionProtocol.Serialize(
-                GetAbilities(playerEntity, manager),
+                GetSlottedAbilities(playerEntity, manager),
                 snapshot.AbilitiesSnapshot,
                 AbilitySnapshot.Serialize,
                 context);
@@ -214,10 +214,10 @@ namespace UnicornHack.Hubs
             => player.LogEntries.OrderBy(e => e, LogEntry.Comparer)
                 .Skip(Math.Max(0, player.LogEntries.Count - 10));
 
-        private static IEnumerable<GameEntity> GetAbilities(GameEntity playerEntity, GameManager manager)
+        private static IEnumerable<GameEntity> GetSlottedAbilities(GameEntity playerEntity, GameManager manager)
             => manager.AbilitiesToAffectableRelationship[playerEntity.Id]
                 .Select(a => a.Ability)
-                .Where(a => a.IsUsable && a.Activation == ActivationType.Targeted)
+                .Where(a => a.Slot != null)
                 .Select(a => a.Entity);
     }
 }

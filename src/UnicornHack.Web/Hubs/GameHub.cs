@@ -12,6 +12,7 @@ using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Services;
+using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Time;
 using UnicornHack.Utils;
@@ -35,21 +36,79 @@ namespace UnicornHack.Hubs
         public Task SendMessage(string message)
             => Clients.All.SendAsync("ReceiveMessage", Context.User.Identity.Name, message);
 
-        public List<object> GetState(string name)
+        public List<object> GetState(string playerName)
         {
-            var player = FindPlayer(name) ?? CreatePlayer(name);
+            var player = FindPlayer(playerName) ?? CreatePlayer(playerName);
 
             return _protocol.Serialize(player.Entity, EntityState.Added, null,
                 new SerializationContext(_dbContext, player.Entity, _gameServices));
         }
 
-        public async Task PerformAction(string name, int? intAction, int? target, int? target2)
+        public Task QueryGame(string playerName, int intQueryType, int[] arguments)
+        {
+            var queryType = (GameQueryType)intQueryType;
+            var result = new List<object> { intQueryType };
+
+            if (queryType == GameQueryType.Clear)
+            {
+                // TODO: only send to clients watching this player
+                return Clients.All.SendAsync("ReceiveUIRequest", result);
+            }
+
+            var player = FindPlayer(playerName);
+
+            if (player != null
+                && player.Entity.Being.IsAlive)
+            {
+                var manager = player.Entity.Manager;
+                switch (queryType)
+                {
+                    case GameQueryType.SlottableAbilities:
+                        var slot = arguments[0];
+                        result.Add(slot);
+                        var abilities = new List<object>();
+                        result.Add(abilities);
+
+                        var context = new SerializationContext(_dbContext, player.Entity, _gameServices);
+                        foreach (var abilityEntity in manager.AbilitiesToAffectableRelationship[player.EntityId])
+                        {
+                            var ability = abilityEntity.Ability;
+                            if (!ability.IsUsable)
+                            {
+                                continue;
+                            }
+
+                            if (slot == AbilitySlottingSystem.DefaultAttackSlot)
+                            {
+                                if (manager.SkillAbilitiesSystem.CanBeDefaultAttack(ability))
+                                {
+                                    abilities.Add(AbilitySnapshot.Serialize(abilityEntity, null, context));
+                                }
+                            }
+                            else if ((ability.Activation & ActivationType.Slottable) != 0
+                                    && !manager.SkillAbilitiesSystem.CanBeDefaultAttack(ability))
+                            {
+                                abilities.Add(AbilitySnapshot.Serialize(abilityEntity, null, context));
+                            }
+                        }
+
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Query type {intQueryType} not supported");
+                }
+            }
+
+            // TODO: only send to clients watching this player
+            return Clients.All.SendAsync("ReceiveUIRequest", result);
+        }
+
+        public async Task PerformAction(string playerName, int intAction, int? target, int? target2)
         {
             var action = (PlayerAction?)intAction;
-            var currentPlayer = FindPlayer(name);
+            var currentPlayer = FindPlayer(playerName);
             if (currentPlayer == null)
             {
-                currentPlayer = CreatePlayer(name);
+                currentPlayer = CreatePlayer(playerName);
                 action = null;
                 target = null;
                 target2 = null;

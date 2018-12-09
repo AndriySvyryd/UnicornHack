@@ -5,6 +5,7 @@ namespace UnicornHack.Systems.Abilities
     public class SetAbilitySlotMessage : IMessage
     {
         private GameEntity _abilityEntity;
+        private GameEntity _ownerEntity;
 
         public GameEntity AbilityEntity
         {
@@ -14,6 +15,17 @@ namespace UnicornHack.Systems.Abilities
                 _abilityEntity?.RemoveReference(this);
                 _abilityEntity = value;
                 _abilityEntity?.AddReference(this);
+            }
+        }
+
+        public GameEntity OwnerEntity
+        {
+            get => _ownerEntity;
+            set
+            {
+                _ownerEntity?.RemoveReference(this);
+                _ownerEntity = value;
+                _ownerEntity?.AddReference(this);
             }
         }
 

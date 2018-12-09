@@ -67,6 +67,8 @@ namespace UnicornHack
             queue.Add<ItemMovedMessage>(AISystem, ItemMovingSystem.ItemMovedMessageName, 1);
             queue.Add<ItemEquippedMessage>(AISystem, ItemUsageSystem.ItemEquippedMessageName, 1);
             queue.Add<ItemActivatedMessage>(AISystem, ItemUsageSystem.ItemActivatedMessageName, 1);
+            queue.Add<EntityAddedMessage<GameEntity>>(
+                AISystem, AbilitiesToAffectableRelationship.GetEntityAddedMessageName(), 1);
 
             PlayerSystem = new PlayerSystem();
             queue.Add<PerformActionMessage>(PlayerSystem, PlayerSystem.PerformPlayerActionMessageName, 0);

@@ -16,7 +16,8 @@ namespace UnicornHack.Systems.Actors
         IGameSystem<TraveledMessage>,
         IGameSystem<ItemEquippedMessage>,
         IGameSystem<ItemActivatedMessage>,
-        IGameSystem<ItemMovedMessage>
+        IGameSystem<ItemMovedMessage>,
+        IGameSystem<EntityAddedMessage<GameEntity>>
     {
         public const string PerformAIActionMessageName = "PerformAIAction";
 
@@ -251,6 +252,35 @@ namespace UnicornHack.Systems.Actors
                 if (ai != null)
                 {
                     ai.NextActionTick += message.Delay;
+                }
+            }
+
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager manager)
+        {
+            var ability = message.Entity.Ability;
+            var owner = ability.OwnerEntity;
+            if (owner.AI != null
+                && (ability.Activation & ActivationType.Slottable) != 0
+                && ability.Slot == null
+                && ability.IsUsable
+                && !manager.SkillAbilitiesSystem.CanBeDefaultAttack(ability))
+            {
+                for (var i = 0; i < owner.Being.AbilitySlotCount; i++)
+                {
+                    if (manager.SlottedAbilitiesIndex[(owner.Id, i)] == null)
+                    {
+                        var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+                        setSlotMessage.Slot = i;
+                        setSlotMessage.AbilityEntity = message.Entity;
+
+                        manager.AbilitySlottingSystem.Process(setSlotMessage, manager);
+                        manager.Queue.ReturnMessage(setSlotMessage);
+
+                        break;
+                    }
                 }
             }
 

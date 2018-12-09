@@ -44,6 +44,11 @@ namespace UnicornHack.Systems.Abilities
             manager.Enqueue(equipMessage);
             manager.Queue.ProcessQueue(manager);
 
+            var nymphAbility = manager.AbilitiesToAffectableRelationship[nymph.Id]
+                .First(a => (a.Ability.Activation & ActivationType.Slottable) != 0
+                    && !manager.SkillAbilitiesSystem.CanBeDefaultAttack(a.Ability));
+            Assert.Equal(0, nymphAbility.Ability.Slot);
+
             var attackAbility = manager.AbilitiesToAffectableRelationship[player.Id]
                 .Single(a => a.Ability.Name == SkillAbilitiesSystem.PrimaryRangedAttackName);
             var activateAbilityMessage = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);

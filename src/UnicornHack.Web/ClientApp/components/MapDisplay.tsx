@@ -2,10 +2,10 @@
 import { observer } from 'mobx-react';
 import { Level, MapFeature, Tile } from '../transport/Model';
 import { MapStyles, ITileStyle } from '../styles/MapStyles';
-import { PlayerAction } from 'ClientApp/transport/PlayerAction';
+import { PlayerAction } from '../transport/PlayerAction';
 
 @observer
-export class Map extends React.Component<IMapProps, {}> {
+export class MapDisplay extends React.Component<IMapProps, {}> {
     render() {
         const level = this.props.level;
 
@@ -21,7 +21,7 @@ export class Map extends React.Component<IMapProps, {}> {
         }
 
         return (<div className="mapContainer frame">
-                    <div className="map"><div className="map__inner-container">{map}</div></div>
+                    <div className="map">{map}</div>
                 </div>);
     }
 }
@@ -43,7 +43,7 @@ class MapRow extends React.Component<IRowProps, {}> {
                 performAction={this.props.performAction}
                 key={x} />
         );
-        return (<div>{row}</div>);
+        return (<div className="map__row">{row}</div>);
     }
 }
 

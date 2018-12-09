@@ -190,6 +190,7 @@ namespace UnicornHack.Systems.Actors
                 case PlayerAction.SetAbilitySlot:
                     var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
                     setSlotMessage.AbilityEntity = manager.FindEntity(target);
+                    setSlotMessage.OwnerEntity = playerEntity;
                     setSlotMessage.Slot = target2;
 
                     manager.Enqueue(setSlotMessage);

@@ -13,25 +13,23 @@ namespace UnicornHack.Hubs
             {
                 case null:
                 case EntityState.Added:
-                {
-                    var ability = abilityEntity.Ability;
-                    var player = context.Observer.Player;
-                    var canBeDefault = context.Manager.SkillAbilitiesSystem.CanBeDefaultAttack(ability);
                     {
-                        properties = state == null
-                            ? new List<object>(canBeDefault ? 3 : 2)
-                            : new List<object>(canBeDefault ? 4 : 3) {(int)state};
-                    }
+                        var ability = abilityEntity.Ability;
+                        var player = context.Observer.Player;
+                        var canBeDefault = context.Manager.SkillAbilitiesSystem.CanBeDefaultAttack(ability);
+                        {
+                            properties = state == null
+                                ? new List<object>(4)
+                                : new List<object>(5) { (int)state };
+                        }
 
-                    properties.Add(abilityEntity.Id);
-                    properties.Add(context.Services.Language.GetString(ability));
-                    if (canBeDefault)
-                    {
-                        properties.Add(abilityEntity.Ability.Slot == AbilitySlottingSystem.DefaultAttackSlot);
-                    }
+                        properties.Add(abilityEntity.Id);
+                        properties.Add(context.Services.Language.GetString(ability));
+                        properties.Add(abilityEntity.Ability.Activation);
+                        properties.Add(abilityEntity.Ability.Slot);
 
-                    return properties;
-                }
+                        return properties;
+                    }
                 case EntityState.Deleted:
                     return new List<object>
                     {
@@ -39,36 +37,41 @@ namespace UnicornHack.Hubs
                         abilityEntity.Id
                     };
                 default:
-                {
-                    var ability = abilityEntity.Ability;
-                    var player = context.Observer.Player;
-                    properties = new List<object>
                     {
-                        (int)state,
-                        abilityEntity.Id
-                    };
-                    var abilityEntry = context.DbContext.Entry(ability);
-                    var i = 1;
-                    var name = abilityEntry.Property(nameof(AbilityComponent.Name));
-                    if (name.IsModified)
-                    {
-                        properties.Add(i);
-                        properties.Add(context.Services.Language.GetString(ability));
-                    }
+                        var ability = abilityEntity.Ability;
+                        var player = context.Observer.Player;
+                        properties = new List<object>
+                            {
+                                (int)state,
+                                abilityEntity.Id
+                            };
+                        var abilityEntry = context.DbContext.Entry(ability);
+                        var i = 1;
+                        var name = abilityEntry.Property(nameof(AbilityComponent.Name));
+                        if (name.IsModified)
+                        {
+                            properties.Add(i);
+                            properties.Add(context.Services.Language.GetString(ability));
+                        }
 
-                    i++;
-                    if (context.Manager.SkillAbilitiesSystem.CanBeDefaultAttack(ability))
-                    {
+                        i++;
+                        var activation = abilityEntry.Property(nameof(AbilityComponent.Activation));
+                        if (activation.IsModified)
+                        {
+                            properties.Add(i);
+                            properties.Add(abilityEntity.Ability.Activation);
+                        }
+
+                        i++;
                         var slot = abilityEntry.Property(nameof(AbilityComponent.Slot));
                         if (slot.IsModified)
                         {
                             properties.Add(i);
-                            properties.Add(abilityEntity.Ability.Slot == AbilitySlottingSystem.DefaultAttackSlot);
+                            properties.Add(abilityEntity.Ability.Slot);
                         }
-                    }
 
-                    return properties.Count > 2 ? properties : null;
-                }
+                        return properties.Count > 2 ? properties : null;
+                    }
             }
         }
     }

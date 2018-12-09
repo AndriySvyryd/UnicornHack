@@ -21,9 +21,9 @@ namespace UnicornHack
             gameQueue.Add(this, RemoveComponentMessageName, 0);
 
             InitializeLevels(gameQueue);
-            InitializeActors(gameQueue);
             InitializeBeings(gameQueue);
             InitializeAbilities(gameQueue);
+            InitializeActors(gameQueue);
             InitializeItems(gameQueue);
             InitializeFaculties(gameQueue);
             InitializeSenses(gameQueue);

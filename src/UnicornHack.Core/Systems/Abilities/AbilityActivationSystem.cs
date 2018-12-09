@@ -74,9 +74,10 @@ namespace UnicornHack.Systems.Abilities
             var ability = activateMessage.AbilityEntity.Ability;
             if (!ability.IsUsable
                 || (ability.Slot == null
-                    && (ability.Activation & ActivationType.Slottable) != 0))
+                    && (ability.Activation & ActivationType.Slottable) != 0
+                    && (ability.OwnerEntity.Being?.AbilitySlotCount ?? 0) != 0))
             {
-                return targetEffectsMessage;
+                throw new InvalidOperationException($"Ability {ability.EntityId} is not usable or is not slotted.");
             }
 
             targetEffectsMessage.SuccessfulActivation = true;

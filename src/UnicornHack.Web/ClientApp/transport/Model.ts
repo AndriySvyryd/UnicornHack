@@ -1,6 +1,7 @@
 /// <reference path='../../node_modules/@types/node/index.d.ts' />
 
 import { observable, computed, action } from "mobx";
+import { ActivationType } from "./ActivationType";
 
 export class Player {
     @observable id: number = 0;
@@ -588,10 +589,11 @@ export class Item {
 
         const state = compactItem[i++];
         switch (state) {
-            case EntityState.Added:
+            case EntityState.Added: {
                 this.expand(compactItem, i).addTo(collection);
                 break;
-            case EntityState.Deleted:
+            }
+            case EntityState.Deleted: {
                 const id = compactItem[i++].toString();
                 const existingItem = collection.get(id);
                 if (existingItem == undefined) {
@@ -600,16 +602,16 @@ export class Item {
 
                 collection.delete(id);
                 break;
-            case EntityState.Modified:
-                {
-                    const id = compactItem[i++].toString();
-                    const existingItem = collection.get(id);
-                    if (existingItem == undefined) {
-                        throw 'Item ' + id + ' not found';
-                    }
-                    existingItem.update(compactItem);
-                    break;
+            }
+            case EntityState.Modified: {
+                const id = compactItem[i++].toString();
+                const existingItem = collection.get(id);
+                if (existingItem == undefined) {
+                    throw 'Item ' + id + ' not found';
                 }
+                existingItem.update(compactItem);
+                break;
+            }
         }
     }
 
@@ -691,7 +693,8 @@ export class EquipableSlot {
 export class Ability {
     @observable id: number = -1;
     @observable name: string = '';
-    @observable isDefault: boolean | undefined;
+    @observable activation: ActivationType = ActivationType.Default;
+    @observable slot: number | undefined;
 
     @action
     static expandToCollection(compactAbility: any[], collection: Map<string, Ability>, parentState: EntityState) {
@@ -730,9 +733,8 @@ export class Ability {
         const ability = new Ability();
         ability.id = compactAbility[i++];
         ability.name = compactAbility[i++];
-        if (compactAbility.length > i) {
-            ability.isDefault = compactAbility[i++];
-        }
+        ability.activation = compactAbility[i++];
+        ability.slot = compactAbility[i++];
 
         return ability;
     }
@@ -747,7 +749,10 @@ export class Ability {
                     this.name = compactAbility[i++];
                     break;
                 case 2:
-                    this.isDefault = compactAbility[i++];
+                    this.activation = compactAbility[i++];
+                    break;
+                case 3:
+                    this.slot = compactAbility[i++];
                     break;
             }
         }

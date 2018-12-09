@@ -10,13 +10,16 @@ import { Chat, IMessage, MessageType } from './Chat';
 import { StatusBar } from './StatusBar';
 import { Inventory } from './Inventory';
 import { AbilityBar } from './AbilityBar';
+import { AbilitySelection } from './AbilitySelection';
 import { PropertyList } from './PropertyList';
-import { Map } from './Map';
+import { MapDisplay } from './MapDisplay';
 import { GameLog } from './GameLog';
 import { MapStyles } from '../styles/MapStyles';
 import { Player, PlayerRace } from '../transport/Model';
 import { PlayerAction } from "../transport/PlayerAction";
 import { Direction } from "../transport/Direction";
+import { UIData } from '../transport/UIData';
+import { GameQueryType } from '../transport/GameQueryType';
 
 interface IGameProps {
     playerName: string;
@@ -27,6 +30,7 @@ interface IGameProps {
 export class Game extends React.Component<IGameProps, {}> {
     @observable player: Player = new Player();
     @observable messages: IMessage[] = [];
+    @observable dialogData: UIData = new UIData();
     @observable waiting: boolean = true;
     actionQueue: IAction[] = [];
     keyMap: any;
@@ -55,6 +59,7 @@ export class Game extends React.Component<IGameProps, {}> {
         connection.on('ReceiveMessage',
             (userName: string, message: string) => this.addMessage(MessageType.Client, message, userName));
         connection.on('ReceiveState', this.processServerState);
+        connection.on('ReceiveUIRequest', this.handleUIRequest);
 
         connection.start()
             .then(() => { this.getFullState() }) // TODO: wait for mount
@@ -82,7 +87,7 @@ export class Game extends React.Component<IGameProps, {}> {
             'moveDown': 'shift+.',
             'wait': ['numpad5', '5', '.'],
         };
-        // TODO: ESC to clear the action queue
+
         this.keyHandlers = {
             'moveNorth': (event: ExtendedKeyboardEvent) => {
                 this.performAction(PlayerAction.MoveOneCell, Direction.North);
@@ -131,6 +136,7 @@ export class Game extends React.Component<IGameProps, {}> {
             'record': (event: ExtendedKeyboardEvent) => this.recordKey()
         };
 
+        this.queryGame = this.queryGame.bind(this);
         this.performAction = this.performAction.bind(this);
         this.sendMessage = this.sendMessage.bind(this);
     }
@@ -150,7 +156,7 @@ export class Game extends React.Component<IGameProps, {}> {
     processServerState(compactPlayer: any[]) {
         const newPlayer = Player.expand(compactPlayer, this.player);
         if (newPlayer == null) {
-            console.log('Desync');
+            console.log('Desync, reloading.');
             this.getFullState();
             return;
         }
@@ -158,6 +164,16 @@ export class Game extends React.Component<IGameProps, {}> {
         this.player = newPlayer;
 
         this.performQueuedActions();
+    }
+
+    private queryGame(queryType: GameQueryType, ...args: Array<number>) {
+        this.connection.invoke('QueryGame', this.props.playerName, queryType, args)
+            .catch(e => this.addError((e || '').toString()));
+    }
+
+    @action.bound
+    handleUIRequest(compactRequest: any[]) {
+        this.dialogData = this.dialogData.update(compactRequest);
     }
 
     private performAction(action: PlayerAction, target: (number | null) = null, target2: (number | null) = null) {
@@ -211,7 +227,7 @@ export class Game extends React.Component<IGameProps, {}> {
                     display: firstTimeLoading ? 'none' : 'block'
                 }}>
                     <HotKeys keyMap={this.keyMap} handlers={this.keyHandlers}>
-                        <Map level={level} styles={this.styles} performAction={this.performAction} />
+                        <MapDisplay level={level} styles={this.styles} performAction={this.performAction} />
                         <StatusBar player={this.player}
                             levelName={level.branchName} levelDepth={level.depth} />
                         <GameLog messages={this.player.log} />
@@ -223,11 +239,13 @@ export class Game extends React.Component<IGameProps, {}> {
                 }}>
                     <HotKeys keyMap={this.keyMap} handlers={this.keyHandlers}>
                         <Inventory items={this.player.inventory} performAction={this.performAction} />
-                        <AbilityBar abilities={this.player.abilities} performAction={this.performAction} />
+                        <AbilityBar abilities={this.player.abilities} performAction={this.performAction} queryGame={this.queryGame} />
                         <PropertyList player={this.player} />
                     </HotKeys>
                     <Chat sendMessage={this.sendMessage} messages={this.messages} />
                 </div>
+
+                <AbilitySelection data={this.dialogData} performAction={this.performAction} queryGame={this.queryGame} />
             </div>
         );
     }
