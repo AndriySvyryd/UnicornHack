@@ -1,4 +1,5 @@
 ﻿import * as React from 'React';
+import * as scss from '../styles/site.scss'
 import { observer } from 'mobx-react';
 import { Ability } from '../transport/Model';
 import { PlayerAction } from "../transport/PlayerAction";
@@ -22,7 +23,7 @@ export class AbilityBar extends React.Component<IAbilityBarProps, {}> {
             slots[i] = <AbilityLine ability={slottedAbility} slot={slot} key={i} performAction={this.props.performAction} queryGame={this.props.queryGame} />
         }
 
-        return (<div className="frame">{slots}</div>);
+        return (<div className={scss.frame}>{slots}</div>);
     }
 }
 
@@ -37,7 +38,7 @@ export class AbilityLine extends React.Component<IAbilityProps, {}> {
     render() {
         const slot = <a tabIndex={(this.props.slot + 1) * 2}
             onClick={() => this.props.queryGame(GameQueryType.SlottableAbilities, this.props.slot)}>
-            <span className="ability__slot">{this.props.slot === -1 ? "D" : this.props.slot + 1}:</span></a>;
+            <span className={scss.ability__slot}>{this.props.slot === -1 ? "D" : this.props.slot + 1}:</span></a>;
 
         // TODO: Activate targetting mode for targetted abilities        
 

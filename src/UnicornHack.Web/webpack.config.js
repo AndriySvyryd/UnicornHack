@@ -30,7 +30,12 @@ function getClientConfig(env) {
                     use: isDevBuild
                         ? [
                             'style-loader',
-                            { loader: 'css-loader', options: { sourceMap: true, importLoaders: 2 } },
+                            {
+                                loader: 'typings-for-css-modules-loader',
+                                options: {
+                                    sourceMap: true, modules: true, namedExport: true, camelCase: 'dashesOnly', importLoaders: 2
+                                }
+                            },
                             {
                                 loader: 'postcss-loader',
                                 options: { sourceMap: true, plugins: () => [require('autoprefixer')()] }
@@ -40,8 +45,10 @@ function getClientConfig(env) {
                         : [
                             MiniCssExtractPlugin.loader,
                             {
-                                loader: 'css-loader',
-                                options: { sourceMap: true, minimize: true, importLoaders: 2 }
+                                loader: 'typings-for-css-modules-loader',
+                                options: {
+                                    sourceMap: true, minimize: true, modules: true, namedExport: true, camelCase: 'dashesOnly', importLoaders: 2
+                                }
                             },
                             {
                                 loader: 'postcss-loader',
@@ -55,7 +62,12 @@ function getClientConfig(env) {
                     use: isDevBuild
                         ? [
                             'style-loader',
-                            { loader: 'css-loader', options: { sourceMap: true, importLoaders: 4 } },
+                            {
+                                loader: 'typings-for-css-modules-loader',
+                                options: {
+                                    sourceMap: true, modules: true, namedExport: true, camelCase: 'dashesOnly', importLoaders: 4
+                                }
+                            },
                             { loader: 'postcss-loader',options: { sourceMap: true } },
                             { loader: 'resolve-url-loader', options: { sourceMap: true } },
                             { loader: 'sass-loader', options: { sourceMap: true } },
@@ -69,8 +81,10 @@ function getClientConfig(env) {
                         : [
                             MiniCssExtractPlugin.loader,
                             {
-                                loader: 'css-loader',
-                                options: { sourceMap: true, minimize: true, importLoaders: 4 }
+                                loader: 'typings-for-css-modules-loader',
+                                options: {
+                                    sourceMap: true, minimize: true, modules: true, namedExport: true, camelCase: 'dashesOnly', importLoaders: 4
+                                }
                             },
                             { loader: 'postcss-loader', options: { sourceMap: true } },
                             { loader: 'resolve-url-loader', options: { sourceMap: true } },

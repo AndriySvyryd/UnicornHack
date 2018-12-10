@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as scss from '../styles/site.scss'
 import { action, observable } from 'mobx';
 import { observer } from 'mobx-react';
 
@@ -6,8 +7,9 @@ import { observer } from 'mobx-react';
 export class Chat extends React.Component<IChatProps, {}> {
     render() {
         return (
-            <div className="frame">
-                <ul className="chat__messages" ref={(list: HTMLUListElement) => {if (list) {
+            <div className={scss.frame}>
+                <ul className={scss.chat__messages} ref={(list: HTMLUListElement) => {
+                    if (list) {
                      list.scrollTop = list.scrollHeight;
                 }}}>
                     {this.props.messages.map(m => <MessageLine {...m} key={m.id} />)}
@@ -70,22 +72,14 @@ export enum MessageType {
 
 @observer
 class InputForm extends React.Component<IInputFormProps, {}> {
-    @observable
-    outgoingMessage: string;
+    @observable outgoingMessage: string = '';
 
-    constructor(props: IInputFormProps) {
-        super(props);
-
-        this.handleChange = action.bound(this.handleChange.bind(this));
-        this.handleSubmit = action.bound(this.handleSubmit.bind(this));
-
-        this.outgoingMessage = '';
-    }
-
+    @action.bound
     handleChange(event: React.ChangeEvent<HTMLInputElement>) {
         this.outgoingMessage = event.target.value;
     }
 
+    @action.bound
     handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         this.props.sendMessage(this.outgoingMessage);
         this.outgoingMessage = '';

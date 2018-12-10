@@ -1,4 +1,5 @@
 ﻿import * as React from 'React';
+import * as scss from '../styles/site.scss'
 import { observer } from 'mobx-react';
 import { Ability } from '../transport/Model';
 import { GameQueryType } from '../transport/GameQueryType';
@@ -13,11 +14,11 @@ export class AbilitySelection extends React.Component<IAbilitySelectionProps, {}
 
         abilities.push(<AbilitySelectionLine ability={null} slot={this.props.data.abilitySlot || -3} key={-1} performAction={this.props.performAction} queryGame={this.props.queryGame} />);
 
-        return <div className="dialogBackground" style={{
+        return <div className={scss.dialogBackground} style={{
             display: this.props.data.abilitySlot === null ? 'none' : 'block'
         }} onClick={() => this.props.queryGame(GameQueryType.Clear)}>
-            <div className="abilitySlotSelection__wrapper">
-                <div className="abilitySlotSelection frame" onClick={(e) => e.stopPropagation()}>
+            <div className={scss.abilitySlotSelection__wrapper}>
+                <div className={scss.abilitySlotSelection + " " + scss.frame} onClick={(e) => e.stopPropagation()}>
                     <div><h4>Select ability:</h4></div>
                     <br />
                     <ul>{abilities}</ul>

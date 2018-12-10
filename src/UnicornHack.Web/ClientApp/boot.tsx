@@ -7,7 +7,7 @@ import * as mobx from 'mobx';
 import { Game } from './components/Game';
 
 function renderApp() {
-    mobx.useStrict(true);
+    mobx.configure({ enforceActions: 'observed', computedRequiresReaction: true });
 
     const paramString = new URL(window.location.toString()).search.slice(1);
     let nextParamIndex = paramString.indexOf('?');

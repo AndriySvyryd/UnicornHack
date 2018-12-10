@@ -35,6 +35,8 @@ bld/
 *.min.js
 *.min.css
 *.js.map
+*.scss.d.ts
+*.css.d.ts
 /yarn.lock
 
 # MSTest test Results

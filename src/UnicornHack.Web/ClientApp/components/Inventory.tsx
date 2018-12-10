@@ -1,4 +1,5 @@
 import * as React from 'React';
+import * as scss from '../styles/site.scss'
 import { observer } from 'mobx-react';
 import { Item, ItemType } from '../transport/Model';
 import { PlayerAction } from "../transport/PlayerAction";
@@ -9,7 +10,7 @@ export class Inventory extends React.Component<IInventoryProps, {}> {
         const items = Array.from(this.props.items.values(),
             i => <InventoryLine item={i} key={i.id} performAction={this.props.performAction} />);
 
-        return (<div className="frame">{items}</div>);
+        return (<div className={scss.frame}>{items}</div>);
     }
 }
 

@@ -2,6 +2,7 @@
 
 import { observable, computed, action } from "mobx";
 import { ActivationType } from "./ActivationType";
+import { Direction } from "./Direction";
 
 export class Player {
     @observable id: number = 0;
@@ -333,7 +334,7 @@ export class MapActor {
     @observable name: string = '';
     @observable levelX: number = 0;
     @observable levelY: number = 0;
-    @observable heading: number = 0;
+    @observable heading: Direction = 0;
 
     @action
     static expandToCollection(compactActor: any[], collection: Map<string, MapActor>, tiles: Tile[][], parentState: EntityState) {

@@ -1,4 +1,5 @@
 ﻿import * as React from 'React';
+import * as scss from '../styles/site.scss'
 import { observer } from 'mobx-react';
 import { LogEntry } from '../transport/Model';
 
@@ -7,7 +8,7 @@ export class GameLog extends React.Component<IGameLogProps, {}> {
     render() {
         const messages = Array.from(this.props.messages.values(),
             l => <GameLogLine entry={l} key={l.id} />);
-        return (<div className="frame">{messages}</div>);
+        return (<div className={scss.frame}>{messages}</div>);
     }
 }
 

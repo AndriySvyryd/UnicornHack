@@ -1,8 +1,10 @@
 ﻿import * as React from 'React';
+import * as scss from '../styles/site.scss'
 import { observer } from 'mobx-react';
 import { Level, MapFeature, Tile } from '../transport/Model';
 import { MapStyles, ITileStyle } from '../styles/MapStyles';
 import { PlayerAction } from '../transport/PlayerAction';
+import { Direction } from 'ClientApp/transport/Direction';
 
 @observer
 export class MapDisplay extends React.Component<IMapProps, {}> {
@@ -20,9 +22,10 @@ export class MapDisplay extends React.Component<IMapProps, {}> {
                 key={y} />;
         }
 
-        return (<div className="mapContainer frame">
-                    <div className="map">{map}</div>
-                </div>);
+        return (
+            <div className={scss.mapContainer + " " + scss.frame} >
+                <div className={scss.map}>{map}</div>
+            </div>);
     }
 }
 
@@ -43,7 +46,7 @@ class MapRow extends React.Component<IRowProps, {}> {
                 performAction={this.props.performAction}
                 key={x} />
         );
-        return (<div className="map__row">{row}</div>);
+        return (<div className={scss.map__row}>{row}</div>);
     }
 }
 
@@ -65,11 +68,13 @@ class MapTile extends React.Component<ITileProps, {}> {
             () => this.props.performAction(PlayerAction.MoveToCell, Level.pack(this.props.x, this.props.y), null);
         // TODO: Also change pointer
 
+        var content: (JSX.Element | string) = "";
         if (tile.actor != null) {
             glyph = styles.actors[tile.actor.baseName];
             if (glyph == undefined) {
                 glyph = Object.assign({}, styles.actors['default'], { char: tile.actor.baseName[0] });
             }
+
             // TODO: Add more creatures
             if (glyph == undefined) {
                 throw `Actor type ${tile.actor.baseName} not supported.`;
@@ -79,11 +84,46 @@ class MapTile extends React.Component<ITileProps, {}> {
             if (tile.actor.baseName == 'player') {
                 onClick = () => this.props.performAction(
                     PlayerAction.Wait, null, null);
-            }
-            else {
+            } else {
                 onClick = () => this.props.performAction(
                     PlayerAction.PerformDefaultAttack, Level.pack(this.props.x, this.props.y), null);
             }
+
+            var direction = '';
+            switch (tile.actor.heading) {
+                case Direction.East:
+                    direction = '90deg';
+                    break;
+                case Direction.Northeast:
+                    direction = '45deg';
+                    break;
+                case Direction.North:
+                    direction = '0deg';
+                    break;
+                case Direction.Northwest:
+                    direction = '315deg';
+                    break;
+                case Direction.West:
+                    direction = '270deg';
+                    break;
+                case Direction.Southwest:
+                    direction = '225deg';
+                    break;
+                case Direction.South:
+                    direction = '180deg';
+                    break;
+                case Direction.Southeast:
+                    direction = '135deg';
+                    break;
+            }
+
+            const mapBackground = scss.body_bg;
+            const highlightBackground = glyph.style.backgroundColor || scss.enemy_bg;
+            const inlineStyle = {
+                backgroundImage: `linear-gradient(${direction}, ${mapBackground} 25%, ${highlightBackground})`
+            };
+            content = <div onClick={onClick} style={inlineStyle}>{glyph.char}</div>;
+            onClick = undefined;
         } else if (tile.item != null) {
             const type = tile.item.type;
             glyph = styles.items[type];
@@ -119,9 +159,13 @@ class MapTile extends React.Component<ITileProps, {}> {
             }
         }
 
+        if (content == '') {
+            content = glyph.char;
+        }
+
         const opacity = 0.3 + ((tile.visibility / 255) * 0.7);
-        return (<div className="map__tile" style={Object.assign({ opacity: opacity }, glyph.style)} onClick={onClick}>
-            {glyph.char}
+        return (<div className={scss.map__tile} style={Object.assign({ opacity: opacity }, glyph.style)} onClick={onClick}>
+            {content}
         </div>);
     }
 }

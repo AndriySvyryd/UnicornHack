@@ -35,8 +35,8 @@ function getClientConfig(env) {
                     use: [
                         MiniCssExtractPlugin.loader,
                         isDevBuild
-                        ? { loader: 'css-loader', options: { importLoaders: 1 } }
-                        : { loader: 'css-loader', options: { minimize: true, importLoaders: 1 } },
+                            ? { loader: 'css-loader', options: { importLoaders: 1 } }
+                            : { loader: 'css-loader', options: { minimize: true, importLoaders: 1 } },
                         'sass-loader'
                     ]
                 }

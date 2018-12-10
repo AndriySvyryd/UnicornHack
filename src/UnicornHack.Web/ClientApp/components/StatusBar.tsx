@@ -1,4 +1,5 @@
 ﻿import * as React from 'React';
+import * as scss from '../styles/site.scss'
 import { observer } from 'mobx-react';
 import { Player, PlayerRace } from '../transport/Model';
 
@@ -10,7 +11,7 @@ export class StatusBar extends React.Component<IStatusBarProps, {}> {
             r => <RaceStatus race={r} isLearning={r === learningRace} key={r.id} />);
         const player = this.props.player;
 
-        return (<div className="frame">
+        return (<div className={scss.frame}>
             {player.name} {racesStatus}HP: {player.hp}/{player.maxHp} EP: {player.ep}/{player.maxEp} XP:{player.xP}/{player.nextLevelXP
             } {this.props.levelName}:{this.props.levelDepth} AUT:{player.nextActionTick / 100}
         </div>);
