@@ -75,8 +75,22 @@ namespace UnicornHack.Systems.Knowledge
 
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Equal(2, manager.LevelKnowledges.Count);
-            Assert.Equal(2, manager.LevelKnowledgesToLevelRelationship[level.EntityId].Count);
+            Assert.Equal(4, manager.LevelKnowledges.Count);
+            Assert.Equal(4, manager.LevelKnowledgesToLevelRelationship[level.EntityId].Count);
+            Assert.Same(nymphKnowledge, manager.LevelKnowledgeToLevelEntityRelationship[nymph.Id]);
+            Assert.Same(daggerKnowledge, manager.LevelKnowledgeToLevelEntityRelationship[dagger.Id]);
+
+            Assert.Equal(nymph.Position.LevelCell, nymphKnowledge.Position.LevelCell);
+            Assert.Equal(nymph.Position.Heading, nymphKnowledge.Position.Heading);
+            Assert.Same(nymph, nymphKnowledge.Knowledge.KnownEntity);
+            Assert.Equal(SenseType.Sight, nymphKnowledge.Knowledge.SensedType);
+            Assert.Same(manager.LevelKnowledgeToLevelCellIndex[(level.EntityId, 1, 1)].Last(), nymphKnowledge);
+
+            Assert.Equal(dagger.Position.LevelCell, daggerKnowledge.Position.LevelCell);
+            Assert.Equal(dagger.Position.Heading, daggerKnowledge.Position.Heading);
+            Assert.Same(dagger, daggerKnowledge.Knowledge.KnownEntity);
+            Assert.Equal(SenseType.Sight, daggerKnowledge.Knowledge.SensedType);
+            Assert.Same(manager.LevelKnowledgeToLevelCellIndex[(level.EntityId, 1, 0)].First(), daggerKnowledge);
         }
 
         // TODO: Test XP

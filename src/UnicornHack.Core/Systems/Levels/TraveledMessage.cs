@@ -32,7 +32,7 @@ namespace UnicornHack.Systems.Levels
         }
 
         public Direction InitialHeading { get; set; }
-        public Point InitialPosition { get; set; }
+        public Point InitialLevelCell { get; set; }
         public bool Successful { get; set; }
         public int Delay { get; set; }
 
@@ -43,7 +43,7 @@ namespace UnicornHack.Systems.Levels
             Entity = default;
             InitialLevel = default;
             InitialHeading = default;
-            InitialPosition = default;
+            InitialLevelCell = default;
             Successful = default;
             Delay = default;
         }

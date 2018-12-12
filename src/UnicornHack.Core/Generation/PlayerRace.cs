@@ -73,7 +73,7 @@ namespace UnicornHack.Generation
                     raceEffectEntity.Ability.OwnerEntity = playerEntity;
                     raceEffect.AffectedEntityId = playerEntity.Id;
 
-                    manager.KnowledgeSystem.UpdateNextLevelXP(playerEntity);
+                    manager.XPSystem.UpdateNextLevelXP(playerEntity);
                 }
 
                 return playerEntity;

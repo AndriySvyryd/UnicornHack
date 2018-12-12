@@ -30,7 +30,7 @@ namespace UnicornHack.Systems.Items
             }
         }
 
-        public Point? InitialPosition { get; set; }
+        public Point? InitialLevelCell { get; set; }
         public int InitialCount { get; set; }
         public bool Successful { get; set; }
         public int Delay { get; set; }
@@ -42,7 +42,7 @@ namespace UnicornHack.Systems.Items
         {
             ItemEntity = default;
             InitialContainer = default;
-            InitialPosition = default;
+            InitialLevelCell = default;
             InitialCount = default;
             Successful = default;
             Delay = default;

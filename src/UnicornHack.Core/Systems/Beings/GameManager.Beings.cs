@@ -49,7 +49,7 @@ namespace UnicornHack
                 (effectEntity, _, __) => effectEntity.RemoveComponent((int)EntityComponent.Race));
 
             LivingSystem = new LivingSystem();
-            queue.Add<XPGainedMessage>(LivingSystem, KnowledgeSystem.XPGainedMessageName, 0);
+            queue.Add<XPGainedMessage>(LivingSystem, XPSystem.XPGainedMessageName, 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,
                 Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.HitPointMaximum)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,

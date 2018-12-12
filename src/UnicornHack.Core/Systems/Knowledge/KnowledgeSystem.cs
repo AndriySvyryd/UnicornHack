@@ -7,6 +7,7 @@ using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Senses;
+using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Knowledge
@@ -23,17 +24,10 @@ namespace UnicornHack.Systems.Knowledge
         IGameSystem<EffectsAppliedMessage>,
         IGameSystem<DiedMessage>
     {
-        public const string XPGainedMessageName = "XPGained";
-
         // TODO: Move log writing to a different system
 
         public MessageProcessingResult Process(VisibleTerrainChangedMessage message, GameManager manager)
         {
-            if (message.TilesExplored > 0)
-            {
-                AddPlayerXP(message.TilesExplored, manager);
-            }
-
             var level = message.LevelEntity.Level;
 
             UpdateAllEntitiesKnowledge(manager.LevelActorsToLevelRelationship, manager.LevelActors.Matcher, level,
@@ -55,7 +49,7 @@ namespace UnicornHack.Systems.Knowledge
             // TODO: Perf: use interval tree to only get the entities and knowledge within sense range
             foreach (var levelEntity in levelEntitiesToLevelRelationship[level.EntityId])
             {
-                UpdateEntityKnowledge(levelEntity, matcher, manager, level);
+                UpdateEntityKnowledge(levelEntity, matcher, manager, level: level);
             }
         }
 
@@ -63,7 +57,7 @@ namespace UnicornHack.Systems.Knowledge
         {
             if (message.Successful)
             {
-                UpdateEntityKnowledge(message.Entity, manager.LevelActors.Matcher, manager);
+                UpdateEntityKnowledge(message.Entity, manager.LevelActors.Matcher, manager, additionalCellToTest: message.InitialLevelCell);
             }
 
             return MessageProcessingResult.ContinueProcessing;
@@ -73,6 +67,7 @@ namespace UnicornHack.Systems.Knowledge
             GameEntity entity,
             EntityMatcher<GameEntity> matcher,
             GameManager manager,
+            Point? additionalCellToTest = null,
             LevelComponent level = null)
         {
             var position = entity.Position;
@@ -83,8 +78,11 @@ namespace UnicornHack.Systems.Knowledge
 
             SenseType sensedType;
             if (position != null
-                && (sensedType = manager.SensorySystem.SensedByPlayer(entity, position.LevelCell)) !=
-                    SenseType.None)
+                && ((sensedType = manager.SensorySystem.SensedByPlayer(entity, position.LevelCell))
+                     != SenseType.None
+                    || (additionalCellToTest != null
+                        && (sensedType = manager.SensorySystem.SensedByPlayer(entity, additionalCellToTest.Value))
+                            != SenseType.None)))
             {
                 foreach (var conflictingKnowledge in
                     manager.LevelKnowledgeToLevelCellIndex[(position.LevelId, position.LevelX, position.LevelY)])
@@ -173,70 +171,12 @@ namespace UnicornHack.Systems.Knowledge
             }
         }
 
-        public void AddPlayerXP(int xp, GameManager manager)
-        {
-            foreach (var playerEntity in manager.Players)
-            {
-                AddXP(playerEntity, xp, manager);
-            }
-        }
-
-        public RaceComponent GetLearningRace(GameEntity actorEntity, GameManager manager)
-            => manager.RacesToBeingRelationship[actorEntity.Id].Values.First().Race;
-
-        public byte GetXPLevel(GameEntity actorEntity, GameManager manager)
-            => (byte)manager.RacesToBeingRelationship[actorEntity.Id].Values.Sum(r => r.Race.Level);
-
-        private void AddXP(GameEntity actorEntity, int xp, GameManager manager)
-        {
-            var player = actorEntity.Player;
-            var being = actorEntity.Being;
-            var leftoverXP = xp;
-            while (leftoverXP != 0)
-            {
-                being.ExperiencePoints += leftoverXP;
-                if (being.ExperiencePoints >= player.NextLevelXP)
-                {
-                    leftoverXP = being.ExperiencePoints - player.NextLevelXP;
-                    being.ExperiencePoints = 0;
-
-                    // TODO: fire an event and trigger abilities
-                    var race = GetLearningRace(actorEntity, manager);
-                    race.Level++;
-
-                    UpdateNextLevelXP(actorEntity);
-                }
-                else
-                {
-                    leftoverXP = 0;
-                }
-            }
-
-            var xpGained = manager.Queue.CreateMessage<XPGainedMessage>(XPGainedMessageName);
-            xpGained.Entity = actorEntity;
-            xpGained.ExperiencePoints = xp;
-            manager.Enqueue(xpGained);
-        }
-
-        public void UpdateNextLevelXP(GameEntity actorEntity)
-        {
-            var player = actorEntity.Player;
-            var playerLevel = GetXPLevel(actorEntity, actorEntity.Manager);
-            if (playerLevel > player.MaxLevel)
-            {
-                player.MaxLevel = playerLevel;
-            }
-
-            var effectiveLevel = player.MaxLevel > playerLevel ? player.MaxLevel - playerLevel : playerLevel;
-            player.NextLevelXP = (int)((1 + Math.Ceiling(Math.Pow(effectiveLevel, 1.5))) * 500);
-        }
-
         public MessageProcessingResult Process(ItemMovedMessage message, GameManager manager)
         {
             if (message.Successful)
             {
                 var itemEntity = message.ItemEntity;
-                UpdateEntityKnowledge(itemEntity, manager.LevelItems.Matcher, manager);
+                UpdateEntityKnowledge(itemEntity, manager.LevelItems.Matcher, manager, additionalCellToTest: message.InitialLevelCell);
 
                 var item = itemEntity.Item;
                 var position = itemEntity.Position;
@@ -247,7 +187,7 @@ namespace UnicornHack.Systems.Knowledge
                     var initialTopContainer = message.InitialContainer != null
                         ? manager.ItemMovingSystem.GetTopContainer(message.InitialContainer, manager)
                         : itemEntity;
-                    var initialPosition = message.InitialPosition ?? initialTopContainer.Position?.LevelCell;
+                    var initialPosition = message.InitialLevelCell ?? initialTopContainer.Position?.LevelCell;
                     var initialSensed = initialPosition != null
                         ? manager.SensorySystem.CanSense(playerEntity, initialTopContainer, initialPosition.Value)
                         : SenseType.None;
@@ -274,7 +214,7 @@ namespace UnicornHack.Systems.Knowledge
                             // Changed container
                         }
                     }
-                    else if (message.InitialPosition != null)
+                    else if (message.InitialLevelCell != null)
                     {
                         if (item.ContainerId != null)
                         {
@@ -398,11 +338,6 @@ namespace UnicornHack.Systems.Knowledge
 
         public MessageProcessingResult Process(DiedMessage message, GameManager manager)
         {
-            if (!message.BeingEntity.HasComponent(EntityComponent.Player))
-            {
-                manager.KnowledgeSystem.AddPlayerXP(GetXPLevel(message.BeingEntity, manager) * 100, manager);
-            }
-
             var deceasedPosition = message.BeingEntity.Position;
             foreach (var playerEntity in manager.Players)
             {

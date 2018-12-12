@@ -16,6 +16,7 @@ namespace UnicornHack
         public EntityIndex<GameEntity, (int, byte, byte)> LevelKnowledgeToLevelCellIndex { get; private set; }
         public UniqueEntityRelationship<GameEntity> LevelKnowledgeToLevelEntityRelationship { get; private set; }
         public KnowledgeSystem KnowledgeSystem { get; private set; }
+        public XPSystem XPSystem { get; private set; }
 
         private void InitializeKnowledge(SequentialMessageQueue<GameManager> queue)
         {
@@ -81,6 +82,10 @@ namespace UnicornHack
             queue.Add<ItemActivatedMessage>(KnowledgeSystem, ItemUsageSystem.ItemActivatedMessageName, 0);
             queue.Add<DiedMessage>(KnowledgeSystem, LivingSystem.DiedMessageName, 1);
             queue.Add<EffectsAppliedMessage>(KnowledgeSystem, EffectApplicationSystem.EffectsAppliedMessageName, 1);
+
+            XPSystem = new XPSystem();
+            queue.Add<VisibleTerrainChangedMessage>(XPSystem, SensorySystem.VisibleTerrainChangedMessageName, 1);
+            queue.Add<DiedMessage>(XPSystem, LivingSystem.DiedMessageName, 4);
         }
     }
 }

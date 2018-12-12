@@ -81,7 +81,7 @@ namespace UnicornHack.Systems.Items
             var position = itemEntity.Position;
             var itemMovedMessage = manager.Queue.CreateMessage<ItemMovedMessage>(ItemMovedMessageName);
             itemMovedMessage.ItemEntity = itemEntity;
-            itemMovedMessage.InitialPosition = position?.LevelCell;
+            itemMovedMessage.InitialLevelCell = position?.LevelCell;
             itemMovedMessage.InitialContainer = item.ContainerId != null
                 ? manager.FindEntity(item.ContainerId.Value)
                 : null;
@@ -118,7 +118,7 @@ namespace UnicornHack.Systems.Items
 
                 itemMovedMessage.Delay += TimeSystem.DefaultActionDelay;
 
-                var initialPosition = itemMovedMessage.InitialPosition;
+                var initialPosition = itemMovedMessage.InitialLevelCell;
                 if (initialPosition == null)
                 {
                     var initialTopContainer = itemMovedMessage.InitialContainer != null

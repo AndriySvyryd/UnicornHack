@@ -105,7 +105,7 @@ namespace UnicornHack.Systems.Effects
                                         addedRaceEntityReference.Referenced, message.TargetEntity.Id);
 
                                     addedRaceEffect.AffectedEntityId = message.TargetEntity.Id;
-                                    manager.KnowledgeSystem.UpdateNextLevelXP(message.TargetEntity);
+                                    manager.XPSystem.UpdateNextLevelXP(message.TargetEntity);
                                 }
                             }
 
@@ -466,7 +466,7 @@ namespace UnicornHack.Systems.Effects
                 case EffectType.GainXP:
                     if (state == State.Added)
                     {
-                        manager.KnowledgeSystem.AddPlayerXP(appliedEffectComponent.Amount.Value, manager);
+                        manager.XPSystem.AddPlayerXP(appliedEffectComponent.Amount.Value, manager);
                     }
 
                     break;
