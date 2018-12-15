@@ -131,20 +131,18 @@ namespace UnicornHack.Utils.MessagingECS
 
             _components[componentId] = null;
 
-            var manager = Manager;
+            Manager?.HandleComponentRemoved(component);
 
-            manager?.HandleComponentRemoved(component);
-
-            component.HandleRemovedFromEntity(manager);
-
-            if (propertyName != null)
-            {
-                FirePropertyChanged(propertyName);
-            }
+            ((IOwnerReferenceable)component).RemoveReference(this);
 
             if (component is IKeepAliveComponent)
             {
                 RemoveReference(component);
+            }
+
+            if (propertyName != null)
+            {
+                FirePropertyChanged(propertyName);
             }
         }
 

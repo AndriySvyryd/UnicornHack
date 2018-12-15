@@ -1,21 +1,50 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using UnicornHack.Utils.Caching;
 
 namespace UnicornHack.Utils.MessagingECS
 {
-    public abstract class Component : ITrackable, IPoolable, INotifyPropertyChanged, INotifyPropertyChanging
+    public abstract class Component : IOwnerReferenceable, ITrackable, IPoolable, INotifyPropertyChanged, INotifyPropertyChanging
     {
         public static int NullId = int.MinValue;
         public event PropertyChangedEventHandler PropertyChanged;
         public event PropertyChangingEventHandler PropertyChanging;
 
+#if DEBUG
+        private readonly List<object> _owners = new List<object>();
+#endif
+        private int _referenceCount;
         private IObjectPool _pool;
         private bool _tracked;
+        private Entity _entity;
 
         public int ComponentId { get; protected set; }
-        public Entity Entity { get; set; }
+
+        public Entity Entity
+        {
+            get => _entity;
+            set
+            {
+                if (_entity != value)
+                {
+                    Debug.Assert(_entity == null || value == null);
+
+                    if (value != null)
+                    {
+                        // Done here because reference count is not persisted
+                        ((IOwnerReferenceable)this).AddReference(value);
+                        Manager = value.Manager;
+                    }
+
+                    _entity = value;
+                }
+            }
+        }
+
+        protected IEntityManager Manager { get; set; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void SetWithNotify<T>(
@@ -60,41 +89,65 @@ namespace UnicornHack.Utils.MessagingECS
         {
             Debug.Assert(!_tracked, $"Component {GetType().Name} is already tracked by {tracker}");
             _tracked = true;
+            ((IOwnerReferenceable)this).AddReference(tracker);
         }
 
         void ITrackable.StopTracking(object tracker)
         {
             _tracked = false;
-            if (Entity == null)
+            ((IOwnerReferenceable)this).RemoveReference(tracker);
+        }
+
+        void IOwnerReferenceable.AddReference(object owner)
+        {
+#if DEBUG
+            _owners.Add(owner);
+#endif
+            _referenceCount++;
+        }
+
+        void IOwnerReferenceable.RemoveReference(object owner)
+        {
+#if DEBUG
+            _owners.Remove(owner);
+#endif
+            if (--_referenceCount > 1)
             {
-                Clean();
                 return;
             }
 
-            Debug.Assert(!Entity.HasComponent(ComponentId));
+            switch (_referenceCount)
+            {
+                case 1:
+                    if (_tracked)
+                    {
+                       Manager.RemoveFromSecondaryTracker(this);
+                    }
+
+                    break;
+                case 0:
+                    Clean();
+
+                    break;
+                default:
+                    throw new InvalidOperationException($"Component {ComponentId} is not referenced by object {owner}");
+            }
         }
 
-        public void HandleRemovedFromEntity(IEntityManager manager)
+        protected virtual void Clean()
         {
-            if (!_tracked)
-            {
-                Debug.Assert(PropertyChanged == null);
-                Debug.Assert(PropertyChanging == null);
+            Debug.Assert(Entity?.HasComponent(ComponentId) != true
+                && _referenceCount == 0
+                && !_tracked
+                && PropertyChanged == null
+                && PropertyChanging == null);
 
-                Entity = null;
-                Clean();
-            }
-            else
-            {
-                Entity = null;
-                manager?.RemoveFromSecondaryTracker(this);
-            }
+            Entity = null;
+
+            _pool?.Return(this);
         }
 
         void IPoolable.SetPool(IObjectPool pool)
             => _pool = pool;
-
-        protected virtual void Clean()
-            => _pool?.Return(this);
     }
 }

@@ -59,7 +59,7 @@ namespace UnicornHack.Utils.MessagingECS
 
             Assert.Same(entity, component.Entity);
 
-            component.HandleRemovedFromEntity(manager);
+            ((IOwnerReferenceable)component).RemoveReference(entity);
 
             Assert.Null(component.Entity);
 
@@ -74,7 +74,15 @@ namespace UnicornHack.Utils.MessagingECS
             var manager = TestHelper.CreateGameManager();
             var component = manager.CreateComponent<ItemComponent>(EntityComponent.Item);
             manager.Game.Repository.Add(component);
-            component.HandleRemovedFromEntity(manager);
+            component.Count = 1;
+
+            var entity = manager.CreateEntity().Referenced;
+            ((IOwnerReferenceable)component).AddReference(manager);
+            ((Component)component).Entity = entity;
+            ((IOwnerReferenceable)component).RemoveReference(entity);
+            ((IOwnerReferenceable)component).RemoveReference(manager);
+
+            Assert.Null(component.Count);
 
             var anotherComponent = manager.CreateComponent<ItemComponent>(EntityComponent.Item);
 
@@ -86,7 +94,8 @@ namespace UnicornHack.Utils.MessagingECS
         {
             var manager = TestHelper.CreateGameManager();
             var component = manager.CreateComponent<ItemComponent>(EntityComponent.Item);
-            ((Component)component).Entity = manager.CreateEntity().Referenced;
+            var entity = manager.CreateEntity().Referenced;
+            ((Component)component).Entity = entity;
             manager.Game.Repository.Add(component);
             manager.Game.Repository.RemoveTracked(component);
 
@@ -94,7 +103,7 @@ namespace UnicornHack.Utils.MessagingECS
 
             Assert.NotSame(component, anotherComponent);
 
-            component.HandleRemovedFromEntity(manager);
+            ((IOwnerReferenceable)component).RemoveReference(entity);
 
             anotherComponent = manager.CreateComponent<ItemComponent>(EntityComponent.Item);
 

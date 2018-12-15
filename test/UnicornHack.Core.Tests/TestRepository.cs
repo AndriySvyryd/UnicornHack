@@ -25,6 +25,11 @@ namespace UnicornHack
         {
             if (entity is ITrackable trackable)
             {
+                if (entity is Component component)
+                {
+                    component.Entity = null;
+                }
+
                 trackable.StopTracking(this);
             }
         }

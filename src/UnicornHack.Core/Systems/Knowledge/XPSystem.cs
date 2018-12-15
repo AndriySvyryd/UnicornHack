@@ -1,22 +1,30 @@
 ﻿using System;
 using System.Linq;
+using UnicornHack.Generation;
 using UnicornHack.Systems.Beings;
+using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Senses;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Knowledge
 {
+    /// <summary>
+    ///     Handles player XP
+    /// </summary>
     public class XPSystem:
         IGameSystem<VisibleTerrainChangedMessage>,
-        IGameSystem<DiedMessage>
+        IGameSystem<DiedMessage>,
+        IGameSystem<EntityAddedMessage<GameEntity>>,
+        IGameSystem<EntityRemovedMessage<GameEntity>>
     {
         public const string XPGainedMessageName = "XPGained";
+        public const string LeveledUpMessageName = "LeveledUp";
 
         public MessageProcessingResult Process(VisibleTerrainChangedMessage message, GameManager manager)
         {
             if (message.TilesExplored > 0)
             {
-                AddPlayerXP(message.TilesExplored, manager);
+                AddPlayerXP(message.TilesExplored * message.LevelEntity.Level.Difficulty, manager);
             }
 
             return MessageProcessingResult.ContinueProcessing;
@@ -29,6 +37,38 @@ namespace UnicornHack.Systems.Knowledge
                 AddPlayerXP(GetXPLevel(message.BeingEntity, manager) * 100, manager);
             }
 
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager manager)
+        {
+            var affectedEntity = manager.FindEntity(message.Entity.Effect?.AffectedEntityId);
+            if (affectedEntity?.HasComponent(EntityComponent.Player) != true)
+            {
+                return MessageProcessingResult.ContinueProcessing;
+            }
+
+            manager.XPSystem.UpdateNextLevelXP(affectedEntity);
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        public MessageProcessingResult Process(EntityRemovedMessage<GameEntity> message, GameManager manager)
+        {
+            var effect = message.Entity.Effect ?? message.ChangedComponent as EffectComponent;
+            var player = manager.FindEntity(effect?.AffectedEntityId)?.Player;
+            if (player?.Entity.Being.IsAlive != true)
+            {
+                return MessageProcessingResult.ContinueProcessing;
+            }
+
+            var race = message.Entity.Race ?? message.ChangedComponent as RaceComponent;
+            var template = PlayerRace.Loader.Find(race.TemplateName);
+            var levelsLost = race.Level - 1;
+            player.SkillPoints -= levelsLost * template.SkillPointRate;
+            player.TraitPoints -= levelsLost * template.TraitPointRate;
+            player.MutationPoints -= levelsLost * template.MutationPointRate;
+
+            manager.XPSystem.UpdateNextLevelXP(player.Entity);
             return MessageProcessingResult.ContinueProcessing;
         }
 
@@ -59,11 +99,23 @@ namespace UnicornHack.Systems.Knowledge
                     leftoverXP = being.ExperiencePoints - player.NextLevelXP;
                     being.ExperiencePoints = 0;
 
-                    // TODO: fire an event and trigger abilities
                     var race = GetLearningRace(actorEntity, manager);
                     race.Level++;
 
+                    var template = PlayerRace.Loader.Find(race.TemplateName);
+                    player.SkillPoints += template.SkillPointRate;
+                    player.TraitPoints += template.TraitPointRate;
+                    player.MutationPoints += template.MutationPointRate;
+
                     UpdateNextLevelXP(actorEntity);
+
+                    var leveledUp = manager.Queue.CreateMessage<LeveledUpMessage>(LeveledUpMessageName);
+                    leveledUp.Entity = actorEntity;
+                    leveledUp.Race = race;
+                    leveledUp.SkillPointsGained = template.SkillPointRate;
+                    leveledUp.TraitPointsGained = template.TraitPointRate;
+                    leveledUp.MutationPointsGained = template.MutationPointRate;
+                    manager.Enqueue(leveledUp);
                 }
                 else
                 {

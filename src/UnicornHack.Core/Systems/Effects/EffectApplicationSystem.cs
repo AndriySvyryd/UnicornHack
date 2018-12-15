@@ -105,7 +105,6 @@ namespace UnicornHack.Systems.Effects
                                         addedRaceEntityReference.Referenced, message.TargetEntity.Id);
 
                                     addedRaceEffect.AffectedEntityId = message.TargetEntity.Id;
-                                    manager.XPSystem.UpdateNextLevelXP(message.TargetEntity);
                                 }
                             }
 
@@ -426,7 +425,7 @@ namespace UnicornHack.Systems.Effects
                     if (state == State.Removed)
                     {
                         effectEntity.RemoveComponent(EntityComponent.Race);
-                        if (!manager.RacesToBeingRelationship[targetEntity.Id].Any())
+                        if (manager.RacesToBeingRelationship[targetEntity.Id].Count == 0)
                         {
                             var combatComponent = targetEntity.Being;
                             if (combatComponent != null)

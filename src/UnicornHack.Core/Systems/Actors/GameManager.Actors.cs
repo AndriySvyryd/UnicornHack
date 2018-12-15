@@ -64,7 +64,7 @@ namespace UnicornHack
             queue.Add<PerformActionMessage>(AISystem, AISystem.PerformAIActionMessageName, 0);
             queue.Add<AbilityActivatedMessage>(AISystem, AbilityActivationSystem.AbilityActivatedMessageName, 1);
             queue.Add<TraveledMessage>(AISystem, TravelSystem.TraveledMessageName, 1);
-            queue.Add<ItemMovedMessage>(AISystem, ItemMovingSystem.ItemMovedMessageName, 1);
+            queue.Add<ItemMovedMessage>(AISystem, ItemMovingSystem.ItemMovedMessageName, 2);
             queue.Add<ItemEquippedMessage>(AISystem, ItemUsageSystem.ItemEquippedMessageName, 1);
             queue.Add<ItemActivatedMessage>(AISystem, ItemUsageSystem.ItemActivatedMessageName, 1);
             queue.Add<EntityAddedMessage<GameEntity>>(
@@ -76,7 +76,7 @@ namespace UnicornHack
             queue.Add<TraveledMessage>(PlayerSystem, TravelSystem.TraveledMessageName, 2);
             queue.Add<ItemEquippedMessage>(PlayerSystem, ItemUsageSystem.ItemEquippedMessageName, 2);
             queue.Add<ItemActivatedMessage>(PlayerSystem, ItemUsageSystem.ItemActivatedMessageName, 2);
-            queue.Add<ItemMovedMessage>(PlayerSystem, ItemMovingSystem.ItemMovedMessageName, 2);
+            queue.Add<ItemMovedMessage>(PlayerSystem, ItemMovingSystem.ItemMovedMessageName, 3);
         }
     }
 }

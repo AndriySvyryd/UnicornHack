@@ -115,7 +115,8 @@ namespace UnicornHack.Utils.MessagingECS
                 entityIndex.HandleEntityRemoved(entity, changedComponent, this);
             }
 
-            if (_entityRemovedMessageName != null)
+            if (_entityRemovedMessageName != null
+                && entity.Manager != null)
             {
                 var message = manager.Queue.CreateMessage<EntityRemovedMessage<TEntity>>(_entityRemovedMessageName);
                 message.Entity = entity;

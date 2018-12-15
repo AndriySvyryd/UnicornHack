@@ -1,6 +1,7 @@
 ﻿using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Items;
+using UnicornHack.Systems.Knowledge;
 using UnicornHack.Utils.MessagingECS;
 
 // ReSharper disable once CheckNamespace
@@ -60,11 +61,11 @@ namespace UnicornHack
                 referencingKeepAlive: true);
 
             AbilityActivationSystem = new AbilityActivationSystem();
-            queue.Add<ActivateAbilityMessage>(AbilityActivationSystem,
-                AbilityActivationSystem.ActivateAbilityMessageName, 0);
-            queue.Add<ItemMovedMessage>(AbilityActivationSystem, ItemMovingSystem.ItemMovedMessageName, 3);
+            queue.Add<ActivateAbilityMessage>(AbilityActivationSystem, AbilityActivationSystem.ActivateAbilityMessageName, 0);
+            queue.Add<ItemMovedMessage>(AbilityActivationSystem, ItemMovingSystem.ItemMovedMessageName, 4);
             queue.Add<ItemEquippedMessage>(AbilityActivationSystem, ItemUsageSystem.ItemEquippedMessageName, 3);
             queue.Add<DiedMessage>(AbilityActivationSystem, LivingSystem.DiedMessageName, 3);
+            queue.Add<LeveledUpMessage>(AbilityActivationSystem, XPSystem.LeveledUpMessageName, 0);
             queue.Add<EntityAddedMessage<GameEntity>>(
                 AbilityActivationSystem, AbilitiesToAffectableRelationship.GetEntityAddedMessageName(), 0);
             queue.Add<EntityRemovedMessage<GameEntity>>(

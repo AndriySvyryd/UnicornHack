@@ -90,7 +90,7 @@ namespace UnicornHack.Systems.Actors
                     {
                         case Direction.Down:
                         case Direction.Up:
-                            manager.KnowledgeSystem.WriteLog(
+                            manager.LoggingSystem.WriteLog(
                                 manager.Game.Services.Language.UnableToMove(moveDirection), playerEntity, manager);
                             break;
                         default:
@@ -225,7 +225,8 @@ namespace UnicornHack.Systems.Actors
                 position.LevelEntity.Level, position.LevelCell, targetCell, position.Heading.Value);
             if (direction == null)
             {
-                manager.KnowledgeSystem.WriteLog("No path to target!", playerEntity, manager);
+                manager.LoggingSystem.WriteLog(
+                    manager.Game.Services.Language.NoPath(), playerEntity, manager);
                 return false;
             }
 
@@ -257,7 +258,7 @@ namespace UnicornHack.Systems.Actors
 
             if (!manager.TravelSystem.CanTravel(travelMessage, manager))
             {
-                manager.KnowledgeSystem.WriteLog(
+                manager.LoggingSystem.WriteLog(
                     manager.Game.Services.Language.UnableToMove(direction), playerEntity, manager);
                 manager.Queue.ReturnMessage(travelMessage);
                 return false;

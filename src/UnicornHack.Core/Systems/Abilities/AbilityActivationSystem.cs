@@ -7,6 +7,7 @@ using UnicornHack.Primitives;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
+using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
 using UnicornHack.Utils;
@@ -20,6 +21,7 @@ namespace UnicornHack.Systems.Abilities
         IGameSystem<ItemMovedMessage>,
         IGameSystem<ItemEquippedMessage>,
         IGameSystem<DiedMessage>,
+        IGameSystem<LeveledUpMessage>,
         IGameSystem<EntityAddedMessage<GameEntity>>,
         IGameSystem<EntityRemovedMessage<GameEntity>>
     {
@@ -444,10 +446,24 @@ namespace UnicornHack.Systems.Abilities
             return MessageProcessingResult.ContinueProcessing;
         }
 
+        public MessageProcessingResult Process(DiedMessage message, GameManager manager)
+        {
+            DeactivateAbilities(message.BeingEntity.Id, ActivationType.Continuous, manager);
+
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        public MessageProcessingResult Process(LeveledUpMessage message, GameManager state)
+        {
+            // TODO: Activate abilities
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
         public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager manager)
         {
             var ability = message.Entity.Ability;
-            if ((ability.Activation & ActivationType.Always) != 0)
+            if (ability != null
+                && (ability.Activation & ActivationType.Always) != 0)
             {
                 Debug.Assert(!ability.IsActive);
 
@@ -476,13 +492,6 @@ namespace UnicornHack.Systems.Abilities
 
                 Deactivate(ability, manager);
             }
-
-            return MessageProcessingResult.ContinueProcessing;
-        }
-
-        public MessageProcessingResult Process(DiedMessage message, GameManager manager)
-        {
-            DeactivateAbilities(message.BeingEntity.Id, ActivationType.Continuous, manager);
 
             return MessageProcessingResult.ContinueProcessing;
         }

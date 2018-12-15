@@ -17,7 +17,9 @@ namespace UnicornHack.Systems.Actors
         private int? _nextActionTick;
         private int _maxLevel;
         private int _nextLevelXP;
-        private int _unspentSkillPoints;
+        private int _skillPoints;
+        private int _traitPoints;
+        private int _mutationPoints;
         private int _oneHanded;
         private int _twoHanded;
         private int _dualWielding;
@@ -109,10 +111,22 @@ namespace UnicornHack.Systems.Actors
             set => SetWithNotify(value, ref _nextLevelXP);
         }
 
-        public int UnspentSkillPoints
+        public int SkillPoints
         {
-            get => _unspentSkillPoints;
-            set => SetWithNotify(value, ref _unspentSkillPoints);
+            get => _skillPoints;
+            set => SetWithNotify(value, ref _skillPoints);
+        }
+
+        public int TraitPoints
+        {
+            get => _traitPoints;
+            set => SetWithNotify(value, ref _traitPoints);
+        }
+
+        public int MutationPoints
+        {
+            get => _mutationPoints;
+            set => SetWithNotify(value, ref _mutationPoints);
         }
 
         public int OneHanded
@@ -323,7 +337,9 @@ namespace UnicornHack.Systems.Actors
             _nextActionTick = default;
             _maxLevel = default;
             _nextLevelXP = default;
-            _unspentSkillPoints = default;
+            _skillPoints = default;
+            _traitPoints = default;
+            _mutationPoints = default;
             _oneHanded = default;
             _twoHanded = default;
             _dualWielding = default;

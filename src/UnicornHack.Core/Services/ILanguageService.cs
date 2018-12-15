@@ -17,7 +17,9 @@ namespace UnicornHack.Services
         string GetString(in ItemActivationEvent @event);
         string GetString(in AttackEvent @event);
         string GetString(in DeathEvent @event);
+        string GetString(in LeveledUpEvent @event);
         string Welcome(GameEntity playerEntity);
         string UnableToMove(Direction direction);
+        string NoPath();
     }
 }

@@ -261,8 +261,8 @@ namespace UnicornHack.Systems.Actors
         public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager manager)
         {
             var ability = message.Entity.Ability;
-            var owner = ability.OwnerEntity;
-            if (owner.AI != null
+            var owner = ability?.OwnerEntity;
+            if (owner?.AI != null
                 && (ability.Activation & ActivationType.Slottable) != 0
                 && ability.Slot == null
                 && ability.IsUsable

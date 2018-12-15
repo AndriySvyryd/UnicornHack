@@ -138,6 +138,11 @@ namespace UnicornHack.Systems.Items
                 foreach (var targetPoint in TerrainSystem.GetAdjacentPoints(
                     message.TargetLevelEntity.Level, message.TargetCell.Value, spilloverDirection, includeInitial: true))
                 {
+                    if (!manager.TravelSystem.CanMoveTo(targetPoint, message.TargetLevelEntity.Level))
+                    {
+                        continue;
+                    }
+
                     var (levelX, levelY) = targetPoint;
                     var existingItem = manager.LevelItemsToLevelCellIndex[(message.TargetLevelEntity.Id, levelX, levelY)];
                     if (existingItem == null)

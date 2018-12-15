@@ -359,8 +359,8 @@ namespace UnicornHack.Services.English
             }
         }
 
-        public string GetPronoun(EnglishPronounForm form, EnglishNumber number, EnglishPerson person,
-            EnglishGender? gender)
+        public string GetPronoun(
+            EnglishPronounForm form, EnglishNumber number, EnglishPerson person, EnglishGender? gender)
         {
             var numberIndex = number == EnglishNumber.Plural ? 1 : 0;
             var formIndex = (int)form;

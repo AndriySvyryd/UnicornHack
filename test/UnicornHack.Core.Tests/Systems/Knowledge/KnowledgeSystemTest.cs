@@ -92,8 +92,5 @@ namespace UnicornHack.Systems.Knowledge
             Assert.Equal(SenseType.Sight, daggerKnowledge.Knowledge.SensedType);
             Assert.Same(manager.LevelKnowledgeToLevelCellIndex[(level.EntityId, 1, 0)].First(), daggerKnowledge);
         }
-
-        // TODO: Test XP
-        // TODO: Test log entries
     }
 }

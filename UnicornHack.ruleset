@@ -160,4 +160,7 @@
     <Rule Id="RCS1168" Action="None" />
     <Rule Id="RCS1194" Action="None" />
   </Rules>
+  <Rules AnalyzerId="Xunit.Analyzers" RuleNamespace="Xunit.Analyzers">
+    <Rule Id="xUnit2013" Action="None" />
+  </Rules>
 </RuleSet>

@@ -8,7 +8,6 @@ namespace UnicornHack.Generation
     public class Ability
     {
         public string Name { get; set; }
-
         public ActivationType Activation { get; set; }
         public ActivationType Trigger { get; set; }
         public TargetingType TargetingType { get; set; }

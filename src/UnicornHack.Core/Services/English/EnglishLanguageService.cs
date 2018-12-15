@@ -502,6 +502,28 @@ namespace UnicornHack.Services.English
                 slotKnown ? GetString(@event.Slot, @event.EquipperEntity, abbreviate: false) : null);
         }
 
+        public string GetString(in LeveledUpEvent @event)
+        {
+            var leveledPerson = @event.SensorEntity == @event.LeveledEntity
+                ? EnglishPerson.Second
+                : EnglishPerson.Third;
+            var leveledGender = (EnglishGender?)@event.LeveledEntity.Being.Sex;
+
+            return ToSentence(
+                GetString(@event.LeveledEntity, leveledPerson, SenseType.Sight),
+                EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "level up", leveledPerson),
+                "!") + " " +
+                ToSentence(
+                    EnglishMorphologicalProcessor.GetPronoun(EnglishPronounForm.Normal, EnglishNumber.Singular, leveledPerson, leveledGender),
+                    EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "gain", leveledPerson),
+                    $"{@event.SkillPointsGained} SP {@event.TraitPointsGained} TP {@event.MutationPointsGained} MP");
+        }
+
+        public string NoPath()
+        {
+            return "No path to target!";
+        }
+
         #endregion
 
         #region Interface messages

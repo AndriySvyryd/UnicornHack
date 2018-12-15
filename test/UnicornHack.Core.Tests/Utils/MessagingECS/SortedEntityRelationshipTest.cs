@@ -73,7 +73,7 @@ namespace UnicornHack.Utils.MessagingECS
                 }
             }
 
-            Assert.Equal(6, manager.Queue.QueuedCount);
+            Assert.Equal(8, manager.Queue.QueuedCount);
         }
 
         [Fact]
@@ -121,7 +121,7 @@ namespace UnicornHack.Utils.MessagingECS
 
             manager.IsLoading = false;
 
-            Assert.Equal(1, manager.Queue.QueuedCount);
+            Assert.Equal(2, manager.Queue.QueuedCount);
         }
 
         [Fact]
@@ -162,11 +162,11 @@ namespace UnicornHack.Utils.MessagingECS
 
                     raceEntity.Race = race;
 
-                    Assert.Equal(1, manager.Queue.QueuedCount);
+                    Assert.Equal(2, manager.Queue.QueuedCount);
 
                     race.Species = Species.Dragon;
 
-                    Assert.Equal(2, manager.Queue.QueuedCount);
+                    Assert.Equal(3, manager.Queue.QueuedCount);
                 }
             }
 

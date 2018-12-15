@@ -70,7 +70,7 @@ namespace UnicornHack.Utils.MessagingECS
                 Assert.Equal(2, manager.Queue.QueuedCount);
             }
 
-            Assert.Equal(3, manager.Queue.QueuedCount);
+            Assert.Equal(2, manager.Queue.QueuedCount);
 
             manager.Queue.ProcessQueue(manager);
 

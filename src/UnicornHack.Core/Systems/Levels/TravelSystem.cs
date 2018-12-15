@@ -232,10 +232,11 @@ namespace UnicornHack.Systems.Levels
         // TODO: Use locomotion type
         // TODO: block if directionIndex > 3 (diagonal) and path is too narrow to squeeze through
         // TODO: Also avoid actors (at least adjacent ones)
-        private static bool CanMoveTo(Point location, LevelComponent level)
+
+        public bool CanMoveTo(Point location, LevelComponent level)
             => CanMoveTo(location.X, location.Y, level) != null;
 
-        private static int? CanMoveTo(Point location, int directionIndex, LevelComponent level)
+        private int? CanMoveTo(Point location, int directionIndex, LevelComponent level)
         {
             var direction = Vector.MovementDirections[directionIndex];
             var newLocation = location.Translate(direction);
@@ -243,7 +244,7 @@ namespace UnicornHack.Systems.Levels
             return CanMoveTo(newLocation.X, newLocation.Y, level);
         }
 
-        private static int? CanMoveTo(byte locationX, byte locationY, LevelComponent level)
+        private int? CanMoveTo(byte locationX, byte locationY, LevelComponent level)
         {
             if (locationX >= level.Width || locationY >= level.Height)
             {

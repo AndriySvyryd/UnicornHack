@@ -17,6 +17,7 @@ namespace UnicornHack
         public UniqueEntityRelationship<GameEntity> LevelKnowledgeToLevelEntityRelationship { get; private set; }
         public KnowledgeSystem KnowledgeSystem { get; private set; }
         public XPSystem XPSystem { get; private set; }
+        public LoggingSystem LoggingSystem { get; private set; }
 
         private void InitializeKnowledge(SequentialMessageQueue<GameManager> queue)
         {
@@ -78,14 +79,21 @@ namespace UnicornHack
             queue.Add<VisibleTerrainChangedMessage>(KnowledgeSystem, SensorySystem.VisibleTerrainChangedMessageName, 0);
             queue.Add<TraveledMessage>(KnowledgeSystem, TravelSystem.TraveledMessageName, 4);
             queue.Add<ItemMovedMessage>(KnowledgeSystem, ItemMovingSystem.ItemMovedMessageName, 0);
-            queue.Add<ItemEquippedMessage>(KnowledgeSystem, ItemUsageSystem.ItemEquippedMessageName, 0);
-            queue.Add<ItemActivatedMessage>(KnowledgeSystem, ItemUsageSystem.ItemActivatedMessageName, 0);
-            queue.Add<DiedMessage>(KnowledgeSystem, LivingSystem.DiedMessageName, 1);
             queue.Add<EffectsAppliedMessage>(KnowledgeSystem, EffectApplicationSystem.EffectsAppliedMessageName, 1);
 
             XPSystem = new XPSystem();
             queue.Add<VisibleTerrainChangedMessage>(XPSystem, SensorySystem.VisibleTerrainChangedMessageName, 1);
             queue.Add<DiedMessage>(XPSystem, LivingSystem.DiedMessageName, 4);
+            queue.Add<EntityAddedMessage<GameEntity>>(XPSystem, Races.GetEntityAddedMessageName(), 0);
+            queue.Add<EntityRemovedMessage<GameEntity>>(XPSystem, Races.GetEntityRemovedMessageName(), 0);
+
+            LoggingSystem = new LoggingSystem();
+            queue.Add<ItemMovedMessage>(LoggingSystem, ItemMovingSystem.ItemMovedMessageName, 1);
+            queue.Add<ItemEquippedMessage>(LoggingSystem, ItemUsageSystem.ItemEquippedMessageName, 0);
+            queue.Add<ItemActivatedMessage>(LoggingSystem, ItemUsageSystem.ItemActivatedMessageName, 0);
+            queue.Add<EffectsAppliedMessage>(LoggingSystem, EffectApplicationSystem.EffectsAppliedMessageName, 2);
+            queue.Add<DiedMessage>(LoggingSystem, LivingSystem.DiedMessageName, 1);
+            queue.Add<LeveledUpMessage>(LoggingSystem, XPSystem.LeveledUpMessageName, 1);
         }
     }
 }

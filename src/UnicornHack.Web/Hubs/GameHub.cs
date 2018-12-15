@@ -313,7 +313,7 @@ namespace UnicornHack.Hubs
             ItemData.PotionOfDwarfness.Instantiate(playerEntity);
             ItemData.PotionOfExperience.Instantiate(playerEntity, quantity: 5);
 
-            manager.KnowledgeSystem.WriteLog(game.Services.Language.Welcome(playerEntity), playerEntity, manager);
+            manager.LoggingSystem.WriteLog(game.Services.Language.Welcome(playerEntity), playerEntity, manager);
 
             Turn(playerEntity.Player);
             _dbContext.ChangeTracker.AcceptAllChanges();

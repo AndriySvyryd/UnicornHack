@@ -1,17 +1,21 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
+using UnicornHack.Services.English;
 using UnicornHack.Services.LogEvents;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Utils.DataStructures;
 using Xunit;
 
-namespace UnicornHack.Services.English
+namespace UnicornHack.Systems.Knowledge
 {
-    public class EnglishLanguageServiceTest
+    public class LoggingSystemTest
     {
+        // TODO: Test through LoggingSystem instead of calling the language system directly
+
         [Fact]
         public void AttackEvent()
         {
@@ -20,116 +24,119 @@ namespace UnicornHack.Services.English
             var nymph = CreatureData.WaterNymph.Instantiate(level, new Point(0, 1));
             var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
             var player2 = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, level.Entity, new Point(0, 3));
+            var manager = level.Entity.Manager;
 
-            Verify(blob, nymph, player, SenseType.Sight, SenseType.Sight, AbilityAction.Bite, 11,
+            Verify(blob, nymph, player, SenseType.Sight, SenseType.Sight, AbilityAction.Bite, manager, 11,
                 expectedMessage: "The acid blob bites the water nymph. (11 pts.)");
 
-            Verify(player, blob, player2, SenseType.Sight, SenseType.Sight, AbilityAction.Sting, 11,
+            Verify(player, blob, player2, SenseType.Sight, SenseType.Sight, AbilityAction.Sting, manager, 11,
                 expectedMessage: "Dudley stings the acid blob. (11 pts.)");
 
-            Verify(blob, player, player2, SenseType.Sight, SenseType.Sight, AbilityAction.Spell, null,
+            Verify(blob, player, player2, SenseType.Sight, SenseType.Sight, AbilityAction.Spell, manager, null,
                 expectedMessage: "The acid blob tries to cast a spell at Dudley, but misses.");
 
-            Verify(blob, nymph, player, SenseType.Sound, SenseType.Sight, AbilityAction.Sting, 11,
+            Verify(blob, nymph, player, SenseType.Sound, SenseType.Sight, AbilityAction.Sting, manager, 11,
                 expectedMessage: "You hear a noise.");
 
             Verify(blob, nymph, player, SenseType.Sight, SenseType.SoundDistant | SenseType.Danger | SenseType.Telepathy,
-                AbilityAction.Headbutt, 11,
+                AbilityAction.Headbutt, manager, 11,
                 expectedMessage: "The acid blob headbutts the water nymph. (11 pts.)");
 
             Verify(nymph, player, player, SenseType.Sight | SenseType.Touch, SenseType.Sight | SenseType.Touch,
-                AbilityAction.Punch, 11,
+                AbilityAction.Punch, manager, 11,
                 expectedMessage: "The water nymph punches you! [11 pts.]");
 
             Verify(nymph, player, player, SenseType.Sight | SenseType.Touch, SenseType.Sight | SenseType.Touch,
-                AbilityAction.Spit, null,
+                AbilityAction.Spit, manager, null,
                 expectedMessage: "The water nymph tries to spit at you, but misses.");
 
-            Verify(player, blob, player, SenseType.Sight | SenseType.Touch, SenseType.Sight, AbilityAction.Hug, 11,
+            Verify(player, blob, player, SenseType.Sight | SenseType.Touch, SenseType.Sight, AbilityAction.Hug, manager, 11,
                 expectedMessage: "You squeeze the acid blob. (11 pts.)");
 
             Verify(player, blob, player, SenseType.Sight | SenseType.Touch, SenseType.Telepathy | SenseType.Touch,
-                AbilityAction.Trample, null,
+                AbilityAction.Trample, manager, null,
                 expectedMessage: "You try to trample the acid blob, but miss.");
 
-            Verify(blob, blob, player, SenseType.Sight, SenseType.Sight, AbilityAction.Claw, 11,
+            Verify(blob, blob, player, SenseType.Sight, SenseType.Sight, AbilityAction.Claw, manager, 11,
                 expectedMessage: "The acid blob claws itself. (11 pts.)");
 
             Verify(player, player, player, SenseType.Sight | SenseType.Touch, SenseType.Sight | SenseType.Touch,
-                AbilityAction.Kick, 12,
+                AbilityAction.Kick, manager, 12,
                 expectedMessage: "You kick yourself! [12 pts.]");
 
             Verify(nymph, player, player, SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Touch,
-                AbilityAction.Scream, 0,
+                AbilityAction.Scream, manager, 0,
                 expectedMessage: "The water nymph screams at you! You are unaffected.");
 
-            Verify(nymph, nymph, player, SenseType.Sight, SenseType.Sight, AbilityAction.Scream, 0,
+            Verify(nymph, nymph, player, SenseType.Sight, SenseType.Sight, AbilityAction.Scream, manager, 0,
                 expectedMessage: "The water nymph screams at herself. The water nymph seems unaffected.");
 
-            Verify(nymph, nymph, player, SenseType.Sound, SenseType.None, AbilityAction.Scream, null,
+            Verify(nymph, nymph, player, SenseType.Sound, SenseType.None, AbilityAction.Scream, manager, null,
                 expectedMessage: "You hear a scream.");
 
             var dagger = ItemData.Dagger.Instantiate(player.Manager).Referenced;
 
-            Verify(player, blob, player, SenseType.Touch | SenseType.Telepathy, SenseType.Sight, AbilityAction.Slash, 11, weapon: dagger,
+            Verify(player, blob, player, SenseType.Touch | SenseType.Telepathy, SenseType.Sight, AbilityAction.Slash, manager, 11,
+                weapon: dagger,
                 expectedMessage: "You slash the acid blob with the dagger. (11 pts.)");
 
-            Verify(player, null, player, SenseType.Touch | SenseType.Telepathy, SenseType.Sight, AbilityAction.Slash, null, weapon: dagger,
+            Verify(player, null, player, SenseType.Touch | SenseType.Telepathy, SenseType.Sight, AbilityAction.Slash, manager, null,
+                weapon: dagger,
                 expectedMessage: "You slash the air with the dagger.");
 
             var bow = ItemData.Shortbow.Instantiate(player.Manager).Referenced;
             var arrow = ItemData.Arrow.Instantiate(player.Manager).Referenced;
 
-            Verify(nymph, player, player, SenseType.Sight, SenseType.None, AbilityAction.Shoot, null, weapon: bow,
+            Verify(nymph, player, player, SenseType.Sight, SenseType.None, AbilityAction.Shoot, manager, null, weapon: bow,
                 expectedMessage: "The water nymph shoots with a shortbow.");
 
-            Verify(nymph, player, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, 11, weapon: arrow,
+            Verify(nymph, player, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11, weapon: arrow,
                 expectedMessage: "An arrow hits you! [11 pts.]");
 
-            Verify(nymph, player, player, SenseType.SoundDistant, SenseType.None, AbilityAction.Shoot, null,
+            Verify(nymph, player, player, SenseType.SoundDistant, SenseType.None, AbilityAction.Shoot, manager, null,
                 weapon: bow,
                 expectedMessage: "Something shoots with something.");
 
-            Verify(nymph, player, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, null, weapon: arrow,
+            Verify(nymph, player, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, null, weapon: arrow,
                 expectedMessage: "An arrow misses you.");
 
-            Verify(player, blob, player, SenseType.Sight, SenseType.None, AbilityAction.Shoot, null, weapon: bow,
+            Verify(player, blob, player, SenseType.Sight, SenseType.None, AbilityAction.Shoot, manager, null, weapon: bow,
                 expectedMessage: "You shoot with the shortbow.");
 
-            Verify(player, blob, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, 11, weapon: arrow,
+            Verify(player, blob, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11, weapon: arrow,
                 expectedMessage: "An arrow hits the acid blob. (11 pts.)");
 
-            Verify(nymph, blob, player, SenseType.Sound, SenseType.None, AbilityAction.Shoot, null, weapon: bow,
+            Verify(nymph, blob, player, SenseType.Sound, SenseType.None, AbilityAction.Shoot, manager, null, weapon: bow,
                 expectedMessage: "You hear a noise.");
 
-            Verify(nymph, blob, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, 2, weapon: arrow,
+            Verify(nymph, blob, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 2, weapon: arrow,
                 expectedMessage: "An arrow hits the acid blob. (2 pts.)");
 
             var throwingKnife = ItemData.ThrowingKnife.Instantiate(player.Manager).Referenced;
 
-            Verify(nymph, player, player, SenseType.Sound, SenseType.None, AbilityAction.Throw, null,
+            Verify(nymph, player, player, SenseType.Sound, SenseType.None, AbilityAction.Throw, manager, null,
                 weapon: throwingKnife,
                 expectedMessage: "Something throws something.");
 
-            Verify(nymph, player, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, 11, weapon: throwingKnife,
+            Verify(nymph, player, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11, weapon: throwingKnife,
                 expectedMessage: "A throwing knife hits you! [11 pts.]");
 
-            Verify(player, null, player, SenseType.Sight, SenseType.None, AbilityAction.Throw, null,
+            Verify(player, null, player, SenseType.Sight, SenseType.None, AbilityAction.Throw, manager, null,
                 weapon: throwingKnife,
                 expectedMessage: "You throw a throwing knife.");
 
-            Verify(player, blob, player, SenseType.None, SenseType.Sound, AbilityAction.Hit, null,
+            Verify(player, blob, player, SenseType.None, SenseType.Sound, AbilityAction.Hit, manager, null,
                 weapon: throwingKnife,
                 expectedMessage: "A throwing knife misses something.");
 
-            Verify(player, null, player, SenseType.None, SenseType.None, AbilityAction.Hit, null, weapon: throwingKnife,
+            Verify(player, null, player, SenseType.None, SenseType.None, AbilityAction.Hit, manager, null, weapon: throwingKnife,
                 expectedMessage: null);
 
-            Verify(nymph, blob, player, SenseType.Sound, SenseType.None, AbilityAction.Throw, null,
+            Verify(nymph, blob, player, SenseType.Sound, SenseType.None, AbilityAction.Throw, manager, null,
                 weapon: throwingKnife,
                 expectedMessage: "You hear a noise.");
 
-            Verify(nymph, blob, player, SenseType.None, SenseType.SoundDistant, AbilityAction.Hit, 2,
+            Verify(nymph, blob, player, SenseType.None, SenseType.SoundDistant, AbilityAction.Hit, manager, 2,
                 weapon: throwingKnife,
                 expectedMessage: "You hear a distant noise.");
         }
@@ -141,16 +148,16 @@ namespace UnicornHack.Services.English
             SenseType attackerSensed,
             SenseType victimSensed,
             AbilityAction abilityAction,
+            GameManager manager,
             int? damage,
             GameEntity weapon = null,
             string expectedMessage = "")
         {
-            var languageService = CreateLanguageService();
+            var languageService = manager.Game.Services.Language;
 
             var appliedEffects = new List<GameEntity>();
             if (damage.HasValue)
             {
-                var manager = sensor.Manager;
                 using (var damageEffectEntity = manager.CreateEntity())
                 {
                     var entity = damageEffectEntity.Referenced;
@@ -197,8 +204,8 @@ namespace UnicornHack.Services.English
             var level = TestHelper.BuildLevel();
             var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
             var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
-
-            var languageService = CreateLanguageService();
+            var manager = level.Entity.Manager;
+            var languageService = manager.Game.Services.Language;
 
             Assert.Equal("The acid blob dies.",
                 languageService.GetString(new DeathEvent(player, blob, SenseType.Sight)));
@@ -214,8 +221,8 @@ namespace UnicornHack.Services.English
             var armor = ItemData.MailArmor.Instantiate(level.Entity.Manager).Referenced;
             var nymph = CreatureData.WaterNymph.Instantiate(level, new Point(0, 1));
             var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
-
-            var languageService = CreateLanguageService();
+            var manager = level.Entity.Manager;
+            var languageService = manager.Game.Services.Language;
 
             Assert.Equal("The water nymph equips something on the torso.",
                 languageService.GetString(new ItemEquipmentEvent(
@@ -241,8 +248,8 @@ namespace UnicornHack.Services.English
             var armor = ItemData.MailArmor.Instantiate(level.Entity.Manager).Referenced;
             var nymph = CreatureData.WaterNymph.Instantiate(level, new Point(0, 1));
             var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
-
-            var languageService = CreateLanguageService();
+            var manager = level.Entity.Manager;
+            var languageService = manager.Game.Services.Language;
 
             Assert.Equal("The water nymph unequips something.", languageService.GetString(new ItemEquipmentEvent(
                 player, nymph, armor, SenseType.Sight, SenseType.Sound, EquipmentSlot.None)));
@@ -267,8 +274,8 @@ namespace UnicornHack.Services.English
             var potion = ItemData.PotionOfHealing.Instantiate(level.Entity.Manager).Referenced;
             var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
             var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
-
-            var languageService = CreateLanguageService();
+            var manager = level.Entity.Manager;
+            var languageService = manager.Game.Services.Language;
 
             Assert.Equal("The acid blob drinks a potion of healing.", languageService.GetString(new ItemActivationEvent(
                 player, potion, blob, blob, null, SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Sound,
@@ -287,8 +294,8 @@ namespace UnicornHack.Services.English
             var coins = ItemData.GoldCoin.Instantiate(level.Entity.Manager).Referenced;
             var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
             var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
-
-            var languageService = CreateLanguageService();
+            var manager = level.Entity.Manager;
+            var languageService = manager.Game.Services.Language;
 
             Assert.Equal("The acid blob picks up 11 gold coins.", languageService.GetString(new ItemPickUpEvent(
                 player, blob, coins, 11, SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Sound)));
@@ -304,8 +311,8 @@ namespace UnicornHack.Services.English
             var coins = ItemData.GoldCoin.Instantiate(level.Entity.Manager).Referenced;
             var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
             var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
-
-            var languageService = CreateLanguageService();
+            var manager = level.Entity.Manager;
+            var languageService = manager.Game.Services.Language;
 
             Assert.Equal("The acid blob drops 11 gold coins.", languageService.GetString(new ItemDropEvent(
                 player, blob, coins, 11, SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Sound)));
@@ -315,11 +322,30 @@ namespace UnicornHack.Services.English
         }
 
         [Fact]
+        public void LeveledUpEvent()
+        {
+            var level = TestHelper.BuildLevel();
+            var player1 = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var player2 = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, level.Entity, new Point(0, 1));
+            var manager = level.Entity.Manager;
+            var languageService = manager.Game.Services.Language;
+
+            Assert.Equal("You level up! You gain 2 SP 1 TP 0 MP.",
+                languageService.GetString(new LeveledUpEvent(
+                    player1, player1, manager.RacesToBeingRelationship[player1.Id].Single().Value.Race, 2, 1, 0)));
+
+            Assert.Equal("Cudley levels up! She gains 3 SP 2 TP 1 MP.",
+                languageService.GetString(new LeveledUpEvent(
+                    player1, player2, manager.RacesToBeingRelationship[player2.Id].Single().Value.Race, 3, 2, 1)));
+        }
+
+        [Fact]
         public void Welcome()
         {
             var level = TestHelper.BuildLevel();
             var player = PlayerRace.InstantiatePlayer("Conan the Barbarian", Sex.Male, level.Entity, new Point(0, 0));
-            var languageService = CreateLanguageService();
+            var manager = level.Entity.Manager;
+            var languageService = manager.Game.Services.Language;
 
             var message = languageService.Welcome(player);
 

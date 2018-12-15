@@ -50,7 +50,9 @@ namespace UnicornHack.Data.Players
                         }
                     }
                 }
-            }
+            },
+            SkillPointRate = 3,
+            TraitPointRate = 3
         };
     }
 }

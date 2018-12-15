@@ -217,6 +217,11 @@ namespace UnicornHack.Systems.Senses
             {
                 sense |= SenseType.Telepathy | SenseType.Touch;
             }
+            else if (sensor.HasComponent(EntityComponent.Player)
+                 && target.HasComponent(EntityComponent.Player))
+            {
+                sense |= SenseType.Telepathy;
+            }
 
             return sense | CanSense(sensor, target, target.Position.LevelCell);
         }

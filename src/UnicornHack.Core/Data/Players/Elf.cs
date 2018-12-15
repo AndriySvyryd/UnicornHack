@@ -80,7 +80,10 @@ namespace UnicornHack.Data.Players
                         }
                     }
                 }
-            }
+            },
+            SkillPointRate = 2,
+            TraitPointRate = 3,
+            MutationPointRate = 1
         };
     }
 }
