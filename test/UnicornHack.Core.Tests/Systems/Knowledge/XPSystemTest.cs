@@ -51,7 +51,7 @@ namespace UnicornHack.Systems.Knowledge
 
             Assert.Equal(2, player.Being.ExperiencePoints);
 
-            manager.LivingSystem.ChangeCurrentHP(nymph.Being, -nymph.Being.HitPoints);
+            nymph.Being.HitPoints = 0;
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(302, player.Being.ExperiencePoints);
@@ -108,12 +108,19 @@ namespace UnicornHack.Systems.Knowledge
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(4, manager.XPSystem.GetXPLevel(playerEntity, manager));
+            Assert.Equal(16, manager.AbilitiesToAffectableRelationship[playerEntity.Id].Count());
             Assert.Equal(2, humanEntity.Race.Level);
             Assert.Equal(2, elfEntity.Race.Level);
             Assert.Equal(5, player.SkillPoints);
             Assert.Equal(6, player.TraitPoints);
             Assert.Equal(1, player.MutationPoints);
             Assert.Equal(4500, player.NextLevelXP);
+
+            manager.XPSystem.AddPlayerXP(player.NextLevelXP, manager);
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(3, humanEntity.Race.Level);
+            Assert.Equal(17, manager.AbilitiesToAffectableRelationship[playerEntity.Id].Count());
 
             var inhumanityPotion = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single();
             activateItemMessage = manager.ItemUsageSystem.CreateActivateItemMessage(manager);
@@ -131,13 +138,13 @@ namespace UnicornHack.Systems.Knowledge
             Assert.Equal(2, player.SkillPoints);
             Assert.Equal(3, player.TraitPoints);
             Assert.Equal(1, player.MutationPoints);
-            Assert.Equal(2000, player.NextLevelXP);
+            Assert.Equal(3500, player.NextLevelXP);
 
             manager.XPSystem.AddPlayerXP(player.NextLevelXP, manager);
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(3, manager.XPSystem.GetXPLevel(playerEntity, manager));
-            Assert.Equal(1000, player.NextLevelXP);
+            Assert.Equal(2000, player.NextLevelXP);
         }
     }
 }

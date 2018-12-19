@@ -62,9 +62,9 @@ namespace UnicornHack.Systems.Effects
                     case EffectType.AddAbility:
                         using (var abilityAddedReference = ApplyEffect(effectComponent, appliedEffects, manager))
                         {
-                            effect.Ability.AddToAppliedEffect(
-                                abilityAddedReference.Referenced, message.TargetEntity.Id);
+                            var ability = effect.Ability.AddToEffect(abilityAddedReference.Referenced);
 
+                            ability.OwnerId = message.TargetEntity.Id;
                             abilityAddedReference.Referenced.Effect.AffectedEntityId = message.TargetEntity.Id;
                         }
 
@@ -427,11 +427,11 @@ namespace UnicornHack.Systems.Effects
                         effectEntity.RemoveComponent(EntityComponent.Race);
                         if (manager.RacesToBeingRelationship[targetEntity.Id].Count == 0)
                         {
-                            var combatComponent = targetEntity.Being;
-                            if (combatComponent != null)
+                            var being = targetEntity.Being;
+                            if (being != null)
                             {
                                 // TODO: Add death cause
-                                manager.LivingSystem.ChangeCurrentHP(combatComponent, -1 * combatComponent.HitPoints);
+                                being.HitPoints = 0;
                             }
                         }
                     }
@@ -450,7 +450,7 @@ namespace UnicornHack.Systems.Effects
                     if (state == State.Added)
                     {
                         var being = targetEntity.Being;
-                        manager.LivingSystem.ChangeCurrentHP(being, -appliedEffectComponent.Amount.Value);
+                        being.HitPoints -= appliedEffectComponent.Amount.Value;
                     }
 
                     break;
@@ -458,7 +458,7 @@ namespace UnicornHack.Systems.Effects
                     if (state == State.Added)
                     {
                         var being = targetEntity.Being;
-                        manager.LivingSystem.ChangeCurrentHP(being, appliedEffectComponent.Amount.Value);
+                        being.HitPoints += appliedEffectComponent.Amount.Value;
                     }
 
                     break;

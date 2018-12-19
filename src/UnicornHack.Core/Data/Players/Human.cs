@@ -49,6 +49,33 @@ namespace UnicornHack.Data.Players
                             Function = ValueCombinationFunction.MeanRoundUp
                         }
                     }
+                },
+                new Ability
+                {
+                    Name = "Surge of Luck ability",
+                    Activation = ActivationType.WhileAboveLevel,
+                    ActivationCondition = 3,
+                    Effects = new HashSet<Effect>
+                    {
+                        new AddAbility
+                        {
+                            Ability = new Ability
+                            {
+                                Name = "Surge of Luck",
+                                Activation = ActivationType.WhileToggled,
+                                EnergyPointCost = 50,
+                                Effects =  new HashSet<Effect>
+                                {
+                                    new ChangeProperty<int>
+                                    {
+                                        PropertyName = "HitPointMaximum",
+                                        Value = 25,
+                                        Function = ValueCombinationFunction.Sum
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             },
             SkillPointRate = 3,

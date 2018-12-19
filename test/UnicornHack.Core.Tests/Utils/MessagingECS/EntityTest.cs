@@ -144,13 +144,13 @@ namespace UnicornHack.Utils.MessagingECS
             Assert.Null(entity.Manager);
             Assert.Null(manager.FindEntity(id));
 
-            Assert.Throws<InvalidOperationException>(() => entity.RemoveReference(manager));
-
             using (var entityReference = manager.CreateEntity())
             {
                 Assert.Same(entity, entityReference.Referenced);
                 Assert.NotEqual(id, entityReference.Referenced.Id);
             }
+
+            Assert.Throws<InvalidOperationException>(() => entity.RemoveReference(manager));
         }
 
         [Fact]

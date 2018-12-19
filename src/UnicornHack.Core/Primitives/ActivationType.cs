@@ -10,7 +10,8 @@ namespace UnicornHack.Primitives
         WhileToggled = 1 << 1,
         WhilePossessed = 1 << 2,
         WhileEquipped = 1 << 3,
-        Continuous = Always | WhileToggled | WhilePossessed | WhileEquipped,
+        WhileAboveLevel = 1 << 15,
+        Continuous = Always | WhileToggled | WhilePossessed | WhileEquipped | WhileAboveLevel,
         ManualActivation = 1 << 4,
         Targeted = 1 << 5,
         Slottable = WhileToggled | ManualActivation | Targeted,
@@ -33,7 +34,6 @@ namespace UnicornHack.Primitives
         OnRangedHit = OnPhysicalRangedHit | OnMagicalRangedHit,
         OnHit = OnMeleeHit | OnRangedHit,
         OnDeath = 1 << 14,
-        OnLevelUp = 1 << 15,
         OnDigestion = 1 << 16
     }
 }

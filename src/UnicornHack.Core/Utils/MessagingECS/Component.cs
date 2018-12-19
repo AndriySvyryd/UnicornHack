@@ -88,13 +88,16 @@ namespace UnicornHack.Utils.MessagingECS
         void ITrackable.StartTracking(object tracker)
         {
             Debug.Assert(!_tracked, $"Component {GetType().Name} is already tracked by {tracker}");
+
             _tracked = true;
-            ((IOwnerReferenceable)this).AddReference(tracker);
         }
 
         void ITrackable.StopTracking(object tracker)
         {
+            Debug.Assert(_tracked, $"Component {GetType().Name} is not tracked by {tracker}");
+
             _tracked = false;
+            ((IOwnerReferenceable)this).AddReference(tracker);
             ((IOwnerReferenceable)this).RemoveReference(tracker);
         }
 
@@ -111,26 +114,25 @@ namespace UnicornHack.Utils.MessagingECS
 #if DEBUG
             _owners.Remove(owner);
 #endif
-            if (--_referenceCount > 1)
+            if (--_referenceCount > 0)
             {
                 return;
             }
 
-            switch (_referenceCount)
+            if (_referenceCount == 0)
             {
-                case 1:
-                    if (_tracked)
-                    {
-                       Manager.RemoveFromSecondaryTracker(this);
-                    }
-
-                    break;
-                case 0:
+                if (_tracked)
+                {
+                    Manager.RemoveFromSecondaryTracker(this);
+                }
+                else
+                {
                     Clean();
-
-                    break;
-                default:
-                    throw new InvalidOperationException($"Component {ComponentId} is not referenced by object {owner}");
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException($"Component {ComponentId} is not referenced by object {owner}");
             }
         }
 

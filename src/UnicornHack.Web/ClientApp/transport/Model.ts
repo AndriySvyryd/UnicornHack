@@ -13,6 +13,7 @@ export class Player {
     @observable maxHp: number = 0;
     @observable ep: number = 0;
     @observable maxEp: number = 0;
+    @observable reservedEp: number = 0;
     @observable level: Level = new Level();
     @observable xP: number = 0;
     @observable nextLevelXP: number = 0;
@@ -91,6 +92,7 @@ export class Player {
         currentPlayer.maxHp = compactPlayer[i++];
         currentPlayer.ep = compactPlayer[i++];
         currentPlayer.maxEp = compactPlayer[i++];
+        currentPlayer.reservedEp = compactPlayer[i++];
         return currentPlayer;
     }
 
@@ -134,6 +136,9 @@ export class Player {
                     break;
                 case 13:
                     this.maxEp = compactPlayer[i++];
+                    break;
+                case 14:
+                    this.reservedEp = compactPlayer[i++];
                     break;
                 default:
                     return i - 1;
@@ -695,7 +700,7 @@ export class Ability {
     @observable id: number = -1;
     @observable name: string = '';
     @observable activation: ActivationType = ActivationType.Default;
-    @observable slot: number | undefined;
+    @observable slot: number | null = null;
 
     @action
     static expandToCollection(compactAbility: any[], collection: Map<string, Ability>, parentState: EntityState) {

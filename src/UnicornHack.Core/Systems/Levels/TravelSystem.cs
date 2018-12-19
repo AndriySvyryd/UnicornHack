@@ -90,7 +90,8 @@ namespace UnicornHack.Systems.Levels
                 if (targetLevelEntity.Level.BranchName == "surface")
                 {
                     var being = message.Entity.Being;
-                    manager.LivingSystem.ChangeCurrentHP(being, -1 * being.HitPoints);
+
+                    being.HitPoints = 0;
                     return traveledMessage;
                 }
             }

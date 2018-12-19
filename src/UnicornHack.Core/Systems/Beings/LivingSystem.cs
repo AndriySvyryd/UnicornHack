@@ -23,68 +23,20 @@ namespace UnicornHack.Systems.Beings
         {
             var player = message.Entity.Player;
             var being = message.Entity.Being;
-            var regenerationRate = (float)player.NextLevelXP / (being.HitPointMaximum * 4);
-            var regeneratingXp = message.ExperiencePoints + being.LeftoverRegenerationXP;
-            var hpRegenerated = (int)Math.Floor(regeneratingXp / regenerationRate);
-            being.LeftoverRegenerationXP = regeneratingXp % regenerationRate;
-            ChangeCurrentHP(being, hpRegenerated);
+
+            var hpRegenerationRate = (float)player.NextLevelXP / (being.HitPointMaximum * 4);
+            var hpRegeneratingXp = message.ExperiencePoints + being.LeftoverHPRegenerationXP;
+            var hpRegenerated = (int)Math.Floor(hpRegeneratingXp / hpRegenerationRate);
+            being.LeftoverHPRegenerationXP = hpRegeneratingXp % hpRegenerationRate;
+            being.HitPoints += hpRegenerated;
+
+            var epRegenerationRate = (float)player.NextLevelXP / (being.EnergyPointMaximum * 4);
+            var epRegeneratingXp = message.ExperiencePoints + being.LeftoverEPRegenerationXP;
+            var epRegenerated = (int)Math.Floor(epRegeneratingXp / epRegenerationRate);
+            being.LeftoverEPRegenerationXP = epRegeneratingXp % epRegenerationRate;
+            being.EnergyPoints += epRegenerated;
+
             return MessageProcessingResult.ContinueProcessing;
-        }
-
-        public bool ChangeCurrentHP(BeingComponent being, int hp)
-        {
-            if (being.HitPoints <= 0)
-            {
-                return false;
-            }
-
-            var newHP = being.HitPoints + hp;
-            if (newHP > being.HitPointMaximum)
-            {
-                newHP = being.HitPointMaximum;
-            }
-
-            being.HitPoints = newHP;
-
-            if (being.HitPoints <= 0)
-            {
-                var entity = being.Entity;
-                var ai = entity.AI;
-                if (ai != null)
-                {
-                    ai.NextActionTick = null;
-                }
-
-                // TODO: Reset NextActionTick for player
-
-                EnqueueDiedMessage(entity, entity.Manager);
-                return false;
-            }
-
-            return true;
-        }
-
-        public void ChangeCurrentEP(BeingComponent being, int ep)
-        {
-            var newEP = being.EnergyPoints + ep;
-            if (newEP < 0)
-            {
-                newEP = 0;
-            }
-
-            if (being.EnergyPoints > being.EnergyPointMaximum)
-            {
-                newEP = being.EnergyPointMaximum;
-            }
-
-            being.EnergyPoints = newEP;
-        }
-
-        private void EnqueueDiedMessage(GameEntity entity, GameManager manager)
-        {
-            var died = manager.Queue.CreateMessage<DiedMessage>(DiedMessageName);
-            died.BeingEntity = entity;
-            manager.Enqueue(died);
         }
 
         public MessageProcessingResult Process(
@@ -93,14 +45,25 @@ namespace UnicornHack.Systems.Beings
             var being = message.Entity.Being;
             switch (message.ChangedPropertyName)
             {
-                case nameof(BeingComponent.HitPointMaximum):
-                    being.HitPoints = message.OldValue == 0
-                        ? message.NewValue
-                        : being.HitPoints * message.NewValue / message.OldValue;
-
-                    if (message.OldValue == 0
-                        && being.IsAlive)
+                case nameof(BeingComponent.HitPoints):
+                    if (message.OldValue > 0
+                        && being.HitPoints <= 0)
                     {
+                        EnqueueDiedMessage(message.Entity, manager);
+                    }
+
+                    break;
+                case nameof(BeingComponent.HitPointMaximum):
+                    if (being.HitPoints > message.NewValue)
+                    {
+                        being.HitPoints = message.NewValue;
+                    }
+
+                    if (message.OldValue == 0)
+                    {
+                        being.HitPoints = message.NewValue;
+
+                        // TODO: Move to AI/Player system
                         // Initialize NextActionTick here so that actors don't try to act before they have HP
                         var ai = message.Entity.AI;
                         if (ai != null)
@@ -122,10 +85,15 @@ namespace UnicornHack.Systems.Beings
 
                     break;
                 case nameof(BeingComponent.EnergyPointMaximum):
-                    being.EnergyPoints = message.OldValue == 0
-                        ? message.NewValue
-                        : being.EnergyPoints * message.NewValue / message.OldValue;
+                    if (being.EnergyPoints > message.NewValue)
+                    {
+                        being.EnergyPoints = message.NewValue;
+                    }
 
+                    if (message.OldValue == 0)
+                    {
+                        being.EnergyPoints = message.NewValue;
+                    }
                     break;
                 case nameof(BeingComponent.Constitution):
                     var hpEffect = GetAttributeEffects(being, manager)
@@ -155,6 +123,13 @@ namespace UnicornHack.Systems.Beings
             }
 
             return MessageProcessingResult.ContinueProcessing;
+        }
+
+        private void EnqueueDiedMessage(GameEntity entity, GameManager manager)
+        {
+            var died = manager.Queue.CreateMessage<DiedMessage>(DiedMessageName);
+            died.BeingEntity = entity;
+            manager.Enqueue(died);
         }
 
         private IEnumerable<GameEntity> GetAttributeEffects(BeingComponent being, GameManager manager)

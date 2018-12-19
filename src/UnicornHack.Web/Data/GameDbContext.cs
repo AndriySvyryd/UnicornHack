@@ -206,7 +206,6 @@ namespace UnicornHack.Data
             {
                 eb.Ignore(e => e.Manager);
                 eb.Property("_referenceCount");
-                eb.Property("_tracked");
                 eb.HasKey(e => new
                 {
                     e.GameId,

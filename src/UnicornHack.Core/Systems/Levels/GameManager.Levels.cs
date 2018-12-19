@@ -47,7 +47,7 @@ namespace UnicornHack
 
             TravelSystem = new TravelSystem();
             queue.Add<TravelMessage>(TravelSystem, TravelSystem.TravelMessageName, 0);
-            queue.Add<DiedMessage>(TravelSystem, LivingSystem.DiedMessageName, 2);
+            queue.Add<DiedMessage>(TravelSystem, LivingSystem.DiedMessageName, 6);
         }
     }
 }

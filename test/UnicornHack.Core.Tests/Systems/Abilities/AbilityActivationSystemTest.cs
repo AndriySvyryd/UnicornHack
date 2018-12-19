@@ -100,6 +100,33 @@ namespace UnicornHack.Systems.Abilities
 
             Assert.Equal(0, messageCount);
         }
+        
+        [Fact]
+        public void Toggleable_abilities_reserve_energy_points()
+        {
+            var level = TestHelper.BuildLevel(".");
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var player = playerEntity.Player;
+            var manager = playerEntity.Manager;
+
+            manager.Queue.ProcessQueue(manager);
+
+            manager.XPSystem.AddPlayerXP(player.NextLevelXP * 3, manager);
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(0, playerEntity.Being.ReservedEnergyPoints);
+            var toggledAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
+                .Single(a => (a.Ability.Activation & ActivationType.WhileToggled) != 0);
+            var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            setSlotMessage.AbilityEntity = toggledAbility;
+            setSlotMessage.Slot = 1;
+
+            manager.Enqueue(setSlotMessage);
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.True(toggledAbility.Ability.IsActive);
+            Assert.Equal(50, playerEntity.Being.ReservedEnergyPoints);
+        }
 
         private class AbilityActivatedListener : IGameSystem<AbilityActivatedMessage>
         {

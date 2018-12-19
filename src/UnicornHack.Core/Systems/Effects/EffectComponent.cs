@@ -104,6 +104,11 @@ namespace UnicornHack.Systems.Effects
                 clone.PropertyName = PropertyName;
                 clone.ContainingAbilityId = abilityEntity.Id;
 
+                if (EffectType == EffectType.AddAbility)
+                {
+                    Entity.Ability.AddToEffect(entityReference.Referenced);
+                }
+
                 entityReference.Referenced.Effect = clone;
                 return clone;
             }

@@ -75,8 +75,8 @@ namespace UnicornHack.Systems.Abilities
                     var oldSlot = ability.Slot;
                     ability.Slot = message.Slot;
 
-                    if ((ability.Activation & ActivationType.WhileToggled) != 0
-                        && oldSlot == null)
+                    if (oldSlot == null
+                        && (ability.Activation & ActivationType.WhileToggled) != 0)
                     {
                         var activationMessage = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);
                         activationMessage.AbilityEntity = message.AbilityEntity;

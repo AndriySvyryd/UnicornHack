@@ -85,23 +85,30 @@ namespace UnicornHack.Systems.Abilities
             targetEffectsMessage.SuccessfulActivation = true;
 
             var activator = activateMessage.ActivatorEntity;
-            if ((ability.Activation & ActivationType.ManualActivation) != 0
-                || (ability.Activation & ActivationType.Targeted) != 0)
+            if (ability.EnergyPointCost > 0)
             {
-                if (ability.EnergyPointCost > 0)
+                var activatorBeing = activator.Being;
+                if (activatorBeing.EnergyPoints < ability.EnergyPointCost)
                 {
-                    var activatorCombatComponent = activator.Being;
-                    if (activatorCombatComponent.EnergyPoints < ability.EnergyPointCost)
-                    {
-                        targetEffectsMessage.SuccessfulActivation = false;
-                        return targetEffectsMessage;
-                    }
+                    targetEffectsMessage.SuccessfulActivation = false;
+                    return targetEffectsMessage;
+                }
 
-                    if (!pretend)
+                if (!pretend)
+                {
+                    if ((ability.Activation & ActivationType.Continuous) != 0)
                     {
-                        manager.LivingSystem.ChangeCurrentEP(activatorCombatComponent, -1 * ability.EnergyPointCost);
+                        activatorBeing.ReservedEnergyPoints += ability.EnergyPointCost;
+                    }
+                    else
+                    {
+                        activatorBeing.EnergyPoints -= ability.EnergyPointCost;
                     }
                 }
+            }
+
+            if ((ability.Activation & ActivationType.Targeted) != 0)
+            {
 
                 // TODO: Specify correct delay in the abilities
                 targetEffectsMessage.Delay = ability.Delay == 0 ? TimeSystem.DefaultActionDelay : ability.Delay;
@@ -133,6 +140,13 @@ namespace UnicornHack.Systems.Abilities
                 }
             }
 
+            if ((ability.Activation & ActivationType.Continuous) != 0
+                && ability.IsActive)
+            {
+                targetEffectsMessage.SuccessfulActivation = false;
+                return targetEffectsMessage;
+            }
+
             if (pretend)
             {
                 return targetEffectsMessage;
@@ -142,7 +156,6 @@ namespace UnicornHack.Systems.Abilities
 
             if ((ability.Activation & ActivationType.Continuous) != 0)
             {
-                Debug.Assert(!ability.IsActive);
                 ability.IsActive = true;
             }
 
@@ -453,10 +466,52 @@ namespace UnicornHack.Systems.Abilities
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        public MessageProcessingResult Process(LeveledUpMessage message, GameManager state)
+        public MessageProcessingResult Process(LeveledUpMessage message, GameManager manager)
         {
-            // TODO: Activate abilities
+            foreach (var abilityEntity in GetTriggeredAbilities(message.Entity.Id, ActivationType.WhileAboveLevel, manager))
+            {
+                var ability = abilityEntity.Ability;
+                if (ability.IsActive)
+                {
+                    continue;
+                }
+
+                var newLevel = GetSourceRace(abilityEntity)?.Level ?? manager.XPSystem.GetXPLevel(message.Entity, manager);
+                if (newLevel < ability.ActivationCondition)
+                {
+                    continue;
+                }
+
+                var activation = CreateActivateAbilityMessage(manager);
+                activation.ActivatorEntity = ability.OwnerEntity;
+                activation.TargetEntity = ability.OwnerEntity;
+                activation.AbilityEntity = abilityEntity;
+                manager.Enqueue(activation);
+            }
+
             return MessageProcessingResult.ContinueProcessing;
+        }
+
+        private RaceComponent GetSourceRace(GameEntity abilityEntity)
+        {
+            var manager = abilityEntity.Manager;
+
+            while (true)
+            {
+                var race = abilityEntity.Race;
+                if (race != null)
+                {
+                    return race;
+                }
+
+                var effect = abilityEntity.Effect;
+                if (effect == null)
+                {
+                    return null;
+                }
+
+                abilityEntity = manager.FindEntity(effect.SourceAbilityId);
+            }
         }
 
         public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager manager)
@@ -816,6 +871,12 @@ namespace UnicornHack.Systems.Abilities
             Debug.Assert(ability.IsActive);
 
             ability.IsActive = false;
+
+            if (ability.EnergyPointCost > 0
+                && (ability.Activation & ActivationType.Continuous) != 0)
+            {
+                ability.OwnerEntity.Being.ReservedEnergyPoints -= ability.EnergyPointCost;
+            }
 
             foreach (var appliedEffect in manager.AppliedEffectsToSourceAbilityRelationship[ability.EntityId].ToList())
             {

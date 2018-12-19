@@ -9,6 +9,7 @@ namespace UnicornHack.Systems.Beings
         private Sex _sex;
         private int _energyPointMaximum;
         private int _energyPoints;
+        private int _reservedEnergyPoints;
         private int _hitPointMaximum;
         private int _hitPoints;
         private int _agility;
@@ -39,7 +40,8 @@ namespace UnicornHack.Systems.Beings
         private ExtremityType _lowerExtremeties;
         private ExtremityType _backExtremeties;
         private int _experiencePoints;
-        private float _leftoverRegenerationXP;
+        private float _leftoverHPRegenerationXP;
+        private float _leftoverEPRegenerationXP;
         private int? _primaryNaturalWeaponId;
         private int? _secondaryNaturalWeaponId;
         private int _abilitySlotCount;
@@ -63,7 +65,48 @@ namespace UnicornHack.Systems.Beings
         public int EnergyPoints
         {
             get => _energyPoints;
-            set => SetWithNotify(value, ref _energyPoints);
+            set
+            {
+                var newEP = value;
+                if (newEP < 0)
+                {
+                    newEP = 0;
+                }
+
+                var maxEP = EnergyPointMaximum - ReservedEnergyPoints;
+                if (newEP > maxEP)
+                {
+                    newEP = maxEP;
+                }
+
+                SetWithNotify(newEP, ref _energyPoints);
+            }
+        }
+
+        public int ReservedEnergyPoints
+        {
+            get => _reservedEnergyPoints;
+            set
+            {
+                var newReservedEP = value;
+                if (newReservedEP < 0)
+                {
+                    newReservedEP = 0;
+                }
+
+                if (newReservedEP > EnergyPointMaximum)
+                {
+                    newReservedEP = EnergyPointMaximum;
+                }
+
+                SetWithNotify(newReservedEP, ref _reservedEnergyPoints);
+
+                var maxEP = EnergyPointMaximum - newReservedEP;
+                if (EnergyPoints > maxEP)
+                {
+                    EnergyPoints = maxEP;
+                }
+            }
         }
 
         [Property(IsCalculated = true)]
@@ -76,7 +119,16 @@ namespace UnicornHack.Systems.Beings
         public int HitPoints
         {
             get => _hitPoints;
-            set => SetWithNotify(value, ref _hitPoints);
+            set
+            {
+                var newHP = value;
+                if (newHP > HitPointMaximum)
+                {
+                    newHP = HitPointMaximum;
+                }
+
+                SetWithNotify(newHP, ref _hitPoints);
+            }
         }
 
         [Property(IsCalculated = true, DefaultValue = 10, MinValue = 0)]
@@ -274,10 +326,16 @@ namespace UnicornHack.Systems.Beings
             set => SetWithNotify(value, ref _experiencePoints);
         }
 
-        public float LeftoverRegenerationXP
+        public float LeftoverHPRegenerationXP
         {
-            get => _leftoverRegenerationXP;
-            set => SetWithNotify(value, ref _leftoverRegenerationXP);
+            get => _leftoverHPRegenerationXP;
+            set => SetWithNotify(value, ref _leftoverHPRegenerationXP);
+        }
+
+        public float LeftoverEPRegenerationXP
+        {
+            get => _leftoverEPRegenerationXP;
+            set => SetWithNotify(value, ref _leftoverEPRegenerationXP);
         }
 
         public int? PrimaryNaturalWeaponId
@@ -337,7 +395,7 @@ namespace UnicornHack.Systems.Beings
             _lowerExtremeties = default;
             _backExtremeties = default;
             _experiencePoints = default;
-            _leftoverRegenerationXP = default;
+            _leftoverHPRegenerationXP = default;
             _primaryNaturalWeaponId = default;
             _secondaryNaturalWeaponId = default;
             _abilitySlotCount = default;

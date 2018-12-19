@@ -11,8 +11,12 @@ export class StatusBar extends React.Component<IStatusBarProps, {}> {
             r => <RaceStatus race={r} isLearning={r === learningRace} key={r.id} />);
         const player = this.props.player;
 
+        var ep = `${player.ep}/${player.maxEp}`;
+        if (player.reservedEp != 0) {
+            ep = `${player.ep}/${player.maxEp - player.reservedEp}(${player.maxEp})`;
+        }
         return (<div className={scss.frame}>
-            {player.name} {racesStatus}HP: {player.hp}/{player.maxHp} EP: {player.ep}/{player.maxEp} XP:{player.xP}/{player.nextLevelXP
+            {player.name} {racesStatus}HP: {player.hp}/{player.maxHp} EP: {ep} XP:{player.xP}/{player.nextLevelXP
             } {this.props.levelName}:{this.props.levelDepth} AUT:{player.nextActionTick / 100}
         </div>);
     }

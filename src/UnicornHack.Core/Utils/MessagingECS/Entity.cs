@@ -2,10 +2,12 @@
 using System.Diagnostics;
 using UnicornHack.Utils.Caching;
 using System.Collections.Generic;
+using System.Text;
 
 namespace UnicornHack.Utils.MessagingECS
 {
     // TODO: Perf: Separate into BaseEntity and ArrayEntity and allow storing components directly into properties
+    [DebuggerDisplay("{ToDebugString(),nq}")]
     public class Entity : NotificationEntity, IOwnerReferenceable, ITrackable, IPoolable
     {
         private Component[] _components;
@@ -212,32 +214,30 @@ namespace UnicornHack.Utils.MessagingECS
 #if DEBUG
             _owners.Remove(owner);
 #endif
-            var referenceCount = --_referenceCount;
-            if (referenceCount > 1)
+            if (--_referenceCount > 0)
             {
                 return;
             }
 
-            switch (referenceCount)
+            if (_referenceCount == 0)
             {
-                case 1:
-                    if (_tracked)
-                    {
-                        ForEachComponent(this, (e, _, c) => e.RemoveComponent(c));
-                        Manager.RemoveFromSecondaryTracker(this);
-                    }
-
-                    break;
-                case 0:
-                    ForEachComponent(this, (e, _, c) => e.RemoveComponent(c));
+                ForEachComponent(this, (e, _, c) => e.RemoveComponent(c));
+                if (_tracked)
+                {
+                    Manager.RemoveFromSecondaryTracker(this);
+                }
+                else
+                {
                     Manager.RemoveEntity(this);
 
                     _id = 0;
                     Manager = null;
                     _pool?.Return(this);
-                    break;
-                default:
-                    throw new InvalidOperationException($"Entity {Id} is not referenced by object {owner}");
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException($"Entity {Id} is not referenced by object {owner}");
             }
         }
 
@@ -245,14 +245,31 @@ namespace UnicornHack.Utils.MessagingECS
 
         void ITrackable.StartTracking(object tracker)
         {
+            Debug.Assert(!_tracked, $"Entity {Id} is already tracked by {tracker}");
+
             _tracked = true;
-            ((IOwnerReferenceable)this).AddReference(tracker);
         }
 
         void ITrackable.StopTracking(object tracker)
         {
+            Debug.Assert(_tracked, $"Entity {Id} is not tracked by {tracker}");
+
             _tracked = false;
+            ((IOwnerReferenceable)this).AddReference(tracker);
             RemoveReference(tracker);
+        }
+
+        private string ToDebugString()
+        {
+            var stringBuilder = new StringBuilder("Entity: ");
+            stringBuilder.Append(Id);
+            ForEachComponent(stringBuilder, (sb, componentId, _) =>
+            {
+                sb.Append(" ");
+                sb.Append(GetComponentPropertyName(componentId) ?? componentId.ToString());
+            });
+
+            return stringBuilder.ToString();
         }
     }
 }

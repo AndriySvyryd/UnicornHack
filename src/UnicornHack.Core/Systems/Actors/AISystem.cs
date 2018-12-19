@@ -2,10 +2,10 @@
 using System.Linq;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
-using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Actors
@@ -17,7 +17,8 @@ namespace UnicornHack.Systems.Actors
         IGameSystem<ItemEquippedMessage>,
         IGameSystem<ItemActivatedMessage>,
         IGameSystem<ItemMovedMessage>,
-        IGameSystem<EntityAddedMessage<GameEntity>>
+        IGameSystem<EntityAddedMessage<GameEntity>>,
+        IGameSystem<DiedMessage>
     {
         public const string PerformAIActionMessageName = "PerformAIAction";
 
@@ -253,6 +254,17 @@ namespace UnicornHack.Systems.Actors
                 {
                     ai.NextActionTick += message.Delay;
                 }
+            }
+
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        public MessageProcessingResult Process(DiedMessage message, GameManager manager)
+        {
+            var ai = message.BeingEntity.AI;
+            if (ai != null)
+            {
+                ai.NextActionTick = null;
             }
 
             return MessageProcessingResult.ContinueProcessing;

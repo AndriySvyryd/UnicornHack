@@ -81,6 +81,7 @@ namespace UnicornHack.Hubs
                 properties.Add(being.HitPointMaximum);
                 properties.Add(being.EnergyPoints);
                 properties.Add(being.EnergyPointMaximum);
+                properties.Add(being.ReservedEnergyPoints);
                 return properties;
             }
 
@@ -204,6 +205,14 @@ namespace UnicornHack.Hubs
                 {
                     properties.Add(i);
                     properties.Add(being.EnergyPointMaximum);
+                }
+
+                i++;
+                var reservedEnergyPoints = beingEntry.Property(nameof(BeingComponent.ReservedEnergyPoints));
+                if (reservedEnergyPoints.IsModified)
+                {
+                    properties.Add(i);
+                    properties.Add(being.ReservedEnergyPoints);
                 }
             }
 

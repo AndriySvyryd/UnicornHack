@@ -450,7 +450,14 @@ namespace UnicornHack.Generation
                 being.Sex = Sex ?? (level.GenerationRandom.Roll(1, 2) > 1
                                 ? Primitives.Sex.Female
                                 : Primitives.Sex.Male);
-                being.ExperiencePoints = XP;
+                if (XP == 0)
+                {
+                    being.ExperiencePoints = InitialLevel * 100;
+                }
+                else
+                {
+                    being.ExperiencePoints = XP;
+                }
 
                 creatureEntity.Being = being;
 

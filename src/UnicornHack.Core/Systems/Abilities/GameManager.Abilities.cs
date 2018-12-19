@@ -64,7 +64,7 @@ namespace UnicornHack
             queue.Add<ActivateAbilityMessage>(AbilityActivationSystem, AbilityActivationSystem.ActivateAbilityMessageName, 0);
             queue.Add<ItemMovedMessage>(AbilityActivationSystem, ItemMovingSystem.ItemMovedMessageName, 4);
             queue.Add<ItemEquippedMessage>(AbilityActivationSystem, ItemUsageSystem.ItemEquippedMessageName, 3);
-            queue.Add<DiedMessage>(AbilityActivationSystem, LivingSystem.DiedMessageName, 3);
+            queue.Add<DiedMessage>(AbilityActivationSystem, LivingSystem.DiedMessageName, 2);
             queue.Add<LeveledUpMessage>(AbilityActivationSystem, XPSystem.LeveledUpMessageName, 0);
             queue.Add<EntityAddedMessage<GameEntity>>(
                 AbilityActivationSystem, AbilitiesToAffectableRelationship.GetEntityAddedMessageName(), 0);

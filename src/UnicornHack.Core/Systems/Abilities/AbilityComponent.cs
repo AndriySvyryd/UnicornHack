@@ -10,10 +10,11 @@ namespace UnicornHack.Systems.Abilities
         private GameEntity _ownerEntity;
         private int? _ownerId;
         private ActivationType _activation;
+        private int? _activationCondition;
+        private ActivationType _trigger;
         private TargetingType _targetingType;
         private TargetingAngle _targetingAngle;
         private AbilityAction _action;
-        private ActivationType _trigger;
         private AbilitySuccessCondition _successCondition;
         private int _timeout;
         private int? _timeoutTick;
@@ -46,6 +47,12 @@ namespace UnicornHack.Systems.Abilities
         {
             get => _activation;
             set => SetWithNotify(value, ref _activation);
+        }
+
+        public int? ActivationCondition
+        {
+            get => _activationCondition;
+            set => SetWithNotify(value, ref _activationCondition);
         }
 
         public TargetingType TargetingType
@@ -135,12 +142,13 @@ namespace UnicornHack.Systems.Abilities
             }
         }
 
-        public void AddToAppliedEffect(GameEntity appliedEffectEntity, int affectedEntityId)
+        public AbilityComponent AddToEffect(GameEntity appliedEffectEntity)
         {
             var manager = appliedEffectEntity.Manager;
             var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
             ability.Name = Name;
             ability.Activation = Activation;
+            ability.ActivationCondition = ActivationCondition;
             ability.TargetingType = TargetingType;
             ability.TargetingAngle = TargetingAngle;
             ability.Action = Action;
@@ -155,7 +163,7 @@ namespace UnicornHack.Systems.Abilities
                 effectEntity.Effect.AddToAbility(appliedEffectEntity);
             }
 
-            ability.OwnerId = affectedEntityId;
+            return ability;
         }
 
         protected override void Clean()

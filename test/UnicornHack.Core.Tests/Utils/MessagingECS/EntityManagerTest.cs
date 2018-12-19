@@ -47,8 +47,10 @@ namespace UnicornHack.Utils.MessagingECS
                 manager.Process(message, manager);
 
                 Assert.False(entity.HasComponent(EntityComponent.Level));
-                Assert.Null(manager.FindEntity(entity.Id));
+                Assert.NotNull(manager.FindEntity(entity.Id));
             }
+
+            Assert.Null(manager.FindEntity(entity.Id));
         }
     }
 }

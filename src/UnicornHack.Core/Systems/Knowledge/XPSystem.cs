@@ -34,7 +34,7 @@ namespace UnicornHack.Systems.Knowledge
         {
             if (!message.BeingEntity.HasComponent(EntityComponent.Player))
             {
-                AddPlayerXP(GetXPLevel(message.BeingEntity, manager) * 100, manager);
+                AddPlayerXP(message.BeingEntity.Being.ExperiencePoints, manager);
             }
 
             return MessageProcessingResult.ContinueProcessing;

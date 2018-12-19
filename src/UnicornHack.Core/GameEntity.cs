@@ -236,7 +236,9 @@ namespace UnicornHack
         }
 
         // Used for debugging
+#pragma warning disable RCS1213 // Remove unused member declaration.
         private RelationshipsView Relationships => new RelationshipsView(this);
+#pragma warning restore RCS1213 // Remove unused member declaration.
 
         public override void Initialize(int id, int componentCount, IEntityManager manager)
         {

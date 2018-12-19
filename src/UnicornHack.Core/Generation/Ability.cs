@@ -9,6 +9,7 @@ namespace UnicornHack.Generation
     {
         public string Name { get; set; }
         public ActivationType Activation { get; set; }
+        public int? ActivationCondition { get; set; }
         public ActivationType Trigger { get; set; }
         public TargetingType TargetingType { get; set; }
         public TargetingAngle TargetingAngle { get; set; }
@@ -25,6 +26,7 @@ namespace UnicornHack.Generation
             var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
             ability.Name = Name;
             ability.Activation = Activation;
+            ability.ActivationCondition = ActivationCondition;
             ability.Trigger = Trigger;
             ability.TargetingType = TargetingType;
             ability.TargetingAngle = TargetingAngle;

@@ -1,6 +1,7 @@
 ﻿import * as React from 'React';
 import * as scss from '../styles/site.scss'
 import { observer } from 'mobx-react';
+import { coalesce } from '../Util';
 import { Ability } from '../transport/Model';
 import { GameQueryType } from '../transport/GameQueryType';
 import { PlayerAction } from "../transport/PlayerAction";
@@ -10,9 +11,9 @@ import { UIData } from '../transport/UIData';
 export class AbilitySelection extends React.Component<IAbilitySelectionProps, {}> {
     render() {
         var abilities = Array.from(this.props.data.slottableAbilities.values(),
-            i => <AbilitySelectionLine ability={i} slot={this.props.data.abilitySlot || -3} key={i.id} performAction={this.props.performAction} queryGame={this.props.queryGame} />);
+            i => <AbilitySelectionLine ability={i} slot={coalesce(this.props.data.abilitySlot, -3)} key={i.id} performAction={this.props.performAction} queryGame={this.props.queryGame} />);
 
-        abilities.push(<AbilitySelectionLine ability={null} slot={this.props.data.abilitySlot || -3} key={-1} performAction={this.props.performAction} queryGame={this.props.queryGame} />);
+        abilities.push(<AbilitySelectionLine ability={null} slot={coalesce(this.props.data.abilitySlot, -3)} key={-1} performAction={this.props.performAction} queryGame={this.props.queryGame} />);
 
         return <div className={scss.dialogBackground} style={{
             display: this.props.data.abilitySlot === null ? 'none' : 'block'
@@ -43,7 +44,7 @@ export class AbilitySelectionLine extends React.Component<IAbilityLineProps, {}>
             const abilitySlot = this.props.ability.slot;
 
             if (abilitySlot !== null) {
-                name += `[${abilitySlot === -1 ? "D" : abilitySlot}]`;
+                name += `[${abilitySlot === -1 ? "D" : (abilitySlot + 1)}]`;
             }
 
             if (abilitySlot == this.props.slot) {
