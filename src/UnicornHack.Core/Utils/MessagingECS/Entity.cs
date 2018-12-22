@@ -7,7 +7,6 @@ using System.Text;
 namespace UnicornHack.Utils.MessagingECS
 {
     // TODO: Perf: Separate into BaseEntity and ArrayEntity and allow storing components directly into properties
-    [DebuggerDisplay("{ToDebugString(),nq}")]
     public class Entity : NotificationEntity, IOwnerReferenceable, ITrackable, IPoolable
     {
         private Component[] _components;
@@ -259,7 +258,7 @@ namespace UnicornHack.Utils.MessagingECS
             RemoveReference(tracker);
         }
 
-        private string ToDebugString()
+        public override string ToString()
         {
             var stringBuilder = new StringBuilder("Entity: ");
             stringBuilder.Append(Id);

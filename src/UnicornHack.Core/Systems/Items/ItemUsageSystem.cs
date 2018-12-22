@@ -5,12 +5,10 @@ using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Items
 {
-    public class ItemUsageSystem : IGameSystem<EquipItemMessage>, IGameSystem<ActivateItemMessage>
+    public class ItemUsageSystem : IGameSystem<EquipItemMessage>
     {
         public const string EquipItemMessageName = "EquipItem";
         public const string ItemEquippedMessageName = "ItemEquipped";
-        public const string ActivateItemMessageName = "ActivatedItem";
-        public const string ItemActivatedMessageName = "ItemActivated";
 
         public EquipItemMessage CreateEquipItemMessage(GameManager manager)
             => manager.Queue.CreateMessage<EquipItemMessage>(EquipItemMessageName);
@@ -216,75 +214,5 @@ namespace UnicornHack.Systems.Items
         // TODO: Add an index for EquipmentSlot?
         public GameEntity GetEquippedItem(EquipmentSlot slot, GameEntity actor, GameManager manager) =>
             manager.EntityItemsToContainerRelationship[actor.Id].FirstOrDefault(item => item.Item.EquippedSlot == slot);
-
-        public ActivateItemMessage CreateActivateItemMessage(GameManager manager)
-            => manager.Queue.CreateMessage<ActivateItemMessage>(ActivateItemMessageName);
-
-        public bool CanActivateItem(ActivateItemMessage message, GameManager manager)
-        {
-            using (var equipped = TryActivate(message, manager, pretend: true))
-            {
-                return equipped.Successful;
-            }
-        }
-
-        public MessageProcessingResult Process(ActivateItemMessage message, GameManager manager)
-        {
-            var equipped = TryActivate(message, manager);
-
-            manager.Enqueue(equipped);
-
-            return MessageProcessingResult.ContinueProcessing;
-        }
-
-        private ItemActivatedMessage TryActivate(
-            ActivateItemMessage message, GameManager manager, bool pretend = false)
-        {
-            var activated = manager.Queue.CreateMessage<ItemActivatedMessage>(ItemActivatedMessageName);
-            activated.ItemEntity = message.ItemEntity;
-            activated.ActivatorEntity = message.ActivatorEntity;
-            activated.TargetEntity = message.TargetEntity;
-            activated.TargetCell = message.TargetCell;
-            activated.ActivationType = message.ActivationType;
-
-            var item = message.ItemEntity.Item;
-            if (item.Type != ItemType.Potion)
-            {
-                // TODO: Handle other activatables
-                return activated;
-            }
-
-            activated.Successful = true;
-            if (pretend)
-            {
-                return activated;
-            }
-
-            // TODO: Calculate delay
-            activated.Delay = TimeSystem.DefaultActionDelay;
-
-            using (var splitItemRefence = manager.ItemMovingSystem.Split(item, 1))
-            {
-                var splitItem = splitItemRefence.Referenced;
-                activated.ItemEntity = splitItem;
-                splitItem.Item.ContainerId = message.ActivatorEntity.Id;
-
-                var activation = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);
-
-                activation.ActivatorEntity = message.ActivatorEntity;
-                activation.TargetEntity = message.ActivatorEntity;
-
-                manager.AbilityActivationSystem.ActivateAbilities(
-                    splitItem.Id, message.ActivationType, activation, manager);
-
-                var removeComponentMessage = manager.CreateRemoveComponentMessage();
-                removeComponentMessage.Entity = splitItem;
-                removeComponentMessage.Component = EntityComponent.Item;
-
-                manager.Enqueue(removeComponentMessage, lowPriority: true);
-            }
-
-            return activated;
-        }
     }
 }

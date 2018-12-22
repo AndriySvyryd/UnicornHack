@@ -2,9 +2,13 @@
 
 namespace UnicornHack
 {
-    public partial class GameManager : EntityManager<GameEntity>, IGameSystem<RemoveComponentMessage>
+    public partial class GameManager :
+        EntityManager<GameEntity>,
+        IGameSystem<RemoveComponentMessage>,
+        IGameSystem<EntityReferenceMessage<GameEntity>>
     {
         public const string RemoveComponentMessageName = "RemoveComponent";
+        public const string EntityReferenceMessageName = "EntityReference";
 
         private readonly string[] _componentPropertyNames;
 
@@ -18,7 +22,8 @@ namespace UnicornHack
         protected override void InitializeSystems(IMessageQueue queue)
         {
             var gameQueue = (SequentialMessageQueue<GameManager>)queue;
-            gameQueue.Add(this, RemoveComponentMessageName, 0);
+            gameQueue.Add<RemoveComponentMessage>(this, RemoveComponentMessageName, 0);
+            gameQueue.Add<EntityReferenceMessage<GameEntity>>(this, EntityReferenceMessageName, 0);
 
             InitializeLevels(gameQueue);
             InitializeBeings(gameQueue);
@@ -73,5 +78,15 @@ namespace UnicornHack
 
             return MessageProcessingResult.ContinueProcessing;
         }
+
+        public EntityReferenceMessage<GameEntity> CreateEntityReferenceMessage(GameEntity entity)
+        {
+            var message = Queue.CreateMessage<EntityReferenceMessage<GameEntity>>(EntityReferenceMessageName);
+            message.Entity = entity;
+            return message;
+        }
+
+        public MessageProcessingResult Process(EntityReferenceMessage<GameEntity> message, GameManager state)
+            => MessageProcessingResult.ContinueProcessing;
     }
 }

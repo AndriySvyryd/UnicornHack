@@ -36,8 +36,8 @@ namespace UnicornHack.Systems.Faculties
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, ExtremityType> message,
-            GameManager manager)
+        public MessageProcessingResult Process(
+            PropertyValueChangedMessage<GameEntity, ExtremityType> message, GameManager manager)
         {
             RecalculateWeaponAbilities(message.Entity, manager);
 
@@ -448,7 +448,7 @@ namespace UnicornHack.Systems.Faculties
                     continue;
                 }
 
-                effect.ActivatableEntityId = weaponId;
+                effect.TargetEntityId = weaponId;
                 break;
             }
         }
@@ -512,7 +512,7 @@ namespace UnicornHack.Systems.Faculties
                     {
                         var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                         effect.EffectType = EffectType.Activate;
-                        effect.ActivatableEntityId = firstWeaponAbilityId;
+                        effect.TargetEntityId = firstWeaponAbilityId;
                         effect.ContainingAbilityId = abilityEntity.Id;
 
                         effectEntityReference.Referenced.Effect = effect;
@@ -524,7 +524,7 @@ namespace UnicornHack.Systems.Faculties
                         {
                             var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                             effect.EffectType = EffectType.Activate;
-                            effect.ActivatableEntityId = secondWeaponAbilityId;
+                            effect.TargetEntityId = secondWeaponAbilityId;
                             effect.ContainingAbilityId = abilityEntity.Id;
 
                             effectEntityReference.Referenced.Effect = effect;
@@ -614,7 +614,7 @@ namespace UnicornHack.Systems.Faculties
                     {
                         var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                         effect.EffectType = EffectType.Move;
-                        effect.ActivatableEntityId = weapon.EntityId;
+                        effect.TargetEntityId = weapon.EntityId;
                         effect.ContainingAbilityId = abilityEntity.Id;
 
                         effectEntityReference.Referenced.Effect = effect;

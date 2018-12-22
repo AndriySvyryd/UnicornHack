@@ -177,7 +177,7 @@ namespace UnicornHack.Systems.Knowledge
 
         public MessageProcessingResult Process(EffectsAppliedMessage message, GameManager manager)
         {
-            if ((message.AbilityType & ActivationType.OnAttack) == 0
+            if ((message.AbilityTrigger & ActivationType.OnAttack) == 0
                 || message.TargetEntity == null)
             {
                 return MessageProcessingResult.ContinueProcessing;
@@ -186,7 +186,7 @@ namespace UnicornHack.Systems.Knowledge
             var targetPosition = message.TargetEntity.Position;
             foreach (var playerEntity in manager.Players)
             {
-                var attackerSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity);
+                var attackerSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity) ?? SenseType.None;
                 if (message.TargetEntity == playerEntity)
                 {
                     // TODO: Interrupt current action

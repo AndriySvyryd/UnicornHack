@@ -16,6 +16,8 @@ namespace UnicornHack.Systems.Knowledge
     {
         // TODO: Test through LoggingSystem instead of calling the language system directly
 
+        // TODO: Test explosion
+
         [Fact]
         public void AttackEvent()
         {
@@ -181,7 +183,7 @@ namespace UnicornHack.Systems.Knowledge
                         var appliedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                         appliedEffect.Amount = damage.Value;
                         appliedEffect.EffectType = EffectType.Activate;
-                        appliedEffect.ActivatableEntityId = weapon.Id;
+                        appliedEffect.TargetEntityId = weapon.Id;
                         appliedEffect.AffectedEntityId = victim.Id;
 
                         entity.Effect = appliedEffect;
@@ -278,13 +280,13 @@ namespace UnicornHack.Systems.Knowledge
             var languageService = manager.Game.Services.Language;
 
             Assert.Equal("The acid blob drinks a potion of healing.", languageService.GetString(new ItemActivationEvent(
-                player, potion, blob, blob, null, SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Sound,
-                SenseType.Sight | SenseType.Sound, ActivationType.ManualActivation, successful: true)));
+                player, potion, blob, blob, SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Sound,
+                SenseType.Sight | SenseType.Sound, successful: true)));
 
             Assert.Equal("You drink a potion of healing.", languageService.GetString(new ItemActivationEvent(
-                player, potion, player, player, null, SenseType.Sight | SenseType.Sound,
+                player, potion, player, player, SenseType.Sight | SenseType.Sound,
                 SenseType.Sight | SenseType.Touch,
-                SenseType.Sight | SenseType.Touch, ActivationType.ManualActivation, successful: true)));
+                SenseType.Sight | SenseType.Touch, successful: true)));
         }
 
         [Fact]

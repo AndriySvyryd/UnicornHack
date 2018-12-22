@@ -21,6 +21,7 @@ namespace UnicornHack
                     (int)EntityComponent.Effect));
 
             TemporalEntitiesIndex = new SortedUniqueEntityIndex<GameEntity, (int Tick, int Id)>(
+                nameof(TemporalEntitiesIndex),
                 TemporalEntities,
                 new KeyValueGetter<GameEntity, (int Tick, int Id)>(
                     (entity, changes, getOldValue, matcher) =>

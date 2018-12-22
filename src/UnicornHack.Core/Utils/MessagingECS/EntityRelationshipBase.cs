@@ -30,9 +30,8 @@ namespace UnicornHack.Utils.MessagingECS
             Action<TEntity, TEntity, Component> handleReferencedDeleted,
             bool referencedKeepAlive,
             bool referencingKeepAlive)
-            : base(referencingGroup, keyValueGetter)
+            : base(name, referencingGroup, keyValueGetter)
         {
-            Name = name;
             ReferencingGroup = referencingGroup;
             ReferencedGroup = referencedGroup;
             _handleReferencedDeleted = handleReferencedDeleted;
@@ -40,7 +39,6 @@ namespace UnicornHack.Utils.MessagingECS
             _referencingKeepAlive = referencingKeepAlive;
         }
 
-        public string Name { get; }
         protected IEntityGroup<TEntity> ReferencedGroup { get; }
         protected IEntityGroup<TEntity> ReferencingGroup { get; }
         public bool IsLoading => ReferencedGroup.IsLoading || ReferencingGroup.IsLoading;
@@ -91,6 +89,8 @@ namespace UnicornHack.Utils.MessagingECS
                 var message = entity.Manager.Queue.CreateMessage<EntityAddedMessage<TEntity>>(_entityAddedMessageName);
                 message.Entity = entity;
                 message.ChangedComponent = changedComponent;
+                message.Group = this;
+                message.ReferencedEntity = referenced;
 
                 entity.Manager.Queue.Enqueue(message);
             }
@@ -121,6 +121,11 @@ namespace UnicornHack.Utils.MessagingECS
                 var message = manager.Queue.CreateMessage<EntityRemovedMessage<TEntity>>(_entityRemovedMessageName);
                 message.Entity = entity;
                 message.ChangedComponent = changedComponent;
+                message.Group = this;
+                if (referenced.Manager != null)
+                {
+                    message.ReferencedEntity = referenced;
+                }
 
                 manager.Queue.Enqueue(message);
             }

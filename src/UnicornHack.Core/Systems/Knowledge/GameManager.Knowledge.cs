@@ -27,6 +27,7 @@ namespace UnicornHack
                 new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Knowledge, (int)EntityComponent.Position));
 
             LevelKnowledgeToLevelCellIndex = new EntityIndex<GameEntity, (int, byte, byte)>(
+                nameof(LevelKnowledgeToLevelCellIndex),
                 LevelKnowledges,
                 new KeyValueGetter<GameEntity, (int, byte, byte)>(
                     (entity, changes, getOldValue, matcher) =>
@@ -90,7 +91,6 @@ namespace UnicornHack
             LoggingSystem = new LoggingSystem();
             queue.Add<ItemMovedMessage>(LoggingSystem, ItemMovingSystem.ItemMovedMessageName, 1);
             queue.Add<ItemEquippedMessage>(LoggingSystem, ItemUsageSystem.ItemEquippedMessageName, 0);
-            queue.Add<ItemActivatedMessage>(LoggingSystem, ItemUsageSystem.ItemActivatedMessageName, 0);
             queue.Add<EffectsAppliedMessage>(LoggingSystem, EffectApplicationSystem.EffectsAppliedMessageName, 2);
             queue.Add<DiedMessage>(LoggingSystem, LivingSystem.DiedMessageName, 1);
             queue.Add<LeveledUpMessage>(LoggingSystem, XPSystem.LeveledUpMessageName, 1);

@@ -18,7 +18,6 @@ namespace UnicornHack.Systems.Abilities
 {
     public class AbilityActivationSystem :
         IGameSystem<ActivateAbilityMessage>,
-        IGameSystem<ItemMovedMessage>,
         IGameSystem<ItemEquippedMessage>,
         IGameSystem<DiedMessage>,
         IGameSystem<LeveledUpMessage>,
@@ -363,15 +362,13 @@ namespace UnicornHack.Systems.Abilities
             var abilityTrigger = targetEffectsMessage.Trigger;
             List<(GameEntity Effect, GameEntity Ability)> activatedAbilities = null;
 
-            foreach (var effectEntity in manager.EffectsToContainingAbilityRelationship[
-                targetEffectsMessage.AbilityEntity.Id])
+            foreach (var effectEntity in
+                manager.EffectsToContainingAbilityRelationship[targetEffectsMessage.AbilityEntity.Id])
             {
                 var effect = effectEntity.Effect;
                 if (effect.EffectType == EffectType.Activate)
                 {
-                    Debug.Assert(abilityTrigger != ActivationType.Default);
-
-                    var activatableId = effect.ActivatableEntityId.Value;
+                    var activatableId = effect.TargetEntityId.Value;
                     var activatable = manager.FindEntity(activatableId);
                     if (activatable == null)
                     {
@@ -379,6 +376,9 @@ namespace UnicornHack.Systems.Abilities
                             $"Couldn't find the entity to activate '{activatableId}' referenced from the effect '{effectEntity.Id}'"
                             + $" on ability '{effect.ContainingAbilityId}'");
                     }
+
+                    Debug.Assert(abilityTrigger != ActivationType.Default
+                        || activatable.HasComponent(EntityComponent.Ability));
 
                     var triggeredAbility = activatable.HasComponent(EntityComponent.Ability)
                         ? activatable
@@ -402,38 +402,6 @@ namespace UnicornHack.Systems.Abilities
             }
 
             return activatedAbilities;
-        }
-
-        public MessageProcessingResult Process(ItemMovedMessage message, GameManager manager)
-        {
-            var item = message.ItemEntity.Item;
-            if (!message.Successful
-                || message.InitialContainer?.Id == item.ContainerId)
-            {
-                return MessageProcessingResult.ContinueProcessing;
-            }
-
-            if (message.InitialContainer != null
-                && message.InitialContainer.HasComponent(EntityComponent.Being))
-            {
-                var activatableId = message.ItemEntity.Id;
-                DeactivateAbilities(activatableId, ActivationType.WhilePossessed, manager);
-            }
-
-            if (item.ContainerId != null)
-            {
-                var containerEntity = manager.FindEntity(item.ContainerId.Value);
-                if (containerEntity.HasComponent(EntityComponent.Being))
-                {
-                    var activation = CreateActivateAbilityMessage(manager);
-                    activation.ActivatorEntity = containerEntity;
-                    activation.TargetEntity = containerEntity;
-
-                    ActivateAbilities(message.ItemEntity.Id, ActivationType.WhilePossessed, activation, manager);
-                }
-            }
-
-            return MessageProcessingResult.ContinueProcessing;
         }
 
         public MessageProcessingResult Process(ItemEquippedMessage message, GameManager manager)
@@ -516,20 +484,39 @@ namespace UnicornHack.Systems.Abilities
 
         public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager manager)
         {
-            var ability = message.Entity.Ability;
-            if (ability != null
-                && (ability.Activation & ActivationType.Always) != 0)
+            switch (message.Group.Name)
             {
-                Debug.Assert(!ability.IsActive);
+                case nameof(GameManager.AbilitiesToAffectableRelationship):
+                    var ability = message.Entity.Ability;
+                    if (ability != null
+                        && (ability.Activation & ActivationType.Always) != 0)
+                    {
+                        Debug.Assert(!ability.IsActive);
 
-                var activation = CreateActivateAbilityMessage(manager);
-                activation.ActivatorEntity = ability.OwnerEntity;
-                activation.TargetEntity = ability.OwnerEntity;
-                activation.AbilityEntity = message.Entity;
+                        var activation = CreateActivateAbilityMessage(manager);
+                        activation.ActivatorEntity = ability.OwnerEntity;
+                        activation.TargetEntity = ability.OwnerEntity;
+                        activation.AbilityEntity = message.Entity;
 
-                Process(activation, manager);
+                        Process(activation, manager);
 
-                manager.Queue.ReturnMessage(activation);
+                        manager.Queue.ReturnMessage(activation);
+                    }
+
+                    break;
+                case nameof(GameManager.EntityItemsToContainerRelationship):
+                    if (message.ReferencedEntity != null
+                        && message.ReferencedEntity.HasComponent(EntityComponent.Being))
+                    {
+                        var activation = CreateActivateAbilityMessage(manager);
+                        activation.ActivatorEntity = message.ReferencedEntity;
+                        activation.TargetEntity = message.ReferencedEntity;
+
+                        ActivateAbilities(message.Entity.Id, ActivationType.WhilePossessed, activation, manager);
+                    }
+                    break;
+                default:
+                    throw new InvalidOperationException(message.Group.Name);
             }
 
             return MessageProcessingResult.ContinueProcessing;
@@ -539,14 +526,30 @@ namespace UnicornHack.Systems.Abilities
 
         public MessageProcessingResult Process(EntityRemovedMessage<GameEntity> message, GameManager manager)
         {
-            var ability = message.Entity.Ability;
-            if (ability != null
-                && (ability.Activation & ActivationType.Always) != 0)
+            switch (message.Group.Name)
             {
-                Debug.Assert(ability.IsActive);
+                case nameof(GameManager.AbilitiesToAffectableRelationship):
+                    var ability = message.Entity.Ability;
+                    if (ability != null
+                        && (ability.Activation & ActivationType.Continuous) != 0)
+                    {
+                        Debug.Assert(ability.IsActive);
 
-                Deactivate(ability, manager);
+                        Deactivate(ability, manager);
+                    }
+
+                    break;
+                case nameof(GameManager.EntityItemsToContainerRelationship):
+                    if (message.ReferencedEntity?.HasComponent(EntityComponent.Being) == true)
+                    {
+                        DeactivateAbilities(message.Entity.Id, ActivationType.WhilePossessed, manager);
+                    }
+
+                    break;
+                default:
+                    throw new InvalidOperationException(message.Group.Name);
             }
+
 
             return MessageProcessingResult.ContinueProcessing;
         }
@@ -632,6 +635,7 @@ namespace UnicornHack.Systems.Abilities
             {
                 case AbilityAction.Default:
                 case AbilityAction.Modifier:
+                case AbilityAction.Drink:
                     return ActivationType.Default;
                 case AbilityAction.Hit:
                 case AbilityAction.Slash:
@@ -664,7 +668,7 @@ namespace UnicornHack.Systems.Abilities
                 case AbilityAction.Explosion:
                     return ActivationType.OnMagicalRangedAttack;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException(nameof(ability), ability.Action.ToString());
             }
         }
 
@@ -856,7 +860,7 @@ namespace UnicornHack.Systems.Abilities
             foreach (var abilityEntity in manager.AbilitiesToAffectableRelationship[activatableId])
             {
                 var ability = abilityEntity.Ability;
-                if ((ability.Activation & activation) != 0 || !ability.IsActive)
+                if ((ability.Activation & activation) == 0 || !ability.IsActive)
                 {
                     continue;
                 }

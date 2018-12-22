@@ -78,6 +78,8 @@ namespace UnicornHack.Utils.MessagingECS
             return false;
         }
 
+        public override string ToString() => "UniqueRelationship: " + Name;
+
         public override IEnumerator<TEntity> GetEnumerator()
             => Index.Values.GetEnumerator();
 

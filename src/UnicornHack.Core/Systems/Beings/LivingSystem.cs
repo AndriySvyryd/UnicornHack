@@ -98,7 +98,7 @@ namespace UnicornHack.Systems.Beings
                 case nameof(BeingComponent.Constitution):
                     var hpEffect = GetAttributeEffects(being, manager)
                         .Select(e => e.Effect)
-                        .First(e => e.PropertyName == nameof(BeingComponent.HitPointMaximum));
+                        .First(e => e.TargetName == nameof(BeingComponent.HitPointMaximum));
 
                     hpEffect.Amount = message.NewValue * 10;
 
@@ -106,14 +106,14 @@ namespace UnicornHack.Systems.Beings
                 case nameof(BeingComponent.Willpower):
                     var epEffect = GetAttributeEffects(being, manager)
                         .Select(e => e.Effect)
-                        .First(e => e.PropertyName == nameof(BeingComponent.EnergyPointMaximum));
+                        .First(e => e.TargetName == nameof(BeingComponent.EnergyPointMaximum));
                     epEffect.Amount = message.NewValue * 10;
 
                     break;
                 case nameof(BeingComponent.Quickness):
                     var movementEffect = GetAttributeEffects(being, manager)
                         .Select(e => e.Effect)
-                        .First(e => e.PropertyName == nameof(PositionComponent.MovementDelay));
+                        .First(e => e.TargetName == nameof(PositionComponent.MovementDelay));
 
                     movementEffect.Amount = message.NewValue == 0
                         ? 0
@@ -136,7 +136,7 @@ namespace UnicornHack.Systems.Beings
         {
             var abilityId = GetAttributedAbility(being.EntityId, manager).Id;
             var effects = manager.AppliedEffectsToSourceAbilityRelationship[abilityId];
-            if (!effects.Any())
+            if (effects.Count == 0)
             {
                 // Ability hasn't been applied yet, so return the definition
                 return manager.EffectsToContainingAbilityRelationship[abilityId];
@@ -181,7 +181,7 @@ namespace UnicornHack.Systems.Beings
                 effect.EffectType = EffectType.ChangeProperty;
                 effect.DurationTicks = (int)EffectDuration.Infinite;
                 effect.Function = ValueCombinationFunction.MeanRoundDown;
-                effect.PropertyName = propertyName;
+                effect.TargetName = propertyName;
 
                 effectReference.Referenced.Effect = effect;
 

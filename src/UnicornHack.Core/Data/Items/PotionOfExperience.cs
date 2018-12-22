@@ -19,8 +19,11 @@ namespace UnicornHack.Data.Items
             {
                 new Ability
                 {
+                    Name = "Drink",
+                    Action = AbilityAction.Drink,
                     Activation = ActivationType.ManualActivation,
-                    Effects = new HashSet<Effect> {new GainXP {Amount = 500}}
+                    Delay = 100,
+                    Effects = new HashSet<Effect> {new GainXP {Amount = 1000}, new RemoveItem() }
                 }
             }
         };

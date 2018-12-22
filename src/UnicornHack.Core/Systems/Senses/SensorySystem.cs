@@ -195,7 +195,7 @@ namespace UnicornHack.Systems.Senses
             return sensed;
         }
 
-        public SenseType CanSense(GameEntity sensor, GameEntity target)
+        public SenseType? CanSense(GameEntity sensor, GameEntity target)
         {
             var sense = SenseType.None;
             if (target == null)
@@ -208,7 +208,7 @@ namespace UnicornHack.Systems.Senses
             if (target.Position == null
                 || sensor.Position?.LevelId != target.Position.LevelId)
             {
-                return sense;
+                return null;
             }
 
             // TODO: Also when touching (e.g. grappling)

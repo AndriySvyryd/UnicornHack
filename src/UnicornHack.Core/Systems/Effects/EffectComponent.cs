@@ -15,8 +15,8 @@ namespace UnicornHack.Systems.Effects
         private int? _amount;
         private EffectType _effectType;
         private ValueCombinationFunction _function;
-        private string _propertyName;
-        private int? _activatableEntityId;
+        private string _targetName;
+        private int? _targetEntityId;
 
         public EffectComponent()
             => ComponentId = (int)EntityComponent.Effect;
@@ -76,16 +76,16 @@ namespace UnicornHack.Systems.Effects
             set => SetWithNotify(value, ref _function);
         }
 
-        public string PropertyName
+        public string TargetName
         {
-            get => _propertyName;
-            set => SetWithNotify(value, ref _propertyName);
+            get => _targetName;
+            set => SetWithNotify(value, ref _targetName);
         }
 
-        public int? ActivatableEntityId
+        public int? TargetEntityId
         {
-            get => _activatableEntityId;
-            set => SetWithNotify(value, ref _activatableEntityId);
+            get => _targetEntityId;
+            set => SetWithNotify(value, ref _targetEntityId);
         }
 
         // TODO: Add application condition
@@ -101,7 +101,9 @@ namespace UnicornHack.Systems.Effects
                 clone.Amount = Amount;
                 clone.EffectType = EffectType;
                 clone.Function = Function;
-                clone.PropertyName = PropertyName;
+                clone.TargetName = TargetName;
+                clone.TargetEntityId = TargetEntityId;
+
                 clone.ContainingAbilityId = abilityEntity.Id;
 
                 if (EffectType == EffectType.AddAbility)
@@ -125,8 +127,8 @@ namespace UnicornHack.Systems.Effects
             _amount = default;
             _effectType = default;
             _function = default;
-            _propertyName = default;
-            _activatableEntityId = default;
+            _targetName = default;
+            _targetEntityId = default;
 
             base.Clean();
         }

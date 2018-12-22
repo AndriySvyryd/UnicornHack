@@ -15,7 +15,6 @@ namespace UnicornHack.Systems.Actors
         IGameSystem<AbilityActivatedMessage>,
         IGameSystem<TraveledMessage>,
         IGameSystem<ItemEquippedMessage>,
-        IGameSystem<ItemActivatedMessage>,
         IGameSystem<ItemMovedMessage>,
         IGameSystem<EntityAddedMessage<GameEntity>>,
         IGameSystem<DiedMessage>
@@ -211,21 +210,6 @@ namespace UnicornHack.Systems.Actors
                 && message.Delay != 0)
             {
                 var ai = message.ActorEntity.AI;
-                if (ai != null)
-                {
-                    ai.NextActionTick += message.Delay;
-                }
-            }
-
-            return MessageProcessingResult.ContinueProcessing;
-        }
-
-        public MessageProcessingResult Process(ItemActivatedMessage message, GameManager state)
-        {
-            if (message.Successful
-                && message.Delay != 0)
-            {
-                var ai = message.ActivatorEntity.AI;
                 if (ai != null)
                 {
                     ai.NextActionTick += message.Delay;

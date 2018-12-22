@@ -28,6 +28,7 @@ namespace UnicornHack
                 new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Ability));
 
             SlottedAbilitiesIndex = new UniqueEntityIndex<GameEntity, (int, int)>(
+                nameof(SlottedAbilitiesIndex),
                 Abilities,
                 new KeyValueGetter<GameEntity, (int, int)>(
                     (entity, changes, getOldValue, matcher) =>
@@ -62,7 +63,6 @@ namespace UnicornHack
 
             AbilityActivationSystem = new AbilityActivationSystem();
             queue.Add<ActivateAbilityMessage>(AbilityActivationSystem, AbilityActivationSystem.ActivateAbilityMessageName, 0);
-            queue.Add<ItemMovedMessage>(AbilityActivationSystem, ItemMovingSystem.ItemMovedMessageName, 4);
             queue.Add<ItemEquippedMessage>(AbilityActivationSystem, ItemUsageSystem.ItemEquippedMessageName, 3);
             queue.Add<DiedMessage>(AbilityActivationSystem, LivingSystem.DiedMessageName, 2);
             queue.Add<LeveledUpMessage>(AbilityActivationSystem, XPSystem.LeveledUpMessageName, 0);

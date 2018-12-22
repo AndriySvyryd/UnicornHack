@@ -103,7 +103,7 @@ namespace UnicornHack.Services.English
         }
 
         public virtual string GetString(AbilityComponent ability)
-            => ability.Name;
+            => Capitalize(new StringBuilder(ability.Name)).ToString();
 
         public virtual string GetString(EquipmentSlot slot, GameEntity actorEntity, bool abbreviate)
         {
@@ -557,9 +557,9 @@ namespace UnicornHack.Services.English
                 }
             }
 
-            var first = builder[index: 0];
-            builder.Remove(startIndex: 0, length: 1).Insert(index: 0, value: char.ToUpper(first))
-                .Remove(builder.Length - 1, length: 1);
+            builder.Remove(builder.Length - 1, length: 1);
+
+            Capitalize(builder);
 
             if (!char.IsPunctuation(builder[builder.Length - 1]))
             {
@@ -570,6 +570,14 @@ namespace UnicornHack.Services.English
                 .Replace(oldValue: " .", newValue: ".").Replace(oldValue: " !", newValue: "!");
 
             return builder.ToString();
+        }
+
+        private static StringBuilder Capitalize(StringBuilder builder)
+        {
+            var first = builder[index: 0];
+            builder.Remove(startIndex: 0, length: 1).Insert(index: 0, value: char.ToUpper(first));
+
+            return builder;
         }
 
         #endregion

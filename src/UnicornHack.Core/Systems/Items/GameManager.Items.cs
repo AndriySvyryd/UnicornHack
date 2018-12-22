@@ -30,6 +30,7 @@ namespace UnicornHack
                     .AllOf((int)EntityComponent.Item, (int)EntityComponent.Physical, (int)EntityComponent.Position));
 
             LevelItemsToLevelCellIndex = new UniqueEntityIndex<GameEntity, (int, byte, byte)>(
+                nameof(LevelItemsToLevelCellIndex),
                 LevelItems,
                 new KeyValueGetter<GameEntity, (int, byte, byte)>(
                     (entity, changes, getOldValue, matcher) =>
@@ -78,8 +79,12 @@ namespace UnicornHack
             queue.Add<DiedMessage>(ItemMovingSystem, LivingSystem.DiedMessageName, 0);
 
             ItemUsageSystem = new ItemUsageSystem();
-            queue.Add<EquipItemMessage>(ItemUsageSystem, ItemUsageSystem.EquipItemMessageName, 0);
-            queue.Add<ActivateItemMessage>(ItemUsageSystem, ItemUsageSystem.ActivateItemMessageName, 0);
+            queue.Add(ItemUsageSystem, ItemUsageSystem.EquipItemMessageName, 0);
+
+            queue.Add<EntityAddedMessage<GameEntity>>(
+                AbilityActivationSystem, EntityItemsToContainerRelationship.GetEntityAddedMessageName(), 0);
+            queue.Add<EntityRemovedMessage<GameEntity>>(
+                AbilityActivationSystem, EntityItemsToContainerRelationship.GetEntityRemovedMessageName(), 0);
         }
     }
 }

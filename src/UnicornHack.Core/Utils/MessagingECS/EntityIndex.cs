@@ -7,16 +7,18 @@ namespace UnicornHack.Utils.MessagingECS
         where TEntity : Entity
     {
         public EntityIndex(
+            string name,
             IEntityGroup<TEntity> group,
             KeyValueGetter<TEntity, TKey> keyValueGetter)
-            : base(group, keyValueGetter)
+            : base(name, group, keyValueGetter)
             => Index = new Dictionary<TKey, HashSet<TEntity>>();
 
         public EntityIndex(
+            string name,
             IEntityGroup<TEntity> group,
             KeyValueGetter<TEntity, TKey> keyValueGetter,
             IEqualityComparer<TKey> comparer)
-            : base(group, keyValueGetter)
+            : base(name, group, keyValueGetter)
             => Index = new Dictionary<TKey, HashSet<TEntity>>(comparer);
 
         protected Dictionary<TKey, HashSet<TEntity>> Index { get; }
@@ -40,5 +42,7 @@ namespace UnicornHack.Utils.MessagingECS
 
         protected override bool TryRemoveEntity(TKey key, TEntity entity, Component changedComponent)
             => GetOrAddEntities(key).Remove(entity);
+
+        public override string ToString() => "Index: " + Name;
     }
 }

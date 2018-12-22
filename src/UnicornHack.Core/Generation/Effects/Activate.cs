@@ -16,7 +16,7 @@ namespace UnicornHack.Generation.Effects
             if (Projectile != null)
             {
                 var item = Item.Loader.Get(Projectile).AddToEntity(effect.Entity);
-                effect.ActivatableEntityId = item.EntityId;
+                effect.TargetEntityId = item.EntityId;
             }
         }
     }

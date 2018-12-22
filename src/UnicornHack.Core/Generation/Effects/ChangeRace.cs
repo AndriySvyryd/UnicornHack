@@ -13,7 +13,7 @@ namespace UnicornHack.Generation.Effects
             base.ConfigureEffect(effect);
 
             effect.EffectType = EffectType.ChangeRace;
-            effect.PropertyName = RaceName;
+            effect.TargetName = RaceName;
             effect.Amount = Remove ? -1 : 1;
         }
     }

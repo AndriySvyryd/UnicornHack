@@ -54,7 +54,7 @@ namespace UnicornHack.Systems.Effects
             }
         }
 
-        public ActivationType AbilityType { get; set; }
+        public ActivationType AbilityTrigger { get; set; }
         public bool SuccessfulApplication { get; set; }
 
         string IMessage.MessageName { get; set; }
@@ -65,7 +65,7 @@ namespace UnicornHack.Systems.Effects
             AbilityEntity = default;
             TargetEntity = default;
             AppliedEffects = default;
-            AbilityType = default;
+            AbilityTrigger = default;
             SuccessfulApplication = default;
         }
     }

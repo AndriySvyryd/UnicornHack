@@ -143,6 +143,7 @@ namespace UnicornHack.Utils.MessagingECS
                 {
                     var raceEntity = raceEntityReference.Referenced;
                     var effect = raceEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
+                    effect.EffectType = EffectType.Move;
                     effect.DurationTicks = -1;
                     effect.AffectedEntityId = beingEntity.Id;
                     var race = manager.CreateComponent<RaceComponent>((int)EntityComponent.Race);
@@ -170,12 +171,13 @@ namespace UnicornHack.Utils.MessagingECS
                 }
             }
 
-            Assert.Equal(0, manager.Beings.Count);
+            Assert.Equal(1, manager.Beings.Count);
             Assert.Equal(0, manager.EntityItems.Count);
 
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(0, manager.Queue.QueuedCount);
+            Assert.Equal(0, manager.Beings.Count);
             Assert.Equal(3, testSystem.MessagesProcessed);
             Assert.Equal(3, testSystem.GroupChangesDetected);
         }

@@ -8,16 +8,18 @@ namespace UnicornHack.Utils.MessagingECS
         where TEntity : Entity
     {
         public UniqueEntityIndex(
+            string name,
             IEntityGroup<TEntity> group,
             KeyValueGetter<TEntity, TKey> keyValueGetter)
-            : base(group, keyValueGetter)
+            : base(name, group, keyValueGetter)
             => Index = new Dictionary<TKey, TEntity>();
 
         public UniqueEntityIndex(
+            string name,
             IEntityGroup<TEntity> group,
             KeyValueGetter<TEntity, TKey> keyValueGetter,
             IEqualityComparer<TKey> comparer)
-            : base(group, keyValueGetter)
+            : base(name, group, keyValueGetter)
             => Index = new Dictionary<TKey, TEntity>(comparer);
 
         protected Dictionary<TKey, TEntity> Index { get; }
@@ -44,5 +46,7 @@ namespace UnicornHack.Utils.MessagingECS
 
             return removed;
         }
+
+        public override string ToString() => "UniqueIndex: " + Name;
     }
 }

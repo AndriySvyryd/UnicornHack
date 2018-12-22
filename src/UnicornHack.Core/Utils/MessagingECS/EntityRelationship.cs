@@ -102,6 +102,8 @@ namespace UnicornHack.Utils.MessagingECS
             return false;
         }
 
+        public override string ToString() => "EntityRelationship: " + Name;
+
         public override IEnumerator<TEntity> GetEnumerator()
             => Index.Values.SelectMany(v => v).GetEnumerator();
 

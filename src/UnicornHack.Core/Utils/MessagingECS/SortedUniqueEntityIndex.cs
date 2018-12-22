@@ -9,16 +9,18 @@ namespace UnicornHack.Utils.MessagingECS
         where TEntity : Entity
     {
         public SortedUniqueEntityIndex(
+            string name,
             IEntityGroup<TEntity> group,
             KeyValueGetter<TEntity, TKey> keyValueGetter)
-            : base(group, keyValueGetter)
+            : base(name, group, keyValueGetter)
             => Index = new SortedDictionary<TKey, TEntity>();
 
         public SortedUniqueEntityIndex(
+            string name,
             IEntityGroup<TEntity> group,
             KeyValueGetter<TEntity, TKey> keyValueGetter,
             IComparer<TKey> comparer)
-            : base(group, keyValueGetter)
+            : base(name, group, keyValueGetter)
             => Index = new SortedDictionary<TKey, TEntity>(comparer);
 
         protected SortedDictionary<TKey, TEntity> Index { get; }
@@ -50,5 +52,7 @@ namespace UnicornHack.Utils.MessagingECS
         public IEnumerator<TEntity> GetEnumerator() => Index.Values.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public override string ToString() => "SortedIndex: " + Name;
     }
 }

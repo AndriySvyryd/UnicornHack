@@ -205,7 +205,7 @@ namespace UnicornHack.Systems.Items
                 if (leftover != null)
                 {
                     if (targetContainer.Capacity
-                        <= manager.EntityItemsToContainerRelationship[targetContainer.EntityId].Count())
+                        <= manager.EntityItemsToContainerRelationship[targetContainer.EntityId].Count)
                     {
                         return itemMovedMessage;
                     }
@@ -252,7 +252,7 @@ namespace UnicornHack.Systems.Items
             var stack = manager.EntityItemsToContainerRelationship[item.EntityId].ToList();
             var stackSize = stack.Count + 1;
 
-            var existingStackSize = manager.EntityItemsToContainerRelationship[existingItem.EntityId].Count() + 1;
+            var existingStackSize = manager.EntityItemsToContainerRelationship[existingItem.EntityId].Count + 1;
 
             if (stackSize > 1 && existingStackSize < existingItem.MaxStackSize)
             {
@@ -324,25 +324,31 @@ namespace UnicornHack.Systems.Items
 
             var newStack = stackedItems[stackedItems.Count - 1];
             stackedItems.RemoveAt(stackedItems.Count - 1);
-            var stackReference = newStack.AddReference(manager);
-            newStack.Item.ContainerId = null;
-            var newStackSize = 1;
+            stackSize--;
 
-            if (quantity > 1)
+            var itemReference = item.Entity.AddReference(manager);
+            using (var stackReference = newStack.AddReference(manager))
             {
+                newStack.Item.ContainerId = item.ContainerId;
+                item.ContainerId = null;
+
                 foreach (var stackedItem in stackedItems)
                 {
-                    if (newStackSize == quantity)
+                    if (stackSize == quantity)
                     {
                         break;
                     }
 
-                    stackedItem.Item.ContainerId = newStack.Id;
-                    newStackSize++;
+                    using (var stackedItemReference = stackedItem.AddReference(manager))
+                    {
+                        stackedItem.Item.ContainerId = newStack.Id;
+                    }
+
+                    stackSize--;
                 }
             }
 
-            return stackReference;
+            return itemReference;
         }
 
         public GameEntity GetTopContainer(GameEntity target, GameManager manager)

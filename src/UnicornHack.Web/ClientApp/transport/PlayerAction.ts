@@ -7,8 +7,6 @@
     DropItem,
     EquipItem,
     UnequipItem,
-    ActivateItem,
-    PerformDefaultAttack,
     SetAbilitySlot,
     UseAbilitySlot
 }

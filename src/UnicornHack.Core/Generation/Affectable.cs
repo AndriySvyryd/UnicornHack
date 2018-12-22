@@ -5,7 +5,7 @@ namespace UnicornHack.Generation
 {
     public class Affectable
     {
-        protected void CreatePropertyEffect(string property, int? value, int abilityId, GameManager manager)
+        protected void CreatePropertyEffect(string propertyName, int? value, int abilityId, GameManager manager)
         {
             if (value == null)
             {
@@ -17,7 +17,7 @@ namespace UnicornHack.Generation
                 var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                 effect.EffectType = EffectType.ChangeProperty;
                 effect.DurationTicks = (int)EffectDuration.Infinite;
-                effect.PropertyName = property;
+                effect.TargetName = propertyName;
                 effect.Amount = value;
                 effect.Function = ValueCombinationFunction.MeanRoundDown;
                 effect.ContainingAbilityId = abilityId;

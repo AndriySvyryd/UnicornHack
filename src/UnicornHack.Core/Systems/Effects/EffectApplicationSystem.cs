@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using UnicornHack.Generation;
@@ -29,40 +30,40 @@ namespace UnicornHack.Systems.Effects
             effectsAppliedMessage.ActivatorEntity = message.ActivatorEntity;
             effectsAppliedMessage.TargetEntity = message.TargetEntity;
             effectsAppliedMessage.AbilityEntity = message.AbilityEntity;
-            effectsAppliedMessage.AbilityType = message.Trigger;
+            effectsAppliedMessage.AbilityTrigger = message.Trigger;
             effectsAppliedMessage.SuccessfulApplication = message.SuccessfulApplication;
 
             var appliedEffects = new ReferencingList<GameEntity>();
             // TODO: Group effects by duration so they can be applied in proper order
             // TODO: Fire a message for effects that are DuringApplication, so they get unapplied as soon as the previous messages are processed
             Dictionary<EffectType, (int Damage, EffectComponent Effect)> damageEffects = null;
-            foreach (var effect in message.EffectsToApply)
+            foreach (var effectEntity in message.EffectsToApply)
             {
-                var effectComponent = effect.Effect;
-                Debug.Assert(!effectComponent.ShouldTargetActivator || message.ActivatorEntity == message.TargetEntity);
+                var effect = effectEntity.Effect;
+                Debug.Assert(!effect.ShouldTargetActivator || message.ActivatorEntity == message.TargetEntity);
                 if (!message.SuccessfulApplication
-                    && effectComponent.EffectType != EffectType.Activate
-                    && effectComponent.EffectType != EffectType.Move)
+                    && effect.EffectType != EffectType.Activate
+                    && effect.EffectType != EffectType.Move)
                 {
                     continue;
                 }
 
-                switch (effectComponent.EffectType)
+                switch (effect.EffectType)
                 {
                     case EffectType.ChangeProperty:
-                        var propertyDescription = PropertyDescription.Loader.Find(effectComponent.PropertyName);
-                        Debug.Assert(propertyDescription.IsCalculated == (effectComponent.DurationTicks != 0));
+                        var propertyDescription = PropertyDescription.Loader.Find(effect.TargetName);
+                        Debug.Assert(propertyDescription.IsCalculated == (effect.DurationTicks != 0));
 
-                        using (var changedPropertyReference = ApplyEffect(effectComponent, appliedEffects, manager))
+                        using (var changedPropertyReference = ApplyEffect(effect, appliedEffects, manager))
                         {
                             changedPropertyReference.Referenced.Effect.AffectedEntityId = message.TargetEntity.Id;
                         }
 
                         break;
                     case EffectType.AddAbility:
-                        using (var abilityAddedReference = ApplyEffect(effectComponent, appliedEffects, manager))
+                        using (var abilityAddedReference = ApplyEffect(effect, appliedEffects, manager))
                         {
-                            var ability = effect.Ability.AddToEffect(abilityAddedReference.Referenced);
+                            var ability = effectEntity.Ability.AddToEffect(abilityAddedReference.Referenced);
 
                             ability.OwnerId = message.TargetEntity.Id;
                             abilityAddedReference.Referenced.Effect.AffectedEntityId = message.TargetEntity.Id;
@@ -70,11 +71,11 @@ namespace UnicornHack.Systems.Effects
 
                         break;
                     case EffectType.ChangeRace:
-                        var remove = effectComponent.Amount == -1;
-                        var raceName = effectComponent.PropertyName;
+                        var remove = effect.Amount == -1;
+                        var raceName = effect.TargetName;
                         if (remove)
                         {
-                            Debug.Assert(effectComponent.DurationTicks == 0);
+                            Debug.Assert(effect.DurationTicks == 0);
 
                             var raceEntity = manager.RacesToBeingRelationship[message.TargetEntity.Id].Values
                                 .SingleOrDefault(r => r.Race.TemplateName == raceName);
@@ -82,7 +83,7 @@ namespace UnicornHack.Systems.Effects
                         }
                         else
                         {
-                            Debug.Assert(effectComponent.DurationTicks != 0);
+                            Debug.Assert(effect.DurationTicks != 0);
 
                             if (!message.TargetEntity.HasComponent(EntityComponent.Player))
                             {
@@ -96,7 +97,7 @@ namespace UnicornHack.Systems.Effects
                             if (existingRace == null)
                             {
                                 using (var addedRaceEntityReference =
-                                    ApplyEffect(effectComponent, appliedEffects, manager))
+                                    ApplyEffect(effect, appliedEffects, manager))
                                 {
                                     var addedRaceEffect = addedRaceEntityReference.Referenced.Effect;
                                     addedRaceEffect.Amount = null;
@@ -122,24 +123,24 @@ namespace UnicornHack.Systems.Effects
                     case EffectType.Soak:
                     case EffectType.MagicalDamage:
                     case EffectType.PhysicalDamage:
-                        Debug.Assert(effectComponent.DurationTicks == 0);
+                        Debug.Assert(effect.DurationTicks == 0);
 
                         if (damageEffects == null)
                         {
                             damageEffects = new Dictionary<EffectType, (int Damage, EffectComponent Effect)>();
                         }
 
-                        var key = effectComponent.EffectType;
+                        var key = effect.EffectType;
                         if (!damageEffects.TryGetValue(key, out var previousDamage))
                         {
                             previousDamage = (0, null);
                         }
 
                         // TODO: Take effectComponent.Function into account
-                        damageEffects[key] = (effectComponent.Amount.Value + previousDamage.Damage, effectComponent);
+                        damageEffects[key] = (effect.Amount.Value + previousDamage.Damage, effect);
                         break;
                     case EffectType.Move:
-                        var movee = manager.FindEntity(effectComponent.ActivatableEntityId.Value);
+                        var movee = manager.FindEntity(effect.TargetEntityId.Value);
                         if (movee.HasComponent(EntityComponent.Item))
                         {
                             var moveItemMessage = manager.ItemMovingSystem.CreateMoveItemMessage(manager);
@@ -164,10 +165,39 @@ namespace UnicornHack.Systems.Effects
                         }
 
                         break;
+                    case EffectType.RemoveItem:
+                        var itemToRemove = manager.FindEntity(effect.TargetEntityId);
+                        var abilityId = effect.ContainingAbilityId;
+                        while (abilityId != null)
+                        {
+                            var abilityEntity = manager.FindEntity(abilityId);
+                            itemToRemove = abilityEntity.Ability.OwnerEntity;
+                            if (itemToRemove?.HasComponent(EntityComponent.Item) != true)
+                            {
+                                abilityId = abilityEntity.Effect.ContainingAbilityId;
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+
+                        if (itemToRemove?.HasComponent(EntityComponent.Item) != true)
+                        {
+                            throw new InvalidOperationException("Couldn't find item to remove");
+                        }
+
+                        using (var itemReference = manager.ItemMovingSystem.Split(itemToRemove.Item, 1))
+                        {
+                            var referenceMessage = manager.CreateEntityReferenceMessage(itemReference.Referenced);
+                            manager.Enqueue(referenceMessage, lowPriority: true);
+                        }
+
+                        break;
                     case EffectType.Heal:
                     case EffectType.GainXP:
                     case EffectType.Activate:
-                        using (var effectReference = ApplyEffect(effectComponent, appliedEffects, manager))
+                        using (var effectReference = ApplyEffect(effect, appliedEffects, manager))
                         {
                             effectReference.Referenced.Effect.AffectedEntityId = message.TargetEntity.Id;
                         }
@@ -273,8 +303,8 @@ namespace UnicornHack.Systems.Effects
 
             appliedEffect.EffectType = effectComponent.EffectType;
             appliedEffect.Function = effectComponent.Function;
-            appliedEffect.PropertyName = effectComponent.PropertyName;
-            appliedEffect.ActivatableEntityId = effectComponent.ActivatableEntityId;
+            appliedEffect.TargetName = effectComponent.TargetName;
+            appliedEffect.TargetEntityId = effectComponent.TargetEntityId;
 
             return appliedEffect;
         }
@@ -410,7 +440,7 @@ namespace UnicornHack.Systems.Effects
                         break;
                     }
 
-                    var propertyDescription = PropertyDescription.Loader.Find(appliedEffectComponent.PropertyName);
+                    var propertyDescription = PropertyDescription.Loader.Find(appliedEffectComponent.TargetName);
                     UpdateProperty(propertyDescription, targetEntity, appliedEffectComponent, manager);
 
                     break;
@@ -469,6 +499,8 @@ namespace UnicornHack.Systems.Effects
                     }
 
                     break;
+                case EffectType.Activate:
+                    break;
                 case EffectType.DrainEnergy:
                 case EffectType.DrainLife:
                 case EffectType.Bind:
@@ -491,9 +523,13 @@ namespace UnicornHack.Systems.Effects
                 case EffectType.Stone:
                 case EffectType.Stun:
                 case EffectType.Suffocate:
+                case EffectType.RemoveItem:
                 case EffectType.Teleport:
+                case EffectType.Move:
                     // TODO: Handle these effects
                     break;
+                default:
+                    throw new InvalidOperationException($"Effect {effectEntity.Id} of type {appliedEffectComponent.EffectType} not handled.");
             }
 
             if (state == State.Added && appliedEffectComponent.DurationTicks == 0)

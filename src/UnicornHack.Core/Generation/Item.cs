@@ -227,23 +227,78 @@ namespace UnicornHack.Generation
 
             foreach (var abilityDefinition in Abilities)
             {
-                using (var abilityEffectReference = manager.CreateEntity())
+                using (var abilityEntityReference = manager.CreateEntity())
                 {
-                    var abilityEffectEntity = abilityEffectReference.Referenced;
+                    var abilityEntity = abilityEntityReference.Referenced;
                     var abilityEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                     abilityEffect.EffectType = EffectType.AddAbility;
                     abilityEffect.DurationTicks = (int)EffectDuration.Infinite;
 
-                    abilityEffectEntity.Effect = abilityEffect;
+                    abilityEntity.Effect = abilityEffect;
 
-                    var ability = abilityDefinition.AddToEffect(abilityEffectEntity);
+                    var ability = abilityDefinition.AddToEffect(abilityEntity);
 
                     ability.OwnerId = itemEntity.Id;
                     abilityEffect.AffectedEntityId = itemEntity.Id;
+
+                    if ((abilityDefinition.Activation
+                        & (ActivationType.WhileToggled | ActivationType.ManualActivation | ActivationType.Targeted)) != 0)
+                    {
+                        AddPossesedAbility(ability, item, manager);
+                    }
                 }
             }
 
             return item;
+        }
+
+        private void AddPossesedAbility(AbilityComponent ability, ItemComponent item, GameManager manager)
+        {
+            using (var abilityEntityReference = manager.CreateEntity())
+            {
+                var abilityEntity = abilityEntityReference.Referenced;
+
+                var abilityEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+                abilityEffect.EffectType = EffectType.AddAbility;
+                abilityEffect.DurationTicks = (int)EffectDuration.Infinite;
+
+                abilityEntity.Effect = abilityEffect;
+
+                var possessedAbility = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+                possessedAbility.Name = "Add " + ability.Name + " ability";
+                possessedAbility.Activation = ActivationType.WhilePossessed;
+
+                abilityEntity.Ability = possessedAbility;
+
+                using (var activateAbilityEntityReference = manager.CreateEntity())
+                {
+                    var activateAbilityEntity = activateAbilityEntityReference.Referenced;
+
+                    var activateAbilityEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+                    activateAbilityEffect.EffectType = EffectType.AddAbility;
+                    activateAbilityEffect.DurationTicks = (int)EffectDuration.Infinite;
+
+                    activateAbilityEntity.Effect = activateAbilityEffect;
+
+                    var activateAbility = ability.AddToEffect(activateAbilityEntity, includeEffects: false);
+                    activateAbility.Name = item.TemplateName + ": " + ability.Name;
+
+                    activateAbilityEffect.ContainingAbilityId = abilityEntity.Id;
+
+                    using (var activateEffectEntityReference = manager.CreateEntity())
+                    {
+                        var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+                        effect.EffectType = EffectType.Activate;
+                        effect.TargetEntityId = ability.EntityId;
+                        effect.ContainingAbilityId = activateAbilityEntity.Id;
+
+                        activateEffectEntityReference.Referenced.Effect = effect;
+                    }
+                }
+
+                possessedAbility.OwnerId = item.EntityId;
+                abilityEffect.AffectedEntityId = item.EntityId;
+            }
         }
 
         private Func<string, byte, int, float> _weightFunction;

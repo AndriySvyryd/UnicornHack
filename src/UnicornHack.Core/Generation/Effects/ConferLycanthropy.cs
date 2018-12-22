@@ -9,7 +9,7 @@ namespace UnicornHack.Generation.Effects
         protected override void ConfigureEffect(EffectComponent effect)
         {
             effect.EffectType = EffectType.ConferLycanthropy;
-            effect.PropertyName = VariantName;
+            effect.TargetName = VariantName;
         }
     }
 }

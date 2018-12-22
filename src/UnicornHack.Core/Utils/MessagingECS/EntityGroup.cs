@@ -99,6 +99,7 @@ namespace UnicornHack.Utils.MessagingECS
                 var message = entity.Manager.Queue.CreateMessage<EntityAddedMessage<TEntity>>(_entityAddedMessageName);
                 message.Entity = entity;
                 message.ChangedComponent = changedComponent;
+                message.Group = this;
 
                 entity.Manager.Queue.Enqueue(message);
             }
@@ -122,6 +123,7 @@ namespace UnicornHack.Utils.MessagingECS
                 var message = manager.Queue.CreateMessage<EntityRemovedMessage<TEntity>>(_entityRemovedMessageName);
                 message.Entity = entity;
                 message.ChangedComponent = changedComponent;
+                message.Group = this;
 
                 manager.Queue.Enqueue(message);
             }
@@ -154,5 +156,7 @@ namespace UnicornHack.Utils.MessagingECS
         public IEnumerator<TEntity> GetEnumerator() => _entities.Values.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public override string ToString() => "EntityGroup: " + Name;
     }
 }

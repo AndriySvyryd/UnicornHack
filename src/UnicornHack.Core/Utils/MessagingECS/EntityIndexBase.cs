@@ -6,14 +6,17 @@ namespace UnicornHack.Utils.MessagingECS
         where TEntity : Entity
     {
         protected EntityIndexBase(
+            string name,
             IEntityGroup<TEntity> group,
             IKeyValueGetter<TEntity, TKey> keyValueGetter)
         {
+            Name = name;
             KeyValueGetter = keyValueGetter;
             group.AddListener(this);
             Group = group;
         }
 
+        public string Name { get; }
         protected IKeyValueGetter<TEntity, TKey> KeyValueGetter { get; }
         protected IEntityGroup<TEntity> Group { get; }
 

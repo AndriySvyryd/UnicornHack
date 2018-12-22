@@ -16,7 +16,6 @@ namespace UnicornHack.Systems.Actors
         IGameSystem<AbilityActivatedMessage>,
         IGameSystem<TraveledMessage>,
         IGameSystem<ItemEquippedMessage>,
-        IGameSystem<ItemActivatedMessage>,
         IGameSystem<ItemMovedMessage>,
         IGameSystem<DiedMessage>
     {
@@ -169,26 +168,6 @@ namespace UnicornHack.Systems.Actors
 
                     manager.Enqueue(unequipMessage);
                     break;
-                case PlayerAction.ActivateItem:
-                    var itemToActivate = GetItem(target.Value, playerEntity, manager);
-                    if (itemToActivate == null)
-                    {
-                        return false;
-                    }
-
-                    var activateItemMessage = manager.ItemUsageSystem.CreateActivateItemMessage(manager);
-                    activateItemMessage.ActivatorEntity = playerEntity;
-                    activateItemMessage.TargetEntity = playerEntity;
-                    activateItemMessage.ItemEntity = itemToActivate;
-                    activateItemMessage.ActivationType = ActivationType.ManualActivation;
-
-                    manager.Enqueue(activateItemMessage);
-                    break;
-                case PlayerAction.PerformDefaultAttack:
-                    var defaultAbilityEntity = manager.AbilitySlottingSystem.GetAbility(
-                        playerEntity.Id, AbilitySlottingSystem.DefaultAttackSlot, manager);
-                    ActivateAbility(defaultAbilityEntity, playerEntity, target, manager);
-                    break;
                 case PlayerAction.SetAbilitySlot:
                     var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
                     setSlotMessage.AbilityEntity = manager.FindEntity(target);
@@ -203,7 +182,7 @@ namespace UnicornHack.Systems.Actors
                         throw new InvalidOperationException("Must specify ability slot number");
                     }
 
-                    var abilityEntity = manager.AbilitySlottingSystem.GetAbility(playerEntity.Id, target2.Value, manager);
+                    var abilityEntity = manager.AbilitySlottingSystem.GetAbility(playerEntity.Id, target.Value, manager);
                     if (abilityEntity == null)
                     {
                         throw new InvalidOperationException("No ability in slot" + target);
@@ -303,6 +282,11 @@ namespace UnicornHack.Systems.Actors
         private bool ActivateAbility(
             GameEntity abilityEntity, GameEntity playerEntity, int? target, GameManager manager)
         {
+            if (target == null)
+            {
+                return ActivateAbility(abilityEntity, playerEntity, playerEntity.Position.LevelCell, playerEntity, manager);
+            }
+
             Point targetCell;
             GameEntity targetActor;
             if (target.Value < 0)
@@ -319,8 +303,7 @@ namespace UnicornHack.Systems.Actors
             else
             {
                 targetCell = Point.Unpack(target).Value;
-                targetActor =
-                    manager.LevelActorToLevelCellIndex[(playerEntity.Position.LevelId, targetCell.X, targetCell.Y)];
+                targetActor = manager.LevelActorToLevelCellIndex[(playerEntity.Position.LevelId, targetCell.X, targetCell.Y)];
             }
 
             return ActivateAbility(abilityEntity, playerEntity, targetCell, targetActor, manager);
@@ -330,7 +313,7 @@ namespace UnicornHack.Systems.Actors
             Point targetCell, GameEntity targetEntity, GameManager manager)
         {
             var ability = abilityEntity.Ability;
-            if (ability.Activation != ActivationType.Targeted
+            if ((ability.Activation & (ActivationType.Targeted | ActivationType.ManualActivation)) == 0
                 || !ability.IsUsable)
             {
                 throw new InvalidOperationException("Ability " + abilityEntity.Id + " cannot be used.");
@@ -338,20 +321,23 @@ namespace UnicornHack.Systems.Actors
 
             var position = playerEntity.Position;
             var shouldMoveCloser = false;
-            switch (ability.TargetingType)
+            if ((ability.Activation & ActivationType.ManualActivation) == 0)
             {
-                case TargetingType.AdjacentSingle:
-                case TargetingType.AdjacentArc:
-                    shouldMoveCloser = position.LevelCell.DistanceTo(targetCell) > 1;
-                    break;
-                case TargetingType.Projectile:
-                case TargetingType.GuidedProjectile:
-                case TargetingType.LineOfSight:
-                case TargetingType.Beam:
-                    // TODO: Check LOS and move closer if none
-                    break;
-                default:
-                    throw new InvalidOperationException(ability.TargetingType.ToString());
+                switch (ability.TargetingType)
+                {
+                    case TargetingType.AdjacentSingle:
+                    case TargetingType.AdjacentArc:
+                        shouldMoveCloser = position.LevelCell.DistanceTo(targetCell) > 1;
+                        break;
+                    case TargetingType.Projectile:
+                    case TargetingType.GuidedProjectile:
+                    case TargetingType.LineOfSight:
+                    case TargetingType.Beam:
+                        // TODO: Check LOS and move closer if none
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Targeting type ${ability.TargetingType.ToString()} not supported");
+                }
             }
 
             if (shouldMoveCloser)
@@ -363,7 +349,7 @@ namespace UnicornHack.Systems.Actors
 
                 var player = playerEntity.Player;
                 player.NextAction = PlayerAction.UseAbilitySlot;
-                player.NextActionTarget = abilityEntity.Id;
+                player.NextActionTarget = ability.Slot;
                 player.NextActionTarget2 = (-targetEntity?.Id) ?? targetCell.ToInt32();
                 player.QueuedAction = true;
 
@@ -408,22 +394,6 @@ namespace UnicornHack.Systems.Actors
                 && message.Delay != 0)
             {
                 var player = message.ActorEntity.Player;
-                if (player != null)
-                {
-                    player.NextActionTick += message.Delay;
-                }
-            }
-
-            return MessageProcessingResult.ContinueProcessing;
-        }
-
-        public MessageProcessingResult Process(ItemActivatedMessage message, GameManager state)
-        {
-            // TODO: show a message on fail
-            if (message.Successful
-                && message.Delay != 0)
-            {
-                var player = message.ActivatorEntity.Player;
                 if (player != null)
                 {
                     player.NextActionTick += message.Delay;

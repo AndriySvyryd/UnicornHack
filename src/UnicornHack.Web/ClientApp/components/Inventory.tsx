@@ -1,7 +1,7 @@
 import * as React from 'React';
 import * as scss from '../styles/site.scss'
 import { observer } from 'mobx-react';
-import { Item, ItemType } from '../transport/Model';
+import { Item } from '../transport/Model';
 import { PlayerAction } from "../transport/PlayerAction";
 
 @observer
@@ -44,13 +44,6 @@ class InventoryLine extends React.Component<IItemProps, {}> {
                     }>{s.name}</a>);
             });
             itemLine.push(')');
-        }
-
-        if (this.props.item.type & ItemType.Potion) {
-            itemLine.push(' ');
-            itemLine.push(<a tabIndex={0} key="quaff" onClick={
-                () => this.props.performAction(PlayerAction.ActivateItem, this.props.item.id, null)
-            }>quaff</a>);
         }
 
         itemLine.push(' ');

@@ -17,7 +17,7 @@ namespace UnicornHack.Generation.Effects
             base.ConfigureEffect(effect);
 
             effect.EffectType = EffectType.ChangeProperty;
-            effect.PropertyName = PropertyName;
+            effect.TargetName = PropertyName;
             effect.Amount = Value.ToInt32(CultureInfo.InvariantCulture);
             effect.Function = Function;
         }

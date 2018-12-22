@@ -198,7 +198,7 @@ namespace UnicornHack.Systems.Effects
                 var otherEffectComponent = (EffectComponent)
                     otherEffectEntity.FindComponent((int)EntityComponent.Effect);
                 if (otherEffectComponent.EffectType == EffectType.ChangeProperty
-                    && otherEffectComponent.PropertyName.Equals(propertyDescription.Name))
+                    && otherEffectComponent.TargetName.Equals(propertyDescription.Name))
                 {
                     activeEffects.Add(otherEffectComponent);
                 }

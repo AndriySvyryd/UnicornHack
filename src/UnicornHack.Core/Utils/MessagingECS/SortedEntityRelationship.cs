@@ -216,6 +216,8 @@ namespace UnicornHack.Utils.MessagingECS
             return true;
         }
 
+        public override string ToString() => "SortedRelationship: " + Name;
+
         public override IEnumerator<TEntity> GetEnumerator()
             => Index.Values.SelectMany(v => v.Values).GetEnumerator();
 

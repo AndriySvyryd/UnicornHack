@@ -5,6 +5,7 @@
     {
         private TEntity _entity;
         private Component _changedComponent;
+        private TEntity _referencedEntity;
 
         public TEntity Entity
         {
@@ -28,12 +29,27 @@
             }
         }
 
+        public TEntity ReferencedEntity
+        {
+            get => _referencedEntity;
+            set
+            {
+                _referencedEntity?.RemoveReference(this);
+                _referencedEntity = value;
+                _referencedEntity?.AddReference(this);
+            }
+        }
+
+        public IEntityGroup<TEntity> Group { get; set; }
+
         string IMessage.MessageName { get; set; }
 
         public void Dispose()
         {
             ChangedComponent = default;
             Entity = default;
+            Group = default;
+            ReferencedEntity = default;
         }
     }
 }

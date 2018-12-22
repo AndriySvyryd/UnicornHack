@@ -30,6 +30,7 @@ namespace UnicornHack
                     .AnyOf((int)EntityComponent.AI, (int)EntityComponent.Player));
 
             LevelActorToLevelCellIndex = new UniqueEntityIndex<GameEntity, (int, byte, byte)>(
+                nameof(LevelActorToLevelCellIndex),
                 LevelActors,
                 new KeyValueGetter<GameEntity, (int, byte, byte)>(
                     (entity, changes, getOldValue, matcher) =>
@@ -67,7 +68,6 @@ namespace UnicornHack
             queue.Add<TraveledMessage>(AISystem, TravelSystem.TraveledMessageName, 1);
             queue.Add<ItemMovedMessage>(AISystem, ItemMovingSystem.ItemMovedMessageName, 2);
             queue.Add<ItemEquippedMessage>(AISystem, ItemUsageSystem.ItemEquippedMessageName, 1);
-            queue.Add<ItemActivatedMessage>(AISystem, ItemUsageSystem.ItemActivatedMessageName, 1);
             queue.Add<DiedMessage>(AISystem, LivingSystem.DiedMessageName, 4);
             queue.Add<EntityAddedMessage<GameEntity>>(
                 AISystem, AbilitiesToAffectableRelationship.GetEntityAddedMessageName(), 1);
@@ -78,7 +78,6 @@ namespace UnicornHack
             queue.Add<TraveledMessage>(PlayerSystem, TravelSystem.TraveledMessageName, 2);
             queue.Add<ItemMovedMessage>(PlayerSystem, ItemMovingSystem.ItemMovedMessageName, 3);
             queue.Add<ItemEquippedMessage>(PlayerSystem, ItemUsageSystem.ItemEquippedMessageName, 2);
-            queue.Add<ItemActivatedMessage>(PlayerSystem, ItemUsageSystem.ItemActivatedMessageName, 2);
             queue.Add<DiedMessage>(PlayerSystem, LivingSystem.DiedMessageName, 5);
         }
     }

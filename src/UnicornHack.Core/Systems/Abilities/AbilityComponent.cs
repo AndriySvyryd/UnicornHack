@@ -142,25 +142,30 @@ namespace UnicornHack.Systems.Abilities
             }
         }
 
-        public AbilityComponent AddToEffect(GameEntity appliedEffectEntity)
+        public AbilityComponent AddToEffect(GameEntity abilityEffectEntity, bool includeEffects = true)
         {
-            var manager = appliedEffectEntity.Manager;
+            var manager = abilityEffectEntity.Manager;
             var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
             ability.Name = Name;
             ability.Activation = Activation;
             ability.ActivationCondition = ActivationCondition;
+            ability.Trigger = Trigger;
             ability.TargetingType = TargetingType;
             ability.TargetingAngle = TargetingAngle;
             ability.Action = Action;
-            ability.Delay = Delay;
+            ability.SuccessCondition = SuccessCondition;
             ability.Timeout = Timeout;
+            ability.Delay = Delay;
             ability.EnergyPointCost = EnergyPointCost;
 
-            appliedEffectEntity.Ability = ability;
+            abilityEffectEntity.Ability = ability;
 
-            foreach (var effectEntity in manager.EffectsToContainingAbilityRelationship[Entity.Id])
+            if (includeEffects)
             {
-                effectEntity.Effect.AddToAbility(appliedEffectEntity);
+                foreach (var effectEntity in manager.EffectsToContainingAbilityRelationship[Entity.Id])
+                {
+                    effectEntity.Effect.AddToAbility(abilityEffectEntity);
+                }
             }
 
             return ability;

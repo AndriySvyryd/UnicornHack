@@ -29,6 +29,7 @@ namespace UnicornHack.Primitives
         Gaze,
         Scream,
         Spell,
-        Explosion
+        Explosion,
+        Drink
     }
 }
