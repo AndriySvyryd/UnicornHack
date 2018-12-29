@@ -18,28 +18,28 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Paralyze {Duration = 4}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
-                    Timeout = 7,
+                    Cooldown = 350,
                     Effects = new HashSet<Effect> {new Engulf {Duration = 7}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Blight {Damage = 10}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Corrode {Damage = 10}}
                 },
                 new Ability
@@ -54,12 +54,10 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.None,
             Size = 8,
             Weight = 600,
-            Agility = 4,
-            Constitution = 4,
-            Intelligence = 4,
-            Quickness = 4,
-            Strength = 4,
-            Willpower = 9,
+            Perception = 4,
+            Might = 4,
+            Speed = 4,
+            Focus = 8,
             PhysicalDeflection = 12,
             AcidResistance = 75,
             ColdResistance = 75,
@@ -67,8 +65,8 @@ namespace UnicornHack.Data.Creatures
             FireResistance = 75,
             StoningImmune = true,
             HeadType = HeadType.None,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.None,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.None,
             RespirationType = RespirationType.None,
             EyeCount = 0,
             NoiseLevel = 0,

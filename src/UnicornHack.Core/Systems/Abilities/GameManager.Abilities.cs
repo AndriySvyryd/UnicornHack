@@ -22,7 +22,8 @@ namespace UnicornHack
 
             AffectableEntities = CreateGroup(nameof(AffectableEntities),
                 new EntityMatcher<GameEntity>().AnyOf(
-                    (int)EntityComponent.Being, (int)EntityComponent.Item, (int)EntityComponent.Physical, (int)EntityComponent.Sensor));
+                    (int)EntityComponent.Being, (int)EntityComponent.Item, (int)EntityComponent.Physical,
+                    (int)EntityComponent.Sensor));
 
             Abilities = CreateGroup(nameof(Abilities),
                 new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Ability));
@@ -34,10 +35,12 @@ namespace UnicornHack
                     (entity, changes, getOldValue, matcher) =>
                     {
                         if (!matcher.TryGetValue<int?>(
-                                entity, (int)EntityComponent.Ability, nameof(AbilityComponent.OwnerId), changes, getOldValue, out var ownerId)
+                                entity, (int)EntityComponent.Ability, nameof(AbilityComponent.OwnerId), changes,
+                                getOldValue, out var ownerId)
                             || !ownerId.HasValue
                             || !matcher.TryGetValue<int?>(
-                                entity, (int)EntityComponent.Ability, nameof(AbilityComponent.Slot), changes, getOldValue, out var slot)
+                                entity, (int)EntityComponent.Ability, nameof(AbilityComponent.Slot), changes,
+                                getOldValue, out var slot)
                             || !slot.HasValue)
                         {
                             return ((0, 0), false);
@@ -62,7 +65,8 @@ namespace UnicornHack
                 referencingKeepAlive: true);
 
             AbilityActivationSystem = new AbilityActivationSystem();
-            queue.Add<ActivateAbilityMessage>(AbilityActivationSystem, AbilityActivationSystem.ActivateAbilityMessageName, 0);
+            queue.Add<ActivateAbilityMessage>(AbilityActivationSystem,
+                AbilityActivationSystem.ActivateAbilityMessageName, 0);
             queue.Add<ItemEquippedMessage>(AbilityActivationSystem, ItemUsageSystem.ItemEquippedMessageName, 3);
             queue.Add<DiedMessage>(AbilityActivationSystem, LivingSystem.DiedMessageName, 2);
             queue.Add<LeveledUpMessage>(AbilityActivationSystem, XPSystem.LeveledUpMessageName, 0);

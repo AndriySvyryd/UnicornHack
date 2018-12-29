@@ -10,11 +10,6 @@ namespace UnicornHack.Data.Items
         public static readonly Item Dagger = new Item
         {
             Name = "dagger",
-            Type = ItemType.WeaponMeleeShort,
-            Material = Material.Steel,
-            Weight = 5,
-            EquipableSizes = SizeCategory.Tiny | SizeCategory.Small,
-            EquipableSlots = EquipmentSlot.GraspSingleExtremity | EquipmentSlot.GraspBothExtremities,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -23,7 +18,12 @@ namespace UnicornHack.Data.Items
                     Action = AbilityAction.Slash,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 40}}
                 }
-            }
+            },
+            Type = ItemType.WeaponMeleeShort,
+            Material = Material.Steel,
+            Weight = 5,
+            EquipableSizes = SizeCategory.Tiny | SizeCategory.Small,
+            EquipableSlots = EquipmentSlot.GraspSingleExtremity | EquipmentSlot.GraspBothExtremities
         };
     }
 }

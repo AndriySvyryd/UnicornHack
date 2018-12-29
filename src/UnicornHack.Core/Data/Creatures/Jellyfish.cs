@@ -18,7 +18,7 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Sting,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Blight {Damage = 60}}
                 }
             },
@@ -26,15 +26,13 @@ namespace UnicornHack.Data.Creatures
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
             Size = 2,
             Weight = 80,
-            Agility = 2,
-            Constitution = 2,
-            Intelligence = 2,
-            Quickness = 2,
-            Strength = 2,
-            Willpower = 2,
+            Perception = 2,
+            Might = 2,
+            Speed = 2,
+            Focus = 2,
             PhysicalDeflection = 14,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.None,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.None,
             RespirationType = RespirationType.Water,
             LocomotionType = LocomotionType.Swimming,
             InventorySize = 0

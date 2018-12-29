@@ -18,18 +18,16 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Blight {Damage = 30}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.Targeted,
-                    Action = AbilityAction.Touch,
-                    Timeout = 1,
-                    Effects = new HashSet<Effect>
-                    {
-                        new Stick()
-                    }
+                    Activation = ActivationType.Targeted, Action = AbilityAction.Touch, Cooldown = 100, Effects =
+                        new HashSet<Effect>
+                        {
+                            new Stick()
+                        }
                 }
             },
             InitialLevel = 3,
@@ -37,16 +35,14 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.None,
             Size = 2,
             Weight = 100,
-            Agility = 2,
-            Constitution = 2,
-            Intelligence = 2,
-            Quickness = 2,
-            Strength = 2,
-            Willpower = 7,
+            Perception = 2,
+            Might = 2,
+            Speed = 2,
+            Focus = 6,
             PhysicalDeflection = 13,
             HeadType = HeadType.None,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.None,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.None,
             RespirationType = RespirationType.None,
             InventorySize = 0,
             EyeCount = 0,

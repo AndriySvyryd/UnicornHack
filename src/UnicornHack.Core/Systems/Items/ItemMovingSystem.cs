@@ -131,12 +131,14 @@ namespace UnicornHack.Systems.Items
                 if (initialPosition != null
                     && initialPosition != message.TargetCell.Value)
                 {
-                    spilloverDirection = message.TargetCell.Value.DifferenceTo(initialPosition.Value).GetUnit().AsDirection();
+                    spilloverDirection = message.TargetCell.Value.DifferenceTo(initialPosition.Value).GetUnit()
+                        .AsDirection();
                 }
 
                 ItemComponent leftover = null;
                 foreach (var targetPoint in TerrainSystem.GetAdjacentPoints(
-                    message.TargetLevelEntity.Level, message.TargetCell.Value, spilloverDirection, includeInitial: true))
+                    message.TargetLevelEntity.Level, message.TargetCell.Value, spilloverDirection,
+                    includeInitial: true))
                 {
                     if (!manager.TravelSystem.CanMoveTo(targetPoint, message.TargetLevelEntity.Level))
                     {
@@ -144,7 +146,8 @@ namespace UnicornHack.Systems.Items
                     }
 
                     var (levelX, levelY) = targetPoint;
-                    var existingItem = manager.LevelItemsToLevelCellIndex[(message.TargetLevelEntity.Id, levelX, levelY)];
+                    var existingItem =
+                        manager.LevelItemsToLevelCellIndex[(message.TargetLevelEntity.Id, levelX, levelY)];
                     if (existingItem == null)
                     {
                         itemMovedMessage.Successful = true;

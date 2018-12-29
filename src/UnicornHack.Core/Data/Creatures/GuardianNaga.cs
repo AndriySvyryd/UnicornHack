@@ -19,14 +19,14 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spit,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Blight {Damage = 140}}
                 }
             },
@@ -36,16 +36,14 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Hiss,
             Size = 16,
             Weight = 1500,
-            Agility = 7,
-            Constitution = 7,
-            Intelligence = 7,
-            Quickness = 7,
-            Strength = 7,
-            Willpower = 7,
-            MagicResistance = 50,
+            Perception = 7,
+            Might = 6,
+            Speed = 7,
+            Focus = 6,
+            MagicDeflection = 25,
             TorsoType = TorsoType.Serpentine,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.None,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.None,
             InventorySize = 1,
             Infravision = true
         };

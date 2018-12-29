@@ -25,14 +25,14 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new DrainLife {Amount = 3}}
                 }
             },
@@ -42,18 +42,16 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Speach,
             Weight = 1000,
-            Agility = 6,
-            Constitution = 6,
-            Intelligence = 6,
-            Quickness = 6,
-            Strength = 6,
-            Willpower = 11,
+            Perception = 6,
+            Might = 6,
+            Speed = 6,
+            Focus = 10,
             Regeneration = 3,
-            MagicResistance = 25,
+            MagicDeflection = 12,
             PhysicalDeflection = 19,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             RespirationType = RespirationType.None,
             LocomotionType = LocomotionType.Flying,
             Infravision = true

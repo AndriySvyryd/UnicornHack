@@ -19,43 +19,37 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Engulf {Duration = 20}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Corrode {Damage = 220}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spit,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Corrode {Damage = 100}}
                 }
             },
             InitialLevel = 30,
-            GenerationWeight = new BranchWeight
-            {
-                Matched = new DefaultWeight {Multiplier = 0F},
-                Name = "hell"
-            },
+            GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 0F}, Name = "hell"},
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
             Behavior = AIBehavior.RangedPeaceful | AIBehavior.Stalking,
             Noise = ActorNoiseType.Gurgle,
             Sex = Sex.Male,
             Size = 8,
             Weight = 1500,
-            Agility = 16,
-            Constitution = 16,
-            Intelligence = 16,
-            Quickness = 16,
-            Strength = 16,
-            Willpower = 16,
-            MagicResistance = 65,
+            Perception = 16,
+            Might = 16,
+            Speed = 16,
+            Focus = 16,
+            MagicDeflection = 32,
             PhysicalDeflection = 27,
             AcidResistance = 75,
             FireResistance = 75,

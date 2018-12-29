@@ -25,30 +25,26 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spell,
-                    Timeout = 1,
-                    Effects = new HashSet<Effect> {new MagicalDamage {Damage = 70}}
+                    Cooldown = 100,
+                    Effects = new HashSet<Effect> {new Disintegrate {Damage = 70}}
                 }
             },
             InitialLevel = 14,
-            GenerationWeight = new BranchWeight
-            {
-                NotMatched = new DefaultWeight {Multiplier = 4F},
-                Name = "hell"
-            },
+            GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight {Multiplier = 4F}, Name = "hell"},
             PreviousStageName = "aleax",
             NextStageName = "archon",
             GenerationFlags = GenerationFlags.NonPolymorphable,
@@ -56,19 +52,17 @@ namespace UnicornHack.Data.Creatures
                        AIBehavior.MagicUser,
             Noise = ActorNoiseType.Speach,
             Weight = 1000,
-            Agility = 8,
-            Constitution = 8,
-            Intelligence = 8,
-            Quickness = 8,
-            Strength = 8,
-            Willpower = 13,
-            MagicResistance = 55,
+            Perception = 8,
+            Might = 8,
+            Speed = 8,
+            Focus = 12,
+            MagicDeflection = 27,
             PhysicalDeflection = 24,
             ColdResistance = 75,
             ElectricityResistance = 75,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             LocomotionType = LocomotionType.Flying,
             Infravisible = true,
             Infravision = true,

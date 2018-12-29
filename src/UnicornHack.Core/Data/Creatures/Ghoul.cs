@@ -19,14 +19,14 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Slow {Duration = 3}}
                 }
             },
@@ -35,17 +35,15 @@ namespace UnicornHack.Data.Creatures
             NextStageName = "ghast",
             Noise = ActorNoiseType.Growl,
             Weight = 400,
-            Agility = 7,
-            Constitution = 7,
-            Intelligence = 7,
-            Quickness = 7,
-            Strength = 7,
-            Willpower = 12,
+            Perception = 7,
+            Might = 6,
+            Speed = 7,
+            Focus = 12,
             PhysicalDeflection = 16,
             ColdResistance = 75,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             RespirationType = RespirationType.None,
             Infravision = true
         };

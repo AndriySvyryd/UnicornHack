@@ -11,7 +11,7 @@ namespace UnicornHack.Systems.Knowledge
     /// <summary>
     ///     Handles player XP
     /// </summary>
-    public class XPSystem:
+    public class XPSystem :
         IGameSystem<VisibleTerrainChangedMessage>,
         IGameSystem<DiedMessage>,
         IGameSystem<EntityAddedMessage<GameEntity>>,

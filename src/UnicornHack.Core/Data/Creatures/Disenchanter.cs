@@ -18,7 +18,7 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new DrainEnergy {Amount = 5}}
                 },
                 new Ability
@@ -31,16 +31,14 @@ namespace UnicornHack.Data.Creatures
             GenerationWeight = new DefaultWeight {Multiplier = 3F},
             Noise = ActorNoiseType.Growl,
             Weight = 750,
-            Agility = 7,
-            Constitution = 7,
-            Intelligence = 7,
-            Quickness = 7,
-            Strength = 7,
-            Willpower = 7,
+            Perception = 7,
+            Might = 6,
+            Speed = 7,
+            Focus = 6,
             PhysicalDeflection = 30,
             TorsoType = TorsoType.Quadruped,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.Claws,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.Claws,
             InventorySize = 1,
             Infravisible = true,
             Infravision = true

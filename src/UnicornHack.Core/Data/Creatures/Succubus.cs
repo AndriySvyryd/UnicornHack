@@ -19,21 +19,21 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Sedate {Duration = 5}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 }
             },
@@ -42,17 +42,15 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Seduction,
             Weight = 1400,
-            Agility = 4,
-            Constitution = 4,
-            Intelligence = 4,
-            Quickness = 4,
-            Strength = 4,
-            Willpower = 4,
-            MagicResistance = 70,
+            Perception = 4,
+            Might = 4,
+            Speed = 4,
+            Focus = 4,
+            MagicDeflection = 35,
             FireResistance = 75,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             LocomotionType = LocomotionType.Flying,
             Infravisible = true,
             Infravision = true

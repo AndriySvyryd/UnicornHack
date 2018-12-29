@@ -18,21 +18,21 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
                 }
             },
@@ -42,17 +42,15 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.MagicUser,
             Noise = ActorNoiseType.Grunt,
             Weight = 1200,
-            Agility = 5,
-            Constitution = 5,
-            Intelligence = 5,
-            Quickness = 5,
-            Strength = 5,
-            Willpower = 5,
+            Perception = 5,
+            Might = 4,
+            Speed = 5,
+            Focus = 4,
             PhysicalDeflection = 24,
             StoningImmune = true,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             RespirationType = RespirationType.None,
             LocomotionType = LocomotionType.Flying
         };

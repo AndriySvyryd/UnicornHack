@@ -19,47 +19,41 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Sting,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Blight {Damage = 50}}
                 }
             },
             InitialLevel = 30,
-            GenerationWeight = new BranchWeight
-            {
-                Matched = new DefaultWeight {Multiplier = 0F},
-                Name = "hell"
-            },
+            GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 0F}, Name = "hell"},
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
             Behavior = AIBehavior.Stalking,
             Noise = ActorNoiseType.Cuss,
             Sex = Sex.Male,
             Size = 16,
             Weight = 2500,
-            Agility = 16,
-            Constitution = 16,
-            Intelligence = 16,
-            Quickness = 16,
-            Strength = 16,
-            Willpower = 16,
-            MagicResistance = 75,
+            Perception = 16,
+            Might = 16,
+            Speed = 16,
+            Focus = 16,
+            MagicDeflection = 37,
             PhysicalDeflection = 23,
             FireResistance = 75,
             TorsoType = TorsoType.Humanoid,
-            LowerExtremeties = ExtremityType.None,
+            LowerExtremities = ExtremityType.None,
             LocomotionType = LocomotionType.Flying,
             Infravisible = true,
             Infravision = true,

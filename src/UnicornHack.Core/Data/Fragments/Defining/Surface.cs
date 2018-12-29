@@ -8,19 +8,8 @@ namespace UnicornHack.Data.Fragments
         public static readonly DefiningMapFragment Surface = new DefiningMapFragment
         {
             Name = "surface",
-            GenerationWeight = new BranchWeight
-            {
-                Matched = new InfiniteWeight(),
-                Name = "surface"
-            },
-            Connections = new[]
-            {
-                new LevelConnection
-                {
-                    BranchName = "dungeon",
-                    Glyph = '>'
-                }
-            },
+            GenerationWeight = new BranchWeight {Matched = new InfiniteWeight(), Name = "surface"},
+            Connections = new[] {new LevelConnection {BranchName = "dungeon", Glyph = '>'}},
             NoRandomDoorways = true,
             LevelHeight = 3,
             LevelWidth = 3,

@@ -29,18 +29,21 @@ namespace UnicornHack.Utils.MessagingECS
             _matcher = new PropertyMatcher().With(getProperty, componentId);
         }
 
-        public bool TryGetKey(TEntity entity, IReadOnlyList<IPropertyValueChange> changes, bool getOldValue, out TKey keyValue)
+        public bool TryGetKey(TEntity entity, IReadOnlyList<IPropertyValueChange> changes, bool getOldValue,
+            out TKey keyValue)
         {
             if (_nullable)
             {
-                if (_matcher.TryGetValue<TKey?>(entity, _componentId, _propertyName, changes, getOldValue, out var value)
+                if (_matcher.TryGetValue<TKey?>(entity, _componentId, _propertyName, changes, getOldValue,
+                        out var value)
                     && value.HasValue)
                 {
                     keyValue = value.Value;
                     return true;
                 }
             }
-            else if (_matcher.TryGetValue<TKey>(entity, _componentId, _propertyName, changes, getOldValue, out var value))
+            else if (_matcher.TryGetValue<TKey>(entity, _componentId, _propertyName, changes, getOldValue,
+                out var value))
             {
                 keyValue = value;
                 return true;

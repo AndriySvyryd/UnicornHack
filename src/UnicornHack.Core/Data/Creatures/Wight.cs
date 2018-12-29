@@ -25,21 +25,21 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new DrainLife {Amount = 2}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spell,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
                 }
             },
@@ -48,18 +48,16 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector | AIBehavior.MagicUser,
             Noise = ActorNoiseType.Howl,
             Weight = 1200,
-            Agility = 2,
-            Constitution = 2,
-            Intelligence = 2,
-            Quickness = 2,
-            Strength = 2,
-            Willpower = 7,
-            MagicResistance = 5,
+            Perception = 2,
+            Might = 2,
+            Speed = 2,
+            Focus = 6,
+            MagicDeflection = 2,
             PhysicalDeflection = 15,
             ColdResistance = 75,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             RespirationType = RespirationType.None,
             Infravision = true
         };

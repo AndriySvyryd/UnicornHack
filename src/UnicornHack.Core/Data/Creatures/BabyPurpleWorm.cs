@@ -19,7 +19,7 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
                 }
             },
@@ -27,16 +27,14 @@ namespace UnicornHack.Data.Creatures
             GenerationWeight = new DefaultWeight {Multiplier = 5F},
             NextStageName = "purple worm",
             Weight = 600,
-            Agility = 3,
-            Constitution = 3,
-            Intelligence = 3,
-            Quickness = 3,
-            Strength = 3,
-            Willpower = 3,
+            Perception = 3,
+            Might = 2,
+            Speed = 3,
+            Focus = 2,
             PhysicalDeflection = 15,
             TorsoType = TorsoType.Serpentine,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.None,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.None,
             InventorySize = 0,
             EyeCount = 0,
             NoiseLevel = 0

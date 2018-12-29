@@ -39,7 +39,8 @@ namespace UnicornHack.Utils.DataLoading
 
                 foreach (var type in _targetAssembly.GetTypes())
                 {
-                    var typeAttribute = (TClassAttribute)type.GetCustomAttribute(typeof(TClassAttribute), inherit: true);
+                    var typeAttribute =
+                        (TClassAttribute)type.GetCustomAttribute(typeof(TClassAttribute), inherit: true);
                     if (typeAttribute == null)
                     {
                         continue;

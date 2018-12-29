@@ -24,14 +24,14 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Kick,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
                 }
             },
@@ -41,12 +41,10 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Speach,
             Size = 8,
             Weight = 2000,
-            Agility = 3,
-            Constitution = 3,
-            Intelligence = 3,
-            Quickness = 3,
-            Strength = 3,
-            Willpower = 3,
+            Perception = 3,
+            Might = 2,
+            Speed = 3,
+            Focus = 2,
             PhysicalDeflection = 16,
             TorsoType = TorsoType.Humanoid,
             Infravisible = true

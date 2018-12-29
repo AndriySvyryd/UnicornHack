@@ -24,46 +24,40 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
                 }
             },
             InitialLevel = 11,
-            GenerationWeight = new BranchWeight
-            {
-                NotMatched = new DefaultWeight(),
-                Name = "hell"
-            },
+            GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight(), Name = "hell"},
             Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Grunt,
             Size = 8,
             Weight = 1200,
-            Agility = 6,
-            Constitution = 6,
-            Intelligence = 6,
-            Quickness = 6,
-            Strength = 6,
-            Willpower = 6,
+            Perception = 6,
+            Might = 6,
+            Speed = 6,
+            Focus = 6,
             Regeneration = 3,
-            MagicResistance = 40,
+            MagicDeflection = 20,
             PhysicalDeflection = 16,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             LocomotionType = LocomotionType.Swimming,
             Infravisible = true,
             Infravision = true,

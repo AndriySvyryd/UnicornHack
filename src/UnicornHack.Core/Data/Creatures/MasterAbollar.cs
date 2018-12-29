@@ -24,38 +24,24 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Suck,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect>
-                    {
-                        new ChangeProperty<int>
-                        {
-                            PropertyName = "intelligence",
-                            Value = -2,
-                            Duration = 10
-                        }
-                    }
+                        {new ChangeProperty<int> {PropertyName = "Focus", Value = -2, Duration = 10}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Suck,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect>
-                    {
-                        new ChangeProperty<int>
-                        {
-                            PropertyName = "intelligence",
-                            Value = -2,
-                            Duration = 10
-                        }
-                    }
+                        {new ChangeProperty<int> {PropertyName = "Focus", Value = -2, Duration = 10}}
                 }
             },
             InitialLevel = 13,
@@ -65,16 +51,14 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Gurgle,
             Size = 8,
             Weight = 1200,
-            Agility = 7,
-            Constitution = 7,
-            Intelligence = 7,
-            Quickness = 7,
-            Strength = 7,
-            Willpower = 7,
-            MagicResistance = 90,
+            Perception = 7,
+            Might = 6,
+            Speed = 7,
+            Focus = 6,
+            MagicDeflection = 45,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             LocomotionType = LocomotionType.Flying,
             Telepathic = 3,
             Infravisible = true,

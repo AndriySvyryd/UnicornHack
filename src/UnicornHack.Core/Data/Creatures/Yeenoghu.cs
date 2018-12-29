@@ -25,50 +25,44 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Confuse {Duration = 9}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Paralyze {Duration = 3}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spell,
-                    Timeout = 1,
-                    Effects = new HashSet<Effect> {new MagicalDamage {Damage = 70}}
+                    Cooldown = 100,
+                    Effects = new HashSet<Effect> {new Disintegrate {Damage = 70}}
                 }
             },
             InitialLevel = 30,
-            GenerationWeight = new BranchWeight
-            {
-                Matched = new DefaultWeight {Multiplier = 0F},
-                Name = "hell"
-            },
+            GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 0F}, Name = "hell"},
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
             Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector | AIBehavior.MagicUser,
             Noise = ActorNoiseType.Gurgle,
             Sex = Sex.Male,
             Size = 8,
             Weight = 1500,
-            Agility = 16,
-            Constitution = 16,
-            Intelligence = 16,
-            Quickness = 16,
-            Strength = 16,
-            Willpower = 16,
-            MagicResistance = 80,
+            Perception = 16,
+            Might = 16,
+            Speed = 16,
+            Focus = 16,
+            MagicDeflection = 40,
             PhysicalDeflection = 25,
             FireResistance = 75,
             Infravisible = true,

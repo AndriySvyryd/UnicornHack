@@ -25,30 +25,26 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Hug,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
                 }
             },
             InitialLevel = 13,
-            GenerationWeight = new BranchWeight
-            {
-                Matched = new DefaultWeight {Multiplier = 2F},
-                Name = "hell"
-            },
+            GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 2F}, Name = "hell"},
             PreviousStageName = "vrock",
             NextStageName = "balrog",
             GenerationFlags = GenerationFlags.NonGenocidable,
@@ -56,18 +52,16 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Growl,
             Size = 8,
             Weight = 1600,
-            Agility = 7,
-            Constitution = 7,
-            Intelligence = 7,
-            Quickness = 7,
-            Strength = 7,
-            Willpower = 7,
-            MagicResistance = 65,
+            Perception = 7,
+            Might = 6,
+            Speed = 7,
+            Focus = 6,
+            MagicDeflection = 32,
             PhysicalDeflection = 23,
             FireResistance = 75,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             LocomotionType = LocomotionType.Flying,
             Infravisible = true,
             Infravision = true,

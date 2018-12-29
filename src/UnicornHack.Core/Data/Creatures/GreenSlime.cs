@@ -16,37 +16,28 @@ namespace UnicornHack.Data.Creatures
             {
                 new Ability
                 {
-                    Activation = ActivationType.Targeted,
-                    Action = AbilityAction.Touch,
-                    Timeout = 1,
-                    Effects = new HashSet<Effect>
-                    {
-                        new Slime()
-                    }
+                    Activation = ActivationType.Targeted, Action = AbilityAction.Touch, Cooldown = 100, Effects =
+                        new HashSet<Effect>
+                        {
+                            new Slime()
+                        }
                 },
                 new Ability
                 {
-                    Activation = ActivationType.OnPhysicalMeleeHit,
-                    Effects = new HashSet<Effect>
+                    Activation = ActivationType.OnPhysicalMeleeHit, Effects = new HashSet<Effect>
                     {
                         new Slime()
                     }
                 }
             },
             InitialLevel = 6,
-            GenerationWeight = new BranchWeight
-            {
-                Matched = new DefaultWeight(),
-                Name = "hell"
-            },
+            GenerationWeight = new BranchWeight {Matched = new DefaultWeight(), Name = "hell"},
             Sex = Sex.None,
             Weight = 400,
-            Agility = 4,
-            Constitution = 4,
-            Intelligence = 4,
-            Quickness = 4,
-            Strength = 4,
-            Willpower = 9,
+            Perception = 4,
+            Might = 4,
+            Speed = 4,
+            Focus = 8,
             PhysicalDeflection = 14,
             AcidResistance = 75,
             ColdResistance = 75,
@@ -54,8 +45,8 @@ namespace UnicornHack.Data.Creatures
             StoningImmune = true,
             HeadType = HeadType.None,
             TorsoType = TorsoType.Amorphic,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.None,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.None,
             RespirationType = RespirationType.None,
             EyeCount = 0,
             NoiseLevel = 0,

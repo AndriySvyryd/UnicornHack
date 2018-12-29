@@ -92,20 +92,22 @@ namespace UnicornHack.Systems.Beings
                     }
 
                     break;
-                case nameof(BeingComponent.Constitution):
+                case nameof(BeingComponent.Might):
                     var hpEffect = GetPropertyEffect(message.Entity, nameof(BeingComponent.HitPointMaximum), manager);
 
                     hpEffect.Amount = message.NewValue * 10;
 
                     break;
-                case nameof(BeingComponent.Willpower):
-                    var epEffect = GetPropertyEffect(message.Entity, nameof(BeingComponent.EnergyPointMaximum), manager);
+                case nameof(BeingComponent.Focus):
+                    var epEffect = GetPropertyEffect(message.Entity, nameof(BeingComponent.EnergyPointMaximum),
+                        manager);
 
                     epEffect.Amount = message.NewValue * 10;
 
                     break;
-                case nameof(BeingComponent.Quickness):
-                    var movementEffect = GetPropertyEffect(message.Entity, nameof(PositionComponent.MovementDelay), manager);
+                case nameof(BeingComponent.Speed):
+                    var movementEffect =
+                        GetPropertyEffect(message.Entity, nameof(PositionComponent.MovementDelay), manager);
 
                     movementEffect.Amount = message.NewValue == 0
                         ? 0

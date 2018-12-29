@@ -20,21 +20,21 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Engulf {Duration = 3}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Soak {Damage = 10}}
                 },
                 new Ability
@@ -44,27 +44,21 @@ namespace UnicornHack.Data.Creatures
                 }
             },
             InitialLevel = 3,
-            GenerationWeight = new BranchWeight
-            {
-                NotMatched = new DefaultWeight {Multiplier = 4F},
-                Name = "hell"
-            },
+            GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight {Multiplier = 4F}, Name = "hell"},
             Sex = Sex.None,
             Size = 16,
             Weight = 1,
-            Agility = 2,
-            Constitution = 2,
-            Intelligence = 2,
-            Quickness = 2,
-            Strength = 2,
-            Willpower = 7,
-            MagicResistance = 30,
+            Perception = 2,
+            Might = 2,
+            Speed = 2,
+            Focus = 6,
+            MagicDeflection = 15,
             AcidResistance = 75,
             SlimingImmune = true,
             StoningImmune = true,
             HeadType = HeadType.None,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.None,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.None,
             RespirationType = RespirationType.None,
             LocomotionType = LocomotionType.Flying,
             InventorySize = 0,

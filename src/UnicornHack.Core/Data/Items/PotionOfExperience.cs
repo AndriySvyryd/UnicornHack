@@ -10,22 +10,25 @@ namespace UnicornHack.Data.Items
         public static readonly Item PotionOfExperience = new Item
         {
             Name = "potion of experience",
-            Type = ItemType.Potion,
-            GenerationWeight = new DefaultWeight {Multiplier = 0F},
-            Material = Material.Glass,
-            Weight = 1,
-            StackSize = 20,
             Abilities = new HashSet<Ability>
             {
                 new Ability
                 {
                     Name = "Drink",
-                    Action = AbilityAction.Drink,
                     Activation = ActivationType.ManualActivation,
+                    Action = AbilityAction.Drink,
                     Delay = 100,
-                    Effects = new HashSet<Effect> {new GainXP {Amount = 1000}, new RemoveItem() }
+                    Effects = new HashSet<Effect>
+                    {
+                        new GainXP {Amount = 1000}, new RemoveItem()
+                    }
                 }
-            }
+            },
+            Type = ItemType.Potion,
+            GenerationWeight = new DefaultWeight {Multiplier = 0F},
+            Material = Material.Glass,
+            Weight = 1,
+            StackSize = 20
         };
     }
 }

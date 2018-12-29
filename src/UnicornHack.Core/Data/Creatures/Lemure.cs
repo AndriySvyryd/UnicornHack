@@ -19,21 +19,21 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 }
             },
@@ -42,12 +42,10 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.Stalking,
             Noise = ActorNoiseType.Hiss,
             Weight = 500,
-            Agility = 2,
-            Constitution = 2,
-            Intelligence = 2,
-            Quickness = 2,
-            Strength = 2,
-            Willpower = 7,
+            Perception = 2,
+            Might = 2,
+            Speed = 2,
+            Focus = 6,
             Regeneration = 3,
             PhysicalDeflection = 13,
             Infravisible = true,

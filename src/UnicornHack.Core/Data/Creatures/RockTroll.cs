@@ -24,44 +24,38 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
                 }
             },
             InitialLevel = 9,
-            GenerationWeight = new BranchWeight
-            {
-                NotMatched = new DefaultWeight {Multiplier = 2F},
-                Name = "hell"
-            },
+            GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight {Multiplier = 2F}, Name = "hell"},
             Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Grunt,
             Size = 8,
             Weight = 1200,
-            Agility = 5,
-            Constitution = 5,
-            Intelligence = 5,
-            Quickness = 5,
-            Strength = 5,
-            Willpower = 5,
+            Perception = 5,
+            Might = 4,
+            Speed = 5,
+            Focus = 4,
             Regeneration = 3,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             Infravisible = true,
             Infravision = true,
             Reanimation = true

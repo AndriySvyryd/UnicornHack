@@ -19,42 +19,36 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Freeze {Damage = 170}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spell,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
                 }
             },
             InitialLevel = 25,
-            GenerationWeight = new BranchWeight
-            {
-                Matched = new DefaultWeight(),
-                Name = "hell"
-            },
+            GenerationWeight = new BranchWeight {Matched = new DefaultWeight(), Name = "hell"},
             PreviousStageName = "master lich",
             Behavior = AIBehavior.MagicUser,
             Noise = ActorNoiseType.Mumble,
             Weight = 600,
-            Agility = 13,
-            Constitution = 13,
-            Intelligence = 13,
-            Quickness = 13,
-            Strength = 13,
-            Willpower = 18,
+            Perception = 13,
+            Might = 12,
+            Speed = 13,
+            Focus = 18,
             Regeneration = 3,
-            MagicResistance = 90,
+            MagicDeflection = 45,
             PhysicalDeflection = 26,
             ColdResistance = 75,
             ElectricityResistance = 75,
             FireResistance = 75,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             RespirationType = RespirationType.None,
             Infravision = true
         };

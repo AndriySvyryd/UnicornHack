@@ -19,55 +19,49 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spell,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
                 }
             },
             InitialLevel = 11,
-            GenerationWeight = new BranchWeight
-            {
-                Matched = new DefaultWeight(),
-                Name = "hell"
-            },
+            GenerationWeight = new BranchWeight {Matched = new DefaultWeight(), Name = "hell"},
             PreviousStageName = "barbed devil",
             GenerationFlags = GenerationFlags.NonGenocidable,
             Behavior = AIBehavior.Stalking | AIBehavior.MagicUser,
             Noise = ActorNoiseType.Cast,
             Size = 16,
             Weight = 2500,
-            Agility = 6,
-            Constitution = 6,
-            Intelligence = 6,
-            Quickness = 6,
-            Strength = 6,
-            Willpower = 6,
-            MagicResistance = 65,
+            Perception = 6,
+            Might = 6,
+            Speed = 6,
+            Focus = 6,
+            MagicDeflection = 32,
             PhysicalDeflection = 24,
             FireResistance = 75,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             Infravisible = true,
             Infravision = true,
             InvisibilityDetection = true

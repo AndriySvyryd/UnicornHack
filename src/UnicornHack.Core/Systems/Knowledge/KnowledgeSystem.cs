@@ -1,7 +1,4 @@
-﻿using System.Linq;
-using UnicornHack.Primitives;
-using UnicornHack.Services.LogEvents;
-using UnicornHack.Systems.Beings;
+﻿using UnicornHack.Primitives;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
@@ -51,7 +48,8 @@ namespace UnicornHack.Systems.Knowledge
         {
             if (message.Successful)
             {
-                UpdateEntityKnowledge(message.Entity, manager.LevelActors.Matcher, manager, additionalCellToTest: message.InitialLevelCell);
+                UpdateEntityKnowledge(message.Entity, manager.LevelActors.Matcher, manager,
+                    additionalCellToTest: message.InitialLevelCell);
             }
 
             return MessageProcessingResult.ContinueProcessing;
@@ -73,10 +71,10 @@ namespace UnicornHack.Systems.Knowledge
             SenseType sensedType;
             if (position != null
                 && ((sensedType = manager.SensorySystem.SensedByPlayer(entity, position.LevelCell))
-                     != SenseType.None
+                    != SenseType.None
                     || (additionalCellToTest != null
                         && (sensedType = manager.SensorySystem.SensedByPlayer(entity, additionalCellToTest.Value))
-                            != SenseType.None)))
+                        != SenseType.None)))
             {
                 foreach (var conflictingKnowledge in
                     manager.LevelKnowledgeToLevelCellIndex[(position.LevelId, position.LevelX, position.LevelY)])
@@ -125,7 +123,7 @@ namespace UnicornHack.Systems.Knowledge
 
                     if (level != knowledgePosition.LevelEntity?.Level
                         || (manager.SensorySystem.SensedByPlayer(knowledge, knowledgePosition.LevelCell)
-                                & knowledge.Knowledge.SensedType) != SenseType.None)
+                            & knowledge.Knowledge.SensedType) != SenseType.None)
                     {
                         knowledge.RemoveComponent(EntityComponent.Knowledge);
                         knowledge.RemoveComponent(EntityComponent.Position);
@@ -169,7 +167,8 @@ namespace UnicornHack.Systems.Knowledge
             if (message.Successful)
             {
                 var itemEntity = message.ItemEntity;
-                UpdateEntityKnowledge(itemEntity, manager.LevelItems.Matcher, manager, additionalCellToTest: message.InitialLevelCell);
+                UpdateEntityKnowledge(itemEntity, manager.LevelItems.Matcher, manager,
+                    additionalCellToTest: message.InitialLevelCell);
             }
 
             return MessageProcessingResult.ContinueProcessing;
@@ -186,7 +185,8 @@ namespace UnicornHack.Systems.Knowledge
             var targetPosition = message.TargetEntity.Position;
             foreach (var playerEntity in manager.Players)
             {
-                var attackerSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity) ?? SenseType.None;
+                var attackerSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity) ??
+                                     SenseType.None;
                 if (message.TargetEntity == playerEntity)
                 {
                     // TODO: Interrupt current action

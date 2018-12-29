@@ -27,21 +27,24 @@ namespace UnicornHack
                     (entity, changes, getOldValue, matcher) =>
                     {
                         if (matcher.TryGetValue<int?>(
-                            entity, (int)EntityComponent.AI, nameof(AIComponent.NextActionTick), changes, getOldValue, out var aiTick)
+                                entity, (int)EntityComponent.AI, nameof(AIComponent.NextActionTick), changes,
+                                getOldValue, out var aiTick)
                             && aiTick.HasValue)
                         {
                             return ((aiTick.Value, entity.Id), true);
                         }
 
                         if (matcher.TryGetValue<int?>(
-                            entity, (int)EntityComponent.Player, nameof(PlayerComponent.NextActionTick), changes, getOldValue, out var playerTick)
+                                entity, (int)EntityComponent.Player, nameof(PlayerComponent.NextActionTick), changes,
+                                getOldValue, out var playerTick)
                             && playerTick.HasValue)
                         {
                             return ((playerTick.Value, entity.Id), true);
                         }
 
                         if (matcher.TryGetValue<int?>(
-                            entity, (int)EntityComponent.Effect, nameof(EffectComponent.ExpirationTick), changes, getOldValue, out var effectTick)
+                                entity, (int)EntityComponent.Effect, nameof(EffectComponent.ExpirationTick), changes,
+                                getOldValue, out var effectTick)
                             && effectTick.HasValue)
                         {
                             return ((effectTick.Value, entity.Id), true);

@@ -18,14 +18,14 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Engulf {Duration = 5}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect>
                     {
                         new Suffocate()
@@ -37,17 +37,15 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.Stalking,
             Size = 8,
             Weight = 800,
-            Agility = 7,
-            Constitution = 7,
-            Intelligence = 7,
-            Quickness = 7,
-            Strength = 7,
-            Willpower = 7,
+            Perception = 7,
+            Might = 6,
+            Speed = 7,
+            Focus = 6,
             PhysicalDeflection = 17,
             HeadType = HeadType.None,
             TorsoType = TorsoType.Quadruped,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.None,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.None,
             EyeCount = 0,
             NoiseLevel = 0,
             VisibilityLevel = 1,

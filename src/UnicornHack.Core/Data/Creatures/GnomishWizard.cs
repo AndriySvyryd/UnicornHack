@@ -18,7 +18,7 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spell,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
                 }
             },
@@ -30,17 +30,15 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.Male,
             Size = 2,
             Weight = 700,
-            Agility = 2,
-            Constitution = 2,
-            Intelligence = 2,
-            Quickness = 2,
-            Strength = 2,
-            Willpower = 2,
-            MagicResistance = 20,
+            Perception = 2,
+            Might = 2,
+            Speed = 2,
+            Focus = 2,
+            MagicDeflection = 10,
             PhysicalDeflection = 10,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             Infravisible = true,
             Infravision = true
         };

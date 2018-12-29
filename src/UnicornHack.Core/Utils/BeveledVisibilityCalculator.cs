@@ -31,7 +31,8 @@ namespace UnicornHack.Utils
         /// <remarks>
         ///     Functions take coordinates instead of <see cref="Point" /> for perf
         /// </remarks>
-        public BeveledVisibilityCalculator(Func<byte, byte, DirectionFlags> getUnconnectedNeighbours, LevelComponent level)
+        public BeveledVisibilityCalculator(Func<byte, byte, DirectionFlags> getUnconnectedNeighbours,
+            LevelComponent level)
         {
             _getUnconnectedNeighbours = getUnconnectedNeighbours;
             _level = level;
@@ -239,7 +240,7 @@ namespace UnicornHack.Utils
                 }
 
                 var commonLength = (minLength << 1) - (minLength >> 1);
-                var newLength = commonLength + maxLength - minLength ;
+                var newLength = commonLength + maxLength - minLength;
 
                 visibleTerrainList.AddRange(Enumerable.Repeat((0, (byte)0), newLength - visibleTerrainList.Count));
 
@@ -489,11 +490,9 @@ namespace UnicornHack.Utils
                                     nextTopIntersectionY = ((x << 1) + 1) * top.Y / (float)(top.X << 1);
                                     break;
                                 }
-                                else
-                                {
-                                    Compute(octant, origin, rangeLimit, linearFalloff, doubleMarginalBlocks,
-                                        x + 1, newTop, bottom, blocksVisibility, visibleTerrain, visibleTerrainList);
-                                }
+
+                                Compute(octant, origin, rangeLimit, linearFalloff, doubleMarginalBlocks,
+                                    x + 1, newTop, bottom, blocksVisibility, visibleTerrain, visibleTerrainList);
                             }
                             else
                             {
@@ -551,6 +550,7 @@ namespace UnicornHack.Utils
                         {
                             return;
                         }
+
                         adjustedMaxVisibility = (byte)(adjustedMaxVisibility - rangeFalloff);
 
                         var visibility = adjustedMaxVisibility;
@@ -662,7 +662,8 @@ namespace UnicornHack.Utils
                                 visibleArea = (lB + rB) * 0.5f;
                             }
 
-                            visibility = (byte)(visibility - (adjustedMaxVisibility - (byte)(adjustedMaxVisibility * visibleArea)));
+                            visibility = (byte)(visibility -
+                                                (adjustedMaxVisibility - (byte)(adjustedMaxVisibility * visibleArea)));
                         }
 
                         visibility += MinVisibility;
@@ -899,7 +900,7 @@ namespace UnicornHack.Utils
 
             public bool Less(Slope other) => Y * other.X < X * other.Y;
 
-            public bool LessOrEqual(Slope other) =>  Y * other.X <= X * other.Y;
+            public bool LessOrEqual(Slope other) => Y * other.X <= X * other.Y;
 
             public int CompareTo(Slope other) => Y * other.X - X * other.Y;
         }

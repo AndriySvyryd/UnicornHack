@@ -19,7 +19,7 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 }
             },
@@ -28,18 +28,16 @@ namespace UnicornHack.Data.Creatures
             NextStageName = "red naga",
             Noise = ActorNoiseType.Hiss,
             Weight = 500,
-            Agility = 2,
-            Constitution = 2,
-            Intelligence = 2,
-            Quickness = 2,
-            Strength = 2,
-            Willpower = 2,
+            Perception = 2,
+            Might = 2,
+            Speed = 2,
+            Focus = 2,
             PhysicalDeflection = 14,
             FireResistance = 75,
             SlimingImmune = true,
             TorsoType = TorsoType.Serpentine,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.None,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.None,
             InventorySize = 1,
             Infravision = true
         };

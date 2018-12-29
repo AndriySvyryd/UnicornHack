@@ -20,14 +20,14 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Engulf {Duration = 4}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Freeze {Damage = 30}}
                 },
                 new Ability
@@ -42,28 +42,22 @@ namespace UnicornHack.Data.Creatures
                 }
             },
             InitialLevel = 5,
-            GenerationWeight = new BranchWeight
-            {
-                NotMatched = new DefaultWeight {Multiplier = 5F},
-                Name = "hell"
-            },
+            GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight {Multiplier = 5F}, Name = "hell"},
             Sex = Sex.None,
             Size = 16,
             Weight = 0,
-            Agility = 3,
-            Constitution = 3,
-            Intelligence = 3,
-            Quickness = 3,
-            Strength = 3,
-            Willpower = 8,
-            MagicResistance = 30,
+            Perception = 3,
+            Might = 2,
+            Speed = 3,
+            Focus = 8,
+            MagicDeflection = 15,
             PhysicalDeflection = 18,
             ColdResistance = 75,
             SlimingImmune = true,
             StoningImmune = true,
             HeadType = HeadType.None,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.None,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.None,
             RespirationType = RespirationType.None,
             LocomotionType = LocomotionType.Flying,
             EyeCount = 0,

@@ -19,28 +19,28 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 60}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Gaze,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Confuse {Duration = 4}}
                 }
             },
@@ -48,17 +48,15 @@ namespace UnicornHack.Data.Creatures
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
             Size = 8,
             Weight = 1300,
-            Agility = 5,
-            Constitution = 5,
-            Intelligence = 5,
-            Quickness = 5,
-            Strength = 5,
-            Willpower = 5,
-            MagicResistance = 25,
+            Perception = 5,
+            Might = 4,
+            Speed = 5,
+            Focus = 4,
+            MagicDeflection = 12,
             PhysicalDeflection = 18,
             TorsoType = TorsoType.Quadruped,
-            UpperExtremeties = ExtremityType.Claws,
-            LowerExtremeties = ExtremityType.Claws,
+            UpperExtremities = ExtremityType.Claws,
+            LowerExtremities = ExtremityType.Claws,
             LocomotionType = LocomotionType.Walking | LocomotionType.Tunneling,
             Infravisible = true,
             Infravision = true

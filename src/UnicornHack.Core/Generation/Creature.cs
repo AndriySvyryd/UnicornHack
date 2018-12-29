@@ -26,17 +26,14 @@ namespace UnicornHack.Generation
         private Sex? _sex;
         private int? _size;
         private int? _weight;
-        private int? _agility;
-        private int? _constitution;
-        private int? _intelligence;
-        private int? _quickness;
-        private int? _strength;
-        private int? _willpower;
+        private int? _perception;
+        private int? _speed;
+        private int? _might;
+        private int? _focus;
         private int? _energyRegeneration;
         private int? _regeneration;
         private int? _magicAbsorption;
         private int? _magicDeflection;
-        private int? _magicResistance;
         private int? _physicalAbsorption;
         private int? _physicalDeflection;
         private int? _physicalResistance;
@@ -53,9 +50,9 @@ namespace UnicornHack.Generation
         private bool? _stoningImmune;
         private HeadType? _headType;
         private TorsoType? _torsoType;
-        private ExtremityType? _upperExtremeties;
-        private ExtremityType? _lowerExtremeties;
-        private ExtremityType? _backExtremeties;
+        private ExtremityType? _upperExtremities;
+        private ExtremityType? _lowerExtremities;
+        private ExtremityType? _backExtremities;
         private RespirationType? _respirationType;
         private LocomotionType? _locomotionType;
         private int? _inventorySize;
@@ -136,40 +133,28 @@ namespace UnicornHack.Generation
             set => _weight = value;
         }
 
-        public int? Agility
+        public int? Perception
         {
-            get => _agility ?? BaseCreature?.Agility;
-            set => _agility = value;
+            get => _perception ?? BaseCreature?.Perception;
+            set => _perception = value;
         }
 
-        public int? Constitution
+        public int? Might
         {
-            get => _constitution ?? BaseCreature?.Constitution;
-            set => _constitution = value;
+            get => _might ?? BaseCreature?.Might;
+            set => _might = value;
         }
 
-        public int? Intelligence
+        public int? Speed
         {
-            get => _intelligence ?? BaseCreature?.Intelligence;
-            set => _intelligence = value;
+            get => _speed ?? BaseCreature?.Speed;
+            set => _speed = value;
         }
 
-        public int? Quickness
+        public int? Focus
         {
-            get => _quickness ?? BaseCreature?.Quickness;
-            set => _quickness = value;
-        }
-
-        public int? Strength
-        {
-            get => _strength ?? BaseCreature?.Strength;
-            set => _strength = value;
-        }
-
-        public int? Willpower
-        {
-            get => _willpower ?? BaseCreature?.Willpower;
-            set => _willpower = value;
+            get => _focus ?? BaseCreature?.Focus;
+            set => _focus = value;
         }
 
         public int? EnergyRegeneration
@@ -194,12 +179,6 @@ namespace UnicornHack.Generation
         {
             get => _magicDeflection ?? BaseCreature?.MagicDeflection;
             set => _magicDeflection = value;
-        }
-
-        public int? MagicResistance
-        {
-            get => _magicResistance ?? BaseCreature?.MagicResistance;
-            set => _magicResistance = value;
         }
 
         public int? PhysicalAbsorption
@@ -298,22 +277,22 @@ namespace UnicornHack.Generation
             set => _torsoType = value;
         }
 
-        public ExtremityType? UpperExtremeties
+        public ExtremityType? UpperExtremities
         {
-            get => _upperExtremeties ?? BaseCreature?.UpperExtremeties;
-            set => _upperExtremeties = value;
+            get => _upperExtremities ?? BaseCreature?.UpperExtremities;
+            set => _upperExtremities = value;
         }
 
-        public ExtremityType? LowerExtremeties
+        public ExtremityType? LowerExtremities
         {
-            get => _lowerExtremeties ?? BaseCreature?.LowerExtremeties;
-            set => _lowerExtremeties = value;
+            get => _lowerExtremities ?? BaseCreature?.LowerExtremities;
+            set => _lowerExtremities = value;
         }
 
-        public ExtremityType? BackExtremeties
+        public ExtremityType? BackExtremities
         {
-            get => _backExtremeties ?? BaseCreature?.BackExtremeties;
-            set => _backExtremeties = value;
+            get => _backExtremities ?? BaseCreature?.BackExtremities;
+            set => _backExtremities = value;
         }
 
         public RespirationType? RespirationType
@@ -511,14 +490,11 @@ namespace UnicornHack.Generation
                             manager);
                         CreatePropertyEffect(nameof(PhysicalComponent.Size), Size, abilityEntity.Id, manager);
                         CreatePropertyEffect(nameof(PhysicalComponent.Weight), Weight, abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Agility), Agility, abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Constitution), Constitution, abilityEntity.Id,
+                        CreatePropertyEffect(nameof(BeingComponent.Perception), Perception, abilityEntity.Id, manager);
+                        CreatePropertyEffect(nameof(BeingComponent.Might), Might, abilityEntity.Id,
                             manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Intelligence), Intelligence, abilityEntity.Id,
-                            manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Quickness), Quickness, abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Strength), Strength, abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Willpower), Willpower, abilityEntity.Id, manager);
+                        CreatePropertyEffect(nameof(BeingComponent.Speed), Speed, abilityEntity.Id, manager);
+                        CreatePropertyEffect(nameof(BeingComponent.Focus), Focus, abilityEntity.Id, manager);
                         CreatePropertyEffect(nameof(BeingComponent.EnergyRegeneration), EnergyRegeneration,
                             abilityEntity.Id, manager);
                         CreatePropertyEffect(nameof(BeingComponent.Regeneration), Regeneration, abilityEntity.Id,
@@ -526,8 +502,6 @@ namespace UnicornHack.Generation
                         CreatePropertyEffect(nameof(BeingComponent.MagicAbsorption), MagicAbsorption, abilityEntity.Id,
                             manager);
                         CreatePropertyEffect(nameof(BeingComponent.MagicDeflection), MagicDeflection, abilityEntity.Id,
-                            manager);
-                        CreatePropertyEffect(nameof(BeingComponent.MagicResistance), MagicResistance, abilityEntity.Id,
                             manager);
                         CreatePropertyEffect(nameof(BeingComponent.PhysicalAbsorption), PhysicalAbsorption,
                             abilityEntity.Id, manager);
@@ -551,7 +525,7 @@ namespace UnicornHack.Generation
                             manager);
                         CreatePropertyEffect(nameof(BeingComponent.WaterResistance), WaterResistance, abilityEntity.Id,
                             manager);
-                        CreatePropertyEffect(nameof(BeingComponent.UpperExtremeties), (int?)UpperExtremeties,
+                        CreatePropertyEffect(nameof(BeingComponent.UpperExtremities), (int?)UpperExtremities,
                             abilityEntity.Id, manager);
                     }
 
@@ -622,17 +596,14 @@ namespace UnicornHack.Generation
                 {nameof(Sex), (o, v) => (Sex?)v != (o.BaseCreature?.Sex)},
                 {nameof(Size), (o, v) => (int?)v != (o.BaseCreature?.Size)},
                 {nameof(Weight), (o, v) => (int?)v != (o.BaseCreature?.Weight)},
-                {nameof(Agility), (o, v) => (int?)v != (o.BaseCreature?.Agility)},
-                {nameof(Constitution), (o, v) => (int?)v != (o.BaseCreature?.Constitution)},
-                {nameof(Intelligence), (o, v) => (int?)v != (o.BaseCreature?.Intelligence)},
-                {nameof(Quickness), (o, v) => (int?)v != (o.BaseCreature?.Quickness)},
-                {nameof(Strength), (o, v) => (int?)v != (o.BaseCreature?.Strength)},
-                {nameof(Willpower), (o, v) => (int?)v != (o.BaseCreature?.Willpower)},
+                {nameof(Perception), (o, v) => (int?)v != (o.BaseCreature?.Perception)},
+                {nameof(Might), (o, v) => (int?)v != (o.BaseCreature?.Might)},
+                {nameof(Speed), (o, v) => (int?)v != (o.BaseCreature?.Speed)},
+                {nameof(Focus), (o, v) => (int?)v != (o.BaseCreature?.Focus)},
                 {nameof(EnergyRegeneration), (o, v) => (int?)v != (o.BaseCreature?.EnergyRegeneration)},
                 {nameof(Regeneration), (o, v) => (int?)v != (o.BaseCreature?.Regeneration)},
                 {nameof(MagicAbsorption), (o, v) => (int?)v != (o.BaseCreature?.MagicAbsorption)},
                 {nameof(MagicDeflection), (o, v) => (int?)v != (o.BaseCreature?.MagicDeflection)},
-                {nameof(MagicResistance), (o, v) => (int?)v != (o.BaseCreature?.MagicResistance)},
                 {nameof(PhysicalAbsorption), (o, v) => (int?)v != (o.BaseCreature?.PhysicalAbsorption)},
                 {nameof(PhysicalDeflection), (o, v) => (int?)v != (o.BaseCreature?.PhysicalDeflection)},
                 {nameof(PhysicalResistance), (o, v) => (int?)v != (o.BaseCreature?.PhysicalResistance)},
@@ -649,9 +620,9 @@ namespace UnicornHack.Generation
                 {nameof(StoningImmune), (o, v) => (bool?)v != (o.BaseCreature?.StoningImmune)},
                 {nameof(HeadType), (o, v) => (HeadType?)v != (o.BaseCreature?.HeadType)},
                 {nameof(TorsoType), (o, v) => (TorsoType?)v != (o.BaseCreature?.TorsoType)},
-                {nameof(UpperExtremeties), (o, v) => (ExtremityType?)v != (o.BaseCreature?.UpperExtremeties)},
-                {nameof(LowerExtremeties), (o, v) => (ExtremityType?)v != (o.BaseCreature?.LowerExtremeties)},
-                {nameof(BackExtremeties), (o, v) => (ExtremityType?)v != (o.BaseCreature?.BackExtremeties)},
+                {nameof(UpperExtremities), (o, v) => (ExtremityType?)v != (o.BaseCreature?.UpperExtremities)},
+                {nameof(LowerExtremities), (o, v) => (ExtremityType?)v != (o.BaseCreature?.LowerExtremities)},
+                {nameof(BackExtremities), (o, v) => (ExtremityType?)v != (o.BaseCreature?.BackExtremities)},
                 {nameof(RespirationType), (o, v) => (RespirationType?)v != (o.BaseCreature?.RespirationType)},
                 {nameof(LocomotionType), (o, v) => (LocomotionType?)v != (o.BaseCreature?.LocomotionType)},
                 {nameof(InventorySize), (o, v) => (int?)v != (o.BaseCreature?.InventorySize)},

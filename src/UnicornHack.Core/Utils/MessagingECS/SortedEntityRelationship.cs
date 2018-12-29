@@ -130,7 +130,8 @@ namespace UnicornHack.Utils.MessagingECS
         {
             if (Index.TryGetValue(key, out var referencingEntities))
             {
-                if (!_sortValueGetter.TryGetKey(entity, new IPropertyValueChange[0], getOldValue: false, out var sortKey))
+                if (!_sortValueGetter.TryGetKey(entity, new IPropertyValueChange[0], getOldValue: false,
+                    out var sortKey))
                 {
                     sortKey = referencingEntities.Where(p => p.Value == entity).Select(p => p.Key).FirstOrDefault();
                 }
@@ -138,7 +139,7 @@ namespace UnicornHack.Utils.MessagingECS
                 if (sortKey != default
                     && referencingEntities.Remove(sortKey))
                 {
-                    if(referencingEntities.Count == 0)
+                    if (referencingEntities.Count == 0)
                     {
                         Index.Remove(key);
                     }
@@ -252,7 +253,8 @@ namespace UnicornHack.Utils.MessagingECS
                 }
             }
 
-            public bool HandlePropertyValuesChanged(IReadOnlyList<IPropertyValueChange> changes, TEntity entity, IEntityGroup<TEntity> group)
+            public bool HandlePropertyValuesChanged(IReadOnlyList<IPropertyValueChange> changes, TEntity entity,
+                IEntityGroup<TEntity> group)
                 => false;
         }
     }

@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Diagnostics;
-using UnicornHack.Utils.Caching;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
+using UnicornHack.Utils.Caching;
 
 namespace UnicornHack.Utils.MessagingECS
 {

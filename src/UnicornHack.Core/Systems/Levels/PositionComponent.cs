@@ -95,7 +95,7 @@ namespace UnicornHack.Systems.Levels
         }
 
         /// <summary>
-        ///     Sets <see cref="LevelId"/> and <see cref="LevelCell"/> atomically.
+        ///     Sets <see cref="LevelId" /> and <see cref="LevelCell" /> atomically.
         /// </summary>
         public void SetLevelPosition(int levelId, Point levelCell)
         {

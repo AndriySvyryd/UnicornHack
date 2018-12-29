@@ -7,11 +7,7 @@ namespace UnicornHack.Data.Items
     {
         public static readonly Item GoldCoin = new Item
         {
-            Name = "gold coin",
-            Type = ItemType.Coin,
-            Weight = 0,
-            StackSize = 2147483647,
-            Countable = true,
+            Name = "gold coin", Type = ItemType.Coin, Weight = 0, StackSize = 2147483647, Countable = true,
             Nameable = false
         };
     }

@@ -25,14 +25,14 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 5,
+                    Cooldown = 250,
                     Effects = new HashSet<Effect> {new ConferLycanthropy {VariantName = "ratwere"}}
                 }
             },
@@ -41,18 +41,16 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Lycanthrope,
             Weight = 1000,
-            Agility = 2,
-            Constitution = 2,
-            Intelligence = 2,
-            Quickness = 2,
-            Strength = 2,
-            Willpower = 2,
+            Perception = 2,
+            Might = 2,
+            Speed = 2,
+            Focus = 2,
             Regeneration = 3,
-            MagicResistance = 10,
+            MagicDeflection = 5,
             PhysicalDeflection = 10,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             Infravisible = true,
             Lycanthropy = "ratwere"
         };

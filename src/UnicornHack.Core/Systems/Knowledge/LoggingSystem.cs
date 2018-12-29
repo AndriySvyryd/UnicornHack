@@ -90,7 +90,8 @@ namespace UnicornHack.Systems.Knowledge
                 var position = message.ActorEntity.Position;
                 foreach (var playerEntity in manager.Players)
                 {
-                    var actorSensed = manager.SensorySystem.CanSense(playerEntity, message.ActorEntity) ?? SenseType.None;
+                    var actorSensed = manager.SensorySystem.CanSense(playerEntity, message.ActorEntity) ??
+                                      SenseType.None;
                     if (message.SuppressLog
                         || !message.ActorEntity.Being.IsAlive
                         || actorSensed == SenseType.None)
@@ -122,8 +123,10 @@ namespace UnicornHack.Systems.Knowledge
                 var targetPosition = message.TargetEntity.Position;
                 foreach (var playerEntity in manager.Players)
                 {
-                    var attackerSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity) ?? SenseType.None;
-                    var victimSensed = manager.SensorySystem.CanSense(playerEntity, message.TargetEntity) ?? SenseType.None;
+                    var attackerSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity) ??
+                                         SenseType.None;
+                    var victimSensed = manager.SensorySystem.CanSense(playerEntity, message.TargetEntity) ??
+                                       SenseType.None;
                     if (attackerSensed == SenseType.None
                         && victimSensed == SenseType.None)
                     {
@@ -160,8 +163,10 @@ namespace UnicornHack.Systems.Knowledge
                 var position = message.ActivatorEntity.Position;
                 foreach (var playerEntity in manager.Players)
                 {
-                    var activatorSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity) ?? SenseType.None;
-                    var targetSensed = manager.SensorySystem.CanSense(playerEntity, message.TargetEntity) ?? SenseType.None;
+                    var activatorSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity) ??
+                                          SenseType.None;
+                    var targetSensed = manager.SensorySystem.CanSense(playerEntity, message.TargetEntity) ??
+                                       SenseType.None;
 
                     if (activatorSensed == SenseType.None
                         && targetSensed == SenseType.None)
@@ -185,7 +190,8 @@ namespace UnicornHack.Systems.Knowledge
             var deceasedPosition = message.BeingEntity.Position;
             foreach (var playerEntity in manager.Players)
             {
-                var deceasedSensed = manager.SensorySystem.CanSense(playerEntity, message.BeingEntity) ?? SenseType.None;
+                var deceasedSensed =
+                    manager.SensorySystem.CanSense(playerEntity, message.BeingEntity) ?? SenseType.None;
                 if (deceasedSensed == SenseType.None)
                 {
                     continue;

@@ -15,7 +15,7 @@ namespace UnicornHack.Generation
         public TargetingAngle TargetingAngle { get; set; }
         public AbilityAction Action { get; set; }
         public AbilitySuccessCondition SuccessCondition { get; set; }
-        public int Timeout { get; set; }
+        public int Cooldown { get; set; }
         public int Delay { get; set; }
         public int EnergyPointCost { get; set; }
         public ISet<Effect> Effects { get; set; }
@@ -32,7 +32,7 @@ namespace UnicornHack.Generation
             ability.TargetingAngle = TargetingAngle;
             ability.Action = Action;
             ability.SuccessCondition = SuccessCondition;
-            ability.Timeout = Timeout;
+            ability.Timeout = Cooldown;
             ability.Delay = Delay;
             ability.EnergyPointCost = EnergyPointCost;
 

@@ -121,7 +121,6 @@ namespace UnicornHack.Systems.Effects
                     case EffectType.Bleed:
                     case EffectType.Shock:
                     case EffectType.Soak:
-                    case EffectType.MagicalDamage:
                     case EffectType.PhysicalDamage:
                         Debug.Assert(effect.DurationTicks == 0);
 
@@ -198,12 +197,13 @@ namespace UnicornHack.Systems.Effects
                     case EffectType.GainXP:
                     case EffectType.Activate:
                         Debug.Assert(effect.DurationTicks != (int)EffectDuration.Infinite
-                            || manager.FindEntity(effect.TargetEntityId).Ability.IsActive);
+                                     || manager.FindEntity(effect.TargetEntityId).Ability.IsActive);
 
                         using (var effectReference = ApplyEffect(effect, appliedEffects, manager))
                         {
                             effectReference.Referenced.Effect.AffectedEntityId = message.TargetEntity.Id;
                         }
+
                         break;
                     case EffectType.DrainEnergy:
                     case EffectType.DrainLife:
@@ -253,7 +253,6 @@ namespace UnicornHack.Systems.Effects
                         case EffectType.Bleed:
                         case EffectType.Shock:
                         case EffectType.Soak:
-                        case EffectType.MagicalDamage:
                         case EffectType.PhysicalDamage:
                             using (var appliedEffectEntityReference = ApplyDamageEffect(
                                 damageEffect.Value.Effect,
@@ -323,42 +322,46 @@ namespace UnicornHack.Systems.Effects
                 case EffectType.Burn:
                     // TODO: Burns items
                     // TODO: Removes slime, wet, frozen
+                    absorption = being.MagicAbsorption;
                     resistance = being.FireResistance;
                     break;
                 case EffectType.Corrode:
                     // TODO: Corrodes items
                     // TODO: Removes stoning
+                    absorption = being.MagicAbsorption;
                     resistance = being.AcidResistance;
                     break;
                 case EffectType.Disintegrate:
                     // TODO: Withers items
+                    absorption = being.MagicAbsorption;
                     resistance = being.DisintegrationResistance;
                     break;
                 case EffectType.Blight:
                     // TODO: Decays items
+                    absorption = being.MagicAbsorption;
                     resistance = being.BlightResistance;
                     break;
                 case EffectType.Freeze:
                     // TODO: Freezes items
                     // TODO: Slows, removes burning, dissolving
+                    absorption = being.MagicAbsorption;
                     resistance = being.ColdResistance;
                     break;
                 case EffectType.Bleed:
+                    absorption = being.MagicAbsorption;
                     resistance = being.BleedingResistance;
                     break;
                 case EffectType.Shock:
                     // TODO: Causing some mechanical and magical items to trigger
                     // TODO: Removes slow
+                    absorption = being.MagicAbsorption;
                     resistance = being.ElectricityResistance;
                     break;
                 case EffectType.Soak:
                     // TODO: Rusts items
                     // TODO: Removes burning
-                    resistance = being.WaterResistance;
-                    break;
-                case EffectType.MagicalDamage:
                     absorption = being.MagicAbsorption;
-                    resistance = being.MagicResistance;
+                    resistance = being.WaterResistance;
                     break;
                 case EffectType.PhysicalDamage:
                     absorption = being.PhysicalAbsorption;
@@ -478,7 +481,6 @@ namespace UnicornHack.Systems.Effects
                 case EffectType.Bleed:
                 case EffectType.Shock:
                 case EffectType.Soak:
-                case EffectType.MagicalDamage:
                 case EffectType.PhysicalDamage:
                     if (state == State.Added)
                     {
@@ -513,6 +515,7 @@ namespace UnicornHack.Systems.Effects
                         var abilityEntity = manager.FindEntity(appliedEffectComponent.TargetEntityId);
                         manager.AbilityActivationSystem.Deactivate(abilityEntity.Ability, manager);
                     }
+
                     break;
                 case EffectType.DrainEnergy:
                 case EffectType.DrainLife:
@@ -542,7 +545,8 @@ namespace UnicornHack.Systems.Effects
                     // TODO: Handle these effects
                     break;
                 default:
-                    throw new InvalidOperationException($"Effect {effectEntity.Id} of type {appliedEffectComponent.EffectType} not handled.");
+                    throw new InvalidOperationException(
+                        $"Effect {effectEntity.Id} of type {appliedEffectComponent.EffectType} not handled.");
             }
 
             if (state == State.Added && appliedEffectComponent.DurationTicks == 0)
@@ -607,8 +611,8 @@ namespace UnicornHack.Systems.Effects
             }
 
             return effects.Select(e => e.Effect)
-                    .FirstOrDefault(e => e.TargetName == propertyName)
-                    ?? AddPropertyEffect(abilityId, propertyName, manager);
+                       .FirstOrDefault(e => e.TargetName == propertyName)
+                   ?? AddPropertyEffect(abilityId, propertyName, manager);
         }
 
         private GameEntity GetOrAddPropertyAbility(int beingId, string abilityName, GameManager manager)

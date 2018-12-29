@@ -19,38 +19,32 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 40}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Breath,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Freeze {Damage = 40}}
                 }
             },
             InitialLevel = 5,
-            GenerationWeight = new BranchWeight
-            {
-                NotMatched = new DefaultWeight {Multiplier = 5F},
-                Name = "hell"
-            },
+            GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight {Multiplier = 5F}, Name = "hell"},
             NextStageName = "winter wolf",
             Noise = ActorNoiseType.Bark,
             Size = 2,
             Weight = 250,
-            Agility = 3,
-            Constitution = 3,
-            Intelligence = 3,
-            Quickness = 3,
-            Strength = 3,
-            Willpower = 3,
+            Perception = 3,
+            Might = 2,
+            Speed = 3,
+            Focus = 2,
             PhysicalDeflection = 16,
             ColdResistance = 75,
             TorsoType = TorsoType.Quadruped,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.Claws,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.Claws,
             InventorySize = 1,
             Infravisible = true
         };

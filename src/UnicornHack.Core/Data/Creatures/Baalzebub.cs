@@ -19,36 +19,30 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Blight {Damage = 70}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Gaze,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Stun {Duration = 7}}
                 }
             },
             InitialLevel = 30,
-            GenerationWeight = new BranchWeight
-            {
-                Matched = new DefaultWeight {Multiplier = 0F},
-                Name = "hell"
-            },
+            GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 0F}, Name = "hell"},
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
             Behavior = AIBehavior.RangedPeaceful | AIBehavior.Stalking,
             Noise = ActorNoiseType.Cuss,
             Sex = Sex.Male,
             Size = 8,
             Weight = 1500,
-            Agility = 16,
-            Constitution = 16,
-            Intelligence = 16,
-            Quickness = 16,
-            Strength = 16,
-            Willpower = 16,
-            MagicResistance = 85,
+            Perception = 16,
+            Might = 16,
+            Speed = 16,
+            Focus = 16,
+            MagicDeflection = 42,
             PhysicalDeflection = 25,
             FireResistance = 75,
             LocomotionType = LocomotionType.Flying,

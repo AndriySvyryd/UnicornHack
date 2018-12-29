@@ -143,7 +143,8 @@ namespace UnicornHack.Utils.MessagingECS
                 {
                     foreach (var change in changes)
                     {
-                        if (_propertyValueChangedMessageNames.TryGetValue(change.ChangedPropertyName, out var messageName)
+                        if (_propertyValueChangedMessageNames.TryGetValue(change.ChangedPropertyName,
+                                out var messageName)
                             && entity.HasComponent(change.ChangedComponent.ComponentId))
                         {
                             change.EnqueuePropertyValueChangedMessage<TEntity>(messageName, entity.Manager);

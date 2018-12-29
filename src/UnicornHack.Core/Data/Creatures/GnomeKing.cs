@@ -24,7 +24,7 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 }
             },
@@ -37,17 +37,15 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.Male,
             Size = 2,
             Weight = 750,
-            Agility = 3,
-            Constitution = 3,
-            Intelligence = 3,
-            Quickness = 3,
-            Strength = 3,
-            Willpower = 3,
-            MagicResistance = 20,
+            Perception = 3,
+            Might = 2,
+            Speed = 3,
+            Focus = 2,
+            MagicDeflection = 10,
             PhysicalDeflection = 10,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             Infravisible = true,
             Infravision = true
         };

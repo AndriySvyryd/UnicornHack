@@ -18,18 +18,16 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.Targeted,
-                    Action = AbilityAction.Claw,
-                    Timeout = 1,
-                    Effects = new HashSet<Effect>
-                    {
-                        new StealItem()
-                    }
+                    Activation = ActivationType.Targeted, Action = AbilityAction.Claw, Cooldown = 100, Effects =
+                        new HashSet<Effect>
+                        {
+                            new StealItem()
+                        }
                 }
             },
             InitialLevel = 2,
@@ -37,16 +35,14 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Growl,
             Size = 2,
             Weight = 100,
-            Agility = 2,
-            Constitution = 2,
-            Intelligence = 2,
-            Quickness = 2,
-            Strength = 2,
-            Willpower = 2,
+            Perception = 2,
+            Might = 2,
+            Speed = 2,
+            Focus = 2,
             PhysicalDeflection = 14,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             Infravisible = true
         };
     }

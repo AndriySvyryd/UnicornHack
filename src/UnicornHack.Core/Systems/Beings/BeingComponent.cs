@@ -12,17 +12,14 @@ namespace UnicornHack.Systems.Beings
         private int _reservedEnergyPoints;
         private int _hitPointMaximum;
         private int _hitPoints;
-        private int _agility;
-        private int _constitution;
-        private int _intelligence;
-        private int _quickness;
-        private int _strength;
-        private int _willpower;
+        private int _perception;
+        private int _might;
+        private int _speed;
+        private int _focus;
         private int _energyRegeneration;
         private int _regeneration;
         private int _magicAbsorption;
         private int _magicDeflection;
-        private int _magicResistance;
         private int _physicalAbsorption;
         private int _physicalDeflection;
         private int _physicalResistance;
@@ -36,9 +33,9 @@ namespace UnicornHack.Systems.Beings
         private int _waterResistance;
         private HeadType _headType;
         private TorsoType _torsoType;
-        private ExtremityType _upperExtremeties;
-        private ExtremityType _lowerExtremeties;
-        private ExtremityType _backExtremeties;
+        private ExtremityType _upperExtremities;
+        private ExtremityType _lowerExtremities;
+        private ExtremityType _backExtremities;
         private int _experiencePoints;
         private float _leftoverHPRegenerationXP;
         private float _leftoverEPRegenerationXP;
@@ -132,45 +129,31 @@ namespace UnicornHack.Systems.Beings
         }
 
         [Property(DefaultValue = 10, MinValue = 0)]
-        public int Agility
+        public int Perception
         {
-            get => _agility;
-            set => SetWithNotify(value, ref _agility);
+            get => _perception;
+            set => SetWithNotify(value, ref _perception);
         }
 
         [Property(DefaultValue = 10, MinValue = 0)]
-        public int Constitution
+        public int Might
         {
-            get => _constitution;
-            set => SetWithNotify(value, ref _constitution);
+            get => _might;
+            set => SetWithNotify(value, ref _might);
         }
 
         [Property(DefaultValue = 10, MinValue = 0)]
-        public int Intelligence
+        public int Speed
         {
-            get => _intelligence;
-            set => SetWithNotify(value, ref _intelligence);
+            get => _speed;
+            set => SetWithNotify(value, ref _speed);
         }
 
         [Property(DefaultValue = 10, MinValue = 0)]
-        public int Quickness
+        public int Focus
         {
-            get => _quickness;
-            set => SetWithNotify(value, ref _quickness);
-        }
-
-        [Property(DefaultValue = 10, MinValue = 0)]
-        public int Strength
-        {
-            get => _strength;
-            set => SetWithNotify(value, ref _strength);
-        }
-
-        [Property(DefaultValue = 10, MinValue = 0)]
-        public int Willpower
-        {
-            get => _willpower;
-            set => SetWithNotify(value, ref _willpower);
+            get => _focus;
+            set => SetWithNotify(value, ref _focus);
         }
 
         [Property]
@@ -199,13 +182,6 @@ namespace UnicornHack.Systems.Beings
         {
             get => _magicDeflection;
             set => SetWithNotify(value, ref _magicDeflection);
-        }
-
-        [Property]
-        public int MagicResistance
-        {
-            get => _magicResistance;
-            set => SetWithNotify(value, ref _magicResistance);
         }
 
         [Property]
@@ -300,24 +276,24 @@ namespace UnicornHack.Systems.Beings
         }
 
         [Property]
-        public ExtremityType UpperExtremeties
+        public ExtremityType UpperExtremities
         {
-            get => _upperExtremeties;
-            set => SetWithNotify(value, ref _upperExtremeties);
+            get => _upperExtremities;
+            set => SetWithNotify(value, ref _upperExtremities);
         }
 
         [Property]
-        public ExtremityType LowerExtremeties
+        public ExtremityType LowerExtremities
         {
-            get => _lowerExtremeties;
-            set => SetWithNotify(value, ref _lowerExtremeties);
+            get => _lowerExtremities;
+            set => SetWithNotify(value, ref _lowerExtremities);
         }
 
         [Property]
-        public ExtremityType BackExtremeties
+        public ExtremityType BackExtremities
         {
-            get => _backExtremeties;
-            set => SetWithNotify(value, ref _backExtremeties);
+            get => _backExtremities;
+            set => SetWithNotify(value, ref _backExtremities);
         }
 
         public int ExperiencePoints
@@ -367,17 +343,14 @@ namespace UnicornHack.Systems.Beings
             _energyPoints = default;
             _hitPointMaximum = default;
             _hitPoints = default;
-            _agility = default;
-            _constitution = default;
-            _intelligence = default;
-            _quickness = default;
-            _strength = default;
-            _willpower = default;
+            _perception = default;
+            _might = default;
+            _speed = default;
+            _focus = default;
             _energyRegeneration = default;
             _regeneration = default;
             _magicAbsorption = default;
             _magicDeflection = default;
-            _magicResistance = default;
             _physicalAbsorption = default;
             _physicalDeflection = default;
             _physicalResistance = default;
@@ -391,9 +364,9 @@ namespace UnicornHack.Systems.Beings
             _waterResistance = default;
             _headType = default;
             _torsoType = default;
-            _upperExtremeties = default;
-            _lowerExtremeties = default;
-            _backExtremeties = default;
+            _upperExtremities = default;
+            _lowerExtremities = default;
+            _backExtremities = default;
             _experiencePoints = default;
             _leftoverHPRegenerationXP = default;
             _primaryNaturalWeaponId = default;

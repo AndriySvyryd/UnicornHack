@@ -25,33 +25,27 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Blight {Damage = 10}}
                 }
             },
             InitialLevel = 7,
-            GenerationWeight = new BranchWeight
-            {
-                Matched = new DefaultWeight {Multiplier = 2F},
-                Name = "hell"
-            },
+            GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 2F}, Name = "hell"},
             NextStageName = "vrock",
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable |
                               GenerationFlags.SmallGroup,
             Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector,
             Weight = 1000,
-            Agility = 4,
-            Constitution = 4,
-            Intelligence = 4,
-            Quickness = 4,
-            Strength = 4,
-            Willpower = 4,
-            MagicResistance = 30,
+            Perception = 4,
+            Might = 4,
+            Speed = 4,
+            Focus = 4,
+            MagicDeflection = 15,
             PhysicalDeflection = 18,
             FireResistance = 75,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             Infravisible = true,
             Infravision = true
         };

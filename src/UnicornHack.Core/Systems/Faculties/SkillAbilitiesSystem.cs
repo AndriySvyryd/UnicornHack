@@ -48,7 +48,8 @@ namespace UnicornHack.Systems.Faculties
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, int> message, GameManager manager)
+        public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, int> message,
+            GameManager manager)
         {
             var increased = message.NewValue > message.OldValue;
             switch (message.ChangedPropertyName)
@@ -153,7 +154,7 @@ namespace UnicornHack.Systems.Faculties
             }
             else
             {
-                using (var primaryWeaponReference = CreateNaturalWeapon(manager, being.UpperExtremeties))
+                using (var primaryWeaponReference = CreateNaturalWeapon(manager, being.UpperExtremities))
                 {
                     primaryWeapon = primaryWeaponReference.Referenced.Item;
                     being.PrimaryNaturalWeaponId = primaryWeapon.EntityId;
@@ -166,7 +167,7 @@ namespace UnicornHack.Systems.Faculties
             }
             else
             {
-                using (var secondaryWeaponReference = CreateNaturalWeapon(manager, being.UpperExtremeties))
+                using (var secondaryWeaponReference = CreateNaturalWeapon(manager, being.UpperExtremities))
                 {
                     secondaryWeapon = secondaryWeaponReference.Referenced.Item;
                     being.SecondaryNaturalWeaponId = secondaryWeapon.EntityId;
@@ -531,7 +532,8 @@ namespace UnicornHack.Systems.Faculties
             int? secondWeaponAbilityId,
             GameManager manager)
         {
-            var ability = EnsureAbility(name, ownerId, targetingType, trigger, shouldBeUsable, manager, out var created);
+            var ability = EnsureAbility(name, ownerId, targetingType, trigger, shouldBeUsable, manager,
+                out var created);
 
             if (created)
             {
@@ -627,7 +629,7 @@ namespace UnicornHack.Systems.Faculties
         }
 
         private bool CanUseWeapons(GameEntity actorEntity)
-            => actorEntity.Being.UpperExtremeties == ExtremityType.GraspingFingers;
+            => actorEntity.Being.UpperExtremities == ExtremityType.GraspingFingers;
 
         private void EnsureMeleeAttack(ItemComponent weapon, GameManager manager)
         {

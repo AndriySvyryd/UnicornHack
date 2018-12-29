@@ -36,7 +36,8 @@ namespace UnicornHack
                     (entity, changes, getOldValue, matcher) =>
                     {
                         if (!matcher.TryGetValue<int>(
-                            entity, (int)EntityComponent.Race, nameof(RaceComponent.Level), changes, getOldValue, out var level))
+                            entity, (int)EntityComponent.Race, nameof(RaceComponent.Level), changes, getOldValue,
+                            out var level))
                         {
                             return ((0, 0), false);
                         }
@@ -57,11 +58,11 @@ namespace UnicornHack
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,
                 Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.EnergyPointMaximum)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,
-                Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.Willpower)), 0);
+                Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.Focus)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,
-                Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.Constitution)), 0);
+                Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.Might)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,
-                Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.Quickness)), 0);
+                Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.Speed)), 0);
         }
     }
 }

@@ -9,18 +9,12 @@ namespace UnicornHack.Data.Items
         public static readonly Item FireBolt = new Item
         {
             Name = "fire bolt",
+            Abilities = new HashSet<Ability>
+                {new Ability {Activation = ActivationType.OnPhysicalRangedAttack, Action = AbilityAction.Hit}},
             Type = ItemType.WeaponProjectile,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             Material = Material.Plasma,
-            Weight = 0,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
-                {
-                    Activation = ActivationType.OnPhysicalRangedAttack,
-                    Action = AbilityAction.Hit
-                }
-            }
+            Weight = 0
         };
     }
 }

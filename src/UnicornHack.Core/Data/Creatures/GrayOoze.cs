@@ -18,14 +18,14 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Soak {Damage = 90}}
                 },
                 new Ability
@@ -38,12 +38,10 @@ namespace UnicornHack.Data.Creatures
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
             Sex = Sex.None,
             Weight = 500,
-            Agility = 2,
-            Constitution = 2,
-            Intelligence = 2,
-            Quickness = 2,
-            Strength = 2,
-            Willpower = 7,
+            Perception = 2,
+            Might = 2,
+            Speed = 2,
+            Focus = 6,
             PhysicalDeflection = 12,
             AcidResistance = 75,
             ColdResistance = 75,
@@ -51,8 +49,8 @@ namespace UnicornHack.Data.Creatures
             StoningImmune = true,
             HeadType = HeadType.None,
             TorsoType = TorsoType.Amorphic,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.None,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.None,
             RespirationType = RespirationType.None,
             EyeCount = 0,
             NoiseLevel = 0,

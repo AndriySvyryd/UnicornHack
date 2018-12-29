@@ -5,7 +5,7 @@ using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Abilities
 {
-    public class AbilitySlottingSystem:
+    public class AbilitySlottingSystem :
         IGameSystem<SetAbilitySlotMessage>,
         IGameSystem<PropertyValueChangedMessage<GameEntity, bool>>,
         IGameSystem<PropertyValueChangedMessage<GameEntity, int>>
@@ -31,7 +31,8 @@ namespace UnicornHack.Systems.Abilities
             }
             else
             {
-                var conflictingAbility = manager.SlottedAbilitiesIndex[(ability?.OwnerId ?? message.OwnerEntity.Id, message.Slot.Value)];
+                var conflictingAbility =
+                    manager.SlottedAbilitiesIndex[(ability?.OwnerId ?? message.OwnerEntity.Id, message.Slot.Value)];
                 if (conflictingAbility != null)
                 {
                     ResetSlot(conflictingAbility, manager);
@@ -97,7 +98,8 @@ namespace UnicornHack.Systems.Abilities
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, bool> message, GameManager manager)
+        public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, bool> message,
+            GameManager manager)
         {
             var ability = message.Entity.Ability;
             if (!ability.IsUsable
@@ -109,7 +111,8 @@ namespace UnicornHack.Systems.Abilities
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, int> message, GameManager manager)
+        public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, int> message,
+            GameManager manager)
         {
             if (message.NewValue < message.OldValue)
             {

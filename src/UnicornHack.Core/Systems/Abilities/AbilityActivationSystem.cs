@@ -388,7 +388,7 @@ namespace UnicornHack.Systems.Abilities
                     }
 
                     Debug.Assert(abilityTrigger != ActivationType.Default
-                        || activatable.HasComponent(EntityComponent.Ability));
+                                 || activatable.HasComponent(EntityComponent.Ability));
 
                     var triggeredAbility = activatable.HasComponent(EntityComponent.Ability)
                         ? activatable
@@ -446,7 +446,8 @@ namespace UnicornHack.Systems.Abilities
 
         public MessageProcessingResult Process(LeveledUpMessage message, GameManager manager)
         {
-            foreach (var abilityEntity in GetTriggeredAbilities(message.Entity.Id, ActivationType.WhileAboveLevel, manager))
+            foreach (var abilityEntity in GetTriggeredAbilities(message.Entity.Id, ActivationType.WhileAboveLevel,
+                manager))
             {
                 var ability = abilityEntity.Ability;
                 if (ability.IsActive)
@@ -454,7 +455,8 @@ namespace UnicornHack.Systems.Abilities
                     continue;
                 }
 
-                var newLevel = GetSourceRace(abilityEntity)?.Level ?? manager.XPSystem.GetXPLevel(message.Entity, manager);
+                var newLevel = GetSourceRace(abilityEntity)?.Level ??
+                               manager.XPSystem.GetXPLevel(message.Entity, manager);
                 if (newLevel < ability.ActivationCondition)
                 {
                     continue;
@@ -524,6 +526,7 @@ namespace UnicornHack.Systems.Abilities
 
                         ActivateAbilities(message.Entity.Id, ActivationType.WhilePossessed, activation, manager);
                     }
+
                     break;
                 default:
                     throw new InvalidOperationException(message.Group.Name);
@@ -686,7 +689,7 @@ namespace UnicornHack.Systems.Abilities
         {
             if (activationMessage.TargetEntity != null)
             {
-                return new[] { (activationMessage.TargetEntity, BeveledVisibilityCalculator.MaxVisibility) };
+                return new[] {(activationMessage.TargetEntity, BeveledVisibilityCalculator.MaxVisibility)};
             }
 
             var activator = activationMessage.ActivatorEntity;
@@ -694,7 +697,7 @@ namespace UnicornHack.Systems.Abilities
             var vectorToTarget = activator.Position.LevelCell.DifferenceTo(targetCell);
             if (vectorToTarget.Length() == 0)
             {
-                return new[] { (activator, BeveledVisibilityCalculator.MaxVisibility) };
+                return new[] {(activator, BeveledVisibilityCalculator.MaxVisibility)};
             }
 
             var manager = activator.Manager;
@@ -709,7 +712,9 @@ namespace UnicornHack.Systems.Abilities
                     }
 
                     var target = manager.LevelActorToLevelCellIndex[(levelId, targetCell.X, targetCell.Y)];
-                    return target == null ? new (GameEntity, byte)[0] : new[] { (target, BeveledVisibilityCalculator.MaxVisibility) };
+                    return target == null
+                        ? new (GameEntity, byte)[0]
+                        : new[] {(target, BeveledVisibilityCalculator.MaxVisibility)};
                 case TargetingType.AdjacentArc:
                     if (vectorToTarget.Length() > 1)
                     {
@@ -766,7 +771,8 @@ namespace UnicornHack.Systems.Abilities
                     var targets = new List<(GameEntity, byte)>();
                     foreach (var (index, beamExposure) in los)
                     {
-                        var beamTarget = manager.LevelActorToLevelCellIndex[(levelEntity.Id, targetCell.X, targetCell.Y)];
+                        var beamTarget =
+                            manager.LevelActorToLevelCellIndex[(levelEntity.Id, targetCell.X, targetCell.Y)];
                         if (beamTarget != null)
                         {
                             targets.Add((beamTarget, beamExposure));
@@ -787,7 +793,8 @@ namespace UnicornHack.Systems.Abilities
                     {
                         return new (GameEntity, byte)[0];
                     }
-                    return new[] { (target, exposure) };
+
+                    return new[] {(target, exposure)};
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -851,7 +858,8 @@ namespace UnicornHack.Systems.Abilities
 
                 if (exposure < BeveledVisibilityCalculator.MaxVisibility)
                 {
-                    deflection += (BeveledVisibilityCalculator.MaxVisibility - exposure) * 10 / BeveledVisibilityCalculator.MaxVisibility;
+                    deflection += (BeveledVisibilityCalculator.MaxVisibility - exposure) * 10 /
+                                  BeveledVisibilityCalculator.MaxVisibility;
                 }
 
                 if (manager.SensorySystem.GetVisibility(message.ActivatorEntity, targetPosition.LevelCell) == 0)

@@ -18,28 +18,28 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 120}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Hug,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Bind {Duration = 7}}
                 }
             },
@@ -48,15 +48,13 @@ namespace UnicornHack.Data.Creatures
             GenerationFlags = GenerationFlags.NonPolymorphable,
             Size = 16,
             Weight = 2000,
-            Agility = 11,
-            Constitution = 11,
-            Intelligence = 11,
-            Quickness = 11,
-            Strength = 11,
-            Willpower = 11,
+            Perception = 11,
+            Might = 10,
+            Speed = 11,
+            Focus = 10,
             PhysicalDeflection = 14,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.None,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.None,
             RespirationType = RespirationType.Water,
             LocomotionType = LocomotionType.Swimming
         };

@@ -19,23 +19,16 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect>
-                    {
-                        new ChangeProperty<int>
-                        {
-                            PropertyName = "agility",
-                            Value = -1,
-                            Duration = 5
-                        }
-                    }
+                        {new ChangeProperty<int> {PropertyName = "Speed", Value = -1, Duration = 5}}
                 }
             },
             InitialLevel = 3,
@@ -44,14 +37,12 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Cuss,
             Size = 2,
             Weight = 200,
-            Agility = 2,
-            Constitution = 2,
-            Intelligence = 2,
-            Quickness = 2,
-            Strength = 2,
-            Willpower = 2,
+            Perception = 2,
+            Might = 2,
+            Speed = 2,
+            Focus = 2,
             Regeneration = 3,
-            MagicResistance = 20,
+            MagicDeflection = 10,
             PhysicalDeflection = 18,
             Infravisible = true,
             Infravision = true

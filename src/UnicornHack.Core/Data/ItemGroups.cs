@@ -10,27 +10,15 @@ namespace UnicornHack.Data
         {
             SubGroups = new List<ItemGroup>
             {
-                new ItemGroup
-                {
-                    Type = ItemType.Coin,
-                    Weight = 40F
-                },
+                new ItemGroup {Type = ItemType.Coin, Weight = 0F},
                 new ItemGroup
                 {
                     Type = ItemType.WeaponMeleeFist,
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -40,16 +28,8 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -59,16 +39,8 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -78,16 +50,8 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -97,16 +61,8 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -116,16 +72,8 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -135,16 +83,8 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -154,16 +94,8 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -173,16 +105,8 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -192,16 +116,8 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -211,16 +127,8 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -231,16 +139,8 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -250,16 +150,8 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -269,16 +161,8 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -288,16 +172,8 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -307,16 +183,8 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -326,16 +194,8 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -345,16 +205,8 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -364,40 +216,20 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
-                new ItemGroup
-                {
-                    Type = ItemType.Potion,
-                    Weight = 100F
-                },
+                new ItemGroup {Type = ItemType.Potion, Weight = 100F},
                 new ItemGroup
                 {
                     Type = ItemType.Wand,
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -406,16 +238,8 @@ namespace UnicornHack.Data
                     Type = ItemType.Figurine,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
@@ -425,24 +249,12 @@ namespace UnicornHack.Data
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Intricate,
-                            Weight = 20F
-                        },
-                        new ItemGroup
-                        {
-                            Complexity = ItemComplexity.Exotic,
-                            Weight = 10F
-                        },
+                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
+                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
                         new ItemGroup {Weight = 40F}
                     }
                 },
-                new ItemGroup
-                {
-                    Type = ItemType.SkillBook,
-                    Weight = 50F
-                }
+                new ItemGroup {Type = ItemType.SkillBook, Weight = 50F}
             }
         };
     }

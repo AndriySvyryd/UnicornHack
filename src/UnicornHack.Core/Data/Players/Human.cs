@@ -19,35 +19,24 @@ namespace UnicornHack.Data.Players
                     Activation = ActivationType.Always,
                     Effects = new HashSet<Effect>
                     {
-                        new ChangeProperty<bool>
-                        {
-                            PropertyName = "Infravisible",
-                            Value = true
-                        },
+                        new ChangeProperty<bool> {PropertyName = "Infravisible", Value = true},
                         new ChangeProperty<TorsoType>
                         {
-                            PropertyName = "TorsoType",
-                            Value = TorsoType.Humanoid,
+                            PropertyName = "TorsoType", Value = TorsoType.Humanoid,
                             Function = ValueCombinationFunction.Override
                         },
                         new ChangeProperty<ExtremityType>
                         {
-                            PropertyName = "UpperExtremeties",
-                            Value = ExtremityType.GraspingFingers,
+                            PropertyName = "UpperExtremities", Value = ExtremityType.GraspingFingers,
                             Function = ValueCombinationFunction.Override
                         },
                         new ChangeProperty<ExtremityType>
                         {
-                            PropertyName = "LowerExtremeties",
-                            Value = ExtremityType.Fingers,
+                            PropertyName = "LowerExtremities", Value = ExtremityType.Fingers,
                             Function = ValueCombinationFunction.Override
                         },
                         new ChangeProperty<int>
-                        {
-                            PropertyName = "Size",
-                            Value = 6,
-                            Function = ValueCombinationFunction.MeanRoundUp
-                        }
+                            {PropertyName = "Size", Value = 6, Function = ValueCombinationFunction.MeanRoundUp}
                     }
                 },
                 new Ability
@@ -63,16 +52,10 @@ namespace UnicornHack.Data.Players
                             {
                                 Name = "Surge of Luck",
                                 Activation = ActivationType.WhileToggled,
+                                Cooldown = 1,
                                 EnergyPointCost = 50,
-                                Effects =  new HashSet<Effect>
-                                {
-                                    new ChangeProperty<int>
-                                    {
-                                        PropertyName = "HitPointMaximum",
-                                        Value = 25,
-                                        Function = ValueCombinationFunction.Sum
-                                    }
-                                }
+                                Effects = new HashSet<Effect>
+                                    {new ChangeProperty<int> {PropertyName = "HitPointMaximum", Value = 25}}
                             }
                         }
                     }

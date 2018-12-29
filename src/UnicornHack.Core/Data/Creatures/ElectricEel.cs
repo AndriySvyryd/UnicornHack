@@ -18,14 +18,14 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Shock {Damage = 140}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Hug,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Bind {Duration = 10}}
                 }
             },
@@ -34,16 +34,14 @@ namespace UnicornHack.Data.Creatures
             PreviousStageName = "giant eel",
             Size = 8,
             Weight = 600,
-            Agility = 4,
-            Constitution = 4,
-            Intelligence = 4,
-            Quickness = 4,
-            Strength = 4,
-            Willpower = 4,
+            Perception = 4,
+            Might = 4,
+            Speed = 4,
+            Focus = 4,
             PhysicalDeflection = 23,
             ElectricityResistance = 75,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.None,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.None,
             RespirationType = RespirationType.Water,
             LocomotionType = LocomotionType.Swimming,
             InventorySize = 0

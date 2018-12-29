@@ -19,21 +19,21 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Engulf {Duration = 7}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Corrode {Damage = 50}}
                 }
             },
@@ -42,17 +42,15 @@ namespace UnicornHack.Data.Creatures
             PreviousStageName = "baby purple worm",
             Size = 32,
             Weight = 1500,
-            Agility = 8,
-            Constitution = 8,
-            Intelligence = 8,
-            Quickness = 8,
-            Strength = 8,
-            Willpower = 8,
-            MagicResistance = 20,
+            Perception = 8,
+            Might = 8,
+            Speed = 8,
+            Focus = 8,
+            MagicDeflection = 10,
             PhysicalDeflection = 15,
             TorsoType = TorsoType.Serpentine,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.None,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.None,
             InventorySize = 0,
             EyeCount = 0
         };

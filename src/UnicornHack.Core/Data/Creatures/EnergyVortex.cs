@@ -20,21 +20,21 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Engulf {Duration = 4}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Shock {Damage = 30}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new DrainEnergy {Amount = 3}}
                 },
                 new Ability
@@ -53,21 +53,19 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.None,
             Size = 16,
             Weight = 0,
-            Agility = 4,
-            Constitution = 4,
-            Intelligence = 4,
-            Quickness = 4,
-            Strength = 4,
-            Willpower = 9,
-            MagicResistance = 30,
+            Perception = 4,
+            Might = 4,
+            Speed = 4,
+            Focus = 8,
+            MagicDeflection = 15,
             PhysicalDeflection = 18,
             DisintegrationResistance = 75,
             ElectricityResistance = 75,
             SlimingImmune = true,
             StoningImmune = true,
             HeadType = HeadType.None,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.None,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.None,
             RespirationType = RespirationType.None,
             LocomotionType = LocomotionType.Flying,
             EyeCount = 0,

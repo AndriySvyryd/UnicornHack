@@ -242,7 +242,8 @@ namespace UnicornHack.Generation
                     abilityEffect.AffectedEntityId = itemEntity.Id;
 
                     if ((abilityDefinition.Activation
-                        & (ActivationType.WhileToggled | ActivationType.ManualActivation | ActivationType.Targeted)) != 0)
+                         & (ActivationType.WhileToggled | ActivationType.ManualActivation | ActivationType.Targeted)) !=
+                        0)
                     {
                         AddPossesedAbility(ability, item, manager);
                     }
@@ -291,7 +292,8 @@ namespace UnicornHack.Generation
                         effect.EffectType = EffectType.Activate;
                         effect.TargetEntityId = ability.EntityId;
                         effect.DurationTicks = (int)((ability.Activation & ActivationType.Continuous) == 0
-                            ? EffectDuration.Instant : EffectDuration.Infinite);
+                            ? EffectDuration.Instant
+                            : EffectDuration.Infinite);
                         effect.ContainingAbilityId = activateAbilityEntity.Id;
 
                         activateEffectEntityReference.Referenced.Effect = effect;

@@ -83,7 +83,7 @@ namespace UnicornHack.Utils.MessagingECS
         }
 
         /// <summary>
-        ///     <paramref name="entity"/> should be empty
+        ///     <paramref name="entity" /> should be empty
         /// </summary>
         /// <param name="entity"></param>
         public void AddEntity(TEntity entity)
@@ -140,7 +140,8 @@ namespace UnicornHack.Utils.MessagingECS
             var groups = _groupsByComponentId[componentId];
             if (groups != null)
             {
-                var changes = new IPropertyValueChange[]{new PropertyValueChange<T>(component, propertyName, oldValue, newValue)};
+                var changes = new IPropertyValueChange[]
+                    {new PropertyValueChange<T>(component, propertyName, oldValue, newValue)};
                 foreach (var group in groups)
                 {
                     group.HandlePropertyValuesChanged(changes);
@@ -152,7 +153,7 @@ namespace UnicornHack.Utils.MessagingECS
         {
             foreach (var group in changes.SelectMany(c =>
                     _groupsByComponentId[c.ChangedComponent.ComponentId]
-                        ?? Enumerable.Empty<EntityGroup<TEntity>>())
+                    ?? Enumerable.Empty<EntityGroup<TEntity>>())
                 .Distinct())
             {
                 group.HandlePropertyValuesChanged(changes);

@@ -27,7 +27,6 @@
         GainXP,
         Heal,
         LevelTeleport,
-        MagicalDamage,
         Move,
         Paralyze,
         PhysicalDamage,
@@ -60,7 +59,6 @@
                 case EffectType.Bleed:
                 case EffectType.Shock:
                 case EffectType.Soak:
-                case EffectType.MagicalDamage:
                 case EffectType.PhysicalDamage:
                     return true;
                 default:

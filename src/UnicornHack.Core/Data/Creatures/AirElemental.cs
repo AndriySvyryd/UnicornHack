@@ -20,14 +20,14 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Engulf {Duration = 5}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Deafen {Duration = 2}}
                 }
             },
@@ -36,19 +36,17 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.None,
             Size = 16,
             Weight = 0,
-            Agility = 5,
-            Constitution = 5,
-            Intelligence = 5,
-            Quickness = 5,
-            Strength = 5,
-            Willpower = 10,
-            MagicResistance = 30,
+            Perception = 5,
+            Might = 4,
+            Speed = 5,
+            Focus = 10,
+            MagicDeflection = 15,
             PhysicalDeflection = 18,
             SlimingImmune = true,
             StoningImmune = true,
             HeadType = HeadType.None,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.None,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.None,
             RespirationType = RespirationType.None,
             LocomotionType = LocomotionType.Flying,
             EyeCount = 0,

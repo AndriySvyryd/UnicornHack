@@ -9,6 +9,7 @@ namespace UnicornHack.Utils.MessagingECS
 
         void HandleEntityRemoved(TEntity entity, Component removedComponent, IEntityGroup<TEntity> group);
 
-        bool HandlePropertyValuesChanged(IReadOnlyList<IPropertyValueChange> changes, TEntity entity, IEntityGroup<TEntity> group);
+        bool HandlePropertyValuesChanged(IReadOnlyList<IPropertyValueChange> changes, TEntity entity,
+            IEntityGroup<TEntity> group);
     }
 }

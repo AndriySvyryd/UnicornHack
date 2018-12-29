@@ -5,12 +5,12 @@ namespace UnicornHack.Services.LogEvents
     public readonly struct LeveledUpEvent
     {
         public LeveledUpEvent(
-           GameEntity sensorEntity,
-           GameEntity entity,
-           RaceComponent race,
-           int skillPointsGained,
-           int traitPointsGained,
-           int mutationPointsGained)
+            GameEntity sensorEntity,
+            GameEntity entity,
+            RaceComponent race,
+            int skillPointsGained,
+            int traitPointsGained,
+            int mutationPointsGained)
         {
             SensorEntity = sensorEntity;
             LeveledEntity = entity;

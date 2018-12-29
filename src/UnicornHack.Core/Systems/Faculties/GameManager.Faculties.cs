@@ -41,7 +41,7 @@ namespace UnicornHack
             SkillAbilitiesSystem = new SkillAbilitiesSystem();
             queue.Add<ItemEquippedMessage>(SkillAbilitiesSystem, ItemUsageSystem.ItemEquippedMessageName, 4);
             queue.Add<PropertyValueChangedMessage<GameEntity, ExtremityType>>(SkillAbilitiesSystem,
-                Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.UpperExtremeties)), 0);
+                Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.UpperExtremities)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
                 Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.OneHanded)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,

@@ -19,14 +19,14 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Headbutt,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 180}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Headbutt,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 180}}
                 }
             },
@@ -35,16 +35,14 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Roar,
             Size = 8,
             Weight = 3800,
-            Agility = 11,
-            Constitution = 11,
-            Intelligence = 11,
-            Quickness = 11,
-            Strength = 11,
-            Willpower = 11,
+            Perception = 11,
+            Might = 10,
+            Speed = 11,
+            Focus = 10,
             PhysicalDeflection = 15,
             TorsoType = TorsoType.Quadruped,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.Claws,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.Claws,
             InventorySize = 1,
             Infravisible = true
         };

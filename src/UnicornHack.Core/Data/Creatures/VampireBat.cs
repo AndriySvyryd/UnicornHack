@@ -19,23 +19,16 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect>
-                    {
-                        new ChangeProperty<int>
-                        {
-                            PropertyName = "strength",
-                            Value = -1,
-                            Duration = 5
-                        }
-                    }
+                        {new ChangeProperty<int> {PropertyName = "Might", Value = -1, Duration = 5}}
                 }
             },
             InitialLevel = 5,
@@ -45,17 +38,15 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Sqeek,
             Size = 1,
             Weight = 100,
-            Agility = 3,
-            Constitution = 3,
-            Intelligence = 3,
-            Quickness = 3,
-            Strength = 3,
-            Willpower = 3,
+            Perception = 3,
+            Might = 2,
+            Speed = 3,
+            Focus = 2,
             Regeneration = 3,
             PhysicalDeflection = 14,
             TorsoType = TorsoType.Quadruped,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.Claws,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.Claws,
             LocomotionType = LocomotionType.Flying,
             InventorySize = 1,
             NoiseLevel = 0,

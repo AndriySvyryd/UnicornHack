@@ -126,26 +126,31 @@ namespace UnicornHack.Utils.DataStructures
             {
                 return X > 0
                     ? X > -Y ? 0 : 1
-                    : -X < -Y ? 2 : 3;
+                    : -X < -Y
+                        ? 2
+                        : 3;
             }
-            else if (Y > 0)
+
+            if (Y > 0)
             {
                 return X < 0
                     ? -X > Y ? 4 : 5
-                    : X < Y ? 6 : 7;
+                    : X < Y
+                        ? 6
+                        : 7;
             }
-            else if (X > 0)
+
+            if (X > 0)
             {
                 return X > -Y ? 0 : 1;
             }
-            else if (X < 0)
+
+            if (X < 0)
             {
                 return -X > Y ? 4 : 5;
             }
-            else
-            {
-                throw new InvalidOperationException("Zero length vector");
-            }
+
+            throw new InvalidOperationException("Zero length vector");
         }
 
         public int OctantsTo(Direction direction)

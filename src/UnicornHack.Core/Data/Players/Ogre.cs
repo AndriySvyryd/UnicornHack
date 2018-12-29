@@ -19,55 +19,28 @@ namespace UnicornHack.Data.Players
                     Activation = ActivationType.Always,
                     Effects = new HashSet<Effect>
                     {
-                        new ChangeProperty<bool>
-                        {
-                            PropertyName = "Infravisible",
-                            Value = true
-                        },
+                        new ChangeProperty<bool> {PropertyName = "Infravisible", Value = true},
                         new ChangeProperty<TorsoType>
                         {
-                            PropertyName = "TorsoType",
-                            Value = TorsoType.Humanoid,
+                            PropertyName = "TorsoType", Value = TorsoType.Humanoid,
                             Function = ValueCombinationFunction.Override
                         },
                         new ChangeProperty<ExtremityType>
                         {
-                            PropertyName = "UpperExtremeties",
-                            Value = ExtremityType.GraspingFingers,
+                            PropertyName = "UpperExtremities", Value = ExtremityType.GraspingFingers,
                             Function = ValueCombinationFunction.Override
                         },
                         new ChangeProperty<ExtremityType>
                         {
-                            PropertyName = "LowerExtremeties",
-                            Value = ExtremityType.Fingers,
+                            PropertyName = "LowerExtremities", Value = ExtremityType.Fingers,
                             Function = ValueCombinationFunction.Override
                         },
+                        new ChangeProperty<int> {PropertyName = "Might", Value = 2},
+                        new ChangeProperty<int> {PropertyName = "Speed", Value = -2},
+                        new ChangeProperty<int> {PropertyName = "Perception", Value = -1},
+                        new ChangeProperty<int> {PropertyName = "Focus", Value = -1},
                         new ChangeProperty<int>
-                        {
-                            PropertyName = "Strength",
-                            Value = 2
-                        },
-                        new ChangeProperty<int>
-                        {
-                            PropertyName = "Agility",
-                            Value = -2
-                        },
-                        new ChangeProperty<int>
-                        {
-                            PropertyName = "Constitution",
-                            Value = 2
-                        },
-                        new ChangeProperty<int>
-                        {
-                            PropertyName = "Quickness",
-                            Value = -2
-                        },
-                        new ChangeProperty<int>
-                        {
-                            PropertyName = "Size",
-                            Value = 9,
-                            Function = ValueCombinationFunction.MeanRoundUp
-                        }
+                            {PropertyName = "Size", Value = 9, Function = ValueCombinationFunction.MeanRoundUp}
                     }
                 }
             },

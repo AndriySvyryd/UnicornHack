@@ -19,14 +19,14 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Paralyze {Duration = 3}}
                 }
             },
@@ -35,17 +35,15 @@ namespace UnicornHack.Data.Creatures
             PreviousStageName = "ghoul",
             Noise = ActorNoiseType.Growl,
             Weight = 400,
-            Agility = 8,
-            Constitution = 8,
-            Intelligence = 8,
-            Quickness = 8,
-            Strength = 8,
-            Willpower = 13,
+            Perception = 8,
+            Might = 8,
+            Speed = 8,
+            Focus = 12,
             PhysicalDeflection = 18,
             ColdResistance = 75,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             RespirationType = RespirationType.None,
             Infravision = true
         };

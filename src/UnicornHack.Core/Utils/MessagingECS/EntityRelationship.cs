@@ -138,7 +138,8 @@ namespace UnicornHack.Utils.MessagingECS
                 }
             }
 
-            public bool HandlePropertyValuesChanged(IReadOnlyList<IPropertyValueChange> changes, TEntity entity, IEntityGroup<TEntity> group)
+            public bool HandlePropertyValuesChanged(IReadOnlyList<IPropertyValueChange> changes, TEntity entity,
+                IEntityGroup<TEntity> group)
                 => false;
         }
     }

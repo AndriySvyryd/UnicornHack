@@ -182,7 +182,8 @@ namespace UnicornHack.Systems.Actors
                         throw new InvalidOperationException("Must specify ability slot number");
                     }
 
-                    var abilityEntity = manager.AbilitySlottingSystem.GetAbility(playerEntity.Id, target.Value, manager);
+                    var abilityEntity =
+                        manager.AbilitySlottingSystem.GetAbility(playerEntity.Id, target.Value, manager);
                     if (abilityEntity == null)
                     {
                         throw new InvalidOperationException("No ability in slot" + target);
@@ -284,7 +285,8 @@ namespace UnicornHack.Systems.Actors
         {
             if (target == null)
             {
-                return ActivateAbility(abilityEntity, playerEntity, playerEntity.Position.LevelCell, playerEntity, manager);
+                return ActivateAbility(abilityEntity, playerEntity, playerEntity.Position.LevelCell, playerEntity,
+                    manager);
             }
 
             Point targetCell;
@@ -303,7 +305,8 @@ namespace UnicornHack.Systems.Actors
             else
             {
                 targetCell = Point.Unpack(target).Value;
-                targetActor = manager.LevelActorToLevelCellIndex[(playerEntity.Position.LevelId, targetCell.X, targetCell.Y)];
+                targetActor =
+                    manager.LevelActorToLevelCellIndex[(playerEntity.Position.LevelId, targetCell.X, targetCell.Y)];
             }
 
             return ActivateAbility(abilityEntity, playerEntity, targetCell, targetActor, manager);
@@ -336,7 +339,8 @@ namespace UnicornHack.Systems.Actors
                         // TODO: Check LOS and move closer if none
                         break;
                     default:
-                        throw new InvalidOperationException($"Targeting type ${ability.TargetingType.ToString()} not supported");
+                        throw new InvalidOperationException(
+                            $"Targeting type ${ability.TargetingType.ToString()} not supported");
                 }
             }
 

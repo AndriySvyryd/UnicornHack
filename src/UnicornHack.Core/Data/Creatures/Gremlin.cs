@@ -18,25 +18,23 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.Targeted,
-                    Action = AbilityAction.Claw,
-                    Timeout = 1,
-                    Effects = new HashSet<Effect>
-                    {
-                        new Curse()
-                    }
+                    Activation = ActivationType.Targeted, Action = AbilityAction.Claw, Cooldown = 100, Effects =
+                        new HashSet<Effect>
+                        {
+                            new Curse()
+                        }
                 }
             },
             InitialLevel = 5,
@@ -45,17 +43,15 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Laugh,
             Size = 2,
             Weight = 100,
-            Agility = 3,
-            Constitution = 3,
-            Intelligence = 3,
-            Quickness = 3,
-            Strength = 3,
-            Willpower = 3,
-            MagicResistance = 25,
+            Perception = 3,
+            Might = 2,
+            Speed = 3,
+            Focus = 2,
+            MagicDeflection = 12,
             PhysicalDeflection = 18,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             LocomotionType = LocomotionType.Swimming,
             Infravisible = true
         };

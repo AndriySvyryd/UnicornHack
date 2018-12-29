@@ -10,11 +10,6 @@ namespace UnicornHack.Data.Items
         public static readonly Item Shortbow = new Item
         {
             Name = "shortbow",
-            Type = ItemType.WeaponRangedBow,
-            Material = Material.Wood,
-            Weight = 5,
-            EquipableSizes = SizeCategory.Small | SizeCategory.Medium,
-            EquipableSlots = EquipmentSlot.GraspSingleExtremity | EquipmentSlot.GraspBothExtremities,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -22,12 +17,14 @@ namespace UnicornHack.Data.Items
                     Activation = ActivationType.OnPhysicalRangedAttack,
                     Action = AbilityAction.Shoot,
                     Effects = new HashSet<Effect>
-                    {
-                        new PhysicalDamage {Damage = 30},
-                        new Activate {Projectile = "arrow"}
-                    }
+                        {new PhysicalDamage {Damage = 30}, new Activate {Projectile = "arrow"}}
                 }
-            }
+            },
+            Type = ItemType.WeaponRangedBow,
+            Material = Material.Wood,
+            Weight = 5,
+            EquipableSizes = SizeCategory.Small | SizeCategory.Medium,
+            EquipableSlots = EquipmentSlot.GraspSingleExtremity | EquipmentSlot.GraspBothExtremities
         };
     }
 }

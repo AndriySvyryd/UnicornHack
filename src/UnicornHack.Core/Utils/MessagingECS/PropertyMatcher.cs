@@ -68,6 +68,7 @@ namespace UnicornHack.Utils.MessagingECS
                             value = getOldValue ? change.OldValue : change.NewValue;
                             return true;
                         }
+
                         component = valueChange.ChangedComponent;
                     }
                 }

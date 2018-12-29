@@ -18,28 +18,28 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 140}}
                 }
             },
@@ -48,13 +48,11 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.GoldCollector | AIBehavior.GemCollector,
             Noise = ActorNoiseType.Roar,
             Weight = 1200,
-            Agility = 5,
-            Constitution = 5,
-            Intelligence = 5,
-            Quickness = 5,
-            Strength = 5,
-            Willpower = 5,
-            MagicResistance = 20,
+            Perception = 5,
+            Might = 4,
+            Speed = 5,
+            Focus = 4,
+            MagicDeflection = 10,
             PhysicalDeflection = 22,
             ColdResistance = 75,
             FireResistance = 75,

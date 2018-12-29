@@ -19,35 +19,35 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Breath,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ElementalDamage"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 180}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spell,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
                 }
             },
@@ -60,21 +60,19 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.Female,
             Size = 32,
             Weight = 4500,
-            Agility = 9,
-            Constitution = 9,
-            Intelligence = 9,
-            Quickness = 9,
-            Strength = 9,
-            Willpower = 14,
-            MagicResistance = 30,
+            Perception = 9,
+            Might = 8,
+            Speed = 9,
+            Focus = 14,
+            MagicDeflection = 15,
             AcidResistance = 75,
             ColdResistance = 75,
             ElectricityResistance = 75,
             FireResistance = 75,
             StoningImmune = true,
             TorsoType = TorsoType.Quadruped,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.Claws,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.Claws,
             LocomotionType = LocomotionType.Flying,
             Infravision = true,
             InvisibilityDetection = true

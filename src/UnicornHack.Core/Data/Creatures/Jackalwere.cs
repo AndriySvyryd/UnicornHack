@@ -19,14 +19,14 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 5,
+                    Cooldown = 250,
                     Effects = new HashSet<Effect> {new ConferLycanthropy {VariantName = "jackalwere"}}
                 }
             },
@@ -36,18 +36,16 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Bark,
             Size = 2,
             Weight = 300,
-            Agility = 2,
-            Constitution = 2,
-            Intelligence = 2,
-            Quickness = 2,
-            Strength = 2,
-            Willpower = 2,
+            Perception = 2,
+            Might = 2,
+            Speed = 2,
+            Focus = 2,
             Regeneration = 3,
-            MagicResistance = 10,
+            MagicDeflection = 5,
             PhysicalDeflection = 13,
             TorsoType = TorsoType.Quadruped,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.Claws,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.Claws,
             InventorySize = 1,
             Infravisible = true
         };

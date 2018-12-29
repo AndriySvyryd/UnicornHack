@@ -44,7 +44,7 @@ namespace UnicornHack.Utils.MessagingECS
             else if (OrphanedEntities.ContainsKey(key))
             {
                 throw new InvalidOperationException(
-                    $"The key { key } already exists in the unique relationship for { Group.Name }");
+                    $"The key {key} already exists in the unique relationship for {Group.Name}");
             }
 
             OrphanedEntities[key] = entity;
@@ -57,7 +57,7 @@ namespace UnicornHack.Utils.MessagingECS
             if (Index.ContainsKey(key))
             {
                 throw new InvalidOperationException(
-                    $"The key { key } already exists in the unique relationship for { Group.Name }");
+                    $"The key {key} already exists in the unique relationship for {Group.Name}");
             }
 
             Index[key] = entity;
@@ -110,7 +110,8 @@ namespace UnicornHack.Utils.MessagingECS
                 }
             }
 
-            public bool HandlePropertyValuesChanged(IReadOnlyList<IPropertyValueChange> changes, TEntity entity, IEntityGroup<TEntity> group)
+            public bool HandlePropertyValuesChanged(IReadOnlyList<IPropertyValueChange> changes, TEntity entity,
+                IEntityGroup<TEntity> group)
                 => false;
         }
     }

@@ -19,7 +19,7 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
                 }
             },
@@ -28,16 +28,14 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.GoldCollector | AIBehavior.GemCollector,
             Size = 2,
             Weight = 100,
-            Agility = 2,
-            Constitution = 2,
-            Intelligence = 2,
-            Quickness = 2,
-            Strength = 2,
-            Willpower = 2,
-            MagicResistance = 20,
+            Perception = 2,
+            Might = 2,
+            Speed = 2,
+            Focus = 2,
+            MagicDeflection = 10,
             TorsoType = TorsoType.Quadruped,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.Claws,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.Claws,
             LocomotionType = LocomotionType.Walking | LocomotionType.Tunneling,
             InventorySize = 1,
             Infravisible = true

@@ -22,9 +22,6 @@
 
         string IMessage.MessageName { get; set; }
 
-        public void Dispose()
-        {
-            Entity = default;
-        }
+        public void Dispose() => Entity = default;
     }
 }

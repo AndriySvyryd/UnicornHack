@@ -19,7 +19,7 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 }
             },
@@ -28,15 +28,13 @@ namespace UnicornHack.Data.Creatures
             PreviousStageName = "baby crocodile",
             Size = 8,
             Weight = 1500,
-            Agility = 5,
-            Constitution = 5,
-            Intelligence = 5,
-            Quickness = 5,
-            Strength = 5,
-            Willpower = 5,
-            MagicResistance = 10,
+            Perception = 5,
+            Might = 4,
+            Speed = 5,
+            Focus = 4,
+            MagicDeflection = 5,
             PhysicalDeflection = 16,
-            UpperExtremeties = ExtremityType.None,
+            UpperExtremities = ExtremityType.None,
             RespirationType = RespirationType.Amphibious,
             LocomotionType = LocomotionType.Swimming,
             InventorySize = 1

@@ -10,11 +10,6 @@ namespace UnicornHack.Data.Items
         public static readonly Item FreezingFocus = new Item
         {
             Name = "freezing focus",
-            Type = ItemType.WeaponMagicFocus,
-            Material = Material.Bone,
-            Weight = 5,
-            EquipableSizes = SizeCategory.Small | SizeCategory.Medium,
-            EquipableSlots = EquipmentSlot.GraspSingleExtremity | EquipmentSlot.GraspBothExtremities,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -23,7 +18,12 @@ namespace UnicornHack.Data.Items
                     Action = AbilityAction.Hit,
                     Effects = new HashSet<Effect> {new Freeze {Damage = 40}}
                 }
-            }
+            },
+            Type = ItemType.WeaponMagicFocus,
+            Material = Material.Bone,
+            Weight = 5,
+            EquipableSizes = SizeCategory.Small | SizeCategory.Medium,
+            EquipableSlots = EquipmentSlot.GraspSingleExtremity | EquipmentSlot.GraspBothExtremities
         };
     }
 }

@@ -19,40 +19,34 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Breath,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Burn {Damage = 70}}
                 }
             },
             InitialLevel = 7,
-            GenerationWeight = new BranchWeight
-            {
-                Matched = new DefaultWeight {Multiplier = 4F},
-                Name = "hell"
-            },
+            GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 4F}, Name = "hell"},
             NextStageName = "hell hound",
             GenerationFlags = GenerationFlags.SmallGroup,
             Noise = ActorNoiseType.Bark,
             Size = 2,
             Weight = 250,
-            Agility = 4,
-            Constitution = 4,
-            Intelligence = 4,
-            Quickness = 4,
-            Strength = 4,
-            Willpower = 4,
-            MagicResistance = 20,
+            Perception = 4,
+            Might = 4,
+            Speed = 4,
+            Focus = 4,
+            MagicDeflection = 10,
             PhysicalDeflection = 16,
             FireResistance = 75,
             TorsoType = TorsoType.Quadruped,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.Claws,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.Claws,
             InventorySize = 1,
             Infravisible = true
         };

@@ -19,23 +19,20 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.Targeted,
-                    Action = AbilityAction.Touch,
-                    Timeout = 5,
-                    Effects = new HashSet<Effect>
-                    {
-                        new Stone()
-                    }
+                    Activation = ActivationType.Targeted, Action = AbilityAction.Touch, Cooldown = 250, Effects =
+                        new HashSet<Effect>
+                        {
+                            new Stone()
+                        }
                 },
                 new Ability
                 {
-                    Activation = ActivationType.OnPhysicalMeleeHit,
-                    Effects = new HashSet<Effect>
+                    Activation = ActivationType.OnPhysicalMeleeHit, Effects = new HashSet<Effect>
                     {
                         new Stone()
                     }
@@ -48,18 +45,16 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Hiss,
             Size = 1,
             Weight = 10,
-            Agility = 3,
-            Constitution = 3,
-            Intelligence = 3,
-            Quickness = 3,
-            Strength = 3,
-            Willpower = 3,
-            MagicResistance = 30,
+            Perception = 3,
+            Might = 2,
+            Speed = 3,
+            Focus = 2,
+            MagicDeflection = 15,
             PhysicalDeflection = 12,
             StoningImmune = true,
             TorsoType = TorsoType.Quadruped,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.Claws,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.Claws,
             InventorySize = 1,
             Infravisible = true
         };

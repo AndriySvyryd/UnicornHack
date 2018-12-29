@@ -10,11 +10,6 @@ namespace UnicornHack.Data.Items
         public static readonly Item ThrowingKnives = new Item
         {
             Name = "throwing knives",
-            Type = ItemType.WeaponRangedThrown,
-            Material = Material.Steel,
-            Weight = 5,
-            EquipableSizes = SizeCategory.Small | SizeCategory.Medium,
-            EquipableSlots = EquipmentSlot.GraspSingleExtremity,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -22,12 +17,14 @@ namespace UnicornHack.Data.Items
                     Activation = ActivationType.OnPhysicalRangedAttack,
                     Action = AbilityAction.Throw,
                     Effects = new HashSet<Effect>
-                    {
-                        new PhysicalDamage {Damage = 30},
-                        new Activate {Projectile = "throwing knife"}
-                    }
+                        {new PhysicalDamage {Damage = 30}, new Activate {Projectile = "throwing knife"}}
                 }
-            }
+            },
+            Type = ItemType.WeaponRangedThrown,
+            Material = Material.Steel,
+            Weight = 5,
+            EquipableSizes = SizeCategory.Small | SizeCategory.Medium,
+            EquipableSlots = EquipmentSlot.GraspSingleExtremity
         };
     }
 }

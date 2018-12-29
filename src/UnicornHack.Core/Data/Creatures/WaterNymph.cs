@@ -19,18 +19,16 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Sedate {Duration = 2}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.Targeted,
-                    Action = AbilityAction.Touch,
-                    Timeout = 1,
-                    Effects = new HashSet<Effect>
-                    {
-                        new StealItem()
-                    }
+                    Activation = ActivationType.Targeted, Action = AbilityAction.Touch, Cooldown = 100, Effects =
+                        new HashSet<Effect>
+                        {
+                            new StealItem()
+                        }
                 }
             },
             InitialLevel = 3,
@@ -39,17 +37,15 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Seduction,
             Sex = Sex.Female,
             Weight = 600,
-            Agility = 2,
-            Constitution = 2,
-            Intelligence = 2,
-            Quickness = 2,
-            Strength = 2,
-            Willpower = 2,
-            MagicResistance = 20,
+            Perception = 2,
+            Might = 2,
+            Speed = 2,
+            Focus = 2,
+            MagicDeflection = 10,
             PhysicalDeflection = 11,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             LocomotionType = LocomotionType.Swimming,
             Infravisible = true
         };

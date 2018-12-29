@@ -25,22 +25,22 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new DrainLife {Amount = 4}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spell,
-                    Timeout = 1,
-                    Effects = new HashSet<Effect> {new MagicalDamage {Damage = 40}}
+                    Cooldown = 100,
+                    Effects = new HashSet<Effect> {new Disintegrate {Damage = 40}}
                 }
             },
             InitialLevel = 20,
@@ -48,18 +48,16 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector | AIBehavior.MagicUser,
             Noise = ActorNoiseType.Hiss,
             Weight = 1000,
-            Agility = 11,
-            Constitution = 11,
-            Intelligence = 11,
-            Quickness = 11,
-            Strength = 11,
-            Willpower = 16,
+            Perception = 11,
+            Might = 10,
+            Speed = 11,
+            Focus = 16,
             Regeneration = 3,
-            MagicResistance = 60,
+            MagicDeflection = 30,
             PhysicalDeflection = 24,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremeties = ExtremityType.GraspingFingers,
-            LowerExtremeties = ExtremityType.Fingers,
+            UpperExtremities = ExtremityType.GraspingFingers,
+            LowerExtremities = ExtremityType.Fingers,
             RespirationType = RespirationType.None,
             LocomotionType = LocomotionType.Flying,
             VisibilityLevel = 0,

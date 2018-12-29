@@ -10,24 +10,20 @@ namespace UnicornHack.Data.Items
         public static readonly Item FireStaff = new Item
         {
             Name = "fire staff",
-            Type = ItemType.WeaponMagicStaff,
-            Material = Material.Wood,
-            Weight = 5,
-            EquipableSizes = SizeCategory.Medium | SizeCategory.Large,
-            EquipableSlots = EquipmentSlot.GraspSingleExtremity | EquipmentSlot.GraspBothExtremities,
             Abilities = new HashSet<Ability>
             {
                 new Ability
                 {
                     Activation = ActivationType.OnPhysicalRangedAttack,
                     Action = AbilityAction.Shoot,
-                    Effects = new HashSet<Effect>
-                    {
-                        new Burn {Damage = 30},
-                        new Activate {Projectile = "fire bolt"}
-                    }
+                    Effects = new HashSet<Effect> {new Burn {Damage = 30}, new Activate {Projectile = "fire bolt"}}
                 }
-            }
+            },
+            Type = ItemType.WeaponMagicStaff,
+            Material = Material.Wood,
+            Weight = 5,
+            EquipableSizes = SizeCategory.Medium | SizeCategory.Large,
+            EquipableSlots = EquipmentSlot.GraspSingleExtremity | EquipmentSlot.GraspBothExtremities
         };
     }
 }

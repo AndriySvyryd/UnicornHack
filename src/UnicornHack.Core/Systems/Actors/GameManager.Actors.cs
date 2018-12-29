@@ -36,11 +36,14 @@ namespace UnicornHack
                     (entity, changes, getOldValue, matcher) =>
                     {
                         if (!matcher.TryGetValue<int>(
-                            entity, (int)EntityComponent.Position, nameof(PositionComponent.LevelId), changes, getOldValue, out var levelId)
-                         || !matcher.TryGetValue<byte>(
-                             entity, (int)EntityComponent.Position, nameof(PositionComponent.LevelX), changes, getOldValue, out var levelX)
-                         || !matcher.TryGetValue<byte>(
-                             entity, (int)EntityComponent.Position, nameof(PositionComponent.LevelY), changes, getOldValue, out var levelY))
+                                entity, (int)EntityComponent.Position, nameof(PositionComponent.LevelId), changes,
+                                getOldValue, out var levelId)
+                            || !matcher.TryGetValue<byte>(
+                                entity, (int)EntityComponent.Position, nameof(PositionComponent.LevelX), changes,
+                                getOldValue, out var levelX)
+                            || !matcher.TryGetValue<byte>(
+                                entity, (int)EntityComponent.Position, nameof(PositionComponent.LevelY), changes,
+                                getOldValue, out var levelY))
                         {
                             return ((0, 0, 0), false);
                         }

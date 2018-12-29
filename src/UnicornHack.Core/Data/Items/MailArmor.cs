@@ -10,11 +10,6 @@ namespace UnicornHack.Data.Items
         public static readonly Item MailArmor = new Item
         {
             Name = "mail armor",
-            Type = ItemType.ArmorTorso,
-            Material = Material.Steel,
-            Weight = 40,
-            EquipableSizes = SizeCategory.Small | SizeCategory.Medium | SizeCategory.Large,
-            EquipableSlots = EquipmentSlot.Torso,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -22,19 +17,16 @@ namespace UnicornHack.Data.Items
                     Activation = ActivationType.WhileEquipped,
                     Effects = new HashSet<Effect>
                     {
-                        new ChangeProperty<int>
-                        {
-                            PropertyName = "physicalDeflection",
-                            Value = 10
-                        },
-                        new ChangeProperty<int>
-                        {
-                            PropertyName = "physicalAbsorption",
-                            Value = 2
-                        }
+                        new ChangeProperty<int> {PropertyName = "PhysicalDeflection", Value = 10},
+                        new ChangeProperty<int> {PropertyName = "PhysicalAbsorption", Value = 2}
                     }
                 }
-            }
+            },
+            Type = ItemType.ArmorTorso,
+            Material = Material.Steel,
+            Weight = 40,
+            EquipableSizes = SizeCategory.Small | SizeCategory.Medium | SizeCategory.Large,
+            EquipableSlots = EquipmentSlot.Torso
         };
     }
 }

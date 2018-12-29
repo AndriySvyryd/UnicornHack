@@ -19,18 +19,16 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.Targeted,
-                    Action = AbilityAction.Touch,
-                    Timeout = 1,
-                    Effects = new HashSet<Effect>
-                    {
-                        new Stick()
-                    }
+                    Activation = ActivationType.Targeted, Action = AbilityAction.Touch, Cooldown = 100, Effects =
+                        new HashSet<Effect>
+                        {
+                            new Stick()
+                        }
                 }
             },
             InitialLevel = 8,
@@ -38,19 +36,17 @@ namespace UnicornHack.Data.Creatures
             PreviousStageName = "small mimic",
             NextStageName = "giant mimic",
             Weight = 600,
-            Agility = 5,
-            Constitution = 5,
-            Intelligence = 5,
-            Quickness = 5,
-            Strength = 5,
-            Willpower = 5,
-            MagicResistance = 10,
+            Perception = 5,
+            Might = 4,
+            Speed = 5,
+            Focus = 4,
+            MagicDeflection = 5,
             PhysicalDeflection = 13,
             AcidResistance = 75,
             HeadType = HeadType.None,
             TorsoType = TorsoType.Amorphic,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.None,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.None,
             RespirationType = RespirationType.None,
             EyeCount = 0,
             NoiseLevel = 0,

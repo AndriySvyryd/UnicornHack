@@ -25,7 +25,7 @@ namespace UnicornHack.Utils.MessagingECS
         {
             if (KeyValueGetter.TryGetKey(
                 entity,
-                new IPropertyValueChange[] { new PropertyValueChange<object>(addedComponent)},
+                new IPropertyValueChange[] {new PropertyValueChange<object>(addedComponent)},
                 getOldValue: false,
                 out var keyValue))
             {

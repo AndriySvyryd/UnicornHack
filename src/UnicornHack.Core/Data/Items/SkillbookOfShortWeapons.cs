@@ -10,9 +10,6 @@ namespace UnicornHack.Data.Items
         public static readonly Item SkillbookOfShortWeapons = new Item
         {
             Name = "skillbook of short weapons",
-            Type = ItemType.SkillBook,
-            Material = Material.Paper,
-            Weight = 1,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,11 +17,13 @@ namespace UnicornHack.Data.Items
                     Name = "Consult",
                     Activation = ActivationType.WhileToggled,
                     Delay = 100,
-                    Effects = new HashSet<Effect> {
-                        new ChangeProperty<int> { PropertyName = "ShortWeapons", Value = 1, Duration = -1 }
-                    }
+                    Effects = new HashSet<Effect>
+                        {new ChangeProperty<int> {PropertyName = "ShortWeapons", Value = 1, Duration = -1}}
                 }
-            }
+            },
+            Type = ItemType.SkillBook,
+            Material = Material.Paper,
+            Weight = 1
         };
     }
 }

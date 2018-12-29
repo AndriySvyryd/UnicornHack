@@ -58,7 +58,7 @@ namespace UnicornHack.Utils
             {
                 currentLocationIndex = _openNodes.Pop();
 
-                currentLocationNode =  ref _graph[currentLocationIndex];
+                currentLocationNode = ref _graph[currentLocationIndex];
                 if (currentLocationNode.Status == _closedNodeStatus)
                 {
                     continue;

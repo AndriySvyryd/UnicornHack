@@ -9,18 +9,12 @@ namespace UnicornHack.Data.Items
         public static readonly Item Arrow = new Item
         {
             Name = "arrow",
+            Abilities = new HashSet<Ability>
+                {new Ability {Activation = ActivationType.OnPhysicalRangedAttack, Action = AbilityAction.Hit}},
             Type = ItemType.WeaponProjectile,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             Material = Material.Steel,
-            Weight = 1,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
-                {
-                    Activation = ActivationType.OnPhysicalRangedAttack,
-                    Action = AbilityAction.Hit
-                }
-            }
+            Weight = 1
         };
     }
 }

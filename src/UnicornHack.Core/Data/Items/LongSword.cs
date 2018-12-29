@@ -10,11 +10,6 @@ namespace UnicornHack.Data.Items
         public static readonly Item LongSword = new Item
         {
             Name = "long sword",
-            Type = ItemType.WeaponMeleeMedium,
-            Material = Material.Steel,
-            Weight = 10,
-            EquipableSizes = SizeCategory.Medium | SizeCategory.Large,
-            EquipableSlots = EquipmentSlot.GraspSingleExtremity | EquipmentSlot.GraspBothExtremities,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -23,7 +18,12 @@ namespace UnicornHack.Data.Items
                     Action = AbilityAction.Slash,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
                 }
-            }
+            },
+            Type = ItemType.WeaponMeleeMedium,
+            Material = Material.Steel,
+            Weight = 10,
+            EquipableSizes = SizeCategory.Medium | SizeCategory.Large,
+            EquipableSlots = EquipmentSlot.GraspSingleExtremity | EquipmentSlot.GraspBothExtremities
         };
     }
 }

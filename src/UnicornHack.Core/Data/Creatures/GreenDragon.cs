@@ -19,28 +19,28 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Breath,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new Blight {Damage = 140}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
-                    Timeout = 1,
+                    Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
                 }
             },
@@ -51,17 +51,15 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Roar,
             Size = 32,
             Weight = 4500,
-            Agility = 8,
-            Constitution = 8,
-            Intelligence = 8,
-            Quickness = 8,
-            Strength = 8,
-            Willpower = 8,
-            MagicResistance = 20,
+            Perception = 8,
+            Might = 8,
+            Speed = 8,
+            Focus = 8,
+            MagicDeflection = 10,
             PhysicalDeflection = 21,
             TorsoType = TorsoType.Quadruped,
-            UpperExtremeties = ExtremityType.None,
-            LowerExtremeties = ExtremityType.Claws,
+            UpperExtremities = ExtremityType.None,
+            LowerExtremities = ExtremityType.Claws,
             LocomotionType = LocomotionType.Flying,
             InventorySize = 1,
             Infravision = true,

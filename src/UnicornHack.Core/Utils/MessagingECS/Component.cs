@@ -7,7 +7,8 @@ using UnicornHack.Utils.Caching;
 
 namespace UnicornHack.Utils.MessagingECS
 {
-    public abstract class Component : IOwnerReferenceable, ITrackable, IPoolable, INotifyPropertyChanged, INotifyPropertyChanging
+    public abstract class Component : IOwnerReferenceable, ITrackable, IPoolable, INotifyPropertyChanged,
+        INotifyPropertyChanging
     {
         public static int NullId = int.MinValue;
         public event PropertyChangedEventHandler PropertyChanged;
@@ -81,9 +82,7 @@ namespace UnicornHack.Utils.MessagingECS
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void NotifyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
         void ITrackable.StartTracking(object tracker)
         {
@@ -139,10 +138,10 @@ namespace UnicornHack.Utils.MessagingECS
         protected virtual void Clean()
         {
             Debug.Assert(Entity?.HasComponent(ComponentId) != true
-                && _referenceCount == 0
-                && !_tracked
-                && PropertyChanged == null
-                && PropertyChanging == null);
+                         && _referenceCount == 0
+                         && !_tracked
+                         && PropertyChanged == null
+                         && PropertyChanging == null);
 
             Entity = null;
 
