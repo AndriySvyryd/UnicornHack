@@ -108,7 +108,6 @@ namespace UnicornHack.Systems.Abilities
 
             if ((ability.Activation & ActivationType.Targeted) != 0)
             {
-
                 // TODO: Specify correct delay in the abilities
                 targetEffectsMessage.Delay = ability.Delay == 0 ? TimeSystem.DefaultActionDelay : ability.Delay;
 
@@ -151,12 +150,7 @@ namespace UnicornHack.Systems.Abilities
                 return targetEffectsMessage;
             }
 
-            // TODO: Set the timeout
-
-            if ((ability.Activation & ActivationType.Continuous) != 0)
-            {
-                ability.IsActive = true;
-            }
+            // TODO: Set the cooldown for non-continuous abilities
 
             var selfEffectsMessage = manager.Queue.CreateMessage<AbilityActivatedMessage>(AbilityActivatedMessageName);
             selfEffectsMessage.AbilityEntity = activateMessage.AbilityEntity;
@@ -184,6 +178,13 @@ namespace UnicornHack.Systems.Abilities
 
             foreach (var activation in activations)
             {
+                var activationAbility = activation.ActivationMessage.AbilityEntity.Ability;
+                if ((activationAbility.Activation & ActivationType.Continuous) != 0
+                    && !activationAbility.IsActive)
+                {
+                    activationAbility.IsActive = true;
+                }
+
                 if (activation.ActivationMessage.TargetEntity == null)
                 {
                     EnqueueAbilityActivated(activation.ActivationMessage, manager);
@@ -195,6 +196,15 @@ namespace UnicornHack.Systems.Abilities
                     targetMessage.TargetEntity = target;
 
                     DetermineSuccess(targetMessage, exposure, manager);
+
+                    var targetAbility = activation.TargetMessage?.AbilityEntity.Ability;
+                    if (targetAbility != null
+                        && (targetAbility.Activation & ActivationType.Continuous) != 0
+                        && !targetAbility.IsActive)
+                    {
+                        targetAbility.IsActive = true;
+                    }
+
                     // TODO: Trigger abilities on target
                     EnqueueAbilityActivated(targetMessage, manager);
                 }
@@ -873,6 +883,8 @@ namespace UnicornHack.Systems.Abilities
         {
             Debug.Assert((ability.Activation & ActivationType.Continuous) != 0);
             Debug.Assert(ability.IsActive);
+
+            // TODO: Set the cooldown
 
             ability.IsActive = false;
 

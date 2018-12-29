@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
@@ -12,7 +13,8 @@ using UnicornHack.Utils.MessagingECS;
 namespace UnicornHack.Systems.Faculties
 {
     public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
-        IGameSystem<PropertyValueChangedMessage<GameEntity, ExtremityType>>
+        IGameSystem<PropertyValueChangedMessage<GameEntity, ExtremityType>>,
+        IGameSystem<PropertyValueChangedMessage<GameEntity, int>>
     {
         public const string PrimaryMeleeWeaponAttackName = "primary melee weapon attack";
         public const string SecondaryMeleeWeaponAttackName = "secondary melee weapon attack";
@@ -25,6 +27,8 @@ namespace UnicornHack.Systems.Faculties
         public const string PrimaryRangedAttackName = "primary ranged attack";
         public const string SecondaryRangedAttackName = "secondary ranged attack";
         public const string DoubleRangedAttackName = "double ranged attack";
+
+        public const string SkillsAbilityName = "skills";
 
         public MessageProcessingResult Process(ItemEquippedMessage message, GameManager manager)
         {
@@ -40,6 +44,55 @@ namespace UnicornHack.Systems.Faculties
             PropertyValueChangedMessage<GameEntity, ExtremityType> message, GameManager manager)
         {
             RecalculateWeaponAbilities(message.Entity, manager);
+
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, int> message, GameManager manager)
+        {
+            var increased = message.NewValue > message.OldValue;
+            switch (message.ChangedPropertyName)
+            {
+                case nameof(PlayerComponent.OneHanded):
+                case nameof(PlayerComponent.TwoHanded):
+                case nameof(PlayerComponent.DualWielding):
+                case nameof(PlayerComponent.FistWeapons):
+                case nameof(PlayerComponent.ShortWeapons):
+                case nameof(PlayerComponent.MediumWeapons):
+                case nameof(PlayerComponent.LongWeapons):
+                case nameof(PlayerComponent.ThrownWeapons):
+                case nameof(PlayerComponent.Slingshots):
+                case nameof(PlayerComponent.Bows):
+                case nameof(PlayerComponent.Crossbows):
+                case nameof(PlayerComponent.MeleeMagicWeapons):
+                case nameof(PlayerComponent.RangedMagicWeapons):
+                    RecalculateWeaponAbilities(message.Entity, manager);
+                    break;
+                case nameof(PlayerComponent.FireSourcery):
+                case nameof(PlayerComponent.AirSourcery):
+                case nameof(PlayerComponent.WaterSourcery):
+                case nameof(PlayerComponent.EarthSourcery):
+                case nameof(PlayerComponent.LifeSourcery):
+                case nameof(PlayerComponent.SpiritSourcery):
+                case nameof(PlayerComponent.Evocation):
+                case nameof(PlayerComponent.Conjuration):
+                case nameof(PlayerComponent.Transmutation):
+                case nameof(PlayerComponent.Enhancement):
+                case nameof(PlayerComponent.Malediction):
+                case nameof(PlayerComponent.Illusion):
+                    RecalculateMagicAbilities(message.Entity, manager);
+                    break;
+                case nameof(PlayerComponent.Armorless):
+                case nameof(PlayerComponent.LightArmor):
+                case nameof(PlayerComponent.HeavyArmor):
+                case nameof(PlayerComponent.Stealth):
+                case nameof(PlayerComponent.Assessination):
+                case nameof(PlayerComponent.Artifice):
+                case nameof(PlayerComponent.Leadership):
+                    break;
+                default:
+                    throw new InvalidOperationException($"Property {message.ChangedPropertyName} not supported.");
+            }
 
             return MessageProcessingResult.ContinueProcessing;
         }
@@ -276,12 +329,12 @@ namespace UnicornHack.Systems.Faculties
 
                 var primaryRangedSkill =
                     primaryRangedWeapon == null ? 0 : GetRangedSkill(primaryRangedWeapon.Type, player);
-                SetDamage(primaryRangedWeaponAttack, primaryRangedSkill ?? player.Thrown, manager);
+                SetDamage(primaryRangedWeaponAttack, primaryRangedSkill ?? player.ThrownWeapons, manager);
 
                 var secondaryRangedSkill = secondaryRangedWeapon == null
                     ? 0
                     : GetRangedSkill(secondaryRangedWeapon.Type, player);
-                SetDamage(secondaryRangedWeaponAttack, secondaryRangedSkill ?? player.Thrown, manager);
+                SetDamage(secondaryRangedWeaponAttack, secondaryRangedSkill ?? player.ThrownWeapons, manager);
 
                 if (secondaryRangedAttack.IsUsable)
                 {
@@ -314,7 +367,7 @@ namespace UnicornHack.Systems.Faculties
                     }
                 }
 
-                if(setSlotMessage.AbilityEntity != null)
+                if (setSlotMessage.AbilityEntity != null)
                 {
                     manager.Enqueue(setSlotMessage);
                 }
@@ -473,20 +526,73 @@ namespace UnicornHack.Systems.Faculties
             int ownerId,
             TargetingType targetingType,
             ActivationType trigger,
-            bool canUseWeapons,
+            bool shouldBeUsable,
             int? firstWeaponAbilityId,
             int? secondWeaponAbilityId,
             GameManager manager)
         {
-            var weaponAttack = manager.AbilitiesToAffectableRelationship[ownerId].Select(a => a.Ability)
+            var ability = EnsureAbility(name, ownerId, targetingType, trigger, shouldBeUsable, manager, out var created);
+
+            if (created)
+            {
+                using (var effectEntityReference = manager.CreateEntity())
+                {
+                    var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+                    effect.EffectType = EffectType.PhysicalDamage;
+                    effect.ContainingAbilityId = ability.EntityId;
+
+                    effectEntityReference.Referenced.Effect = effect;
+                }
+
+                if (firstWeaponAbilityId != null)
+                {
+                    using (var effectEntityReference = manager.CreateEntity())
+                    {
+                        var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+                        effect.EffectType = EffectType.Activate;
+                        effect.TargetEntityId = firstWeaponAbilityId;
+                        effect.ContainingAbilityId = ability.EntityId;
+
+                        effectEntityReference.Referenced.Effect = effect;
+                    }
+                }
+
+                if (secondWeaponAbilityId != null)
+                {
+                    using (var effectEntityReference = manager.CreateEntity())
+                    {
+                        var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+                        effect.EffectType = EffectType.Activate;
+                        effect.TargetEntityId = secondWeaponAbilityId;
+                        effect.ContainingAbilityId = ability.EntityId;
+
+                        effectEntityReference.Referenced.Effect = effect;
+                    }
+                }
+            }
+
+            return ability;
+        }
+
+        private AbilityComponent EnsureAbility(
+            string name,
+            int ownerId,
+            TargetingType targetingType,
+            ActivationType trigger,
+            bool shouldHaveAbility,
+            GameManager manager,
+            out bool created)
+        {
+            created = false;
+            var ability = manager.AbilitiesToAffectableRelationship[ownerId].Select(a => a.Ability)
                 .FirstOrDefault(a => a.Name == name);
-            if (weaponAttack == null && canUseWeapons)
+            if (ability == null && shouldHaveAbility)
             {
                 using (var abilityEntityReference = manager.CreateEntity())
                 {
                     var abilityEntity = abilityEntityReference.Referenced;
 
-                    var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+                    ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
                     ability.Name = name;
                     ability.OwnerId = ownerId;
                     ability.Activation = ActivationType.Targeted;
@@ -499,56 +605,25 @@ namespace UnicornHack.Systems.Faculties
 
                     abilityEntity.Ability = ability;
 
-                    using (var effectEntityReference = manager.CreateEntity())
-                    {
-                        var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                        effect.EffectType = EffectType.PhysicalDamage;
-                        effect.ContainingAbilityId = abilityEntity.Id;
-
-                        effectEntityReference.Referenced.Effect = effect;
-                    }
-
-                    using (var effectEntityReference = manager.CreateEntity())
-                    {
-                        var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                        effect.EffectType = EffectType.Activate;
-                        effect.TargetEntityId = firstWeaponAbilityId;
-                        effect.ContainingAbilityId = abilityEntity.Id;
-
-                        effectEntityReference.Referenced.Effect = effect;
-                    }
-
-                    if (secondWeaponAbilityId != null)
-                    {
-                        using (var effectEntityReference = manager.CreateEntity())
-                        {
-                            var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                            effect.EffectType = EffectType.Activate;
-                            effect.TargetEntityId = secondWeaponAbilityId;
-                            effect.ContainingAbilityId = abilityEntity.Id;
-
-                            effectEntityReference.Referenced.Effect = effect;
-                        }
-                    }
-
+                    created = true;
                     return ability;
                 }
             }
 
-            if (weaponAttack != null)
+            if (ability != null)
             {
-                if (canUseWeapons)
+                if (shouldHaveAbility)
                 {
-                    weaponAttack.IsUsable = false;
+                    ability.IsUsable = false;
                 }
                 else
                 {
-                    weaponAttack.Entity.RemoveComponent(EntityComponent.Ability);
+                    ability.Entity.RemoveComponent(EntityComponent.Ability);
                     return null;
                 }
             }
 
-            return weaponAttack;
+            return ability;
         }
 
         private bool CanUseWeapons(GameEntity actorEntity)
@@ -662,7 +737,7 @@ namespace UnicornHack.Systems.Faculties
         {
             if ((weaponType & ItemType.WeaponRangedThrown) != 0)
             {
-                return player.Thrown;
+                return player.ThrownWeapons;
             }
 
             if ((weaponType & ItemType.WeaponRangedBow) != 0)
@@ -702,6 +777,46 @@ namespace UnicornHack.Systems.Faculties
                 default:
                     return false;
             }
+        }
+
+        public void RecalculateMagicAbilities(GameEntity actorEntity, GameManager manager)
+        {
+            var player = actorEntity.Player;
+
+            var iceShard = EnsureAbility(
+                "ice shard", actorEntity.Id, TargetingType.Projectile, ActivationType.OnMagicalRangedAttack,
+                true, manager, out var created);
+            if (created)
+            {
+                using (var effectEntityReference = manager.CreateEntity())
+                {
+                    var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+                    effect.EffectType = EffectType.Freeze;
+                    effect.Amount = 40;
+                    effect.ContainingAbilityId = iceShard.EntityId;
+
+                    effectEntityReference.Referenced.Effect = effect;
+                }
+            }
+
+            iceShard.IsUsable = player.WaterSourcery >= 1 || player.Conjuration >= 1;
+        }
+
+        public void ImproveSkill(string skillName, GameEntity playerEntity)
+        {
+            var player = playerEntity.Player;
+
+            if (!(PropertyDescription.Loader.Find(skillName) is PropertyDescription<int> skillDescription)
+                || skillDescription.GetValue(player) >= 3
+                || player.SkillPoints < 4)
+            {
+                return;
+            }
+
+            player.SkillPoints -= 4;
+            var skillEffect = playerEntity.Manager.EffectApplicationSystem
+                .GetPropertyEffect(playerEntity, skillName, SkillsAbilityName);
+            skillEffect.Amount += 1;
         }
     }
 }

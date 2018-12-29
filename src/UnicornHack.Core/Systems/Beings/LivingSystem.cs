@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnicornHack.Primitives;
-using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
@@ -94,26 +90,22 @@ namespace UnicornHack.Systems.Beings
                     {
                         being.EnergyPoints = message.NewValue;
                     }
+
                     break;
                 case nameof(BeingComponent.Constitution):
-                    var hpEffect = GetAttributeEffects(being, manager)
-                        .Select(e => e.Effect)
-                        .First(e => e.TargetName == nameof(BeingComponent.HitPointMaximum));
+                    var hpEffect = GetPropertyEffect(message.Entity, nameof(BeingComponent.HitPointMaximum), manager);
 
                     hpEffect.Amount = message.NewValue * 10;
 
                     break;
                 case nameof(BeingComponent.Willpower):
-                    var epEffect = GetAttributeEffects(being, manager)
-                        .Select(e => e.Effect)
-                        .First(e => e.TargetName == nameof(BeingComponent.EnergyPointMaximum));
+                    var epEffect = GetPropertyEffect(message.Entity, nameof(BeingComponent.EnergyPointMaximum), manager);
+
                     epEffect.Amount = message.NewValue * 10;
 
                     break;
                 case nameof(BeingComponent.Quickness):
-                    var movementEffect = GetAttributeEffects(being, manager)
-                        .Select(e => e.Effect)
-                        .First(e => e.TargetName == nameof(PositionComponent.MovementDelay));
+                    var movementEffect = GetPropertyEffect(message.Entity, nameof(PositionComponent.MovementDelay), manager);
 
                     movementEffect.Amount = message.NewValue == 0
                         ? 0
@@ -125,68 +117,14 @@ namespace UnicornHack.Systems.Beings
             return MessageProcessingResult.ContinueProcessing;
         }
 
+        private static EffectComponent GetPropertyEffect(GameEntity entity, string propertyName, GameManager manager)
+            => manager.EffectApplicationSystem.GetPropertyEffect(entity, propertyName, AttributedAbilityName);
+
         private void EnqueueDiedMessage(GameEntity entity, GameManager manager)
         {
             var died = manager.Queue.CreateMessage<DiedMessage>(DiedMessageName);
             died.BeingEntity = entity;
             manager.Enqueue(died);
-        }
-
-        private IEnumerable<GameEntity> GetAttributeEffects(BeingComponent being, GameManager manager)
-        {
-            var abilityId = GetAttributedAbility(being.EntityId, manager).Id;
-            var effects = manager.AppliedEffectsToSourceAbilityRelationship[abilityId];
-            if (effects.Count == 0)
-            {
-                // Ability hasn't been applied yet, so return the definition
-                return manager.EffectsToContainingAbilityRelationship[abilityId];
-            }
-
-            return effects;
-        }
-
-        private GameEntity GetAttributedAbility(int beingId, GameManager manager)
-        {
-            var attributedAbility = manager.AbilitiesToAffectableRelationship[beingId]
-                .FirstOrDefault(a => a.Ability.Name == AttributedAbilityName);
-            if (attributedAbility == null)
-            {
-                using (var abilityReference = manager.CreateEntity())
-                {
-                    attributedAbility = abilityReference.Referenced;
-
-                    var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
-                    ability.Name = AttributedAbilityName;
-                    ability.OwnerId = beingId;
-                    ability.Activation = ActivationType.Always;
-
-                    attributedAbility.Ability = ability;
-                }
-
-                AddPropertyEffect(attributedAbility.Id, nameof(BeingComponent.HitPointMaximum), manager);
-                AddPropertyEffect(attributedAbility.Id, nameof(BeingComponent.EnergyPointMaximum), manager);
-                AddPropertyEffect(attributedAbility.Id, nameof(PositionComponent.MovementDelay), manager);
-            }
-
-            return attributedAbility;
-        }
-
-        private EffectComponent AddPropertyEffect(int abilityId, string propertyName, GameManager manager)
-        {
-            using (var effectReference = manager.CreateEntity())
-            {
-                var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-
-                effect.ContainingAbilityId = abilityId;
-                effect.EffectType = EffectType.ChangeProperty;
-                effect.DurationTicks = (int)EffectDuration.Infinite;
-                effect.Function = ValueCombinationFunction.MeanRoundDown;
-                effect.TargetName = propertyName;
-
-                effectReference.Referenced.Effect = effect;
-
-                return effect;
-            }
         }
     }
 }

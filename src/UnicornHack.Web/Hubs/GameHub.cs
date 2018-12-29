@@ -312,6 +312,7 @@ namespace UnicornHack.Hubs
             ItemData.PotionOfElfness.Instantiate(playerEntity);
             ItemData.PotionOfDwarfness.Instantiate(playerEntity);
             ItemData.PotionOfExperience.Instantiate(playerEntity, quantity: 6);
+            ItemData.SkillbookOfConjuration.Instantiate(playerEntity);
 
             manager.LoggingSystem.WriteLog(game.Services.Language.Welcome(playerEntity), playerEntity, manager);
 

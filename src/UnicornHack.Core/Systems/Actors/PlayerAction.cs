@@ -2,7 +2,7 @@
 {
     public enum PlayerAction
     {
-        Wait,
+        Wait = 0,
         ChangeHeading,
         MoveOneCell,
         MoveToCell,

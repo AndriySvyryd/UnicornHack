@@ -27,7 +27,7 @@ namespace UnicornHack.Systems.Actors
         private int _shortWeapons;
         private int _mediumWeapons;
         private int _longWeapons;
-        private int _thrown;
+        private int _thrownWeapons;
         private int _slingshots;
         private int _bows;
         private int _crossbows;
@@ -50,7 +50,6 @@ namespace UnicornHack.Systems.Actors
         private int _enhancement;
         private int _malediction;
         private int _illusion;
-        private int _survival;
         private int _artifice;
         private int _leadership;
 
@@ -129,198 +128,224 @@ namespace UnicornHack.Systems.Actors
             set => SetWithNotify(value, ref _mutationPoints);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int OneHanded
         {
             get => _oneHanded;
             set => SetWithNotify(value, ref _oneHanded);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int TwoHanded
         {
             get => _twoHanded;
             set => SetWithNotify(value, ref _twoHanded);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int DualWielding
         {
             get => _dualWielding;
             set => SetWithNotify(value, ref _dualWielding);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int FistWeapons
         {
             get => _fistWeapons;
             set => SetWithNotify(value, ref _fistWeapons);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int ShortWeapons
         {
             get => _shortWeapons;
             set => SetWithNotify(value, ref _shortWeapons);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int MediumWeapons
         {
             get => _mediumWeapons;
             set => SetWithNotify(value, ref _mediumWeapons);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int LongWeapons
         {
             get => _longWeapons;
             set => SetWithNotify(value, ref _longWeapons);
         }
 
-        public int Thrown
+        [Property(MinValue = 0, MaxValue = 3)]
+        public int ThrownWeapons
         {
-            get => _thrown;
-            set => SetWithNotify(value, ref _thrown);
+            get => _thrownWeapons;
+            set => SetWithNotify(value, ref _thrownWeapons);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int Slingshots
         {
             get => _slingshots;
             set => SetWithNotify(value, ref _slingshots);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int Bows
         {
             get => _bows;
             set => SetWithNotify(value, ref _bows);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int Crossbows
         {
             get => _crossbows;
             set => SetWithNotify(value, ref _crossbows);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int Armorless
         {
             get => _armorless;
             set => SetWithNotify(value, ref _armorless);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int LightArmor
         {
             get => _lightArmor;
             set => SetWithNotify(value, ref _lightArmor);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int HeavyArmor
         {
             get => _heavyArmor;
             set => SetWithNotify(value, ref _heavyArmor);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int Stealth
         {
             get => _stealth;
             set => SetWithNotify(value, ref _stealth);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int Assessination
         {
             get => _assessination;
             set => SetWithNotify(value, ref _assessination);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int MeleeMagicWeapons
         {
             get => _meleeMagicWeapons;
             set => SetWithNotify(value, ref _meleeMagicWeapons);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int RangedMagicWeapons
         {
             get => _rangedMagicWeapons;
             set => SetWithNotify(value, ref _rangedMagicWeapons);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int FireSourcery
         {
             get => _fireSourcery;
             set => SetWithNotify(value, ref _fireSourcery);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int AirSourcery
         {
             get => _airSourcery;
             set => SetWithNotify(value, ref _airSourcery);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int WaterSourcery
         {
             get => _waterSourcery;
             set => SetWithNotify(value, ref _waterSourcery);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int EarthSourcery
         {
             get => _earthSourcery;
             set => SetWithNotify(value, ref _earthSourcery);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int LifeSourcery
         {
             get => _lifeSourcery;
             set => SetWithNotify(value, ref _lifeSourcery);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int SpiritSourcery
         {
             get => _spiritSourcery;
             set => SetWithNotify(value, ref _spiritSourcery);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int Evocation
         {
             get => _evocation;
             set => SetWithNotify(value, ref _evocation);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int Conjuration
         {
             get => _conjuration;
             set => SetWithNotify(value, ref _conjuration);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int Transmutation
         {
             get => _transmutation;
             set => SetWithNotify(value, ref _transmutation);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int Enhancement
         {
             get => _enhancement;
             set => SetWithNotify(value, ref _enhancement);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int Malediction
         {
             get => _malediction;
             set => SetWithNotify(value, ref _malediction);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int Illusion
         {
             get => _illusion;
             set => SetWithNotify(value, ref _illusion);
         }
 
-        public int Survival
-        {
-            get => _survival;
-            set => SetWithNotify(value, ref _survival);
-        }
-
+        [Property(MinValue = 0, MaxValue = 3)]
         public int Artifice
         {
             get => _artifice;
             set => SetWithNotify(value, ref _artifice);
         }
 
+        [Property(MinValue = 0, MaxValue = 3)]
         public int Leadership
         {
             get => _leadership;
@@ -347,7 +372,7 @@ namespace UnicornHack.Systems.Actors
             _shortWeapons = default;
             _mediumWeapons = default;
             _longWeapons = default;
-            _thrown = default;
+            _thrownWeapons = default;
             _slingshots = default;
             _bows = default;
             _crossbows = default;
@@ -370,7 +395,6 @@ namespace UnicornHack.Systems.Actors
             _enhancement = default;
             _malediction = default;
             _illusion = default;
-            _survival = default;
             _artifice = default;
             _leadership = default;
 

@@ -15,42 +15,42 @@ namespace UnicornHack.Systems.Senses
         public SensorComponent()
             => ComponentId = (int)EntityComponent.Sensor;
 
-        [Property(IsCalculated = true, DefaultValue = 1)]
+        [Property(DefaultValue = 1)]
         public int PrimaryFOVQuadrants
         {
             get => _primaryFOVQuadrants;
             set => SetWithNotify(value, ref _primaryFOVQuadrants);
         }
 
-        [Property(IsCalculated = true, DefaultValue = 2)]
+        [Property(DefaultValue = 2)]
         public int TotalFOVQuadrants
         {
             get => _totalFOVQuadrants;
             set => SetWithNotify(value, ref _totalFOVQuadrants);
         }
 
-        [Property(IsCalculated = true, DefaultValue = 16)]
+        [Property(DefaultValue = 16)]
         public int PrimaryVisionRange
         {
             get => _primaryVisionRange;
             set => SetWithNotify(value, ref _primaryVisionRange);
         }
 
-        [Property(IsCalculated = true, DefaultValue = 8)]
+        [Property(DefaultValue = 8)]
         public int SecondaryVisionRange
         {
             get => _secondaryVisionRange;
             set => SetWithNotify(value, ref _secondaryVisionRange);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public bool Infravision
         {
             get => _infravision;
             set => SetWithNotify(value, ref _infravision);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public bool InvisibilityDetection
         {
             get => _invisibilityDetection;

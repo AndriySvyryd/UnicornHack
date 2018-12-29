@@ -48,7 +48,7 @@ namespace UnicornHack.Systems.Levels
         }
 
         // TODO: Separate delay for turning
-        [Property(MinValue = 0, IsCalculated = true)]
+        [Property(MinValue = 0)]
         public int MovementDelay
         {
             get => _movementDelay;

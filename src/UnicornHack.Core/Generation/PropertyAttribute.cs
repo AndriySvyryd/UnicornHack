@@ -9,7 +9,7 @@ namespace UnicornHack.Generation
     [AttributeUsage(AttributeTargets.Property)]
     public sealed class PropertyAttribute : Attribute
     {
-        public bool IsCalculated { get; set; }
+        public bool IsCalculated { get; set; } = true;
         public object MinValue { get; set; }
         public object MaxValue { get; set; }
         public object DefaultValue { get; set; }

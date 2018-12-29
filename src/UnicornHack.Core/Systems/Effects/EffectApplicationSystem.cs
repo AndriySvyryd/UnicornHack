@@ -197,6 +197,9 @@ namespace UnicornHack.Systems.Effects
                     case EffectType.Heal:
                     case EffectType.GainXP:
                     case EffectType.Activate:
+                        Debug.Assert(effect.DurationTicks != (int)EffectDuration.Infinite
+                            || manager.FindEntity(effect.TargetEntityId).Ability.IsActive);
+
                         using (var effectReference = ApplyEffect(effect, appliedEffects, manager))
                         {
                             effectReference.Referenced.Effect.AffectedEntityId = message.TargetEntity.Id;
@@ -500,6 +503,16 @@ namespace UnicornHack.Systems.Effects
 
                     break;
                 case EffectType.Activate:
+                    if (state == State.Removed)
+                    {
+                        if (appliedEffectComponent.DurationTicks == (int)EffectDuration.Instant)
+                        {
+                            break;
+                        }
+
+                        var abilityEntity = manager.FindEntity(appliedEffectComponent.TargetEntityId);
+                        manager.AbilityActivationSystem.Deactivate(abilityEntity.Ability, manager);
+                    }
                     break;
                 case EffectType.DrainEnergy:
                 case EffectType.DrainLife:
@@ -575,6 +588,66 @@ namespace UnicornHack.Systems.Effects
                     targetEntity,
                     appliedEffectComponent,
                     manager);
+            }
+        }
+
+        /// <summary>
+        ///     Returns a permanently applied effect that affects the specified property.
+        ///     The effect amount can be changed without having to reapply it.
+        /// </summary>
+        public EffectComponent GetPropertyEffect(GameEntity entity, string propertyName, string abilityName)
+        {
+            var manager = entity.Manager;
+            var abilityId = GetOrAddPropertyAbility(entity.Id, abilityName, manager).Id;
+            var effects = manager.AppliedEffectsToSourceAbilityRelationship[abilityId];
+            if (effects.Count == 0)
+            {
+                // Ability hasn't been applied yet, so return the definition
+                effects = manager.EffectsToContainingAbilityRelationship[abilityId];
+            }
+
+            return effects.Select(e => e.Effect)
+                    .FirstOrDefault(e => e.TargetName == propertyName)
+                    ?? AddPropertyEffect(abilityId, propertyName, manager);
+        }
+
+        private GameEntity GetOrAddPropertyAbility(int beingId, string abilityName, GameManager manager)
+        {
+            var propertyAbility = manager.AbilitiesToAffectableRelationship[beingId]
+                .FirstOrDefault(a => a.Ability.Name == abilityName);
+            if (propertyAbility == null)
+            {
+                using (var abilityReference = manager.CreateEntity())
+                {
+                    propertyAbility = abilityReference.Referenced;
+
+                    var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+                    ability.Name = abilityName;
+                    ability.OwnerId = beingId;
+                    ability.Activation = ActivationType.Always;
+
+                    propertyAbility.Ability = ability;
+                }
+            }
+
+            return propertyAbility;
+        }
+
+        private EffectComponent AddPropertyEffect(int abilityId, string propertyName, GameManager manager)
+        {
+            using (var effectReference = manager.CreateEntity())
+            {
+                var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+
+                effect.ContainingAbilityId = abilityId;
+                effect.EffectType = EffectType.ChangeProperty;
+                effect.DurationTicks = (int)EffectDuration.Infinite;
+                effect.Function = ValueCombinationFunction.MeanRoundDown;
+                effect.TargetName = propertyName;
+
+                effectReference.Referenced.Effect = effect;
+
+                return effect;
             }
         }
 

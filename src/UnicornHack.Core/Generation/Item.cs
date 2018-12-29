@@ -290,6 +290,8 @@ namespace UnicornHack.Generation
                         var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                         effect.EffectType = EffectType.Activate;
                         effect.TargetEntityId = ability.EntityId;
+                        effect.DurationTicks = (int)((ability.Activation & ActivationType.Continuous) == 0
+                            ? EffectDuration.Instant : EffectDuration.Infinite);
                         effect.ContainingAbilityId = activateAbilityEntity.Id;
 
                         activateEffectEntityReference.Referenced.Effect = effect;

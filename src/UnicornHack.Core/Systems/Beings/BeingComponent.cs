@@ -55,7 +55,7 @@ namespace UnicornHack.Systems.Beings
             set => SetWithNotify(value, ref _sex);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public int EnergyPointMaximum
         {
             get => _energyPointMaximum;
@@ -109,7 +109,7 @@ namespace UnicornHack.Systems.Beings
             }
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public int HitPointMaximum
         {
             get => _hitPointMaximum;
@@ -131,189 +131,189 @@ namespace UnicornHack.Systems.Beings
             }
         }
 
-        [Property(IsCalculated = true, DefaultValue = 10, MinValue = 0)]
+        [Property(DefaultValue = 10, MinValue = 0)]
         public int Agility
         {
             get => _agility;
             set => SetWithNotify(value, ref _agility);
         }
 
-        [Property(IsCalculated = true, DefaultValue = 10, MinValue = 0)]
+        [Property(DefaultValue = 10, MinValue = 0)]
         public int Constitution
         {
             get => _constitution;
             set => SetWithNotify(value, ref _constitution);
         }
 
-        [Property(IsCalculated = true, DefaultValue = 10, MinValue = 0)]
+        [Property(DefaultValue = 10, MinValue = 0)]
         public int Intelligence
         {
             get => _intelligence;
             set => SetWithNotify(value, ref _intelligence);
         }
 
-        [Property(IsCalculated = true, DefaultValue = 10, MinValue = 0)]
+        [Property(DefaultValue = 10, MinValue = 0)]
         public int Quickness
         {
             get => _quickness;
             set => SetWithNotify(value, ref _quickness);
         }
 
-        [Property(IsCalculated = true, DefaultValue = 10, MinValue = 0)]
+        [Property(DefaultValue = 10, MinValue = 0)]
         public int Strength
         {
             get => _strength;
             set => SetWithNotify(value, ref _strength);
         }
 
-        [Property(IsCalculated = true, DefaultValue = 10, MinValue = 0)]
+        [Property(DefaultValue = 10, MinValue = 0)]
         public int Willpower
         {
             get => _willpower;
             set => SetWithNotify(value, ref _willpower);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public int EnergyRegeneration
         {
             get => _energyRegeneration;
             set => SetWithNotify(value, ref _energyRegeneration);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public int Regeneration
         {
             get => _regeneration;
             set => SetWithNotify(value, ref _regeneration);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public int MagicAbsorption
         {
             get => _magicAbsorption;
             set => SetWithNotify(value, ref _magicAbsorption);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public int MagicDeflection
         {
             get => _magicDeflection;
             set => SetWithNotify(value, ref _magicDeflection);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public int MagicResistance
         {
             get => _magicResistance;
             set => SetWithNotify(value, ref _magicResistance);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public int PhysicalAbsorption
         {
             get => _physicalAbsorption;
             set => SetWithNotify(value, ref _physicalAbsorption);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public int PhysicalDeflection
         {
             get => _physicalDeflection;
             set => SetWithNotify(value, ref _physicalDeflection);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public int PhysicalResistance
         {
             get => _physicalResistance;
             set => SetWithNotify(value, ref _physicalResistance);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public int AcidResistance
         {
             get => _acidResistance;
             set => SetWithNotify(value, ref _acidResistance);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public int BleedingResistance
         {
             get => _bleedingResistance;
             set => SetWithNotify(value, ref _bleedingResistance);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public int BlightResistance
         {
             get => _blightResistance;
             set => SetWithNotify(value, ref _blightResistance);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public int ColdResistance
         {
             get => _coldResistance;
             set => SetWithNotify(value, ref _coldResistance);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public int DisintegrationResistance
         {
             get => _disintegrationResistance;
             set => SetWithNotify(value, ref _disintegrationResistance);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public int ElectricityResistance
         {
             get => _electricityResistance;
             set => SetWithNotify(value, ref _electricityResistance);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public int FireResistance
         {
             get => _fireResistance;
             set => SetWithNotify(value, ref _fireResistance);
         }
 
-        [Property(IsCalculated = true, DefaultValue = 100)]
+        [Property(DefaultValue = 100)]
         public int WaterResistance
         {
             get => _waterResistance;
             set => SetWithNotify(value, ref _waterResistance);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public HeadType HeadType
         {
             get => _headType;
             set => SetWithNotify(value, ref _headType);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public TorsoType TorsoType
         {
             get => _torsoType;
             set => SetWithNotify(value, ref _torsoType);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public ExtremityType UpperExtremeties
         {
             get => _upperExtremeties;
             set => SetWithNotify(value, ref _upperExtremeties);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public ExtremityType LowerExtremeties
         {
             get => _lowerExtremeties;
             set => SetWithNotify(value, ref _lowerExtremeties);
         }
 
-        [Property(IsCalculated = true)]
+        [Property]
         public ExtremityType BackExtremeties
         {
             get => _backExtremeties;
@@ -350,7 +350,7 @@ namespace UnicornHack.Systems.Beings
             set => SetWithNotify(value, ref _secondaryNaturalWeaponId);
         }
 
-        [Property(IsCalculated = true, DefaultValue = 8)]
+        [Property(DefaultValue = 8)]
         public int AbilitySlotCount
         {
             get => _abilitySlotCount;

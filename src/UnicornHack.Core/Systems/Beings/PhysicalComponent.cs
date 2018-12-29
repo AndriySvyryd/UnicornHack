@@ -22,7 +22,7 @@ namespace UnicornHack.Systems.Beings
         }
 
         // units of 100 grams
-        [Property(MinValue = 0, DefaultValue = 1, IsCalculated = true)]
+        [Property(MinValue = 0, DefaultValue = 1)]
         public int Weight
         {
             get => _weight;
@@ -30,7 +30,7 @@ namespace UnicornHack.Systems.Beings
         }
 
         // Largest dimension in feet
-        [Property(MinValue = 0, DefaultValue = 1, IsCalculated = true)]
+        [Property(MinValue = 0, DefaultValue = 1)]
         public int Size
         {
             get => _size;
@@ -45,7 +45,7 @@ namespace UnicornHack.Systems.Beings
 
         // TODO: Perf: Store number of items contained
 
-        [Property(IsCalculated = true)]
+        [Property]
         public bool Infravisible
         {
             get => _infravisible;

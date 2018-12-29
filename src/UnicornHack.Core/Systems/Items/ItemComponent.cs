@@ -75,7 +75,7 @@ namespace UnicornHack.Systems.Items
             set => SetWithNotify(value, ref _count);
         }
 
-        [Property(IsCalculated = true, MinValue = 0, MaxValue = 10)]
+        [Property(MinValue = 0, MaxValue = 10)]
         public int Hindrance
         {
             get => _hindrance;
