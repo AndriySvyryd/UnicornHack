@@ -106,7 +106,12 @@ namespace UnicornHack.Systems.Items
             }
             else
             {
-                if (item.EquippedSlot == EquipmentSlot.None)
+                if (item.EquippedSlot == EquipmentSlot.None
+                    || (!message.Force
+                        && manager.AbilitiesToAffectableRelationship[item.EntityId].Select(a => a.Ability)
+                            .Any(a => a.CooldownTick != null
+                                      || a.CooldownXpLeft != null
+                                      || ((a.Activation & ActivationType.Slottable) != 0 && a.IsActive))))
                 {
                     return equippedMessage;
                 }

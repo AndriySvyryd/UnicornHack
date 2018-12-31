@@ -20,7 +20,7 @@ namespace UnicornHack.Data.Items
                     Delay = 100,
                     Effects = new HashSet<Effect>
                     {
-                        new ChangeRace {RaceName = "dwarf", Duration = -1}, new RemoveItem()
+                        new ChangeRace {RaceName = "dwarf", Duration = EffectDuration.Infinite}, new RemoveItem()
                     }
                 }
             },

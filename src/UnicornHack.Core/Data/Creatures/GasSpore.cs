@@ -26,7 +26,7 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Explosion,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Deafen {Duration = 27}}
+                    Effects = new HashSet<Effect> {new Deafen { Duration = EffectDuration.UntilTimeout, DurationAmount = 27}}
                 }
             },
             InitialLevel = 1,
@@ -35,7 +35,7 @@ namespace UnicornHack.Data.Creatures
             Size = 2,
             Weight = 10,
             Perception = 1,
-            Might = 0,
+            Might = 1,
             Speed = 1,
             Focus = 6,
             PhysicalDeflection = 10,

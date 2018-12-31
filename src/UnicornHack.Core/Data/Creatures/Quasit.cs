@@ -28,7 +28,9 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new ChangeProperty<int> {PropertyName = "Speed", Value = -1, Duration = 5}}
+                    {
+                        new ChangeProperty<int> {PropertyName = "Speed", Value = -1, Duration = EffectDuration.UntilTimeout, DurationAmount = 5}
+                    }
                 }
             },
             InitialLevel = 3,

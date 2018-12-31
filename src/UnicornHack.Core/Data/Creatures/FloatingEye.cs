@@ -18,7 +18,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.OnPhysicalMeleeHit,
-                    Effects = new HashSet<Effect> {new Paralyze {Duration = 35}}
+                    Effects = new HashSet<Effect> {new Paralyze { Duration = EffectDuration.UntilTimeout, DurationAmount = 35}}
                 }
             },
             InitialLevel = 2,

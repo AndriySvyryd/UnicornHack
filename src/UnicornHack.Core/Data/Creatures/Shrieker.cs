@@ -19,7 +19,7 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Scream,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Deafen {Duration = 3}}
+                    Effects = new HashSet<Effect> {new Deafen { Duration = EffectDuration.UntilTimeout, DurationAmount = 3}}
                 }
             },
             InitialLevel = 3,

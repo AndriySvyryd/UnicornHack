@@ -48,5 +48,8 @@ namespace UnicornHack.Utils.MessagingECS
         }
 
         public override string ToString() => "UniqueIndex: " + Name;
+
+        public override IEnumerator<TEntity> GetEnumerator()
+            => Index.Values.GetEnumerator();
     }
 }

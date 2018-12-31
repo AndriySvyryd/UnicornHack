@@ -78,6 +78,34 @@ namespace UnicornHack.Systems.Knowledge
             {
                 AddXP(playerEntity, xp, manager);
             }
+
+            foreach (var xpEntity in manager.XPEntities.ToList())
+            {
+                var ability = xpEntity.Ability;
+                if (ability?.CooldownXpLeft != null)
+                {
+                    // TODO: Perf: Queue as a message and remove .ToList()
+                    var newCooldown = ability.CooldownXpLeft - xp;
+                    ability.CooldownXpLeft = newCooldown > 0 ? newCooldown : null;
+                }
+
+                var effect = xpEntity.Effect;
+                if (effect?.ExpirationXp != null)
+                {
+                    var newExpiration = effect.ExpirationXp - xp;
+                    if (newExpiration < 0)
+                    {
+                        var removeComponentMessage = manager.CreateRemoveComponentMessage();
+                        removeComponentMessage.Entity = xpEntity;
+                        removeComponentMessage.Component = EntityComponent.Effect;
+                        manager.Enqueue(removeComponentMessage, lowPriority: true);
+                    }
+                    else
+                    {
+                        effect.ExpirationXp = newExpiration;
+                    }
+                }
+            }
         }
 
         public RaceComponent GetLearningRace(GameEntity actorEntity, GameManager manager)

@@ -44,6 +44,7 @@ namespace UnicornHack.Systems.Items
 
         public Point? TargetCell { get; set; }
         public bool SuppressLog { get; set; }
+        public bool Force { get; set; }
 
         string IMessage.MessageName { get; set; }
 
@@ -54,6 +55,7 @@ namespace UnicornHack.Systems.Items
             TargetLevelEntity = default;
             TargetCell = default;
             SuppressLog = default;
+            Force = default;
         }
     }
 }

@@ -19,87 +19,110 @@ namespace UnicornHack.Systems.Abilities
         public MessageProcessingResult Process(SetAbilitySlotMessage message, GameManager manager)
         {
             var ability = message.AbilityEntity?.Ability;
-            if (message.Slot == null)
-            {
-                if (ability.IsActive
-                    && ability.Slot != null)
-                {
-                    manager.AbilityActivationSystem.Deactivate(ability, manager);
-                }
-
-                ability.Slot = null;
-            }
-            else
+            if (message.Slot != null)
             {
                 var conflictingAbility =
                     manager.SlottedAbilitiesIndex[(ability?.OwnerId ?? message.OwnerEntity.Id, message.Slot.Value)];
                 if (conflictingAbility != null)
                 {
+                    if (conflictingAbility == message.AbilityEntity)
+                    {
+                        return MessageProcessingResult.ContinueProcessing;
+                    }
+
                     ResetSlot(conflictingAbility, manager);
 
-                    Debug.Assert(conflictingAbility.Ability.Slot == null);
+                    if (conflictingAbility.Ability.Slot != null)
+                    {
+                        return MessageProcessingResult.ContinueProcessing;
+                    }
                 }
 
-                if (ability != null)
+                if (ability == null)
                 {
-                    if (message.Slot.Value != DefaultAttackSlot
-                        && (message.Slot.Value < 0
-                            || message.Slot.Value >= ability.OwnerEntity.Being.AbilitySlotCount))
+                    return MessageProcessingResult.ContinueProcessing;
+                }
+
+                Debug.Assert(ability.CooldownTick == null && ability.CooldownXpLeft == null);
+
+                if (message.Slot.Value != DefaultAttackSlot
+                    && (message.Slot.Value < 0
+                        || message.Slot.Value >= ability.OwnerEntity.Being.AbilitySlotCount))
+                {
+                    throw new InvalidOperationException("Invalid slot " + message.Slot.Value);
+                }
+
+                if ((ability.Activation & ActivationType.Slottable) == 0)
+                {
+                    throw new InvalidOperationException($"Ability {ability.EntityId} is not slottable.");
+                }
+
+                if (!ability.IsUsable)
+                {
+                    throw new InvalidOperationException($"Ability {ability.EntityId} is not usable.");
+                }
+
+                if (message.Slot.Value == DefaultAttackSlot
+                    && !manager.SkillAbilitiesSystem.CanBeDefaultAttack(ability))
+                {
+                    throw new InvalidOperationException(
+                        "Ability " + ability.EntityId + " cannot be the default attack for " + ability.OwnerId);
+                }
+
+                if (message.Slot.Value != DefaultAttackSlot
+                    && manager.SkillAbilitiesSystem.CanBeDefaultAttack(ability))
+                {
+                    throw new InvalidOperationException(
+                        "Ability " + ability.EntityId + " can only be the default attack for " + ability.OwnerId);
+                }
+
+                var oldSlot = ability.Slot;
+                ability.Slot = message.Slot;
+
+                if (oldSlot == null
+                    && (ability.Activation & ActivationType.WhileToggled) != 0)
+                {
+                    var activationMessage = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);
+                    activationMessage.AbilityEntity = message.AbilityEntity;
+                    activationMessage.ActivatorEntity = ability.OwnerEntity;
+                    activationMessage.TargetEntity = ability.OwnerEntity;
+
+                    if (!manager.AbilityActivationSystem.CanActivateAbility(activationMessage))
                     {
-                        throw new InvalidOperationException("Invalid slot " + message.Slot.Value);
+                        manager.Queue.ReturnMessage(activationMessage);
+                        ability.Slot = oldSlot;
+                        return MessageProcessingResult.ContinueProcessing;
                     }
 
-                    if ((ability.Activation & ActivationType.Slottable) == 0)
-                    {
-                        throw new InvalidOperationException($"Ability {ability.EntityId} is not slottable.");
-                    }
+                    manager.Enqueue(activationMessage);
+                }
+            }
+            else if (ability != null)
+            {
+                if (ability.IsActive
+                    && ability.Slot != null)
+                {
+                    var deactivateMessage =
+                        manager.AbilityActivationSystem.CreateDeactivateAbilityMessage(manager);
+                    deactivateMessage.AbilityEntity = message.AbilityEntity;
+                    deactivateMessage.ActivatorEntity = ability.OwnerEntity;
 
-                    if (!ability.IsUsable)
-                    {
-                        throw new InvalidOperationException($"Ability {ability.EntityId} is not usable.");
-                    }
+                    manager.AbilityActivationSystem.Process(deactivateMessage, manager);
+                    manager.Queue.ReturnMessage(deactivateMessage);
+                }
 
-                    if (message.Slot.Value == DefaultAttackSlot
-                        && !manager.SkillAbilitiesSystem.CanBeDefaultAttack(ability))
-                    {
-                        throw new InvalidOperationException(
-                            "Ability " + ability.EntityId + " cannot be the default attack for " + ability.OwnerId);
-                    }
-
-                    if (message.Slot.Value != DefaultAttackSlot
-                        && manager.SkillAbilitiesSystem.CanBeDefaultAttack(ability))
-                    {
-                        throw new InvalidOperationException(
-                            "Ability " + ability.EntityId + " can only be the default attack for " + ability.OwnerId);
-                    }
-
-                    var oldSlot = ability.Slot;
-                    ability.Slot = message.Slot;
-
-                    if (oldSlot == null
-                        && (ability.Activation & ActivationType.WhileToggled) != 0)
-                    {
-                        var activationMessage = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);
-                        activationMessage.AbilityEntity = message.AbilityEntity;
-                        activationMessage.ActivatorEntity = ability.OwnerEntity;
-                        activationMessage.TargetEntity = ability.OwnerEntity;
-
-                        if (!manager.AbilityActivationSystem.CanActivateAbility(activationMessage))
-                        {
-                            manager.Queue.ReturnMessage(activationMessage);
-                            return MessageProcessingResult.ContinueProcessing;
-                        }
-
-                        manager.Enqueue(activationMessage);
-                    }
+                if (ability.CooldownTick == null
+                    && ability.CooldownXpLeft == null)
+                {
+                    ability.Slot = null;
                 }
             }
 
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, bool> message,
-            GameManager manager)
+        public MessageProcessingResult Process(
+            PropertyValueChangedMessage<GameEntity, bool> message, GameManager manager)
         {
             var ability = message.Entity.Ability;
             if (!ability.IsUsable
@@ -111,8 +134,8 @@ namespace UnicornHack.Systems.Abilities
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, int> message,
-            GameManager manager)
+        public MessageProcessingResult Process(
+            PropertyValueChangedMessage<GameEntity, int> message, GameManager manager)
         {
             if (message.NewValue < message.OldValue)
             {

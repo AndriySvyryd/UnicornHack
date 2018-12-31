@@ -41,7 +41,7 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Gaze,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Confuse {Duration = 4}}
+                    Effects = new HashSet<Effect> {new Confuse { Duration = EffectDuration.UntilTimeout, DurationAmount = 4}}
                 }
             },
             InitialLevel = 9,

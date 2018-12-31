@@ -33,14 +33,14 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Confuse {Duration = 9}}
+                    Effects = new HashSet<Effect> {new Confuse { Duration = EffectDuration.UntilTimeout, DurationAmount = 9}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Paralyze {Duration = 3}}
+                    Effects = new HashSet<Effect> {new Paralyze { Duration = EffectDuration.UntilTimeout, DurationAmount = 3}}
                 },
                 new Ability
                 {

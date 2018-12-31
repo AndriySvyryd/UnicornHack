@@ -35,7 +35,7 @@ namespace UnicornHack.Systems.Actors
         private int _lightArmor;
         private int _heavyArmor;
         private int _stealth;
-        private int _assessination;
+        private int _assassination;
         private int _meleeMagicWeapons;
         private int _rangedMagicWeapons;
         private int _fireSourcery;
@@ -234,10 +234,10 @@ namespace UnicornHack.Systems.Actors
         }
 
         [Property(MinValue = 0, MaxValue = 3)]
-        public int Assessination
+        public int Assassination
         {
-            get => _assessination;
-            set => SetWithNotify(value, ref _assessination);
+            get => _assassination;
+            set => SetWithNotify(value, ref _assassination);
         }
 
         [Property(MinValue = 0, MaxValue = 3)]
@@ -380,7 +380,7 @@ namespace UnicornHack.Systems.Actors
             _lightArmor = default;
             _heavyArmor = default;
             _stealth = default;
-            _assessination = default;
+            _assassination = default;
             _meleeMagicWeapons = default;
             _rangedMagicWeapons = default;
             _fireSourcery = default;

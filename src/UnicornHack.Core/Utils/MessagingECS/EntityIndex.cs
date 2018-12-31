@@ -44,5 +44,8 @@ namespace UnicornHack.Utils.MessagingECS
             => GetOrAddEntities(key).Remove(entity);
 
         public override string ToString() => "Index: " + Name;
+
+        public override IEnumerator<TEntity> GetEnumerator()
+            => Index.Values.SelectMany(v => v).GetEnumerator();
     }
 }

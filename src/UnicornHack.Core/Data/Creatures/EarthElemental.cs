@@ -27,7 +27,7 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Punch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Stun {Duration = 2}}
+                    Effects = new HashSet<Effect> {new Stun { Duration = EffectDuration.UntilTimeout, DurationAmount = 2}}
                 }
             },
             InitialLevel = 8,

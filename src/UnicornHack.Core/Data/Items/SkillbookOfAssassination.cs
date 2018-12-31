@@ -7,9 +7,9 @@ namespace UnicornHack.Data.Items
 {
     public static partial class ItemData
     {
-        public static readonly Item SkillbookOfOneHanded = new Item
+        public static readonly Item SkillbookOfAssassination = new Item
         {
-            Name = "skillbook of one handed",
+            Name = "skillbook of assassination",
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -18,7 +18,7 @@ namespace UnicornHack.Data.Items
                     Activation = ActivationType.WhileToggled,
                     Delay = 100,
                     Effects = new HashSet<Effect>
-                        {new ChangeProperty<int> {PropertyName = "OneHanded", Value = 1, Duration = EffectDuration.Infinite}}
+                        {new ChangeProperty<int> {PropertyName = "Assassination", Value = 1, Duration = EffectDuration.Infinite}}
                 }
             },
             Type = ItemType.SkillBook,

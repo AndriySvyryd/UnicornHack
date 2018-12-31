@@ -12,7 +12,6 @@ namespace UnicornHack.Systems.Beings
         {
             var level = TestHelper.BuildLevel(".");
             var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
-            var player = playerEntity.Player;
             var manager = playerEntity.Manager;
 
             manager.Queue.ProcessQueue(manager);
@@ -39,7 +38,6 @@ namespace UnicornHack.Systems.Beings
         {
             var level = TestHelper.BuildLevel(".");
             var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
-            var player = playerEntity.Player;
             var manager = playerEntity.Manager;
 
             manager.Queue.ProcessQueue(manager);

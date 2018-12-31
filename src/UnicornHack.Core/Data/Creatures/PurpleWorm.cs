@@ -27,7 +27,7 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Engulf {Duration = 7}}
+                    Effects = new HashSet<Effect> {new Engulf { Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
                 },
                 new Ability
                 {

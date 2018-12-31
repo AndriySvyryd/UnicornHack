@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace UnicornHack.Utils.MessagingECS
@@ -222,9 +221,5 @@ namespace UnicornHack.Utils.MessagingECS
         public bool ContainsEntity(TEntity entity)
             => KeyValueGetter.TryGetKey(entity, new IPropertyValueChange[0], getOldValue: false, out var referencedId)
                && ReferencedGroup.ContainsEntity(referencedId);
-
-        public abstract IEnumerator<TEntity> GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

@@ -62,13 +62,14 @@ namespace UnicornHack.Systems.Items
             var position = message.BeingEntity.Position;
             foreach (var item in manager.EntityItemsToContainerRelationship[message.BeingEntity.Id])
             {
-                var moveMessage = CreateMoveItemMessage(manager);
-                moveMessage.ItemEntity = item;
-                moveMessage.TargetCell = position.LevelCell;
-                moveMessage.TargetLevelEntity = position.LevelEntity;
-                moveMessage.SuppressLog = true;
+                var moveItemMessage = CreateMoveItemMessage(manager);
+                moveItemMessage.ItemEntity = item;
+                moveItemMessage.TargetCell = position.LevelCell;
+                moveItemMessage.TargetLevelEntity = position.LevelEntity;
+                moveItemMessage.SuppressLog = true;
+                moveItemMessage.Force = true;
 
-                manager.Enqueue(moveMessage);
+                manager.Enqueue(moveItemMessage);
             }
 
             return MessageProcessingResult.ContinueProcessing;
@@ -104,8 +105,8 @@ namespace UnicornHack.Systems.Items
                     var equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
                     equipMessage.ActorEntity = manager.FindEntity(item.ContainerId.Value);
                     equipMessage.ItemEntity = itemEntity;
-                    equipMessage.Slot = EquipmentSlot.None;
                     equipMessage.SuppressLog = true;
+                    equipMessage.Force = message.Force;
 
                     if (!manager.ItemUsageSystem.CanEquipItem(equipMessage, manager))
                     {

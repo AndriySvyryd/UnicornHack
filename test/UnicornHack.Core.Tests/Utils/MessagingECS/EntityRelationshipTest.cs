@@ -168,14 +168,14 @@ namespace UnicornHack.Utils.MessagingECS
                         testSystem, manager.EffectsToContainingAbilityRelationship.GetEntityRemovedMessageName(), 10);
                     manager.Queue.Add<PropertyValueChangedMessage<GameEntity, int>>(
                         testSystem, manager.EffectsToContainingAbilityRelationship.GetPropertyValueChangedMessageName(
-                            nameof(EffectComponent.DurationTicks)), 10);
+                            nameof(EffectComponent.DurationAmount)), 10);
                     manager.EffectsToContainingAbilityRelationship.AddListener(testSystem);
 
                     effect.ContainingAbilityId = abilityEntity.Id;
 
                     Assert.Equal(1, manager.Queue.QueuedCount);
 
-                    effect.DurationTicks = 10;
+                    effect.DurationAmount = 10;
 
                     Assert.Equal(2, manager.Queue.QueuedCount);
                 }
@@ -233,7 +233,7 @@ namespace UnicornHack.Utils.MessagingECS
                 Assert.Same(_testEntity, message.Entity);
                 Assert.Equal(_testComponent.ComponentId, message.ChangedComponent?.ComponentId);
                 Assert.Same(_testComponent, message.ChangedComponent);
-                Assert.Equal(nameof(EffectComponent.DurationTicks), message.ChangedPropertyName);
+                Assert.Equal(nameof(EffectComponent.DurationAmount), message.ChangedPropertyName);
                 Assert.Equal(0, message.OldValue);
                 Assert.Equal(10, message.NewValue);
 
@@ -268,7 +268,7 @@ namespace UnicornHack.Utils.MessagingECS
                 Assert.Same(_testEntity, entity);
                 Assert.Equal(_testComponent.ComponentId, componentId);
                 Assert.Same(_testComponent, component);
-                Assert.Equal(nameof(EffectComponent.DurationTicks), propertyName);
+                Assert.Equal(nameof(EffectComponent.DurationAmount), propertyName);
                 Assert.Equal(0, (int)(object)oldValue);
                 Assert.Equal(10, (int)(object)newValue);
                 Assert.Same(_group, group);
@@ -286,7 +286,7 @@ namespace UnicornHack.Utils.MessagingECS
                 Assert.Same(_testEntity, entity);
                 Assert.Equal(_testComponent.ComponentId, change.ChangedComponent?.ComponentId);
                 Assert.Same(_testComponent, change.ChangedComponent);
-                Assert.Equal(nameof(EffectComponent.DurationTicks), change.ChangedPropertyName);
+                Assert.Equal(nameof(EffectComponent.DurationAmount), change.ChangedPropertyName);
                 Assert.Equal(0, change.OldValue);
                 Assert.Equal(10, change.NewValue);
                 Assert.Same(_group, group);

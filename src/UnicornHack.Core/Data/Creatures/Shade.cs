@@ -21,14 +21,14 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Paralyze {Duration = 7}}
+                    Effects = new HashSet<Effect> {new Paralyze { Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Slow {Duration = 3}}
+                    Effects = new HashSet<Effect> {new Slow { Duration = EffectDuration.UntilTimeout, DurationAmount = 3}}
                 }
             },
             InitialLevel = 12,

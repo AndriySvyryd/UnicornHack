@@ -461,7 +461,7 @@ namespace UnicornHack.Generation
                 {
                     var appliedEffectEntity = appliedEffectEntityReference.Referenced;
                     var appliedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                    appliedEffect.DurationTicks = (int)EffectDuration.Infinite;
+                    appliedEffect.Duration = EffectDuration.Infinite;
                     appliedEffect.EffectType = EffectType.ChangeRace;
 
                     appliedEffectEntity.Effect = appliedEffect;
@@ -475,7 +475,7 @@ namespace UnicornHack.Generation
 
                         var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                         effect.EffectType = EffectType.AddAbility;
-                        effect.DurationTicks = (int)EffectDuration.Infinite;
+                        effect.Duration = EffectDuration.Infinite;
                         effect.ContainingAbilityId = appliedEffectEntity.Id;
 
                         abilityEntity.Effect = effect;

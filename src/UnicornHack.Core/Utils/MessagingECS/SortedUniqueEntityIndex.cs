@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
@@ -49,9 +48,7 @@ namespace UnicornHack.Utils.MessagingECS
 
         public int Count => Index.Count;
 
-        public IEnumerator<TEntity> GetEnumerator() => Index.Values.GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        public override IEnumerator<TEntity> GetEnumerator() => Index.Values.GetEnumerator();
 
         public override string ToString() => "SortedIndex: " + Name;
     }

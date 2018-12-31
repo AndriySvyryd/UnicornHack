@@ -19,14 +19,14 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Paralyze {Duration = 4}}
+                    Effects = new HashSet<Effect> {new Paralyze { Duration = EffectDuration.UntilTimeout, DurationAmount = 4}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Cooldown = 350,
-                    Effects = new HashSet<Effect> {new Engulf {Duration = 7}}
+                    Effects = new HashSet<Effect> {new Engulf { Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
                 },
                 new Ability
                 {
@@ -45,7 +45,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.OnPhysicalMeleeHit,
-                    Effects = new HashSet<Effect> {new Paralyze {Duration = 4}}
+                    Effects = new HashSet<Effect> {new Paralyze { Duration = EffectDuration.UntilTimeout, DurationAmount = 4}}
                 }
             },
             InitialLevel = 6,

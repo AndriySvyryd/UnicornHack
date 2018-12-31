@@ -87,7 +87,7 @@ namespace UnicornHack.Systems.Faculties
                 case nameof(PlayerComponent.LightArmor):
                 case nameof(PlayerComponent.HeavyArmor):
                 case nameof(PlayerComponent.Stealth):
-                case nameof(PlayerComponent.Assessination):
+                case nameof(PlayerComponent.Assassination):
                 case nameof(PlayerComponent.Artifice):
                 case nameof(PlayerComponent.Leadership):
                     break;
@@ -402,7 +402,7 @@ namespace UnicornHack.Systems.Faculties
                 var appliedEffectEntity = appliedEffectEntityReference.Referenced;
                 var appliedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                 appliedEffect.EffectType = EffectType.AddAbility;
-                appliedEffect.DurationTicks = (int)EffectDuration.Infinite;
+                appliedEffect.Duration = EffectDuration.Infinite;
 
                 appliedEffectEntity.Effect = appliedEffect;
 
@@ -527,13 +527,13 @@ namespace UnicornHack.Systems.Faculties
             int ownerId,
             TargetingType targetingType,
             ActivationType trigger,
-            bool shouldBeUsable,
+            bool shouldBePresent,
             int? firstWeaponAbilityId,
             int? secondWeaponAbilityId,
             GameManager manager)
         {
-            var ability = EnsureAbility(name, ownerId, targetingType, trigger, shouldBeUsable, manager,
-                out var created);
+            var ability =
+                EnsureAbility(name, ownerId, targetingType, trigger, shouldBePresent, false, manager, out var created);
 
             if (created)
             {
@@ -581,14 +581,15 @@ namespace UnicornHack.Systems.Faculties
             int ownerId,
             TargetingType targetingType,
             ActivationType trigger,
-            bool shouldHaveAbility,
+            bool shouldBePresent,
+            bool shouldBeUsable,
             GameManager manager,
             out bool created)
         {
             created = false;
             var ability = manager.AbilitiesToAffectableRelationship[ownerId].Select(a => a.Ability)
                 .FirstOrDefault(a => a.Name == name);
-            if (ability == null && shouldHaveAbility)
+            if (ability == null && shouldBePresent)
             {
                 using (var abilityEntityReference = manager.CreateEntity())
                 {
@@ -599,7 +600,7 @@ namespace UnicornHack.Systems.Faculties
                     ability.OwnerId = ownerId;
                     ability.Activation = ActivationType.Targeted;
                     ability.Trigger = trigger;
-                    ability.IsUsable = false;
+                    ability.IsUsable = shouldBeUsable;
                     ability.TargetingType = targetingType;
                     ability.TargetingAngle = TargetingAngle.Front2Octants;
                     // TODO: Calculate proper delay
@@ -614,15 +615,13 @@ namespace UnicornHack.Systems.Faculties
 
             if (ability != null)
             {
-                if (shouldHaveAbility)
-                {
-                    ability.IsUsable = false;
-                }
-                else
+                if (!shouldBePresent)
                 {
                     ability.Entity.RemoveComponent(EntityComponent.Ability);
                     return null;
                 }
+
+                ability.IsUsable = shouldBeUsable;
             }
 
             return ability;
@@ -787,9 +786,13 @@ namespace UnicornHack.Systems.Faculties
 
             var iceShard = EnsureAbility(
                 "ice shard", actorEntity.Id, TargetingType.Projectile, ActivationType.OnMagicalRangedAttack,
-                true, manager, out var created);
+                shouldBePresent: true, shouldBeUsable: player.WaterSourcery >= 1 || player.Conjuration >= 1, manager, out var created);
             if (created)
             {
+                iceShard.Cooldown = 1000;
+                iceShard.SuccessCondition = AbilitySuccessCondition.MagicAttack;
+                iceShard.Action = AbilityAction.Shoot;
+
                 using (var effectEntityReference = manager.CreateEntity())
                 {
                     var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
@@ -800,8 +803,6 @@ namespace UnicornHack.Systems.Faculties
                     effectEntityReference.Referenced.Effect = effect;
                 }
             }
-
-            iceShard.IsUsable = player.WaterSourcery >= 1 || player.Conjuration >= 1;
         }
 
         public void ImproveSkill(string skillName, GameEntity playerEntity)
@@ -818,7 +819,7 @@ namespace UnicornHack.Systems.Faculties
             player.SkillPoints -= 4;
             var skillEffect = playerEntity.Manager.EffectApplicationSystem
                 .GetPropertyEffect(playerEntity, skillName, SkillsAbilityName);
-            skillEffect.Amount += 1;
+            skillEffect.Amount = (skillEffect.Amount ?? 0) + 1;
         }
     }
 }

@@ -34,7 +34,7 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Hug,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Bind {Duration = 2}}
+                    Effects = new HashSet<Effect> {new Bind { Duration = EffectDuration.UntilTimeout, DurationAmount = 2}}
                 }
             },
             InitialLevel = 6,

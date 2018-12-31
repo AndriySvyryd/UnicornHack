@@ -36,7 +36,7 @@ namespace UnicornHack.Generation
                 {
                     var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                     effect.EffectType = EffectType.AddAbility;
-                    effect.DurationTicks = (int)EffectDuration.Infinite;
+                    effect.Duration = EffectDuration.Infinite;
                     effect.ContainingAbilityId = appliedEffectEntity.Id;
 
                     effectEntityReference.Referenced.Effect = effect;

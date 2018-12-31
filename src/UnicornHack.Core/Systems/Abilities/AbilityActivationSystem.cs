@@ -18,6 +18,7 @@ namespace UnicornHack.Systems.Abilities
 {
     public class AbilityActivationSystem :
         IGameSystem<ActivateAbilityMessage>,
+        IGameSystem<DeactivateAbilityMessage>,
         IGameSystem<ItemEquippedMessage>,
         IGameSystem<DiedMessage>,
         IGameSystem<LeveledUpMessage>,
@@ -25,10 +26,14 @@ namespace UnicornHack.Systems.Abilities
         IGameSystem<EntityRemovedMessage<GameEntity>>
     {
         public const string ActivateAbilityMessageName = "ActivateAbility";
+        public const string DeactivateAbilityMessageName = "DeactivateAbility";
         public const string AbilityActivatedMessageName = "AbilityActivated";
 
         public ActivateAbilityMessage CreateActivateAbilityMessage(GameManager manager)
             => manager.Queue.CreateMessage<ActivateAbilityMessage>(ActivateAbilityMessageName);
+
+        public DeactivateAbilityMessage CreateDeactivateAbilityMessage(GameManager manager)
+            => manager.Queue.CreateMessage<DeactivateAbilityMessage>(DeactivateAbilityMessageName);
 
         public bool CanActivateAbility(ActivateAbilityMessage activateAbilityMessage)
         {
@@ -81,7 +86,14 @@ namespace UnicornHack.Systems.Abilities
                 throw new InvalidOperationException($"Ability {ability.EntityId} is not usable or is not slotted.");
             }
 
-            targetEffectsMessage.SuccessfulActivation = true;
+            if (((ability.Activation & ActivationType.Continuous) != 0
+                 && ability.IsActive)
+                || ability.CooldownTick != null
+                || ability.CooldownXpLeft != null)
+            {
+                targetEffectsMessage.SuccessfulActivation = false;
+                return targetEffectsMessage;
+            }
 
             var activator = activateMessage.ActivatorEntity;
             if (ability.EnergyPointCost > 0)
@@ -89,7 +101,6 @@ namespace UnicornHack.Systems.Abilities
                 var activatorBeing = activator.Being;
                 if (activatorBeing.EnergyPoints < ability.EnergyPointCost)
                 {
-                    targetEffectsMessage.SuccessfulActivation = false;
                     return targetEffectsMessage;
                 }
 
@@ -106,6 +117,8 @@ namespace UnicornHack.Systems.Abilities
                 }
             }
 
+            targetEffectsMessage.SuccessfulActivation = true;
+
             if ((ability.Activation & ActivationType.Targeted) != 0)
             {
                 // TODO: Specify correct delay in the abilities
@@ -118,39 +131,30 @@ namespace UnicornHack.Systems.Abilities
                         activateMessage.TargetCell ?? activateMessage.TargetEntity.Position.LevelCell);
                     if (requiredHeading != activatorPosition.Heading)
                     {
-                        var travelMesage = manager.TravelSystem.CreateTravelMessage(manager);
-                        travelMesage.Entity = activateMessage.ActivatorEntity;
-                        travelMesage.TargetHeading = requiredHeading;
-                        travelMesage.TargetCell = activatorPosition.LevelCell;
+                        var travelMessage = manager.TravelSystem.CreateTravelMessage(manager);
+                        travelMessage.Entity = activateMessage.ActivatorEntity;
+                        travelMessage.TargetHeading = requiredHeading;
+                        travelMessage.TargetCell = activatorPosition.LevelCell;
 
-                        if (!manager.TravelSystem.CanTravel(travelMesage, manager))
+                        if (!manager.TravelSystem.CanTravel(travelMessage, manager))
                         {
                             targetEffectsMessage.SuccessfulActivation = false;
-                            manager.Queue.ReturnMessage(travelMesage);
+                            manager.Queue.ReturnMessage(travelMessage);
                             return targetEffectsMessage;
                         }
 
                         if (!pretend)
                         {
-                            manager.Enqueue(travelMesage);
+                            manager.Enqueue(travelMessage);
                         }
                     }
                 }
-            }
-
-            if ((ability.Activation & ActivationType.Continuous) != 0
-                && ability.IsActive)
-            {
-                targetEffectsMessage.SuccessfulActivation = false;
-                return targetEffectsMessage;
             }
 
             if (pretend)
             {
                 return targetEffectsMessage;
             }
-
-            // TODO: Set the cooldown for non-continuous abilities
 
             var selfEffectsMessage = manager.Queue.CreateMessage<AbilityActivatedMessage>(AbilityActivatedMessageName);
             selfEffectsMessage.AbilityEntity = activateMessage.AbilityEntity;
@@ -178,12 +182,7 @@ namespace UnicornHack.Systems.Abilities
 
             foreach (var activation in activations)
             {
-                var activationAbility = activation.ActivationMessage.AbilityEntity.Ability;
-                if ((activationAbility.Activation & ActivationType.Continuous) != 0
-                    && !activationAbility.IsActive)
-                {
-                    activationAbility.IsActive = true;
-                }
+                ChangeState(active: true, activation.ActivationMessage.AbilityEntity.Ability, activateMessage.ActivatorEntity, manager);
 
                 if (activation.ActivationMessage.TargetEntity == null)
                 {
@@ -198,11 +197,9 @@ namespace UnicornHack.Systems.Abilities
                     DetermineSuccess(targetMessage, exposure, manager);
 
                     var targetAbility = activation.TargetMessage?.AbilityEntity.Ability;
-                    if (targetAbility != null
-                        && (targetAbility.Activation & ActivationType.Continuous) != 0
-                        && !targetAbility.IsActive)
+                    if (targetAbility != null)
                     {
-                        targetAbility.IsActive = true;
+                        ChangeState(active: true, targetAbility, activateMessage.ActivatorEntity, manager);
                     }
 
                     // TODO: Trigger abilities on target
@@ -311,6 +308,7 @@ namespace UnicornHack.Systems.Abilities
                 {
                     var subAbilityMessage = messageToProcess.Clone(manager);
                     subAbilityMessage.AbilityEntity = subActivation.ActivatedAbility;
+                    subAbilityMessage.Delay = subActivation.ActivatedAbility.Ability.Delay;
 
                     AbilityActivatedMessage nextActivationMessage;
                     var nextTargetMessage = targetMessage;
@@ -431,7 +429,7 @@ namespace UnicornHack.Systems.Abilities
             }
             else
             {
-                DeactivateAbilities(message.ItemEntity.Id, ActivationType.WhileEquipped, manager);
+                DeactivateAbilities(message.ItemEntity.Id, ActivationType.WhileEquipped, message.ActorEntity, manager);
             }
 
             return MessageProcessingResult.ContinueProcessing;
@@ -439,15 +437,15 @@ namespace UnicornHack.Systems.Abilities
 
         public MessageProcessingResult Process(DiedMessage message, GameManager manager)
         {
-            DeactivateAbilities(message.BeingEntity.Id, ActivationType.Continuous, manager);
+            DeactivateAbilities(message.BeingEntity.Id, ActivationType.Continuous, message.BeingEntity, manager);
 
             return MessageProcessingResult.ContinueProcessing;
         }
 
         public MessageProcessingResult Process(LeveledUpMessage message, GameManager manager)
         {
-            foreach (var abilityEntity in GetTriggeredAbilities(message.Entity.Id, ActivationType.WhileAboveLevel,
-                manager))
+            foreach (var abilityEntity in GetTriggeredAbilities(
+                message.Entity.Id, ActivationType.WhileAboveLevel, manager))
             {
                 var ability = abilityEntity.Ability;
                 if (ability.IsActive)
@@ -548,21 +546,20 @@ namespace UnicornHack.Systems.Abilities
                     {
                         Debug.Assert(ability.IsActive);
 
-                        Deactivate(ability, manager);
+                        Deactivate(ability, message.ReferencedEntity, manager);
                     }
 
                     break;
                 case nameof(GameManager.EntityItemsToContainerRelationship):
                     if (message.ReferencedEntity?.HasComponent(EntityComponent.Being) == true)
                     {
-                        DeactivateAbilities(message.Entity.Id, ActivationType.WhilePossessed, manager);
+                        DeactivateAbilities(message.Entity.Id, ActivationType.WhilePossessed, message.ReferencedEntity, manager);
                     }
 
                     break;
                 default:
                     throw new InvalidOperationException(message.Group.Name);
             }
-
 
             return MessageProcessingResult.ContinueProcessing;
         }
@@ -722,8 +719,8 @@ namespace UnicornHack.Systems.Abilities
                     }
 
                     var direction = vectorToTarget.AsDirection();
-                    var firstNeighbour = targetCell.Translate(direction.Rotate(1).AsVector());
-                    var secondNeighbour = targetCell.Translate(direction.Rotate(-1).AsVector());
+                    var firstNeighbor = targetCell.Translate(direction.Rotate(1).AsVector());
+                    var secondNeighbor = targetCell.Translate(direction.Rotate(-1).AsVector());
 
                     var targets = new List<(GameEntity, byte)>();
                     var arcTarget = manager.LevelActorToLevelCellIndex[(levelId, targetCell.X, targetCell.Y)];
@@ -732,13 +729,13 @@ namespace UnicornHack.Systems.Abilities
                         targets.Add((arcTarget, BeveledVisibilityCalculator.MaxVisibility));
                     }
 
-                    arcTarget = manager.LevelActorToLevelCellIndex[(levelId, firstNeighbour.X, firstNeighbour.Y)];
+                    arcTarget = manager.LevelActorToLevelCellIndex[(levelId, firstNeighbor.X, firstNeighbor.Y)];
                     if (arcTarget != null)
                     {
                         targets.Add((arcTarget, BeveledVisibilityCalculator.MaxVisibility));
                     }
 
-                    arcTarget = manager.LevelActorToLevelCellIndex[(levelId, secondNeighbour.X, secondNeighbour.Y)];
+                    arcTarget = manager.LevelActorToLevelCellIndex[(levelId, secondNeighbor.X, secondNeighbor.Y)];
                     if (arcTarget != null)
                     {
                         targets.Add((arcTarget, BeveledVisibilityCalculator.MaxVisibility));
@@ -858,8 +855,8 @@ namespace UnicornHack.Systems.Abilities
 
                 if (exposure < BeveledVisibilityCalculator.MaxVisibility)
                 {
-                    deflection += (BeveledVisibilityCalculator.MaxVisibility - exposure) * 10 /
-                                  BeveledVisibilityCalculator.MaxVisibility;
+                    deflection += (BeveledVisibilityCalculator.MaxVisibility - exposure) * 10
+                                  / BeveledVisibilityCalculator.MaxVisibility;
                 }
 
                 if (manager.SensorySystem.GetVisibility(message.ActivatorEntity, targetPosition.LevelCell) == 0)
@@ -873,7 +870,7 @@ namespace UnicornHack.Systems.Abilities
             message.SuccessfulApplication = success;
         }
 
-        private void DeactivateAbilities(int activatableId, ActivationType activation, GameManager manager)
+        private void DeactivateAbilities(int activatableId, ActivationType activation, GameEntity activatorEntity, GameManager manager)
         {
             foreach (var abilityEntity in manager.AbilitiesToAffectableRelationship[activatableId])
             {
@@ -883,23 +880,25 @@ namespace UnicornHack.Systems.Abilities
                     continue;
                 }
 
-                Deactivate(ability, manager);
+                Deactivate(ability, activatorEntity, manager);
             }
         }
 
-        public void Deactivate(AbilityComponent ability, GameManager manager)
+        public MessageProcessingResult Process(DeactivateAbilityMessage message, GameManager manager)
         {
-            Debug.Assert((ability.Activation & ActivationType.Continuous) != 0);
-            Debug.Assert(ability.IsActive);
+            Deactivate(message.AbilityEntity.Ability, message.ActivatorEntity, manager);
 
-            // TODO: Set the cooldown
+            return MessageProcessingResult.ContinueProcessing;
+        }
 
-            ability.IsActive = false;
+        private void Deactivate(AbilityComponent ability, GameEntity activatorEntity, GameManager manager)
+        {
+            ChangeState(active: false, ability, activatorEntity, manager);
 
             if (ability.EnergyPointCost > 0
                 && (ability.Activation & ActivationType.Continuous) != 0)
             {
-                ability.OwnerEntity.Being.ReservedEnergyPoints -= ability.EnergyPointCost;
+                activatorEntity.Being.ReservedEnergyPoints -= ability.EnergyPointCost;
             }
 
             foreach (var appliedEffect in manager.AppliedEffectsToSourceAbilityRelationship[ability.EntityId].ToList())
@@ -909,6 +908,45 @@ namespace UnicornHack.Systems.Abilities
                 removeComponentMessage.Component = EntityComponent.Effect;
 
                 manager.Enqueue(removeComponentMessage, lowPriority: true);
+            }
+        }
+
+        private void ChangeState(bool active, AbilityComponent ability, GameEntity activatorEntity, GameManager manager)
+        {
+            if (active)
+            {
+                if ((ability.Activation & ActivationType.Continuous) == 0)
+                {
+                    if (ability.Cooldown > 0)
+                    {
+                        ability.CooldownTick = manager.Game.CurrentTick + ability.Cooldown + ability.Delay;
+                    }
+
+                    if (ability.XPCooldown > 0)
+                    {
+                        ability.CooldownXpLeft = activatorEntity.Player.NextLevelXP * ability.XPCooldown / 100;
+                    }
+                }
+                else if (!ability.IsActive)
+                {
+                    ability.IsActive = true;
+                }
+            }
+            else
+            {
+                Debug.Assert((ability.Activation & ActivationType.Continuous) != 0);
+                Debug.Assert(ability.IsActive);
+
+                ability.IsActive = false;
+                if (ability.Cooldown > 0)
+                {
+                    ability.CooldownTick = manager.Game.CurrentTick + ability.Cooldown;
+                }
+
+                if (ability.XPCooldown > 0)
+                {
+                    ability.CooldownXpLeft = activatorEntity.Player.NextLevelXP * ability.XPCooldown / 100;
+                }
             }
         }
 

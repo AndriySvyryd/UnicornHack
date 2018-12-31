@@ -67,6 +67,8 @@ namespace UnicornHack
             AbilityActivationSystem = new AbilityActivationSystem();
             queue.Add<ActivateAbilityMessage>(AbilityActivationSystem,
                 AbilityActivationSystem.ActivateAbilityMessageName, 0);
+            queue.Add<DeactivateAbilityMessage>(AbilityActivationSystem,
+                AbilityActivationSystem.DeactivateAbilityMessageName, 0);
             queue.Add<ItemEquippedMessage>(AbilityActivationSystem, ItemUsageSystem.ItemEquippedMessageName, 3);
             queue.Add<DiedMessage>(AbilityActivationSystem, LivingSystem.DiedMessageName, 2);
             queue.Add<LeveledUpMessage>(AbilityActivationSystem, XPSystem.LeveledUpMessageName, 0);

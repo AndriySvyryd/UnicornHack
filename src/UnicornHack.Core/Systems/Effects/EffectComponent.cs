@@ -9,14 +9,16 @@ namespace UnicornHack.Systems.Effects
         private int? _affectedEntityId;
         private int? _sourceAbilityId;
         private int? _containingAbilityId;
-        private int _durationTicks;
+        private int _durationAmount;
         private int? _expirationTick;
+        private int? _expirationXp;
         private bool _shouldTargetActivator;
         private int? _amount;
         private EffectType _effectType;
         private ValueCombinationFunction _function;
         private string _targetName;
         private int? _targetEntityId;
+        private EffectDuration _duration;
 
         public EffectComponent()
             => ComponentId = (int)EntityComponent.Effect;
@@ -39,17 +41,28 @@ namespace UnicornHack.Systems.Effects
             set => SetWithNotify(value, ref _containingAbilityId);
         }
 
-        // See EffectDuration
-        public int DurationTicks
+        public EffectDuration Duration
         {
-            get => _durationTicks;
-            set => SetWithNotify(value, ref _durationTicks);
+            get => _duration;
+            set => SetWithNotify(value, ref _duration);
+        }
+
+        public int DurationAmount
+        {
+            get => _durationAmount;
+            set => SetWithNotify(value, ref _durationAmount);
         }
 
         public int? ExpirationTick
         {
             get => _expirationTick;
             set => SetWithNotify(value, ref _expirationTick);
+        }
+
+        public int? ExpirationXp
+        {
+            get => _expirationXp;
+            set => SetWithNotify(value, ref _expirationXp);
         }
 
         public bool ShouldTargetActivator
@@ -97,7 +110,8 @@ namespace UnicornHack.Systems.Effects
             {
                 var clone = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                 clone.ShouldTargetActivator = ShouldTargetActivator;
-                clone.DurationTicks = DurationTicks;
+                clone.Duration = Duration;
+                clone.DurationAmount = DurationAmount;
                 clone.Amount = Amount;
                 clone.EffectType = EffectType;
                 clone.Function = Function;
@@ -121,8 +135,10 @@ namespace UnicornHack.Systems.Effects
             _affectedEntityId = default;
             _sourceAbilityId = default;
             _containingAbilityId = default;
-            _durationTicks = default;
+            _duration = default;
+            _durationAmount = default;
             _expirationTick = default;
+            _expirationXp = default;
             _shouldTargetActivator = default;
             _amount = default;
             _effectType = default;

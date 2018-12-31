@@ -1,7 +1,7 @@
 const path = require('path');
 const webpack = require('webpack');
 const CheckerPlugin = require('awesome-typescript-loader').CheckerPlugin;
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
 const bundleOutputDir = './wwwroot/dist';
@@ -131,8 +131,8 @@ function getClientConfig(env) {
             minimizer: isDevBuild
                 ? []
                 : [
-                    new UglifyJsPlugin({
-                        uglifyOptions: {
+                    new TerserPlugin({
+                        terserOptions: {
                             ecma: 6
                         },
                         cache: true,

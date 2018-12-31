@@ -1,6 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
 
@@ -89,13 +89,12 @@ function getClientConfig(env) {
             minimizer: isDevBuild
                 ? []
                 : [
-                    new UglifyJsPlugin({
-                        uglifyOptions: {
+                    new TerserPlugin({
+                        terserOptions: {
                             ecma: 6
                         },
                         cache: true,
-                        parallel: true,
-                        sourceMap: true
+                        parallel: true
                     }),
                     new OptimizeCSSAssetsPlugin({})
                 ]

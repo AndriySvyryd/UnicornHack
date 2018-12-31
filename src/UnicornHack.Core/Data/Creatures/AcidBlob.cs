@@ -27,7 +27,7 @@ namespace UnicornHack.Data.Creatures
             Size = 1,
             Weight = 30,
             Perception = 1,
-            Might = 0,
+            Might = 5,
             Speed = 1,
             Focus = 6,
             PhysicalDeflection = 12,

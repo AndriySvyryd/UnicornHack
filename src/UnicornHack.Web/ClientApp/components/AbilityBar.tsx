@@ -1,7 +1,7 @@
 ﻿import * as React from 'React';
 import * as scss from '../styles/site.scss'
 import { observer } from 'mobx-react';
-import { Ability } from '../transport/Model';
+import { Ability, Player } from '../transport/Model';
 import { PlayerAction } from "../transport/PlayerAction";
 import { GameQueryType } from '../transport/GameQueryType';
 import { ActivationType } from '../transport/ActivationType';
@@ -20,7 +20,7 @@ export class AbilityBar extends React.Component<IAbilityBarProps, {}> {
                 }
             }
 
-            slots[i] = <AbilityLine ability={slottedAbility} slot={slot} key={i} performAction={this.props.performAction} queryGame={this.props.queryGame} />
+            slots[i] = <AbilityLine ability={slottedAbility} player={this.props.player} slot={slot} key={i} performAction={this.props.performAction} queryGame={this.props.queryGame} />
         }
 
         return (<div className={scss.frame}>{slots}</div>);
@@ -29,6 +29,7 @@ export class AbilityBar extends React.Component<IAbilityBarProps, {}> {
 
 interface IAbilityBarProps {
     abilities: Map<string, Ability>;
+    player: Player
     performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
     queryGame: (intQueryType: GameQueryType, ...args: Array<number>) => void;
 }
@@ -40,14 +41,33 @@ export class AbilityLine extends React.Component<IAbilityProps, {}> {
             onClick={() => this.props.queryGame(GameQueryType.SlottableAbilities, this.props.slot)}>
             <span className={scss.ability__slot}>{this.props.slot === -1 ? "D" : this.props.slot + 1}:</span></a>;
 
-        // TODO: Activate targetting mode for targetted abilities        
+        // TODO: Activate targeting mode for targetted abilities        
 
         var ability = <span>{this.props.ability === null ? "" : this.props.ability.name}</span>;
         if (this.props.ability !== null
             && (this.props.ability.activation & ActivationType.ManualActivation) !== 0) {
-            ability = <a tabIndex={(this.props.slot + 1) * 2 + 1}
-                onClick={() => this.props.performAction(PlayerAction.UseAbilitySlot, this.props.slot, null)
-                }>{ability}</a>;
+
+            if (this.props.ability.cooldownTick == null
+                && this.props.ability.cooldownXpLeft == null) {
+
+                ability = <a tabIndex={(this.props.slot + 1) * 2 + 1}
+                    onClick={() => this.props.performAction(PlayerAction.UseAbilitySlot, this.props.slot, null)
+                    }>{ability}</a>;
+            } else {
+                var timeout = "[";
+                if (this.props.ability.cooldownTick != null) {
+                    timeout += (this.props.ability.cooldownTick - this.props.player.currentTick) / 100.0 + " AUT";
+                }
+
+                if (this.props.ability.cooldownXpLeft != null) {
+                    timeout += this.props.ability.cooldownXpLeft + " XP";
+                }
+
+                timeout = timeout.trimRight();
+                timeout += "]";
+
+                ability = <span>{ability} {timeout}</span>;
+            }
         }
 
         return <div>{slot} {ability}</div>;
@@ -57,6 +77,7 @@ export class AbilityLine extends React.Component<IAbilityProps, {}> {
 interface IAbilityProps {
     slot: number;
     ability: Ability | null;
+    player: Player
     performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
     queryGame: (intQueryType: GameQueryType, ...args: Array<number>) => void;
 }

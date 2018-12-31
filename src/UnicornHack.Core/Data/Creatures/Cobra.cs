@@ -27,7 +27,7 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Spit,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blind {Duration = 5}}
+                    Effects = new HashSet<Effect> {new Blind { Duration = EffectDuration.UntilTimeout, DurationAmount = 5}}
                 }
             },
             InitialLevel = 7,

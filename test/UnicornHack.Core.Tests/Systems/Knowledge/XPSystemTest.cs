@@ -3,6 +3,9 @@ using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
+using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Beings;
+using UnicornHack.Systems.Effects;
 using UnicornHack.Utils.DataStructures;
 using Xunit;
 
@@ -152,14 +155,107 @@ namespace UnicornHack.Systems.Knowledge
             Assert.Equal(2000, player.NextLevelXP);
         }
 
-        private static GameEntity ActivateAbility(string abilityName, GameEntity playerEntity, GameManager manager)
+        [Fact]
+        public void Some_abilities_cooldown_with_xp()
+        {
+            var level = TestHelper.BuildLevel(".");
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            ItemData.FlaskOfHealing.Instantiate(playerEntity);
+            ItemData.PotionOfExperience.Instantiate(playerEntity);
+            var manager = playerEntity.Manager;
+
+            manager.Queue.ProcessQueue(manager);
+
+            var flaskAbilityEntity = ActivateAbility(ItemData.FlaskOfHealing.Name + ": Drink", playerEntity, manager);
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.NotNull(flaskAbilityEntity.Ability.CooldownXpLeft);
+            Assert.Null(flaskAbilityEntity.Ability.CooldownTick);
+            playerEntity.Being.HitPoints = 50;
+
+            ActivateAbility(flaskAbilityEntity, playerEntity, manager);
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(50, playerEntity.Being.HitPoints);
+
+            ActivateAbility(ItemData.PotionOfExperience.Name + ": Drink", playerEntity, manager, slot: 1);
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Null(flaskAbilityEntity.Ability.CooldownXpLeft);
+            Assert.Null(flaskAbilityEntity.Ability.CooldownTick);
+            Assert.NotEqual(50, playerEntity.Being.HitPoints);
+            playerEntity.Being.HitPoints = 50;
+
+            ActivateAbility(flaskAbilityEntity, playerEntity, manager);
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.NotEqual(50, playerEntity.Being.HitPoints);
+        }
+
+        [Fact]
+        public void Some_effects_expire_with_xp()
+        {
+            var level = TestHelper.BuildLevel(".");
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            ItemData.PotionOfExperience.Instantiate(playerEntity);
+            var manager = playerEntity.Manager;
+
+            manager.Queue.ProcessQueue(manager);
+
+            GameEntity debuffAbilityEntity = null;
+            using (var abilityEntityReference = manager.CreateEntity())
+            {
+                debuffAbilityEntity = abilityEntityReference.Referenced;
+
+                var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+                ability.Activation = ActivationType.ManualActivation;
+                ability.OwnerEntity = playerEntity;
+
+                debuffAbilityEntity.Ability = ability;
+
+                using (var effectEntityReference = manager.CreateEntity())
+                {
+                    var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+                    effect.EffectType = EffectType.ChangeProperty;
+                    effect.TargetName = nameof(BeingComponent.Might);
+                    effect.Amount = -1;
+                    effect.Duration = EffectDuration.UntilXPGained;
+                    effect.DurationAmount = 20;
+                    effect.ContainingAbilityId = ability.EntityId;
+
+                    effectEntityReference.Referenced.Effect = effect;
+                }
+            }
+
+            ActivateAbility(debuffAbilityEntity, playerEntity, manager);
+            manager.Queue.ProcessQueue(manager);
+
+            var appliedEffect = manager.AppliedEffectsToSourceAbilityRelationship[debuffAbilityEntity.Id].Single();
+
+            Assert.Equal(200, appliedEffect.Effect.ExpirationXp);
+            Assert.Equal(9, playerEntity.Being.Might);
+
+            ActivateAbility(ItemData.PotionOfExperience.Name + ": Drink", playerEntity, manager, slot: 1);
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(0, appliedEffect.Id);
+            Assert.Equal(10, playerEntity.Being.Might);
+        }
+
+        private static GameEntity ActivateAbility(
+            string abilityName, GameEntity playerEntity, GameManager manager, int slot = 0)
         {
             var abilityEntity = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
-                   .First(a => a.Ability.Name == abilityName);
+                .First(a => a.Ability.Name == abilityName);
+            return ActivateAbility(abilityEntity, playerEntity, manager, slot);
+        }
 
+        private static GameEntity ActivateAbility(
+            GameEntity abilityEntity, GameEntity playerEntity,GameManager manager, int slot = 0)
+        {
             var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
             setSlotMessage.AbilityEntity = abilityEntity;
-            setSlotMessage.Slot = 0;
+            setSlotMessage.Slot = slot;
             manager.Enqueue(setSlotMessage);
 
             var activateItemMessage = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);

@@ -209,7 +209,7 @@ namespace UnicornHack.Generation
                 var appliedEffectEntity = appliedEffectEntityReference.Referenced;
                 var appliedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                 appliedEffect.EffectType = EffectType.AddAbility;
-                appliedEffect.DurationTicks = (int)EffectDuration.Infinite;
+                appliedEffect.Duration = EffectDuration.Infinite;
 
                 appliedEffectEntity.Effect = appliedEffect;
 
@@ -232,7 +232,7 @@ namespace UnicornHack.Generation
                     var abilityEntity = abilityEntityReference.Referenced;
                     var abilityEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                     abilityEffect.EffectType = EffectType.AddAbility;
-                    abilityEffect.DurationTicks = (int)EffectDuration.Infinite;
+                    abilityEffect.Duration = EffectDuration.Infinite;
 
                     abilityEntity.Effect = abilityEffect;
 
@@ -241,11 +241,9 @@ namespace UnicornHack.Generation
                     ability.OwnerId = itemEntity.Id;
                     abilityEffect.AffectedEntityId = itemEntity.Id;
 
-                    if ((abilityDefinition.Activation
-                         & (ActivationType.WhileToggled | ActivationType.ManualActivation | ActivationType.Targeted)) !=
-                        0)
+                    if ((abilityDefinition.Activation & ActivationType.Slottable) != 0)
                     {
-                        AddPossesedAbility(ability, item, manager);
+                        AddPossessedAbility(ability, abilityDefinition.UsabilityCondition, item, manager);
                     }
                 }
             }
@@ -253,7 +251,7 @@ namespace UnicornHack.Generation
             return item;
         }
 
-        private void AddPossesedAbility(AbilityComponent ability, ItemComponent item, GameManager manager)
+        private void AddPossessedAbility(AbilityComponent ability, ActivationType usabilityCondition, ItemComponent item, GameManager manager)
         {
             using (var abilityEntityReference = manager.CreateEntity())
             {
@@ -261,13 +259,15 @@ namespace UnicornHack.Generation
 
                 var abilityEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                 abilityEffect.EffectType = EffectType.AddAbility;
-                abilityEffect.DurationTicks = (int)EffectDuration.Infinite;
+                abilityEffect.Duration = EffectDuration.Infinite;
 
                 abilityEntity.Effect = abilityEffect;
 
                 var possessedAbility = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
                 possessedAbility.Name = "Add " + ability.Name + " ability";
-                possessedAbility.Activation = ActivationType.WhilePossessed;
+                possessedAbility.Activation = usabilityCondition == ActivationType.Default
+                    ? ActivationType.WhilePossessed
+                    : usabilityCondition;
 
                 abilityEntity.Ability = possessedAbility;
 
@@ -277,7 +277,7 @@ namespace UnicornHack.Generation
 
                     var activateAbilityEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                     activateAbilityEffect.EffectType = EffectType.AddAbility;
-                    activateAbilityEffect.DurationTicks = (int)EffectDuration.Infinite;
+                    activateAbilityEffect.Duration = EffectDuration.Infinite;
 
                     activateAbilityEntity.Effect = activateAbilityEffect;
 
@@ -291,7 +291,7 @@ namespace UnicornHack.Generation
                         var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                         effect.EffectType = EffectType.Activate;
                         effect.TargetEntityId = ability.EntityId;
-                        effect.DurationTicks = (int)((ability.Activation & ActivationType.Continuous) == 0
+                        effect.Duration = ((ability.Activation & ActivationType.Continuous) == 0
                             ? EffectDuration.Instant
                             : EffectDuration.Infinite);
                         effect.ContainingAbilityId = activateAbilityEntity.Id;

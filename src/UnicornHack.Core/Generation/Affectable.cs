@@ -16,7 +16,7 @@ namespace UnicornHack.Generation
             {
                 var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                 effect.EffectType = EffectType.ChangeProperty;
-                effect.DurationTicks = (int)EffectDuration.Infinite;
+                effect.Duration = EffectDuration.Infinite;
                 effect.TargetName = propertyName;
                 effect.Amount = value;
                 effect.Function = ValueCombinationFunction.MeanRoundDown;

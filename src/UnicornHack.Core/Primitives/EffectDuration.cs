@@ -2,9 +2,10 @@
 {
     public enum EffectDuration
     {
+        Infinite = -1,
         Instant = 0,
         UntilTimeout = 1,
-        Infinite = -1,
-        DuringApplication = -2
+        UntilXPGained = 2,
+        DuringApplication = 3
     }
 }

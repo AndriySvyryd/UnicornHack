@@ -15,18 +15,17 @@ namespace UnicornHack.Hubs
                 case EntityState.Added:
                     {
                         var ability = abilityEntity.Ability;
-                        var player = context.Observer.Player;
-                        var canBeDefault = context.Manager.SkillAbilitiesSystem.CanBeDefaultAttack(ability);
-                        {
-                            properties = state == null
-                                ? new List<object>(4)
-                                : new List<object>(5) { (int)state };
-                        }
+
+                        properties = state == null
+                            ? new List<object>(6)
+                            : new List<object>(7) {(int)state};
 
                         properties.Add(abilityEntity.Id);
                         properties.Add(context.Services.Language.GetString(ability));
                         properties.Add(abilityEntity.Ability.Activation);
                         properties.Add(abilityEntity.Ability.Slot);
+                        properties.Add(abilityEntity.Ability.CooldownTick);
+                        properties.Add(abilityEntity.Ability.CooldownXpLeft);
 
                         return properties;
                     }
@@ -39,7 +38,6 @@ namespace UnicornHack.Hubs
                 default:
                     {
                         var ability = abilityEntity.Ability;
-                        var player = context.Observer.Player;
                         properties = new List<object>
                             {
                                 (int)state,
@@ -68,6 +66,22 @@ namespace UnicornHack.Hubs
                         {
                             properties.Add(i);
                             properties.Add(abilityEntity.Ability.Slot);
+                        }
+
+                        i++;
+                        var cooldownTick = abilityEntry.Property(nameof(AbilityComponent.CooldownTick));
+                        if (cooldownTick.IsModified)
+                        {
+                            properties.Add(i);
+                            properties.Add(abilityEntity.Ability.CooldownTick);
+                        }
+
+                        i++;
+                        var cooldownXpLeft = abilityEntry.Property(nameof(AbilityComponent.CooldownXpLeft));
+                        if (cooldownXpLeft.IsModified)
+                        {
+                            properties.Add(i);
+                            properties.Add(abilityEntity.Ability.CooldownXpLeft);
                         }
 
                         return properties.Count > 2 ? properties : null;

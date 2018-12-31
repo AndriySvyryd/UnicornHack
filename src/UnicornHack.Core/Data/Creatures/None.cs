@@ -12,10 +12,9 @@ namespace UnicornHack.Data.Creatures
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
             Weight = 0,
             Perception = 1,
-            Might = 0,
+            Might = 1,
             Speed = 1,
-            Focus = 0,
-            MagicDeflection = 0
+            Focus = 1
         };
     }
 }

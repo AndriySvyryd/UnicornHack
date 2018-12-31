@@ -73,7 +73,7 @@ namespace UnicornHack
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
                 Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.Stealth)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.Assessination)), 0);
+                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.Assassination)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
                 Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.MeleeMagicWeapons)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,

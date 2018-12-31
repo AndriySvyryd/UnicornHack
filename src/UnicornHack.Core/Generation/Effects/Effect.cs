@@ -21,9 +21,10 @@ namespace UnicornHack.Generation.Effects
 
                 ConfigureEffect(effect);
 
-                if (continuous)
+                if (continuous
+                    && effect.Duration == EffectDuration.Instant)
                 {
-                    effect.DurationTicks = (int)EffectDuration.Infinite;
+                    effect.Duration = EffectDuration.Infinite;
                 }
 
                 return effect;

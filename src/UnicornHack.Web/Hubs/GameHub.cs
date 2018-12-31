@@ -14,7 +14,6 @@ using UnicornHack.Primitives;
 using UnicornHack.Services;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
-using UnicornHack.Systems.Time;
 using UnicornHack.Utils;
 using UnicornHack.Utils.MessagingECS;
 
@@ -194,7 +193,7 @@ namespace UnicornHack.Hubs
             }
 
             currentPlayer.Game.ActingPlayer = null;
-            TimeSystem.AdvanceToNextPlayerTurn(manager);
+            manager.TimeSystem.AdvanceToNextPlayerTurn(manager);
 
             //TODO: If all players are dead end the game
 
@@ -300,7 +299,7 @@ namespace UnicornHack.Hubs
             var playerEntity = PlayerRace.InstantiatePlayer(
                 name, Sex.Male, initialLevelEntity, initialLevelConnection.TargetLevelCell.Value);
 
-            ItemData.PotionOfHealing.Instantiate(playerEntity);
+            ItemData.FlaskOfHealing.Instantiate(playerEntity);
             ItemData.MailArmor.Instantiate(playerEntity);
             ItemData.LongSword.Instantiate(playerEntity);
             ItemData.Dagger.Instantiate(playerEntity);

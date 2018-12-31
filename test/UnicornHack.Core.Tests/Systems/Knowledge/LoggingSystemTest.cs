@@ -273,20 +273,27 @@ namespace UnicornHack.Systems.Knowledge
         public void ItemConsumptionEvent()
         {
             var level = TestHelper.BuildLevel();
-            var potion = ItemData.PotionOfHealing.Instantiate(level.Entity.Manager).Referenced;
+            var flask = ItemData.FlaskOfHealing.Instantiate(level.Entity.Manager).Referenced;
+            var potion = ItemData.PotionOfExperience.Instantiate(level.Entity.Manager).Referenced;
             var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
             var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
             var manager = level.Entity.Manager;
             var languageService = manager.Game.Services.Language;
 
-            Assert.Equal("The acid blob drinks a potion of healing.", languageService.GetString(new ItemActivationEvent(
-                player, potion, blob, blob, SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Sound,
-                SenseType.Sight | SenseType.Sound, successful: true)));
+            Assert.Equal("The acid blob drinks from a flask of healing.", languageService.GetString(
+                new ItemActivationEvent(player, flask, blob, blob,
+                    SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Sound,
+                    SenseType.Sight | SenseType.Sound, consumed: false, successful: true)));
 
-            Assert.Equal("You drink a potion of healing.", languageService.GetString(new ItemActivationEvent(
-                player, potion, player, player, SenseType.Sight | SenseType.Sound,
-                SenseType.Sight | SenseType.Touch,
-                SenseType.Sight | SenseType.Touch, successful: true)));
+            Assert.Equal("You drink from a flask of healing.", languageService.GetString(
+                new ItemActivationEvent(player, flask, player, player,
+                    SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Touch,
+                    SenseType.Sight | SenseType.Touch, consumed: false, successful: true)));
+
+            Assert.Equal("You drink a potion of experience.", languageService.GetString(
+                new ItemActivationEvent(player, potion, player, player,
+                    SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Touch,
+                    SenseType.Sight | SenseType.Touch, consumed: true, successful: true)));
         }
 
         [Fact]

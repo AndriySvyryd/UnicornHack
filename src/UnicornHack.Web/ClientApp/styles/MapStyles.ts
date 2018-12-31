@@ -82,8 +82,8 @@ export class ItemStyles {
         this[ItemType.Coin] = { char: '$', style: { color: 'gold' } };
 
         const armor = { char: '(', style: { color: 'teal' }  };
-        this[ItemType.ArmorBack] = armor;
-        this[ItemType.ArmorBody] = armor;
+        this[ItemType.AccessoryBack] = armor;
+        this[ItemType.ArmorTorso] = armor;
         this[ItemType.ArmorFeet] = armor;
         this[ItemType.ArmorHands] = armor;
         this[ItemType.ArmorHead] = armor;
@@ -101,6 +101,8 @@ export class ItemStyles {
         this[ItemType.WeaponRangedThrown] = weapon;
         this[ItemType.WeaponAmmoContainer] = weapon;
 
-        this[ItemType.Potion] = { char: '!', style: { color: 'yellow' }  };
+        this[ItemType.Potion] = { char: '!', style: { color: 'yellow' } };
+
+        this[ItemType.SkillBook] = { char: '+', style: { color: 'magenta' } };
     }
 }

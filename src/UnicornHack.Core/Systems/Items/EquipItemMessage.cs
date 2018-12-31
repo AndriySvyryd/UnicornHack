@@ -32,6 +32,7 @@ namespace UnicornHack.Systems.Items
 
         public EquipmentSlot Slot { get; set; }
         public bool SuppressLog { get; set; }
+        public bool Force { get; set; }
 
         string IMessage.MessageName { get; set; }
 
@@ -41,6 +42,7 @@ namespace UnicornHack.Systems.Items
             ActorEntity = default;
             Slot = default;
             SuppressLog = default;
+            Force = default;
         }
     }
 }

@@ -33,8 +33,8 @@ namespace UnicornHack
             InitializeFaculties(gameQueue);
             InitializeSenses(gameQueue);
             InitializeEffects(gameQueue);
-            InitializeKnowledge(gameQueue);
             InitializeTime(gameQueue);
+            InitializeKnowledge(gameQueue);
         }
 
         public override int GetNextEntityId() => ++Game.NextEntityId;

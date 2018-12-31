@@ -34,21 +34,21 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Gaze,
                     Cooldown = 350,
-                    Effects = new HashSet<Effect> {new Slow {Duration = 13}}
+                    Effects = new HashSet<Effect> {new Slow { Duration = EffectDuration.UntilTimeout, DurationAmount = 13}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Gaze,
                     Cooldown = 350,
-                    Effects = new HashSet<Effect> {new Sedate {Duration = 13}}
+                    Effects = new HashSet<Effect> {new Sedate { Duration = EffectDuration.UntilTimeout, DurationAmount = 13}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Gaze,
                     Cooldown = 350,
-                    Effects = new HashSet<Effect> {new Confuse {Duration = 13}}
+                    Effects = new HashSet<Effect> {new Confuse { Duration = EffectDuration.UntilTimeout, DurationAmount = 13}}
                 },
                 new Ability
                 {

@@ -1,4 +1,6 @@
-﻿using UnicornHack.Systems.Beings;
+﻿using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Knowledge;
@@ -15,6 +17,7 @@ namespace UnicornHack
         public EntityRelationship<GameEntity> LevelKnowledgesToLevelRelationship { get; private set; }
         public EntityIndex<GameEntity, (int, byte, byte)> LevelKnowledgeToLevelCellIndex { get; private set; }
         public UniqueEntityRelationship<GameEntity> LevelKnowledgeToLevelEntityRelationship { get; private set; }
+        public UniqueEntityIndex<GameEntity, int> XPEntities { get; private set; }
         public KnowledgeSystem KnowledgeSystem { get; private set; }
         public XPSystem XPSystem { get; private set; }
         public LoggingSystem LoggingSystem { get; private set; }
@@ -78,6 +81,36 @@ namespace UnicornHack
                     effectEntity.RemoveComponent(EntityComponent.Knowledge);
                     effectEntity.RemoveComponent(EntityComponent.Position);
                 });
+
+            XPEntities = new UniqueEntityIndex<GameEntity, int>(
+                nameof(XPEntities),
+                TemporalEntities,
+                new KeyValueGetter<GameEntity, int>(
+                    (entity, changes, getOldValue, matcher) =>
+                    {
+                        if (matcher.TryGetValue<int?>(
+                                entity, (int)EntityComponent.Ability, nameof(AbilityComponent.CooldownXpLeft), changes,
+                                getOldValue, out var abilityXp)
+                            && abilityXp.HasValue)
+                        {
+                            return (entity.Id, true);
+                        }
+
+                        if (matcher.TryGetValue<int?>(
+                                entity, (int)EntityComponent.Effect, nameof(EffectComponent.ExpirationXp), changes,
+                                getOldValue, out var effectXp)
+                            && effectXp.HasValue)
+                        {
+                            return (entity.Id, true);
+                        }
+
+                        return (0, false);
+                    },
+                    new PropertyMatcher()
+                        .With(component => ((EffectComponent)component).ExpirationXp, (int)EntityComponent.Effect)
+                        .With(component => ((AbilityComponent)component).CooldownXpLeft, (int)EntityComponent.Ability)
+                )
+            );
 
             KnowledgeSystem = new KnowledgeSystem();
             queue.Add<VisibleTerrainChangedMessage>(KnowledgeSystem, SensorySystem.VisibleTerrainChangedMessageName, 0);

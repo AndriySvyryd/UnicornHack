@@ -7,22 +7,26 @@ namespace UnicornHack.Data.Items
 {
     public static partial class ItemData
     {
-        public static readonly Item SkillbookOfAssessination = new Item
+        public static readonly Item FlaskOfHealing = new Item
         {
-            Name = "skillbook of assessination",
+            Name = "flask of healing",
             Abilities = new HashSet<Ability>
             {
                 new Ability
                 {
-                    Name = "Consult",
-                    Activation = ActivationType.WhileToggled,
+                    Name = "Drink",
+                    Activation = ActivationType.ManualActivation,
+                    Action = AbilityAction.Drink,
                     Delay = 100,
+                    XPCooldown = 25,
                     Effects = new HashSet<Effect>
-                        {new ChangeProperty<int> {PropertyName = "Assessination", Value = 1, Duration = -1}}
+                    {
+                        new Heal {Amount = 50}
+                    }
                 }
             },
-            Type = ItemType.SkillBook,
-            Material = Material.Paper,
+            Type = ItemType.Potion,
+            Material = Material.Glass,
             Weight = 1
         };
     }

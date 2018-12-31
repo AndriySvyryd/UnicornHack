@@ -16,8 +16,10 @@ namespace UnicornHack.Systems.Abilities
         private TargetingAngle _targetingAngle;
         private AbilityAction _action;
         private AbilitySuccessCondition _successCondition;
-        private int _timeout;
-        private int? _timeoutTick;
+        private int _cooldown;
+        private int _xpCooldown;
+        private int? _cooldownTick;
+        private int? _cooldownXpLeft;
         private int _energyPointCost;
         private int _delay;
         private bool _isActive;
@@ -85,16 +87,28 @@ namespace UnicornHack.Systems.Abilities
             set => SetWithNotify(value, ref _successCondition);
         }
 
-        public int Timeout
+        public int Cooldown
         {
-            get => _timeout;
-            set => SetWithNotify(value, ref _timeout);
+            get => _cooldown;
+            set => SetWithNotify(value, ref _cooldown);
         }
 
-        public int? TimeoutTick
+        public int XPCooldown
         {
-            get => _timeoutTick;
-            set => SetWithNotify(value, ref _timeoutTick);
+            get => _xpCooldown;
+            set => SetWithNotify(value, ref _xpCooldown);
+        }
+
+        public int? CooldownTick
+        {
+            get => _cooldownTick;
+            set => SetWithNotify(value, ref _cooldownTick);
+        }
+
+        public int? CooldownXpLeft
+        {
+            get => _cooldownXpLeft;
+            set => SetWithNotify(value, ref _cooldownXpLeft);
         }
 
         public int EnergyPointCost
@@ -154,7 +168,8 @@ namespace UnicornHack.Systems.Abilities
             ability.TargetingAngle = TargetingAngle;
             ability.Action = Action;
             ability.SuccessCondition = SuccessCondition;
-            ability.Timeout = Timeout;
+            ability.Cooldown = Cooldown;
+            ability.XPCooldown = XPCooldown;
             ability.Delay = Delay;
             ability.EnergyPointCost = EnergyPointCost;
 
@@ -175,14 +190,17 @@ namespace UnicornHack.Systems.Abilities
         {
             _name = default;
             _ownerId = default;
+            _ownerEntity = default;
             _activation = default;
             _targetingType = default;
             _targetingAngle = default;
             _action = default;
             _trigger = default;
             _successCondition = default;
-            _timeout = default;
-            _timeoutTick = default;
+            _cooldown = default;
+            _xpCooldown = default;
+            _cooldownTick = default;
+            _cooldownXpLeft = default;
             _energyPointCost = default;
             _delay = default;
             _isActive = default;

@@ -20,7 +20,7 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Breath,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Sedate {Duration = 14}}
+                    Effects = new HashSet<Effect> {new Sedate { Duration = EffectDuration.UntilTimeout, DurationAmount = 14}}
                 },
                 new Ability
                 {

@@ -239,7 +239,7 @@ export class Game extends React.Component<IGameProps, {}> {
                 }}>
                     <HotKeys keyMap={this.keyMap} handlers={this.keyHandlers}>
                         <Inventory items={this.player.inventory} performAction={this.performAction} />
-                        <AbilityBar abilities={this.player.abilities} performAction={this.performAction} queryGame={this.queryGame} />
+                        <AbilityBar abilities={this.player.abilities} player={this.player} performAction={this.performAction} queryGame={this.queryGame} />
                         <PropertyList player={this.player} />
                     </HotKeys>
                     <Chat sendMessage={this.sendMessage} messages={this.messages} />

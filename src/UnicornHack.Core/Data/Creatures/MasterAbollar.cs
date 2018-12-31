@@ -33,7 +33,9 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Suck,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new ChangeProperty<int> {PropertyName = "Focus", Value = -2, Duration = 10}}
+                    {
+                        new ChangeProperty<int> {PropertyName = "Focus", Value = -2, Duration = EffectDuration.UntilTimeout, DurationAmount = 10}
+                    }
                 },
                 new Ability
                 {
@@ -41,7 +43,9 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Suck,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new ChangeProperty<int> {PropertyName = "Focus", Value = -2, Duration = 10}}
+                    {
+                        new ChangeProperty<int> {PropertyName = "Focus", Value = -2, Duration = EffectDuration.UntilTimeout, DurationAmount = 10}
+                    }
                 }
             },
             InitialLevel = 13,

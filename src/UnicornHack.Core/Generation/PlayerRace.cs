@@ -67,7 +67,7 @@ namespace UnicornHack.Generation
                 {
                     var raceEffectEntity = raceEntityReference.Referenced;
                     var raceEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                    raceEffect.DurationTicks = (int)EffectDuration.Infinite;
+                    raceEffect.Duration = EffectDuration.Infinite;
                     raceEffect.EffectType = EffectType.ChangeRace;
 
                     raceEffectEntity.Effect = raceEffect;
@@ -77,6 +77,7 @@ namespace UnicornHack.Generation
                     raceEffectEntity.Ability.OwnerEntity = playerEntity;
                     raceEffect.AffectedEntityId = playerEntity.Id;
 
+                    // TODO: handle in XP system
                     manager.XPSystem.UpdateNextLevelXP(playerEntity);
                 }
 

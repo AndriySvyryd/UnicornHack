@@ -21,7 +21,7 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Explosion,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blind {Duration = 27}}
+                    Effects = new HashSet<Effect> {new Blind { Duration = EffectDuration.UntilTimeout, DurationAmount = 27}}
                 }
             },
             InitialLevel = 3,

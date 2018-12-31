@@ -9,7 +9,7 @@ namespace UnicornHack.Systems.Time
         public const string AdvanceTurnMessageName = "AdvanceTurn";
         public const int DefaultActionDelay = 100;
 
-        public static void AdvanceToNextPlayerTurn(GameManager manager)
+        public void AdvanceToNextPlayerTurn(GameManager manager)
         {
             while (manager.Game.ActingPlayer == null)
             {
@@ -18,8 +18,8 @@ namespace UnicornHack.Systems.Time
             }
         }
 
-        public static void EnqueueAdvanceTurn(GameManager manager)
-            => manager.Enqueue(manager.Queue.CreateMessage<AdvanceTurnMessage>(AdvanceTurnMessageName));
+        public void EnqueueAdvanceTurn(GameManager manager)
+            => manager.Enqueue(manager.Queue.CreateMessage<AdvanceTurnMessage>(AdvanceTurnMessageName), lowPriority: true);
 
         // TODO: Handle ability timeout
         public MessageProcessingResult Process(AdvanceTurnMessage message, GameManager manager)
@@ -35,7 +35,10 @@ namespace UnicornHack.Systems.Time
             }
 
             var entity = manager.TemporalEntitiesIndex.First();
-            manager.Game.CurrentTick = GetTick(entity).Value;
+            var tick = GetTick(entity);
+            Debug.Assert(tick != null, $"Entity {entity.Id} is not a supported temporal entity!");
+
+            manager.Game.CurrentTick = tick.Value;
 
             var ai = entity.AI;
             if (ai != null)
@@ -51,42 +54,49 @@ namespace UnicornHack.Systems.Time
                 return MessageProcessingResult.ContinueProcessing;
             }
 
-            var appliedEffect = entity.Effect;
-            if (appliedEffect != null)
+            var ability = entity.Ability;
+            if (ability != null
+                && ability.CooldownTick == tick)
             {
-                entity.RemoveComponent(appliedEffect);
+                ability.CooldownTick = null;
                 return MessageProcessingResult.ContinueProcessing;
             }
 
-            Debug.Fail($"Entity {entity.Id} is not a supported temporal entity!");
+            var appliedEffect = entity.Effect;
+            if (appliedEffect != null)
+            {
+                var removeComponentMessage = manager.CreateRemoveComponentMessage();
+                removeComponentMessage.Entity = entity;
+                removeComponentMessage.Component = EntityComponent.Effect;
+                manager.Enqueue(removeComponentMessage, lowPriority: true);
+                return MessageProcessingResult.ContinueProcessing;
+            }
 
             return MessageProcessingResult.StopProcessing;
         }
 
         public static int? GetTick(GameEntity entity)
         {
-            int? tick = null;
             var ai = entity.AI;
             if (ai != null)
             {
-                tick = ai.NextActionTick;
-                return tick;
-            }
-
-            var appliedEffect = entity.Effect;
-            if (appliedEffect != null)
-            {
-                tick = appliedEffect.ExpirationTick;
-                return tick;
+                return ai.NextActionTick;
             }
 
             var player = entity.Player;
             if (player != null)
             {
-                tick = player.NextActionTick;
+                return player.NextActionTick;
             }
 
-            return tick;
+            var ability = entity.Ability;
+            if (ability != null)
+            {
+                return ability.CooldownTick;
+            }
+
+            var appliedEffect = entity.Effect;
+            return appliedEffect?.ExpirationTick;
         }
     }
 }

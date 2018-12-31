@@ -10,7 +10,7 @@ namespace UnicornHack.Systems.Senses
 {
     public class SensorySystemTest
     {
-        private readonly static string TestMap = @"
+        private static readonly string TestMap = @"
 ...
 ...
 ..#";

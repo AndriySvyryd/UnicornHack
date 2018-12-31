@@ -87,7 +87,6 @@ namespace UnicornHack.Systems.Knowledge
         {
             if (message.Successful)
             {
-                var position = message.ActorEntity.Position;
                 foreach (var playerEntity in manager.Players)
                 {
                     var actorSensed = manager.SensorySystem.CanSense(playerEntity, message.ActorEntity) ??
@@ -120,7 +119,6 @@ namespace UnicornHack.Systems.Knowledge
 
             if ((message.AbilityEntity.Ability.Activation & ActivationType.OnAttack) != 0)
             {
-                var targetPosition = message.TargetEntity.Position;
                 foreach (var playerEntity in manager.Players)
                 {
                     var attackerSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity) ??
@@ -160,7 +158,6 @@ namespace UnicornHack.Systems.Knowledge
 
             if (activatableEntity?.HasComponent(EntityComponent.Item) == true)
             {
-                var position = message.ActivatorEntity.Position;
                 foreach (var playerEntity in manager.Players)
                 {
                     var activatorSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity) ??
@@ -174,10 +171,12 @@ namespace UnicornHack.Systems.Knowledge
                         continue;
                     }
 
+                    var consumed = message.AppliedEffects
+                        .Any(e => e.Effect.EffectType == EffectType.RemoveItem);
                     var itemSensed = manager.SensorySystem.CanSense(playerEntity, activatableEntity) ?? activatorSensed;
                     var logMessage = manager.Game.Services.Language.GetString(new ItemActivationEvent(
                         playerEntity, activatableEntity, message.ActivatorEntity, message.TargetEntity, itemSensed,
-                        activatorSensed, targetSensed, message.SuccessfulApplication));
+                        activatorSensed, targetSensed, consumed, message.SuccessfulApplication));
                     WriteLog(logMessage, playerEntity, manager);
                 }
             }

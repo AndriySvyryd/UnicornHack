@@ -467,7 +467,7 @@ namespace UnicornHack.Services.English
                 ? EnglishPerson.Second
                 : EnglishPerson.Third;
             var verb = (@event.ItemEntity.Item.Type & ItemType.Potion) != 0
-                ? "drink"
+                ? @event.Consumed ? "drink" : "drink from"
                 : (@event.ItemEntity.Item.Type & ItemType.SkillBook) != 0
                     ? "read"
                     : "activate";

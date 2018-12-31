@@ -14,10 +14,8 @@ namespace UnicornHack.Systems.Abilities
         public void Abilities_can_be_assigned_to_slots()
         {
             var level = TestHelper.BuildLevel(" ");
-
             var manager = level.Entity.Manager;
-
-            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
 
             manager.Queue.ProcessQueue(manager);
 
@@ -28,7 +26,7 @@ namespace UnicornHack.Systems.Abilities
 
                 var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
                 ability.Activation = ActivationType.WhileToggled;
-                ability.OwnerEntity = player;
+                ability.OwnerEntity = playerEntity;
 
                 toggledAbility.Ability = ability;
             }
@@ -38,9 +36,10 @@ namespace UnicornHack.Systems.Abilities
             setSlotMessage.Slot = 0;
             manager.Enqueue(setSlotMessage);
             manager.Queue.ProcessQueue(manager);
+
             Assert.Equal(0, toggledAbility.Ability.Slot);
             Assert.True(toggledAbility.Ability.IsActive);
-            Assert.Same(toggledAbility, manager.SlottedAbilitiesIndex[(player.Id, 0)]);
+            Assert.Same(toggledAbility, manager.SlottedAbilitiesIndex[(playerEntity.Id, 0)]);
 
             GameEntity targetedAbility = null;
             using (var abilityEntityReference = manager.CreateEntity())
@@ -49,7 +48,7 @@ namespace UnicornHack.Systems.Abilities
 
                 var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
                 ability.Activation = ActivationType.Targeted;
-                ability.OwnerEntity = player;
+                ability.OwnerEntity = playerEntity;
 
                 targetedAbility.Ability = ability;
             }
@@ -59,17 +58,18 @@ namespace UnicornHack.Systems.Abilities
             setSlotMessage.Slot = 0;
             manager.Enqueue(setSlotMessage);
             manager.Queue.ProcessQueue(manager);
+
             Assert.Null(toggledAbility.Ability.Slot);
             Assert.False(toggledAbility.Ability.IsActive);
             Assert.Equal(0, targetedAbility.Ability.Slot);
 
             setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
-            setSlotMessage.OwnerEntity = player;
+            setSlotMessage.OwnerEntity = playerEntity;
             setSlotMessage.Slot = 0;
             manager.Enqueue(setSlotMessage);
             manager.Queue.ProcessQueue(manager);
             Assert.Null(targetedAbility.Ability.Slot);
-            Assert.Null(manager.SlottedAbilitiesIndex[(player.Id, 0)]);
+            Assert.Null(manager.SlottedAbilitiesIndex[(playerEntity.Id, 0)]);
 
             setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
             setSlotMessage.AbilityEntity = targetedAbility;
@@ -94,7 +94,7 @@ namespace UnicornHack.Systems.Abilities
             setSlotMessage.Slot = AbilitySlottingSystem.DefaultAttackSlot;
             Assert.Throws<InvalidOperationException>(() => manager.AbilitySlottingSystem.Process(setSlotMessage, manager));
 
-            var attackAbility = manager.AbilitiesToAffectableRelationship[player.Id]
+            var attackAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
                 .Single(a => a.Ability.Name == SkillAbilitiesSystem.DoubleMeleeAttackName);
             setSlotMessage.AbilityEntity = attackAbility;
             setSlotMessage.Slot = 0;
@@ -107,7 +107,7 @@ namespace UnicornHack.Systems.Abilities
             Assert.Throws<InvalidOperationException>(() => manager.AbilitySlottingSystem.Process(setSlotMessage, manager));
             Assert.Null(targetedAbility.Ability.Slot);
 
-            var alwaysAbility = manager.AbilitiesToAffectableRelationship[player.Id]
+            var alwaysAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
                 .First(a => (a.Ability.Activation & ActivationType.Always) != 0);
             setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
             setSlotMessage.AbilityEntity = alwaysAbility;
@@ -117,13 +117,13 @@ namespace UnicornHack.Systems.Abilities
 
             setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
             setSlotMessage.AbilityEntity = targetedAbility;
-            setSlotMessage.Slot = player.Being.AbilitySlotCount - 1;
+            setSlotMessage.Slot = playerEntity.Being.AbilitySlotCount - 1;
             manager.Enqueue(setSlotMessage);
             manager.Queue.ProcessQueue(manager);
-            Assert.True(player.Being.AbilitySlotCount > 1);
-            Assert.Equal(player.Being.AbilitySlotCount - 1, targetedAbility.Ability.Slot);
+            Assert.True(playerEntity.Being.AbilitySlotCount > 1);
+            Assert.Equal(playerEntity.Being.AbilitySlotCount - 1, targetedAbility.Ability.Slot);
 
-            player.Being.AbilitySlotCount = 1;
+            playerEntity.Being.AbilitySlotCount = 1;
             manager.Queue.ProcessQueue(manager);
             Assert.Null(targetedAbility.Ability.Slot);
         }

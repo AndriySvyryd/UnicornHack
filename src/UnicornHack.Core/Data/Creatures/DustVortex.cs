@@ -21,14 +21,14 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Engulf {Duration = 3}}
+                    Effects = new HashSet<Effect> {new Engulf { Duration = EffectDuration.UntilTimeout, DurationAmount = 3}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blind {Duration = 1}}
+                    Effects = new HashSet<Effect> {new Blind { Duration = EffectDuration.UntilTimeout, DurationAmount = 1}}
                 }
             },
             InitialLevel = 4,

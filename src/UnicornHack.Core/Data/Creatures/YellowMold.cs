@@ -16,7 +16,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.OnPhysicalMeleeHit,
-                    Effects = new HashSet<Effect> {new Stun {Duration = 7}}
+                    Effects = new HashSet<Effect> {new Stun { Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
                 }
             },
             InitialLevel = 1,
@@ -25,7 +25,7 @@ namespace UnicornHack.Data.Creatures
             Size = 2,
             Weight = 50,
             Perception = 1,
-            Might = 0,
+            Might = 2,
             Speed = 1,
             Focus = 6,
             PhysicalDeflection = 11,

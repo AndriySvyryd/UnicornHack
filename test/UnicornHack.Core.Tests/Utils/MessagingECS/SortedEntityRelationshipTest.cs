@@ -27,7 +27,7 @@ namespace UnicornHack.Utils.MessagingECS
                     var firstRaceEntity = firstRaceEntityReference.Referenced;
                     var firstRace = firstRaceEntity.AddComponent<RaceComponent>((int)EntityComponent.Race);
                     var firstEffect = firstRaceEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
-                    firstEffect.DurationTicks = -1;
+                    firstEffect.Duration = EffectDuration.Infinite;
 
                     Assert.Empty(manager.RacesToBeingRelationship[beingEntity.Id]);
 
@@ -44,7 +44,7 @@ namespace UnicornHack.Utils.MessagingECS
                         var secondRaceEntity = secondRaceEntityReference.Referenced;
                         secondRaceEntity.AddComponent<RaceComponent>((int)EntityComponent.Race);
                         var secondEffect = secondRaceEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
-                        secondEffect.DurationTicks = -1;
+                        secondEffect.Duration = EffectDuration.Infinite;
 
                         secondEffect.AffectedEntityId = beingEntity.Id;
 
@@ -104,13 +104,13 @@ namespace UnicornHack.Utils.MessagingECS
                 var raceEntity = raceEntityReference.Referenced;
                 raceEntity.AddComponent<RaceComponent>((int)EntityComponent.Race);
                 var effect = raceEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
-                effect.DurationTicks = -1;
+                effect.Duration = EffectDuration.Infinite;
                 effect.AffectedEntityId = 2;
 
                 using (var beingEntityReference = manager.CreateEntity())
                 {
                     var beingEntity = beingEntityReference.Referenced;
-                    var being = beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+                    beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
                     beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
                     beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
 
@@ -135,7 +135,7 @@ namespace UnicornHack.Utils.MessagingECS
             using (var beingEntityReference = ((IEntityManager)manager).CreateEntity())
             {
                 var beingEntity = (GameEntity)beingEntityReference.Referenced;
-                var being = beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+                beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
                 beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
                 beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
 
@@ -144,7 +144,7 @@ namespace UnicornHack.Utils.MessagingECS
                     var raceEntity = raceEntityReference.Referenced;
                     var effect = raceEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
                     effect.EffectType = EffectType.Move;
-                    effect.DurationTicks = -1;
+                    effect.Duration = EffectDuration.Infinite;
                     effect.AffectedEntityId = beingEntity.Id;
                     var race = manager.CreateComponent<RaceComponent>((int)EntityComponent.Race);
 

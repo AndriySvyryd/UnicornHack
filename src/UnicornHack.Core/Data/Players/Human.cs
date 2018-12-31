@@ -52,7 +52,7 @@ namespace UnicornHack.Data.Players
                             {
                                 Name = "Surge of Luck",
                                 Activation = ActivationType.WhileToggled,
-                                Cooldown = 1,
+                                Cooldown = 200,
                                 EnergyPointCost = 50,
                                 Effects = new HashSet<Effect>
                                     {new ChangeProperty<int> {PropertyName = "HitPointMaximum", Value = 25}}

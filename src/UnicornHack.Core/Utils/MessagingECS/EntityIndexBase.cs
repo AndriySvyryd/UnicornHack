@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 
 namespace UnicornHack.Utils.MessagingECS
 {
-    public abstract class EntityIndexBase<TEntity, TKey> : IGroupChangesListener<TEntity>
+    public abstract class EntityIndexBase<TEntity, TKey> : IGroupChangesListener<TEntity>, IEnumerable<TEntity>
         where TEntity : Entity
     {
         protected EntityIndexBase(
@@ -85,7 +86,8 @@ namespace UnicornHack.Utils.MessagingECS
         }
 
         protected abstract bool TryAddEntity(TKey key, TEntity entity, Component changedComponent);
-
         protected abstract bool TryRemoveEntity(TKey key, TEntity entity, Component changedComponent);
+        public abstract IEnumerator<TEntity> GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

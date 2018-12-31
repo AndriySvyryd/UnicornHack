@@ -50,7 +50,7 @@ namespace UnicornHack.Utils.MessagingECS
         {
             if (!_properties.TryGetValue((componentId, propertyName), out var getValue))
             {
-                throw new InvalidOperationException($"The matcher wasn't setup for property {propertyName}");
+                throw new InvalidOperationException($"This matcher can't handle property {propertyName}");
             }
 
             Component component = null;
