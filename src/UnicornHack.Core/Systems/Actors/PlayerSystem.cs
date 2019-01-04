@@ -252,16 +252,15 @@ namespace UnicornHack.Systems.Actors
 
         public MessageProcessingResult Process(TraveledMessage message, GameManager state)
         {
-            var player = message.Entity.Player;
-            if (player != null)
+            if (!message.Successful)
             {
-                Debug.Assert(message.Successful);
-                player.NextActionTick += message.Delay;
                 return MessageProcessingResult.ContinueProcessing;
             }
 
-            if (!message.Successful)
+            var player = message.Entity.Player;
+            if (player != null)
             {
+                player.NextActionTick += message.Delay;
                 return MessageProcessingResult.ContinueProcessing;
             }
 

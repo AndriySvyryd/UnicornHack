@@ -42,6 +42,7 @@ namespace UnicornHack.Systems.Beings
         private int? _primaryNaturalWeaponId;
         private int? _secondaryNaturalWeaponId;
         private int _abilitySlotCount;
+        private int _entropyState;
 
         public BeingComponent()
             => ComponentId = (int)EntityComponent.Being;
@@ -331,6 +332,12 @@ namespace UnicornHack.Systems.Beings
         {
             get => _abilitySlotCount;
             set => SetWithNotify(value, ref _abilitySlotCount);
+        }
+
+        public int EntropyState
+        {
+            get => _entropyState;
+            set => SetWithNotify(value, ref _entropyState);
         }
 
         // Unmapped properties

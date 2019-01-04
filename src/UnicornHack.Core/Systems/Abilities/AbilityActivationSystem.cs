@@ -864,7 +864,9 @@ namespace UnicornHack.Systems.Abilities
                     deflection += 10;
                 }
 
-                success = game.Random.Next(deflection + 20) < 15;
+                var entropyState = message.TargetEntity.Being.EntropyState;
+                success = game.Random.NextBool(75 - deflection, ref entropyState);
+                message.TargetEntity.Being.EntropyState = entropyState;
             }
 
             message.SuccessfulApplication = success;

@@ -44,7 +44,7 @@ export class AbilitySelectionLine extends React.Component<IAbilityLineProps, {}>
             const abilitySlot = this.props.ability.slot;
 
             if (abilitySlot !== null) {
-                name += `[${abilitySlot === -1 ? "D" : (abilitySlot + 1)}]`;
+                name = `(${abilitySlot === -1 ? "D" : (abilitySlot + 1)}) ` + name;
             }
 
             if (abilitySlot == this.props.slot) {

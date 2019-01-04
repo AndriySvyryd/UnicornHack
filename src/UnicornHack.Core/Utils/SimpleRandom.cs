@@ -179,7 +179,14 @@ namespace UnicornHack.Utils
             return first == numbers.Length ? first - 1 : first;
         }
 
+        /// <summary>
+        ///     Returns a random number in the range [0, <paramref name="maxValue"/>)
+        /// </summary>
         public int Next(int maxValue) => Next(minValue: 0, maxValue);
+
+        /// <summary>
+        ///     Returns a random number in the range [<paramref name="minValue"/>, <paramref name="maxValue"/>)
+        /// </summary>
         public int Next(int minValue, int maxValue) => (int)Next(minValue, (float)maxValue);
 
         public float Next(float minValue, float maxValue)
@@ -198,7 +205,6 @@ namespace UnicornHack.Utils
             return minValue + IntToFloat * NextInt() * range;
         }
 
-        public bool NextBool() => (0x80000000 & NextUInt()) == 0;
         private int NextInt() => (int)(int.MaxValue & NextUInt());
 
         /// <summary>
@@ -212,7 +218,7 @@ namespace UnicornHack.Utils
             var successes = 0;
             for (var i = 0; i < n; i++)
             {
-                if (Next(0, 1f) < p)
+                if (Next(0, 1f) <= p)
                 {
                     successes++;
                 }
@@ -225,8 +231,84 @@ namespace UnicornHack.Utils
         {
             Seed ^= Seed << 13;
             Seed ^= Seed >> 17;
-            Seed = Seed ^ Seed << 5;
+            Seed ^= Seed << 5;
             return Seed;
+        }
+
+        public bool NextBool() => (0x80000000 & NextUInt()) == 0;
+
+        private const int BoolSeedMask = 0x000000FF;
+        private const int PositiveStreakShift = 8;
+        private const int PositiveStreakMask = 0x0000FF00;
+        private const int NegativeStreakShift = 16;
+        private const int NegativeStreakMask = 0x00FF0000;
+        private const int InitializedFlag = 0x01000000;
+
+        /// <summary>
+        ///     Returns a random bool with the given <paramref name="successProbability"/> without any streaks
+        ///     longer than ((100 / p) - 1) * 2 and with no predictable order.
+        /// </summary>
+        /// <param name="successProbability">Percent of expected <c>true</c> results.</param>
+        /// <param name="entropyState">State for streak-breaking.</param>
+        /// <returns> A random bool. </returns>
+        public bool NextBool(int successProbability, ref int entropyState)
+        {
+            if (successProbability < 0
+                || successProbability > 100)
+            {
+                throw new ArgumentOutOfRangeException(nameof(successProbability));
+            }
+
+            switch (successProbability)
+            {
+                case 0:
+                    return false;
+                case 100:
+                    return true;
+            }
+
+            var positiveStreak = (entropyState & PositiveStreakMask) >> PositiveStreakShift;
+            var negativeStreak = (entropyState & NegativeStreakMask) >> NegativeStreakShift;
+            var seed = entropyState & BoolSeedMask;
+            if (entropyState == 0)
+            {
+                positiveStreak = Next(100);
+                negativeStreak = Next(100);
+                seed = Next(100);
+            }
+
+            if (positiveStreak < 100)
+            {
+                positiveStreak += successProbability;
+            }
+
+            if (negativeStreak < 100)
+            {
+                negativeStreak += 100 - successProbability;
+            }
+
+            seed += successProbability;
+
+            var result = seed >= 100;
+
+            if (positiveStreak >= 100
+                && negativeStreak >= 100)
+            {
+                positiveStreak = 0;
+                negativeStreak = 0;
+                seed = Next(100);
+            }
+            else if (result)
+            {
+                seed -= 100;
+            }
+
+            entropyState = seed
+                           | (positiveStreak << PositiveStreakShift)
+                           | (negativeStreak << NegativeStreakShift)
+                           | InitializedFlag;
+
+            return result;
         }
     }
 }
