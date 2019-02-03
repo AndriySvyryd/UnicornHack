@@ -7,6 +7,7 @@ namespace UnicornHack.Systems.Effects
     public class EffectComponent : GameComponent
     {
         private int? _affectedEntityId;
+        private int? _sourceEffectId;
         private int? _sourceAbilityId;
         private int? _containingAbilityId;
         private int _durationAmount;
@@ -27,6 +28,12 @@ namespace UnicornHack.Systems.Effects
         {
             get => _affectedEntityId;
             set => SetWithNotify(value, ref _affectedEntityId);
+        }
+
+        public int? SourceEffectId
+        {
+            get => _sourceEffectId;
+            set => SetWithNotify(value, ref _sourceEffectId);
         }
 
         public int? SourceAbilityId
@@ -101,8 +108,6 @@ namespace UnicornHack.Systems.Effects
             set => SetWithNotify(value, ref _targetEntityId);
         }
 
-        // TODO: Add application condition
-
         public EffectComponent AddToAbility(GameEntity abilityEntity)
         {
             var manager = abilityEntity.Manager;
@@ -122,7 +127,7 @@ namespace UnicornHack.Systems.Effects
 
                 if (EffectType == EffectType.AddAbility)
                 {
-                    Entity.Ability.AddToEffect(entityReference.Referenced);
+                    Entity.Ability?.AddToEffect(entityReference.Referenced);
                 }
 
                 entityReference.Referenced.Effect = clone;
@@ -133,6 +138,7 @@ namespace UnicornHack.Systems.Effects
         protected override void Clean()
         {
             _affectedEntityId = default;
+            _sourceEffectId = default;
             _sourceAbilityId = default;
             _containingAbilityId = default;
             _duration = default;

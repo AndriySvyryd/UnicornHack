@@ -17,11 +17,14 @@ namespace UnicornHack.Data.Creatures
             {
                 new Ability
                 {
-                    Activation = ActivationType.Targeted, Action = AbilityAction.Claw, Cooldown = 100, Effects =
-                        new HashSet<Effect>
-                        {
-                            new StealGold()
-                        }
+                    Activation = ActivationType.Targeted,
+                    Range = 1,
+                    Action = AbilityAction.Claw,
+                    Cooldown = 100,
+                    Effects = new HashSet<Effect>
+                    {
+                        new StealGold()
+                    }
                 }
             },
             InitialLevel = 5,
@@ -34,8 +37,8 @@ namespace UnicornHack.Data.Creatures
             Might = 2,
             Speed = 3,
             Focus = 2,
-            MagicDeflection = 10,
-            PhysicalDeflection = 12,
+            Armor = 1,
+            MagicResistance = 10,
             LocomotionType = LocomotionType.Walking | LocomotionType.Teleportation,
             Infravisible = true
         };

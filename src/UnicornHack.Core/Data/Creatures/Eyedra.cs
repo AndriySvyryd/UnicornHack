@@ -18,6 +18,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
@@ -25,6 +26,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Gaze,
                     Cooldown = 350,
                     Effects = new HashSet<Effect> {new Disintegrate {Damage = 50}}
@@ -32,35 +34,45 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Gaze,
                     Cooldown = 350,
-                    Effects = new HashSet<Effect> {new Slow { Duration = EffectDuration.UntilTimeout, DurationAmount = 13}}
+                    Effects = new HashSet<Effect>
+                        {new Slow {Duration = EffectDuration.UntilTimeout, DurationAmount = 13}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Gaze,
                     Cooldown = 350,
-                    Effects = new HashSet<Effect> {new Sedate { Duration = EffectDuration.UntilTimeout, DurationAmount = 13}}
+                    Effects = new HashSet<Effect>
+                        {new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = 13}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Gaze,
                     Cooldown = 350,
-                    Effects = new HashSet<Effect> {new Confuse { Duration = EffectDuration.UntilTimeout, DurationAmount = 13}}
-                },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted, Action = AbilityAction.Gaze, Cooldown = 350, Effects =
-                        new HashSet<Effect>
-                        {
-                            new Stone()
-                        }
+                    Effects = new HashSet<Effect>
+                        {new Confuse {Duration = EffectDuration.UntilTimeout, DurationAmount = 13}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
+                    Action = AbilityAction.Gaze,
+                    Cooldown = 350,
+                    Effects = new HashSet<Effect>
+                    {
+                        new Stone()
+                    }
+                },
+                new Ability
+                {
+                    Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Gaze,
                     Cooldown = 350,
                     Effects = new HashSet<Effect> {new DrainEnergy {Amount = 3}}
@@ -76,8 +88,8 @@ namespace UnicornHack.Data.Creatures
             Might = 4,
             Speed = 5,
             Focus = 4,
-            MagicDeflection = 17,
-            PhysicalDeflection = 16,
+            Armor = 3,
+            MagicResistance = 17,
             ColdResistance = 75,
             HeadType = HeadType.None,
             UpperExtremities = ExtremityType.None,

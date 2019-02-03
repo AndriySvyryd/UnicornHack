@@ -17,6 +17,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Spell,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
@@ -31,8 +32,7 @@ namespace UnicornHack.Data.Creatures
             Might = 2,
             Speed = 2,
             Focus = 2,
-            MagicDeflection = 5,
-            PhysicalDeflection = 10,
+            MagicResistance = 5,
             TorsoType = TorsoType.Humanoid,
             UpperExtremities = ExtremityType.GraspingFingers,
             LowerExtremities = ExtremityType.Fingers,

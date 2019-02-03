@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Linq;
+using UnicornHack.Data.Abilities;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
-using UnicornHack.Systems.Faculties;
+using UnicornHack.Systems.Beings;
+using UnicornHack.Systems.Effects;
 using UnicornHack.Utils.DataStructures;
 using Xunit;
 
@@ -13,13 +15,13 @@ namespace UnicornHack.Systems.Abilities
         [Fact]
         public void Abilities_can_be_assigned_to_slots()
         {
-            var level = TestHelper.BuildLevel(" ");
+            var level = TestHelper.BuildLevel(".");
             var manager = level.Entity.Manager;
             var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
 
             manager.Queue.ProcessQueue(manager);
 
-            GameEntity toggledAbility = null;
+            GameEntity toggledAbility;
             using (var abilityEntityReference = manager.CreateEntity())
             {
                 toggledAbility = abilityEntityReference.Referenced;
@@ -31,6 +33,20 @@ namespace UnicornHack.Systems.Abilities
                 toggledAbility.Ability = ability;
             }
 
+            using (var effectEntityReference = manager.CreateEntity())
+            {
+                var bleedingEffectEntity = effectEntityReference.Referenced;
+
+                var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+                effect.Duration = EffectDuration.Infinite;
+                effect.EffectType = EffectType.ChangeProperty;
+                effect.TargetName = nameof(BeingComponent.BleedingResistance);
+                effect.Amount = 10;
+                effect.ContainingAbilityId = toggledAbility.Id;
+
+                bleedingEffectEntity.Effect = effect;
+            }
+
             var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
             setSlotMessage.AbilityEntity = toggledAbility;
             setSlotMessage.Slot = 0;
@@ -40,8 +56,9 @@ namespace UnicornHack.Systems.Abilities
             Assert.Equal(0, toggledAbility.Ability.Slot);
             Assert.True(toggledAbility.Ability.IsActive);
             Assert.Same(toggledAbility, manager.SlottedAbilitiesIndex[(playerEntity.Id, 0)]);
+            Assert.Equal(10, playerEntity.Being.BleedingResistance);
 
-            GameEntity targetedAbility = null;
+            GameEntity targetedAbility;
             using (var abilityEntityReference = manager.CreateEntity())
             {
                 targetedAbility = abilityEntityReference.Referenced;
@@ -53,6 +70,19 @@ namespace UnicornHack.Systems.Abilities
                 targetedAbility.Ability = ability;
             }
 
+            using (var effectEntityReference = manager.CreateEntity())
+            {
+                var bleedingEffectEntity = effectEntityReference.Referenced;
+
+                var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+                effect.Duration = EffectDuration.Infinite;
+                effect.EffectType = EffectType.Bleed;
+                effect.Amount = 10;
+                effect.ContainingAbilityId = targetedAbility.Id;
+
+                bleedingEffectEntity.Effect = effect;
+            }
+
             setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
             setSlotMessage.AbilityEntity = targetedAbility;
             setSlotMessage.Slot = 0;
@@ -62,6 +92,7 @@ namespace UnicornHack.Systems.Abilities
             Assert.Null(toggledAbility.Ability.Slot);
             Assert.False(toggledAbility.Ability.IsActive);
             Assert.Equal(0, targetedAbility.Ability.Slot);
+            Assert.Equal(0, playerEntity.Being.BleedingResistance);
 
             setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
             setSlotMessage.OwnerEntity = playerEntity;
@@ -91,16 +122,15 @@ namespace UnicornHack.Systems.Abilities
             targetedAbility.Ability.IsUsable = true;
             setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
             setSlotMessage.AbilityEntity = targetedAbility;
-            setSlotMessage.Slot = AbilitySlottingSystem.DefaultAttackSlot;
+            setSlotMessage.Slot = AbilitySlottingSystem.DefaultMeleeAttackSlot;
             Assert.Throws<InvalidOperationException>(() => manager.AbilitySlottingSystem.Process(setSlotMessage, manager));
 
-            var attackAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
-                .Single(a => a.Ability.Name == SkillAbilitiesSystem.DoubleMeleeAttackName);
+            var attackAbility = manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.DoubleMeleeAttack.Name)];
             setSlotMessage.AbilityEntity = attackAbility;
             setSlotMessage.Slot = 0;
             Assert.Throws<InvalidOperationException>(() => manager.AbilitySlottingSystem.Process(setSlotMessage, manager));
 
-            setSlotMessage.Slot = -2;
+            setSlotMessage.Slot = -3;
             Assert.Throws<InvalidOperationException>(() => manager.AbilitySlottingSystem.Process(setSlotMessage, manager));
 
             setSlotMessage.Slot = 20;

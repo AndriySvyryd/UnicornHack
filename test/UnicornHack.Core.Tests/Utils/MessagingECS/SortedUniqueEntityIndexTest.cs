@@ -43,6 +43,8 @@ namespace UnicornHack.Utils.MessagingECS
 
                     Assert.Same(firstEffectEntity, manager.TemporalEntitiesIndex.Single());
                 }
+
+                manager.Queue.ProcessQueue(manager);
             }
 
             Assert.Empty(manager.TemporalEntitiesIndex);

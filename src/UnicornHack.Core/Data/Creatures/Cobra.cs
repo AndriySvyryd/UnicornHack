@@ -18,6 +18,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new Blight {Damage = 50}}
@@ -25,9 +26,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Spit,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blind { Duration = EffectDuration.UntilTimeout, DurationAmount = 5}}
+                    Effects = new HashSet<Effect>
+                        {new Blind {Duration = EffectDuration.UntilTimeout, DurationAmount = 5}}
                 }
             },
             InitialLevel = 7,
@@ -38,7 +41,7 @@ namespace UnicornHack.Data.Creatures
             Might = 4,
             Speed = 4,
             Focus = 4,
-            PhysicalDeflection = 18,
+            Armor = 4,
             TorsoType = TorsoType.Serpentine,
             UpperExtremities = ExtremityType.None,
             LowerExtremities = ExtremityType.None,

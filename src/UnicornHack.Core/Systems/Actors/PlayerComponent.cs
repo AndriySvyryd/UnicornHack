@@ -20,38 +20,17 @@ namespace UnicornHack.Systems.Actors
         private int _skillPoints;
         private int _traitPoints;
         private int _mutationPoints;
-        private int _oneHanded;
-        private int _twoHanded;
-        private int _dualWielding;
-        private int _fistWeapons;
+        private int _handWeapons;
         private int _shortWeapons;
         private int _mediumWeapons;
         private int _longWeapons;
-        private int _thrownWeapons;
-        private int _slingshots;
-        private int _bows;
-        private int _crossbows;
-        private int _armorless;
+        private int _closeRangeWeapons;
+        private int _shortRangeWeapons;
+        private int _mediumRangeWeapons;
+        private int _longRangeWeapons;
         private int _lightArmor;
         private int _heavyArmor;
-        private int _stealth;
-        private int _assassination;
-        private int _meleeMagicWeapons;
-        private int _rangedMagicWeapons;
-        private int _fireSourcery;
-        private int _airSourcery;
-        private int _waterSourcery;
-        private int _earthSourcery;
-        private int _lifeSourcery;
-        private int _spiritSourcery;
-        private int _evocation;
-        private int _conjuration;
-        private int _transmutation;
-        private int _enhancement;
-        private int _malediction;
-        private int _illusion;
         private int _artifice;
-        private int _leadership;
 
         public PlayerComponent()
             => ComponentId = (int)EntityComponent.Player;
@@ -129,31 +108,10 @@ namespace UnicornHack.Systems.Actors
         }
 
         [Property(MinValue = 0, MaxValue = 3)]
-        public int OneHanded
+        public int HandWeapons
         {
-            get => _oneHanded;
-            set => SetWithNotify(value, ref _oneHanded);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int TwoHanded
-        {
-            get => _twoHanded;
-            set => SetWithNotify(value, ref _twoHanded);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int DualWielding
-        {
-            get => _dualWielding;
-            set => SetWithNotify(value, ref _dualWielding);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int FistWeapons
-        {
-            get => _fistWeapons;
-            set => SetWithNotify(value, ref _fistWeapons);
+            get => _handWeapons;
+            set => SetWithNotify(value, ref _handWeapons);
         }
 
         [Property(MinValue = 0, MaxValue = 3)]
@@ -178,38 +136,31 @@ namespace UnicornHack.Systems.Actors
         }
 
         [Property(MinValue = 0, MaxValue = 3)]
-        public int ThrownWeapons
+        public int CloseRangeWeapons
         {
-            get => _thrownWeapons;
-            set => SetWithNotify(value, ref _thrownWeapons);
+            get => _closeRangeWeapons;
+            set => SetWithNotify(value, ref _closeRangeWeapons);
         }
 
         [Property(MinValue = 0, MaxValue = 3)]
-        public int Slingshots
+        public int ShortRangeWeapons
         {
-            get => _slingshots;
-            set => SetWithNotify(value, ref _slingshots);
+            get => _shortRangeWeapons;
+            set => SetWithNotify(value, ref _shortRangeWeapons);
         }
 
         [Property(MinValue = 0, MaxValue = 3)]
-        public int Bows
+        public int MediumRangeWeapons
         {
-            get => _bows;
-            set => SetWithNotify(value, ref _bows);
+            get => _mediumRangeWeapons;
+            set => SetWithNotify(value, ref _mediumRangeWeapons);
         }
 
         [Property(MinValue = 0, MaxValue = 3)]
-        public int Crossbows
+        public int LongRangeWeapons
         {
-            get => _crossbows;
-            set => SetWithNotify(value, ref _crossbows);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int Armorless
-        {
-            get => _armorless;
-            set => SetWithNotify(value, ref _armorless);
+            get => _longRangeWeapons;
+            set => SetWithNotify(value, ref _longRangeWeapons);
         }
 
         [Property(MinValue = 0, MaxValue = 3)]
@@ -227,129 +178,10 @@ namespace UnicornHack.Systems.Actors
         }
 
         [Property(MinValue = 0, MaxValue = 3)]
-        public int Stealth
-        {
-            get => _stealth;
-            set => SetWithNotify(value, ref _stealth);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int Assassination
-        {
-            get => _assassination;
-            set => SetWithNotify(value, ref _assassination);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int MeleeMagicWeapons
-        {
-            get => _meleeMagicWeapons;
-            set => SetWithNotify(value, ref _meleeMagicWeapons);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int RangedMagicWeapons
-        {
-            get => _rangedMagicWeapons;
-            set => SetWithNotify(value, ref _rangedMagicWeapons);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int FireSourcery
-        {
-            get => _fireSourcery;
-            set => SetWithNotify(value, ref _fireSourcery);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int AirSourcery
-        {
-            get => _airSourcery;
-            set => SetWithNotify(value, ref _airSourcery);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int WaterSourcery
-        {
-            get => _waterSourcery;
-            set => SetWithNotify(value, ref _waterSourcery);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int EarthSourcery
-        {
-            get => _earthSourcery;
-            set => SetWithNotify(value, ref _earthSourcery);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int LifeSourcery
-        {
-            get => _lifeSourcery;
-            set => SetWithNotify(value, ref _lifeSourcery);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int SpiritSourcery
-        {
-            get => _spiritSourcery;
-            set => SetWithNotify(value, ref _spiritSourcery);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int Evocation
-        {
-            get => _evocation;
-            set => SetWithNotify(value, ref _evocation);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int Conjuration
-        {
-            get => _conjuration;
-            set => SetWithNotify(value, ref _conjuration);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int Transmutation
-        {
-            get => _transmutation;
-            set => SetWithNotify(value, ref _transmutation);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int Enhancement
-        {
-            get => _enhancement;
-            set => SetWithNotify(value, ref _enhancement);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int Malediction
-        {
-            get => _malediction;
-            set => SetWithNotify(value, ref _malediction);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int Illusion
-        {
-            get => _illusion;
-            set => SetWithNotify(value, ref _illusion);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
         public int Artifice
         {
             get => _artifice;
             set => SetWithNotify(value, ref _artifice);
-        }
-
-        [Property(MinValue = 0, MaxValue = 3)]
-        public int Leadership
-        {
-            get => _leadership;
-            set => SetWithNotify(value, ref _leadership);
         }
 
         protected override void Clean()
@@ -365,38 +197,17 @@ namespace UnicornHack.Systems.Actors
             _skillPoints = default;
             _traitPoints = default;
             _mutationPoints = default;
-            _oneHanded = default;
-            _twoHanded = default;
-            _dualWielding = default;
-            _fistWeapons = default;
+            _handWeapons = default;
             _shortWeapons = default;
             _mediumWeapons = default;
             _longWeapons = default;
-            _thrownWeapons = default;
-            _slingshots = default;
-            _bows = default;
-            _crossbows = default;
-            _armorless = default;
+            _closeRangeWeapons = default;
+            _shortRangeWeapons = default;
+            _mediumRangeWeapons = default;
+            _longRangeWeapons = default;
             _lightArmor = default;
             _heavyArmor = default;
-            _stealth = default;
-            _assassination = default;
-            _meleeMagicWeapons = default;
-            _rangedMagicWeapons = default;
-            _fireSourcery = default;
-            _airSourcery = default;
-            _waterSourcery = default;
-            _earthSourcery = default;
-            _lifeSourcery = default;
-            _spiritSourcery = default;
-            _evocation = default;
-            _conjuration = default;
-            _transmutation = default;
-            _enhancement = default;
-            _malediction = default;
-            _illusion = default;
             _artifice = default;
-            _leadership = default;
 
             base.Clean();
         }

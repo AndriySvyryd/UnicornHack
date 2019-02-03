@@ -47,20 +47,39 @@ namespace UnicornHack
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((EffectComponent)component).SourceAbilityId,
                     (int)EntityComponent.Effect),
-                (effectEntity, _, __) => effectEntity.Effect.SourceAbilityId = null);
+                (effectEntity, _, changedComponent) =>
+                {
+                    var sourceAbility = changedComponent as AbilityComponent
+                                        ?? effectEntity.Manager.FindEntity(effectEntity.Effect.SourceAbilityId)
+                                            ?.Ability;
+                    if (sourceAbility?.IsActive == true)
+                    {
+                        effectEntity.Effect = null;
+                    }
+                    else
+                    {
+                        effectEntity.Effect.SourceAbilityId = null;
+                    }
+                });
 
-            EffectApplicationSystem = new EffectApplicationSystem(new PropertyValueCalculator());
+            EffectApplicationSystem = new EffectApplicationSystem();
             queue.Add<AbilityActivatedMessage>(EffectApplicationSystem,
                 AbilityActivationSystem.AbilityActivatedMessageName, 0);
+            queue.Add<ApplyEffectMessage>(EffectApplicationSystem,
+                EffectApplicationSystem.ApplyEffectMessageName, 0);
             queue.Add<EntityAddedMessage<GameEntity>>(EffectApplicationSystem,
                 AffectableEntities.GetEntityAddedMessageName(), 0);
             queue.Add<EntityAddedMessage<GameEntity>>(EffectApplicationSystem,
-                AppliedEffectsToAffectableEntityRelationship.GetEntityAddedMessageName(), 0);
+                Effects.GetEntityAddedMessageName(), 0);
             queue.Add<EntityRemovedMessage<GameEntity>>(EffectApplicationSystem,
-                AppliedEffectsToAffectableEntityRelationship.GetEntityRemovedMessageName(), 0);
+                Effects.GetEntityRemovedMessageName(), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int?>>(EffectApplicationSystem,
-                AppliedEffectsToAffectableEntityRelationship.GetPropertyValueChangedMessageName(
-                    nameof(EffectComponent.Amount)), 0);
+                Effects.GetPropertyValueChangedMessageName(nameof(EffectComponent.Amount)), 0);
+
+            queue.Add<EntityAddedMessage<GameEntity>>(AbilityActivationSystem,
+                Effects.GetEntityAddedMessageName(), 1);
+            queue.Add<EntityRemovedMessage<GameEntity>>(AbilityActivationSystem,
+                Effects.GetEntityRemovedMessageName(), 1);
         }
     }
 }

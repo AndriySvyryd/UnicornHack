@@ -15,8 +15,7 @@ namespace UnicornHack.Data.Creatures
             {
                 new Ability
                 {
-                    Activation = ActivationType.OnPhysicalMeleeHit,
-                    Effects = new HashSet<Effect> {new Freeze {Damage = 30}}
+                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Freeze {Damage = 30}}
                 }
             },
             InitialLevel = 1,
@@ -28,7 +27,6 @@ namespace UnicornHack.Data.Creatures
             Might = 5,
             Speed = 1,
             Focus = 6,
-            PhysicalDeflection = 11,
             ColdResistance = 75,
             HeadType = HeadType.None,
             UpperExtremities = ExtremityType.None,

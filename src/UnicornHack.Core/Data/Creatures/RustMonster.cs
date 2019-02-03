@@ -17,6 +17,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new Soak {Damage = 70}}
@@ -24,14 +25,14 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new Soak {Damage = 70}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.OnPhysicalMeleeHit,
-                    Effects = new HashSet<Effect> {new Soak {Damage = 100}}
+                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Soak {Damage = 100}}
                 }
             },
             InitialLevel = 5,
@@ -41,7 +42,7 @@ namespace UnicornHack.Data.Creatures
             Might = 2,
             Speed = 3,
             Focus = 2,
-            PhysicalDeflection = 18,
+            Armor = 4,
             TorsoType = TorsoType.Quadruped,
             UpperExtremities = ExtremityType.None,
             LowerExtremities = ExtremityType.Claws,

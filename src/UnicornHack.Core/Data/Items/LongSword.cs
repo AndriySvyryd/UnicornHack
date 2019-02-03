@@ -14,7 +14,8 @@ namespace UnicornHack.Data.Items
             {
                 new Ability
                 {
-                    Activation = ActivationType.OnPhysicalMeleeAttack,
+                    Activation = ActivationType.OnMeleeAttack,
+                    Range = 1,
                     Action = AbilityAction.Slash,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
                 }
@@ -23,7 +24,7 @@ namespace UnicornHack.Data.Items
             Material = Material.Steel,
             Weight = 10,
             EquipableSizes = SizeCategory.Medium | SizeCategory.Large,
-            EquipableSlots = EquipmentSlot.GraspSingleExtremity | EquipmentSlot.GraspBothExtremities
+            EquipableSlots = EquipmentSlot.GraspMelee
         };
     }
 }

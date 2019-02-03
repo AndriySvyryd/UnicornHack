@@ -17,8 +17,9 @@ namespace UnicornHack.Data.Creatures
             {
                 new Ability
                 {
-                    Activation = ActivationType.OnPhysicalMeleeHit,
-                    Effects = new HashSet<Effect> {new Paralyze { Duration = EffectDuration.UntilTimeout, DurationAmount = 35}}
+                    Activation = ActivationType.OnMeleeHit,
+                    Effects = new HashSet<Effect>
+                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = 35}}
                 }
             },
             InitialLevel = 2,
@@ -31,8 +32,7 @@ namespace UnicornHack.Data.Creatures
             Might = 2,
             Speed = 2,
             Focus = 2,
-            MagicDeflection = 5,
-            PhysicalDeflection = 11,
+            MagicResistance = 5,
             HeadType = HeadType.None,
             UpperExtremities = ExtremityType.None,
             LowerExtremities = ExtremityType.None,

@@ -214,7 +214,7 @@ namespace UnicornHack.Generation
                 appliedEffectEntity.Effect = appliedEffect;
 
                 var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
-                ability.Name = LivingSystem.InnateAbilityName;
+                ability.Name = EffectApplicationSystem.InnateAbilityName;
                 ability.Activation = ActivationType.Always;
 
                 appliedEffectEntity.Ability = ability;
@@ -243,7 +243,7 @@ namespace UnicornHack.Generation
 
                     if ((abilityDefinition.Activation & ActivationType.Slottable) != 0)
                     {
-                        AddPossessedAbility(ability, abilityDefinition.UsabilityCondition, item, manager);
+                        AddPossessedAbility(ability, abilityDefinition.ItemCondition, item, manager);
                     }
                 }
             }
@@ -251,7 +251,8 @@ namespace UnicornHack.Generation
             return item;
         }
 
-        private void AddPossessedAbility(AbilityComponent ability, ActivationType usabilityCondition, ItemComponent item, GameManager manager)
+        private void AddPossessedAbility(
+            AbilityComponent ability, ActivationType itemCondition, ItemComponent item, GameManager manager)
         {
             using (var abilityEntityReference = manager.CreateEntity())
             {
@@ -265,9 +266,9 @@ namespace UnicornHack.Generation
 
                 var possessedAbility = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
                 possessedAbility.Name = "Add " + ability.Name + " ability";
-                possessedAbility.Activation = usabilityCondition == ActivationType.Default
+                possessedAbility.Activation = itemCondition == ActivationType.Default
                     ? ActivationType.WhilePossessed
-                    : usabilityCondition;
+                    : itemCondition;
 
                 abilityEntity.Ability = possessedAbility;
 

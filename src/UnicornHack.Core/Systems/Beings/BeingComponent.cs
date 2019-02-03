@@ -18,11 +18,11 @@ namespace UnicornHack.Systems.Beings
         private int _focus;
         private int _energyRegeneration;
         private int _regeneration;
-        private int _magicAbsorption;
-        private int _magicDeflection;
-        private int _physicalAbsorption;
-        private int _physicalDeflection;
+        private int _evasion;
+        private int _deflection;
+        private int _armor;
         private int _physicalResistance;
+        private int _magicResistance;
         private int _acidResistance;
         private int _bleedingResistance;
         private int _blightResistance;
@@ -172,31 +172,24 @@ namespace UnicornHack.Systems.Beings
         }
 
         [Property]
-        public int MagicAbsorption
+        public int Evasion
         {
-            get => _magicAbsorption;
-            set => SetWithNotify(value, ref _magicAbsorption);
+            get => _evasion;
+            set => SetWithNotify(value, ref _evasion);
         }
 
         [Property]
-        public int MagicDeflection
+        public int Deflection
         {
-            get => _magicDeflection;
-            set => SetWithNotify(value, ref _magicDeflection);
+            get => _deflection;
+            set => SetWithNotify(value, ref _deflection);
         }
 
         [Property]
-        public int PhysicalAbsorption
+        public int Armor
         {
-            get => _physicalAbsorption;
-            set => SetWithNotify(value, ref _physicalAbsorption);
-        }
-
-        [Property]
-        public int PhysicalDeflection
-        {
-            get => _physicalDeflection;
-            set => SetWithNotify(value, ref _physicalDeflection);
+            get => _armor;
+            set => SetWithNotify(value, ref _armor);
         }
 
         [Property]
@@ -204,6 +197,13 @@ namespace UnicornHack.Systems.Beings
         {
             get => _physicalResistance;
             set => SetWithNotify(value, ref _physicalResistance);
+        }
+
+        [Property]
+        public int MagicResistance
+        {
+            get => _magicResistance;
+            set => SetWithNotify(value, ref _magicResistance);
         }
 
         [Property]
@@ -356,11 +356,11 @@ namespace UnicornHack.Systems.Beings
             _focus = default;
             _energyRegeneration = default;
             _regeneration = default;
-            _magicAbsorption = default;
-            _magicDeflection = default;
-            _physicalAbsorption = default;
-            _physicalDeflection = default;
+            _evasion = default;
+            _deflection = default;
+            _armor = default;
             _physicalResistance = default;
+            _magicResistance = default;
             _acidResistance = default;
             _bleedingResistance = default;
             _blightResistance = default;

@@ -18,6 +18,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Breath,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ElementalDamage"}}
@@ -25,6 +26,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 180}}
@@ -32,6 +34,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
@@ -39,6 +42,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
@@ -46,6 +50,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Spell,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
@@ -64,7 +69,7 @@ namespace UnicornHack.Data.Creatures
             Might = 8,
             Speed = 9,
             Focus = 14,
-            MagicDeflection = 15,
+            MagicResistance = 15,
             AcidResistance = 75,
             ColdResistance = 75,
             ElectricityResistance = 75,

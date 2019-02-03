@@ -18,6 +18,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
@@ -25,6 +26,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
@@ -32,6 +34,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Sting,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new Blight {Damage = 50}}
@@ -49,8 +52,8 @@ namespace UnicornHack.Data.Creatures
             Might = 16,
             Speed = 16,
             Focus = 16,
-            MagicDeflection = 37,
-            PhysicalDeflection = 23,
+            Armor = 6,
+            MagicResistance = 37,
             FireResistance = 75,
             TorsoType = TorsoType.Humanoid,
             LowerExtremities = ExtremityType.None,

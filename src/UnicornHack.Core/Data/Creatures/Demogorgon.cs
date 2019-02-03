@@ -18,6 +18,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Spell,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
@@ -25,6 +26,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Sting,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new DrainLife {Amount = 2}}
@@ -32,6 +34,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new ChangeRace {RaceName = "zombie", Delay = 10000}}
@@ -39,6 +42,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new ChangeRace {RaceName = "zombie", Delay = 10000}}
@@ -56,8 +60,8 @@ namespace UnicornHack.Data.Creatures
             Might = 16,
             Speed = 16,
             Focus = 16,
-            MagicDeflection = 47,
-            PhysicalDeflection = 28,
+            Armor = 9,
+            MagicResistance = 47,
             FireResistance = 75,
             TorsoType = TorsoType.Humanoid,
             UpperExtremities = ExtremityType.GraspingFingers,

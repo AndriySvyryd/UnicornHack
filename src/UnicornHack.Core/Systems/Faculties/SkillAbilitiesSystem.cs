@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
+using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
-using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Time;
@@ -18,23 +19,26 @@ namespace UnicornHack.Systems.Faculties
     {
         public const string PrimaryMeleeWeaponAttackName = "primary melee weapon attack";
         public const string SecondaryMeleeWeaponAttackName = "secondary melee weapon attack";
-        public const string PrimaryMeleeAttackName = "primary melee attack";
-        public const string SecondaryMeleeAttackName = "secondary melee attack";
-        public const string DoubleMeleeAttackName = "double melee attack";
+        public const string TwoHandedMeleeWeaponAttackName = "two handed melee weapon attack";
 
         public const string PrimaryRangedWeaponAttackName = "primary ranged weapon attack";
         public const string SecondaryRangedWeaponAttackName = "secondary ranged weapon attack";
-        public const string PrimaryRangedAttackName = "primary ranged attack";
-        public const string SecondaryRangedAttackName = "secondary ranged attack";
-        public const string DoubleRangedAttackName = "double ranged attack";
-
-        public const string SkillsAbilityName = "skills";
+        public const string TwoHandedRangedWeaponAttackName = "two handed ranged weapon attack";
 
         public MessageProcessingResult Process(ItemEquippedMessage message, GameManager manager)
         {
             if (message.Successful)
             {
-                RecalculateWeaponAbilities(message.ActorEntity, manager);
+                if ((message.Slot & EquipmentSlot.GraspMelee) != 0
+                    || (message.OldSlot & EquipmentSlot.GraspMelee) != 0)
+                {
+                    RecalculateWeaponAbilities(message.ActorEntity, melee: true, manager);
+                }
+                else if ((message.Slot & EquipmentSlot.GraspRanged) != 0
+                         || (message.OldSlot & EquipmentSlot.GraspRanged) != 0)
+                {
+                    RecalculateWeaponAbilities(message.ActorEntity, melee: false, manager);
+                }
             }
 
             return MessageProcessingResult.ContinueProcessing;
@@ -43,53 +47,36 @@ namespace UnicornHack.Systems.Faculties
         public MessageProcessingResult Process(
             PropertyValueChangedMessage<GameEntity, ExtremityType> message, GameManager manager)
         {
-            RecalculateWeaponAbilities(message.Entity, manager);
+            if (message.Entity.Being.IsAlive)
+            {
+                RecalculateWeaponAbilities(message.Entity, melee: true, manager);
+                RecalculateWeaponAbilities(message.Entity, melee: false, manager);
+            }
 
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, int> message,
-            GameManager manager)
+        public MessageProcessingResult Process(
+            PropertyValueChangedMessage<GameEntity, int> message, GameManager manager)
         {
-            var increased = message.NewValue > message.OldValue;
             switch (message.ChangedPropertyName)
             {
-                case nameof(PlayerComponent.OneHanded):
-                case nameof(PlayerComponent.TwoHanded):
-                case nameof(PlayerComponent.DualWielding):
-                case nameof(PlayerComponent.FistWeapons):
+                case nameof(PlayerComponent.HandWeapons):
                 case nameof(PlayerComponent.ShortWeapons):
                 case nameof(PlayerComponent.MediumWeapons):
                 case nameof(PlayerComponent.LongWeapons):
-                case nameof(PlayerComponent.ThrownWeapons):
-                case nameof(PlayerComponent.Slingshots):
-                case nameof(PlayerComponent.Bows):
-                case nameof(PlayerComponent.Crossbows):
-                case nameof(PlayerComponent.MeleeMagicWeapons):
-                case nameof(PlayerComponent.RangedMagicWeapons):
-                    RecalculateWeaponAbilities(message.Entity, manager);
+                    RecalculateWeaponAbilities(message.Entity, melee: true, manager);
                     break;
-                case nameof(PlayerComponent.FireSourcery):
-                case nameof(PlayerComponent.AirSourcery):
-                case nameof(PlayerComponent.WaterSourcery):
-                case nameof(PlayerComponent.EarthSourcery):
-                case nameof(PlayerComponent.LifeSourcery):
-                case nameof(PlayerComponent.SpiritSourcery):
-                case nameof(PlayerComponent.Evocation):
-                case nameof(PlayerComponent.Conjuration):
-                case nameof(PlayerComponent.Transmutation):
-                case nameof(PlayerComponent.Enhancement):
-                case nameof(PlayerComponent.Malediction):
-                case nameof(PlayerComponent.Illusion):
-                    RecalculateMagicAbilities(message.Entity, manager);
+                case nameof(PlayerComponent.CloseRangeWeapons):
+                case nameof(PlayerComponent.ShortRangeWeapons):
+                case nameof(PlayerComponent.MediumRangeWeapons):
+                case nameof(PlayerComponent.LongRangeWeapons):
+                    RecalculateWeaponAbilities(message.Entity, melee: false, manager);
                     break;
-                case nameof(PlayerComponent.Armorless):
                 case nameof(PlayerComponent.LightArmor):
                 case nameof(PlayerComponent.HeavyArmor):
-                case nameof(PlayerComponent.Stealth):
-                case nameof(PlayerComponent.Assassination):
                 case nameof(PlayerComponent.Artifice):
-                case nameof(PlayerComponent.Leadership):
+                    // TODO: Update hindrance
                     break;
                 default:
                     throw new InvalidOperationException($"Property {message.ChangedPropertyName} not supported.");
@@ -98,349 +85,218 @@ namespace UnicornHack.Systems.Faculties
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        private bool RecalculateWeaponAbilities(GameEntity actorEntity, GameManager manager)
+        private bool RecalculateWeaponAbilities(GameEntity actorEntity, bool melee, GameManager manager)
         {
             var canUseWeapons = CanUseWeapons(actorEntity);
 
-            var primaryMeleeWeaponAttack =
-                ResetWeaponAbility(PrimaryMeleeWeaponAttackName, actorEntity.Id, canUseWeapons, manager);
-
-            var secondaryMeleeWeaponAttack =
-                ResetWeaponAbility(SecondaryMeleeWeaponAttackName, actorEntity.Id, canUseWeapons, manager);
-
-            var primaryMeleeAttack = ResetAttackAbility(
-                PrimaryMeleeAttackName, actorEntity.Id, TargetingType.AdjacentSingle, ActivationType.OnMeleeAttack,
-                canUseWeapons, primaryMeleeWeaponAttack?.EntityId, null, manager);
-
-            var secondaryMeleeAttack = ResetAttackAbility(
-                SecondaryMeleeAttackName, actorEntity.Id, TargetingType.AdjacentSingle, ActivationType.OnMeleeAttack,
-                canUseWeapons, secondaryMeleeWeaponAttack?.EntityId, null, manager);
-
-            var doubleMeleeAttack = ResetAttackAbility(
-                DoubleMeleeAttackName, actorEntity.Id, TargetingType.AdjacentSingle, ActivationType.OnMeleeAttack,
-                canUseWeapons, primaryMeleeWeaponAttack?.EntityId, secondaryMeleeWeaponAttack?.EntityId, manager);
-
-            var primaryRangedWeaponAttack =
-                ResetWeaponAbility(PrimaryRangedWeaponAttackName, actorEntity.Id, canUseWeapons, manager);
-
-            var secondaryRangedWeaponAttack =
-                ResetWeaponAbility(SecondaryRangedWeaponAttackName, actorEntity.Id, canUseWeapons, manager);
-
-            var primaryRangedAttack = ResetAttackAbility(
-                PrimaryRangedAttackName, actorEntity.Id, TargetingType.Projectile, ActivationType.OnRangedAttack,
-                canUseWeapons, primaryRangedWeaponAttack?.EntityId, null, manager);
-
-            var secondaryRangedAttack = ResetAttackAbility(
-                SecondaryRangedAttackName, actorEntity.Id, TargetingType.Projectile, ActivationType.OnRangedAttack,
-                canUseWeapons, secondaryRangedWeaponAttack?.EntityId, null, manager);
-
-            var doubleRangedAttack = ResetAttackAbility(
-                DoubleRangedAttackName, actorEntity.Id, TargetingType.Projectile, ActivationType.OnRangedAttack,
-                canUseWeapons, primaryRangedWeaponAttack?.EntityId, secondaryRangedWeaponAttack?.EntityId, manager);
-
-            if (!canUseWeapons)
-            {
-                return false;
-            }
-
             var being = actorEntity.Being;
             ItemComponent twoHandedWeapon = null;
-            ItemComponent primaryWeapon;
-            ItemComponent secondaryWeapon;
+            ItemComponent primaryWeapon = null;
+            ItemComponent secondaryWeapon = null;
 
-            if (being.PrimaryNaturalWeaponId.HasValue)
+            if (canUseWeapons)
             {
-                primaryWeapon = manager.FindEntity(being.PrimaryNaturalWeaponId.Value).Item;
-            }
-            else
-            {
-                using (var primaryWeaponReference = CreateNaturalWeapon(manager, being.UpperExtremities))
+                if (melee)
                 {
-                    primaryWeapon = primaryWeaponReference.Referenced.Item;
-                    being.PrimaryNaturalWeaponId = primaryWeapon.EntityId;
-                }
-            }
-
-            if (being.SecondaryNaturalWeaponId.HasValue)
-            {
-                secondaryWeapon = manager.FindEntity(being.SecondaryNaturalWeaponId.Value).Item;
-            }
-            else
-            {
-                using (var secondaryWeaponReference = CreateNaturalWeapon(manager, being.UpperExtremities))
-                {
-                    secondaryWeapon = secondaryWeaponReference.Referenced.Item;
-                    being.SecondaryNaturalWeaponId = secondaryWeapon.EntityId;
-                }
-            }
-
-            foreach (var itemEntity in manager.EntityItemsToContainerRelationship[actorEntity.Id])
-            {
-                var item = itemEntity.Item;
-
-                switch (item.EquippedSlot)
-                {
-                    case EquipmentSlot.GraspBothExtremities:
-                        twoHandedWeapon = item;
-                        primaryWeapon = null;
-                        secondaryWeapon = null;
-                        break;
-                    case EquipmentSlot.GraspPrimaryExtremity:
-                        primaryWeapon = item;
-                        break;
-                    case EquipmentSlot.GraspSecondaryExtremity:
-                        secondaryWeapon = item;
-                        break;
-                }
-            }
-
-            var twoHandedWeaponType = twoHandedWeapon?.Type ?? ItemType.None;
-            var primaryWeaponType = primaryWeapon?.Type ?? ItemType.None;
-            var secondaryWeaponType = secondaryWeapon?.Type ?? ItemType.None;
-            var dualWielding = primaryWeapon != null
-                               && secondaryWeapon != null
-                               && (primaryWeaponType & ItemType.WeaponMeleeFist) == 0
-                               && (secondaryWeaponType & ItemType.WeaponMeleeFist) == 0;
-            var dualFist = (primaryWeaponType & ItemType.WeaponMeleeFist) != 0
-                           && (secondaryWeaponType & ItemType.WeaponMeleeFist) != 0;
-
-            ItemComponent primaryMeleeWeapon = null;
-            ItemComponent secondaryMeleeWeapon = null;
-            ItemComponent primaryRangedWeapon = null;
-            ItemComponent secondaryRangedWeapon = null;
-
-            // TODO: Choose proper targeting type and angle based on weapon
-            if (twoHandedWeapon != null)
-            {
-                if ((twoHandedWeaponType & ItemType.WeaponRanged) == 0)
-                {
-                    primaryMeleeAttack.IsUsable = true;
-                    SetWeapon(primaryMeleeWeaponAttack, twoHandedWeapon.EntityId, manager);
-                    primaryMeleeWeapon = twoHandedWeapon;
-
-                    EnsureMeleeAttack(twoHandedWeapon, manager);
-                }
-
-                primaryRangedAttack.IsUsable = true;
-                SetWeapon(primaryRangedWeaponAttack, twoHandedWeapon.EntityId, manager);
-                primaryRangedWeapon = twoHandedWeapon;
-
-                EnsureRangedAttack(twoHandedWeapon, manager);
-            }
-            else
-            {
-                if (dualWielding
-                    || dualFist)
-                {
-                    if ((primaryWeaponType & ItemType.WeaponRanged) == 0
-                        && (secondaryWeaponType & ItemType.WeaponRanged) == 0)
+                    if (being.PrimaryNaturalWeaponId.HasValue)
                     {
-                        doubleMeleeAttack.IsUsable = true;
+                        primaryWeapon = manager.FindEntity(being.PrimaryNaturalWeaponId.Value).Item;
+                    }
+                    else
+                    {
+                        var primaryWeaponReference = TryCreateNaturalWeapon(being.UpperExtremities, melee, manager);
+                        if (primaryWeaponReference != null)
+                        {
+                            primaryWeapon = primaryWeaponReference.Referenced.Item;
+                            being.PrimaryNaturalWeaponId = primaryWeapon.EntityId;
+                            primaryWeaponReference.Dispose();
+                        }
                     }
 
-                    if (!dualFist
-                        && (((primaryWeaponType & ItemType.WeaponRanged) == 0)
-                            == ((secondaryWeaponType & ItemType.WeaponRanged) == 0)))
+                    if (being.SecondaryNaturalWeaponId.HasValue)
                     {
-                        doubleRangedAttack.IsUsable = true;
+                        secondaryWeapon = manager.FindEntity(being.SecondaryNaturalWeaponId.Value).Item;
+                    }
+                    else
+                    {
+                        var secondaryWeaponReference = TryCreateNaturalWeapon(being.UpperExtremities, melee, manager);
+                        if (secondaryWeaponReference != null)
+                        {
+                            secondaryWeapon = secondaryWeaponReference.Referenced.Item;
+                            being.SecondaryNaturalWeaponId = secondaryWeapon.EntityId;
+                            secondaryWeaponReference.Dispose();
+                        }
                     }
                 }
 
-                if ((primaryWeaponType & ItemType.WeaponRanged) == 0)
+                foreach (var itemEntity in manager.EntityItemsToContainerRelationship[actorEntity.Id])
                 {
-                    primaryMeleeAttack.IsUsable = true;
-                    SetWeapon(primaryMeleeWeaponAttack, primaryWeapon.EntityId, manager);
-                    primaryMeleeWeapon = primaryWeapon;
+                    var item = itemEntity.Item;
 
-                    EnsureMeleeAttack(primaryWeapon, manager);
+                    if (melee)
+                    {
+                        switch (item.EquippedSlot)
+                        {
+                            case EquipmentSlot.GraspBothMelee:
+                                twoHandedWeapon = item;
+                                primaryWeapon = null;
+                                secondaryWeapon = null;
+                                break;
+                            case EquipmentSlot.GraspPrimaryMelee:
+                                primaryWeapon = item;
+                                break;
+                            case EquipmentSlot.GraspSecondaryMelee:
+                                secondaryWeapon = item;
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        switch (item.EquippedSlot)
+                        {
+                            case EquipmentSlot.GraspBothRanged:
+                                twoHandedWeapon = item;
+                                primaryWeapon = null;
+                                secondaryWeapon = null;
+                                break;
+                            case EquipmentSlot.GraspPrimaryRanged:
+                                primaryWeapon = item;
+                                break;
+                            case EquipmentSlot.GraspSecondaryRanged:
+                                secondaryWeapon = item;
+                                break;
+                        }
+                    }
+                }
+            }
+
+            var activation = melee ? ActivationType.OnMeleeAttack : ActivationType.OnRangedAttack;
+            var twoHandedWeaponAttack = ResetWeaponAbility(
+                melee ? TwoHandedMeleeWeaponAttackName : TwoHandedRangedWeaponAttackName,
+                actorEntity.Id, twoHandedWeapon, activation, manager);
+
+            var primaryWeaponAttack = ResetWeaponAbility(
+                melee ? PrimaryMeleeWeaponAttackName : PrimaryRangedWeaponAttackName,
+                actorEntity.Id, primaryWeapon, activation, manager);
+
+            var secondaryWeaponAttack = ResetWeaponAbility(
+                melee ? SecondaryMeleeWeaponAttackName : SecondaryRangedWeaponAttackName,
+                actorEntity.Id, secondaryWeapon, activation, manager);
+
+            foreach (WieldingAbility defaultAttackTemplate in Ability.Loader.GetAllValues(AbilityType.DefaultAttack))
+            {
+                if ((melee && (defaultAttackTemplate.ItemType & ItemType.WeaponMelee) != 0)
+                    || (!melee && (defaultAttackTemplate.ItemType & ItemType.WeaponRanged) != 0))
+                {
+                    EnsureAbility(defaultAttackTemplate, actorEntity, manager);
+                }
+            }
+
+            AbilityComponent defaultAttackAbility = null;
+            var expectedItemType = melee ? ItemType.WeaponMelee : ItemType.WeaponRanged;
+            foreach (var abilityEntity in manager.AbilitiesToAffectableRelationship[actorEntity.Id])
+            {
+                var ability = abilityEntity.Ability;
+                if (ability.Template == null
+                    || !(ability.Template is WieldingAbility wieldingAbility)
+                    || (wieldingAbility.ItemType & expectedItemType) == 0)
+                {
+                    continue;
                 }
 
-                if ((secondaryWeaponType & ItemType.WeaponRanged) == 0)
+                switch (wieldingAbility.WieldingStyle)
                 {
-                    secondaryMeleeAttack.IsUsable = true;
-                    SetWeapon(secondaryMeleeWeaponAttack, secondaryWeapon.EntityId, manager);
-                    secondaryMeleeWeapon = secondaryWeapon;
+                    case WieldingStyle.OneHanded:
+                        var primaryUsable = IsCompatible(
+                            primaryWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType, manager);
+                        var secondaryUsable = IsCompatible(
+                            secondaryWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType, manager);
 
-                    EnsureMeleeAttack(secondaryWeapon, manager);
+                        ResetWieldingAbility(ability, wieldingAbility,
+                            primaryUsable == secondaryUsable ? null :
+                            primaryUsable ? primaryWeaponAttack : secondaryWeaponAttack,
+                            null, activation, actorEntity);
+                        break;
+                    case WieldingStyle.TwoHanded:
+                        var twoHandedUsable = IsCompatible(
+                            twoHandedWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType, manager);
+
+                        ResetWieldingAbility(ability, wieldingAbility,
+                            twoHandedUsable ? twoHandedWeaponAttack : null, null, activation, actorEntity);
+                        break;
+                    case WieldingStyle.Dual:
+                        var bothUsable = IsCompatible(
+                                             primaryWeapon, activation, wieldingAbility.ItemType,
+                                             wieldingAbility.DamageType, manager)
+                                         && IsCompatible(
+                                             secondaryWeapon, activation, wieldingAbility.ItemType,
+                                             wieldingAbility.DamageType, manager);
+
+                        ResetWieldingAbility(ability, wieldingAbility,
+                            bothUsable ? primaryWeaponAttack : null, bothUsable ? secondaryWeaponAttack : null,
+                            activation, actorEntity);
+                        break;
+                    default:
+                        var primaryWeaponUsable = IsCompatible(
+                            primaryWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType, manager);
+                        var secondaryWeaponUsable = IsCompatible(
+                            secondaryWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType, manager);
+                        var twoHandedWeaponUsable = IsCompatible(
+                            twoHandedWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType, manager);
+
+                        ResetWieldingAbility(ability, wieldingAbility,
+                            primaryWeaponUsable ? primaryWeaponAttack :
+                            twoHandedWeaponUsable ? twoHandedWeaponAttack : null,
+                            secondaryWeaponUsable ? secondaryWeaponAttack : null, activation, actorEntity);
+                        break;
                 }
 
-                if ((primaryWeaponType & ItemType.WeaponMeleeFist) == 0)
+                if (wieldingAbility.Type == AbilityType.DefaultAttack
+                    && ability.IsUsable)
                 {
-                    primaryRangedAttack.IsUsable = true;
-                    SetWeapon(primaryRangedWeaponAttack, primaryWeapon.EntityId, manager);
-                    primaryRangedWeapon = primaryWeapon;
-
-                    EnsureRangedAttack(primaryWeapon, manager);
-                }
-
-                if ((secondaryWeaponType & ItemType.WeaponMeleeFist) == 0)
-                {
-                    secondaryRangedAttack.IsUsable = true;
-                    SetWeapon(secondaryRangedWeaponAttack, secondaryWeapon.EntityId, manager);
-                    secondaryRangedWeapon = secondaryWeapon;
-
-                    EnsureRangedAttack(secondaryWeapon, manager);
+                    Debug.Assert(defaultAttackAbility == null);
+                    defaultAttackAbility = ability;
                 }
             }
 
             var player = actorEntity.Player;
-            if (player != null)
+            if (player == null)
             {
-                // TODO: Calculate skill effects properly
-                var primaryMeleeWeaponSkill =
-                    primaryMeleeWeapon == null ? 0 : GetMeleeSkill(primaryMeleeWeapon.Type, player);
-                SetDamage(primaryMeleeWeaponAttack, primaryMeleeWeaponSkill ?? 0, manager);
-
-                var secondaryMeleeWeaponSkill =
-                    secondaryMeleeWeapon == null ? 0 : GetMeleeSkill(secondaryMeleeWeapon.Type, player);
-                SetDamage(secondaryMeleeWeaponAttack, secondaryMeleeWeaponSkill ?? 0, manager);
-
-                var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
-                setSlotMessage.Slot = AbilitySlottingSystem.DefaultAttackSlot;
-
-                if (secondaryMeleeAttack.IsUsable)
-                {
-                    SetDamage(secondaryMeleeAttack, player.OneHanded, manager);
-                    if (secondaryMeleeWeaponSkill != null)
-                    {
-                        setSlotMessage.AbilityEntity = secondaryMeleeAttack.Entity;
-                    }
-                }
-
-                if (primaryMeleeAttack.IsUsable)
-                {
-                    SetDamage(primaryMeleeAttack, primaryMeleeWeapon.EquippedSlot == EquipmentSlot.GraspBothExtremities
-                            ? player.TwoHanded
-                            : player.OneHanded,
-                        manager);
-                    if (primaryMeleeWeaponSkill != null)
-                    {
-                        setSlotMessage.AbilityEntity = primaryMeleeAttack.Entity;
-                    }
-                }
-
-                if (doubleMeleeAttack.IsUsable)
-                {
-                    SetDamage(doubleMeleeAttack, player.DualWielding, manager);
-                    if (primaryMeleeWeaponSkill != null && secondaryMeleeWeaponSkill != null)
-                    {
-                        setSlotMessage.AbilityEntity = doubleMeleeAttack.Entity;
-                    }
-                }
-
-                var primaryRangedSkill =
-                    primaryRangedWeapon == null ? 0 : GetRangedSkill(primaryRangedWeapon.Type, player);
-                SetDamage(primaryRangedWeaponAttack, primaryRangedSkill ?? player.ThrownWeapons, manager);
-
-                var secondaryRangedSkill = secondaryRangedWeapon == null
-                    ? 0
-                    : GetRangedSkill(secondaryRangedWeapon.Type, player);
-                SetDamage(secondaryRangedWeaponAttack, secondaryRangedSkill ?? player.ThrownWeapons, manager);
-
-                if (secondaryRangedAttack.IsUsable)
-                {
-                    SetDamage(secondaryRangedAttack, player.OneHanded, manager);
-                    if (secondaryRangedSkill != null)
-                    {
-                        setSlotMessage.AbilityEntity = secondaryRangedAttack.Entity;
-                    }
-                }
-
-                if (primaryRangedAttack.IsUsable)
-                {
-                    SetDamage(primaryRangedAttack,
-                        primaryRangedWeapon.EquippedSlot == EquipmentSlot.GraspBothExtremities
-                            ? player.TwoHanded
-                            : player.OneHanded,
-                        manager);
-                    if (primaryRangedSkill != null)
-                    {
-                        setSlotMessage.AbilityEntity = primaryRangedAttack.Entity;
-                    }
-                }
-
-                if (doubleRangedAttack.IsUsable)
-                {
-                    SetDamage(doubleRangedAttack, player.DualWielding, manager);
-                    if (primaryRangedSkill != null && secondaryRangedSkill != null)
-                    {
-                        setSlotMessage.AbilityEntity = doubleRangedAttack.Entity;
-                    }
-                }
-
-                if (setSlotMessage.AbilityEntity != null)
-                {
-                    manager.Enqueue(setSlotMessage);
-                }
-                else
-                {
-                    manager.Queue.ReturnMessage(setSlotMessage);
-                }
+                return canUseWeapons;
             }
 
-            return true;
+            var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            setSlotMessage.Slot =
+                melee ? AbilitySlottingSystem.DefaultMeleeAttackSlot : AbilitySlottingSystem.DefaultRangedAttackSlot;
+            setSlotMessage.AbilityEntity = defaultAttackAbility?.Entity;
+            setSlotMessage.OwnerEntity = actorEntity;
+            manager.Enqueue(setSlotMessage);
+
+            return canUseWeapons;
         }
 
-        private ITransientReference<GameEntity> CreateNaturalWeapon(GameManager manager, ExtremityType extremityType)
+        private ITransientReference<GameEntity> TryCreateNaturalWeapon(ExtremityType extremityType, bool melee,
+            GameManager manager)
         {
-            var itemEntityReference = manager.CreateEntity();
-            var itemEntity = itemEntityReference.Referenced;
-            var item = manager.CreateComponent<ItemComponent>(EntityComponent.Item);
-            item.Type = ItemType.WeaponMeleeFist;
-            // TODO: Use name for claws, etc.
-            item.TemplateName = "fist";
-
-            itemEntity.Item = item;
-
-            var physical = manager.CreateComponent<PhysicalComponent>(EntityComponent.Physical);
-            physical.Material = Material.Flesh;
-
-            itemEntity.Physical = physical;
-
-            using (var appliedEffectEntityReference = manager.CreateEntity())
+            if (!melee
+                || extremityType != ExtremityType.GraspingFingers)
             {
-                var appliedEffectEntity = appliedEffectEntityReference.Referenced;
-                var appliedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                appliedEffect.EffectType = EffectType.AddAbility;
-                appliedEffect.Duration = EffectDuration.Infinite;
-
-                appliedEffectEntity.Effect = appliedEffect;
-
-                var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
-                ability.Name = LivingSystem.InnateAbilityName;
-                ability.Activation = ActivationType.OnPhysicalMeleeAttack;
-                // TODO: Use correct action for claws, etc.
-                ability.Action = AbilityAction.Punch;
-
-                appliedEffectEntity.Ability = ability;
-
-                using (var effectEntityReference = manager.CreateEntity())
-                {
-                    var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                    effect.EffectType = EffectType.PhysicalDamage;
-                    // TODO: Calculate h2h damage
-                    effect.Amount = 20;
-                    effect.ContainingAbilityId = appliedEffectEntity.Id;
-
-                    effectEntityReference.Referenced.Effect = effect;
-                }
-
-                ability.OwnerId = itemEntity.Id;
-                appliedEffect.AffectedEntityId = itemEntity.Id;
+                return null;
             }
 
-            return itemEntityReference;
+            // TODO: Support claws, tentacles, etc.
+            return Item.Loader.Get("fist").Instantiate(manager);
         }
 
         private AbilityComponent ResetWeaponAbility(
             string name,
             int ownerId,
-            bool canUseWeapons,
+            ItemComponent weapon,
+            ActivationType activation,
             GameManager manager)
         {
-            var weaponAttack = manager.AbilitiesToAffectableRelationship[ownerId].Select(a => a.Ability)
-                .FirstOrDefault(a => a.Name == name);
-            if (weaponAttack == null && canUseWeapons)
+            var weaponAttack = manager.AffectableAbilitiesIndex[(ownerId, name)]?.Ability;
+            if (weaponAttack == null && weapon != null)
             {
                 using (var abilityEntityReference = manager.CreateEntity())
                 {
@@ -449,25 +305,29 @@ namespace UnicornHack.Systems.Faculties
                     var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
                     ability.Name = name;
                     ability.OwnerId = ownerId;
+                    ability.Range = 1;
                     // TODO: Calculate proper delay
                     ability.Delay = TimeSystem.DefaultActionDelay;
+
+                    var abilityToActivate = manager.AbilitiesToAffectableRelationship[weapon.EntityId]
+                        .Select(a => a.Ability).FirstOrDefault(a => (a.Activation & activation) != 0);
+
+                    if (abilityToActivate != null)
+                    {
+                        // TODO: Calculate range
+                        ability.Range = abilityToActivate.Range;
+                        ability.TargetingType = abilityToActivate.TargetingType;
+                        ability.TargetingShape = abilityToActivate.TargetingShape;
+                    }
 
                     abilityEntity.Ability = ability;
 
                     using (var effectEntityReference = manager.CreateEntity())
                     {
                         var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                        effect.EffectType = EffectType.PhysicalDamage;
-                        effect.ContainingAbilityId = abilityEntity.Id;
-
-                        effectEntityReference.Referenced.Effect = effect;
-                    }
-
-                    using (var effectEntityReference = manager.CreateEntity())
-                    {
-                        var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                         effect.EffectType = EffectType.Activate;
                         effect.ContainingAbilityId = abilityEntity.Id;
+                        effect.TargetEntityId = weapon.EntityId;
 
                         effectEntityReference.Referenced.Effect = effect;
                     }
@@ -478,13 +338,23 @@ namespace UnicornHack.Systems.Faculties
 
             if (weaponAttack != null)
             {
-                if (canUseWeapons)
+                if (weapon != null)
                 {
-                    SetWeapon(weaponAttack, null, manager);
+                    foreach (var effectEntity in manager.EffectsToContainingAbilityRelationship[weaponAttack.EntityId])
+                    {
+                        var effect = effectEntity.Effect;
+                        if (effect.EffectType != EffectType.Activate)
+                        {
+                            continue;
+                        }
+
+                        effect.TargetEntityId = weapon.EntityId;
+                        break;
+                    }
                 }
                 else
                 {
-                    weaponAttack.Entity.RemoveComponent(EntityComponent.Ability);
+                    weaponAttack.IsUsable = false;
                     return null;
                 }
             }
@@ -492,9 +362,71 @@ namespace UnicornHack.Systems.Faculties
             return weaponAttack;
         }
 
-        private void SetWeapon(AbilityComponent weaponAttack, int? weaponId, GameManager manager)
+        private AbilityComponent EnsureAbility(
+            Ability abilityTemplate,
+            GameEntity ownerEntity,
+            GameManager manager)
+            => manager.AffectableAbilitiesIndex[(ownerEntity.Id, abilityTemplate.Name)]?.Ability
+               ?? abilityTemplate.AddToAffectable(ownerEntity);
+
+        private void ResetWieldingAbility(
+            AbilityComponent ability,
+            WieldingAbility template,
+            AbilityComponent firstWeaponAbility,
+            AbilityComponent secondWeaponAbility,
+            ActivationType trigger,
+            GameEntity ownerEntity)
         {
-            foreach (var effectEntity in manager.EffectsToContainingAbilityRelationship[weaponAttack.EntityId])
+            ability.Activation = ActivationType.Targeted;
+            ability.Trigger = trigger;
+            Debug.Assert(ability.CooldownTick == null && ability.CooldownXpLeft == null);
+            ability.IsUsable = firstWeaponAbility != null
+                               && (template.WieldingStyle != WieldingStyle.Dual || secondWeaponAbility != null);
+
+            if (!ability.IsUsable)
+            {
+                return;
+            }
+
+            // TODO: Only use weapon values when not specified by the ability
+            ability.Range = firstWeaponAbility.Range;
+            ability.HeadingDeviation = firstWeaponAbility.HeadingDeviation;
+            ability.TargetingShape = firstWeaponAbility.TargetingShape;
+            ability.TargetingType = firstWeaponAbility.TargetingType;
+            ability.Delay = firstWeaponAbility.Delay;
+
+            if (secondWeaponAbility != null)
+            {
+                if (secondWeaponAbility.Range < ability.Range)
+                {
+                    ability.Range = secondWeaponAbility.Range;
+                }
+
+                if (secondWeaponAbility.HeadingDeviation < ability.HeadingDeviation)
+                {
+                    ability.HeadingDeviation = secondWeaponAbility.HeadingDeviation;
+                }
+
+                if (secondWeaponAbility.TargetingShape < ability.TargetingShape)
+                {
+                    ability.TargetingShape = secondWeaponAbility.TargetingShape;
+                }
+
+                if (secondWeaponAbility.TargetingType < ability.TargetingType)
+                {
+                    ability.TargetingType = secondWeaponAbility.TargetingType;
+                }
+
+                if (secondWeaponAbility.Delay > ability.Delay)
+                {
+                    ability.Delay = secondWeaponAbility.Delay;
+                }
+            }
+
+            var manager = ownerEntity.Manager;
+
+            GameEntity firstEffectEntity = null;
+            foreach (var effectEntity in manager.EffectsToContainingAbilityRelationship[ability.EntityId])
             {
                 var effect = effectEntity.Effect;
                 if (effect.EffectType != EffectType.Activate)
@@ -502,10 +434,57 @@ namespace UnicornHack.Systems.Faculties
                     continue;
                 }
 
-                effect.TargetEntityId = weaponId;
-                break;
+                if (firstEffectEntity == null)
+                {
+                    firstEffectEntity = effectEntity;
+                    effect.TargetEntityId = firstWeaponAbility.EntityId;
+                    if (template.WieldingStyle == WieldingStyle.OneHanded
+                        || template.WieldingStyle == WieldingStyle.TwoHanded)
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    effect.TargetEntityId = secondWeaponAbility?.EntityId;
+                    break;
+                }
             }
         }
+
+        private bool IsCompatible(ItemComponent weapon, ActivationType activation, ItemType? itemType,
+            EffectType? damageType, GameManager manager)
+        {
+            if (weapon != null
+                && (itemType == null || (weapon.Type & itemType.Value) != 0))
+            {
+                if (damageType == null)
+                {
+                    return true;
+                }
+
+                foreach (var abilityEntity in manager.AbilitiesToAffectableRelationship[weapon.EntityId])
+                {
+                    if ((abilityEntity.Ability.Activation & activation) == 0)
+                    {
+                        continue;
+                    }
+
+                    foreach (var effectEntity in manager.EffectsToContainingAbilityRelationship[abilityEntity.Id])
+                    {
+                        if (effectEntity.Effect.EffectType == damageType)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private bool CanUseWeapons(GameEntity actorEntity)
+            => actorEntity.Being.UpperExtremities == ExtremityType.GraspingFingers;
 
         private void SetDamage(AbilityComponent attack, int damage, GameManager manager)
         {
@@ -522,304 +501,106 @@ namespace UnicornHack.Systems.Faculties
             }
         }
 
-        private AbilityComponent ResetAttackAbility(
-            string name,
-            int ownerId,
-            TargetingType targetingType,
-            ActivationType trigger,
-            bool shouldBePresent,
-            int? firstWeaponAbilityId,
-            int? secondWeaponAbilityId,
-            GameManager manager)
+        public int? GetItemSkill(ItemType itemType, PlayerComponent player)
         {
-            var ability =
-                EnsureAbility(name, ownerId, targetingType, trigger, shouldBePresent, false, manager, out var created);
-
-            if (created)
+            if ((itemType & ItemType.WeaponMeleeHand) != 0)
             {
-                using (var effectEntityReference = manager.CreateEntity())
-                {
-                    var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                    effect.EffectType = EffectType.PhysicalDamage;
-                    effect.ContainingAbilityId = ability.EntityId;
-
-                    effectEntityReference.Referenced.Effect = effect;
-                }
-
-                if (firstWeaponAbilityId != null)
-                {
-                    using (var effectEntityReference = manager.CreateEntity())
-                    {
-                        var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                        effect.EffectType = EffectType.Activate;
-                        effect.TargetEntityId = firstWeaponAbilityId;
-                        effect.ContainingAbilityId = ability.EntityId;
-
-                        effectEntityReference.Referenced.Effect = effect;
-                    }
-                }
-
-                if (secondWeaponAbilityId != null)
-                {
-                    using (var effectEntityReference = manager.CreateEntity())
-                    {
-                        var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                        effect.EffectType = EffectType.Activate;
-                        effect.TargetEntityId = secondWeaponAbilityId;
-                        effect.ContainingAbilityId = ability.EntityId;
-
-                        effectEntityReference.Referenced.Effect = effect;
-                    }
-                }
+                return player.HandWeapons;
             }
 
-            return ability;
-        }
-
-        private AbilityComponent EnsureAbility(
-            string name,
-            int ownerId,
-            TargetingType targetingType,
-            ActivationType trigger,
-            bool shouldBePresent,
-            bool shouldBeUsable,
-            GameManager manager,
-            out bool created)
-        {
-            created = false;
-            var ability = manager.AbilitiesToAffectableRelationship[ownerId].Select(a => a.Ability)
-                .FirstOrDefault(a => a.Name == name);
-            if (ability == null && shouldBePresent)
-            {
-                using (var abilityEntityReference = manager.CreateEntity())
-                {
-                    var abilityEntity = abilityEntityReference.Referenced;
-
-                    ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
-                    ability.Name = name;
-                    ability.OwnerId = ownerId;
-                    ability.Activation = ActivationType.Targeted;
-                    ability.Trigger = trigger;
-                    ability.IsUsable = shouldBeUsable;
-                    ability.TargetingType = targetingType;
-                    ability.TargetingAngle = TargetingAngle.Front2Octants;
-                    // TODO: Calculate proper delay
-                    ability.Delay = TimeSystem.DefaultActionDelay;
-
-                    abilityEntity.Ability = ability;
-
-                    created = true;
-                    return ability;
-                }
-            }
-
-            if (ability != null)
-            {
-                if (!shouldBePresent)
-                {
-                    ability.Entity.RemoveComponent(EntityComponent.Ability);
-                    return null;
-                }
-
-                ability.IsUsable = shouldBeUsable;
-            }
-
-            return ability;
-        }
-
-        private bool CanUseWeapons(GameEntity actorEntity)
-            => actorEntity.Being.UpperExtremities == ExtremityType.GraspingFingers;
-
-        private void EnsureMeleeAttack(ItemComponent weapon, GameManager manager)
-        {
-            if (manager.AbilitiesToAffectableRelationship[weapon.EntityId]
-                .All(a => (a.Ability.Activation & ActivationType.OnMeleeAttack) == 0))
-            {
-                using (var abilityEntityReference = manager.CreateEntity())
-                {
-                    var abilityEntity = abilityEntityReference.Referenced;
-
-                    var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
-                    ability.OwnerId = weapon.EntityId;
-                    ability.Activation = ActivationType.OnPhysicalMeleeAttack;
-                    ability.Action = AbilityAction.Hit;
-
-                    abilityEntity.Ability = ability;
-
-                    using (var effectEntityReference = manager.CreateEntity())
-                    {
-                        var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                        effect.EffectType = EffectType.PhysicalDamage;
-                        effect.Amount = GetWeightDamage(weapon);
-                        effect.ContainingAbilityId = abilityEntity.Id;
-
-                        effectEntityReference.Referenced.Effect = effect;
-                    }
-                }
-            }
-        }
-
-        private void EnsureRangedAttack(ItemComponent weapon, GameManager manager)
-        {
-            if (manager.AbilitiesToAffectableRelationship[weapon.EntityId]
-                .All(a => (a.Ability.Activation & ActivationType.OnRangedAttack) == 0))
-            {
-                using (var abilityEntityReference = manager.CreateEntity())
-                {
-                    var abilityEntity = abilityEntityReference.Referenced;
-
-                    var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
-                    ability.OwnerId = weapon.EntityId;
-                    ability.Activation = ActivationType.OnPhysicalRangedAttack;
-                    ability.Action = AbilityAction.Hit;
-
-                    abilityEntity.Ability = ability;
-
-                    using (var effectEntityReference = manager.CreateEntity())
-                    {
-                        var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                        effect.EffectType = EffectType.PhysicalDamage;
-                        effect.Amount = GetWeightDamage(weapon);
-                        effect.ContainingAbilityId = abilityEntity.Id;
-
-                        effectEntityReference.Referenced.Effect = effect;
-                    }
-
-                    // TODO: Separate this into a different ability so the item is moved even when missed
-                    using (var effectEntityReference = manager.CreateEntity())
-                    {
-                        var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                        effect.EffectType = EffectType.Move;
-                        effect.TargetEntityId = weapon.EntityId;
-                        effect.ContainingAbilityId = abilityEntity.Id;
-
-                        effectEntityReference.Referenced.Effect = effect;
-                    }
-                }
-            }
-
-            // TODO: Make sure launcher has activate item for the projectile
-        }
-
-        private int GetWeightDamage(ItemComponent weapon)
-            => 4 * weapon.Entity.Physical.Weight;
-
-        private int? GetMeleeSkill(ItemType weaponType, PlayerComponent player)
-        {
-            if ((weaponType & ItemType.WeaponMeleeFist) != 0)
-            {
-                return player.FistWeapons;
-            }
-
-            if ((weaponType & ItemType.WeaponMeleeShort) != 0)
+            if ((itemType & ItemType.WeaponMeleeShort) != 0)
             {
                 return player.ShortWeapons;
             }
 
-            if ((weaponType & ItemType.WeaponMeleeMedium) != 0)
+            if ((itemType & ItemType.WeaponMeleeMedium) != 0)
             {
                 return player.MediumWeapons;
             }
 
-            if ((weaponType & ItemType.WeaponMeleeLong) != 0)
+            if ((itemType & ItemType.WeaponMeleeLong) != 0)
             {
                 return player.LongWeapons;
             }
 
-            if ((weaponType & ItemType.WeaponMagicFocus) != 0)
+            if ((itemType & ItemType.WeaponRangedClose) != 0)
             {
-                return player.MeleeMagicWeapons;
+                return player.CloseRangeWeapons;
+            }
+
+            if ((itemType & ItemType.WeaponRangedLong) != 0)
+            {
+                return player.MediumRangeWeapons;
+            }
+
+            if ((itemType & ItemType.WeaponRangedMedium) != 0)
+            {
+                return player.LongRangeWeapons;
+            }
+
+            if ((itemType & ItemType.WeaponRangedShort) != 0)
+            {
+                return player.ShortRangeWeapons;
+            }
+
+            if ((itemType & ItemType.LightArmor) != 0)
+            {
+                return player.LightArmor;
+            }
+
+            if ((itemType & ItemType.HeavyArmor) != 0)
+            {
+                return player.HeavyArmor;
+            }
+
+            if ((itemType & ItemType.Orb) != 0
+                || (itemType & ItemType.Trinket) != 0
+                || (itemType & ItemType.Figurine) != 0)
+            {
+                return player.Artifice;
             }
 
             return null;
         }
 
-        private int? GetRangedSkill(ItemType weaponType, PlayerComponent player)
+        public void BuyAbilityLevel(Ability ability, GameEntity playerEntity)
         {
-            if ((weaponType & ItemType.WeaponRangedThrown) != 0)
-            {
-                return player.ThrownWeapons;
-            }
-
-            if ((weaponType & ItemType.WeaponRangedBow) != 0)
-            {
-                return player.Bows;
-            }
-
-            if ((weaponType & ItemType.WeaponRangedCrossbow) != 0)
-            {
-                return player.Crossbows;
-            }
-
-            if ((weaponType & ItemType.WeaponRangedSlingshot) != 0)
-            {
-                return player.Slingshots;
-            }
-
-            if ((weaponType & ItemType.WeaponMagicStaff) != 0)
-            {
-                return player.RangedMagicWeapons;
-            }
-
-            return null;
-        }
-
-        public bool CanBeDefaultAttack(AbilityComponent ability)
-        {
-            switch (ability.Name)
-            {
-                case DoubleMeleeAttackName:
-                case PrimaryMeleeAttackName:
-                case SecondaryMeleeAttackName:
-                case DoubleRangedAttackName:
-                case PrimaryRangedAttackName:
-                case SecondaryRangedAttackName:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        public void RecalculateMagicAbilities(GameEntity actorEntity, GameManager manager)
-        {
-            var player = actorEntity.Player;
-
-            var iceShard = EnsureAbility(
-                "ice shard", actorEntity.Id, TargetingType.Projectile, ActivationType.OnMagicalRangedAttack,
-                shouldBePresent: true, shouldBeUsable: player.WaterSourcery >= 1 || player.Conjuration >= 1, manager, out var created);
-            if (created)
-            {
-                iceShard.Cooldown = 1000;
-                iceShard.SuccessCondition = AbilitySuccessCondition.MagicAttack;
-                iceShard.Action = AbilityAction.Shoot;
-
-                using (var effectEntityReference = manager.CreateEntity())
-                {
-                    var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                    effect.EffectType = EffectType.Freeze;
-                    effect.Amount = 40;
-                    effect.ContainingAbilityId = iceShard.EntityId;
-
-                    effectEntityReference.Referenced.Effect = effect;
-                }
-            }
-        }
-
-        public void ImproveSkill(string skillName, GameEntity playerEntity)
-        {
+            var manager = playerEntity.Manager;
             var player = playerEntity.Player;
 
-            if (!(PropertyDescription.Loader.Find(skillName) is PropertyDescription<int> skillDescription)
-                || skillDescription.GetValue(player) >= 3
-                || player.SkillPoints < 4)
+            switch (ability.Type)
             {
-                return;
+                case AbilityType.Skill:
+                    if (player.SkillPoints < ability.Cost)
+                    {
+                        return;
+                    }
+
+                    player.SkillPoints -= ability.Cost;
+                    break;
+                case AbilityType.Trait:
+                    if (player.TraitPoints < ability.Cost)
+                    {
+                        return;
+                    }
+
+                    player.TraitPoints -= ability.Cost;
+                    break;
+                case AbilityType.Mutation:
+                    if (player.MutationPoints < ability.Cost)
+                    {
+                        return;
+                    }
+
+                    player.MutationPoints -= ability.Cost;
+                    break;
+                default:
+                    throw new InvalidOperationException($"Not enough points to buy ability {ability.Name}");
             }
 
-            player.SkillPoints -= 4;
-            var skillEffect = playerEntity.Manager.EffectApplicationSystem
-                .GetPropertyEffect(playerEntity, skillName, SkillsAbilityName);
-            skillEffect.Amount = (skillEffect.Amount ?? 0) + 1;
+            var effect = manager.EffectApplicationSystem.GetAbilityEffect(
+                playerEntity, ability.Name, EffectApplicationSystem.InnateAbilityName);
+            effect.Amount++;
         }
     }
 }

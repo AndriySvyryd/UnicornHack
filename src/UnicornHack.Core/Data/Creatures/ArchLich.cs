@@ -18,6 +18,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new Freeze {Damage = 170}}
@@ -25,6 +26,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Spell,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
@@ -41,8 +43,8 @@ namespace UnicornHack.Data.Creatures
             Speed = 13,
             Focus = 18,
             Regeneration = 3,
-            MagicDeflection = 45,
-            PhysicalDeflection = 26,
+            Armor = 8,
+            MagicResistance = 45,
             ColdResistance = 75,
             ElectricityResistance = 75,
             FireResistance = 75,

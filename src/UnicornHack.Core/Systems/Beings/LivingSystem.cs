@@ -1,5 +1,4 @@
 ﻿using System;
-using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
@@ -12,7 +11,6 @@ namespace UnicornHack.Systems.Beings
         IGameSystem<PropertyValueChangedMessage<GameEntity, int>>
     {
         public const string DiedMessageName = "Died";
-        public const string InnateAbilityName = "innate";
         public const string AttributedAbilityName = "attributed";
 
         public MessageProcessingResult Process(XPGainedMessage message, GameManager manager)
@@ -93,34 +91,37 @@ namespace UnicornHack.Systems.Beings
 
                     break;
                 case nameof(BeingComponent.Might):
-                    var hpEffect = GetPropertyEffect(message.Entity, nameof(BeingComponent.HitPointMaximum), manager);
+                    var hpEffect = manager.EffectApplicationSystem.GetPropertyEffect(
+                        message.Entity, nameof(BeingComponent.HitPointMaximum), AttributedAbilityName);
 
                     hpEffect.Amount = message.NewValue * 10;
 
                     break;
                 case nameof(BeingComponent.Focus):
-                    var epEffect = GetPropertyEffect(message.Entity, nameof(BeingComponent.EnergyPointMaximum),
-                        manager);
+                    var epEffect = manager.EffectApplicationSystem.GetPropertyEffect(
+                        message.Entity, nameof(BeingComponent.EnergyPointMaximum), AttributedAbilityName);
 
                     epEffect.Amount = message.NewValue * 10;
 
                     break;
                 case nameof(BeingComponent.Speed):
-                    var movementEffect =
-                        GetPropertyEffect(message.Entity, nameof(PositionComponent.MovementDelay), manager);
+                    var movementEffect = manager.EffectApplicationSystem.GetPropertyEffect(
+                        message.Entity, nameof(PositionComponent.MovementDelay), AttributedAbilityName);
 
                     movementEffect.Amount = message.NewValue == 0
                         ? 0
                         : TimeSystem.DefaultActionDelay * 10 / message.NewValue;
+
+                    var evasionEffect = manager.EffectApplicationSystem.GetPropertyEffect(
+                        message.Entity, nameof(BeingComponent.Evasion), AttributedAbilityName);
+
+                    evasionEffect.Amount = message.NewValue * 5;
 
                     break;
             }
 
             return MessageProcessingResult.ContinueProcessing;
         }
-
-        private static EffectComponent GetPropertyEffect(GameEntity entity, string propertyName, GameManager manager)
-            => manager.EffectApplicationSystem.GetPropertyEffect(entity, propertyName, AttributedAbilityName);
 
         private void EnqueueDiedMessage(GameEntity entity, GameManager manager)
         {

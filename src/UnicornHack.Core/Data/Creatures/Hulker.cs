@@ -18,6 +18,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
@@ -25,6 +26,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
@@ -32,6 +34,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 60}}
@@ -39,9 +42,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Gaze,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Confuse { Duration = EffectDuration.UntilTimeout, DurationAmount = 4}}
+                    Effects = new HashSet<Effect>
+                        {new Confuse {Duration = EffectDuration.UntilTimeout, DurationAmount = 4}}
                 }
             },
             InitialLevel = 9,
@@ -52,8 +57,8 @@ namespace UnicornHack.Data.Creatures
             Might = 4,
             Speed = 5,
             Focus = 4,
-            MagicDeflection = 12,
-            PhysicalDeflection = 18,
+            Armor = 4,
+            MagicResistance = 12,
             TorsoType = TorsoType.Quadruped,
             UpperExtremities = ExtremityType.Claws,
             LowerExtremities = ExtremityType.Claws,

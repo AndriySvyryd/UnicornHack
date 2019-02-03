@@ -14,25 +14,25 @@ namespace UnicornHack.Utils.MessagingECS
             using (var entityReference = manager.CreateEntity())
             {
                 var entity = entityReference.Referenced;
-                var effect = entity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
+                entity.AddComponent<LevelComponent>((int)EntityComponent.Level);
 
-                Assert.Equal(1, manager.Effects.Count);
-                Assert.True(manager.Effects.Matcher.Matches(entity));
-                Assert.True(manager.Effects.ContainsEntity(entity.Id));
-                Assert.Same(entity, manager.Effects.FindEntity(entity.Id));
-                Assert.Same(entity, manager.Effects.Single());
+                Assert.Equal(1, manager.Levels.Count);
+                Assert.True(manager.Levels.Matcher.Matches(entity));
+                Assert.True(manager.Levels.ContainsEntity(entity.Id));
+                Assert.Same(entity, manager.Levels.FindEntity(entity.Id));
+                Assert.Same(entity, manager.Levels.Single());
 
                 entity.AddComponent<ConnectionComponent>((int)EntityComponent.Connection);
 
-                Assert.Equal(1, manager.Effects.Count);
+                Assert.Equal(1, manager.Levels.Count);
 
-                entity.RemoveComponent(EntityComponent.Effect);
+                entity.RemoveComponent(EntityComponent.Level);
 
-                Assert.Equal(0, manager.Effects.Count);
-                Assert.False(manager.Effects.Matcher.Matches(entity));
-                Assert.False(manager.Effects.ContainsEntity(entity.Id));
-                Assert.Null(manager.Effects.FindEntity(entity.Id));
-                Assert.Empty(manager.Effects);
+                Assert.Equal(0, manager.Levels.Count);
+                Assert.False(manager.Levels.Matcher.Matches(entity));
+                Assert.False(manager.Levels.ContainsEntity(entity.Id));
+                Assert.Null(manager.Levels.FindEntity(entity.Id));
+                Assert.Empty(manager.Levels);
             }
 
             Assert.Equal(0, manager.Queue.QueuedCount);

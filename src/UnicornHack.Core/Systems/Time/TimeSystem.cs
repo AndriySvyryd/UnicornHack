@@ -19,7 +19,8 @@ namespace UnicornHack.Systems.Time
         }
 
         public void EnqueueAdvanceTurn(GameManager manager)
-            => manager.Enqueue(manager.Queue.CreateMessage<AdvanceTurnMessage>(AdvanceTurnMessageName), lowPriority: true);
+            => manager.Enqueue(manager.Queue.CreateMessage<AdvanceTurnMessage>(AdvanceTurnMessageName),
+                lowPriority: true);
 
         // TODO: Handle ability timeout
         public MessageProcessingResult Process(AdvanceTurnMessage message, GameManager manager)

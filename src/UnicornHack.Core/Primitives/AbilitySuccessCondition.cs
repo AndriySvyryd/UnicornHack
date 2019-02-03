@@ -4,7 +4,8 @@
     {
         Default,
         Always,
-        PhysicalAttack,
-        MagicAttack
+        Attack,
+        UnblockableAttack,
+        UnavoidableAttack
     }
 }

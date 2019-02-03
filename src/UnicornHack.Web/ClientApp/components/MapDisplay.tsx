@@ -86,7 +86,7 @@ class MapTile extends React.Component<ITileProps, {}> {
                     PlayerAction.Wait, null, null);
             } else {
                 onClick = () => this.props.performAction(
-                    PlayerAction.UseAbilitySlot, -1, Level.pack(this.props.x, this.props.y));
+                    PlayerAction.UseAbilitySlot, null, Level.pack(this.props.x, this.props.y));
             }
 
             var direction = '';

@@ -12,6 +12,7 @@ namespace UnicornHack
         public EntityGroup<GameEntity> Abilities { get; private set; }
         public EntityGroup<GameEntity> AffectableEntities { get; private set; }
         public UniqueEntityIndex<GameEntity, (int, int)> SlottedAbilitiesIndex { get; private set; }
+        public UniqueEntityIndex<GameEntity, (int, string)> AffectableAbilitiesIndex { get; private set; }
         public EntityRelationship<GameEntity> AbilitiesToAffectableRelationship { get; private set; }
         public AbilityActivationSystem AbilityActivationSystem { get; private set; }
         public AbilitySlottingSystem AbilitySlottingSystem { get; private set; }
@@ -51,6 +52,31 @@ namespace UnicornHack
                     new PropertyMatcher()
                         .With(component => ((AbilityComponent)component).OwnerId, (int)EntityComponent.Ability)
                         .With(component => ((AbilityComponent)component).Slot, (int)EntityComponent.Ability)
+                ));
+
+            AffectableAbilitiesIndex = new UniqueEntityIndex<GameEntity, (int, string)>(
+                nameof(AffectableAbilitiesIndex),
+                Abilities,
+                new KeyValueGetter<GameEntity, (int, string)>(
+                    (entity, changes, getOldValue, matcher) =>
+                    {
+                        if (!matcher.TryGetValue<int?>(
+                                entity, (int)EntityComponent.Ability, nameof(AbilityComponent.OwnerId), changes,
+                                getOldValue, out var ownerId)
+                            || !ownerId.HasValue
+                            || !matcher.TryGetValue<string>(
+                                entity, (int)EntityComponent.Ability, nameof(AbilityComponent.Name), changes,
+                                getOldValue, out var name)
+                            || name == null)
+                        {
+                            return ((0, null), false);
+                        }
+
+                        return ((ownerId.Value, name), true);
+                    },
+                    new PropertyMatcher()
+                        .With(component => ((AbilityComponent)component).OwnerId, (int)EntityComponent.Ability)
+                        .With(component => ((AbilityComponent)component).Name, (int)EntityComponent.Ability)
                 ));
 
             AbilitiesToAffectableRelationship = new EntityRelationship<GameEntity>(

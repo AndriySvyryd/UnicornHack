@@ -98,21 +98,6 @@ namespace UnicornHack.Utils.MessagingECS
         protected void OnEntityRemoved(TEntity entity, Component changedComponent, TEntity referenced)
         {
             var manager = entity.Manager;
-            if (referenced != null
-                && _referencedKeepAlive)
-            {
-                referenced.RemoveReference(entity);
-            }
-
-            if (_referencingKeepAlive)
-            {
-                entity.RemoveReference(referenced);
-            }
-
-            foreach (var entityIndex in _changeListeners)
-            {
-                entityIndex.HandleEntityRemoved(entity, changedComponent, this);
-            }
 
             if (_entityRemovedMessageName != null
                 && entity.Manager != null)
@@ -127,6 +112,22 @@ namespace UnicornHack.Utils.MessagingECS
                 }
 
                 manager.Queue.Enqueue(message);
+            }
+
+            if (referenced?.Manager != null
+                && _referencedKeepAlive)
+            {
+                referenced.RemoveReference(entity);
+            }
+
+            if (_referencingKeepAlive)
+            {
+                entity.RemoveReference(referenced);
+            }
+
+            foreach (var entityIndex in _changeListeners)
+            {
+                entityIndex.HandleEntityRemoved(entity, changedComponent, this);
             }
         }
 

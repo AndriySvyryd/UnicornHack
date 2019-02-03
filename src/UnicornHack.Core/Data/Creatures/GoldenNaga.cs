@@ -18,6 +18,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
@@ -25,6 +26,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Spell,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new Disintegrate {Damage = 140}}
@@ -40,8 +42,8 @@ namespace UnicornHack.Data.Creatures
             Might = 6,
             Speed = 6,
             Focus = 6,
-            MagicDeflection = 35,
-            PhysicalDeflection = 18,
+            Armor = 4,
+            MagicResistance = 35,
             AcidResistance = 75,
             StoningImmune = true,
             TorsoType = TorsoType.Serpentine,

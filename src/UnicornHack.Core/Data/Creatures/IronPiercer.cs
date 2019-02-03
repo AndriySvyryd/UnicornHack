@@ -17,6 +17,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
@@ -30,7 +31,7 @@ namespace UnicornHack.Data.Creatures
             Might = 2,
             Speed = 3,
             Focus = 2,
-            PhysicalDeflection = 18,
+            Armor = 4,
             UpperExtremities = ExtremityType.None,
             LowerExtremities = ExtremityType.None,
             InventorySize = 0,

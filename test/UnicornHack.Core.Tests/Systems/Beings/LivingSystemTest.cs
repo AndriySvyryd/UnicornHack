@@ -1,4 +1,5 @@
-﻿using UnicornHack.Generation;
+﻿using UnicornHack.Data.Items;
+using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Utils.DataStructures;
 using Xunit;
@@ -8,10 +9,11 @@ namespace UnicornHack.Systems.Beings
     public class LivingSystemTest
     {
         [Fact]
-        public void Hp_and_ep_regenerate_with_xp()
+        public void Hp_and_ep_depend_on_might_and_focus_and_regenerate_with_xp()
         {
             var level = TestHelper.BuildLevel(".");
             var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            ItemData.PotionOfOgreness.Instantiate(playerEntity);
             var manager = playerEntity.Manager;
 
             manager.Queue.ProcessQueue(manager);
@@ -19,7 +21,6 @@ namespace UnicornHack.Systems.Beings
             var being = playerEntity.Being;
             Assert.Equal(100, being.EnergyPointMaximum);
             Assert.Equal(100, being.EnergyPoints);
-            Assert.Equal(0, being.ReservedEnergyPoints);
             Assert.Equal(100, being.HitPointMaximum);
             Assert.Equal(100, being.HitPoints);
 
@@ -30,6 +31,14 @@ namespace UnicornHack.Systems.Beings
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(60, being.EnergyPoints);
+            Assert.Equal(60, being.HitPoints);
+
+            TestHelper.ActivateAbility(ItemData.PotionOfOgreness.Name + ": Drink", playerEntity, manager);
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(90, being.EnergyPointMaximum);
+            Assert.Equal(60, being.EnergyPoints);
+            Assert.Equal(120, being.HitPointMaximum);
             Assert.Equal(60, being.HitPoints);
         }
 

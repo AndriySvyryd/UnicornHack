@@ -45,21 +45,15 @@ namespace UnicornHack.Systems.Abilities
 
         private void EnqueueAbilityActivated(AbilityActivatedMessage abilityActivatedMessage, GameManager manager)
         {
-            if (abilityActivatedMessage.EffectsToApply != null
-                && !abilityActivatedMessage.EffectsToApply.IsEmpty)
-            {
-                manager.Enqueue(abilityActivatedMessage);
-            }
-            else
-            {
-                manager.Queue.ReturnMessage(abilityActivatedMessage);
-            }
+            Debug.Assert(abilityActivatedMessage.EffectsToApply != null);
+            manager.Enqueue(abilityActivatedMessage);
         }
 
         public MessageProcessingResult Process(ActivateAbilityMessage message, GameManager manager)
         {
             var abilityActivatedMessage = Activate(message, pretend: false);
-            if (abilityActivatedMessage != null)
+            if (abilityActivatedMessage != null
+                && abilityActivatedMessage.SuccessfulActivation)
             {
                 EnqueueAbilityActivated(abilityActivatedMessage, manager);
             }
@@ -89,17 +83,18 @@ namespace UnicornHack.Systems.Abilities
             if (((ability.Activation & ActivationType.Continuous) != 0
                  && ability.IsActive)
                 || ability.CooldownTick != null
-                || ability.CooldownXpLeft != null)
+                || ability.CooldownXpLeft != null
+                || manager.EffectsToContainingAbilityRelationship[ability.EntityId].Count == 0)
             {
                 targetEffectsMessage.SuccessfulActivation = false;
                 return targetEffectsMessage;
             }
 
-            var activator = activateMessage.ActivatorEntity;
-            if (ability.EnergyPointCost > 0)
+            var ownerBeing = ability.OwnerEntity.Being;
+            if (ability.EnergyPointCost > 0
+                && ownerBeing != null)
             {
-                var activatorBeing = activator.Being;
-                if (activatorBeing.EnergyPoints < ability.EnergyPointCost)
+                if (ownerBeing.EnergyPoints < ability.EnergyPointCost)
                 {
                     return targetEffectsMessage;
                 }
@@ -108,11 +103,11 @@ namespace UnicornHack.Systems.Abilities
                 {
                     if ((ability.Activation & ActivationType.Continuous) != 0)
                     {
-                        activatorBeing.ReservedEnergyPoints += ability.EnergyPointCost;
+                        ownerBeing.ReservedEnergyPoints += ability.EnergyPointCost;
                     }
                     else
                     {
-                        activatorBeing.EnergyPoints -= ability.EnergyPointCost;
+                        ownerBeing.EnergyPoints -= ability.EnergyPointCost;
                     }
                 }
             }
@@ -171,7 +166,13 @@ namespace UnicornHack.Systems.Abilities
 
             AddTriggeredEffects(targetEffectsMessage, selfEffectsMessage, ability.EntityId, abilityTrigger, manager);
 
-            var activations = GetActivations(targetEffectsMessage, selfEffectsMessage);
+            var activatedAbilities = new HashSet<AbilityComponent>();
+            var activations = GetActivations(targetEffectsMessage, selfEffectsMessage, activatedAbilities);
+
+            foreach (var activatedAbility in activatedAbilities)
+            {
+                ChangeState(active: true, activatedAbility, activateMessage.ActivatorEntity, manager);
+            }
 
             if (!selfEffectsMessage.EffectsToApply.IsEmpty)
             {
@@ -182,8 +183,6 @@ namespace UnicornHack.Systems.Abilities
 
             foreach (var activation in activations)
             {
-                ChangeState(active: true, activation.ActivationMessage.AbilityEntity.Ability, activateMessage.ActivatorEntity, manager);
-
                 if (activation.ActivationMessage.TargetEntity == null)
                 {
                     EnqueueAbilityActivated(activation.ActivationMessage, manager);
@@ -195,12 +194,6 @@ namespace UnicornHack.Systems.Abilities
                     targetMessage.TargetEntity = target;
 
                     DetermineSuccess(targetMessage, exposure, manager);
-
-                    var targetAbility = activation.TargetMessage?.AbilityEntity.Ability;
-                    if (targetAbility != null)
-                    {
-                        ChangeState(active: true, targetAbility, activateMessage.ActivatorEntity, manager);
-                    }
 
                     // TODO: Trigger abilities on target
                     EnqueueAbilityActivated(targetMessage, manager);
@@ -230,22 +223,6 @@ namespace UnicornHack.Systems.Abilities
                 case ActivationType.ManualActivation:
                     return activatorPosition.Heading.Value;
                 case ActivationType.Targeted:
-                    var maxOctantDifference = 4;
-                    switch (ability.TargetingAngle)
-                    {
-                        case TargetingAngle.Front2Octants:
-                            maxOctantDifference = 0;
-                            break;
-                        case TargetingAngle.Front4Octants:
-                            maxOctantDifference = 1;
-                            break;
-                        case TargetingAngle.Omnidirectional:
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException(
-                                "Invalid ability direction " + ability.TargetingAngle);
-                    }
-
                     var targetDirection = activatorPosition.LevelCell.DifferenceTo(targetCell);
                     if (targetDirection.Length() == 0)
                     {
@@ -254,6 +231,7 @@ namespace UnicornHack.Systems.Abilities
 
                     var octantsToTurn = 0;
                     var targetOctantDifference = targetDirection.OctantsTo(activatorPosition.Heading.Value);
+                    var maxOctantDifference = ability.HeadingDeviation;
                     if (targetOctantDifference > maxOctantDifference)
                     {
                         octantsToTurn = targetOctantDifference - maxOctantDifference;
@@ -282,11 +260,13 @@ namespace UnicornHack.Systems.Abilities
 
         private List<AbilityActivation> GetActivations(
             AbilityActivatedMessage activationMessage,
-            AbilityActivatedMessage selfEffectsMessage)
+            AbilityActivatedMessage selfEffectsMessage,
+            HashSet<AbilityComponent> activatedAbilities)
         {
             var activations = new List<AbilityActivation>();
 
-            GetActivations(activationMessage, null, selfEffectsMessage, null, activations);
+            activatedAbilities.Add(activationMessage.AbilityEntity.Ability);
+            GetActivations(activationMessage, null, selfEffectsMessage, null, activatedAbilities, activations);
 
             return activations;
         }
@@ -296,6 +276,7 @@ namespace UnicornHack.Systems.Abilities
             AbilityActivatedMessage targetMessage,
             AbilityActivatedMessage selfEffectsMessage,
             GameEntity activatingEffect,
+            HashSet<AbilityComponent> activatedAbilities,
             List<AbilityActivation> activations)
         {
             var manager = activationMessage.AbilityEntity.Manager;
@@ -306,13 +287,15 @@ namespace UnicornHack.Systems.Abilities
             {
                 foreach (var subActivation in perAbilityActivations)
                 {
+                    activatedAbilities.Add(subActivation.ActivatedAbility.Ability);
+
                     var subAbilityMessage = messageToProcess.Clone(manager);
                     subAbilityMessage.AbilityEntity = subActivation.ActivatedAbility;
                     subAbilityMessage.Delay = subActivation.ActivatedAbility.Ability.Delay;
 
                     AbilityActivatedMessage nextActivationMessage;
                     var nextTargetMessage = targetMessage;
-                    if (subActivation.ActivatedAbility.Ability.TargetingType != TargetingType.None
+                    if (subActivation.ActivatedAbility.Ability.Range != 0
                         && nextTargetMessage == null)
                     {
                         nextActivationMessage = subAbilityMessage;
@@ -330,7 +313,7 @@ namespace UnicornHack.Systems.Abilities
                     }
 
                     GetActivations(nextActivationMessage, nextTargetMessage, selfEffectsMessage,
-                        subActivation.ActivatingEffect, activations);
+                        subActivation.ActivatingEffect, activatedAbilities, activations);
                 }
 
                 queue.ReturnMessage(activationMessage);
@@ -444,6 +427,7 @@ namespace UnicornHack.Systems.Abilities
 
         public MessageProcessingResult Process(LeveledUpMessage message, GameManager manager)
         {
+            // TODO: Use a leveled ability
             foreach (var abilityEntity in GetTriggeredAbilities(
                 message.Entity.Id, ActivationType.WhileAboveLevel, manager))
             {
@@ -499,18 +483,13 @@ namespace UnicornHack.Systems.Abilities
                 case nameof(GameManager.AbilitiesToAffectableRelationship):
                     var ability = message.Entity.Ability;
                     if (ability != null
-                        && (ability.Activation & ActivationType.Always) != 0)
+                        && (ability.Activation & ActivationType.Always) != 0
+                        && !ability.IsActive
+                        && manager.EffectsToContainingAbilityRelationship[ability.EntityId].Count != 0)
                     {
                         Debug.Assert(!ability.IsActive);
 
-                        var activation = CreateActivateAbilityMessage(manager);
-                        activation.ActivatorEntity = ability.OwnerEntity;
-                        activation.TargetEntity = ability.OwnerEntity;
-                        activation.AbilityEntity = message.Entity;
-
-                        Process(activation, manager);
-
-                        manager.Queue.ReturnMessage(activation);
+                        Activate(ability, manager);
                     }
 
                     break;
@@ -526,11 +505,38 @@ namespace UnicornHack.Systems.Abilities
                     }
 
                     break;
+                case nameof(GameManager.Effects):
+                    var effect = message.Entity.Effect;
+                    if (effect.ContainingAbilityId != null)
+                    {
+                        var containingAbility = manager.FindEntity(effect.ContainingAbilityId)?.Ability;
+                        if (containingAbility != null
+                            && (containingAbility.Activation & ActivationType.Always) != 0
+                            && !containingAbility.IsActive
+                            && manager.EffectsToContainingAbilityRelationship[containingAbility.EntityId].Count == 1)
+                        {
+                            Activate(containingAbility, manager);
+                        }
+                    }
+
+                    break;
                 default:
                     throw new InvalidOperationException(message.Group.Name);
             }
 
             return MessageProcessingResult.ContinueProcessing;
+        }
+
+        private void Activate(AbilityComponent ability, GameManager manager)
+        {
+            var activation = CreateActivateAbilityMessage(manager);
+            activation.ActivatorEntity = ability.OwnerEntity;
+            activation.TargetEntity = ability.OwnerEntity;
+            activation.AbilityEntity = ability.Entity;
+
+            Process(activation, manager);
+
+            manager.Queue.ReturnMessage(activation);
         }
 
         // TODO: Detect when IsUsable changes to false and deactivate
@@ -540,12 +546,11 @@ namespace UnicornHack.Systems.Abilities
             switch (message.Group.Name)
             {
                 case nameof(GameManager.AbilitiesToAffectableRelationship):
-                    var ability = message.Entity.Ability;
+                    var ability = message.ChangedComponent as AbilityComponent ?? message.Entity.Ability;
                     if (ability != null
-                        && (ability.Activation & ActivationType.Continuous) != 0)
+                        && (ability.Activation & ActivationType.Continuous) != 0
+                        && ability.IsActive)
                     {
-                        Debug.Assert(ability.IsActive);
-
                         Deactivate(ability, message.ReferencedEntity, manager);
                     }
 
@@ -553,7 +558,24 @@ namespace UnicornHack.Systems.Abilities
                 case nameof(GameManager.EntityItemsToContainerRelationship):
                     if (message.ReferencedEntity?.HasComponent(EntityComponent.Being) == true)
                     {
-                        DeactivateAbilities(message.Entity.Id, ActivationType.WhilePossessed, message.ReferencedEntity, manager);
+                        DeactivateAbilities(
+                            message.Entity.Id, ActivationType.WhilePossessed, message.ReferencedEntity, manager);
+                    }
+
+                    break;
+                case nameof(GameManager.Effects):
+                    var effect = (EffectComponent)message.ChangedComponent;
+                    if (effect.ContainingAbilityId != null)
+                    {
+                        var containingAbility = manager
+                            .FindEntity(effect.ContainingAbilityId)?.Ability;
+                        if (containingAbility != null
+                            && (containingAbility.Activation & ActivationType.Continuous) != 0
+                            && containingAbility.IsActive
+                            && manager.EffectsToContainingAbilityRelationship[containingAbility.EntityId].Count == 0)
+                        {
+                            Deactivate(containingAbility, message.ReferencedEntity, manager);
+                        }
                     }
 
                     break;
@@ -664,19 +686,17 @@ namespace UnicornHack.Systems.Abilities
                 case AbilityAction.Sting:
                 case AbilityAction.Hug:
                 case AbilityAction.Trample:
-                    return ActivationType.OnPhysicalMeleeAttack;
+                case AbilityAction.Digestion:
+                    return ActivationType.OnMeleeAttack;
                 case AbilityAction.Shoot:
                 case AbilityAction.Throw:
                 case AbilityAction.Spit:
-                    return ActivationType.OnPhysicalRangedAttack;
-                case AbilityAction.Digestion:
-                    return ActivationType.OnMagicalMeleeAttack;
                 case AbilityAction.Breath:
                 case AbilityAction.Gaze:
                 case AbilityAction.Scream:
                 case AbilityAction.Spell:
                 case AbilityAction.Explosion:
-                    return ActivationType.OnMagicalRangedAttack;
+                    return ActivationType.OnRangedAttack;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(ability), ability.Action.ToString());
             }
@@ -692,7 +712,8 @@ namespace UnicornHack.Systems.Abilities
             var activator = activationMessage.ActivatorEntity;
             var targetCell = activationMessage.TargetCell.Value;
             var vectorToTarget = activator.Position.LevelCell.DifferenceTo(targetCell);
-            if (vectorToTarget.Length() == 0)
+            var targetDistance = vectorToTarget.Length();
+            if (targetDistance == 0)
             {
                 return new[] {(activator, BeveledVisibilityCalculator.MaxVisibility)};
             }
@@ -700,20 +721,13 @@ namespace UnicornHack.Systems.Abilities
             var manager = activator.Manager;
             var levelId = activator.Position.LevelId;
             var ability = activationMessage.AbilityEntity.Ability;
-            switch (ability.TargetingType)
-            {
-                case TargetingType.AdjacentSingle:
-                    if (vectorToTarget.Length() > 1)
-                    {
-                        return new (GameEntity, byte)[0];
-                    }
 
-                    var target = manager.LevelActorToLevelCellIndex[(levelId, targetCell.X, targetCell.Y)];
-                    return target == null
-                        ? new (GameEntity, byte)[0]
-                        : new[] {(target, BeveledVisibilityCalculator.MaxVisibility)};
-                case TargetingType.AdjacentArc:
-                    if (vectorToTarget.Length() > 1)
+            switch (ability.TargetingShape)
+            {
+                // TODO: Handle other shapes
+                case TargetingShape.ThreeOctants:
+                    // TODO: Handle different ranges
+                    if (targetDistance > 1)
                     {
                         return new (GameEntity, byte)[0];
                     }
@@ -742,51 +756,50 @@ namespace UnicornHack.Systems.Abilities
                     }
 
                     return targets;
-                case TargetingType.Projectile:
-                case TargetingType.GuidedProjectile:
-                case TargetingType.Beam:
-                case TargetingType.LineOfSight:
+                case TargetingShape.Line:
                     return GetLOSTargets(
                         activator,
                         targetCell,
                         activator.Position.LevelEntity,
-                        ability.TargetingType);
+                        ability.TargetingType,
+                        ability.Range);
                 default:
-                    throw new ArgumentOutOfRangeException("TargetingType " + ability.TargetingType + " not supported");
+                    throw new NotSupportedException("TargetingShape " + ability.TargetingShape + " not supported");
             }
         }
 
         private static IReadOnlyCollection<(GameEntity, byte)> GetLOSTargets(
-            GameEntity sensor, Point targetCell, GameEntity levelEntity, TargetingType targetingType)
+            GameEntity sensor, Point targetCell, GameEntity levelEntity, TargetingType targetingType, int range)
         {
             var manager = levelEntity.Manager;
             var los = manager.SensorySystem.GetLOS(sensor, targetCell);
             var level = levelEntity.Level;
             switch (targetingType)
             {
-                case TargetingType.Beam:
+                case TargetingType.Area:
                     var targets = new List<(GameEntity, byte)>();
-                    foreach (var (index, beamExposure) in los)
+                    foreach (var (targetIndex, beamExposure) in los)
                     {
+                        var beamTargetCell = level.IndexToPoint[targetIndex];
                         var beamTarget =
-                            manager.LevelActorToLevelCellIndex[(levelEntity.Id, targetCell.X, targetCell.Y)];
-                        if (beamTarget != null)
+                            manager.LevelActorToLevelCellIndex[(levelEntity.Id, beamTargetCell.X, beamTargetCell.Y)];
+                        if (beamTarget != null
+                            && sensor.Position.LevelCell.DifferenceTo(beamTargetCell).Length() <= range)
                         {
                             targets.Add((beamTarget, beamExposure));
                         }
                     }
 
                     return targets;
-                case TargetingType.Projectile:
-                case TargetingType.GuidedProjectile:
-                case TargetingType.LineOfSight:
-                    // TODO: Target visibility for Projectile should be affected by previous entities
-                    // TODO: Allow GuidedProjectile to hit out of LOS in some cases
+                case TargetingType.Edge:
+                case TargetingType.Single:
+                    // TODO: Target for Single should be the first entity
 
                     var (lastIndex, exposure) = los.Last();
                     var target = manager.LevelActorToLevelCellIndex[(levelEntity.Id, targetCell.X, targetCell.Y)];
                     if (level.IndexToPoint[lastIndex] != targetCell
-                        || target == null)
+                        || target == null
+                        || sensor.Position.LevelCell.DifferenceTo(targetCell).Length() > range)
                     {
                         return new (GameEntity, byte)[0];
                     }
@@ -805,24 +818,16 @@ namespace UnicornHack.Systems.Abilities
             if (successCondition == AbilitySuccessCondition.Default)
             {
                 var activation = ability.Activation;
-                if ((activation & ActivationType.OnPhysicalAttack) != ActivationType.Default)
+                if ((activation & ActivationType.OnAttack) != ActivationType.Default)
                 {
-                    successCondition = AbilitySuccessCondition.PhysicalAttack;
-                }
-                else if ((activation & ActivationType.OnMagicalAttack) != ActivationType.Default)
-                {
-                    successCondition = AbilitySuccessCondition.MagicAttack;
+                    successCondition = AbilitySuccessCondition.Attack;
                 }
                 else
                 {
                     var trigger = GetTrigger(ability);
-                    if ((trigger & ActivationType.OnPhysicalAttack) != ActivationType.Default)
+                    if ((trigger & ActivationType.OnAttack) != ActivationType.Default)
                     {
-                        successCondition = AbilitySuccessCondition.PhysicalAttack;
-                    }
-                    else if ((trigger & ActivationType.OnMagicalAttack) != ActivationType.Default)
-                    {
-                        successCondition = AbilitySuccessCondition.MagicAttack;
+                        successCondition = AbilitySuccessCondition.Attack;
                     }
                     else
                     {
@@ -838,41 +843,45 @@ namespace UnicornHack.Systems.Abilities
             }
             else if (successCondition != AbilitySuccessCondition.Always)
             {
-                var deflection = 0;
-                var targetPosition = message.TargetEntity.Position;
-                if (successCondition == AbilitySuccessCondition.PhysicalAttack)
+                int defenseRating;
+                switch (successCondition)
                 {
-                    deflection = message.TargetEntity.Being.PhysicalDeflection;
-                }
-                else if (successCondition == AbilitySuccessCondition.MagicAttack)
-                {
-                    deflection = message.TargetEntity.Being.MagicDeflection;
-                }
-                else
-                {
-                    throw new ArgumentOutOfRangeException();
+                    case AbilitySuccessCondition.Attack:
+                        defenseRating = message.TargetEntity.Being.Deflection;
+                        defenseRating += message.TargetEntity.Being.Evasion;
+                        break;
+                    case AbilitySuccessCondition.UnblockableAttack:
+                        defenseRating = message.TargetEntity.Being.Evasion;
+                        break;
+                    case AbilitySuccessCondition.UnavoidableAttack:
+                        defenseRating = message.TargetEntity.Being.Deflection;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
 
                 if (exposure < BeveledVisibilityCalculator.MaxVisibility)
                 {
-                    deflection += (BeveledVisibilityCalculator.MaxVisibility - exposure) * 10
+                    // TODO: This should decrease attack rating instead
+                    defenseRating += (BeveledVisibilityCalculator.MaxVisibility - exposure) * 10
                                   / BeveledVisibilityCalculator.MaxVisibility;
                 }
 
-                if (manager.SensorySystem.GetVisibility(message.ActivatorEntity, targetPosition.LevelCell) == 0)
+                if (defenseRating > 100)
                 {
-                    deflection += 10;
+                    defenseRating = 100;
                 }
 
                 var entropyState = message.TargetEntity.Being.EntropyState;
-                success = game.Random.NextBool(75 - deflection, ref entropyState);
+                success = game.Random.NextBool(100 - defenseRating, ref entropyState);
                 message.TargetEntity.Being.EntropyState = entropyState;
             }
 
             message.SuccessfulApplication = success;
         }
 
-        private void DeactivateAbilities(int activatableId, ActivationType activation, GameEntity activatorEntity, GameManager manager)
+        private void DeactivateAbilities(
+            int activatableId, ActivationType activation, GameEntity activatorEntity, GameManager manager)
         {
             foreach (var abilityEntity in manager.AbilitiesToAffectableRelationship[activatableId])
             {
@@ -900,7 +909,11 @@ namespace UnicornHack.Systems.Abilities
             if (ability.EnergyPointCost > 0
                 && (ability.Activation & ActivationType.Continuous) != 0)
             {
-                activatorEntity.Being.ReservedEnergyPoints -= ability.EnergyPointCost;
+                var ownerBeing = ability.OwnerEntity.Being;
+                if (ownerBeing != null)
+                {
+                    ownerBeing.ReservedEnergyPoints -= ability.EnergyPointCost;
+                }
             }
 
             foreach (var appliedEffect in manager.AppliedEffectsToSourceAbilityRelationship[ability.EntityId].ToList())
@@ -910,6 +923,12 @@ namespace UnicornHack.Systems.Abilities
                 removeComponentMessage.Component = EntityComponent.Effect;
 
                 manager.Enqueue(removeComponentMessage, lowPriority: true);
+            }
+
+            if (ability.Slot != null
+                && (ability.Activation & ActivationType.WhileToggled) != 0)
+            {
+                ability.Slot = null;
             }
         }
 

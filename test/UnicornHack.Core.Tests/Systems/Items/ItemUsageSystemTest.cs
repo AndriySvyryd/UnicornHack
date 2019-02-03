@@ -27,7 +27,7 @@ namespace UnicornHack.Systems.Items
             var equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = shieldEntity;
-            equipMessage.Slot = EquipmentSlot.GraspBothExtremities;
+            equipMessage.Slot = EquipmentSlot.GraspBothMelee;
 
             manager.Enqueue(equipMessage);
             manager.Queue.ProcessQueue(manager);
@@ -35,7 +35,7 @@ namespace UnicornHack.Systems.Items
             var shieldAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
                 .Select(a => a.Ability)
                 .Single(a => (a.Activation & ActivationType.Slottable) != 0
-                             && !manager.SkillAbilitiesSystem.CanBeDefaultAttack(a));
+                             && a.Template?.Type != AbilityType.DefaultAttack);
 
             var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
             setSlotMessage.AbilityEntity = shieldAbility.Entity;
@@ -59,7 +59,7 @@ namespace UnicornHack.Systems.Items
             manager.Enqueue(moveItemMessage);
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Equal(EquipmentSlot.GraspBothExtremities, shieldEntity.Item.EquippedSlot);
+            Assert.Equal(EquipmentSlot.GraspBothMelee, shieldEntity.Item.EquippedSlot);
             Assert.Equal(0, shieldAbility.Slot);
             Assert.True(shieldAbility.IsActive);
 
@@ -70,7 +70,7 @@ namespace UnicornHack.Systems.Items
             manager.Enqueue(deactivateMessage);
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Equal(0, shieldAbility.Slot);
+            Assert.Null(shieldAbility.Slot);
             Assert.False(shieldAbility.IsActive);
             Assert.Equal(0, playerEntity.Being.FireResistance);
             Assert.Equal(200, shieldAbility.CooldownTick);
@@ -88,8 +88,8 @@ namespace UnicornHack.Systems.Items
 
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Equal(EquipmentSlot.GraspBothExtremities, shieldEntity.Item.EquippedSlot);
-            Assert.Equal(0, shieldAbility.Slot);
+            Assert.Equal(EquipmentSlot.GraspBothMelee, shieldEntity.Item.EquippedSlot);
+            Assert.NotNull(manager.AffectableAbilitiesIndex[(playerEntity.Id, shieldAbility.Name)]);
 
             manager.TimeSystem.EnqueueAdvanceTurn(manager);
             manager.Queue.ProcessQueue(manager);
@@ -128,7 +128,7 @@ namespace UnicornHack.Systems.Items
             var equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = shieldEntity;
-            equipMessage.Slot = EquipmentSlot.GraspBothExtremities;
+            equipMessage.Slot = EquipmentSlot.GraspBothMelee;
 
             manager.Enqueue(equipMessage);
             manager.Queue.ProcessQueue(manager);
@@ -136,7 +136,7 @@ namespace UnicornHack.Systems.Items
             var shieldAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
                 .Select(a => a.Ability)
                 .Single(a => (a.Activation & ActivationType.Slottable) != 0
-                             && !manager.SkillAbilitiesSystem.CanBeDefaultAttack(a));
+                             && a.Template?.Type != AbilityType.DefaultAttack);
 
             var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
             setSlotMessage.AbilityEntity = shieldAbility.Entity;
@@ -161,13 +161,13 @@ namespace UnicornHack.Systems.Items
             var activateAbility = manager.AbilitiesToAffectableRelationship[shieldEntity.Id]
                 .Select(a => a.Ability)
                 .Single(a => (a.Activation & ActivationType.Slottable) != 0
-                             && !manager.SkillAbilitiesSystem.CanBeDefaultAttack(a));
+                             && a.Template?.Type != AbilityType.DefaultAttack);
             Assert.Equal(200, activateAbility.CooldownTick);
 
             equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = shieldEntity;
-            equipMessage.Slot = EquipmentSlot.GraspBothExtremities;
+            equipMessage.Slot = EquipmentSlot.GraspBothMelee;
 
             manager.Enqueue(equipMessage);
             manager.Queue.ProcessQueue(manager);
@@ -180,7 +180,7 @@ namespace UnicornHack.Systems.Items
             manager.Enqueue(moveItemMessage);
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Equal(EquipmentSlot.GraspBothExtremities, shieldEntity.Item.EquippedSlot);
+            Assert.Equal(EquipmentSlot.GraspBothMelee, shieldEntity.Item.EquippedSlot);
             Assert.Equal(1, manager.EntityItemsToContainerRelationship[playerEntity.Id].Count);
 
             moveItemMessage = manager.ItemMovingSystem.CreateMoveItemMessage(manager);

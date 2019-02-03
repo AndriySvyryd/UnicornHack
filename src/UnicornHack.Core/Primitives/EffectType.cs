@@ -1,10 +1,11 @@
-﻿namespace UnicornHack.Systems.Effects
+﻿namespace UnicornHack.Primitives
 {
     public enum EffectType
     {
         Default = 0,
         Activate,
         AddAbility,
+        AddDuplicateAbility,
         Bind,
         Bleed,
         Blight,

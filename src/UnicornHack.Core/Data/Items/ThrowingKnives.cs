@@ -14,17 +14,18 @@ namespace UnicornHack.Data.Items
             {
                 new Ability
                 {
-                    Activation = ActivationType.OnPhysicalRangedAttack,
+                    Activation = ActivationType.OnRangedAttack,
+                    Range = 15,
                     Action = AbilityAction.Throw,
                     Effects = new HashSet<Effect>
                         {new PhysicalDamage {Damage = 30}, new Activate {Projectile = "throwing knife"}}
                 }
             },
-            Type = ItemType.WeaponRangedThrown,
+            Type = ItemType.WeaponRangedClose,
             Material = Material.Steel,
             Weight = 5,
             EquipableSizes = SizeCategory.Small | SizeCategory.Medium,
-            EquipableSlots = EquipmentSlot.GraspSingleExtremity
+            EquipableSlots = EquipmentSlot.GraspSingleRanged
         };
     }
 }

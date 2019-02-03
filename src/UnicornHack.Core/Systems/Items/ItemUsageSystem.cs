@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Time;
 using UnicornHack.Utils.MessagingECS;
@@ -37,7 +38,29 @@ namespace UnicornHack.Systems.Items
             equippedMessage.ItemEntity = message.ItemEntity;
             equippedMessage.ActorEntity = message.ActorEntity;
             equippedMessage.Slot = message.Slot;
+            equippedMessage.OldSlot = item.EquippedSlot;
             equippedMessage.SuppressLog = message.SuppressLog;
+
+            switch (message.Slot)
+            {
+                case EquipmentSlot.None:
+                case EquipmentSlot.GraspPrimaryMelee:
+                case EquipmentSlot.GraspSecondaryMelee:
+                case EquipmentSlot.GraspBothMelee:
+                case EquipmentSlot.GraspPrimaryRanged:
+                case EquipmentSlot.GraspSecondaryRanged:
+                case EquipmentSlot.GraspBothRanged:
+                case EquipmentSlot.GraspMouth:
+                case EquipmentSlot.Torso:
+                case EquipmentSlot.Head:
+                case EquipmentSlot.Feet:
+                case EquipmentSlot.Hands:
+                case EquipmentSlot.Back:
+                case EquipmentSlot.Neck:
+                    break;
+                default:
+                    throw new InvalidOperationException($"Invalid slot {message.Slot}");
+            }
 
             if (message.Slot != EquipmentSlot.None)
             {
@@ -66,26 +89,53 @@ namespace UnicornHack.Systems.Items
                     }
                 }
 
-                if (message.Slot == EquipmentSlot.GraspPrimaryExtremity
-                    || message.Slot == EquipmentSlot.GraspSecondaryExtremity)
+                if (message.Slot == EquipmentSlot.GraspPrimaryMelee
+                    || message.Slot == EquipmentSlot.GraspSecondaryMelee)
                 {
-                    equippedItem = GetEquippedItem(EquipmentSlot.GraspBothExtremities, message.ActorEntity, manager);
+                    equippedItem = GetEquippedItem(EquipmentSlot.GraspBothMelee, message.ActorEntity, manager);
                     if (equippedItem != null
                         && !Unequip(equippedItem, message.ActorEntity, manager, pretend))
                     {
                         return equippedMessage;
                     }
                 }
-                else if (message.Slot == EquipmentSlot.GraspBothExtremities)
+                else if (message.Slot == EquipmentSlot.GraspBothMelee)
                 {
-                    equippedItem = GetEquippedItem(EquipmentSlot.GraspPrimaryExtremity, message.ActorEntity, manager);
+                    equippedItem = GetEquippedItem(EquipmentSlot.GraspPrimaryMelee, message.ActorEntity, manager);
                     if (equippedItem != null
                         && !Unequip(equippedItem, message.ActorEntity, manager, pretend))
                     {
                         return equippedMessage;
                     }
 
-                    equippedItem = GetEquippedItem(EquipmentSlot.GraspSecondaryExtremity, message.ActorEntity, manager);
+                    equippedItem = GetEquippedItem(EquipmentSlot.GraspSecondaryMelee, message.ActorEntity, manager);
+                    if (equippedItem != null
+                        && !Unequip(equippedItem, message.ActorEntity, manager, pretend))
+                    {
+                        return equippedMessage;
+                    }
+                }
+
+                if (message.Slot == EquipmentSlot.GraspPrimaryRanged
+                    || message.Slot == EquipmentSlot.GraspSecondaryRanged)
+                {
+                    equippedItem = GetEquippedItem(EquipmentSlot.GraspBothRanged, message.ActorEntity, manager);
+                    if (equippedItem != null
+                        && !Unequip(equippedItem, message.ActorEntity, manager, pretend))
+                    {
+                        return equippedMessage;
+                    }
+                }
+                else if (message.Slot == EquipmentSlot.GraspBothRanged)
+                {
+                    equippedItem = GetEquippedItem(EquipmentSlot.GraspPrimaryRanged, message.ActorEntity, manager);
+                    if (equippedItem != null
+                        && !Unequip(equippedItem, message.ActorEntity, manager, pretend))
+                    {
+                        return equippedMessage;
+                    }
+
+                    equippedItem = GetEquippedItem(EquipmentSlot.GraspSecondaryRanged, message.ActorEntity, manager);
                     if (equippedItem != null
                         && !Unequip(equippedItem, message.ActorEntity, manager, pretend))
                     {
@@ -164,15 +214,15 @@ namespace UnicornHack.Systems.Items
             }
 
             var slots = EquipmentSlot.None;
-            if ((item.EquipableSlots & EquipmentSlot.GraspBothExtremities) != 0
-                && (item.EquipableSlots & EquipmentSlot.GraspSingleExtremity) != 0)
+            if ((item.EquipableSlots & EquipmentSlot.GraspBothMelee) != 0
+                && (item.EquipableSlots & EquipmentSlot.GraspSingleMelee) != 0)
             {
                 if (category != SizeCategory.Tiny)
                 {
                     var smallerSize = (SizeCategory)((int)category >> 1);
                     if ((item.EquipableSizes & smallerSize) != 0)
                     {
-                        slots |= EquipmentSlot.GraspSingleExtremity;
+                        slots |= EquipmentSlot.GraspSingleMelee;
                     }
                 }
 
@@ -181,7 +231,29 @@ namespace UnicornHack.Systems.Items
                     var biggerSize = (SizeCategory)((int)category << 1);
                     if ((item.EquipableSizes & biggerSize) != 0)
                     {
-                        slots |= EquipmentSlot.GraspBothExtremities;
+                        slots |= EquipmentSlot.GraspBothMelee;
+                    }
+                }
+            }
+
+            if ((item.EquipableSlots & EquipmentSlot.GraspBothRanged) != 0
+                && (item.EquipableSlots & EquipmentSlot.GraspSingleRanged) != 0)
+            {
+                if (category != SizeCategory.Tiny)
+                {
+                    var smallerSize = (SizeCategory)((int)category >> 1);
+                    if ((item.EquipableSizes & smallerSize) != 0)
+                    {
+                        slots |= EquipmentSlot.GraspSingleRanged;
+                    }
+                }
+
+                if (category != SizeCategory.Gigantic)
+                {
+                    var biggerSize = (SizeCategory)((int)category << 1);
+                    if ((item.EquipableSizes & biggerSize) != 0)
+                    {
+                        slots |= EquipmentSlot.GraspBothRanged;
                     }
                 }
             }

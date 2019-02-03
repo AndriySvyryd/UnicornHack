@@ -7,8 +7,8 @@ using UnicornHack.Utils.Caching;
 
 namespace UnicornHack.Utils.MessagingECS
 {
-    public abstract class Component : IOwnerReferenceable, ITrackable, IPoolable, INotifyPropertyChanged,
-        INotifyPropertyChanging
+    public abstract class Component :
+        IOwnerReferenceable, ITrackable, IPoolable, INotifyPropertyChanged, INotifyPropertyChanging
     {
         public static int NullId = int.MinValue;
         public event PropertyChangedEventHandler PropertyChanged;
@@ -137,7 +137,7 @@ namespace UnicornHack.Utils.MessagingECS
 
         protected virtual void Clean()
         {
-            Debug.Assert(Entity?.HasComponent(ComponentId) != true
+            Debug.Assert(Entity?.FindComponent(ComponentId) != this
                          && _referenceCount == 0
                          && !_tracked
                          && PropertyChanged == null

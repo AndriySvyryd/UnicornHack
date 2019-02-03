@@ -18,6 +18,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
@@ -25,6 +26,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Hug,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
@@ -32,9 +34,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Hug,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Bind { Duration = EffectDuration.UntilTimeout, DurationAmount = 2}}
+                    Effects = new HashSet<Effect>
+                        {new Bind {Duration = EffectDuration.UntilTimeout, DurationAmount = 2}}
                 }
             },
             InitialLevel = 6,
@@ -45,7 +49,7 @@ namespace UnicornHack.Data.Creatures
             Might = 4,
             Speed = 4,
             Focus = 4,
-            PhysicalDeflection = 15,
+            Armor = 2,
             TorsoType = TorsoType.Serpentine,
             UpperExtremities = ExtremityType.None,
             LowerExtremities = ExtremityType.None,

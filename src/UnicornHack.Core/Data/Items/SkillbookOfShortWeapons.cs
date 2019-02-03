@@ -18,7 +18,7 @@ namespace UnicornHack.Data.Items
                     Activation = ActivationType.WhileToggled,
                     Delay = 100,
                     Effects = new HashSet<Effect>
-                        {new ChangeProperty<int> {PropertyName = "ShortWeapons", Value = 1, Duration = EffectDuration.Infinite}}
+                        {new AddAbility {AbilityName = "short weapons", Level = 1, Duration = EffectDuration.Infinite}}
                 }
             },
             Type = ItemType.SkillBook,

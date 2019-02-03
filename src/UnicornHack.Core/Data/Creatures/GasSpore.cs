@@ -17,6 +17,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Explosion,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 140}}
@@ -24,9 +25,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Explosion,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Deafen { Duration = EffectDuration.UntilTimeout, DurationAmount = 27}}
+                    Effects = new HashSet<Effect>
+                        {new Deafen {Duration = EffectDuration.UntilTimeout, DurationAmount = 27}}
                 }
             },
             InitialLevel = 1,
@@ -38,7 +41,6 @@ namespace UnicornHack.Data.Creatures
             Might = 1,
             Speed = 1,
             Focus = 6,
-            PhysicalDeflection = 10,
             SlimingImmune = true,
             HeadType = HeadType.None,
             UpperExtremities = ExtremityType.None,

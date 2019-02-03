@@ -17,13 +17,14 @@ namespace UnicornHack.Data.Creatures
             {
                 new Ability
                 {
-                    Activation = ActivationType.OnPhysicalMeleeAttack,
+                    Activation = ActivationType.OnMeleeAttack,
                     Action = AbilityAction.Modifier,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 40}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Punch,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
@@ -31,6 +32,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new DrainLife {Amount = 4}}
@@ -48,7 +50,7 @@ namespace UnicornHack.Data.Creatures
             Speed = 7,
             Focus = 12,
             Regeneration = 3,
-            MagicDeflection = 20,
+            MagicResistance = 20,
             TorsoType = TorsoType.Humanoid,
             UpperExtremities = ExtremityType.GraspingFingers,
             LowerExtremities = ExtremityType.Fingers,

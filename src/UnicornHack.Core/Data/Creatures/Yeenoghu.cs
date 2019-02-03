@@ -17,13 +17,14 @@ namespace UnicornHack.Data.Creatures
             {
                 new Ability
                 {
-                    Activation = ActivationType.OnPhysicalMeleeAttack,
+                    Activation = ActivationType.OnMeleeAttack,
                     Action = AbilityAction.Modifier,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Punch,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
@@ -31,20 +32,25 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Confuse { Duration = EffectDuration.UntilTimeout, DurationAmount = 9}}
+                    Effects = new HashSet<Effect>
+                        {new Confuse {Duration = EffectDuration.UntilTimeout, DurationAmount = 9}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Paralyze { Duration = EffectDuration.UntilTimeout, DurationAmount = 3}}
+                    Effects = new HashSet<Effect>
+                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = 3}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Spell,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new Disintegrate {Damage = 70}}
@@ -62,8 +68,8 @@ namespace UnicornHack.Data.Creatures
             Might = 16,
             Speed = 16,
             Focus = 16,
-            MagicDeflection = 40,
-            PhysicalDeflection = 25,
+            Armor = 7,
+            MagicResistance = 40,
             FireResistance = 75,
             Infravisible = true,
             Infravision = true,

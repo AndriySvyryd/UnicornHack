@@ -16,15 +16,18 @@ namespace UnicornHack.Data.Creatures
             {
                 new Ability
                 {
-                    Activation = ActivationType.Targeted, Action = AbilityAction.Touch, Cooldown = 100, Effects =
-                        new HashSet<Effect>
-                        {
-                            new Slime()
-                        }
+                    Activation = ActivationType.Targeted,
+                    Range = 1,
+                    Action = AbilityAction.Touch,
+                    Cooldown = 100,
+                    Effects = new HashSet<Effect>
+                    {
+                        new Slime()
+                    }
                 },
                 new Ability
                 {
-                    Activation = ActivationType.OnPhysicalMeleeHit, Effects = new HashSet<Effect>
+                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect>
                     {
                         new Slime()
                     }
@@ -38,7 +41,7 @@ namespace UnicornHack.Data.Creatures
             Might = 4,
             Speed = 4,
             Focus = 8,
-            PhysicalDeflection = 14,
+            Armor = 2,
             AcidResistance = 75,
             ColdResistance = 75,
             ElectricityResistance = 75,

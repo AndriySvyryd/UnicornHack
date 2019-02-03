@@ -18,17 +18,22 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Sedate { Duration = EffectDuration.UntilTimeout, DurationAmount = 2}}
+                    Effects = new HashSet<Effect>
+                        {new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = 2}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.Targeted, Action = AbilityAction.Touch, Cooldown = 100, Effects =
-                        new HashSet<Effect>
-                        {
-                            new StealItem()
-                        }
+                    Activation = ActivationType.Targeted,
+                    Range = 1,
+                    Action = AbilityAction.Touch,
+                    Cooldown = 100,
+                    Effects = new HashSet<Effect>
+                    {
+                        new StealItem()
+                    }
                 }
             },
             InitialLevel = 3,
@@ -41,8 +46,7 @@ namespace UnicornHack.Data.Creatures
             Might = 5,
             Speed = 8,
             Focus = 6,
-            MagicDeflection = 10,
-            PhysicalDeflection = 11,
+            MagicResistance = 10,
             TorsoType = TorsoType.Humanoid,
             UpperExtremities = ExtremityType.GraspingFingers,
             LowerExtremities = ExtremityType.Fingers,

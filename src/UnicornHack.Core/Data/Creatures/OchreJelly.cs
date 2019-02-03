@@ -17,9 +17,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Engulf { Duration = EffectDuration.UntilTimeout, DurationAmount = 4}}
+                    Effects = new HashSet<Effect>
+                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = 4}}
                 },
                 new Ability
                 {
@@ -30,8 +32,7 @@ namespace UnicornHack.Data.Creatures
                 },
                 new Ability
                 {
-                    Activation = ActivationType.OnPhysicalMeleeHit,
-                    Effects = new HashSet<Effect> {new Corrode {Damage = 70}}
+                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Corrode {Damage = 70}}
                 }
             },
             InitialLevel = 6,
@@ -43,8 +44,8 @@ namespace UnicornHack.Data.Creatures
             Might = 4,
             Speed = 4,
             Focus = 8,
-            MagicDeflection = 10,
-            PhysicalDeflection = 12,
+            Armor = 1,
+            MagicResistance = 10,
             AcidResistance = 75,
             StoningImmune = true,
             HeadType = HeadType.None,

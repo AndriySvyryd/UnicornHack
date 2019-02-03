@@ -10,7 +10,7 @@ import { ActivationType } from '../transport/ActivationType';
 export class AbilityBar extends React.Component<IAbilityBarProps, {}> {
     render() {
         const slots = new Array(9);
-        for (var i = 0; i < slots.length; i++) {
+        for (var i = 1; i < slots.length; i++) {
             const slot = i - 1;
             var slottedAbility = null;
             for (var ability of this.props.abilities.values()) {

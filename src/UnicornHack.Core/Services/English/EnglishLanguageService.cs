@@ -8,7 +8,6 @@ using UnicornHack.Primitives;
 using UnicornHack.Services.LogEvents;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
-using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 
 namespace UnicornHack.Services.English
@@ -110,14 +109,26 @@ namespace UnicornHack.Services.English
             // TODO: take body shape into account
             switch (slot)
             {
-                case EquipmentSlot.GraspPrimaryExtremity:
-                    return abbreviate ? "MH" : "main hand";
-                case EquipmentSlot.GraspSecondaryExtremity:
-                    return abbreviate ? "OH" : "off hand";
-                case EquipmentSlot.GraspSingleExtremity:
-                    return abbreviate ? "SH" : "single hand";
-                case EquipmentSlot.GraspBothExtremities:
-                    return abbreviate ? "BH" : "both hands";
+                case EquipmentSlot.GraspPrimaryMelee:
+                    return abbreviate ? "MM" : "main hand for melee";
+                case EquipmentSlot.GraspPrimaryRanged:
+                    return abbreviate ? "MR" : "main hand for ranged";
+                case EquipmentSlot.GraspSecondaryMelee:
+                    return abbreviate ? "OM" : "off hand for melee";
+                case EquipmentSlot.GraspSecondaryRanged:
+                    return abbreviate ? "OR" : "off hand for ranged";
+                case EquipmentSlot.GraspSingleMelee:
+                    return abbreviate ? "SM" : "single hand for melee";
+                case EquipmentSlot.GraspSingleRanged:
+                    return abbreviate ? "SR" : "single hand for ranged";
+                case EquipmentSlot.GraspBothMelee:
+                    return abbreviate ? "BM" : "both hands for melee";
+                case EquipmentSlot.GraspBothRanged:
+                    return abbreviate ? "BR" : "both hands for ranged";
+                case EquipmentSlot.GraspMelee:
+                    return abbreviate ? "AM" : "single or both hands for melee";
+                case EquipmentSlot.GraspRanged:
+                    return abbreviate ? "AR" : "single or both hands for ranged";
                 case EquipmentSlot.GraspMouth:
                     return abbreviate ? "M" : "mouth";
                 case EquipmentSlot.Feet:
@@ -141,11 +152,14 @@ namespace UnicornHack.Services.English
         {
             switch (slot)
             {
-                case EquipmentSlot.GraspPrimaryExtremity:
-                case EquipmentSlot.GraspSecondaryExtremity:
+                case EquipmentSlot.GraspPrimaryMelee:
+                case EquipmentSlot.GraspPrimaryRanged:
+                case EquipmentSlot.GraspSecondaryMelee:
+                case EquipmentSlot.GraspSecondaryRanged:
                 case EquipmentSlot.GraspMouth:
                     return "in the";
-                case EquipmentSlot.GraspBothExtremities:
+                case EquipmentSlot.GraspBothMelee:
+                case EquipmentSlot.GraspBothRanged:
                     return "in";
                 case EquipmentSlot.Feet:
                 case EquipmentSlot.Torso:
@@ -201,7 +215,7 @@ namespace UnicornHack.Services.English
                     verb = "throw";
                     break;
                 case AbilityAction.Shoot:
-                    verb = "shoot with";
+                    verb = "shoot at";
                     break;
                 case AbilityAction.Digestion:
                     verb = "digest";
@@ -327,20 +341,11 @@ namespace UnicornHack.Services.English
             if (weapon == null
                 || !@event.Ranged)
             {
-                // TODO: Don't add the weapon name
-                var meleeWeaponPhrase = weapon == null || weapon.TemplateName == ""
-                    ? ""
-                    : "with " +
-                      (@event.AttackerSensed.CanIdentify()
-                          ? GetString(weapon, 1, definiteDeterminer: attackerPerson == EnglishPerson.Second)
-                          : "something");
-
                 if (victim == null)
                 {
                     return ToSentence(attacker,
                         EnglishMorphologicalProcessor.ProcessVerb(attackVerb, mainVerbForm),
                         "the air",
-                        meleeWeaponPhrase,
                         @event.SensorEntity == @event.VictimEntity ? "!" : ".");
                 }
 
@@ -353,7 +358,6 @@ namespace UnicornHack.Services.English
                             : EnglishMorphologicalProcessor.GetPronoun(EnglishPronounForm.Reflexive,
                                 EnglishNumber.Singular,
                                 attackerPerson, victimGender),
-                        meleeWeaponPhrase,
                         @event.SensorEntity == @event.VictimEntity ? "!" : ".");
 
                     if (!@event.VictimSensed.CanIdentify())
@@ -369,7 +373,6 @@ namespace UnicornHack.Services.English
                     EnglishMorphologicalProcessor.ProcessVerb(verbPhrase: "try", mainVerbForm),
                     EnglishMorphologicalProcessor.ProcessVerb(attackVerb, EnglishVerbForm.Infinitive),
                     victim,
-                    meleeWeaponPhrase,
                     ", but",
                     EnglishMorphologicalProcessor.ProcessVerb(verbPhrase: "miss", mainVerbForm));
             }
@@ -378,12 +381,7 @@ namespace UnicornHack.Services.English
             if (@event.AbilityAction == AbilityAction.Throw
                 || @event.AbilityAction == AbilityAction.Shoot)
             {
-                return ToSentence(attacker,
-                    EnglishMorphologicalProcessor.ProcessVerb(attackVerb, mainVerbForm),
-                    @event.AttackerSensed.CanIdentify()
-                        ? GetString(weapon, 1,
-                            definiteDeterminer: !isProjectile && attackerPerson == EnglishPerson.Second)
-                        : "something");
+                return null;
             }
 
             if (@event.Hit)

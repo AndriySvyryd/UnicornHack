@@ -31,6 +31,7 @@ namespace UnicornHack.Systems.Items
         }
 
         public EquipmentSlot Slot { get; set; }
+        public EquipmentSlot OldSlot { get; set; }
         public bool Successful { get; set; }
         public int Delay { get; set; }
         public bool SuppressLog { get; set; }
@@ -42,6 +43,7 @@ namespace UnicornHack.Systems.Items
             ItemEntity = default;
             ActorEntity = default;
             Slot = default;
+            OldSlot = default;
             Successful = default;
             Delay = default;
             SuppressLog = default;

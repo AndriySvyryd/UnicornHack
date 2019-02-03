@@ -19,16 +19,19 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Engulf { Duration = EffectDuration.UntilTimeout, DurationAmount = 3}}
+                    Effects = new HashSet<Effect>
+                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = 3}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blind { Duration = EffectDuration.UntilTimeout, DurationAmount = 1}}
+                    Effects = new HashSet<Effect>
+                        {new Blind {Duration = EffectDuration.UntilTimeout, DurationAmount = 1}}
                 }
             },
             InitialLevel = 4,
@@ -40,8 +43,8 @@ namespace UnicornHack.Data.Creatures
             Might = 2,
             Speed = 3,
             Focus = 8,
-            MagicDeflection = 15,
-            PhysicalDeflection = 18,
+            Armor = 4,
+            MagicResistance = 15,
             WaterResistance = 50,
             SlimingImmune = true,
             StoningImmune = true,

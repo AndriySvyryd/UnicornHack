@@ -43,7 +43,7 @@ namespace UnicornHack.Utils.MessagingECS
                 }
             }
 
-            Assert.Equal(0, manager.Queue.QueuedCount);
+            Assert.Equal(1, manager.Queue.QueuedCount);
         }
 
         [Fact]
@@ -76,7 +76,6 @@ namespace UnicornHack.Utils.MessagingECS
             Assert.Equal(0, manager.Abilities.Count);
             Assert.Equal(0, manager.EffectsToContainingAbilityRelationship.Count);
             Assert.Equal(0, manager.Effects.Count);
-            Assert.Equal(0, manager.Queue.QueuedCount);
         }
 
         [Fact]
@@ -118,8 +117,6 @@ namespace UnicornHack.Utils.MessagingECS
             }
 
             manager.IsLoading = false;
-
-            Assert.Equal(0, manager.Queue.QueuedCount);
         }
 
         [Fact]
@@ -138,8 +135,6 @@ namespace UnicornHack.Utils.MessagingECS
             Assert.Equal(0, manager.Effects.Count);
 
             manager.IsLoading = false;
-
-            Assert.Equal(0, manager.Queue.QueuedCount);
         }
 
         [Fact]
@@ -159,6 +154,8 @@ namespace UnicornHack.Utils.MessagingECS
                 {
                     var effectEntity = (GameEntity)effectEntityReference.Referenced;
                     var effect = effectEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
+
+                    manager.Queue.ProcessQueue(manager);
 
                     testSystem = new RelationshipTestSystem(effectEntity, effect, manager.EffectsToContainingAbilityRelationship);
 
@@ -185,7 +182,6 @@ namespace UnicornHack.Utils.MessagingECS
 
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Equal(0, manager.Queue.QueuedCount);
             Assert.Equal(3, testSystem.MessagesProcessed);
             Assert.Equal(3, testSystem.GroupChangesDetected);
         }
@@ -222,7 +218,6 @@ namespace UnicornHack.Utils.MessagingECS
             public MessageProcessingResult Process(EntityRemovedMessage<GameEntity> message, GameManager state)
             {
                 Assert.Same(_testEntity, message.Entity);
-                Assert.Same(_testComponent, message.ChangedComponent);
 
                 MessagesProcessed++;
                 return MessageProcessingResult.ContinueProcessing;
@@ -255,7 +250,6 @@ namespace UnicornHack.Utils.MessagingECS
                 GameEntity entity, Component removedComponent, IEntityGroup<GameEntity> group)
             {
                 Assert.Same(_testEntity, entity);
-                Assert.Same(_testComponent, removedComponent);
                 Assert.Same(_group, group);
 
                 GroupChangesDetected++;

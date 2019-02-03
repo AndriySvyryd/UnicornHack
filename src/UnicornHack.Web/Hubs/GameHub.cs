@@ -77,15 +77,24 @@ namespace UnicornHack.Hubs
                                 continue;
                             }
 
-                            if (slot == AbilitySlottingSystem.DefaultAttackSlot)
+                            if (slot == AbilitySlottingSystem.DefaultMeleeAttackSlot)
                             {
-                                if (manager.SkillAbilitiesSystem.CanBeDefaultAttack(ability))
+                                if (ability.Template?.Type == AbilityType.DefaultAttack
+                                    && ((WieldingAbility)ability.Template).ItemType == ItemType.WeaponMelee)
+                                {
+                                    abilities.Add(AbilitySnapshot.Serialize(abilityEntity, null, context));
+                                }
+                            }
+                            else if (slot == AbilitySlottingSystem.DefaultRangedAttackSlot)
+                            {
+                                if (ability.Template?.Type == AbilityType.DefaultAttack
+                                    && ((WieldingAbility)ability.Template).ItemType == ItemType.WeaponRanged)
                                 {
                                     abilities.Add(AbilitySnapshot.Serialize(abilityEntity, null, context));
                                 }
                             }
                             else if ((ability.Activation & ActivationType.Slottable) != 0
-                                    && !manager.SkillAbilitiesSystem.CanBeDefaultAttack(ability))
+                                    && ability.Template?.Type != AbilityType.DefaultAttack)
                             {
                                 abilities.Add(AbilitySnapshot.Serialize(abilityEntity, null, context));
                             }
@@ -307,6 +316,7 @@ namespace UnicornHack.Hubs
             ItemData.ThrowingKnives.Instantiate(playerEntity);
             ItemData.FireStaff.Instantiate(playerEntity);
             ItemData.FreezingFocus.Instantiate(playerEntity);
+            ItemData.FieryAegis.Instantiate(playerEntity);
             ItemData.PotionOfOgreness.Instantiate(playerEntity);
             ItemData.PotionOfElfness.Instantiate(playerEntity);
             ItemData.PotionOfDwarfness.Instantiate(playerEntity);

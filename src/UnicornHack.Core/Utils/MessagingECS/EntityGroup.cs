@@ -112,11 +112,6 @@ namespace UnicornHack.Utils.MessagingECS
             var manager = entity.Manager;
             _entities.Remove(entity.Id);
 
-            foreach (var entityIndex in _changeListeners)
-            {
-                entityIndex.HandleEntityRemoved(entity, changedComponent, this);
-            }
-
             if (_entityRemovedMessageName != null
                 && entity.Manager != null)
             {
@@ -126,6 +121,11 @@ namespace UnicornHack.Utils.MessagingECS
                 message.Group = this;
 
                 manager.Queue.Enqueue(message);
+            }
+
+            foreach (var entityIndex in _changeListeners)
+            {
+                entityIndex.HandleEntityRemoved(entity, changedComponent, this);
             }
         }
 

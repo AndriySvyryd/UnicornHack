@@ -20,6 +20,7 @@ namespace UnicornHack.Editor
             Serialize(PlayerRace.Loader);
             Serialize(Item.Loader);
             Serialize(ItemGroup.Loader);
+            Serialize(Ability.Loader);
             Serialize(Branch.Loader);
             Serialize(NormalMapFragment.Loader);
             Serialize(ConnectingMapFragment.Loader);
@@ -79,6 +80,9 @@ namespace UnicornHack.Editor
             => Verify(script, item, i => i.Name == item.Name, c => c.Abilities);
 
         private static void Verify(string script, ItemGroup item)
+            => Verify(script, item, i => i.Name == item.Name, null);
+
+        private static void Verify(string script, Ability item)
             => Verify(script, item, i => i.Name == item.Name, null);
 
         private static void Verify(string script, Branch branch)
@@ -158,7 +162,15 @@ namespace UnicornHack.Editor
                 switch (effect)
                 {
                     case AddAbility addAbility:
-                        Validate(addAbility.Ability);
+                        if (addAbility.Ability != null)
+                        {
+                            Validate(addAbility.Ability);
+                        }
+                        else
+                        {
+                            Ability.Loader.Get(addAbility.AbilityName);
+                        }
+
                         break;
                     case ChangeProperty<int> property:
                         Validate(property);

@@ -14,16 +14,17 @@ namespace UnicornHack.Data.Items
             {
                 new Ability
                 {
-                    Activation = ActivationType.OnPhysicalRangedAttack,
+                    Activation = ActivationType.OnRangedAttack,
+                    Range = 10,
                     Action = AbilityAction.Shoot,
                     Effects = new HashSet<Effect> {new Burn {Damage = 30}, new Activate {Projectile = "fire bolt"}}
                 }
             },
-            Type = ItemType.WeaponMagicStaff,
+            Type = ItemType.WeaponRangedLong,
             Material = Material.Wood,
             Weight = 5,
             EquipableSizes = SizeCategory.Medium | SizeCategory.Large,
-            EquipableSlots = EquipmentSlot.GraspSingleExtremity | EquipmentSlot.GraspBothExtremities
+            EquipableSlots = EquipmentSlot.GraspRanged
         };
     }
 }

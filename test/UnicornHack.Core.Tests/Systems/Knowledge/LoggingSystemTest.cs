@@ -80,30 +80,30 @@ namespace UnicornHack.Systems.Knowledge
 
             Verify(player, blob, player, SenseType.Touch | SenseType.Telepathy, SenseType.Sight, AbilityAction.Slash, manager, 11,
                 weapon: dagger,
-                expectedMessage: "You slash the acid blob with the dagger. (11 pts.)");
+                expectedMessage: "You slash the acid blob. (11 pts.)");
 
             Verify(player, null, player, SenseType.Touch | SenseType.Telepathy, SenseType.Sight, AbilityAction.Slash, manager, null,
                 weapon: dagger,
-                expectedMessage: "You slash the air with the dagger.");
+                expectedMessage: "You slash the air.");
 
             var bow = ItemData.Shortbow.Instantiate(player.Manager).Referenced;
             var arrow = ItemData.Arrow.Instantiate(player.Manager).Referenced;
 
             Verify(nymph, player, player, SenseType.Sight, SenseType.None, AbilityAction.Shoot, manager, null, weapon: bow,
-                expectedMessage: "The water nymph shoots with a shortbow.");
+                expectedMessage: null);
 
             Verify(nymph, player, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11, weapon: arrow,
                 expectedMessage: "An arrow hits you! [11 pts.]");
 
             Verify(nymph, player, player, SenseType.SoundDistant, SenseType.None, AbilityAction.Shoot, manager, null,
                 weapon: bow,
-                expectedMessage: "Something shoots with something.");
+                expectedMessage: null);
 
             Verify(nymph, player, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, null, weapon: arrow,
                 expectedMessage: "An arrow misses you.");
 
             Verify(player, blob, player, SenseType.Sight, SenseType.None, AbilityAction.Shoot, manager, null, weapon: bow,
-                expectedMessage: "You shoot with the shortbow.");
+                expectedMessage: null);
 
             Verify(player, blob, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11, weapon: arrow,
                 expectedMessage: "An arrow hits the acid blob. (11 pts.)");
@@ -118,14 +118,14 @@ namespace UnicornHack.Systems.Knowledge
 
             Verify(nymph, player, player, SenseType.Sound, SenseType.None, AbilityAction.Throw, manager, null,
                 weapon: throwingKnife,
-                expectedMessage: "Something throws something.");
+                expectedMessage: null);
 
             Verify(nymph, player, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11, weapon: throwingKnife,
                 expectedMessage: "A throwing knife hits you! [11 pts.]");
 
             Verify(player, null, player, SenseType.Sight, SenseType.None, AbilityAction.Throw, manager, null,
                 weapon: throwingKnife,
-                expectedMessage: "You throw a throwing knife.");
+                expectedMessage: null);
 
             Verify(player, blob, player, SenseType.None, SenseType.Sound, AbilityAction.Hit, manager, null,
                 weapon: throwingKnife,
@@ -238,9 +238,9 @@ namespace UnicornHack.Systems.Knowledge
 
             var sword = ItemData.LongSword.Instantiate(level.Entity.Manager).Referenced;
 
-            Assert.Equal("You equip a long sword in the main hand.", languageService.GetString(new ItemEquipmentEvent(
+            Assert.Equal("You equip a long sword in the main hand for melee.", languageService.GetString(new ItemEquipmentEvent(
                 player, player, sword, SenseType.Sight | SenseType.Touch,
-                SenseType.Sight | SenseType.Touch, EquipmentSlot.GraspPrimaryExtremity)));
+                SenseType.Sight | SenseType.Touch, EquipmentSlot.GraspPrimaryMelee)));
         }
 
         [Fact]

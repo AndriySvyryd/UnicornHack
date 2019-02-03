@@ -1,5 +1,4 @@
 ﻿using System.Linq;
-using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Levels;
 using Xunit;
 
@@ -15,7 +14,7 @@ namespace UnicornHack.Utils.MessagingECS
             using (var entityReference = ((IEntityManager)manager).CreateEntity())
             {
                 entity = (GameEntity)entityReference.Referenced;
-                entity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
+                entity.AddComponent<ConnectionComponent>((int)EntityComponent.Connection);
 
                 Assert.Same(entity, ((IEntityManager)manager).FindEntity(entity.Id));
                 Assert.Same(entity, manager.GetEntities().Single());

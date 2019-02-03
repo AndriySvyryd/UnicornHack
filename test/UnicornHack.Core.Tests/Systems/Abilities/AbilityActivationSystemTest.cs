@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
 using UnicornHack.Generation;
@@ -31,7 +32,7 @@ namespace UnicornHack.Systems.Abilities
             var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(2, 0));
             playerEntity.Position.Heading = Direction.West;
             playerEntity.Player.SkillPoints = 5;
-            manager.SkillAbilitiesSystem.ImproveSkill(nameof(PlayerComponent.Conjuration), playerEntity);
+            manager.SkillAbilitiesSystem.BuyAbilityLevel(AbilityData.Conjuration, playerEntity);
             ItemData.Shortbow.Instantiate(playerEntity);
             var nymph = CreatureData.WaterNymph.Instantiate(level, new Point(2, 2));
             var elemental = CreatureData.AirElemental.Instantiate(level, new Point(0, 0));
@@ -42,18 +43,17 @@ namespace UnicornHack.Systems.Abilities
             var equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = bow;
-            equipMessage.Slot = EquipmentSlot.GraspBothExtremities;
+            equipMessage.Slot = EquipmentSlot.GraspBothRanged;
 
             manager.Enqueue(equipMessage);
             manager.Queue.ProcessQueue(manager);
 
             var nymphAbility = manager.AbilitiesToAffectableRelationship[nymph.Id]
                 .First(a => (a.Ability.Activation & ActivationType.Slottable) != 0
-                    && !manager.SkillAbilitiesSystem.CanBeDefaultAttack(a.Ability));
+                    && a.Ability.Template?.Type != AbilityType.DefaultAttack);
             Assert.Equal(0, nymphAbility.Ability.Slot);
 
-            var attackAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
-                .Single(a => a.Ability.Name == SkillAbilitiesSystem.PrimaryRangedAttackName);
+            var attackAbility = manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.TwoHandedRangedAttack.Name)];
             var activateAbilityMessage = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);
             activateAbilityMessage.ActivatorEntity = playerEntity;
             activateAbilityMessage.TargetCell = nymph.Position.LevelCell;
@@ -102,8 +102,7 @@ namespace UnicornHack.Systems.Abilities
             Assert.Equal(0, messageCount);
 
             nymph.Being.HitPoints = nymph.Being.HitPointMaximum;
-            var iceShardAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
-                .Single(a => a.Ability.Name == "ice shard");
+            var iceShardAbility = manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)];
             iceShardAbility.Ability.SuccessCondition = AbilitySuccessCondition.Default;
 
             var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
@@ -169,7 +168,7 @@ namespace UnicornHack.Systems.Abilities
             manager.Queue.ProcessQueue(manager);
 
             Assert.False(toggledAbility.Ability.IsActive);
-            Assert.Equal(1, toggledAbility.Ability.Slot);
+            Assert.Null(toggledAbility.Ability.Slot);
             Assert.Equal(200, toggledAbility.Ability.CooldownTick);
             Assert.Equal(0, playerEntity.Being.ReservedEnergyPoints);
 

@@ -18,9 +18,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Engulf { Duration = EffectDuration.UntilTimeout, DurationAmount = 20}}
+                    Effects = new HashSet<Effect>
+                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = 20}}
                 },
                 new Ability
                 {
@@ -32,6 +34,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Spit,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new Corrode {Damage = 100}}
@@ -49,8 +52,8 @@ namespace UnicornHack.Data.Creatures
             Might = 16,
             Speed = 16,
             Focus = 16,
-            MagicDeflection = 32,
-            PhysicalDeflection = 27,
+            Armor = 8,
+            MagicResistance = 32,
             AcidResistance = 75,
             FireResistance = 75,
             StoningImmune = true,

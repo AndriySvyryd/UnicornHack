@@ -19,16 +19,20 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Paralyze { Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
+                    Effects = new HashSet<Effect>
+                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Slow { Duration = EffectDuration.UntilTimeout, DurationAmount = 3}}
+                    Effects = new HashSet<Effect>
+                        {new Slow {Duration = EffectDuration.UntilTimeout, DurationAmount = 3}}
                 }
             },
             InitialLevel = 12,
@@ -42,8 +46,8 @@ namespace UnicornHack.Data.Creatures
             Might = 6,
             Speed = 7,
             Focus = 12,
-            MagicDeflection = 12,
-            PhysicalDeflection = 10,
+            PhysicalResistance = 50,
+            MagicResistance = 12,
             ColdResistance = 75,
             DisintegrationResistance = 75,
             SlimingImmune = true,

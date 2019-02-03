@@ -19,6 +19,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Explosion,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new Confuse {DurationAmount = 27}}

@@ -17,9 +17,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Engulf { Duration = EffectDuration.UntilTimeout, DurationAmount = 4}}
+                    Effects = new HashSet<Effect>
+                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = 4}}
                 },
                 new Ability
                 {
@@ -41,7 +43,7 @@ namespace UnicornHack.Data.Creatures
             Might = 6,
             Speed = 6,
             Focus = 6,
-            PhysicalDeflection = 17,
+            Armor = 3,
             HeadType = HeadType.None,
             TorsoType = TorsoType.Quadruped,
             UpperExtremities = ExtremityType.None,

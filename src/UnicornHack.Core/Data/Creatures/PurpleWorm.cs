@@ -18,6 +18,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
@@ -25,9 +26,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Engulf { Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
+                    Effects = new HashSet<Effect>
+                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
                 },
                 new Ability
                 {
@@ -46,8 +49,8 @@ namespace UnicornHack.Data.Creatures
             Might = 8,
             Speed = 8,
             Focus = 8,
-            MagicDeflection = 10,
-            PhysicalDeflection = 15,
+            Armor = 2,
+            MagicResistance = 10,
             TorsoType = TorsoType.Serpentine,
             UpperExtremities = ExtremityType.None,
             LowerExtremities = ExtremityType.None,

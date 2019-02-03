@@ -12,8 +12,8 @@ namespace UnicornHack.Generation.Effects
         protected override void ConfigureEffect(EffectComponent effect)
         {
             Debug.Assert(DurationAmount == 0
-                || Duration == EffectDuration.UntilTimeout
-                || Duration == EffectDuration.UntilXPGained);
+                         || Duration == EffectDuration.UntilTimeout
+                         || Duration == EffectDuration.UntilXPGained);
 
             effect.Duration = Duration;
             effect.DurationAmount = DurationAmount;

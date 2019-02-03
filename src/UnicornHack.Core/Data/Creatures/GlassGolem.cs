@@ -17,6 +17,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Punch,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
@@ -24,6 +25,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Punch,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
@@ -37,8 +39,8 @@ namespace UnicornHack.Data.Creatures
             Might = 8,
             Speed = 9,
             Focus = 14,
-            MagicDeflection = 25,
-            PhysicalDeflection = 16,
+            Armor = 3,
+            MagicResistance = 25,
             AcidResistance = 75,
             ColdResistance = 75,
             ElectricityResistance = 75,

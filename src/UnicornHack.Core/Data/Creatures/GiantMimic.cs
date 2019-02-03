@@ -18,17 +18,21 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.Targeted, Action = AbilityAction.Touch, Cooldown = 100, Effects =
-                        new HashSet<Effect>
-                        {
-                            new Stick()
-                        }
+                    Activation = ActivationType.Targeted,
+                    Range = 1,
+                    Action = AbilityAction.Touch,
+                    Cooldown = 100,
+                    Effects = new HashSet<Effect>
+                    {
+                        new Stick()
+                    }
                 }
             },
             InitialLevel = 9,
@@ -40,8 +44,8 @@ namespace UnicornHack.Data.Creatures
             Might = 4,
             Speed = 5,
             Focus = 4,
-            MagicDeflection = 10,
-            PhysicalDeflection = 13,
+            Armor = 1,
+            MagicResistance = 10,
             AcidResistance = 75,
             HeadType = HeadType.None,
             TorsoType = TorsoType.Amorphic,

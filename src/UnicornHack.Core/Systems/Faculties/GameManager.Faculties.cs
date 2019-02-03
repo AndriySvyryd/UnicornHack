@@ -43,13 +43,7 @@ namespace UnicornHack
             queue.Add<PropertyValueChangedMessage<GameEntity, ExtremityType>>(SkillAbilitiesSystem,
                 Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.UpperExtremities)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.OneHanded)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.TwoHanded)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.DualWielding)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.FistWeapons)), 0);
+                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.HandWeapons)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
                 Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.ShortWeapons)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
@@ -57,55 +51,19 @@ namespace UnicornHack
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
                 Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.LongWeapons)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.ThrownWeapons)), 0);
+                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.CloseRangeWeapons)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.Slingshots)), 0);
+                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.ShortRangeWeapons)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.Bows)), 0);
+                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.MediumRangeWeapons)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.Crossbows)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.Armorless)), 0);
+                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.LongRangeWeapons)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
                 Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.LightArmor)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
                 Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.HeavyArmor)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.Stealth)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.Assassination)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.MeleeMagicWeapons)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.RangedMagicWeapons)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.FireSourcery)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.AirSourcery)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.WaterSourcery)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.EarthSourcery)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.LifeSourcery)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.SpiritSourcery)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.Evocation)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.Conjuration)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.Transmutation)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.Enhancement)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.Malediction)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.Illusion)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
                 Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.Artifice)), 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-                Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.Leadership)), 0);
         }
     }
 }

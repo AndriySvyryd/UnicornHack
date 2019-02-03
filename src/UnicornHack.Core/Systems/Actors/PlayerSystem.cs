@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
@@ -177,19 +176,7 @@ namespace UnicornHack.Systems.Actors
                     manager.Enqueue(setSlotMessage);
                     break;
                 case PlayerAction.UseAbilitySlot:
-                    if (target == null)
-                    {
-                        throw new InvalidOperationException("Must specify ability slot number");
-                    }
-
-                    var abilityEntity =
-                        manager.AbilitySlottingSystem.GetAbility(playerEntity.Id, target.Value, manager);
-                    if (abilityEntity == null)
-                    {
-                        throw new InvalidOperationException("No ability in slot" + target);
-                    }
-
-                    ActivateAbility(abilityEntity, playerEntity, target2, manager);
+                    ActivateAbility(playerEntity, target, target2, manager);
                     break;
                 default:
                     throw new InvalidOperationException(
@@ -225,9 +212,10 @@ namespace UnicornHack.Systems.Actors
             if (conflictingActor != null)
             {
                 var abilityEntity = manager.AbilitySlottingSystem.GetAbility(
-                    playerEntity.Id, AbilitySlottingSystem.DefaultAttackSlot, manager);
-                return ActivateAbility(
-                    abilityEntity, playerEntity, targetCell, conflictingActor, manager);
+                    playerEntity.Id, AbilitySlottingSystem.DefaultMeleeAttackSlot, manager);
+                return abilityEntity == null
+                    ? false
+                    : ActivateAbility(abilityEntity, playerEntity, targetCell, conflictingActor, manager);
             }
 
             var travelMessage = manager.TravelSystem.CreateTravelMessage(manager);
@@ -279,18 +267,16 @@ namespace UnicornHack.Systems.Actors
             return itemEntity;
         }
 
-        private bool ActivateAbility(
-            GameEntity abilityEntity, GameEntity playerEntity, int? target, GameManager manager)
+        private bool ActivateAbility(GameEntity playerEntity, int? slot, int? target, GameManager manager)
         {
-            if (target == null)
-            {
-                return ActivateAbility(abilityEntity, playerEntity, playerEntity.Position.LevelCell, playerEntity,
-                    manager);
-            }
-
             Point targetCell;
             GameEntity targetActor;
-            if (target.Value < 0)
+            if (target == null)
+            {
+                targetCell = playerEntity.Position.LevelCell;
+                targetActor = playerEntity;
+            }
+            else if (target.Value < 0)
             {
                 targetActor = manager.FindEntity(-target.Value);
                 if (targetActor == null
@@ -306,6 +292,31 @@ namespace UnicornHack.Systems.Actors
                 targetCell = Point.Unpack(target).Value;
                 targetActor =
                     manager.LevelActorToLevelCellIndex[(playerEntity.Position.LevelId, targetCell.X, targetCell.Y)];
+            }
+
+            GameEntity abilityEntity = null;
+            if (slot.HasValue)
+            {
+                abilityEntity = manager.AbilitySlottingSystem.GetAbility(playerEntity.Id, slot.Value, manager);
+                if (abilityEntity == null)
+                {
+                    throw new InvalidOperationException("No ability in slot" + target);
+                }
+            }
+            else
+            {
+                var vectorToTarget = playerEntity.Position.LevelCell.DifferenceTo(targetCell);
+                if (vectorToTarget.Length() > 1)
+                {
+                    abilityEntity =
+                        manager.AbilitySlottingSystem.GetAbility(playerEntity.Id, AbilitySlottingSystem.DefaultRangedAttackSlot, manager);
+                }
+
+                if (abilityEntity == null)
+                {
+                    abilityEntity =
+                        manager.AbilitySlottingSystem.GetAbility(playerEntity.Id, AbilitySlottingSystem.DefaultMeleeAttackSlot, manager);
+                }
             }
 
             return ActivateAbility(abilityEntity, playerEntity, targetCell, targetActor, manager);
@@ -325,22 +336,8 @@ namespace UnicornHack.Systems.Actors
             var shouldMoveCloser = false;
             if ((ability.Activation & ActivationType.ManualActivation) == 0)
             {
-                switch (ability.TargetingType)
-                {
-                    case TargetingType.AdjacentSingle:
-                    case TargetingType.AdjacentArc:
-                        shouldMoveCloser = position.LevelCell.DistanceTo(targetCell) > 1;
-                        break;
-                    case TargetingType.Projectile:
-                    case TargetingType.GuidedProjectile:
-                    case TargetingType.LineOfSight:
-                    case TargetingType.Beam:
-                        // TODO: Check LOS and move closer if none
-                        break;
-                    default:
-                        throw new InvalidOperationException(
-                            $"Targeting type ${ability.TargetingType.ToString()} not supported");
-                }
+                shouldMoveCloser = position.LevelCell.DistanceTo(targetCell) > ability.Range;
+                // TODO: Check LOS and move closer if none
             }
 
             if (shouldMoveCloser)

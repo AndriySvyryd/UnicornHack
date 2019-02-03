@@ -17,14 +17,14 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new Corrode {Damage = 130}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.OnPhysicalMeleeHit,
-                    Effects = new HashSet<Effect> {new Corrode {Damage = 30}}
+                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Corrode {Damage = 30}}
                 }
             },
             InitialLevel = 10,
@@ -34,7 +34,7 @@ namespace UnicornHack.Data.Creatures
             Might = 6,
             Speed = 6,
             Focus = 10,
-            PhysicalDeflection = 14,
+            Armor = 2,
             AcidResistance = 75,
             ColdResistance = 75,
             ElectricityResistance = 75,

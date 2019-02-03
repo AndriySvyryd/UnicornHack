@@ -10,10 +10,10 @@ namespace UnicornHack.Data
         {
             SubGroups = new List<ItemGroup>
             {
-                new ItemGroup {Type = ItemType.Coin, Weight = 0F},
+                new ItemGroup {Type = ItemType.Coin},
                 new ItemGroup
                 {
-                    Type = ItemType.WeaponMeleeFist,
+                    Type = ItemType.WeaponMeleeHand,
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
@@ -57,7 +57,7 @@ namespace UnicornHack.Data
                 },
                 new ItemGroup
                 {
-                    Type = ItemType.WeaponMagicFocus,
+                    Type = ItemType.WeaponRangedClose,
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
@@ -68,7 +68,7 @@ namespace UnicornHack.Data
                 },
                 new ItemGroup
                 {
-                    Type = ItemType.WeaponMagicStaff,
+                    Type = ItemType.WeaponRangedShort,
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
@@ -79,7 +79,7 @@ namespace UnicornHack.Data
                 },
                 new ItemGroup
                 {
-                    Type = ItemType.WeaponRangedThrown,
+                    Type = ItemType.WeaponRangedLong,
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
@@ -90,29 +90,7 @@ namespace UnicornHack.Data
                 },
                 new ItemGroup
                 {
-                    Type = ItemType.WeaponRangedSlingshot,
-                    Weight = 10F,
-                    SubGroups = new List<ItemGroup>
-                    {
-                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
-                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
-                        new ItemGroup {Weight = 40F}
-                    }
-                },
-                new ItemGroup
-                {
-                    Type = ItemType.WeaponRangedBow,
-                    Weight = 10F,
-                    SubGroups = new List<ItemGroup>
-                    {
-                        new ItemGroup {Complexity = ItemComplexity.Intricate, Weight = 20F},
-                        new ItemGroup {Complexity = ItemComplexity.Exotic, Weight = 10F},
-                        new ItemGroup {Weight = 40F}
-                    }
-                },
-                new ItemGroup
-                {
-                    Type = ItemType.WeaponRangedCrossbow,
+                    Type = ItemType.WeaponRangedMedium,
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {
@@ -224,7 +202,7 @@ namespace UnicornHack.Data
                 new ItemGroup {Type = ItemType.Potion, Weight = 100F},
                 new ItemGroup
                 {
-                    Type = ItemType.Wand,
+                    Type = ItemType.Orb,
                     Weight = 10F,
                     SubGroups = new List<ItemGroup>
                     {

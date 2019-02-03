@@ -10,7 +10,7 @@ namespace UnicornHack.Data.Items
         {
             Name = "fire bolt",
             Abilities = new HashSet<Ability>
-                {new Ability {Activation = ActivationType.OnPhysicalRangedAttack, Action = AbilityAction.Hit}},
+                {new Ability {Activation = ActivationType.OnRangedAttack, Action = AbilityAction.Hit}},
             Type = ItemType.WeaponProjectile,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             Material = Material.Plasma,

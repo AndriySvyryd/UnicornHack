@@ -1,7 +1,9 @@
 ﻿using System.Linq;
+using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
+using UnicornHack.Systems.Abilities;
 using UnicornHack.Utils.DataStructures;
 using Xunit;
 
@@ -14,53 +16,127 @@ namespace UnicornHack.Systems.Faculties
         {
             var level = TestHelper.BuildLevel(".");
             var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
-            var player = playerEntity.Player;
             ItemData.SkillbookOfWaterSourcery.Instantiate(playerEntity);
             var manager = playerEntity.Manager;
 
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Equal(0, player.WaterSourcery);
-            Assert.Null(manager.AbilitiesToAffectableRelationship[playerEntity.Id]
-                   .FirstOrDefault(a => a.Ability.Name == "ice shard"));
+            Assert.Null(manager.AffectableAbilitiesIndex[(playerEntity.Id, "ice shard")]);
 
-            var firstWaterAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
-                   .First(a => a.Ability.Name == ItemData.SkillbookOfWaterSourcery.Name + ": Consult");
+            var firstWaterBookAbility =
+                manager.AffectableAbilitiesIndex[
+                    (playerEntity.Id, ItemData.SkillbookOfWaterSourcery.Name + ": Consult")];
             ItemData.SkillbookOfWaterSourcery.Instantiate(playerEntity);
             ItemData.SkillbookOfConjuration.Instantiate(playerEntity);
-            ActivateAbility(firstWaterAbility, 0, manager);
+            ActivateAbility(firstWaterBookAbility, 0, manager);
 
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Equal(1, player.WaterSourcery);
-            Assert.Equal(0, player.Conjuration);
+            Assert.True(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)].Ability
+                .IsUsable);
 
-            var iceShardAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
-                   .First(a => a.Ability.Name == "ice shard");
-            Assert.True(iceShardAbility.Ability.IsUsable);
-
-            var otherWaterAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
-                   .First(a => a.Ability.Name == ItemData.SkillbookOfWaterSourcery.Name + ": Consult" && a != firstWaterAbility);
-            ActivateAbility(otherWaterAbility, 1, manager);
-
-            var conjurationAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
-                   .First(a => a.Ability.Name == ItemData.SkillbookOfConjuration.Name + ": Consult");
-            ActivateAbility(conjurationAbility, 2, manager);
+            var conjurationBookAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
+                .First(a => a.Ability.Name == ItemData.SkillbookOfConjuration.Name + ": Consult");
+            ActivateAbility(conjurationBookAbility, 2, manager);
 
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Equal(2, player.WaterSourcery);
-            Assert.Equal(1, player.Conjuration);
-            Assert.True(iceShardAbility.Ability.IsUsable);
+            Assert.True(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)].Ability
+                .IsUsable);
 
-            DeactivateAbility(firstWaterAbility, manager);
-            DeactivateAbility(otherWaterAbility, manager);
-            DeactivateAbility(conjurationAbility, manager);
+            Assert.Equal(1,
+                manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)].Ability.Level);
+
+            playerEntity.Player.SkillPoints = 5;
+            manager.SkillAbilitiesSystem.BuyAbilityLevel(AbilityData.WaterSourcery, playerEntity);
 
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Equal(0, player.WaterSourcery);
-            Assert.False(iceShardAbility.Ability.IsUsable);
+            Assert.Equal(2,
+                manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)].Ability.Level);
+            Assert.Equal(1,
+                manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.Conjuration.Name)].Ability.Level);
+            Assert.True(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)].Ability
+                .IsUsable);
+
+            DeactivateAbility(firstWaterBookAbility, manager);
+            DeactivateAbility(conjurationBookAbility, manager);
+
+            // TODO: Drop first book, other ability should be placed in same slot
+            //var otherWaterBookAbility =
+            //    manager.AffectableAbilitiesIndex[
+            //        (playerEntity.Id, ItemData.SkillbookOfWaterSourcery.Name + ": Consult")];
+
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(1,
+                manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)].Ability.Level);
+            Assert.Null(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.Conjuration.Name)]);
+            Assert.True(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)].Ability
+                .IsUsable);
+
+            var deactivateMessage = manager.AbilityActivationSystem.CreateDeactivateAbilityMessage(manager);
+            deactivateMessage.AbilityEntity =
+                manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)];
+            deactivateMessage.ActivatorEntity = playerEntity;
+            manager.Enqueue(deactivateMessage);
+
+            manager.Queue.ProcessQueue(manager);
+
+            manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)].Ability = null;
+
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Null(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)]);
+            Assert.Null(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.Conjuration.Name)]);
+            Assert.False(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)]?.Ability
+                             ?.IsUsable == true);
+        }
+
+        [Fact]
+        public void Default_attacks_are_slotted_when_weapons_are_equipped()
+        {
+            var level = TestHelper.BuildLevel(".");
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var manager = playerEntity.Manager;
+            ItemData.LongSword.Instantiate(playerEntity);
+            ItemData.FireStaff.Instantiate(playerEntity);
+
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Same(AbilityData.DoubleMeleeAttack.Name,
+                manager.SlottedAbilitiesIndex[(playerEntity.Id, AbilitySlottingSystem.DefaultMeleeAttackSlot)].Ability.Name);
+            Assert.Null(
+                manager.SlottedAbilitiesIndex[(playerEntity.Id, AbilitySlottingSystem.DefaultRangedAttackSlot)]);
+            Assert.Equal(1, manager.AbilitiesToAffectableRelationship[playerEntity.Id].Select(a => a.Ability)
+                .Count(a => a.IsUsable && (a.Activation & ActivationType.Slottable) != 0));
+
+            var swordEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id]
+                .Single(e => e.Item.TemplateName == ItemData.LongSword.Name);
+            var equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            equipMessage.ActorEntity = playerEntity;
+            equipMessage.ItemEntity = swordEntity;
+            equipMessage.Slot = EquipmentSlot.GraspBothMelee;
+
+            manager.Enqueue(equipMessage);
+
+            var staffEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id]
+                .Single(e => e.Item.TemplateName == ItemData.FireStaff.Name);
+            equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            equipMessage.ActorEntity = playerEntity;
+            equipMessage.ItemEntity = staffEntity;
+            equipMessage.Slot = EquipmentSlot.GraspBothRanged;
+
+            manager.Enqueue(equipMessage);
+
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Same(AbilityData.TwoHandedMeleeAttack.Name,
+                manager.SlottedAbilitiesIndex[(playerEntity.Id, AbilitySlottingSystem.DefaultMeleeAttackSlot)].Ability.Name);
+            Assert.Same(AbilityData.TwoHandedRangedAttack.Name,
+                manager.SlottedAbilitiesIndex[(playerEntity.Id, AbilitySlottingSystem.DefaultRangedAttackSlot)].Ability.Name);
+            Assert.Equal(2, manager.AbilitiesToAffectableRelationship[playerEntity.Id].Select(a => a.Ability)
+                .Count(a => a.IsUsable && (a.Activation & ActivationType.Slottable) != 0));
         }
 
         private static GameEntity ActivateAbility(GameEntity abilityEntity, int slot, GameManager manager)

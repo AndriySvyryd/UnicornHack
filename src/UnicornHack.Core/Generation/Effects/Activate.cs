@@ -1,8 +1,8 @@
-﻿using UnicornHack.Systems.Effects;
+﻿using UnicornHack.Primitives;
+using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects
 {
-    // TODO: Support triggered abilities
     public class Activate : DurationEffect
     {
         public string Projectile { get; set; }

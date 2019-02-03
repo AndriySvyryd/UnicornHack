@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Microsoft.Extensions.Caching.Memory;
 using UnicornHack.Generation;
@@ -343,6 +344,28 @@ Seed: " + level.Game.InitialSeed);
             }
 
             return builder.ToString();
+        }
+
+        public static GameEntity ActivateAbility(
+            string abilityName, GameEntity playerEntity, GameManager manager, int slot = 0)
+            => ActivateAbility(manager.AffectableAbilitiesIndex[(playerEntity.Id, abilityName)], playerEntity, manager, slot);
+
+        public static GameEntity ActivateAbility(
+            GameEntity abilityEntity, GameEntity playerEntity, GameManager manager, int slot = 0)
+        {
+            var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            setSlotMessage.AbilityEntity = abilityEntity;
+            setSlotMessage.Slot = slot;
+            manager.Enqueue(setSlotMessage);
+
+            var activateAbilityMessage = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);
+            activateAbilityMessage.ActivatorEntity = playerEntity;
+            activateAbilityMessage.TargetEntity = playerEntity;
+            activateAbilityMessage.AbilityEntity = abilityEntity;
+
+            manager.Enqueue(activateAbilityMessage);
+
+            return abilityEntity;
         }
     }
 }

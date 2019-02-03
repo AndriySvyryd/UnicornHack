@@ -180,12 +180,12 @@ namespace UnicornHack.Utils
         }
 
         /// <summary>
-        ///     Returns a random number in the range [0, <paramref name="maxValue"/>)
+        ///     Returns a random number in the range [0, <paramref name="maxValue" />)
         /// </summary>
         public int Next(int maxValue) => Next(minValue: 0, maxValue);
 
         /// <summary>
-        ///     Returns a random number in the range [<paramref name="minValue"/>, <paramref name="maxValue"/>)
+        ///     Returns a random number in the range [<paramref name="minValue" />, <paramref name="maxValue" />)
         /// </summary>
         public int Next(int minValue, int maxValue) => (int)Next(minValue, (float)maxValue);
 
@@ -245,7 +245,7 @@ namespace UnicornHack.Utils
         private const int InitializedFlag = 0x01000000;
 
         /// <summary>
-        ///     Returns a random bool with the given <paramref name="successProbability"/> without any streaks
+        ///     Returns a random bool with the given <paramref name="successProbability" /> without any streaks
         ///     longer than ((100 / p) - 1) * 2 and with no predictable order.
         /// </summary>
         /// <param name="successProbability">Percent of expected <c>true</c> results.</param>

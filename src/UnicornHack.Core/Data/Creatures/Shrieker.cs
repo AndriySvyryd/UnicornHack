@@ -17,9 +17,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Scream,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Deafen { Duration = EffectDuration.UntilTimeout, DurationAmount = 3}}
+                    Effects = new HashSet<Effect>
+                        {new Deafen {Duration = EffectDuration.UntilTimeout, DurationAmount = 3}}
                 }
             },
             InitialLevel = 3,
@@ -31,7 +33,7 @@ namespace UnicornHack.Data.Creatures
             Might = 2,
             Speed = 2,
             Focus = 6,
-            PhysicalDeflection = 13,
+            Armor = 1,
             HeadType = HeadType.None,
             UpperExtremities = ExtremityType.None,
             LowerExtremities = ExtremityType.None,

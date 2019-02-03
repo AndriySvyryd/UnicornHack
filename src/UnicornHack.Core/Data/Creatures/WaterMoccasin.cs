@@ -18,6 +18,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new Blight {Damage = 30}}
@@ -33,7 +34,7 @@ namespace UnicornHack.Data.Creatures
             Might = 2,
             Speed = 3,
             Focus = 2,
-            PhysicalDeflection = 17,
+            Armor = 3,
             TorsoType = TorsoType.Serpentine,
             UpperExtremities = ExtremityType.None,
             LowerExtremities = ExtremityType.None,

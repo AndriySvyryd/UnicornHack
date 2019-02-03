@@ -15,8 +15,7 @@ namespace UnicornHack.Data.Creatures
             {
                 new Ability
                 {
-                    Activation = ActivationType.OnPhysicalMeleeHit,
-                    Effects = new HashSet<Effect> {new Corrode {Damage = 30}}
+                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Corrode {Damage = 30}}
                 }
             },
             InitialLevel = 1,
@@ -28,7 +27,6 @@ namespace UnicornHack.Data.Creatures
             Might = 2,
             Speed = 1,
             Focus = 6,
-            PhysicalDeflection = 11,
             AcidResistance = 75,
             StoningImmune = true,
             HeadType = HeadType.None,

@@ -15,11 +15,7 @@ namespace UnicornHack.Data.Items
                 new Ability
                 {
                     Activation = ActivationType.WhileEquipped,
-                    Effects = new HashSet<Effect>
-                    {
-                        new ChangeProperty<int> {PropertyName = "PhysicalDeflection", Value = 10},
-                        new ChangeProperty<int> {PropertyName = "PhysicalAbsorption", Value = 2}
-                    }
+                    Effects = new HashSet<Effect> {new ChangeProperty<int> {PropertyName = "Armor", Value = 5}}
                 }
             },
             Type = ItemType.ArmorTorso,

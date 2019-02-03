@@ -262,7 +262,7 @@ namespace UnicornHack.Systems.Actors
                 && (ability.Activation & ActivationType.Slottable) != 0
                 && ability.Slot == null
                 && ability.IsUsable
-                && !manager.SkillAbilitiesSystem.CanBeDefaultAttack(ability))
+                && ability.Template?.Type != AbilityType.DefaultAttack)
             {
                 for (var i = 0; i < owner.Being.AbilitySlotCount; i++)
                 {

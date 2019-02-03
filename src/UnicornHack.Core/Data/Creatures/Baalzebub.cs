@@ -18,6 +18,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new Blight {Damage = 70}}
@@ -25,9 +26,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 20,
                     Action = AbilityAction.Gaze,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Stun {Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
+                    Effects = new HashSet<Effect>
+                        {new Stun {Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
                 }
             },
             InitialLevel = 30,
@@ -42,8 +45,8 @@ namespace UnicornHack.Data.Creatures
             Might = 16,
             Speed = 16,
             Focus = 16,
-            MagicDeflection = 42,
-            PhysicalDeflection = 25,
+            Armor = 7,
+            MagicResistance = 42,
             FireResistance = 75,
             LocomotionType = LocomotionType.Flying,
             Infravisible = true,

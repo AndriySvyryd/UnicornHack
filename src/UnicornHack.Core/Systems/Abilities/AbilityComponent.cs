@@ -7,13 +7,16 @@ namespace UnicornHack.Systems.Abilities
     public class AbilityComponent : GameComponent
     {
         private string _name;
+        private int? _level;
         private GameEntity _ownerEntity;
         private int? _ownerId;
         private ActivationType _activation;
         private int? _activationCondition;
         private ActivationType _trigger;
+        private int _headingDeviation;
+        private int _range;
+        private TargetingShape _targetingShape;
         private TargetingType _targetingType;
-        private TargetingAngle _targetingAngle;
         private AbilityAction _action;
         private AbilitySuccessCondition _successCondition;
         private int _cooldown;
@@ -25,6 +28,8 @@ namespace UnicornHack.Systems.Abilities
         private bool _isActive;
         private bool _isUsable = true;
         private int? _slot;
+        private Ability _template;
+        private bool _templateLoaded;
 
         public AbilityComponent()
             => ComponentId = (int)EntityComponent.Ability;
@@ -33,6 +38,12 @@ namespace UnicornHack.Systems.Abilities
         {
             get => _name;
             set => SetWithNotify(value, ref _name);
+        }
+
+        public int? Level
+        {
+            get => _level;
+            set => SetWithNotify(value, ref _level);
         }
 
         public int? OwnerId
@@ -51,34 +62,49 @@ namespace UnicornHack.Systems.Abilities
             set => SetWithNotify(value, ref _activation);
         }
 
-        public int? ActivationCondition
-        {
-            get => _activationCondition;
-            set => SetWithNotify(value, ref _activationCondition);
-        }
-
-        public TargetingType TargetingType
-        {
-            get => _targetingType;
-            set => SetWithNotify(value, ref _targetingType);
-        }
-
-        public TargetingAngle TargetingAngle
-        {
-            get => _targetingAngle;
-            set => SetWithNotify(value, ref _targetingAngle);
-        }
-
         public AbilityAction Action
         {
             get => _action;
             set => SetWithNotify(value, ref _action);
         }
 
+        public int? ActivationCondition
+        {
+            get => _activationCondition;
+            set => SetWithNotify(value, ref _activationCondition);
+        }
+
         public ActivationType Trigger
         {
             get => _trigger;
             set => SetWithNotify(value, ref _trigger);
+        }
+
+        /// <summary>
+        ///     Max number of octants between heading and direction to target
+        /// </summary>
+        public int HeadingDeviation
+        {
+            get => _headingDeviation;
+            set => SetWithNotify(value, ref _headingDeviation);
+        }
+
+        public int Range
+        {
+            get => _range;
+            set => SetWithNotify(value, ref _range);
+        }
+
+        public TargetingShape TargetingShape
+        {
+            get => _targetingShape;
+            set => SetWithNotify(value, ref _targetingShape);
+        }
+
+        public TargetingType TargetingType
+        {
+            get => _targetingType;
+            set => SetWithNotify(value, ref _targetingType);
         }
 
         public AbilitySuccessCondition SuccessCondition
@@ -156,16 +182,41 @@ namespace UnicornHack.Systems.Abilities
             }
         }
 
+        public Ability Template
+        {
+            get
+            {
+                if (_templateLoaded
+                    || _name == null)
+                {
+                    return _template;
+                }
+
+                _template = Ability.Loader.Find(_name);
+                _templateLoaded = true;
+                return _template;
+            }
+
+            set
+            {
+                _template = value;
+                _templateLoaded = true;
+            }
+        }
+
         public AbilityComponent AddToEffect(GameEntity abilityEffectEntity, bool includeEffects = true)
         {
             var manager = abilityEffectEntity.Manager;
             var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
             ability.Name = Name;
+            ability.Level = Level;
             ability.Activation = Activation;
             ability.ActivationCondition = ActivationCondition;
             ability.Trigger = Trigger;
+            ability.HeadingDeviation = HeadingDeviation;
+            ability.Range = Range;
+            ability.TargetingShape = TargetingShape;
             ability.TargetingType = TargetingType;
-            ability.TargetingAngle = TargetingAngle;
             ability.Action = Action;
             ability.SuccessCondition = SuccessCondition;
             ability.Cooldown = Cooldown;
@@ -189,13 +240,17 @@ namespace UnicornHack.Systems.Abilities
         protected override void Clean()
         {
             _name = default;
+            _level = default;
             _ownerId = default;
             _ownerEntity = default;
             _activation = default;
-            _targetingType = default;
-            _targetingAngle = default;
-            _action = default;
+            _activationCondition = default;
             _trigger = default;
+            _headingDeviation = default;
+            _range = default;
+            _targetingShape = default;
+            _targetingType = default;
+            _action = default;
             _successCondition = default;
             _cooldown = default;
             _xpCooldown = default;

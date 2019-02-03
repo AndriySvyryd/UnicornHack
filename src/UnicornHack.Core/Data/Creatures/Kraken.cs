@@ -17,6 +17,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
@@ -24,6 +25,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
@@ -31,6 +33,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 120}}
@@ -38,9 +41,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Hug,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Bind { Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
+                    Effects = new HashSet<Effect>
+                        {new Bind {Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
                 }
             },
             InitialLevel = 20,
@@ -52,7 +57,7 @@ namespace UnicornHack.Data.Creatures
             Might = 10,
             Speed = 11,
             Focus = 10,
-            PhysicalDeflection = 14,
+            Armor = 2,
             UpperExtremities = ExtremityType.None,
             LowerExtremities = ExtremityType.None,
             RespirationType = RespirationType.Water,

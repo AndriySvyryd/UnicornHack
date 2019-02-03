@@ -10,7 +10,8 @@ namespace UnicornHack.Systems.Abilities
         IGameSystem<PropertyValueChangedMessage<GameEntity, bool>>,
         IGameSystem<PropertyValueChangedMessage<GameEntity, int>>
     {
-        public static int DefaultAttackSlot = -1;
+        public static int DefaultMeleeAttackSlot = -1;
+        public static int DefaultRangedAttackSlot = -2;
         public const string SetAbilitySlotMessageName = "SetAbilitySlot";
 
         public SetAbilitySlotMessage CreateSetAbilitySlotMessage(GameManager manager)
@@ -45,7 +46,8 @@ namespace UnicornHack.Systems.Abilities
 
                 Debug.Assert(ability.CooldownTick == null && ability.CooldownXpLeft == null);
 
-                if (message.Slot.Value != DefaultAttackSlot
+                if (message.Slot.Value != DefaultMeleeAttackSlot
+                    && message.Slot.Value != DefaultRangedAttackSlot
                     && (message.Slot.Value < 0
                         || message.Slot.Value >= ability.OwnerEntity.Being.AbilitySlotCount))
                 {
@@ -62,15 +64,17 @@ namespace UnicornHack.Systems.Abilities
                     throw new InvalidOperationException($"Ability {ability.EntityId} is not usable.");
                 }
 
-                if (message.Slot.Value == DefaultAttackSlot
-                    && !manager.SkillAbilitiesSystem.CanBeDefaultAttack(ability))
+                if ((message.Slot.Value == DefaultMeleeAttackSlot
+                     || message.Slot.Value == DefaultRangedAttackSlot)
+                    && ability.Template?.Type != AbilityType.DefaultAttack)
                 {
                     throw new InvalidOperationException(
                         "Ability " + ability.EntityId + " cannot be the default attack for " + ability.OwnerId);
                 }
 
-                if (message.Slot.Value != DefaultAttackSlot
-                    && manager.SkillAbilitiesSystem.CanBeDefaultAttack(ability))
+                if (message.Slot.Value != DefaultMeleeAttackSlot
+                    && message.Slot.Value != DefaultRangedAttackSlot
+                    && ability.Template?.Type == AbilityType.DefaultAttack)
                 {
                     throw new InvalidOperationException(
                         "Ability " + ability.EntityId + " can only be the default attack for " + ability.OwnerId);
@@ -125,6 +129,7 @@ namespace UnicornHack.Systems.Abilities
             PropertyValueChangedMessage<GameEntity, bool> message, GameManager manager)
         {
             var ability = message.Entity.Ability;
+            Debug.Assert(ability.CooldownXpLeft == null && ability.CooldownTick == null);
             if (!ability.IsUsable
                 && ability.Slot != null)
             {
@@ -143,7 +148,8 @@ namespace UnicornHack.Systems.Abilities
                 {
                     var abilitySlot = abilityEntity.Ability.Slot;
                     if (abilitySlot.HasValue
-                        && abilitySlot != DefaultAttackSlot
+                        && abilitySlot != DefaultMeleeAttackSlot
+                        && abilitySlot != DefaultRangedAttackSlot
                         && abilitySlot >= message.NewValue)
                     {
                         ResetSlot(abilityEntity, manager);

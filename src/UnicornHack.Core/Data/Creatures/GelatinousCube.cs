@@ -17,16 +17,20 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Paralyze { Duration = EffectDuration.UntilTimeout, DurationAmount = 4}}
+                    Effects = new HashSet<Effect>
+                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = 4}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Touch,
                     Cooldown = 350,
-                    Effects = new HashSet<Effect> {new Engulf { Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
+                    Effects = new HashSet<Effect>
+                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
                 },
                 new Ability
                 {
@@ -44,8 +48,9 @@ namespace UnicornHack.Data.Creatures
                 },
                 new Ability
                 {
-                    Activation = ActivationType.OnPhysicalMeleeHit,
-                    Effects = new HashSet<Effect> {new Paralyze { Duration = EffectDuration.UntilTimeout, DurationAmount = 4}}
+                    Activation = ActivationType.OnMeleeHit,
+                    Effects = new HashSet<Effect>
+                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = 4}}
                 }
             },
             InitialLevel = 6,
@@ -58,7 +63,7 @@ namespace UnicornHack.Data.Creatures
             Might = 4,
             Speed = 4,
             Focus = 8,
-            PhysicalDeflection = 12,
+            Armor = 1,
             AcidResistance = 75,
             ColdResistance = 75,
             ElectricityResistance = 75,

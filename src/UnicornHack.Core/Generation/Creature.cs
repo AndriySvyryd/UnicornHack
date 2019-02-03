@@ -32,10 +32,10 @@ namespace UnicornHack.Generation
         private int? _focus;
         private int? _energyRegeneration;
         private int? _regeneration;
-        private int? _magicAbsorption;
-        private int? _magicDeflection;
-        private int? _physicalAbsorption;
-        private int? _physicalDeflection;
+        private int? _evasion;
+        private int? _magicResistance;
+        private int? _armor;
+        private int? _deflection;
         private int? _physicalResistance;
         private int? _acidResistance;
         private int? _bleedingResistance;
@@ -169,34 +169,34 @@ namespace UnicornHack.Generation
             set => _regeneration = value;
         }
 
-        public int? MagicAbsorption
+        public int? Evasion
         {
-            get => _magicAbsorption ?? BaseCreature?.MagicAbsorption;
-            set => _magicAbsorption = value;
+            get => _evasion ?? BaseCreature?.Evasion;
+            set => _evasion = value;
         }
 
-        public int? MagicDeflection
+        public int? Deflection
         {
-            get => _magicDeflection ?? BaseCreature?.MagicDeflection;
-            set => _magicDeflection = value;
+            get => _deflection ?? BaseCreature?.Deflection;
+            set => _deflection = value;
         }
 
-        public int? PhysicalAbsorption
+        public int? Armor
         {
-            get => _physicalAbsorption ?? BaseCreature?.PhysicalAbsorption;
-            set => _physicalAbsorption = value;
-        }
-
-        public int? PhysicalDeflection
-        {
-            get => _physicalDeflection ?? BaseCreature?.PhysicalDeflection;
-            set => _physicalDeflection = value;
+            get => _armor ?? BaseCreature?.Armor;
+            set => _armor = value;
         }
 
         public int? PhysicalResistance
         {
             get => _physicalResistance ?? BaseCreature?.PhysicalResistance;
             set => _physicalResistance = value;
+        }
+
+        public int? MagicResistance
+        {
+            get => _magicResistance ?? BaseCreature?.MagicResistance;
+            set => _magicResistance = value;
         }
 
         public int? AcidResistance
@@ -481,7 +481,7 @@ namespace UnicornHack.Generation
                         abilityEntity.Effect = effect;
 
                         var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
-                        ability.Name = LivingSystem.InnateAbilityName;
+                        ability.Name = EffectApplicationSystem.InnateAbilityName;
                         ability.Activation = ActivationType.Always;
 
                         abilityEntity.Ability = ability;
@@ -499,16 +499,16 @@ namespace UnicornHack.Generation
                             abilityEntity.Id, manager);
                         CreatePropertyEffect(nameof(BeingComponent.Regeneration), Regeneration, abilityEntity.Id,
                             manager);
-                        CreatePropertyEffect(nameof(BeingComponent.MagicAbsorption), MagicAbsorption, abilityEntity.Id,
+                        CreatePropertyEffect(nameof(BeingComponent.Evasion), Evasion, abilityEntity.Id,
                             manager);
-                        CreatePropertyEffect(nameof(BeingComponent.MagicDeflection), MagicDeflection, abilityEntity.Id,
-                            manager);
-                        CreatePropertyEffect(nameof(BeingComponent.PhysicalAbsorption), PhysicalAbsorption,
+                        CreatePropertyEffect(nameof(BeingComponent.Deflection), Deflection,
                             abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.PhysicalDeflection), PhysicalDeflection,
+                        CreatePropertyEffect(nameof(BeingComponent.Armor), Armor,
                             abilityEntity.Id, manager);
                         CreatePropertyEffect(nameof(BeingComponent.PhysicalResistance), PhysicalResistance,
                             abilityEntity.Id, manager);
+                        CreatePropertyEffect(nameof(BeingComponent.MagicResistance), MagicResistance, abilityEntity.Id,
+                            manager);
                         CreatePropertyEffect(nameof(BeingComponent.AcidResistance), AcidResistance, abilityEntity.Id,
                             manager);
                         CreatePropertyEffect(nameof(BeingComponent.BleedingResistance), BleedingResistance,
@@ -602,11 +602,11 @@ namespace UnicornHack.Generation
                 {nameof(Focus), (o, v) => (int?)v != (o.BaseCreature?.Focus)},
                 {nameof(EnergyRegeneration), (o, v) => (int?)v != (o.BaseCreature?.EnergyRegeneration)},
                 {nameof(Regeneration), (o, v) => (int?)v != (o.BaseCreature?.Regeneration)},
-                {nameof(MagicAbsorption), (o, v) => (int?)v != (o.BaseCreature?.MagicAbsorption)},
-                {nameof(MagicDeflection), (o, v) => (int?)v != (o.BaseCreature?.MagicDeflection)},
-                {nameof(PhysicalAbsorption), (o, v) => (int?)v != (o.BaseCreature?.PhysicalAbsorption)},
-                {nameof(PhysicalDeflection), (o, v) => (int?)v != (o.BaseCreature?.PhysicalDeflection)},
+                {nameof(Evasion), (o, v) => (int?)v != (o.BaseCreature?.Evasion)},
+                {nameof(Deflection), (o, v) => (int?)v != (o.BaseCreature?.Deflection)},
+                {nameof(Armor), (o, v) => (int?)v != (o.BaseCreature?.Armor)},
                 {nameof(PhysicalResistance), (o, v) => (int?)v != (o.BaseCreature?.PhysicalResistance)},
+                {nameof(MagicResistance), (o, v) => (int?)v != (o.BaseCreature?.MagicResistance)},
                 {nameof(AcidResistance), (o, v) => (int?)v != (o.BaseCreature?.AcidResistance)},
                 {nameof(BleedingResistance), (o, v) => (int?)v != (o.BaseCreature?.BleedingResistance)},
                 {nameof(BlightResistance), (o, v) => (int?)v != (o.BaseCreature?.BlightResistance)},

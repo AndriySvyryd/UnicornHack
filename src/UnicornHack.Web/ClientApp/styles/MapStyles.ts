@@ -89,17 +89,16 @@ export class ItemStyles {
         this[ItemType.ArmorHead] = armor;
 
         const weapon = { char: ')', style: { color: 'chocolate' }  };
-        this[ItemType.WeaponMeleeFist] = weapon;
+        this[ItemType.WeaponMeleeHand] = weapon;
         this[ItemType.WeaponMeleeShort] = weapon;
         this[ItemType.WeaponMeleeMedium] = weapon;
         this[ItemType.WeaponMeleeLong] = weapon;
-        this[ItemType.WeaponMagicFocus] = weapon;
-        this[ItemType.WeaponMagicStaff] = weapon;
-        this[ItemType.WeaponRangedBow] = weapon;
-        this[ItemType.WeaponRangedCrossbow] = weapon;
-        this[ItemType.WeaponRangedSlingshot] = weapon;
-        this[ItemType.WeaponRangedThrown] = weapon;
+        this[ItemType.WeaponRangedClose] = weapon;
+        this[ItemType.WeaponRangedShort] = weapon;
+        this[ItemType.WeaponRangedMedium] = weapon;
+        this[ItemType.WeaponRangedLong] = weapon;
         this[ItemType.WeaponAmmoContainer] = weapon;
+        this[ItemType.WeaponProjectile] = weapon;
 
         this[ItemType.Potion] = { char: '!', style: { color: 'yellow' } };
 

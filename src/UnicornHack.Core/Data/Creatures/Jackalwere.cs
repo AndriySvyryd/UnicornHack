@@ -18,6 +18,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
@@ -25,6 +26,7 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 250,
                     Effects = new HashSet<Effect> {new ConferLycanthropy {VariantName = "jackalwere"}}
@@ -41,8 +43,8 @@ namespace UnicornHack.Data.Creatures
             Speed = 2,
             Focus = 2,
             Regeneration = 3,
-            MagicDeflection = 5,
-            PhysicalDeflection = 13,
+            Armor = 1,
+            MagicResistance = 5,
             TorsoType = TorsoType.Quadruped,
             UpperExtremities = ExtremityType.None,
             LowerExtremities = ExtremityType.Claws,

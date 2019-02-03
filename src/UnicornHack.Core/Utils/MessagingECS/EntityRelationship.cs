@@ -133,6 +133,22 @@ namespace UnicornHack.Utils.MessagingECS
             {
                 foreach (var referencingEntity in _relationship[entity.Id].ToList())
                 {
+                    if (_relationship.KeyValueGetter.TryGetKey(
+                        referencingEntity,
+                        changes: null,
+                        getOldValue: true,
+                        out var keyValue))
+                    {
+                        if (_relationship.OrphanedEntities == null)
+                        {
+                            _relationship.OrphanedEntities = new Dictionary<int, HashSet<TEntity>>();
+                        }
+
+                        // Need to add to orphaned list first, since removing it from the relationship might remove the last reference to it
+                        _relationship.GetOrAddEntities(keyValue, _relationship.OrphanedEntities).Add(referencingEntity);
+                        _relationship.TryRemoveEntity(keyValue, referencingEntity, changedComponent: null);
+                    }
+
                     _relationship.HandleReferencedEntityRemoved(
                         referencingEntity, entity, removedComponent);
                 }
@@ -141,6 +157,8 @@ namespace UnicornHack.Utils.MessagingECS
             public bool HandlePropertyValuesChanged(IReadOnlyList<IPropertyValueChange> changes, TEntity entity,
                 IEntityGroup<TEntity> group)
                 => false;
+
+            public override string ToString() => _relationship.ToString();
         }
     }
 }
