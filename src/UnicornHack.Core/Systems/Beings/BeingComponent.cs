@@ -25,11 +25,15 @@ namespace UnicornHack.Systems.Beings
         private int _magicResistance;
         private int _acidResistance;
         private int _bleedingResistance;
-        private int _blightResistance;
         private int _coldResistance;
-        private int _disintegrationResistance;
         private int _electricityResistance;
         private int _fireResistance;
+        private int _lightResistance;
+        private int _psychicResistance;
+        private int _sonicResistance;
+        private int _stunResistance;
+        private int _toxinResistance;
+        private int _voidResistance;
         private int _waterResistance;
         private HeadType _headType;
         private TorsoType _torsoType;
@@ -221,24 +225,10 @@ namespace UnicornHack.Systems.Beings
         }
 
         [Property]
-        public int BlightResistance
-        {
-            get => _blightResistance;
-            set => SetWithNotify(value, ref _blightResistance);
-        }
-
-        [Property]
         public int ColdResistance
         {
             get => _coldResistance;
             set => SetWithNotify(value, ref _coldResistance);
-        }
-
-        [Property]
-        public int DisintegrationResistance
-        {
-            get => _disintegrationResistance;
-            set => SetWithNotify(value, ref _disintegrationResistance);
         }
 
         [Property]
@@ -253,6 +243,48 @@ namespace UnicornHack.Systems.Beings
         {
             get => _fireResistance;
             set => SetWithNotify(value, ref _fireResistance);
+        }
+
+        [Property(DefaultValue = 100)]
+        public int LightResistance
+        {
+            get => _lightResistance;
+            set => SetWithNotify(value, ref _lightResistance);
+        }
+
+        [Property]
+        public int PsychicResistance
+        {
+            get => _psychicResistance;
+            set => SetWithNotify(value, ref _psychicResistance);
+        }
+
+        [Property]
+        public int SonicResistance
+        {
+            get => _sonicResistance;
+            set => SetWithNotify(value, ref _sonicResistance);
+        }
+
+        [Property]
+        public int StunResistance
+        {
+            get => _stunResistance;
+            set => SetWithNotify(value, ref _stunResistance);
+        }
+
+        [Property]
+        public int ToxinResistance
+        {
+            get => _toxinResistance;
+            set => SetWithNotify(value, ref _toxinResistance);
+        }
+
+        [Property]
+        public int VoidResistance
+        {
+            get => _voidResistance;
+            set => SetWithNotify(value, ref _voidResistance);
         }
 
         [Property(DefaultValue = 100)]
@@ -363,11 +395,15 @@ namespace UnicornHack.Systems.Beings
             _magicResistance = default;
             _acidResistance = default;
             _bleedingResistance = default;
-            _blightResistance = default;
             _coldResistance = default;
-            _disintegrationResistance = default;
             _electricityResistance = default;
             _fireResistance = default;
+            _lightResistance = default;
+            _psychicResistance = default;
+            _sonicResistance = default;
+            _stunResistance = default;
+            _toxinResistance = default;
+            _voidResistance = default;
             _waterResistance = default;
             _headType = default;
             _torsoType = default;

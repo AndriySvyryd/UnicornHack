@@ -43,7 +43,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 20,
                     Action = AbilityAction.Spell,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Disintegrate {Damage = 70}}
+                    Effects = new HashSet<Effect> {new Wither {Damage = 70}}
                 }
             },
             InitialLevel = 14,

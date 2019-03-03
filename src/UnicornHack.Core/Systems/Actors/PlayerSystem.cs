@@ -326,10 +326,9 @@ namespace UnicornHack.Systems.Actors
             Point targetCell, GameEntity targetEntity, GameManager manager)
         {
             var ability = abilityEntity.Ability;
-            if ((ability.Activation & (ActivationType.Targeted | ActivationType.ManualActivation)) == 0
-                || !ability.IsUsable)
+            if ((ability.Activation & ActivationType.Slottable) == 0)
             {
-                throw new InvalidOperationException("Ability " + abilityEntity.Id + " cannot be used.");
+                throw new InvalidOperationException("Ability " + abilityEntity.Id + " cannot be activated directly.");
             }
 
             var position = playerEntity.Position;
@@ -361,7 +360,7 @@ namespace UnicornHack.Systems.Actors
             activationMessage.ActivatorEntity = playerEntity;
             activationMessage.TargetEntity = targetEntity;
 
-            if (!manager.AbilityActivationSystem.CanActivateAbility(activationMessage))
+            if (!manager.AbilityActivationSystem.CanActivateAbility(activationMessage, shouldThrow: true))
             {
                 manager.Queue.ReturnMessage(activationMessage);
                 return false;
@@ -373,9 +372,7 @@ namespace UnicornHack.Systems.Actors
 
         public MessageProcessingResult Process(AbilityActivatedMessage message, GameManager manager)
         {
-            // TODO: show a message on fail
-            if (message.SuccessfulActivation
-                && message.Delay != 0)
+            if (message.Delay != 0)
             {
                 var player = message.ActivatorEntity.Player;
                 if (player != null)

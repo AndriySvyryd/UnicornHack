@@ -251,7 +251,7 @@ namespace UnicornHack.Utils
         /// <param name="successProbability">Percent of expected <c>true</c> results.</param>
         /// <param name="entropyState">State for streak-breaking.</param>
         /// <returns> A random bool. </returns>
-        public bool NextBool(int successProbability, ref int entropyState)
+        public virtual bool NextBool(int successProbability, ref int entropyState)
         {
             if (successProbability < 0
                 || successProbability > 100)

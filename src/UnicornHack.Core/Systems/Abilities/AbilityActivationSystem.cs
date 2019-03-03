@@ -30,16 +30,21 @@ namespace UnicornHack.Systems.Abilities
         public const string AbilityActivatedMessageName = "AbilityActivated";
 
         public ActivateAbilityMessage CreateActivateAbilityMessage(GameManager manager)
-            => manager.Queue.CreateMessage<ActivateAbilityMessage>(ActivateAbilityMessageName);
+            => manager.CreateMessage<ActivateAbilityMessage>(ActivateAbilityMessageName);
 
         public DeactivateAbilityMessage CreateDeactivateAbilityMessage(GameManager manager)
-            => manager.Queue.CreateMessage<DeactivateAbilityMessage>(DeactivateAbilityMessageName);
+            => manager.CreateMessage<DeactivateAbilityMessage>(DeactivateAbilityMessageName);
 
-        public bool CanActivateAbility(ActivateAbilityMessage activateAbilityMessage)
+        public bool CanActivateAbility(ActivateAbilityMessage activateAbilityMessage, bool shouldThrow)
         {
             using (var message = Activate(activateAbilityMessage, pretend: true))
             {
-                return message.SuccessfulActivation;
+                if (!string.IsNullOrEmpty(message.ActivationError) && shouldThrow)
+                {
+                    throw new InvalidOperationException(message.ActivationError);
+                }
+
+                return string.IsNullOrEmpty(message.ActivationError);
             }
         }
 
@@ -49,13 +54,21 @@ namespace UnicornHack.Systems.Abilities
             manager.Enqueue(abilityActivatedMessage);
         }
 
-        public MessageProcessingResult Process(ActivateAbilityMessage message, GameManager manager)
+        MessageProcessingResult IMessageConsumer<ActivateAbilityMessage, GameManager>.Process(
+            ActivateAbilityMessage message, GameManager manager)
         {
             var abilityActivatedMessage = Activate(message, pretend: false);
-            if (abilityActivatedMessage != null
-                && abilityActivatedMessage.SuccessfulActivation)
+            if (abilityActivatedMessage != null)
             {
-                EnqueueAbilityActivated(abilityActivatedMessage, manager);
+                if (!string.IsNullOrEmpty(abilityActivatedMessage.ActivationError))
+                {
+                    throw new InvalidOperationException(abilityActivatedMessage.ActivationError);
+                }
+
+                if (abilityActivatedMessage.ActivationError == null)
+                {
+                    EnqueueAbilityActivated(abilityActivatedMessage, manager);
+                }
             }
 
             return MessageProcessingResult.ContinueProcessing;
@@ -64,29 +77,43 @@ namespace UnicornHack.Systems.Abilities
         private AbilityActivatedMessage Activate(ActivateAbilityMessage activateMessage, bool pretend)
         {
             var manager = activateMessage.AbilityEntity.Manager;
-            var targetEffectsMessage =
-                manager.Queue.CreateMessage<AbilityActivatedMessage>(AbilityActivatedMessageName);
+            var targetEffectsMessage = manager.CreateMessage<AbilityActivatedMessage>(AbilityActivatedMessageName);
             targetEffectsMessage.AbilityEntity = activateMessage.AbilityEntity;
             targetEffectsMessage.ActivatorEntity = activateMessage.ActivatorEntity;
             targetEffectsMessage.TargetCell = activateMessage.TargetCell;
             targetEffectsMessage.TargetEntity = activateMessage.TargetEntity;
 
             var ability = activateMessage.AbilityEntity.Ability;
-            if (!ability.IsUsable
-                || (ability.Slot == null
-                    && (ability.Activation & ActivationType.Slottable) != 0
-                    && (ability.OwnerEntity.Being?.AbilitySlotCount ?? 0) != 0))
+            if (!ability.IsUsable)
             {
-                throw new InvalidOperationException($"Ability {ability.EntityId} is not usable or is not slotted.");
+                targetEffectsMessage.ActivationError = $"Ability {ability.EntityId} is not usable or is not slotted.";
+                return targetEffectsMessage;
             }
 
-            if (((ability.Activation & ActivationType.Continuous) != 0
-                 && ability.IsActive)
-                || ability.CooldownTick != null
-                || ability.CooldownXpLeft != null
-                || manager.EffectsToContainingAbilityRelationship[ability.EntityId].Count == 0)
+            if (ability.Slot == null
+                && (ability.Activation & ActivationType.Slottable) != 0
+                && (ability.OwnerEntity.Being?.AbilitySlotCount ?? 0) != 0)
             {
-                targetEffectsMessage.SuccessfulActivation = false;
+                targetEffectsMessage.ActivationError = $"Ability {ability.EntityId} is not slotted.";
+                return targetEffectsMessage;
+            }
+
+            if (ability.IsActive)
+            {
+                targetEffectsMessage.ActivationError = $"Ability {ability.EntityId} is already active.";
+                return targetEffectsMessage;
+            }
+
+            if (ability.CooldownTick != null
+                || ability.CooldownXpLeft != null)
+            {
+                targetEffectsMessage.ActivationError = $"Ability {ability.EntityId} is on cooldown.";
+                return targetEffectsMessage;
+            }
+
+            if (manager.EffectsToContainingAbilityRelationship[ability.EntityId].Count == 0)
+            {
+                targetEffectsMessage.ActivationError = "";
                 return targetEffectsMessage;
             }
 
@@ -96,6 +123,7 @@ namespace UnicornHack.Systems.Abilities
             {
                 if (ownerBeing.EnergyPoints < ability.EnergyPointCost)
                 {
+                    targetEffectsMessage.ActivationError = $"Not enough EP to activate ability {ability.EntityId}.";
                     return targetEffectsMessage;
                 }
 
@@ -111,8 +139,6 @@ namespace UnicornHack.Systems.Abilities
                     }
                 }
             }
-
-            targetEffectsMessage.SuccessfulActivation = true;
 
             if ((ability.Activation & ActivationType.Targeted) != 0)
             {
@@ -133,14 +159,14 @@ namespace UnicornHack.Systems.Abilities
 
                         if (!manager.TravelSystem.CanTravel(travelMessage, manager))
                         {
-                            targetEffectsMessage.SuccessfulActivation = false;
-                            manager.Queue.ReturnMessage(travelMessage);
+                            targetEffectsMessage.ActivationError = $"Unable to turn in order to activate ability {ability.EntityId}.";
+                            manager.ReturnMessage(travelMessage);
                             return targetEffectsMessage;
                         }
 
                         if (!pretend)
                         {
-                            manager.Enqueue(travelMessage);
+                            manager.Process(travelMessage);
                         }
                     }
                 }
@@ -151,7 +177,7 @@ namespace UnicornHack.Systems.Abilities
                 return targetEffectsMessage;
             }
 
-            var selfEffectsMessage = manager.Queue.CreateMessage<AbilityActivatedMessage>(AbilityActivatedMessageName);
+            var selfEffectsMessage = manager.CreateMessage<AbilityActivatedMessage>(AbilityActivatedMessageName);
             selfEffectsMessage.AbilityEntity = activateMessage.AbilityEntity;
             selfEffectsMessage.ActivatorEntity = activateMessage.ActivatorEntity;
             selfEffectsMessage.TargetEntity = activateMessage.ActivatorEntity;
@@ -176,10 +202,12 @@ namespace UnicornHack.Systems.Abilities
 
             if (!selfEffectsMessage.EffectsToApply.IsEmpty)
             {
-                manager.EffectApplicationSystem.Process(selfEffectsMessage, manager);
+                manager.Process(selfEffectsMessage);
             }
-
-            manager.Queue.ReturnMessage(selfEffectsMessage);
+            else
+            {
+                manager.ReturnMessage(selfEffectsMessage);
+            }
 
             foreach (var activation in activations)
             {
@@ -201,12 +229,12 @@ namespace UnicornHack.Systems.Abilities
 
                 if (activation.ActivationMessage.TargetEntity != null)
                 {
-                    manager.Queue.ReturnMessage(activation.ActivationMessage);
+                    manager.ReturnMessage(activation.ActivationMessage);
                 }
 
                 if (activation.TargetMessage != null)
                 {
-                    manager.Queue.ReturnMessage(activation.TargetMessage);
+                    manager.ReturnMessage(activation.TargetMessage);
                 }
             }
 
@@ -280,7 +308,6 @@ namespace UnicornHack.Systems.Abilities
             List<AbilityActivation> activations)
         {
             var manager = activationMessage.AbilityEntity.Manager;
-            var queue = manager.Queue;
             var messageToProcess = targetMessage ?? activationMessage;
             var perAbilityActivations = GetActivatedAbilities(messageToProcess, selfEffectsMessage);
             if (perAbilityActivations != null)
@@ -316,10 +343,10 @@ namespace UnicornHack.Systems.Abilities
                         subActivation.ActivatingEffect, activatedAbilities, activations);
                 }
 
-                queue.ReturnMessage(activationMessage);
+                manager.ReturnMessage(activationMessage);
                 if (targetMessage != null)
                 {
-                    queue.ReturnMessage(targetMessage);
+                    manager.ReturnMessage(targetMessage);
                 }
             }
             else
@@ -448,7 +475,7 @@ namespace UnicornHack.Systems.Abilities
                 activation.ActivatorEntity = ability.OwnerEntity;
                 activation.TargetEntity = ability.OwnerEntity;
                 activation.AbilityEntity = abilityEntity;
-                manager.Enqueue(activation);
+                manager.Process(activation);
             }
 
             return MessageProcessingResult.ContinueProcessing;
@@ -527,18 +554,6 @@ namespace UnicornHack.Systems.Abilities
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        private void Activate(AbilityComponent ability, GameManager manager)
-        {
-            var activation = CreateActivateAbilityMessage(manager);
-            activation.ActivatorEntity = ability.OwnerEntity;
-            activation.TargetEntity = ability.OwnerEntity;
-            activation.AbilityEntity = ability.Entity;
-
-            Process(activation, manager);
-
-            manager.Queue.ReturnMessage(activation);
-        }
-
         // TODO: Detect when IsUsable changes to false and deactivate
 
         public MessageProcessingResult Process(EntityRemovedMessage<GameEntity> message, GameManager manager)
@@ -586,6 +601,16 @@ namespace UnicornHack.Systems.Abilities
             return MessageProcessingResult.ContinueProcessing;
         }
 
+        private void Activate(AbilityComponent ability, GameManager manager)
+        {
+            var activation = CreateActivateAbilityMessage(manager);
+            activation.ActivatorEntity = ability.OwnerEntity;
+            activation.TargetEntity = ability.OwnerEntity;
+            activation.AbilityEntity = ability.Entity;
+
+            manager.Process(activation);
+        }
+
         public void ActivateAbilities(
             int activatableId,
             ActivationType trigger,
@@ -596,10 +621,10 @@ namespace UnicornHack.Systems.Abilities
             {
                 var newActivation = activationMessage.Clone(activationMessage);
                 newActivation.AbilityEntity = triggeredAbility;
-                manager.Enqueue(newActivation);
+                manager.Process(newActivation);
             }
 
-            manager.Queue.ReturnMessage(activationMessage);
+            manager.ReturnMessage(activationMessage);
         }
 
         private IEnumerable<GameEntity> GetTriggeredAbilities(
@@ -650,7 +675,8 @@ namespace UnicornHack.Systems.Abilities
                 {
                     if (effectEntity.Effect.ShouldTargetActivator)
                     {
-                        selfEffectsMessage.EffectsToApply = selfEffectsMessage.EffectsToApply.Add(effectEntity);
+                        selfEffectsMessage.EffectsToApply =
+                            selfEffectsMessage.EffectsToApply.Add(effectEntity);
                     }
                     else
                     {
@@ -895,7 +921,8 @@ namespace UnicornHack.Systems.Abilities
             }
         }
 
-        public MessageProcessingResult Process(DeactivateAbilityMessage message, GameManager manager)
+        MessageProcessingResult IMessageConsumer<DeactivateAbilityMessage, GameManager>.Process(
+            DeactivateAbilityMessage message, GameManager manager)
         {
             Deactivate(message.AbilityEntity.Ability, message.ActivatorEntity, manager);
 

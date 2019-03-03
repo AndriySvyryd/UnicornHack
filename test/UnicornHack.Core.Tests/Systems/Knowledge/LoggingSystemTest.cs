@@ -6,6 +6,7 @@ using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Services.English;
 using UnicornHack.Services.LogEvents;
+using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Utils.DataStructures;
 using Xunit;
@@ -14,133 +15,201 @@ namespace UnicornHack.Systems.Knowledge
 {
     public class LoggingSystemTest
     {
-        // TODO: Test through LoggingSystem instead of calling the language system directly
-
         // TODO: Test explosion
 
         [Fact]
         public void AttackEvent()
         {
-            var level = TestHelper.BuildLevel();
-            var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
+            var level = TestHelper.BuildLevel(@"
+...
+...
+...");
+            var demogorgon = CreatureData.Demogorgon.Instantiate(level, new Point(0, 0));
+
             var nymph = CreatureData.WaterNymph.Instantiate(level, new Point(0, 1));
-            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
-            var player2 = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, level.Entity, new Point(0, 3));
-            var manager = level.Entity.Manager;
 
-            Verify(blob, nymph, player, SenseType.Sight, SenseType.Sight, AbilityAction.Bite, manager, 11,
-                expectedMessage: "The acid blob bites the water nymph. (11 pts.)");
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(1, 1));
+            playerEntity.Position.Heading = Direction.West;
+            var manager = playerEntity.Manager;
 
-            Verify(player, blob, player2, SenseType.Sight, SenseType.Sight, AbilityAction.Sting, manager, 11,
-                expectedMessage: "Dudley stings the acid blob. (11 pts.)");
+            ItemData.LongSword.Instantiate(playerEntity);
 
-            Verify(blob, player, player2, SenseType.Sight, SenseType.Sight, AbilityAction.Spell, manager, null,
-                expectedMessage: "The acid blob tries to cast a spell at Dudley, but misses.");
+            var player2Entity = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, level.Entity, new Point(1, 0));
+            player2Entity.Position.Heading = Direction.North;
 
-            Verify(blob, nymph, player, SenseType.Sound, SenseType.Sight, AbilityAction.Sting, manager, 11,
+            manager.Queue.ProcessQueue(manager);
+
+            var swordEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id]
+                .Single(e => e.Item.TemplateName == ItemData.LongSword.Name);
+            var equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            equipMessage.ActorEntity = playerEntity;
+            equipMessage.ItemEntity = swordEntity;
+            equipMessage.Slot = EquipmentSlot.GraspBothMelee;
+
+            manager.Enqueue(equipMessage);
+            manager.Queue.ProcessQueue(manager);
+            playerEntity.Player.LogEntries.Clear();
+            player2Entity.Player.LogEntries.Clear();
+
+            Verify(demogorgon, nymph, playerEntity, player2Entity,
+                manager.AbilitiesToAffectableRelationship[demogorgon.Id].ElementAt(3), success: true,
+                "The Demogorgon stings the water nymph. (18 pts.)",
+                "The Demogorgon stings something.",
+                manager);
+
+            Verify(demogorgon, nymph, playerEntity, player2Entity,
+                manager.AbilitiesToAffectableRelationship[demogorgon.Id].ElementAt(3), success: false,
+                "The Demogorgon tries to sting the water nymph, but misses.",
+                "The Demogorgon tries to sting something, but misses.",
+                manager);
+
+            Verify(playerEntity, demogorgon, playerEntity, player2Entity,
+                manager.AbilitiesToAffectableRelationship[playerEntity.Id]
+                    .Single(a => a.Ability.Slot == AbilitySlottingSystem.DefaultMeleeAttackSlot), success: true,
+                "You slash the Demogorgon. (61 pts.)",
+                "Dudley slashes the Demogorgon. (61 pts.)",
+                manager);
+
+            Verify(playerEntity, demogorgon, playerEntity, player2Entity,
+                manager.AbilitiesToAffectableRelationship[playerEntity.Id]
+                    .Single(a => a.Ability.Slot == AbilitySlottingSystem.DefaultMeleeAttackSlot), success: false,
+                "You try to slash the Demogorgon, but miss.",
+                "Dudley tries to slash the Demogorgon, but misses.",
+                manager);
+
+            Verify(demogorgon, playerEntity, playerEntity, player2Entity,
+                manager.AbilitiesToAffectableRelationship[demogorgon.Id].ElementAt(2), success: true,
+                "The Demogorgon casts a spell at you! You are unaffected.",
+                "The Demogorgon casts a spell at Dudley. He is unaffected.",
+                manager);
+
+            Verify(demogorgon, playerEntity, playerEntity, player2Entity,
+                manager.AbilitiesToAffectableRelationship[demogorgon.Id].ElementAt(2), success: false,
+                "The Demogorgon tries to cast a spell at you, but misses.",
+                "The Demogorgon tries to cast a spell at Dudley, but misses.",
+                manager);
+
+            Verify(demogorgon, playerEntity, player2Entity, SenseType.Sight, SenseType.Sight, AbilityAction.Spell, manager, null,
+                expectedMessage: "The Demogorgon tries to cast a spell at Dudley, but misses.");
+
+            Verify(demogorgon, nymph, playerEntity, SenseType.Sound, SenseType.Sight, AbilityAction.Sting, manager, 11,
                 expectedMessage: "You hear a noise.");
 
-            Verify(blob, nymph, player, SenseType.Sight, SenseType.SoundDistant | SenseType.Danger | SenseType.Telepathy,
-                AbilityAction.Headbutt, manager, 11,
-                expectedMessage: "The acid blob headbutts the water nymph. (11 pts.)");
-
-            Verify(nymph, player, player, SenseType.Sight | SenseType.Touch, SenseType.Sight | SenseType.Touch,
+            Verify(nymph, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch, SenseType.Sight | SenseType.Touch,
                 AbilityAction.Punch, manager, 11,
                 expectedMessage: "The water nymph punches you! [11 pts.]");
 
-            Verify(nymph, player, player, SenseType.Sight | SenseType.Touch, SenseType.Sight | SenseType.Touch,
+            Verify(nymph, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch, SenseType.Sight | SenseType.Touch,
                 AbilityAction.Spit, manager, null,
                 expectedMessage: "The water nymph tries to spit at you, but misses.");
 
-            Verify(player, blob, player, SenseType.Sight | SenseType.Touch, SenseType.Sight, AbilityAction.Hug, manager, 11,
-                expectedMessage: "You squeeze the acid blob. (11 pts.)");
+            Verify(playerEntity, demogorgon, playerEntity, SenseType.Sight | SenseType.Touch, SenseType.Sight, AbilityAction.Hug, manager, 11,
+                expectedMessage: "You squeeze the Demogorgon. (11 pts.)");
 
-            Verify(player, blob, player, SenseType.Sight | SenseType.Touch, SenseType.Telepathy | SenseType.Touch,
+            Verify(playerEntity, demogorgon, playerEntity, SenseType.Sight | SenseType.Touch, SenseType.Telepathy | SenseType.Touch,
                 AbilityAction.Trample, manager, null,
-                expectedMessage: "You try to trample the acid blob, but miss.");
+                expectedMessage: "You try to trample the Demogorgon, but miss.");
 
-            Verify(blob, blob, player, SenseType.Sight, SenseType.Sight, AbilityAction.Claw, manager, 11,
-                expectedMessage: "The acid blob claws itself. (11 pts.)");
+            Verify(demogorgon, demogorgon, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Claw, manager, 11,
+                expectedMessage: "The Demogorgon claws himself. (11 pts.)");
 
-            Verify(player, player, player, SenseType.Sight | SenseType.Touch, SenseType.Sight | SenseType.Touch,
+            Verify(playerEntity, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch, SenseType.Sight | SenseType.Touch,
                 AbilityAction.Kick, manager, 12,
                 expectedMessage: "You kick yourself! [12 pts.]");
 
-            Verify(nymph, player, player, SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Touch,
+            Verify(nymph, playerEntity, playerEntity, SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Touch,
                 AbilityAction.Scream, manager, 0,
                 expectedMessage: "The water nymph screams at you! You are unaffected.");
 
-            Verify(nymph, nymph, player, SenseType.Sight, SenseType.Sight, AbilityAction.Scream, manager, 0,
-                expectedMessage: "The water nymph screams at herself. The water nymph seems unaffected.");
+            Verify(nymph, nymph, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Scream, manager, 0,
+                expectedMessage: "The water nymph screams at herself. She is unaffected.");
 
-            Verify(nymph, nymph, player, SenseType.Sound, SenseType.None, AbilityAction.Scream, manager, null,
+            Verify(nymph, nymph, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Scream, manager, null,
                 expectedMessage: "You hear a scream.");
 
-            var dagger = ItemData.Dagger.Instantiate(player.Manager).Referenced;
+            var dagger = ItemData.Dagger.Instantiate(playerEntity.Manager).Referenced;
 
-            Verify(player, blob, player, SenseType.Touch | SenseType.Telepathy, SenseType.Sight, AbilityAction.Slash, manager, 11,
-                weapon: dagger,
-                expectedMessage: "You slash the acid blob. (11 pts.)");
-
-            Verify(player, null, player, SenseType.Touch | SenseType.Telepathy, SenseType.Sight, AbilityAction.Slash, manager, null,
+            Verify(playerEntity, null, playerEntity, SenseType.Touch | SenseType.Telepathy, SenseType.Sight, AbilityAction.Slash, manager, null,
                 weapon: dagger,
                 expectedMessage: "You slash the air.");
 
-            var bow = ItemData.Shortbow.Instantiate(player.Manager).Referenced;
-            var arrow = ItemData.Arrow.Instantiate(player.Manager).Referenced;
+            var bow = ItemData.Shortbow.Instantiate(playerEntity.Manager).Referenced;
+            var arrow = ItemData.Arrow.Instantiate(playerEntity.Manager).Referenced;
 
-            Verify(nymph, player, player, SenseType.Sight, SenseType.None, AbilityAction.Shoot, manager, null, weapon: bow,
+            Verify(nymph, playerEntity, playerEntity, SenseType.Sight, SenseType.None, AbilityAction.Shoot, manager, null, weapon: bow,
                 expectedMessage: null);
 
-            Verify(nymph, player, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11, weapon: arrow,
+            Verify(nymph, playerEntity, playerEntity, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11, weapon: arrow,
                 expectedMessage: "An arrow hits you! [11 pts.]");
 
-            Verify(nymph, player, player, SenseType.SoundDistant, SenseType.None, AbilityAction.Shoot, manager, null,
+            Verify(nymph, playerEntity, playerEntity, SenseType.SoundDistant, SenseType.None, AbilityAction.Shoot, manager, null,
                 weapon: bow,
                 expectedMessage: null);
 
-            Verify(nymph, player, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, null, weapon: arrow,
+            Verify(nymph, playerEntity, playerEntity, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, null, weapon: arrow,
                 expectedMessage: "An arrow misses you.");
 
-            Verify(player, blob, player, SenseType.Sight, SenseType.None, AbilityAction.Shoot, manager, null, weapon: bow,
+            Verify(playerEntity, demogorgon, playerEntity, SenseType.Sight, SenseType.None, AbilityAction.Shoot, manager, null, weapon: bow,
                 expectedMessage: null);
 
-            Verify(player, blob, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11, weapon: arrow,
-                expectedMessage: "An arrow hits the acid blob. (11 pts.)");
+            Verify(playerEntity, demogorgon, playerEntity, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11, weapon: arrow,
+                expectedMessage: "An arrow hits the Demogorgon. (11 pts.)");
 
-            Verify(nymph, blob, player, SenseType.Sound, SenseType.None, AbilityAction.Shoot, manager, null, weapon: bow,
+            Verify(nymph, demogorgon, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Shoot, manager, null, weapon: bow,
                 expectedMessage: "You hear a noise.");
 
-            Verify(nymph, blob, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 2, weapon: arrow,
-                expectedMessage: "An arrow hits the acid blob. (2 pts.)");
+            Verify(nymph, demogorgon, playerEntity, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 2, weapon: arrow,
+                expectedMessage: "An arrow hits the Demogorgon. (2 pts.)");
 
-            var throwingKnife = ItemData.ThrowingKnife.Instantiate(player.Manager).Referenced;
+            var throwingKnife = ItemData.ThrowingKnife.Instantiate(playerEntity.Manager).Referenced;
 
-            Verify(nymph, player, player, SenseType.Sound, SenseType.None, AbilityAction.Throw, manager, null,
+            Verify(nymph, playerEntity, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Throw, manager, null,
                 weapon: throwingKnife,
                 expectedMessage: null);
 
-            Verify(nymph, player, player, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11, weapon: throwingKnife,
+            Verify(nymph, playerEntity, playerEntity, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11, weapon: throwingKnife,
                 expectedMessage: "A throwing knife hits you! [11 pts.]");
 
-            Verify(player, null, player, SenseType.Sight, SenseType.None, AbilityAction.Throw, manager, null,
-                weapon: throwingKnife,
+            Verify(playerEntity, null, playerEntity, SenseType.None, SenseType.None, AbilityAction.Hit, manager, null, weapon: throwingKnife,
                 expectedMessage: null);
 
-            Verify(player, blob, player, SenseType.None, SenseType.Sound, AbilityAction.Hit, manager, null,
-                weapon: throwingKnife,
-                expectedMessage: "A throwing knife misses something.");
-
-            Verify(player, null, player, SenseType.None, SenseType.None, AbilityAction.Hit, manager, null, weapon: throwingKnife,
-                expectedMessage: null);
-
-            Verify(nymph, blob, player, SenseType.Sound, SenseType.None, AbilityAction.Throw, manager, null,
+            Verify(nymph, demogorgon, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Throw, manager, null,
                 weapon: throwingKnife,
                 expectedMessage: "You hear a noise.");
 
-            Verify(nymph, blob, player, SenseType.None, SenseType.SoundDistant, AbilityAction.Hit, manager, 2,
+            Verify(nymph, demogorgon, playerEntity, SenseType.None, SenseType.SoundDistant, AbilityAction.Hit, manager, 2,
                 weapon: throwingKnife,
                 expectedMessage: "You hear a distant noise.");
+        }
+
+        private static void Verify(
+            GameEntity attacker,
+            GameEntity victim,
+            GameEntity player1,
+            GameEntity player2,
+            GameEntity ability,
+            bool success,
+            string expectedMessage1,
+            string expectedMessage2,
+            GameManager manager)
+        {
+            var activationMessage = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);
+            activationMessage.AbilityEntity = ability;
+            activationMessage.ActivatorEntity = attacker;
+            activationMessage.TargetEntity = victim;
+            ability.Ability.CooldownTick = null;
+
+            manager.Enqueue(activationMessage);
+
+            ((TestRandom)manager.Game.Random).EnqueueNextBool(success);
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(expectedMessage1,
+                player1.Player.LogEntries.Single().Message);
+            player1.Player.LogEntries.Clear();
+            Assert.Equal(expectedMessage2,
+                player2.Player.LogEntries.Single().Message);
+            player2.Player.LogEntries.Clear();
         }
 
         private void Verify(

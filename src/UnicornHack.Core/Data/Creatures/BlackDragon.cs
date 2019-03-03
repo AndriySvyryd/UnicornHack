@@ -21,7 +21,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 20,
                     Action = AbilityAction.Breath,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Disintegrate {Damage = 140}}
+                    Effects = new HashSet<Effect> {new Wither {Damage = 140}}
                 },
                 new Ability
                 {
@@ -61,7 +61,7 @@ namespace UnicornHack.Data.Creatures
             Focus = 8,
             Armor = 5,
             MagicResistance = 10,
-            DisintegrationResistance = 75,
+            VoidResistance = 75,
             TorsoType = TorsoType.Quadruped,
             UpperExtremities = ExtremityType.None,
             LowerExtremities = ExtremityType.Claws,

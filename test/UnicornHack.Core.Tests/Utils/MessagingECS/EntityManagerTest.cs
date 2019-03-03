@@ -34,19 +34,20 @@ namespace UnicornHack.Utils.MessagingECS
             {
                 entity = (GameEntity)entityReference.Referenced;
                 entity.AddComponent<LevelComponent>((int)EntityComponent.Level);
-            }
 
-            Assert.Same(entity, manager.FindEntity(entity.Id));
+                Assert.Same(entity, manager.FindEntity(entity.Id));
 
-            using(var message = manager.CreateRemoveComponentMessage())
-            {
+                var message = manager.CreateRemoveComponentMessage();
+
                 message.Entity = entity;
                 message.Component = EntityComponent.Level;
 
-                manager.Process(message, manager);
-
-                Assert.False(entity.HasComponent(EntityComponent.Level));
+                manager.Enqueue(message);
                 Assert.NotNull(manager.FindEntity(entity.Id));
+                Assert.True(entity.HasComponent(EntityComponent.Level));
+
+                manager.Queue.ProcessQueue(manager);
+                Assert.False(entity.HasComponent(EntityComponent.Level));
             }
 
             Assert.Null(manager.FindEntity(entity.Id));

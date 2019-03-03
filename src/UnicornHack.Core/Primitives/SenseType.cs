@@ -15,7 +15,7 @@ namespace UnicornHack.Primitives
         Touch = 1 << 6
     }
 
-    public static class SenseTypeExtentions
+    public static class SenseTypeExtensions
     {
         public static bool CanIdentify(this SenseType sense)
             => (sense & (SenseType.Sight | SenseType.Telepathy)) != SenseType.None;

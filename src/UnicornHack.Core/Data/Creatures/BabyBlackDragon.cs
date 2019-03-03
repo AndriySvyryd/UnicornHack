@@ -36,7 +36,7 @@ namespace UnicornHack.Data.Creatures
             Focus = 6,
             Armor = 4,
             MagicResistance = 5,
-            DisintegrationResistance = 75,
+            VoidResistance = 75,
             TorsoType = TorsoType.Quadruped,
             UpperExtremities = ExtremityType.None,
             LowerExtremities = ExtremityType.Claws,

@@ -108,10 +108,10 @@ namespace UnicornHack.Utils.MessagingECS
             }
         }
 
-        public void Process<TMessage>(string name, TMessage message, TState state)
-            where TMessage : class, IDisposable, new()
+        public void Process<TMessage>(TMessage message, TState state)
+            where TMessage : class, IMessage, new()
         {
-            if (_namedQueues.TryGetValue(name, out var specificQueue))
+            if (_namedQueues.TryGetValue(message.MessageName, out var specificQueue))
             {
                 ((MessageSpecificQueue<TMessage, TState>)specificQueue).Process(message, state);
             }

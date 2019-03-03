@@ -91,7 +91,7 @@ namespace UnicornHack.Systems.Abilities
                     activationMessage.ActivatorEntity = ability.OwnerEntity;
                     activationMessage.TargetEntity = ability.OwnerEntity;
 
-                    if (!manager.AbilityActivationSystem.CanActivateAbility(activationMessage))
+                    if (!manager.AbilityActivationSystem.CanActivateAbility(activationMessage, shouldThrow: false))
                     {
                         manager.Queue.ReturnMessage(activationMessage);
                         ability.Slot = oldSlot;
@@ -111,8 +111,7 @@ namespace UnicornHack.Systems.Abilities
                     deactivateMessage.AbilityEntity = message.AbilityEntity;
                     deactivateMessage.ActivatorEntity = ability.OwnerEntity;
 
-                    manager.AbilityActivationSystem.Process(deactivateMessage, manager);
-                    manager.Queue.ReturnMessage(deactivateMessage);
+                    manager.Process(deactivateMessage);
                 }
 
                 if (ability.CooldownTick == null

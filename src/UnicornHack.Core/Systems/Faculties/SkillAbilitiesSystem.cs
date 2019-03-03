@@ -259,12 +259,6 @@ namespace UnicornHack.Systems.Faculties
                 }
             }
 
-            var player = actorEntity.Player;
-            if (player == null)
-            {
-                return canUseWeapons;
-            }
-
             var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
             setSlotMessage.Slot =
                 melee ? AbilitySlottingSystem.DefaultMeleeAttackSlot : AbilitySlottingSystem.DefaultRangedAttackSlot;

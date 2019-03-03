@@ -15,6 +15,7 @@ namespace UnicornHack.Systems.Effects
         private int? _expirationXp;
         private bool _shouldTargetActivator;
         private int? _amount;
+        private int? _secondaryAmount;
         private EffectType _effectType;
         private ValueCombinationFunction _function;
         private string _targetName;
@@ -82,6 +83,12 @@ namespace UnicornHack.Systems.Effects
         {
             get => _amount;
             set => SetWithNotify(value, ref _amount);
+        }
+
+        public int? SecondaryAmount
+        {
+            get => _secondaryAmount;
+            set => SetWithNotify(value, ref _secondaryAmount);
         }
 
         public EffectType EffectType

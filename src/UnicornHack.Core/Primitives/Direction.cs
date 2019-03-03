@@ -58,7 +58,7 @@ namespace UnicornHack.Primitives
         All = NorthSemicircle | SouthSemicircle
     }
 
-    public static class DirectionExtentions
+    public static class DirectionExtensions
     {
         public static Direction Rotate(this Direction direction, int octants)
         {

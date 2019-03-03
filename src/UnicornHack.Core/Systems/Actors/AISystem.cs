@@ -16,8 +16,9 @@ namespace UnicornHack.Systems.Actors
         IGameSystem<TraveledMessage>,
         IGameSystem<ItemEquippedMessage>,
         IGameSystem<ItemMovedMessage>,
+        IGameSystem<DiedMessage>,
         IGameSystem<EntityAddedMessage<GameEntity>>,
-        IGameSystem<DiedMessage>
+        IGameSystem<PropertyValueChangedMessage<GameEntity, bool>>
     {
         public const string PerformAIActionMessageName = "PerformAIAction";
 
@@ -132,7 +133,7 @@ namespace UnicornHack.Systems.Actors
                 activationMessage.ActivatorEntity = aiEntity;
                 activationMessage.TargetEntity = targetEntity;
 
-                if (!manager.AbilityActivationSystem.CanActivateAbility(activationMessage))
+                if (!manager.AbilityActivationSystem.CanActivateAbility(activationMessage, shouldThrow: true))
                 {
                     manager.Queue.ReturnMessage(activationMessage);
                     return false;
@@ -147,8 +148,7 @@ namespace UnicornHack.Systems.Actors
 
         public MessageProcessingResult Process(AbilityActivatedMessage message, GameManager manager)
         {
-            if (message.SuccessfulActivation
-                && message.Delay != 0)
+            if (message.Delay != 0)
             {
                 var ai = message.ActivatorEntity.AI;
                 if (ai != null)
@@ -227,10 +227,10 @@ namespace UnicornHack.Systems.Actors
                 var ai = message.InitialContainer?.AI;
                 if (ai == null)
                 {
-                    var finalContainderId = message.ItemEntity.Item.ContainerId;
-                    if (finalContainderId != null)
+                    var finalContainerId = message.ItemEntity.Item.ContainerId;
+                    if (finalContainerId != null)
                     {
-                        ai = manager.FindEntity(finalContainderId.Value).AI;
+                        ai = manager.FindEntity(finalContainerId.Value).AI;
                     }
                 }
 
@@ -256,31 +256,47 @@ namespace UnicornHack.Systems.Actors
 
         public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager manager)
         {
-            var ability = message.Entity.Ability;
-            var owner = ability?.OwnerEntity;
-            if (owner?.AI != null
-                && (ability.Activation & ActivationType.Slottable) != 0
-                && ability.Slot == null
-                && ability.IsUsable
-                && ability.Template?.Type != AbilityType.DefaultAttack)
-            {
-                for (var i = 0; i < owner.Being.AbilitySlotCount; i++)
-                {
-                    if (manager.SlottedAbilitiesIndex[(owner.Id, i)] == null)
-                    {
-                        var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
-                        setSlotMessage.Slot = i;
-                        setSlotMessage.AbilityEntity = message.Entity;
-
-                        manager.AbilitySlottingSystem.Process(setSlotMessage, manager);
-                        manager.Queue.ReturnMessage(setSlotMessage);
-
-                        break;
-                    }
-                }
-            }
+            TrySlot(message.Entity.Ability, manager);
 
             return MessageProcessingResult.ContinueProcessing;
+        }
+
+        public MessageProcessingResult Process(
+            PropertyValueChangedMessage<GameEntity, bool> message, GameManager manager)
+        {
+            TrySlot((AbilityComponent)message.ChangedComponent, manager);
+
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        private static void TrySlot(AbilityComponent ability, GameManager manager)
+        {
+            var owner = ability.OwnerEntity;
+            if (owner.AI == null
+                || (ability.Activation & ActivationType.Slottable) == 0
+                || ability.Slot != null
+                || !ability.IsUsable
+                || ability.Template?.Type == AbilityType.DefaultAttack)
+            {
+                return;
+            }
+
+            for (var i = 0; i < owner.Being.AbilitySlotCount; i++)
+            {
+                if (manager.SlottedAbilitiesIndex[(owner.Id, i)] != null)
+                {
+                    continue;
+                }
+
+                var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+                setSlotMessage.Slot = i;
+                setSlotMessage.AbilityEntity = ability.Entity;
+
+                manager.AbilitySlottingSystem.Process(setSlotMessage, manager);
+                manager.Queue.ReturnMessage(setSlotMessage);
+
+                break;
+            }
         }
     }
 }

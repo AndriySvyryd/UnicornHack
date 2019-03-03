@@ -39,11 +39,15 @@ namespace UnicornHack.Generation
         private int? _physicalResistance;
         private int? _acidResistance;
         private int? _bleedingResistance;
-        private int? _blightResistance;
         private int? _coldResistance;
-        private int? _disintegrationResistance;
         private int? _electricityResistance;
         private int? _fireResistance;
+        private int? _lightResistance;
+        private int? _psychicResistance;
+        private int? _sonicResistance;
+        private int? _stunResistance;
+        private int? _voidResistance;
+        private int? _toxinResistance;
         private int? _waterResistance;
         private bool? _reflective;
         private bool? _slimingImmune;
@@ -211,22 +215,10 @@ namespace UnicornHack.Generation
             set => _bleedingResistance = value;
         }
 
-        public int? BlightResistance
-        {
-            get => _blightResistance ?? BaseCreature?.BlightResistance;
-            set => _blightResistance = value;
-        }
-
         public int? ColdResistance
         {
             get => _coldResistance ?? BaseCreature?.ColdResistance;
             set => _coldResistance = value;
-        }
-
-        public int? DisintegrationResistance
-        {
-            get => _disintegrationResistance ?? BaseCreature?.DisintegrationResistance;
-            set => _disintegrationResistance = value;
         }
 
         public int? ElectricityResistance
@@ -239,6 +231,42 @@ namespace UnicornHack.Generation
         {
             get => _fireResistance ?? BaseCreature?.FireResistance;
             set => _fireResistance = value;
+        }
+
+        public int? LightResistance
+        {
+            get => _lightResistance ?? BaseCreature?.LightResistance;
+            set => _lightResistance = value;
+        }
+
+        public int? PsychicResistance
+        {
+            get => _psychicResistance ?? BaseCreature?.PsychicResistance;
+            set => _psychicResistance = value;
+        }
+
+        public int? SonicResistance
+        {
+            get => _sonicResistance ?? BaseCreature?.SonicResistance;
+            set => _sonicResistance = value;
+        }
+
+        public int? StunResistance
+        {
+            get => _stunResistance ?? BaseCreature?.StunResistance;
+            set => _stunResistance = value;
+        }
+
+        public int? ToxinResistance
+        {
+            get => _toxinResistance ?? BaseCreature?.ToxinResistance;
+            set => _toxinResistance = value;
+        }
+
+        public int? VoidResistance
+        {
+            get => _voidResistance ?? BaseCreature?.VoidResistance;
+            set => _voidResistance = value;
         }
 
         public int? WaterResistance
@@ -513,16 +541,24 @@ namespace UnicornHack.Generation
                             manager);
                         CreatePropertyEffect(nameof(BeingComponent.BleedingResistance), BleedingResistance,
                             abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.BlightResistance), BlightResistance,
-                            abilityEntity.Id, manager);
                         CreatePropertyEffect(nameof(BeingComponent.ColdResistance), ColdResistance, abilityEntity.Id,
                             manager);
-                        CreatePropertyEffect(nameof(BeingComponent.DisintegrationResistance), DisintegrationResistance,
-                            abilityEntity.Id, manager);
                         CreatePropertyEffect(nameof(BeingComponent.ElectricityResistance), ElectricityResistance,
                             abilityEntity.Id, manager);
                         CreatePropertyEffect(nameof(BeingComponent.FireResistance), FireResistance, abilityEntity.Id,
                             manager);
+                        CreatePropertyEffect(nameof(BeingComponent.LightResistance), LightResistance,
+                            abilityEntity.Id, manager);
+                        CreatePropertyEffect(nameof(BeingComponent.PsychicResistance), PsychicResistance,
+                            abilityEntity.Id, manager);
+                        CreatePropertyEffect(nameof(BeingComponent.SonicResistance), SonicResistance,
+                            abilityEntity.Id, manager);
+                        CreatePropertyEffect(nameof(BeingComponent.StunResistance), StunResistance,
+                            abilityEntity.Id, manager);
+                        CreatePropertyEffect(nameof(BeingComponent.ToxinResistance), ToxinResistance,
+                            abilityEntity.Id, manager);
+                        CreatePropertyEffect(nameof(BeingComponent.VoidResistance), VoidResistance,
+                            abilityEntity.Id, manager);
                         CreatePropertyEffect(nameof(BeingComponent.WaterResistance), WaterResistance, abilityEntity.Id,
                             manager);
                         CreatePropertyEffect(nameof(BeingComponent.UpperExtremities), (int?)UpperExtremities,
@@ -609,11 +645,15 @@ namespace UnicornHack.Generation
                 {nameof(MagicResistance), (o, v) => (int?)v != (o.BaseCreature?.MagicResistance)},
                 {nameof(AcidResistance), (o, v) => (int?)v != (o.BaseCreature?.AcidResistance)},
                 {nameof(BleedingResistance), (o, v) => (int?)v != (o.BaseCreature?.BleedingResistance)},
-                {nameof(BlightResistance), (o, v) => (int?)v != (o.BaseCreature?.BlightResistance)},
                 {nameof(ColdResistance), (o, v) => (int?)v != (o.BaseCreature?.ColdResistance)},
-                {nameof(DisintegrationResistance), (o, v) => (int?)v != (o.BaseCreature?.DisintegrationResistance)},
                 {nameof(ElectricityResistance), (o, v) => (int?)v != (o.BaseCreature?.ElectricityResistance)},
                 {nameof(FireResistance), (o, v) => (int?)v != (o.BaseCreature?.FireResistance)},
+                {nameof(LightResistance), (o, v) => (int?) v != (o.BaseCreature?.LightResistance)},
+                {nameof(PsychicResistance), (o, v) => (int?) v != (o.BaseCreature?.PsychicResistance)},
+                {nameof(SonicResistance), (o, v) => (int?) v != (o.BaseCreature?.SonicResistance)},
+                {nameof(StunResistance), (o, v) => (int?) v != (o.BaseCreature?.StunResistance)},
+                {nameof(ToxinResistance), (o, v) => (int?) v != (o.BaseCreature?.ToxinResistance)},
+                {nameof(VoidResistance), (o, v) => (int?) v != (o.BaseCreature?.VoidResistance)},
                 {nameof(WaterResistance), (o, v) => (int?)v != (o.BaseCreature?.WaterResistance)},
                 {nameof(Reflective), (o, v) => (bool?)v != (o.BaseCreature?.Reflective)},
                 {nameof(SlimingImmune), (o, v) => (bool?)v != (o.BaseCreature?.SlimingImmune)},

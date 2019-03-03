@@ -1,3 +1,4 @@
+using UnicornHack.Primitives;
 using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects
@@ -8,6 +9,8 @@ namespace UnicornHack.Generation.Effects
 
         protected override void ConfigureEffect(EffectComponent effect)
         {
+            effect.EffectType = EffectType.Heal;
+            effect.Amount = 0;
         }
     }
 }

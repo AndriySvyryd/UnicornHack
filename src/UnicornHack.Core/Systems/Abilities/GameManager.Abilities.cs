@@ -107,7 +107,7 @@ namespace UnicornHack
             queue.Add<SetAbilitySlotMessage>(AbilitySlottingSystem,
                 AbilitySlottingSystem.SetAbilitySlotMessageName, 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, bool>>(AbilitySlottingSystem,
-                Abilities.GetPropertyValueChangedMessageName(nameof(AbilityComponent.IsUsable)),
+                AbilitiesToAffectableRelationship.GetPropertyValueChangedMessageName(nameof(AbilityComponent.IsUsable)),
                 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(AbilitySlottingSystem,
                 Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.AbilitySlotCount)),

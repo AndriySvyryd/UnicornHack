@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using Microsoft.Extensions.Caching.Memory;
 using UnicornHack.Generation;
@@ -9,7 +8,6 @@ using UnicornHack.Primitives;
 using UnicornHack.Services;
 using UnicornHack.Services.English;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Utils;
 using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 using Xunit;
@@ -22,7 +20,7 @@ namespace UnicornHack
         {
             var game = new Game
             {
-                Random = new SimpleRandom {Seed = seed ?? (uint)Environment.TickCount},
+                Random = new TestRandom { Seed = seed ?? (uint)Environment.TickCount},
                 InitialSeed = seed,
                 Repository = new TestRepository(),
                 Services = new GameServices(new EnglishLanguageService(), new MemoryCache(new MemoryCacheOptions()))

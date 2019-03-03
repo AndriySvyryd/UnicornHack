@@ -117,7 +117,11 @@ namespace UnicornHack.Systems.Knowledge
                 return MessageProcessingResult.ContinueProcessing;
             }
 
-            if ((message.AbilityEntity.Ability.Activation & ActivationType.OnAttack) != 0)
+            var ability = message.AbilityEntity.Ability;
+            if ((ability.Activation & ActivationType.OnAttack) != 0
+                || (ability.Action != AbilityAction.Default
+                    && ability.Action != AbilityAction.Modifier
+                    && ability.Action != AbilityAction.Drink))
             {
                 foreach (var playerEntity in manager.Players)
                 {
@@ -135,7 +139,6 @@ namespace UnicornHack.Systems.Knowledge
                         .SingleOrDefault(e => e.Effect.EffectType == EffectType.Activate)?
                         .Effect.TargetEntityId;
                     var weapon = manager.FindEntity(weaponId);
-                    var ability = message.AbilityEntity.Ability;
                     var logMessage = manager.Game.Services.Language.GetString(new AttackEvent(
                         playerEntity, message.ActivatorEntity, message.TargetEntity,
                         attackerSensed, victimSensed, message.AppliedEffects, ability.Action,

@@ -49,7 +49,7 @@ namespace UnicornHack.Data.Creatures
             PhysicalResistance = 50,
             MagicResistance = 12,
             ColdResistance = 75,
-            DisintegrationResistance = 75,
+            VoidResistance = 75,
             SlimingImmune = true,
             StoningImmune = true,
             TorsoType = TorsoType.Humanoid,

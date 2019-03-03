@@ -30,13 +30,6 @@ namespace UnicornHack.Systems.Effects
                 toggledAbility.Ability = ability;
             }
 
-            var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
-            setSlotMessage.AbilityEntity = toggledAbility;
-            setSlotMessage.Slot = 0;
-
-            manager.Enqueue(setSlotMessage);
-            manager.Queue.ProcessQueue(manager);
-
             Assert.Null(toggledAbility.Ability.Slot);
             Assert.False(toggledAbility.Ability.IsActive);
             Assert.Null(manager.SlottedAbilitiesIndex[(playerEntity.Id, 0)]);
@@ -58,7 +51,7 @@ namespace UnicornHack.Systems.Effects
                 acidEffectEntity.Effect = effect;
             }
 
-            setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
             setSlotMessage.AbilityEntity = toggledAbility;
             setSlotMessage.Slot = 0;
 

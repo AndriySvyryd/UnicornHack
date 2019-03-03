@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
 using UnicornHack.Generation;
@@ -166,7 +167,8 @@ namespace UnicornHack.Systems.Knowledge
 
             manager.Queue.ProcessQueue(manager);
 
-            var flaskAbilityEntity = TestHelper.ActivateAbility(ItemData.FlaskOfHealing.Name + ": Drink", playerEntity, manager);
+            var flaskAbilityEntity =
+                TestHelper.ActivateAbility(ItemData.FlaskOfHealing.Name + ": Drink", playerEntity, manager);
             manager.Queue.ProcessQueue(manager);
 
             Assert.NotNull(flaskAbilityEntity.Ability.CooldownXpLeft);
@@ -174,7 +176,7 @@ namespace UnicornHack.Systems.Knowledge
             playerEntity.Being.HitPoints = 50;
 
             TestHelper.ActivateAbility(flaskAbilityEntity, playerEntity, manager);
-            manager.Queue.ProcessQueue(manager);
+            Assert.Throws<InvalidOperationException>(() => manager.Queue.ProcessQueue(manager));
 
             Assert.Equal(50, playerEntity.Being.HitPoints);
 

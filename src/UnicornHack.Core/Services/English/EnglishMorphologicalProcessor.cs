@@ -208,14 +208,18 @@ namespace UnicornHack.Services.English
         private static readonly string[,,] Pronouns = new string[2, 5, 5]
         {
             {
-                {"I", "you", "it", "he", "she"}, {"me", "you", "it", "him", "her"},
-                {"myself", "yourself", "itself", "himself", "herself"}, {"mine", "yours", "its", "his", "hers"},
+                {"I", "you", "it", "he", "she"},
+                {"me", "you", "it", "him", "her"},
+                {"myself", "yourself", "itself", "himself", "herself"},
+                {"mine", "yours", "its", "his", "hers"},
                 {"my", "your", "its", "his", "her"}
             },
             {
-                {"we", "you", "they", "they", "they"}, {"us", "you", "them", "them", "them"},
+                {"we", "you", "they", "they", "they"},
+                {"us", "you", "them", "them", "them"},
                 {"ourselves", "yourselves", "themselves", "themselves", "themselves"},
-                {"ours", "yours", "theirs", "theirs", "theirs"}, {"our", "your", "their", "their", "their"}
+                {"ours", "yours", "theirs", "theirs", "theirs"},
+                {"our", "your", "their", "their", "their"}
             }
         };
 

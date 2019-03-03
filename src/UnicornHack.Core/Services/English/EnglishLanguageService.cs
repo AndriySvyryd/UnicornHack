@@ -295,8 +295,6 @@ namespace UnicornHack.Services.English
 
         public virtual string GetString(in AttackEvent @event)
         {
-            // TODO: don't log attacks, only hit/misses
-
             if (@event.SensorEntity != @event.VictimEntity
                 && @event.SensorEntity != @event.AttackerEntity
                 && !@event.AttackerSensed.CanIdentify())
@@ -366,7 +364,10 @@ namespace UnicornHack.Services.English
                     }
 
                     return attackSentence + " " + FormatDamage(
-                               @event.AppliedEffects, victimPerson == EnglishPerson.Second ? null : victim);
+                               @event.AppliedEffects,
+                               victimPerson == EnglishPerson.Second,
+                               EnglishMorphologicalProcessor.GetPronoun(
+                                   EnglishPronounForm.Normal, EnglishNumber.Singular, victimPerson, victimGender));
                 }
 
                 return ToSentence(attacker,
@@ -402,7 +403,10 @@ namespace UnicornHack.Services.English
                 }
 
                 return attackSentence + " " + FormatDamage(
-                           @event.AppliedEffects, victimPerson == EnglishPerson.Second ? null : victim);
+                           @event.AppliedEffects,
+                           victimPerson == EnglishPerson.Second,
+                           EnglishMorphologicalProcessor.GetPronoun(
+                               EnglishPronounForm.Normal, EnglishNumber.Singular, victimPerson, victimGender));
             }
 
             return victim == null
@@ -414,18 +418,15 @@ namespace UnicornHack.Services.English
                     victim);
         }
 
-        protected virtual string FormatDamage(IReadOnlyList<GameEntity> effects, string victim)
+        protected virtual string FormatDamage(IReadOnlyList<GameEntity> effects, bool reflexive, string victimPronoun)
         {
             // TODO: Differentiate damage types
             var damage = effects.Select(e => e.Effect).Where(e => e.EffectType.IsDamage())
                 .Aggregate(0, (d, e) => d + e.Amount.Value);
 
-            if (damage == 0)
-            {
-                return victim == null ? "You are unaffected." : ToSentence(victim, "seems unaffected.");
-            }
-
-            return Format(victim == null ? "[{0} pts.]" : "({0} pts.)", damage);
+            return damage == 0
+                ? ToSentence(victimPronoun, reflexive ? "are" : "is", "unaffected.")
+                : Format(reflexive ? "[{0} pts.]" : "({0} pts.)", damage);
         }
 
         public virtual string GetString(in DeathEvent @event)

@@ -38,7 +38,7 @@ namespace UnicornHack.Data.Creatures
             Armor = 7,
             MagicResistance = 7,
             ColdResistance = 75,
-            DisintegrationResistance = 75,
+            VoidResistance = 75,
             SlimingImmune = true,
             StoningImmune = true,
             TorsoType = TorsoType.Humanoid,

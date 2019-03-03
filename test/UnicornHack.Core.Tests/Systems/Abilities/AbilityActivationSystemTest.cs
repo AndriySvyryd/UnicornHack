@@ -127,7 +127,7 @@ namespace UnicornHack.Systems.Abilities
             activateAbilityMessage.AbilityEntity = iceShardAbility;
             manager.Enqueue(activateAbilityMessage);
 
-            manager.Queue.ProcessQueue(manager);
+            Assert.Throws<InvalidOperationException>(() => manager.Queue.ProcessQueue(manager));
 
             Assert.Equal(1, messageCount);
             Assert.Equal(1100, iceShardAbility.Ability.CooldownTick);

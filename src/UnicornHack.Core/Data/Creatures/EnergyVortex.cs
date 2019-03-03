@@ -59,7 +59,7 @@ namespace UnicornHack.Data.Creatures
             Focus = 8,
             Armor = 4,
             MagicResistance = 15,
-            DisintegrationResistance = 75,
+            VoidResistance = 75,
             ElectricityResistance = 75,
             SlimingImmune = true,
             StoningImmune = true,

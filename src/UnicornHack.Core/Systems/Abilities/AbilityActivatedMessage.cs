@@ -47,13 +47,13 @@ namespace UnicornHack.Systems.Abilities
         public Point? TargetCell { get; set; }
         public ActivationType Trigger { get; set; }
         public ImmutableList<GameEntity> EffectsToApply { get; set; }
-        public bool SuccessfulActivation { get; set; }
+        public string ActivationError { get; set; }
         public bool SuccessfulApplication { get; set; }
         public int Delay { get; set; }
 
         public AbilityActivatedMessage Clone(GameManager manager)
         {
-            var abilityActivatedMessage = manager.Queue.CreateMessage<AbilityActivatedMessage>(
+            var abilityActivatedMessage = manager.CreateMessage<AbilityActivatedMessage>(
                 ((IMessage)this).MessageName);
             abilityActivatedMessage.ActivatorEntity = ActivatorEntity;
             abilityActivatedMessage.AbilityEntity = AbilityEntity;
@@ -61,7 +61,7 @@ namespace UnicornHack.Systems.Abilities
             abilityActivatedMessage.TargetCell = TargetCell;
             abilityActivatedMessage.Trigger = Trigger;
             abilityActivatedMessage.EffectsToApply = EffectsToApply;
-            abilityActivatedMessage.SuccessfulActivation = SuccessfulActivation;
+            abilityActivatedMessage.ActivationError = ActivationError;
             abilityActivatedMessage.Delay = Delay;
             return abilityActivatedMessage;
         }
@@ -76,7 +76,7 @@ namespace UnicornHack.Systems.Abilities
             TargetCell = default;
             Trigger = default;
             EffectsToApply = default;
-            SuccessfulActivation = default;
+            ActivationError = default;
             SuccessfulApplication = default;
             Delay = default;
         }

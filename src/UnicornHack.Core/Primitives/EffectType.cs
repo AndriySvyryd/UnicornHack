@@ -20,7 +20,6 @@
         Curse,
         Deafen,
         Disarm,
-        Disintegrate,
         DrainEnergy,
         DrainLife,
         Engulf,
@@ -28,39 +27,49 @@
         GainXP,
         Heal,
         LevelTeleport,
+        LightDamage,
         Move,
         Paralyze,
         PhysicalDamage,
+        PsychicDamage,
+        Recharge,
         RemoveItem,
         Sedate,
         Shock,
         Slime,
         Slow,
         Soak,
+        SonicDamage,
         StealGold,
         StealItem,
         Stick,
         Stone,
         Stun,
         Suffocate,
-        Teleport
+        Teleport,
+        Wither
     }
 
-    public static class EffectTypeExtentions
+    public static class EffectTypeExtensions
     {
         public static bool IsDamage(this EffectType effectType)
         {
             switch (effectType)
             {
                 case EffectType.Burn:
-                case EffectType.Corrode:
-                case EffectType.Disintegrate:
-                case EffectType.Blight:
-                case EffectType.Freeze:
                 case EffectType.Bleed:
+                case EffectType.Blight:
+                case EffectType.Corrode:
+                case EffectType.Freeze:
+                case EffectType.LightDamage:
+                case EffectType.PsychicDamage:
                 case EffectType.Shock:
                 case EffectType.Soak:
+                case EffectType.SonicDamage:
+                case EffectType.Wither:
                 case EffectType.PhysicalDamage:
+                case EffectType.DrainEnergy:
+                case EffectType.DrainLife:
                     return true;
                 default:
                     return false;

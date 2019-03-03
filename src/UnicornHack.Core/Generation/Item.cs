@@ -122,12 +122,12 @@ namespace UnicornHack.Generation
 
                 if (!manager.ItemMovingSystem.CanMoveItem(moveMessage, manager))
                 {
-                    manager.Queue.ReturnMessage(moveMessage);
+                    manager.ReturnMessage(moveMessage);
                     return false;
                 }
 
                 itemEntityReference.Dispose();
-                manager.Enqueue(moveMessage);
+                manager.Process(moveMessage);
             }
 
             return true;
@@ -154,7 +154,7 @@ namespace UnicornHack.Generation
 
                 if (!manager.ItemMovingSystem.CanMoveItem(moveMessage, manager))
                 {
-                    manager.Queue.ReturnMessage(moveMessage);
+                    manager.ReturnMessage(moveMessage);
                     return false;
                 }
 

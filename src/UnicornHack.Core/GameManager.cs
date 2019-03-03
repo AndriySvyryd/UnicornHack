@@ -4,6 +4,7 @@ namespace UnicornHack
 {
     public partial class GameManager :
         EntityManager<GameEntity>,
+        IMessageQueue,
         IGameSystem<RemoveComponentMessage>,
         IGameSystem<EntityReferenceMessage<GameEntity>>
     {
@@ -46,9 +47,6 @@ namespace UnicornHack
             return entity;
         }
 
-        public RemoveComponentMessage CreateRemoveComponentMessage()
-            => Queue.CreateMessage<RemoveComponentMessage>(RemoveComponentMessageName);
-
         public TComponent CreateComponent<TComponent>(EntityComponent componentId)
             where TComponent : GameComponent, new()
             => CreateComponent<TComponent>((int)componentId);
@@ -72,7 +70,23 @@ namespace UnicornHack
         public override void RemoveFromSecondaryTracker(ITrackable trackable)
             => Game.Repository.RemoveTracked(trackable);
 
-        public MessageProcessingResult Process(RemoveComponentMessage message, GameManager manager)
+        public TMessage CreateMessage<TMessage>(string name)
+            where TMessage : class, IMessage, new()
+            => Queue.CreateMessage<TMessage>(name);
+
+        public void ReturnMessage<TMessage>(TMessage message)
+            where TMessage : class, IMessage, new()
+            => Queue.ReturnMessage(message);
+
+        public void Process<TMessage>(TMessage message)
+            where TMessage : class, IMessage, new()
+            => Queue.Process(message, this);
+
+        public RemoveComponentMessage CreateRemoveComponentMessage()
+            => Queue.CreateMessage<RemoveComponentMessage>(RemoveComponentMessageName);
+
+        MessageProcessingResult IMessageConsumer<RemoveComponentMessage, GameManager>.Process(
+            RemoveComponentMessage message, GameManager manager)
         {
             message.Entity.RemoveComponent(message.Component);
 
@@ -86,7 +100,8 @@ namespace UnicornHack
             return message;
         }
 
-        public MessageProcessingResult Process(EntityReferenceMessage<GameEntity> message, GameManager state)
+        MessageProcessingResult IMessageConsumer<EntityReferenceMessage<GameEntity>, GameManager>.Process(
+            EntityReferenceMessage<GameEntity> message, GameManager state)
             => MessageProcessingResult.ContinueProcessing;
     }
 }
