@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
@@ -193,6 +194,62 @@ namespace UnicornHack.Systems.Items
             manager.Queue.ProcessQueue(manager);
 
             Assert.Empty(manager.EntityItemsToContainerRelationship[playerEntity.Id]);
+        }
+
+        [Fact]
+        public void Cannot_equip_items_that_require_EP()
+        {
+            var level = TestHelper.BuildLevel(".");
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var player = playerEntity.Player;
+            player.NextAction = PlayerAction.Wait;
+            var manager = playerEntity.Manager;
+            ItemData.CloakOfInvisibility.Instantiate(playerEntity);
+
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(100, playerEntity.Being.Visibility);
+
+            var cloakEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single();
+            var equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            equipMessage.ActorEntity = playerEntity;
+            equipMessage.ItemEntity = cloakEntity;
+            equipMessage.Slot = EquipmentSlot.Back;
+
+            manager.Enqueue(equipMessage);
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(EquipmentSlot.Back, cloakEntity.Item.EquippedSlot);
+            Assert.Equal(50, playerEntity.Being.EnergyPoints);
+            Assert.Equal(50, playerEntity.Being.ReservedEnergyPoints);
+            Assert.Equal(0, playerEntity.Being.Visibility);
+
+            playerEntity.Being.EnergyPoints = 20;
+
+            equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            equipMessage.ActorEntity = playerEntity;
+            equipMessage.ItemEntity = cloakEntity;
+
+            manager.Enqueue(equipMessage);
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(EquipmentSlot.None, cloakEntity.Item.EquippedSlot);
+            Assert.Equal(20, playerEntity.Being.EnergyPoints);
+            Assert.Equal(0, playerEntity.Being.ReservedEnergyPoints);
+            Assert.Equal(100, playerEntity.Being.Visibility);
+
+            equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            equipMessage.ActorEntity = playerEntity;
+            equipMessage.ItemEntity = cloakEntity;
+            equipMessage.Slot = EquipmentSlot.Back;
+
+            manager.Enqueue(equipMessage);
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(EquipmentSlot.None, cloakEntity.Item.EquippedSlot);
+            Assert.Equal(20, playerEntity.Being.EnergyPoints);
+            Assert.Equal(0, playerEntity.Being.ReservedEnergyPoints);
+            Assert.Equal(100, playerEntity.Being.Visibility);
         }
     }
 }

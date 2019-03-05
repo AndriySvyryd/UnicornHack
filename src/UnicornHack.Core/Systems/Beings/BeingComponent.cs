@@ -40,6 +40,7 @@ namespace UnicornHack.Systems.Beings
         private ExtremityType _upperExtremities;
         private ExtremityType _lowerExtremities;
         private ExtremityType _backExtremities;
+        private int _visibility;
         private int _experiencePoints;
         private float _leftoverHPRegenerationXP;
         private float _leftoverEPRegenerationXP;
@@ -329,6 +330,13 @@ namespace UnicornHack.Systems.Beings
             set => SetWithNotify(value, ref _backExtremities);
         }
 
+        [Property(DefaultValue = 100, MinValue = 0)]
+        public int Visibility
+        {
+            get => _visibility;
+            set => SetWithNotify(value, ref _visibility);
+        }
+
         public int ExperiencePoints
         {
             get => _experiencePoints;
@@ -410,11 +418,13 @@ namespace UnicornHack.Systems.Beings
             _upperExtremities = default;
             _lowerExtremities = default;
             _backExtremities = default;
+            _visibility = default;
             _experiencePoints = default;
             _leftoverHPRegenerationXP = default;
             _primaryNaturalWeaponId = default;
             _secondaryNaturalWeaponId = default;
             _abilitySlotCount = default;
+            _entropyState = default;
 
             base.Clean();
         }

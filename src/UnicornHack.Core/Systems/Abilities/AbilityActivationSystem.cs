@@ -117,11 +117,11 @@ namespace UnicornHack.Systems.Abilities
                 return targetEffectsMessage;
             }
 
-            var ownerBeing = ability.OwnerEntity.Being;
+            var being = ability.OwnerEntity.Being ?? targetEffectsMessage.ActivatorEntity.Being;
             if (ability.EnergyPointCost > 0
-                && ownerBeing != null)
+                && being != null)
             {
-                if (ownerBeing.EnergyPoints < ability.EnergyPointCost)
+                if (being.EnergyPoints < ability.EnergyPointCost)
                 {
                     targetEffectsMessage.ActivationError = $"Not enough EP to activate ability {ability.EntityId}.";
                     return targetEffectsMessage;
@@ -131,11 +131,11 @@ namespace UnicornHack.Systems.Abilities
                 {
                     if ((ability.Activation & ActivationType.Continuous) != 0)
                     {
-                        ownerBeing.ReservedEnergyPoints += ability.EnergyPointCost;
+                        being.ReservedEnergyPoints += ability.EnergyPointCost;
                     }
                     else
                     {
-                        ownerBeing.EnergyPoints -= ability.EnergyPointCost;
+                        being.EnergyPoints -= ability.EnergyPointCost;
                     }
                 }
             }
@@ -435,7 +435,26 @@ namespace UnicornHack.Systems.Abilities
                 activation.ActivatorEntity = message.ActorEntity;
                 activation.TargetEntity = message.ActorEntity;
 
-                ActivateAbilities(message.ItemEntity.Id, ActivationType.WhileEquipped, activation, manager);
+                if (ActivateAbilities(
+                    message.ItemEntity.Id, ActivationType.WhileEquipped, activation, manager, pretend: true))
+                {
+                    ActivateAbilities(
+                        message.ItemEntity.Id, ActivationType.WhileEquipped, activation, manager, pretend: false);
+                    manager.ReturnMessage(activation);
+                }
+                else
+                {
+                    manager.ReturnMessage(activation);
+
+                    var unequipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+                    unequipMessage.ActorEntity = message.ActorEntity;
+                    unequipMessage.ItemEntity = message.ItemEntity;
+                    unequipMessage.SuppressLog = true;
+
+                    // TODO: Log message
+                    manager.Enqueue(unequipMessage);
+                    return MessageProcessingResult.StopProcessing;
+                }
             }
             else
             {
@@ -528,7 +547,8 @@ namespace UnicornHack.Systems.Abilities
                         activation.ActivatorEntity = message.ReferencedEntity;
                         activation.TargetEntity = message.ReferencedEntity;
 
-                        ActivateAbilities(message.Entity.Id, ActivationType.WhilePossessed, activation, manager);
+                        ActivateAbilities(message.Entity.Id, ActivationType.WhilePossessed, activation, manager, pretend: false);
+                        manager.ReturnMessage(activation);
                     }
 
                     break;
@@ -611,20 +631,28 @@ namespace UnicornHack.Systems.Abilities
             manager.Process(activation);
         }
 
-        public void ActivateAbilities(
+        public bool ActivateAbilities(
             int activatableId,
             ActivationType trigger,
             ActivateAbilityMessage activationMessage,
-            GameManager manager)
+            GameManager manager,
+            bool pretend)
         {
             foreach (var triggeredAbility in GetTriggeredAbilities(activatableId, trigger, manager))
             {
                 var newActivation = activationMessage.Clone(activationMessage);
                 newActivation.AbilityEntity = triggeredAbility;
-                manager.Process(newActivation);
+                if (!pretend)
+                {
+                    manager.Process(newActivation);
+                }
+                else if (!CanActivateAbility(newActivation, shouldThrow: false))
+                {
+                    return false;
+                }
             }
 
-            manager.ReturnMessage(activationMessage);
+            return true;
         }
 
         private IEnumerable<GameEntity> GetTriggeredAbilities(
@@ -936,10 +964,10 @@ namespace UnicornHack.Systems.Abilities
             if (ability.EnergyPointCost > 0
                 && (ability.Activation & ActivationType.Continuous) != 0)
             {
-                var ownerBeing = ability.OwnerEntity.Being;
-                if (ownerBeing != null)
+                var being = ability.OwnerEntity.Being ?? activatorEntity.Being;
+                if (being != null)
                 {
-                    ownerBeing.ReservedEnergyPoints -= ability.EnergyPointCost;
+                    being.ReservedEnergyPoints -= ability.EnergyPointCost;
                 }
             }
 

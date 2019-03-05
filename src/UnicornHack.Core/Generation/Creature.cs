@@ -563,6 +563,8 @@ namespace UnicornHack.Generation
                             manager);
                         CreatePropertyEffect(nameof(BeingComponent.UpperExtremities), (int?)UpperExtremities,
                             abilityEntity.Id, manager);
+
+                        // TODO: Populate other property
                     }
 
                     appliedEffectEntity.Ability.OwnerEntity = creatureEntity;

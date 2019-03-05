@@ -125,7 +125,7 @@ namespace UnicornHack
 
             LoggingSystem = new LoggingSystem();
             queue.Add<ItemMovedMessage>(LoggingSystem, ItemMovingSystem.ItemMovedMessageName, 1);
-            queue.Add<ItemEquippedMessage>(LoggingSystem, ItemUsageSystem.ItemEquippedMessageName, 0);
+            queue.Add<ItemEquippedMessage>(LoggingSystem, ItemUsageSystem.ItemEquippedMessageName, 1);
             queue.Add<EffectsAppliedMessage>(LoggingSystem, EffectApplicationSystem.EffectsAppliedMessageName, 2);
             queue.Add<DiedMessage>(LoggingSystem, LivingSystem.DiedMessageName, 1);
             queue.Add<LeveledUpMessage>(LoggingSystem, XPSystem.LeveledUpMessageName, 1);
