@@ -189,7 +189,6 @@ namespace UnicornHack.Systems.Knowledge
 
         public MessageProcessingResult Process(DiedMessage message, GameManager manager)
         {
-            var deceasedPosition = message.BeingEntity.Position;
             foreach (var playerEntity in manager.Players)
             {
                 var deceasedSensed =

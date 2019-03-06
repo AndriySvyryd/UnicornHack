@@ -112,7 +112,7 @@ namespace UnicornHack.Systems.Beings
             }
         }
 
-        [Property]
+        [Property(DefaultValue = 1)]
         public int HitPointMaximum
         {
             get => _hitPointMaximum;

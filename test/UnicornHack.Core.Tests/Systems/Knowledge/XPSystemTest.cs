@@ -88,6 +88,9 @@ namespace UnicornHack.Systems.Knowledge
             Assert.Equal(3, player.TraitPoints);
             Assert.Equal(0, player.MutationPoints);
             Assert.Equal(2000, player.NextLevelXP);
+            var experienceAbility =
+                manager.AffectableAbilitiesIndex[(playerEntity.Id, ItemData.PotionOfExperience.Name + ": Drink")];
+            Assert.Equal(0, experienceAbility.Ability.Slot);
 
             var humanEntity = manager.RacesToBeingRelationship[playerEntity.Id].Single().Value;
             TestHelper.ActivateAbility(ItemData.PotionOfElfness.Name + ": Drink", playerEntity, manager);

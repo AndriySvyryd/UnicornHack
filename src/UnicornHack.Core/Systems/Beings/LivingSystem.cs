@@ -53,7 +53,7 @@ namespace UnicornHack.Systems.Beings
                         being.HitPoints = message.NewValue;
                     }
 
-                    if (message.OldValue == 0)
+                    if (message.OldValue == 1)
                     {
                         being.HitPoints = message.NewValue;
 

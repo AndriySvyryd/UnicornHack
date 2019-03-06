@@ -43,6 +43,8 @@ namespace UnicornHack.Generation
 
                 var being = manager.CreateComponent<BeingComponent>(EntityComponent.Being);
                 being.Sex = sex;
+                being.HitPointMaximum = 1;
+                being.HitPoints = 1;
 
                 playerEntity.Being = being;
 

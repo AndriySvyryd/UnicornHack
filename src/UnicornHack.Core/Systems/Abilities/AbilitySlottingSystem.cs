@@ -19,7 +19,9 @@ namespace UnicornHack.Systems.Abilities
 
         public MessageProcessingResult Process(SetAbilitySlotMessage message, GameManager manager)
         {
-            var ability = message.AbilityEntity?.Ability;
+            var ability = message.AbilityEntity?.Ability
+                ?? manager.AffectableAbilitiesIndex[(message.OwnerEntity.Id, message.AbilityName)]?.Ability;
+
             if (message.Slot != null)
             {
                 var conflictingAbility =

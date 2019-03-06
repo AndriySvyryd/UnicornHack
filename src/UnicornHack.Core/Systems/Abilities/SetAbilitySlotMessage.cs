@@ -31,11 +31,14 @@ namespace UnicornHack.Systems.Abilities
 
         public int? Slot { get; set; }
 
+        public string AbilityName { get; set; }
+
         string IMessage.MessageName { get; set; }
 
         public void Dispose()
         {
             AbilityEntity = default;
+            AbilityName = default;
             Slot = default;
         }
     }

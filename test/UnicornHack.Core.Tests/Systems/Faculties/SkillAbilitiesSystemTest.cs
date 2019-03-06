@@ -26,6 +26,7 @@ namespace UnicornHack.Systems.Faculties
             var firstWaterBookAbility =
                 manager.AffectableAbilitiesIndex[
                     (playerEntity.Id, ItemData.SkillbookOfWaterSourcery.Name + ": Consult")];
+            var firstWaterBook = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single();
             ItemData.SkillbookOfWaterSourcery.Instantiate(playerEntity);
             ItemData.SkillbookOfConjuration.Instantiate(playerEntity);
             ActivateAbility(firstWaterBookAbility, 0, manager);
@@ -59,16 +60,17 @@ namespace UnicornHack.Systems.Faculties
             Assert.True(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)].Ability
                 .IsUsable);
 
-            DeactivateAbility(firstWaterBookAbility, manager);
             DeactivateAbility(conjurationBookAbility, manager);
 
-            // TODO: Drop first book, other ability should be placed in same slot
-            //var otherWaterBookAbility =
-            //    manager.AffectableAbilitiesIndex[
-            //        (playerEntity.Id, ItemData.SkillbookOfWaterSourcery.Name + ": Consult")];
+            var moveItemMessage = manager.ItemMovingSystem.CreateMoveItemMessage(manager);
+            moveItemMessage.ItemEntity = firstWaterBook;
+            moveItemMessage.TargetCell = new Point(0, 0);
+            moveItemMessage.TargetLevelEntity = level.Entity;
 
+            manager.Enqueue(moveItemMessage);
             manager.Queue.ProcessQueue(manager);
 
+            Assert.Null(firstWaterBookAbility.Manager);
             Assert.Equal(1,
                 manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)].Ability.Level);
             Assert.Null(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.Conjuration.Name)]);

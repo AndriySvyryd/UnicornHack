@@ -24,6 +24,11 @@ namespace UnicornHack.Systems.Effects
 
         public MessageProcessingResult Process(AbilityActivatedMessage message, GameManager manager)
         {
+            if (message.TargetEntity?.Being.IsAlive != true)
+            {
+                return MessageProcessingResult.ContinueProcessing;
+            }
+
             var effectsAppliedMessage = manager.Queue.CreateMessage<EffectsAppliedMessage>(EffectsAppliedMessageName);
             effectsAppliedMessage.ActivatorEntity = message.ActivatorEntity;
             effectsAppliedMessage.TargetEntity = message.TargetEntity;
@@ -704,6 +709,9 @@ namespace UnicornHack.Systems.Effects
                             break;
                         }
 
+                        var abilitySlot = (effectEntity.Ability.Activation & ActivationType.WhileToggled) == 0
+                            ? effectEntity.Ability.Slot
+                            : null;
                         var abilityName = effectEntity.Ability.Name;
                         effectEntity.Ability = null;
 
@@ -734,6 +742,17 @@ namespace UnicornHack.Systems.Effects
                             EnqueueApplyEffect(targetEntity, sourceEffectEntity, manager);
 
                             break;
+                        }
+
+                        if (abilitySlot != null)
+                        {
+                            // TODO: Try set slot even if no duplicate ability present yet
+                            var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+                            setSlotMessage.AbilityName = abilityName;
+                            setSlotMessage.OwnerEntity = targetEntity;
+                            setSlotMessage.Slot = abilitySlot;
+
+                            manager.Enqueue(setSlotMessage, lowPriority: true);
                         }
                     }
                     else if (state == State.Modified)
