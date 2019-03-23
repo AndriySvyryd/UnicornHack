@@ -17,14 +17,17 @@ namespace UnicornHack.Data.Items
                     Activation = ActivationType.OnMeleeAttack,
                     Range = 1,
                     Action = AbilityAction.Hit,
-                    Effects = new HashSet<Effect> {new Freeze {Damage = 40}}
+                    Delay = "100*weaponScaling",
+                    Effects = new HashSet<Effect> {new Freeze {Damage = "40*weaponScaling" } }
                 }
             },
             Type = ItemType.WeaponMeleeShort,
             Material = Material.Bone,
             Weight = 5,
             EquipableSizes = SizeCategory.Small | SizeCategory.Medium,
-            EquipableSlots = EquipmentSlot.GraspMelee
+            EquipableSlots = EquipmentSlot.GraspMelee,
+            RequiredFocus = 8,
+            RequiredSpeed = 2
         };
     }
 }

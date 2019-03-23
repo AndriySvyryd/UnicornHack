@@ -176,10 +176,10 @@ namespace UnicornHack.Generation.Map
             return true;
         }
 
-        private Corridor FindCorridorPath(Point source, Point target, LevelComponent level, bool allowDiagonals,
-            bool avoidTurns)
+        private Corridor FindCorridorPath(
+            Point source, Point target, LevelComponent level, bool allowDiagonals, bool avoidTurns)
         {
-            // TODO: Use A* to tunnel arround fragments
+            // TODO: Use A* to tunnel around fragments
             var path = new List<Point>();
             var fragmentFeaturesHit = 0;
             var fragmentFeaturesAlmostHit = 0;

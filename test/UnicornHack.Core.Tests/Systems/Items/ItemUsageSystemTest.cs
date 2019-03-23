@@ -139,6 +139,8 @@ namespace UnicornHack.Systems.Items
                 .Single(a => (a.Activation & ActivationType.Slottable) != 0
                              && a.Template?.Type != AbilityType.DefaultAttack);
 
+            Assert.Equal(100, player.NextActionTick);
+
             var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
             setSlotMessage.AbilityEntity = shieldAbility.Entity;
             setSlotMessage.Slot = 0;
@@ -147,6 +149,7 @@ namespace UnicornHack.Systems.Items
 
             Assert.True(shieldAbility.IsActive);
             Assert.Equal(30, playerEntity.Being.FireResistance);
+            Assert.Equal(150, player.NextActionTick);
 
             equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
             equipMessage.ActorEntity = playerEntity;
@@ -164,6 +167,7 @@ namespace UnicornHack.Systems.Items
                 .Single(a => (a.Activation & ActivationType.Slottable) != 0
                              && a.Template?.Type != AbilityType.DefaultAttack);
             Assert.Equal(200, activateAbility.CooldownTick);
+            Assert.Equal(250, player.NextActionTick);
 
             equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
             equipMessage.ActorEntity = playerEntity;

@@ -21,7 +21,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100"}}
                 }
             },
             InitialLevel = 5,

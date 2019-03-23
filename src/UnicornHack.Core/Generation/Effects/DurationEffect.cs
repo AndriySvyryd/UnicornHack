@@ -7,11 +7,11 @@ namespace UnicornHack.Generation.Effects
     public abstract class DurationEffect : Effect
     {
         public EffectDuration Duration { get; set; }
-        public int DurationAmount { get; set; }
+        public string DurationAmount { get; set; }
 
         protected override void ConfigureEffect(EffectComponent effect)
         {
-            Debug.Assert(DurationAmount == 0
+            Debug.Assert(DurationAmount == null
                          || Duration == EffectDuration.UntilTimeout
                          || Duration == EffectDuration.UntilXPGained);
 

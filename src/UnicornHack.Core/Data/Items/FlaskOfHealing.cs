@@ -18,7 +18,7 @@ namespace UnicornHack.Data.Items
                     Activation = ActivationType.ManualActivation,
                     Action = AbilityAction.Drink,
                     XPCooldown = 25,
-                    Delay = 100,
+                    Delay = "100",
                     Effects = new HashSet<Effect> {new Heal {Amount = 50}}
                 }
             },

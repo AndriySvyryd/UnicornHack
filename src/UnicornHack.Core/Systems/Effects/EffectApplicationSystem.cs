@@ -16,7 +16,8 @@ namespace UnicornHack.Systems.Effects
         IGameSystem<ApplyEffectMessage>,
         IGameSystem<EntityAddedMessage<GameEntity>>,
         IGameSystem<EntityRemovedMessage<GameEntity>>,
-        IGameSystem<PropertyValueChangedMessage<GameEntity, int?>>
+        IGameSystem<PropertyValueChangedMessage<GameEntity, int?>>,
+        IGameSystem<PropertyValueChangedMessage<GameEntity, string>>
     {
         public const string EffectsAppliedMessageName = "EffectsApplied";
         public const string ApplyEffectMessageName = "ApplyEffect";
@@ -80,7 +81,8 @@ namespace UnicornHack.Systems.Effects
                         }
 
                         // TODO: Take effectComponent.Function into account
-                        damageEffects[key] = (effect.Amount.Value + previousDamage.Damage, effectEntity);
+                        damageEffects[key] = (effect.GetActualAmount(message.ActivatorEntity) + previousDamage.Damage,
+                            effectEntity);
                         break;
                     default:
                         ApplyEffect(effectEntity, message.TargetEntity, message.TargetCell, message.ActivatorEntity,
@@ -129,14 +131,15 @@ namespace UnicornHack.Systems.Effects
                     var propertyDescription = PropertyDescription.Loader.Find(effect.TargetName);
                     Debug.Assert(propertyDescription.IsCalculated == (effect.Duration != EffectDuration.Instant));
 
-                    ApplyEffect(effect, affectedEntity, amountOverride, appliedEffects, manager);
+                    ApplyEffect(effect, affectedEntity, activatorEntity, amountOverride, appliedEffects, manager);
 
                     break;
                 case EffectType.AddAbility:
                     var abilityAddedEntity = manager.AppliedEffectsToAffectableEntityRelationship[affectedEntity.Id]
                                                  .FirstOrDefault(e => e.Effect.SourceEffectId == effect.EntityId)
                                              ?? ApplyEffect(
-                                                 effect, affectedEntity, amountOverride, appliedEffects, manager);
+                                                 effect, affectedEntity, activatorEntity, amountOverride,
+                                                 appliedEffects, manager);
                     if (manager.AffectableAbilitiesIndex[
                             (affectedEntity.Id, effectEntity.Ability?.Name ?? effect.TargetName)] == null)
                     {
@@ -191,8 +194,8 @@ namespace UnicornHack.Systems.Effects
                             .SingleOrDefault(r => r.Race.Species == raceDefinition.Species);
                         if (existingRace == null)
                         {
-                            var addedRaceEntity =
-                                ApplyEffect(effect, affectedEntity, amountOverride, appliedEffects, manager);
+                            var addedRaceEntity = ApplyEffect(
+                                effect, affectedEntity, activatorEntity, amountOverride, appliedEffects, manager);
                             addedRaceEntity.Effect.Amount = null;
 
                             raceDefinition.AddToAppliedEffect(addedRaceEntity, affectedEntity.Id);
@@ -212,11 +215,12 @@ namespace UnicornHack.Systems.Effects
                         return null;
                     }
 
-                    var fireDamage = GetDamage(effect, amountOverride, 0,
+                    var fireDamage = GetDamage(effect, activatorEntity, amountOverride, 0,
                         being.MagicResistance + being.FireResistance);
                     if (fireDamage != 0)
                     {
-                        return ApplyEffect(effect, affectedEntity, fireDamage, appliedEffects, manager);
+                        return ApplyEffect(
+                            effect, affectedEntity, activatorEntity, fireDamage, appliedEffects, manager);
                     }
 
                     break;
@@ -229,11 +233,12 @@ namespace UnicornHack.Systems.Effects
                         return null;
                     }
 
-                    var acidDamage = GetDamage(effect, amountOverride, 0,
+                    var acidDamage = GetDamage(effect, activatorEntity, amountOverride, 0,
                         being.MagicResistance + being.AcidResistance);
                     if (acidDamage != 0)
                     {
-                        return ApplyEffect(effect, affectedEntity, acidDamage, appliedEffects, manager);
+                        return ApplyEffect(
+                            effect, affectedEntity, activatorEntity, acidDamage, appliedEffects, manager);
                     }
 
                     break;
@@ -245,11 +250,12 @@ namespace UnicornHack.Systems.Effects
                         return null;
                     }
 
-                    var witherDamage = GetDamage(effect, amountOverride, 0,
+                    var witherDamage = GetDamage(effect, activatorEntity, amountOverride, 0,
                         being.MagicResistance + being.VoidResistance);
                     if (witherDamage != 0)
                     {
-                        return ApplyEffect(effect, affectedEntity, witherDamage, appliedEffects, manager);
+                        return ApplyEffect(
+                            effect, affectedEntity, activatorEntity, witherDamage, appliedEffects, manager);
                     }
 
                     break;
@@ -261,11 +267,12 @@ namespace UnicornHack.Systems.Effects
                         return null;
                     }
 
-                    var blightDamage = GetDamage(effect, amountOverride, 0,
+                    var blightDamage = GetDamage(effect, activatorEntity, amountOverride, 0,
                         being.MagicResistance + being.ToxinResistance);
                     if (blightDamage != 0)
                     {
-                        return ApplyEffect(effect, affectedEntity, blightDamage, appliedEffects, manager);
+                        return ApplyEffect(
+                            effect, affectedEntity, activatorEntity, blightDamage, appliedEffects, manager);
                     }
 
                     break;
@@ -278,11 +285,12 @@ namespace UnicornHack.Systems.Effects
                         return null;
                     }
 
-                    var coldDamage = GetDamage(effect, amountOverride, 0,
+                    var coldDamage = GetDamage(effect, activatorEntity, amountOverride, 0,
                         being.MagicResistance + being.ColdResistance);
                     if (coldDamage != 0)
                     {
-                        return ApplyEffect(effect, affectedEntity, coldDamage, appliedEffects, manager);
+                        return ApplyEffect(
+                            effect, affectedEntity, activatorEntity, coldDamage, appliedEffects, manager);
                     }
 
                     break;
@@ -292,11 +300,12 @@ namespace UnicornHack.Systems.Effects
                         return null;
                     }
 
-                    var bleedingDamage = GetDamage(effect, amountOverride, 0,
+                    var bleedingDamage = GetDamage(effect, activatorEntity, amountOverride, 0,
                         being.MagicResistance + being.BleedingResistance);
                     if (bleedingDamage != 0)
                     {
-                        return ApplyEffect(effect, affectedEntity, bleedingDamage, appliedEffects, manager);
+                        return ApplyEffect(
+                            effect, affectedEntity, activatorEntity, bleedingDamage, appliedEffects, manager);
                     }
 
                     break;
@@ -309,11 +318,12 @@ namespace UnicornHack.Systems.Effects
                         return null;
                     }
 
-                    var shockDamage = GetDamage(effect, amountOverride,0,
+                    var shockDamage = GetDamage(effect, activatorEntity, amountOverride, 0,
                         being.MagicResistance + being.ElectricityResistance);
                     if (shockDamage != 0)
                     {
-                        return ApplyEffect(effect, affectedEntity, shockDamage, appliedEffects, manager);
+                        return ApplyEffect(
+                            effect, affectedEntity, activatorEntity, shockDamage, appliedEffects, manager);
                     }
 
                     break;
@@ -326,11 +336,12 @@ namespace UnicornHack.Systems.Effects
                         return null;
                     }
 
-                    var waterDamage = GetDamage(effect, amountOverride, 0,
+                    var waterDamage = GetDamage(effect, activatorEntity, amountOverride, 0,
                         being.MagicResistance + being.WaterResistance);
                     if (waterDamage != 0)
                     {
-                        return ApplyEffect(effect, affectedEntity, waterDamage, appliedEffects, manager);
+                        return ApplyEffect(
+                            effect, affectedEntity, activatorEntity, waterDamage, appliedEffects, manager);
                     }
 
                     break;
@@ -340,11 +351,12 @@ namespace UnicornHack.Systems.Effects
                         return null;
                     }
 
-                    var lightDamage = GetDamage(effect, amountOverride, 0,
+                    var lightDamage = GetDamage(effect, activatorEntity, amountOverride, 0,
                         being.MagicResistance + being.LightResistance);
                     if (lightDamage != 0)
                     {
-                        return ApplyEffect(effect, affectedEntity, lightDamage, appliedEffects, manager);
+                        return ApplyEffect(
+                            effect, affectedEntity, activatorEntity, lightDamage, appliedEffects, manager);
                     }
 
                     break;
@@ -354,11 +366,12 @@ namespace UnicornHack.Systems.Effects
                         return null;
                     }
 
-                    var sonicDamage = GetDamage(effect, amountOverride, 0,
+                    var sonicDamage = GetDamage(effect, activatorEntity, amountOverride, 0,
                         being.MagicResistance + being.SonicResistance);
                     if (sonicDamage != 0)
                     {
-                        return ApplyEffect(effect, affectedEntity, sonicDamage, appliedEffects, manager);
+                        return ApplyEffect(
+                            effect, affectedEntity, activatorEntity, sonicDamage, appliedEffects, manager);
                     }
 
                     break;
@@ -368,11 +381,12 @@ namespace UnicornHack.Systems.Effects
                         return null;
                     }
 
-                    var psychicDamage = GetDamage(effect, amountOverride, 0,
+                    var psychicDamage = GetDamage(effect, activatorEntity, amountOverride, 0,
                         being.MagicResistance + being.PsychicResistance);
                     if (psychicDamage != 0)
                     {
-                        return ApplyEffect(effect, affectedEntity, psychicDamage, appliedEffects, manager);
+                        return ApplyEffect(
+                            effect, affectedEntity, activatorEntity, psychicDamage, appliedEffects, manager);
                     }
 
                     break;
@@ -382,11 +396,13 @@ namespace UnicornHack.Systems.Effects
                         return null;
                     }
 
-                    var physicalDamage = GetDamage(effect, amountOverride, being.Armor - effect.SecondaryAmount ?? 0,
+                    var physicalDamage = GetDamage(effect, activatorEntity, amountOverride,
+                        being.Armor - effect.SecondaryAmount ?? 0,
                         being.PhysicalResistance);
                     if (physicalDamage != 0)
                     {
-                        return ApplyEffect(effect, affectedEntity, physicalDamage, appliedEffects, manager);
+                        return ApplyEffect(
+                            effect, affectedEntity, activatorEntity, physicalDamage, appliedEffects, manager);
                     }
 
                     break;
@@ -396,13 +412,15 @@ namespace UnicornHack.Systems.Effects
                         return null;
                     }
 
-                    var energyDamage = GetDamage(effect, amountOverride, 0,
+                    var energyDamage = GetDamage(effect, activatorEntity, amountOverride, 0,
                         being.MagicResistance + being.VoidResistance);
                     if (energyDamage != 0)
                     {
-                        var selfEffectEntity = ApplyEffect(effect, activatorEntity, energyDamage, null, manager);
+                        var selfEffectEntity = ApplyEffect(
+                            effect, activatorEntity, activatorEntity, energyDamage, null, manager);
                         selfEffectEntity.Effect.EffectType = EffectType.Recharge;
-                        return ApplyEffect(effect, affectedEntity, energyDamage, appliedEffects, manager);
+                        return ApplyEffect(
+                            effect, affectedEntity, activatorEntity, energyDamage, appliedEffects, manager);
                     }
 
                     break;
@@ -412,13 +430,15 @@ namespace UnicornHack.Systems.Effects
                         return null;
                     }
 
-                    var drainDamage = GetDamage(effect, amountOverride, 0,
+                    var drainDamage = GetDamage(effect, activatorEntity, amountOverride, 0,
                         being.MagicResistance + being.BleedingResistance);
                     if (drainDamage != 0)
                     {
-                        var selfEffectEntity = ApplyEffect(effect, activatorEntity, drainDamage, null, manager);
+                        var selfEffectEntity = ApplyEffect(
+                            effect, activatorEntity, activatorEntity, drainDamage, null, manager);
                         selfEffectEntity.Effect.EffectType = EffectType.Heal;
-                        return ApplyEffect(effect, affectedEntity, drainDamage, appliedEffects, manager);
+                        return ApplyEffect(
+                            effect, affectedEntity, activatorEntity, drainDamage, appliedEffects, manager);
                     }
 
                     break;
@@ -448,7 +468,8 @@ namespace UnicornHack.Systems.Effects
                         manager.Enqueue(moveItemMessage);
                     }
 
-                    return ApplyEffect(effect, affectedEntity, amountOverride, appliedEffects, manager);
+                    return ApplyEffect(
+                        effect, affectedEntity, activatorEntity, amountOverride, appliedEffects, manager);
                 case EffectType.RemoveItem:
                     var itemToRemove = manager.FindEntity(effect.TargetEntityId);
                     var abilityId = effect.ContainingAbilityId;
@@ -477,7 +498,7 @@ namespace UnicornHack.Systems.Effects
                         manager.Enqueue(referenceMessage, lowPriority: true);
 
                         var appliedEffectEntity = ApplyEffect(
-                            effect, affectedEntity, amountOverride, appliedEffects, manager);
+                            effect, affectedEntity, activatorEntity, amountOverride, appliedEffects, manager);
                         appliedEffectEntity.Effect.TargetEntityId = itemReference.Referenced.Id;
 
                         return appliedEffectEntity;
@@ -489,7 +510,8 @@ namespace UnicornHack.Systems.Effects
                     Debug.Assert(effect.Duration != EffectDuration.Infinite
                                  || manager.FindEntity(effect.TargetEntityId).Ability.IsActive);
 
-                    return ApplyEffect(effect, affectedEntity, amountOverride, appliedEffects, manager);
+                    return ApplyEffect(
+                        effect, affectedEntity, activatorEntity, amountOverride, appliedEffects, manager);
                 case EffectType.Bind:
                 case EffectType.Blind:
                 case EffectType.ConferLycanthropy:
@@ -524,6 +546,7 @@ namespace UnicornHack.Systems.Effects
         private GameEntity ApplyEffect(
             EffectComponent effect,
             GameEntity affectedEntity,
+            GameEntity activatorEntity,
             int? amountOverride,
             ReferencingList<GameEntity> appliedEffects,
             GameManager manager)
@@ -536,7 +559,10 @@ namespace UnicornHack.Systems.Effects
                 appliedEffect.ShouldTargetActivator = effect.ShouldTargetActivator;
                 appliedEffect.SourceEffectId = effect.EntityId;
                 appliedEffect.SourceAbilityId = effect.ContainingAbilityId;
-                appliedEffect.Amount = amountOverride ?? effect.Amount;
+                appliedEffect.Amount = amountOverride
+                                       ?? (effect.Amount != null || effect.AmountExpression != null
+                                           ? effect.GetActualAmount(activatorEntity)
+                                           : (int?)null);
                 appliedEffect.Duration = effect.Duration;
                 appliedEffect.DurationAmount = effect.DurationAmount;
                 appliedEffect.EffectType = effect.EffectType;
@@ -550,25 +576,22 @@ namespace UnicornHack.Systems.Effects
                     case EffectDuration.Infinite:
                     case EffectDuration.Instant:
                     case EffectDuration.DuringApplication:
-                        Debug.Assert(effect.DurationAmount == 0);
+                        Debug.Assert(effect.DurationAmount == null);
                         break;
                     case EffectDuration.UntilTimeout:
-                        Debug.Assert(effect.DurationAmount > 0);
-
-                        appliedEffect.ExpirationTick = manager.Game.CurrentTick + effect.DurationAmount;
+                        appliedEffect.ExpirationTick = manager.Game.CurrentTick + effect.GetActualDurationAmount();
                         break;
                     case EffectDuration.UntilXPGained:
-                        Debug.Assert(effect.DurationAmount > 0);
-
                         var player = affectedEntity.Player;
                         if (player != null)
                         {
                             appliedEffect.ExpirationXp =
-                                affectedEntity.Player.NextLevelXP * effect.DurationAmount / 100;
+                                affectedEntity.Player.NextLevelXP * effect.GetActualDurationAmount() / 100;
                         }
                         else
                         {
-                            appliedEffect.ExpirationTick = manager.Game.CurrentTick + effect.DurationAmount * 100;
+                            appliedEffect.ExpirationTick =
+                                manager.Game.CurrentTick + effect.GetActualDurationAmount() * 100;
                         }
 
                         break;
@@ -584,9 +607,10 @@ namespace UnicornHack.Systems.Effects
             }
         }
 
-        private static int GetDamage(EffectComponent effect, int? amountOverride, int absorption, int resistance)
+        private static int GetDamage(EffectComponent effect, GameEntity activatorEntity, int? amountOverride,
+            int absorption, int resistance)
         {
-            var damage = amountOverride ?? effect.Amount.Value;
+            var damage = amountOverride ?? effect.GetActualAmount(activatorEntity);
             if (absorption > 0)
             {
                 damage -= absorption;
@@ -630,6 +654,18 @@ namespace UnicornHack.Systems.Effects
             return MessageProcessingResult.ContinueProcessing;
         }
 
+        public MessageProcessingResult Process(
+            PropertyValueChangedMessage<GameEntity, string> message, GameManager manager)
+        {
+            var effect = (EffectComponent)message.ChangedComponent;
+            if (effect.Duration != EffectDuration.Instant)
+            {
+                ProcessEffectChanges(message.Entity, effect, manager, State.Modified);
+            }
+
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
         private MessageProcessingResult ProcessEffectChanges(
             GameEntity effectEntity, EffectComponent effect, GameManager manager, State state)
         {
@@ -646,6 +682,8 @@ namespace UnicornHack.Systems.Effects
                     return MessageProcessingResult.ContinueProcessing;
                 }
 
+                var activator = containingAbility.OwnerEntity;
+
                 var appliedEffects = manager.AppliedEffectsToSourceAbilityRelationship[containingAbility.EntityId];
                 if (state == State.Added)
                 {
@@ -654,7 +692,7 @@ namespace UnicornHack.Systems.Effects
                         var appliedEffect = appliedEffects.First().Effect;
                         var affectedEntity = manager.FindEntity(appliedEffect.AffectedEntityId);
 
-                        ApplyEffect(effectEntity, affectedEntity, targetCell: null, activatorEntity: null,
+                        ApplyEffect(effectEntity, affectedEntity, targetCell: null, activatorEntity: activator,
                             amountOverride: null, appliedEffects: null, manager);
                     }
 
@@ -675,7 +713,7 @@ namespace UnicornHack.Systems.Effects
                     }
                     else
                     {
-                        appliedEffect.Amount = effect.Amount;
+                        appliedEffect.Amount = effect.GetActualAmount(activator);
                     }
                 }
 
@@ -1133,14 +1171,14 @@ namespace UnicornHack.Systems.Effects
                     {
                         var activeEffect = activeEffects[index];
 
-                        ApplyOperation(activeEffect.Amount.Value, activeEffect.Function, ref newValue, ref runningSum,
-                            ref summandCount);
+                        ApplyOperation(activeEffect.Amount.Value, activeEffect.Function,
+                            ref newValue, ref runningSum, ref summandCount);
                     }
                 }
                 else if (effect?.Entity?.Effect?.AffectedEntityId != null)
                 {
-                    ApplyOperation(effect.Amount.Value, effect.Function, ref newValue, ref runningSum,
-                        ref summandCount);
+                    ApplyOperation(effect.Amount.Value, effect.Function,
+                        ref newValue, ref runningSum, ref summandCount);
                 }
 
                 propertyDescription.SetValue(newValue, targetComponent);
@@ -1159,10 +1197,15 @@ namespace UnicornHack.Systems.Effects
             EffectComponent effect,
             GameManager manager)
         {
+            var targetComponent = targetEntity.FindComponent(propertyDescription.ComponentId);
+            if (targetComponent == null)
+            {
+                return;
+            }
+
             bool newValue;
             var runningSum = 0;
             var summandCount = 0;
-            var targetComponent = targetEntity.FindComponent(propertyDescription.ComponentId);
             if (propertyDescription.IsCalculated)
             {
                 var activeEffects = GetSortedAppliedEffects(targetEntity, propertyDescription, effect, manager);
@@ -1174,13 +1217,14 @@ namespace UnicornHack.Systems.Effects
                     {
                         var activeEffect = activeEffects[index];
 
-                        Apply(activeEffect.Amount.Value != 0, activeEffect.Function, ref newValue, ref runningSum,
-                            ref summandCount);
+                        Apply(activeEffect.Amount.Value != 0, activeEffect.Function,
+                            ref newValue, ref runningSum, ref summandCount);
                     }
                 }
-                else if (effect != null)
+                else if (effect?.Entity?.Effect?.AffectedEntityId != null)
                 {
-                    Apply(effect.Amount.Value != 0, effect.Function, ref newValue, ref runningSum, ref summandCount);
+                    Apply(effect.Amount.Value != 0, effect.Function,
+                        ref newValue, ref runningSum, ref summandCount);
                 }
 
                 propertyDescription.SetValue(newValue, targetComponent);

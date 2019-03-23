@@ -18,7 +18,8 @@ namespace UnicornHack.Data.Items
                     EnergyPointCost = 50,
                     Effects = new HashSet<Effect>
                     {
-                        new ChangeProperty<int> {PropertyName = "Visibility", Value = 0, Function = ValueCombinationFunction.Override}
+                        new ChangeProperty<int>
+                            {PropertyName = "Visibility", Function = ValueCombinationFunction.Override}
                     }
                 }
             },

@@ -22,11 +22,11 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Punch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Burn {Damage = 100}}
+                    Effects = new HashSet<Effect> {new Burn {Damage = "100"}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Burn {Damage = 30}}
+                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Burn {Damage = "30"}}
                 }
             },
             InitialLevel = 8,

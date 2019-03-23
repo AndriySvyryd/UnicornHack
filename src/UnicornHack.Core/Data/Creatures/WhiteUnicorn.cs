@@ -21,7 +21,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Headbutt,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 60}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "60"}}
                 },
                 new Ability
                 {
@@ -29,7 +29,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Kick,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "30"}}
                 }
             },
             InitialLevel = 4,

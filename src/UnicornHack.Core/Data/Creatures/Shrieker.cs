@@ -21,7 +21,7 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Scream,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new Deafen {Duration = EffectDuration.UntilTimeout, DurationAmount = 3}}
+                        {new Deafen {Duration = EffectDuration.UntilTimeout, DurationAmount = "3"}}
                 }
             },
             InitialLevel = 3,

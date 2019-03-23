@@ -17,15 +17,18 @@ namespace UnicornHack.Data.Items
                     Activation = ActivationType.OnRangedAttack,
                     Range = 15,
                     Action = AbilityAction.Throw,
+                    Delay = "100*weaponScaling",
                     Effects = new HashSet<Effect>
-                        {new PhysicalDamage {Damage = 30}, new Activate {Projectile = "throwing knife"}}
+                        {new PhysicalDamage {Damage = "30*weaponScaling"}, new Activate {Projectile = "throwing knife"}}
                 }
             },
             Type = ItemType.WeaponRangedClose,
             Material = Material.Steel,
             Weight = 5,
             EquipableSizes = SizeCategory.Small | SizeCategory.Medium,
-            EquipableSlots = EquipmentSlot.GraspSingleRanged
+            EquipableSlots = EquipmentSlot.GraspSingleRanged,
+            RequiredMight = 5,
+            RequiredSpeed = 5
         };
     }
 }

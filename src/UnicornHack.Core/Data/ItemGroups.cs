@@ -199,7 +199,7 @@ namespace UnicornHack.Data
                         new ItemGroup {Weight = 40F}
                     }
                 },
-                new ItemGroup {Type = ItemType.Potion, Weight = 100F},
+                new ItemGroup {Type = ItemType.Potion, Weight = 10F},
                 new ItemGroup
                 {
                     Type = ItemType.Orb,
@@ -232,7 +232,7 @@ namespace UnicornHack.Data
                         new ItemGroup {Weight = 40F}
                     }
                 },
-                new ItemGroup {Type = ItemType.SkillBook, Weight = 50F}
+                new ItemGroup {Type = ItemType.SkillBook, Weight = 10F}
             }
         };
     }

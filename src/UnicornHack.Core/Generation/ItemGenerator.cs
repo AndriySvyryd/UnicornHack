@@ -8,7 +8,7 @@ namespace UnicornHack.Generation
 {
     public class ItemGenerator
     {
-        public byte ExpectedInitialCount { get; set; } = 6;
+        public byte ExpectedInitialCount { get; set; } = 3;
 
         public virtual void Fill(LevelComponent level, List<Room> rooms)
         {

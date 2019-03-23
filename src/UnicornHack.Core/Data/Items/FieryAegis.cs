@@ -27,7 +27,7 @@ namespace UnicornHack.Data.Items
                     Activation = ActivationType.WhileToggled,
                     ItemCondition = ActivationType.WhileEquipped,
                     Cooldown = 200,
-                    Delay = 50,
+                    Delay = "50",
                     EnergyPointCost = 20,
                     Effects = new HashSet<Effect>
                     {

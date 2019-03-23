@@ -20,7 +20,7 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Spell,
-                    Cooldown = 100,
+                    Delay = "100",
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
                 },
                 new Ability
@@ -28,7 +28,7 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Sting,
-                    Cooldown = 100,
+                    Delay = "100",
                     Effects = new HashSet<Effect> {new DrainLife {Amount = 20}}
                 },
                 new Ability
@@ -36,12 +36,12 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Claw,
-                    Cooldown = 100,
+                    Delay = "100",
                     Effects = new HashSet<Effect>
                     {
-                        new Burn {Damage = 20},
+                        new Burn {Damage = "20"},
                         new ChangeProperty<int>
-                            {PropertyName = "Might", Duration = EffectDuration.UntilTimeout, DurationAmount = 10000}
+                            {PropertyName = "Might", Duration = EffectDuration.UntilTimeout, DurationAmount = "10000"}
                     }
                 },
                 new Ability
@@ -49,10 +49,8 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Claw,
-                    Effects = new HashSet<Effect>
-                    {
-                        new PhysicalDamage {Damage = 25}
-                    }
+                    Delay = "100",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "25"}}
                 }
             },
             InitialLevel = 30,

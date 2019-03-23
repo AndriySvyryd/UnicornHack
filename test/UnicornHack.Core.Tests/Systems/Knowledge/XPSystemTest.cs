@@ -225,7 +225,7 @@ namespace UnicornHack.Systems.Knowledge
                     effect.TargetName = nameof(BeingComponent.Might);
                     effect.Amount = -1;
                     effect.Duration = EffectDuration.UntilXPGained;
-                    effect.DurationAmount = 20;
+                    effect.DurationAmount = "20";
                     effect.ContainingAbilityId = ability.EntityId;
 
                     effectEntityReference.Referenced.Effect = effect;

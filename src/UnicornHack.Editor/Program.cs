@@ -68,34 +68,34 @@ namespace UnicornHack.Editor
         }
 
         private static void Verify(string script, PropertyDescription property)
-            => Verify(script, property, i => i.Name == property.Name, null);
+            => Verify(script, property, i => i.Name);
 
         private static void Verify(string script, Creature creature)
-            => Verify(script, creature, c => c.Name == creature.Name, c => c.Abilities);
+            => Verify(script, creature, c => c.Name, getAbilities: c => c.Abilities);
 
         private static void Verify(string script, PlayerRace player)
-            => Verify(script, player, p => p.Name == player.Name, c => c.Abilities);
+            => Verify(script, player, p => p.Name, getAbilities: c => c.Abilities);
 
         private static void Verify(string script, Item item)
-            => Verify(script, item, i => i.Name == item.Name, c => c.Abilities);
+            => Verify(script, item, i => i.Name, getAbilities: c => c.Abilities);
 
         private static void Verify(string script, ItemGroup item)
-            => Verify(script, item, i => i.Name == item.Name, null);
+            => Verify(script, item, i => i.Name);
 
         private static void Verify(string script, Ability item)
-            => Verify(script, item, i => i.Name == item.Name, null);
+            => Verify(script, item, i => i.Name);
 
         private static void Verify(string script, Branch branch)
-            => Verify(script, branch, b => b.Name == branch.Name, null);
+            => Verify(script, branch, b => b.Name);
 
         private static void Verify(string script, MapFragment fragment)
-            => Verify(script, fragment, f => f.Name == fragment.Name && VerifyNoUnicode(fragment), null);
+            => Verify(script, fragment, f => f.Name, VerifyNoUnicode);
 
         private static void Verify(string script, ConnectingMapFragment fragment)
-            => Verify(script, fragment, f => f.Name == fragment.Name && VerifyNoUnicode(fragment), null);
+            => Verify(script, fragment, f => f.Name, VerifyNoUnicode);
 
         private static void Verify(string script, DefiningMapFragment fragment)
-            => Verify(script, fragment, f => f.Name == fragment.Name && VerifyNoUnicode(fragment), null);
+            => Verify(script, fragment, f => f.Name, VerifyNoUnicode);
 
         private static bool VerifyNoUnicode(MapFragment fragment)
         {
@@ -123,15 +123,19 @@ namespace UnicornHack.Editor
             return true;
         }
 
-        private static void Verify<T>(string script, T variant, Func<T, bool> isValid,
-            Func<T, ISet<Ability>> getAbilities)
+        private static void Verify<T>(string script, T variant,
+            Func<T, string> getName,
+            Func<T, bool> isValid = null,
+            Func<T, ISet<Ability>> getAbilities = null)
         {
             try
             {
                 var serializedVariant = script == null ? variant : CSScriptLoaderHelpers.Load<T>(script);
-                if (!isValid(serializedVariant))
+                var name = getName(variant);
+                if (name != getName(serializedVariant)
+                    || (isValid != null && !isValid(serializedVariant)))
                 {
-                    Console.WriteLine(script);
+                    throw new InvalidOperationException("Invalid");
                 }
 
                 var abilities = getAbilities?.Invoke(serializedVariant);
@@ -139,7 +143,7 @@ namespace UnicornHack.Editor
                 {
                     foreach (var ability in abilities)
                     {
-                        Validate(ability);
+                        Validate(ability, name);
                     }
                 }
             }
@@ -150,8 +154,15 @@ namespace UnicornHack.Editor
             }
         }
 
-        private static void Validate(Ability ability)
+        private static void Validate(Ability ability, string ownerName)
         {
+            if ((ability.Activation & ActivationType.Slottable) != 0
+                && ability.Delay == null && ability.Cooldown == 0 && ability.XPCooldown == 0)
+            {
+                throw new InvalidOperationException(
+                    $"Ability {ability.Name} on {ownerName} has no delay or cooldown");
+            }
+
             if (ability.Effects == null)
             {
                 return;
@@ -164,7 +175,7 @@ namespace UnicornHack.Editor
                     case AddAbility addAbility:
                         if (addAbility.Ability != null)
                         {
-                            Validate(addAbility.Ability);
+                            Validate(addAbility.Ability, ownerName);
                         }
                         else
                         {

@@ -27,6 +27,10 @@ namespace UnicornHack.Generation
         private bool? _countable;
         private bool? _nameable;
         private int? _capacity;
+        private int? _requiredFocus;
+        private int? _requiredMight;
+        private int? _requiredPerception;
+        private int? _requiredSpeed;
 
         public string Name { get; set; }
 
@@ -101,6 +105,30 @@ namespace UnicornHack.Generation
         {
             get => _capacity ?? BaseItem?.Capacity;
             set => _capacity = value;
+        }
+
+        public int? RequiredFocus
+        {
+            get => _requiredFocus ?? BaseItem?.RequiredFocus;
+            set => _requiredFocus = value;
+        }
+
+        public int? RequiredMight
+        {
+            get => _requiredMight ?? BaseItem?.RequiredMight;
+            set => _requiredMight = value;
+        }
+
+        public int? RequiredPerception
+        {
+            get => _requiredPerception ?? BaseItem?.RequiredPerception;
+            set => _requiredPerception = value;
+        }
+
+        public int? RequiredSpeed
+        {
+            get => _requiredSpeed ?? BaseItem?.RequiredSpeed;
+            set => _requiredSpeed = value;
         }
 
         public bool Instantiate(GameEntity container, int quantity = 1)
@@ -346,7 +374,11 @@ namespace UnicornHack.Generation
             {nameof(Nameable), (o, v) => (bool?)v != o.BaseItem?.Nameable},
             {nameof(EquipableSizes), (o, v) => (SizeCategory?)v != o.BaseItem?.EquipableSizes},
             {nameof(EquipableSlots), (o, v) => (EquipmentSlot?)v != o.BaseItem?.EquipableSlots},
-            {nameof(Capacity), (o, v) => (int?)v != o.BaseItem?.Capacity}
+            {nameof(Capacity), (o, v) => (int?)v != o.BaseItem?.Capacity},
+            {nameof(RequiredFocus), (o, v) => (int?)v != o.BaseItem?.RequiredFocus},
+            {nameof(RequiredMight), (o, v) => (int?)v != o.BaseItem?.RequiredMight},
+            {nameof(RequiredPerception), (o, v) => (int?)v != o.BaseItem?.RequiredPerception},
+            {nameof(RequiredSpeed), (o, v) => (int?)v != o.BaseItem?.RequiredSpeed}
         };
 
         ICSScriptSerializer ICSScriptSerializable.GetSerializer() => Serializer;

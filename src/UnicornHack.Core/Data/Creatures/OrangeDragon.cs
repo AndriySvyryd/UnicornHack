@@ -22,7 +22,7 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Breath,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = 14}}
+                        {new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = "14"}}
                 },
                 new Ability
                 {
@@ -30,7 +30,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "90"}}
                 },
                 new Ability
                 {
@@ -38,7 +38,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50"}}
                 },
                 new Ability
                 {
@@ -46,7 +46,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 50}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50"}}
                 }
             },
             InitialLevel = 15,

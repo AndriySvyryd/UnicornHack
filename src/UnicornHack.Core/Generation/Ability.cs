@@ -24,6 +24,7 @@ namespace UnicornHack.Generation
         public TargetingType TargetingType { get; set; }
         public AbilityAction Action { get; set; }
         public AbilitySuccessCondition SuccessCondition { get; set; }
+        public int? Accuracy { get; set; }
 
         /// <summary>
         ///     Amount of ticks that need to pass after the ability has been used or deactivated before it can be used again.
@@ -36,7 +37,7 @@ namespace UnicornHack.Generation
         /// </summary>
         public int XPCooldown { get; set; }
 
-        public int Delay { get; set; }
+        public string Delay { get; set; }
         public int EnergyPointCost { get; set; }
         public ISet<Effect> Effects { get; set; }
 
@@ -111,7 +112,13 @@ namespace UnicornHack.Generation
             {nameof(TargetingShape), (o, v) => (TargetingShape)v != default},
             {nameof(TargetingType), (o, v) => (TargetingType)v != default},
             {nameof(Action), (o, v) => (AbilityAction)v != default},
-            {nameof(SuccessCondition), (o, v) => (AbilitySuccessCondition)v != default}
+            {nameof(SuccessCondition), (o, v) => (AbilitySuccessCondition)v != default},
+            {nameof(Accuracy), (o, v) => v != default},
+            {nameof(Cooldown), (o, v) => (int)v != default},
+            {nameof(XPCooldown), (o, v) => (int)v != default},
+            {nameof(Delay), (o, v) => (string)v != default},
+            {nameof(EnergyPointCost), (o, v) => (int)v != default},
+            {nameof(Effects), (o, v) => (((ISet<Effect>)v)?.Count ?? 0) != 0}
         };
 
         public virtual ICSScriptSerializer GetSerializer() => Serializer;

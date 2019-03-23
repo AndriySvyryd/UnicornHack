@@ -21,7 +21,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20"}}
                 },
                 new Ability
                 {
@@ -34,7 +34,7 @@ namespace UnicornHack.Data.Creatures
                         new ChangeProperty<int>
                         {
                             PropertyName = "Speed", Value = -1, Duration = EffectDuration.UntilTimeout,
-                            DurationAmount = 5
+                            DurationAmount = "5"
                         }
                     }
                 }

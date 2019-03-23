@@ -20,11 +20,11 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Corrode {Damage = 130}}
+                    Effects = new HashSet<Effect> {new Corrode {Damage = "130"}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Corrode {Damage = 30}}
+                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Corrode {Damage = "30"}}
                 }
             },
             InitialLevel = 10,

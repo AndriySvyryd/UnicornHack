@@ -57,14 +57,14 @@ namespace UnicornHack.Utils.MessagingECS
                     testSystem, manager.Effects.GetEntityAddedMessageName(), 10);
                 manager.Queue.Add<EntityRemovedMessage<GameEntity>>(
                     testSystem, manager.Effects.GetEntityRemovedMessageName(), 10);
-                manager.Queue.Add<PropertyValueChangedMessage<GameEntity, int>>(
+                manager.Queue.Add<PropertyValueChangedMessage<GameEntity, string>>(
                     testSystem, manager.Effects.GetPropertyValueChangedMessageName(nameof(EffectComponent.DurationAmount)), 10);
 
                 entity.Effect = effect;
 
                 Assert.Equal(1, manager.Queue.QueuedCount);
 
-                effect.DurationAmount = 10;
+                effect.DurationAmount = "10";
 
                 Assert.Equal(2, manager.Queue.QueuedCount);
             }
@@ -80,7 +80,7 @@ namespace UnicornHack.Utils.MessagingECS
         private class GroupTestSystem :
             IGameSystem<EntityAddedMessage<GameEntity>>,
             IGameSystem<EntityRemovedMessage<GameEntity>>,
-            IGameSystem<PropertyValueChangedMessage<GameEntity, int>>
+            IGameSystem<PropertyValueChangedMessage<GameEntity, string>>
         {
             private readonly GameEntity _testEntity;
             private readonly GameComponent _testComponent;
@@ -111,14 +111,14 @@ namespace UnicornHack.Utils.MessagingECS
                 return MessageProcessingResult.ContinueProcessing;
             }
 
-            public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, int> message, GameManager state)
+            public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, string> message, GameManager state)
             {
                 Assert.Same(_testEntity, message.Entity);
                 Assert.Equal(_testComponent.ComponentId, message.ChangedComponent?.ComponentId);
                 Assert.Same(_testComponent, message.ChangedComponent);
                 Assert.Equal(nameof(EffectComponent.DurationAmount), message.ChangedPropertyName);
-                Assert.Equal(0, message.OldValue);
-                Assert.Equal(10, message.NewValue);
+                Assert.Null(message.OldValue);
+                Assert.Equal("10", message.NewValue);
 
                 MessagesProcessed++;
                 return MessageProcessingResult.ContinueProcessing;

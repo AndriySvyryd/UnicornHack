@@ -21,7 +21,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 30}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "30"}}
                 },
                 new Ability
                 {
@@ -29,16 +29,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 20,
                     Action = AbilityAction.Gaze,
                     Cooldown = 350,
-                    Effects = new HashSet<Effect> {new Wither { Damage = 50}}
-                },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Range = 20,
-                    Action = AbilityAction.Gaze,
-                    Cooldown = 350,
-                    Effects = new HashSet<Effect>
-                        {new Slow {Duration = EffectDuration.UntilTimeout, DurationAmount = 13}}
+                    Effects = new HashSet<Effect> {new Wither {Damage = "50"}}
                 },
                 new Ability
                 {
@@ -47,7 +38,7 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Gaze,
                     Cooldown = 350,
                     Effects = new HashSet<Effect>
-                        {new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = 13}}
+                        {new Slow {Duration = EffectDuration.UntilTimeout, DurationAmount = "13"}}
                 },
                 new Ability
                 {
@@ -56,7 +47,16 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Gaze,
                     Cooldown = 350,
                     Effects = new HashSet<Effect>
-                        {new Confuse {Duration = EffectDuration.UntilTimeout, DurationAmount = 13}}
+                        {new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = "13"}}
+                },
+                new Ability
+                {
+                    Activation = ActivationType.Targeted,
+                    Range = 20,
+                    Action = AbilityAction.Gaze,
+                    Cooldown = 350,
+                    Effects = new HashSet<Effect>
+                        {new Confuse {Duration = EffectDuration.UntilTimeout, DurationAmount = "13"}}
                 },
                 new Ability
                 {

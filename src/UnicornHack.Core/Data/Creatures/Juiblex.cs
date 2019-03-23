@@ -22,14 +22,14 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = 20}}
+                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = "20"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Corrode {Damage = 220}}
+                    Effects = new HashSet<Effect> {new Corrode {Damage = "220"}}
                 },
                 new Ability
                 {
@@ -37,7 +37,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 20,
                     Action = AbilityAction.Spit,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Corrode {Damage = 100}}
+                    Effects = new HashSet<Effect> {new Corrode {Damage = "100"}}
                 }
             },
             InitialLevel = 30,

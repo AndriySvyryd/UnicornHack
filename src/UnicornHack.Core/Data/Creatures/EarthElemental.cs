@@ -21,7 +21,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Punch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 140}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "140"}}
                 },
                 new Ability
                 {
@@ -30,7 +30,7 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Punch,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new Stun {Duration = EffectDuration.UntilTimeout, DurationAmount = 2}}
+                        {new Stun {Duration = EffectDuration.UntilTimeout, DurationAmount = "2"}}
                 }
             },
             InitialLevel = 8,

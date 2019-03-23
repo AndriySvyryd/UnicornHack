@@ -18,7 +18,7 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.OnMeleeAttack,
                     Action = AbilityAction.Modifier,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20"}}
                 },
                 new Ability
                 {
@@ -26,7 +26,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Punch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
                 },
                 new Ability
                 {
@@ -39,7 +39,7 @@ namespace UnicornHack.Data.Creatures
                         new ChangeProperty<int>
                         {
                             PropertyName = "Focus", Value = -2, Duration = EffectDuration.UntilTimeout,
-                            DurationAmount = 10
+                            DurationAmount = "10"
                         }
                     }
                 }

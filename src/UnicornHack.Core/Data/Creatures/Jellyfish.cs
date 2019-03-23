@@ -20,7 +20,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Sting,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blight {Damage = 60}}
+                    Effects = new HashSet<Effect> {new Blight {Damage = "60"}}
                 }
             },
             InitialLevel = 3,

@@ -20,7 +20,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100"}}
                 },
                 new Ability
                 {
@@ -28,7 +28,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100"}}
                 },
                 new Ability
                 {
@@ -36,7 +36,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 70}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70"}}
                 }
             },
             InitialLevel = 9,

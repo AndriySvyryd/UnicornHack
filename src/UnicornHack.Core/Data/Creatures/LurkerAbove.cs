@@ -21,7 +21,7 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = 4}}
+                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = "4"}}
                 },
                 new Ability
                 {

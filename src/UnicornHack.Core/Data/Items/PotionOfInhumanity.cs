@@ -17,7 +17,7 @@ namespace UnicornHack.Data.Items
                     Name = "Drink",
                     Activation = ActivationType.ManualActivation,
                     Action = AbilityAction.Drink,
-                    Delay = 100,
+                    Delay = "100",
                     Effects = new HashSet<Effect>
                     {
                         new ChangeRace {RaceName = "human", Remove = true}, new RemoveItem()

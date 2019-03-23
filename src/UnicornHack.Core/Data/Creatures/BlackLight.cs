@@ -22,7 +22,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 20,
                     Action = AbilityAction.Explosion,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Confuse {DurationAmount = 27}}
+                    Effects = new HashSet<Effect> {new Confuse {DurationAmount = "27"}}
                 }
             },
             InitialLevel = 5,
@@ -36,9 +36,9 @@ namespace UnicornHack.Data.Creatures
             Focus = 8,
             AcidResistance = 75,
             ColdResistance = 75,
-            VoidResistance = 75,
             ElectricityResistance = 75,
             FireResistance = 75,
+            VoidResistance = 75,
             SlimingImmune = true,
             HeadType = HeadType.None,
             UpperExtremities = ExtremityType.None,

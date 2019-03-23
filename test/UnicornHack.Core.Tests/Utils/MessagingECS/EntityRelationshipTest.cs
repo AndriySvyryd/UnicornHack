@@ -163,7 +163,7 @@ namespace UnicornHack.Utils.MessagingECS
                         testSystem, manager.EffectsToContainingAbilityRelationship.GetEntityAddedMessageName(), 10);
                     manager.Queue.Add<EntityRemovedMessage<GameEntity>>(
                         testSystem, manager.EffectsToContainingAbilityRelationship.GetEntityRemovedMessageName(), 10);
-                    manager.Queue.Add<PropertyValueChangedMessage<GameEntity, int>>(
+                    manager.Queue.Add<PropertyValueChangedMessage<GameEntity, string>>(
                         testSystem, manager.EffectsToContainingAbilityRelationship.GetPropertyValueChangedMessageName(
                             nameof(EffectComponent.DurationAmount)), 10);
                     manager.EffectsToContainingAbilityRelationship.AddListener(testSystem);
@@ -172,7 +172,7 @@ namespace UnicornHack.Utils.MessagingECS
 
                     Assert.Equal(1, manager.Queue.QueuedCount);
 
-                    effect.DurationAmount = 10;
+                    effect.DurationAmount = "10";
 
                     Assert.Equal(2, manager.Queue.QueuedCount);
                 }
@@ -189,7 +189,7 @@ namespace UnicornHack.Utils.MessagingECS
         private class RelationshipTestSystem :
             IGameSystem<EntityAddedMessage<GameEntity>>,
             IGameSystem<EntityRemovedMessage<GameEntity>>,
-            IGameSystem<PropertyValueChangedMessage<GameEntity, int>>,
+            IGameSystem<PropertyValueChangedMessage<GameEntity, string>>,
             IGroupChangesListener<GameEntity>
         {
             private readonly GameEntity _testEntity;
@@ -223,14 +223,14 @@ namespace UnicornHack.Utils.MessagingECS
                 return MessageProcessingResult.ContinueProcessing;
             }
 
-            public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, int> message, GameManager state)
+            public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, string> message, GameManager state)
             {
                 Assert.Same(_testEntity, message.Entity);
                 Assert.Equal(_testComponent.ComponentId, message.ChangedComponent?.ComponentId);
                 Assert.Same(_testComponent, message.ChangedComponent);
                 Assert.Equal(nameof(EffectComponent.DurationAmount), message.ChangedPropertyName);
-                Assert.Equal(0, message.OldValue);
-                Assert.Equal(10, message.NewValue);
+                Assert.Null(message.OldValue);
+                Assert.Equal("10", message.NewValue);
 
                 MessagesProcessed++;
                 return MessageProcessingResult.ContinueProcessing;
@@ -263,8 +263,8 @@ namespace UnicornHack.Utils.MessagingECS
                 Assert.Equal(_testComponent.ComponentId, componentId);
                 Assert.Same(_testComponent, component);
                 Assert.Equal(nameof(EffectComponent.DurationAmount), propertyName);
-                Assert.Equal(0, (int)(object)oldValue);
-                Assert.Equal(10, (int)(object)newValue);
+                Assert.Null((string)(object)oldValue);
+                Assert.Equal("10", (string)(object)newValue);
                 Assert.Same(_group, group);
 
                 GroupChangesDetected++;
@@ -275,14 +275,14 @@ namespace UnicornHack.Utils.MessagingECS
             public bool HandlePropertyValuesChanged(
                 IReadOnlyList<IPropertyValueChange> changes, GameEntity entity, IEntityGroup<GameEntity> group)
             {
-                var change = (PropertyValueChange<int>)changes[0];
+                var change = (PropertyValueChange<string>)changes[0];
 
                 Assert.Same(_testEntity, entity);
                 Assert.Equal(_testComponent.ComponentId, change.ChangedComponent?.ComponentId);
                 Assert.Same(_testComponent, change.ChangedComponent);
                 Assert.Equal(nameof(EffectComponent.DurationAmount), change.ChangedPropertyName);
-                Assert.Equal(0, change.OldValue);
-                Assert.Equal(10, change.NewValue);
+                Assert.Null(change.OldValue);
+                Assert.Equal("10", change.NewValue);
                 Assert.Same(_group, group);
 
                 GroupChangesDetected++;

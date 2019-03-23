@@ -23,7 +23,7 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
+                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = "7"}}
                 },
                 new Ability
                 {
@@ -32,7 +32,7 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new Slow {Duration = EffectDuration.UntilTimeout, DurationAmount = 3}}
+                        {new Slow {Duration = EffectDuration.UntilTimeout, DurationAmount = "3"}}
                 }
             },
             InitialLevel = 12,

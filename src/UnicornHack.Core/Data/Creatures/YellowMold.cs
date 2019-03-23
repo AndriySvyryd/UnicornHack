@@ -17,7 +17,7 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.OnMeleeHit,
                     Effects = new HashSet<Effect>
-                        {new Stun {Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
+                        {new Stun {Duration = EffectDuration.UntilTimeout, DurationAmount = "7"}}
                 }
             },
             InitialLevel = 1,

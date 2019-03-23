@@ -25,6 +25,9 @@ namespace UnicornHack.Systems.Faculties
         public const string SecondaryRangedWeaponAttackName = "secondary ranged weapon attack";
         public const string TwoHandedRangedWeaponAttackName = "two handed ranged weapon attack";
 
+        public readonly string DefaultWeaponDelay =
+            TimeSystem.DefaultActionDelay + "*" + AbilityComponent.WeaponScalingDelay;
+
         public MessageProcessingResult Process(ItemEquippedMessage message, GameManager manager)
         {
             if (message.Successful)
@@ -108,6 +111,7 @@ namespace UnicornHack.Systems.Faculties
                         if (primaryWeaponReference != null)
                         {
                             primaryWeapon = primaryWeaponReference.Referenced.Item;
+                            primaryWeapon.EquippedSlot = EquipmentSlot.GraspPrimaryMelee;
                             being.PrimaryNaturalWeaponId = primaryWeapon.EntityId;
                             primaryWeaponReference.Dispose();
                         }
@@ -123,6 +127,7 @@ namespace UnicornHack.Systems.Faculties
                         if (secondaryWeaponReference != null)
                         {
                             secondaryWeapon = secondaryWeaponReference.Referenced.Item;
+                            secondaryWeapon.EquippedSlot = EquipmentSlot.GraspSecondaryMelee;
                             being.SecondaryNaturalWeaponId = secondaryWeapon.EntityId;
                             secondaryWeaponReference.Dispose();
                         }
@@ -173,15 +178,15 @@ namespace UnicornHack.Systems.Faculties
             var activation = melee ? ActivationType.OnMeleeAttack : ActivationType.OnRangedAttack;
             var twoHandedWeaponAttack = ResetWeaponAbility(
                 melee ? TwoHandedMeleeWeaponAttackName : TwoHandedRangedWeaponAttackName,
-                actorEntity.Id, twoHandedWeapon, activation, manager);
+                actorEntity, twoHandedWeapon, activation, manager);
 
             var primaryWeaponAttack = ResetWeaponAbility(
                 melee ? PrimaryMeleeWeaponAttackName : PrimaryRangedWeaponAttackName,
-                actorEntity.Id, primaryWeapon, activation, manager);
+                actorEntity, primaryWeapon, activation, manager);
 
             var secondaryWeaponAttack = ResetWeaponAbility(
                 melee ? SecondaryMeleeWeaponAttackName : SecondaryRangedWeaponAttackName,
-                actorEntity.Id, secondaryWeapon, activation, manager);
+                actorEntity, secondaryWeapon, activation, manager);
 
             foreach (WieldingAbility defaultAttackTemplate in Ability.Loader.GetAllValues(AbilityType.DefaultAttack))
             {
@@ -260,8 +265,9 @@ namespace UnicornHack.Systems.Faculties
             }
 
             var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
-            setSlotMessage.Slot =
-                melee ? AbilitySlottingSystem.DefaultMeleeAttackSlot : AbilitySlottingSystem.DefaultRangedAttackSlot;
+            setSlotMessage.Slot = melee
+                ? AbilitySlottingSystem.DefaultMeleeAttackSlot
+                : AbilitySlottingSystem.DefaultRangedAttackSlot;
             setSlotMessage.AbilityEntity = defaultAttackAbility?.Entity;
             setSlotMessage.OwnerEntity = actorEntity;
             manager.Enqueue(setSlotMessage);
@@ -269,8 +275,8 @@ namespace UnicornHack.Systems.Faculties
             return canUseWeapons;
         }
 
-        private ITransientReference<GameEntity> TryCreateNaturalWeapon(ExtremityType extremityType, bool melee,
-            GameManager manager)
+        private ITransientReference<GameEntity> TryCreateNaturalWeapon(
+            ExtremityType extremityType, bool melee, GameManager manager)
         {
             if (!melee
                 || extremityType != ExtremityType.GraspingFingers)
@@ -284,49 +290,32 @@ namespace UnicornHack.Systems.Faculties
 
         private AbilityComponent ResetWeaponAbility(
             string name,
-            int ownerId,
+            GameEntity ownerEntity,
             ItemComponent weapon,
             ActivationType activation,
             GameManager manager)
         {
-            var weaponAttack = manager.AffectableAbilitiesIndex[(ownerId, name)]?.Ability;
+            var weaponAttack = manager.AffectableAbilitiesIndex[(ownerEntity.Id, name)]?.Ability;
             if (weaponAttack == null && weapon != null)
             {
                 using (var abilityEntityReference = manager.CreateEntity())
                 {
                     var abilityEntity = abilityEntityReference.Referenced;
 
-                    var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
-                    ability.Name = name;
-                    ability.OwnerId = ownerId;
-                    ability.Range = 1;
-                    // TODO: Calculate proper delay
-                    ability.Delay = TimeSystem.DefaultActionDelay;
+                    weaponAttack = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+                    weaponAttack.Name = name;
+                    weaponAttack.OwnerId = ownerEntity.Id;
 
-                    var abilityToActivate = manager.AbilitiesToAffectableRelationship[weapon.EntityId]
-                        .Select(a => a.Ability).FirstOrDefault(a => (a.Activation & activation) != 0);
-
-                    if (abilityToActivate != null)
-                    {
-                        // TODO: Calculate range
-                        ability.Range = abilityToActivate.Range;
-                        ability.TargetingType = abilityToActivate.TargetingType;
-                        ability.TargetingShape = abilityToActivate.TargetingShape;
-                    }
-
-                    abilityEntity.Ability = ability;
+                    abilityEntity.Ability = weaponAttack;
 
                     using (var effectEntityReference = manager.CreateEntity())
                     {
                         var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                         effect.EffectType = EffectType.Activate;
                         effect.ContainingAbilityId = abilityEntity.Id;
-                        effect.TargetEntityId = weapon.EntityId;
 
                         effectEntityReference.Referenced.Effect = effect;
                     }
-
-                    return ability;
                 }
             }
 
@@ -334,16 +323,25 @@ namespace UnicornHack.Systems.Faculties
             {
                 if (weapon != null)
                 {
+                    var abilityToActivate = manager.AbilitiesToAffectableRelationship[weapon.EntityId]
+                        .Select(a => a.Ability).FirstOrDefault(a => (a.Activation & activation) != 0);
+
+                    if (abilityToActivate != null)
+                    {
+                        // TODO: Calculate range
+                        weaponAttack.Range = abilityToActivate.Range;
+                        weaponAttack.TargetingType = abilityToActivate.TargetingType;
+                        weaponAttack.TargetingShape = abilityToActivate.TargetingShape;
+                        weaponAttack.Delay = abilityToActivate.GetActualDelay(ownerEntity).ToString();
+                    }
+
                     foreach (var effectEntity in manager.EffectsToContainingAbilityRelationship[weaponAttack.EntityId])
                     {
                         var effect = effectEntity.Effect;
-                        if (effect.EffectType != EffectType.Activate)
+                        if (effect.EffectType == EffectType.Activate)
                         {
-                            continue;
+                            effect.TargetEntityId = weapon.EntityId;
                         }
-
-                        effect.TargetEntityId = weapon.EntityId;
-                        break;
                     }
                 }
                 else
@@ -387,7 +385,7 @@ namespace UnicornHack.Systems.Faculties
             ability.HeadingDeviation = firstWeaponAbility.HeadingDeviation;
             ability.TargetingShape = firstWeaponAbility.TargetingShape;
             ability.TargetingType = firstWeaponAbility.TargetingType;
-            ability.Delay = firstWeaponAbility.Delay;
+            var delay = firstWeaponAbility.GetActualDelay(ownerEntity);
 
             if (secondWeaponAbility != null)
             {
@@ -411,12 +409,16 @@ namespace UnicornHack.Systems.Faculties
                     ability.TargetingType = secondWeaponAbility.TargetingType;
                 }
 
-                if (secondWeaponAbility.Delay > ability.Delay)
+                var secondDelay = secondWeaponAbility.GetActualDelay(ownerEntity);
+                if ((secondDelay > delay
+                     || secondDelay == -1)
+                    && delay != -1)
                 {
-                    ability.Delay = secondWeaponAbility.Delay;
+                    delay = secondDelay;
                 }
             }
 
+            ability.Delay = delay.ToString();
             var manager = ownerEntity.Manager;
 
             GameEntity firstEffectEntity = null;

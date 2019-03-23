@@ -20,7 +20,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 20,
                     Action = AbilityAction.Explosion,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 140}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "140"}}
                 },
                 new Ability
                 {
@@ -29,7 +29,7 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Explosion,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new Deafen {Duration = EffectDuration.UntilTimeout, DurationAmount = 27}}
+                        {new Deafen {Duration = EffectDuration.UntilTimeout, DurationAmount = "27"}}
                 }
             },
             InitialLevel = 1,

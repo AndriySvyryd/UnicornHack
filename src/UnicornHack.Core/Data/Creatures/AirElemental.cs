@@ -23,7 +23,7 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = 5}}
+                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = "5"}}
                 },
                 new Ability
                 {
@@ -31,7 +31,7 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Digestion,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new Deafen {Duration = EffectDuration.UntilTimeout, DurationAmount = 2}}
+                        {new Deafen {Duration = EffectDuration.UntilTimeout, DurationAmount = "2"}}
                 }
             },
             InitialLevel = 8,

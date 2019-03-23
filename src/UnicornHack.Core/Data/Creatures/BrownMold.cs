@@ -15,7 +15,7 @@ namespace UnicornHack.Data.Creatures
             {
                 new Ability
                 {
-                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Freeze {Damage = 30}}
+                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Freeze {Damage = "30"}}
                 }
             },
             InitialLevel = 1,

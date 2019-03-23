@@ -23,22 +23,22 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = 4}}
+                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = "4"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Freeze {Damage = 30}}
+                    Effects = new HashSet<Effect> {new Freeze {Damage = "30"}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Freeze {Damage = 30}}
+                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Freeze {Damage = "30"}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.OnRangedHit, Effects = new HashSet<Effect> {new Freeze {Damage = 30}}
+                    Activation = ActivationType.OnRangedHit, Effects = new HashSet<Effect> {new Freeze {Damage = "30"}}
                 }
             },
             InitialLevel = 5,

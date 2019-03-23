@@ -19,7 +19,7 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.OnMeleeAttack,
                     Action = AbilityAction.Modifier,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 100}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100"}}
                 },
                 new Ability
                 {
@@ -27,7 +27,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Punch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
                 },
                 new Ability
                 {
@@ -36,7 +36,7 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new Confuse {Duration = EffectDuration.UntilTimeout, DurationAmount = 9}}
+                        {new Confuse {Duration = EffectDuration.UntilTimeout, DurationAmount = "9"}}
                 },
                 new Ability
                 {
@@ -45,7 +45,7 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = 3}}
+                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = "3"}}
                 },
                 new Ability
                 {
@@ -53,7 +53,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 20,
                     Action = AbilityAction.Spell,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Wither { Damage = 70}}
+                    Effects = new HashSet<Effect> {new Wither {Damage = "70"}}
                 }
             },
             InitialLevel = 30,

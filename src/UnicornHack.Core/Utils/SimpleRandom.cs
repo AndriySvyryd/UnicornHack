@@ -202,6 +202,11 @@ namespace UnicornHack.Utils
                 throw new ArgumentOutOfRangeException($"Don't use this generator for ranges over {int.MaxValue}");
             }
 
+            if (range == 0)
+            {
+                return minValue;
+            }
+
             return minValue + IntToFloat * NextInt() * range;
         }
 

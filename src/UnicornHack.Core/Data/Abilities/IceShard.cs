@@ -16,8 +16,8 @@ namespace UnicornHack.Data.Abilities
             Action = AbilityAction.Shoot,
             SuccessCondition = AbilitySuccessCondition.Attack,
             Cooldown = 1000,
-            Delay = 100,
-            Effects = new HashSet<Effect> {new Freeze {Damage = 40}}
+            Delay = "100",
+            Effects = new HashSet<Effect> {new Freeze {Damage = "40"}}
         };
     }
 }

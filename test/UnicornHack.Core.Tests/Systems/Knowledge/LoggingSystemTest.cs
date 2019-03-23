@@ -66,8 +66,8 @@ namespace UnicornHack.Systems.Knowledge
             Verify(playerEntity, demogorgon, playerEntity, player2Entity,
                 manager.AbilitiesToAffectableRelationship[playerEntity.Id]
                     .Single(a => a.Ability.Slot == AbilitySlottingSystem.DefaultMeleeAttackSlot), success: true,
-                "You slash the Demogorgon. (61 pts.)",
-                "Dudley slashes the Demogorgon. (61 pts.)",
+                "You slash the Demogorgon. (89 pts.)",
+                "Dudley slashes the Demogorgon. (89 pts.)",
                 manager);
 
             Verify(playerEntity, demogorgon, playerEntity, player2Entity,

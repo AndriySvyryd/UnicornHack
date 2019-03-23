@@ -23,7 +23,7 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Explosion,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new Blind {Duration = EffectDuration.UntilTimeout, DurationAmount = 27}}
+                        {new Blind {Duration = EffectDuration.UntilTimeout, DurationAmount = "27"}}
                 }
             },
             InitialLevel = 3,
@@ -37,9 +37,9 @@ namespace UnicornHack.Data.Creatures
             Focus = 6,
             AcidResistance = 75,
             ColdResistance = 75,
-            VoidResistance = 75,
             ElectricityResistance = 75,
             FireResistance = 75,
+            VoidResistance = 75,
             SlimingImmune = true,
             HeadType = HeadType.None,
             UpperExtremities = ExtremityType.None,

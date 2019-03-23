@@ -11,12 +11,12 @@ namespace UnicornHack.Data.Abilities
         {
             Name = "double ranged attack",
             Type = AbilityType.DefaultAttack,
-            WieldingStyle = WieldingStyle.Dual,
-            ItemType = ItemType.WeaponRanged,
             Effects = new HashSet<Effect>
             {
                 new Activate(), new Activate()
-            }
+            },
+            WieldingStyle = WieldingStyle.Dual,
+            ItemType = ItemType.WeaponRanged
         };
     }
 }

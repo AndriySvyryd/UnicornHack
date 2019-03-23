@@ -21,7 +21,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Freeze {Damage = 70}}
+                    Effects = new HashSet<Effect> {new Freeze {Damage = "70"}}
                 },
                 new Ability
                 {

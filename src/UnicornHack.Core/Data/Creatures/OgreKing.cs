@@ -18,7 +18,7 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.OnMeleeAttack,
                     Action = AbilityAction.Modifier,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "90"}}
                 },
                 new Ability
                 {
@@ -26,7 +26,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Punch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 10}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
                 }
             },
             InitialLevel = 9,

@@ -17,13 +17,16 @@ namespace UnicornHack.Data.Items
                     Activation = ActivationType.OnMeleeAttack,
                     Range = 1,
                     Action = AbilityAction.Punch,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 20}}
+                    Delay = "100*weaponScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*weaponScaling" } }
                 }
             },
             Type = ItemType.WeaponMeleeHand,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             Material = Material.Flesh,
-            Weight = 4
+            Weight = 4,
+            RequiredMight = 2,
+            RequiredSpeed = 2
         };
     }
 }

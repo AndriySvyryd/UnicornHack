@@ -21,7 +21,7 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = 4}}
+                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = "4"}}
                 },
                 new Ability
                 {
@@ -30,27 +30,27 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Touch,
                     Cooldown = 350,
                     Effects = new HashSet<Effect>
-                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
+                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = "7"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blight {Damage = 10}}
+                    Effects = new HashSet<Effect> {new Blight {Damage = "10"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Corrode {Damage = 10}}
+                    Effects = new HashSet<Effect> {new Corrode {Damage = "10"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnMeleeHit,
                     Effects = new HashSet<Effect>
-                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = 4}}
+                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = "4"}}
                 }
             },
             InitialLevel = 6,

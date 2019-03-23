@@ -4,8 +4,8 @@ namespace UnicornHack.Generation.Effects
 {
     public abstract class DamageEffect : Effect
     {
-        public int Damage { get; set; }
+        public string Damage { get; set; }
 
-        protected override void ConfigureEffect(EffectComponent effect) => effect.Amount = Damage;
+        protected override void ConfigureEffect(EffectComponent effect) => effect.AmountExpression = Damage;
     }
 }

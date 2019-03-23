@@ -22,7 +22,7 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = 2}}
+                        {new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = "2"}}
                 },
                 new Ability
                 {

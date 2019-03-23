@@ -19,7 +19,7 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.OnMeleeHit,
                     Effects = new HashSet<Effect>
-                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = 35}}
+                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = "35"}}
                 }
             },
             InitialLevel = 2,

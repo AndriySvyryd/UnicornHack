@@ -36,9 +36,14 @@ namespace UnicornHack.Systems.Actors
 
             Debug.Assert(actor.Being.IsAlive);
 
-            if (TryAttackPlayerCharacter(actor, manager))
+            // TODO: If can't act - wait till player turn
+            switch (TryAttackPlayerCharacter(actor, manager))
             {
-                return MessageProcessingResult.ContinueProcessing;
+                case true:
+                    return MessageProcessingResult.ContinueProcessing;
+                case false:
+                    ai.NextActionTick += TimeSystem.DefaultActionDelay / 2;
+                    return MessageProcessingResult.ContinueProcessing;
             }
 
             var position = actor.Position;
@@ -98,8 +103,9 @@ namespace UnicornHack.Systems.Actors
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        private bool TryAttackPlayerCharacter(GameEntity aiEntity, GameManager manager)
+        private bool? TryAttackPlayerCharacter(GameEntity aiEntity, GameManager manager)
         {
+            bool? ableToAttack = null;
             var aiPosition = aiEntity.Position;
             foreach (var playerEntity in manager.Players)
             {
@@ -111,10 +117,14 @@ namespace UnicornHack.Systems.Actors
                     continue;
                 }
 
-                return Attack(aiEntity, playerEntity, manager);
+                ableToAttack = false;
+                if (Attack(aiEntity, playerEntity, manager))
+                {
+                    return true;
+                }
             }
 
-            return false;
+            return ableToAttack;
         }
 
         private bool Attack(GameEntity aiEntity, GameEntity targetEntity, GameManager manager)
@@ -133,10 +143,10 @@ namespace UnicornHack.Systems.Actors
                 activationMessage.ActivatorEntity = aiEntity;
                 activationMessage.TargetEntity = targetEntity;
 
-                if (!manager.AbilityActivationSystem.CanActivateAbility(activationMessage, shouldThrow: true))
+                if (!manager.AbilityActivationSystem.CanActivateAbility(activationMessage, shouldThrow: false))
                 {
                     manager.Queue.ReturnMessage(activationMessage);
-                    return false;
+                    continue;
                 }
 
                 manager.Enqueue(activationMessage);

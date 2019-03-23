@@ -16,7 +16,7 @@ namespace UnicornHack.Data.Items
                 {
                     Name = "Consult",
                     Activation = ActivationType.WhileToggled,
-                    Delay = 100,
+                    Delay = "100",
                     Effects = new HashSet<Effect>
                         {new AddAbility {AbilityName = "one handed", Level = 1, Duration = EffectDuration.Infinite}}
                 }

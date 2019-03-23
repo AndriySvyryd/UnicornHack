@@ -21,7 +21,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Claw,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blight {Damage = 100}}
+                    Effects = new HashSet<Effect> {new Blight {Damage = "100"}}
                 },
                 new Ability
                 {
@@ -29,7 +29,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 20,
                     Action = AbilityAction.Spell,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Freeze {Damage = 210}}
+                    Effects = new HashSet<Effect> {new Freeze {Damage = "210"}}
                 }
             },
             InitialLevel = 30,

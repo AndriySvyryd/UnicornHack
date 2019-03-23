@@ -20,7 +20,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "90"}}
                 },
                 new Ability
                 {
@@ -28,11 +28,11 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Soak {Damage = 90}}
+                    Effects = new HashSet<Effect> {new Soak {Damage = "90"}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Soak {Damage = 40}}
+                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Soak {Damage = "40"}}
                 }
             },
             InitialLevel = 3,

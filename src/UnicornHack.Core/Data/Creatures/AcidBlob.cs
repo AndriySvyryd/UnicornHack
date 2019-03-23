@@ -16,7 +16,7 @@ namespace UnicornHack.Data.Creatures
             {
                 new Ability
                 {
-                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Corrode {Damage = 40}}
+                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Corrode {Damage = "40"}}
                 }
             },
             InitialLevel = 1,

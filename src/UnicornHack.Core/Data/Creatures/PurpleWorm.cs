@@ -21,7 +21,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = 90}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "90"}}
                 },
                 new Ability
                 {
@@ -30,14 +30,14 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
+                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = "7"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Corrode {Damage = 50}}
+                    Effects = new HashSet<Effect> {new Corrode {Damage = "50"}}
                 }
             },
             InitialLevel = 15,

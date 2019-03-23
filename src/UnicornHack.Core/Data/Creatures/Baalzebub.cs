@@ -21,7 +21,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blight {Damage = 70}}
+                    Effects = new HashSet<Effect> {new Blight {Damage = "70"}}
                 },
                 new Ability
                 {
@@ -30,7 +30,7 @@ namespace UnicornHack.Data.Creatures
                     Action = AbilityAction.Gaze,
                     Cooldown = 100,
                     Effects = new HashSet<Effect>
-                        {new Stun {Duration = EffectDuration.UntilTimeout, DurationAmount = 7}}
+                        {new Stun {Duration = EffectDuration.UntilTimeout, DurationAmount = "7"}}
                 }
             },
             InitialLevel = 30,

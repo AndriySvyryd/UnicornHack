@@ -20,11 +20,11 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Touch,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blight {Damage = 30}}
+                    Effects = new HashSet<Effect> {new Blight {Damage = "30"}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Blight {Damage = 30}}
+                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Blight {Damage = "30"}}
                 }
             },
             InitialLevel = 5,

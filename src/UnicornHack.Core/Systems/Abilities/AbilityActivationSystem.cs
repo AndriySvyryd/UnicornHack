@@ -140,10 +140,16 @@ namespace UnicornHack.Systems.Abilities
                 }
             }
 
-            if ((ability.Activation & ActivationType.Targeted) != 0)
+            if ((ability.Activation & ActivationType.Slottable) != 0)
             {
-                // TODO: Specify correct delay in the abilities
-                targetEffectsMessage.Delay = ability.Delay == 0 ? TimeSystem.DefaultActionDelay : ability.Delay;
+                var delay = ability.GetActualDelay(activateMessage.ActivatorEntity);
+                if (delay == -1)
+                {
+                    targetEffectsMessage.ActivationError = $"Speed too low to activate ability {ability.EntityId}.";
+                    return targetEffectsMessage;
+                }
+
+                targetEffectsMessage.Delay = delay;
 
                 var activatorPosition = activateMessage.ActivatorEntity.Position;
                 if (activatorPosition != null)
@@ -249,6 +255,7 @@ namespace UnicornHack.Systems.Abilities
             switch (ability.Activation)
             {
                 case ActivationType.ManualActivation:
+                case ActivationType.WhileToggled:
                     return activatorPosition.Heading.Value;
                 case ActivationType.Targeted:
                     var targetDirection = activatorPosition.LevelCell.DifferenceTo(targetCell);
@@ -318,7 +325,6 @@ namespace UnicornHack.Systems.Abilities
 
                     var subAbilityMessage = messageToProcess.Clone(manager);
                     subAbilityMessage.AbilityEntity = subActivation.ActivatedAbility;
-                    subAbilityMessage.Delay = subActivation.ActivatedAbility.Ability.Delay;
 
                     AbilityActivatedMessage nextActivationMessage;
                     var nextTargetMessage = targetMessage;
@@ -995,7 +1001,10 @@ namespace UnicornHack.Systems.Abilities
                 {
                     if (ability.Cooldown > 0)
                     {
-                        ability.CooldownTick = manager.Game.CurrentTick + ability.Cooldown + ability.Delay;
+                        var delay = ability.GetActualDelay(activatorEntity);
+                        Debug.Assert(delay != -1);
+
+                        ability.CooldownTick = manager.Game.CurrentTick + ability.Cooldown + delay;
                     }
 
                     if (ability.XPCooldown > 0)

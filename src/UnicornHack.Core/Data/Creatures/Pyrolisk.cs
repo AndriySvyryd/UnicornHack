@@ -21,7 +21,7 @@ namespace UnicornHack.Data.Creatures
                     Range = 20,
                     Action = AbilityAction.Gaze,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Burn {Damage = 70}}
+                    Effects = new HashSet<Effect> {new Burn {Damage = "70"}}
                 }
             },
             InitialLevel = 6,
