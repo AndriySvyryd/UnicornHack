@@ -23,8 +23,8 @@ export class MapDisplay extends React.Component<IMapProps, {}> {
         }
 
         return (
-            <div className={scss.mapContainer + " " + scss.frame} >
-                <div className={scss.map}>{map}</div>
+            <div className="mapContainer" >
+                <div className="map">{map}</div>
             </div>);
     }
 }
@@ -46,7 +46,7 @@ class MapRow extends React.Component<IRowProps, {}> {
                 performAction={this.props.performAction}
                 key={x} />
         );
-        return (<div className={scss.map__row}>{row}</div>);
+        return (<div className="map__row">{row}</div>);
     }
 }
 
@@ -164,7 +164,7 @@ class MapTile extends React.Component<ITileProps, {}> {
         }
 
         const opacity = 0.3 + ((tile.visibility / 255) * 0.7);
-        return (<div className={scss.map__tile} style={Object.assign({ opacity: opacity }, glyph.style)} onClick={onClick}>
+        return (<div className="map__tile" style={Object.assign({ opacity: opacity }, glyph.style)} onClick={onClick}>
             {content}
         </div>);
     }

@@ -1,5 +1,4 @@
 ﻿import * as React from 'React';
-import * as scss from '../styles/site.scss'
 import { observer } from 'mobx-react';
 import { coalesce } from '../Util';
 import { Ability } from '../transport/Model';
@@ -15,11 +14,11 @@ export class AbilitySelection extends React.Component<IAbilitySelectionProps, {}
 
         abilities.push(<AbilitySelectionLine ability={null} slot={coalesce(this.props.data.abilitySlot, -3)} key={-1} performAction={this.props.performAction} queryGame={this.props.queryGame} />);
 
-        return <div className={scss.dialogBackground} style={{
+        return <div className="dialog__overlay" style={{
             display: this.props.data.abilitySlot === null ? 'none' : 'block'
         }} onClick={() => this.props.queryGame(GameQueryType.Clear)}>
-            <div className={scss.abilitySlotSelection__wrapper}>
-                <div className={scss.abilitySlotSelection + " " + scss.frame} onClick={(e) => e.stopPropagation()}>
+            <div className="abilitySlotSelection__wrapper">
+                <div className="abilitySlotSelection" onClick={(e) => e.stopPropagation()}>
                     <div><h4>Select ability:</h4></div>
                     <br />
                     <ul>{abilities}</ul>

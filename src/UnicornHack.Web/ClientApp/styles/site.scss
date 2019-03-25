@@ -1,3 +1,5 @@
+@import "node_modules/bootstrap/scss/utilities/_text";
+
 @font-face {
     font-family: DejaVuSansMono;
     src: url('../fonts/DejaVuSansMono.woff2') format('woff2'), url('../fonts/DejaVuSansMono.woff') format('woff'), url('../fonts/DejaVuSansMono.ttf') format('truetype');
@@ -31,6 +33,15 @@ input::placeholder {
     text-align: center;
 }
 
+.container {
+    @include make-container();
+    @include make-container-max-widths();
+}
+
+.intro {
+    @include make-row();
+}
+
 .frame {
     border-width: 1px;
     display: block;
@@ -40,7 +51,36 @@ input::placeholder {
     border-radius: 3px;
 }
 
+.game {
+    @include make-row();
+}
+
+.game__map {
+    @include make-col-ready();
+
+    @include media-breakpoint-down(xl) {
+        @include make-col(12);
+    }
+
+    @include media-breakpoint-up(xl) {
+        @include make-col(9);
+    }
+}
+
+.game__sidepanel {
+    @include make-col-ready();
+
+    @include media-breakpoint-down(xl) {
+        @include make-col(12);
+    }
+
+    @include media-breakpoint-up(xl) {
+        @include make-col(3);
+    }
+}
+
 .mapContainer {
+    @extend .frame;
     overflow: hidden;
     height: 640px;
 }
@@ -75,6 +115,14 @@ input::placeholder {
     transform: scale(0.5, 1);
 }
 
+.log {
+    @extend .frame;
+}
+
+.chat {
+    @extend .frame;
+}
+
 .chat__messages {
     list-style-type: none;
     padding: 10px;
@@ -83,11 +131,40 @@ input::placeholder {
     padding: 0;
 }
 
-.ability__slot {
+.chat__input {
+    @include make-col(10);
+}
+
+.statusBar {
+    @include make-row();
+}
+
+.statusBar__wrapper {
+    @extend .frame;
+}
+
+.statusBar__row {
+    @include make-col-ready();
+
+    @include media-breakpoint-down(xl) {
+        @include make-col(2);
+    }
+
+    @include media-breakpoint-up(xl) {
+        @include make-col(6);
+    }
+}
+
+.abilityBar {
+    @extend .frame;
+}
+
+.abilityBar__slot {
     color: $secondary;
 }
 
 .abilitySlotSelection {
+    @extend .frame;
     position: relative;
     margin: auto;
     max-height: 100%;
@@ -103,7 +180,7 @@ input::placeholder {
     height: 100%;
 }
 
-.dialogBackground {
+.dialog__overlay {
     position: fixed;
     padding: 0;
     margin: 0;
@@ -112,6 +189,10 @@ input::placeholder {
     width: 100%;
     height: 100%;
     background: rgba(127,127,127,0.25);
+}
+
+.inventory {
+    @extend .frame;
 }
 
 :export {

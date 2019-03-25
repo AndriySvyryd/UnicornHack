@@ -1,5 +1,4 @@
 import * as React from 'react';
-import * as scss from '../styles/site.scss'
 import { action, observable } from 'mobx';
 import { observer } from 'mobx-react';
 
@@ -7,8 +6,8 @@ import { observer } from 'mobx-react';
 export class Chat extends React.Component<IChatProps, {}> {
     render() {
         return (
-            <div className={scss.frame}>
-                <ul className={scss.chat__messages} ref={(list: HTMLUListElement) => {
+            <div className="chat">
+                <ul className="chat__messages" ref={(list: HTMLUListElement) => {
                     if (list) {
                      list.scrollTop = list.scrollHeight;
                 }}}>
@@ -36,23 +35,23 @@ class MessageLine extends React.Component<IMessage, {}> {
 
         line.push(<span key={this.props.id}>{this.props.text}</span>);
 
-        let color = '';
+        let colorClass = '';
         switch (this.props.type) {
             case MessageType.Client:
-                color = 'text-light';
+                colorClass = 'text-light';
                 break;
             case MessageType.Error:
-                color = 'text-danger';
+                colorClass = 'text-danger';
                 break;
             case MessageType.Warning:
-                color = 'text-warning';
+                colorClass = 'text-warning';
                 break;
             case MessageType.Info:
-                color = 'text-muted font-italic';
+                colorClass = 'text-muted font-italic';
                 break;
         }
 
-        return (<li className={color} key={this.props.id}>{line}</li>);
+        return (<li className={colorClass} key={this.props.id}>{line}</li>);
     }
 }
 
@@ -89,7 +88,7 @@ class InputForm extends React.Component<IInputFormProps, {}> {
     render() {
         return (
             <form className="form-inline" onSubmit={this.handleSubmit} autoComplete="off">
-                <input className="form-control col-10" type="text" value={this.outgoingMessage} onChange={this.handleChange} />
+                <input className="form-control chat__input" type="text" value={this.outgoingMessage} onChange={this.handleChange} />
                 <input className="btn btn-secondary" type="submit" value="Send" />
             </form>
         );

@@ -11,7 +11,7 @@ function getClientConfig(env) {
     return {
         stats: { modules: false },
         mode: isDevBuild ? 'development' : 'production',
-        devtool: isDevBuild ? 'eval-source-map' : 'source-map',
+        devtool: isDevBuild ? 'eval-source-map' : '',
         resolve: { extensions: ['.js', '.jsx', '.ts', '.tsx'] },
         entry: { 'main': './ClientApp/boot.tsx' },
         output: {
@@ -31,10 +31,8 @@ function getClientConfig(env) {
                         ? [
                             'style-loader',
                             {
-                                loader: 'typings-for-css-modules-loader',
-                                options: {
-                                    sourceMap: true, modules: true, namedExport: true, camelCase: 'dashesOnly', importLoaders: 2
-                                }
+                                loader: 'css-loader',
+                                options: { sourceMap: true,  importLoaders: 2 }
                             },
                             {
                                 loader: 'postcss-loader',
@@ -44,16 +42,8 @@ function getClientConfig(env) {
                         ]
                         : [
                             MiniCssExtractPlugin.loader,
-                            {
-                                loader: 'typings-for-css-modules-loader',
-                                options: {
-                                    sourceMap: true, minimize: true, modules: true, namedExport: true, camelCase: 'dashesOnly', importLoaders: 2
-                                }
-                            },
-                            {
-                                loader: 'postcss-loader',
-                                options: { sourceMap: true, plugins: () => [require('autoprefixer')()] }
-                            },
+                            { loader: 'css-loader', options: { importLoaders: 2 } },
+                            { loader: 'postcss-loader' },
                             { loader: 'resolve-url-loader', options: { sourceMap: true } }
                         ]
                 },
@@ -62,38 +52,29 @@ function getClientConfig(env) {
                     use: isDevBuild
                         ? [
                             'style-loader',
+                            'css-modules-typescript-loader',
                             {
-                                loader: 'typings-for-css-modules-loader',
-                                options: {
-                                    sourceMap: true, modules: true, namedExport: true, camelCase: 'dashesOnly', importLoaders: 4
-                                }
-                            },
-                            { loader: 'postcss-loader',options: { sourceMap: true } },
-                            { loader: 'resolve-url-loader', options: { sourceMap: true } },
-                            { loader: 'sass-loader', options: { sourceMap: true } },
-                            {
-                                loader: 'sass-resources-loader',
-                                options: {
-                                    resources: './ClientApp/styles/sass-resources.scss'
-                                }
-                            }
-                        ]
-                        : [
-                            MiniCssExtractPlugin.loader,
-                            {
-                                loader: 'typings-for-css-modules-loader',
-                                options: {
-                                    sourceMap: true, minimize: true, modules: true, namedExport: true, camelCase: 'dashesOnly', importLoaders: 4
-                                }
+                                loader: 'css-loader',
+                                options: { sourceMap: true, camelCase: 'dashesOnly', importLoaders: 4 }
                             },
                             { loader: 'postcss-loader', options: { sourceMap: true } },
                             { loader: 'resolve-url-loader', options: { sourceMap: true } },
                             { loader: 'sass-loader', options: { sourceMap: true } },
                             {
                                 loader: 'sass-resources-loader',
-                                options: {
-                                    resources: './ClientApp/styles/sass-resources.scss'
-                                }
+                                options: { resources: './ClientApp/styles/sass-resources.scss' }
+                            }
+                        ]
+                        : [
+                            MiniCssExtractPlugin.loader,
+                            'css-modules-typescript-loader',
+                            { loader: 'css-loader', options: { camelCase: 'dashesOnly', importLoaders: 4 } },
+                            { loader: 'postcss-loader' },
+                            { loader: 'resolve-url-loader' },
+                            { loader: 'sass-loader' },
+                            {
+                                loader: 'sass-resources-loader',
+                                options: { resources: './ClientApp/styles/sass-resources.scss' }
                             }
                         ]
                 }
@@ -136,8 +117,7 @@ function getClientConfig(env) {
                             ecma: 6
                         },
                         cache: true,
-                        parallel: true,
-                        sourceMap: true
+                        parallel: true
                     }),
                     new OptimizeCSSAssetsPlugin({})
                 ]

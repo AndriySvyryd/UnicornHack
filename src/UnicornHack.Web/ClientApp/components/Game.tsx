@@ -11,7 +11,6 @@ import { StatusBar } from './StatusBar';
 import { Inventory } from './Inventory';
 import { AbilityBar } from './AbilityBar';
 import { AbilitySelection } from './AbilitySelection';
-import { PropertyList } from './PropertyList';
 import { MapDisplay } from './MapDisplay';
 import { GameLog } from './GameLog';
 import { MapStyles } from '../styles/MapStyles';
@@ -219,28 +218,26 @@ export class Game extends React.Component<IGameProps, {}> {
         const firstTimeLoading = level.depth === -1;
 
         return (
-            <div className="row">
+            <div className="game">
                 <div style={{
                     display: firstTimeLoading ? 'block' : 'none'
                 }}>Loading, please wait...</div>
-                <div className="col-9" style={{
+                <div className="game__map" style={{
                     display: firstTimeLoading ? 'none' : 'block'
                 }}>
                     <HotKeys keyMap={this.keyMap} handlers={this.keyHandlers}>
                         <MapDisplay level={level} styles={this.styles} performAction={this.performAction} />
-                        <StatusBar player={this.player}
-                            levelName={level.branchName} levelDepth={level.depth} />
                         <GameLog messages={this.player.log} />
                     </HotKeys>
                 </div>
 
-                <div className="col-3" style={{
+                <div className="game__sidepanel" style={{
                     display: firstTimeLoading ? 'none' : 'block'
                 }}>
                     <HotKeys keyMap={this.keyMap} handlers={this.keyHandlers}>
-                        <Inventory items={this.player.inventory} performAction={this.performAction} />
+                        <StatusBar player={this.player} levelName={level.branchName} levelDepth={level.depth} />
                         <AbilityBar abilities={this.player.abilities} player={this.player} performAction={this.performAction} queryGame={this.queryGame} />
-                        <PropertyList player={this.player} />
+                        <Inventory items={this.player.inventory} performAction={this.performAction} />
                     </HotKeys>
                     <Chat sendMessage={this.sendMessage} messages={this.messages} />
                 </div>
