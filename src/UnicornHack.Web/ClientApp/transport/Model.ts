@@ -38,11 +38,11 @@ export class Player {
     }
 
     private static isGreater(race1: PlayerRace, race2: PlayerRace): boolean {
-        if (race1.xPLevel > race2.xPLevel) {
+        if (race1.xpLevel > race2.xpLevel) {
             return true;
         }
 
-        if (race1.xPLevel < race2.xPLevel) {
+        if (race1.xpLevel < race2.xpLevel) {
             return false;
         }
 
@@ -853,7 +853,8 @@ export class LogEntry {
 export class PlayerRace {
     @observable id: number = 0;
     @observable name: string = '';
-    @observable xPLevel: number = 0;
+    @observable shortName: string = '';
+    @observable xpLevel: number = 0;
 
     @action
     static expandToCollection(compactPlayerRace: any[], collection: Map<string, PlayerRace>, parentState: EntityState) {
@@ -892,7 +893,8 @@ export class PlayerRace {
         const playerRace = new PlayerRace();
         playerRace.id = compactPlayerRace[i++];
         playerRace.name = compactPlayerRace[i++];
-        playerRace.xPLevel = compactPlayerRace[i++];
+        playerRace.shortName = compactPlayerRace[i++];
+        playerRace.xpLevel = compactPlayerRace[i++];
 
         return playerRace;
     }
@@ -907,7 +909,10 @@ export class PlayerRace {
                     this.name = compactPlayerRace[i++];
                     break;
                 case 2:
-                    this.xPLevel = compactPlayerRace[i++];
+                    this.shortName = compactPlayerRace[i++];
+                    break;
+                case 3:
+                    this.xpLevel = compactPlayerRace[i++];
                     break;
                 default:
                     return i - 1;

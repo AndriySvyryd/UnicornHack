@@ -1,6 +1,4 @@
-import 'bootstrap-loader';
 import './styles/site.scss';
-import 'url-search-params-polyfill';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as mobx from 'mobx';

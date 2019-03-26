@@ -87,9 +87,9 @@ class InputForm extends React.Component<IInputFormProps, {}> {
 
     render() {
         return (
-            <form className="form-inline" onSubmit={this.handleSubmit} autoComplete="off">
-                <input className="form-control chat__input" type="text" value={this.outgoingMessage} onChange={this.handleChange} />
-                <input className="btn btn-secondary" type="submit" value="Send" />
+            <form className="chat__form" onSubmit={this.handleSubmit} autoComplete="off">
+                <input className="chat__input" type="text" value={this.outgoingMessage} onChange={this.handleChange} />
+                <input className="chat__send" type="submit" value="Send" />
             </form>
         );
     }

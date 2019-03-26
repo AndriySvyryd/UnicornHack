@@ -81,8 +81,11 @@ export class ItemStyles {
     constructor() {
         this[ItemType.Coin] = { char: '$', style: { color: 'gold' } };
 
+        this[ItemType.AccessoryNeck] = { char: '"', style: { color: 'limegreen' } };
+
         const armor = { char: '(', style: { color: 'teal' }  };
         this[ItemType.AccessoryBack] = armor;
+        this[ItemType.Shield] = armor;
         this[ItemType.ArmorTorso] = armor;
         this[ItemType.ArmorFeet] = armor;
         this[ItemType.ArmorHands] = armor;

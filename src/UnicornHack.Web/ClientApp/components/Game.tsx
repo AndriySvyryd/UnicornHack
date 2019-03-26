@@ -218,31 +218,33 @@ export class Game extends React.Component<IGameProps, {}> {
         const firstTimeLoading = level.depth === -1;
 
         return (
-            <div className="game">
+            <div>
                 <div style={{
                     display: firstTimeLoading ? 'block' : 'none'
                 }}>Loading, please wait...</div>
-                <div className="game__map" style={{
-                    display: firstTimeLoading ? 'none' : 'block'
+                <div className="game" style={{
+                    display: firstTimeLoading ? 'none' : 'flex'
                 }}>
-                    <HotKeys keyMap={this.keyMap} handlers={this.keyHandlers}>
-                        <MapDisplay level={level} styles={this.styles} performAction={this.performAction} />
-                        <GameLog messages={this.player.log} />
-                    </HotKeys>
-                </div>
+                    <div className="game__map">
+                        <HotKeys keyMap={this.keyMap} handlers={this.keyHandlers}>
+                            <MapDisplay level={level} styles={this.styles} performAction={this.performAction} />
+                            <GameLog messages={this.player.log} />
+                        </HotKeys>
+                    </div>
 
-                <div className="game__sidepanel" style={{
-                    display: firstTimeLoading ? 'none' : 'block'
-                }}>
-                    <HotKeys keyMap={this.keyMap} handlers={this.keyHandlers}>
-                        <StatusBar player={this.player} levelName={level.branchName} levelDepth={level.depth} />
-                        <AbilityBar abilities={this.player.abilities} player={this.player} performAction={this.performAction} queryGame={this.queryGame} />
-                        <Inventory items={this.player.inventory} performAction={this.performAction} />
-                    </HotKeys>
-                    <Chat sendMessage={this.sendMessage} messages={this.messages} />
+                    <div className="game__sidepanel">
+                        <HotKeys keyMap={this.keyMap} handlers={this.keyHandlers}>
+                            <div className="game__sidepanelContainer">
+                                <StatusBar player={this.player} levelName={level.branchName} levelDepth={level.depth} />
+                                <AbilityBar abilities={this.player.abilities} player={this.player}
+                                    performAction={this.performAction} queryGame={this.queryGame} />
+                                <Inventory items={this.player.inventory} performAction={this.performAction} />
+                            </div>
+                        </HotKeys>
+                        <Chat sendMessage={this.sendMessage} messages={this.messages} />
+                    </div>
+                    <AbilitySelection data={this.dialogData} performAction={this.performAction} queryGame={this.queryGame} />
                 </div>
-
-                <AbilitySelection data={this.dialogData} performAction={this.performAction} queryGame={this.queryGame} />
             </div>
         );
     }

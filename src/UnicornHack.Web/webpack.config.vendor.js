@@ -44,9 +44,8 @@ function getClientConfig(env) {
         },
         entry: {
             vendor: [
-                '@aspnet/signalr', '@aspnet/signalr-protocol-msgpack', 'buffer', 'bootstrap-loader',
-                'event-source-polyfill', 'isomorphic-fetch', 'lodash', 'mobx', 'mobx-react', 'react', 'react-dom',
-                'react-hotkeys', 'mousetrap', 'url-search-params-polyfill'
+                '@aspnet/signalr', '@aspnet/signalr-protocol-msgpack', 'buffer', 'lodash',
+                'mobx', 'mobx-react', 'react', 'react-dom', 'react-hotkeys', 'mousetrap'
             ]
         },
         plugins: [

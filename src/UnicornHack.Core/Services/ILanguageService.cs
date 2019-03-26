@@ -1,6 +1,7 @@
 using UnicornHack.Primitives;
 using UnicornHack.Services.LogEvents;
 using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Items;
 
 namespace UnicornHack.Services
@@ -9,6 +10,7 @@ namespace UnicornHack.Services
     {
         string GetPropertyString(string propertyName, bool abbreviate);
         string GetString(ItemComponent item, int quantity, SenseType sense);
+        string GetString(RaceComponent race, bool abbreviate);
         string GetString(AbilityComponent ability);
         string GetString(EquipmentSlot slot, GameEntity actorEntity, bool abbreviate);
         string GetString(in ItemPickUpEvent @event);

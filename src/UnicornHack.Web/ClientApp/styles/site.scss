@@ -1,12 +1,14 @@
 @import "node_modules/bootstrap/scss/utilities/_text";
+@import "node_modules/bootstrap/scss/_reboot";
+@import "node_modules/bootstrap/scss/_progress";
+@import "node_modules/bootstrap/scss/_buttons";
+@import "node_modules/bootstrap/scss/_code";
+@import "node_modules/bootstrap/scss/_forms";
+@import "node_modules/bootstrap/scss/_type";
 
 @font-face {
     font-family: DejaVuSansMono;
     src: url('../fonts/DejaVuSansMono.woff2') format('woff2'), url('../fonts/DejaVuSansMono.woff') format('woff'), url('../fonts/DejaVuSansMono.ttf') format('truetype');
-}
-
-html {
-    font-size: 14px;
 }
 
 body {
@@ -65,6 +67,10 @@ input::placeholder {
     @include media-breakpoint-up(xl) {
         @include make-col(9);
     }
+
+    @include media-breakpoint-up(xxl) {
+        @include make-col(6);
+    }
 }
 
 .game__sidepanel {
@@ -77,12 +83,22 @@ input::placeholder {
     @include media-breakpoint-up(xl) {
         @include make-col(3);
     }
+
+    @include media-breakpoint-up(xxl) {
+        @include make-col(6);
+    }
+}
+
+.game__sidepanelContainer {
+    @include make-row();
+    margin: 0;
 }
 
 .mapContainer {
     @extend .frame;
     overflow: hidden;
     height: 640px;
+    order: 0;
 }
 
 .map {
@@ -119,11 +135,27 @@ input::placeholder {
     @extend .frame;
 }
 
+.sidepanel {
+    @include make-col-ready();
+
+    @include media-breakpoint-down(xxl) {
+        @include make-col(12);
+    }
+
+    @include media-breakpoint-up(xxl) {
+        @include make-col(6);
+    }
+}
+
 .chat {
+    @extend .sidepanel;
     @extend .frame;
+    @include make-row();
+    margin: 0;
 }
 
 .chat__messages {
+    @include make-col(12);
     list-style-type: none;
     padding: 10px;
     max-height: 10rem;
@@ -131,31 +163,119 @@ input::placeholder {
     padding: 0;
 }
 
+.chat__form {
+    @extend .form-inline;
+    @include make-col(12);
+}
+
 .chat__input {
+    @extend .form-control;
     @include make-col(10);
+}
+
+.chat__send {
+    @extend .btn;
+    @extend .btn-secondary;
+    @include make-col(2);
+}
+
+.statusBar__wrapper {
+    @extend .sidepanel;
+    @extend .frame;
 }
 
 .statusBar {
     @include make-row();
 }
 
-.statusBar__wrapper {
-    @extend .frame;
-}
-
-.statusBar__row {
+.statusBar__element {
     @include make-col-ready();
 
     @include media-breakpoint-down(xl) {
-        @include make-col(2);
+        @include make-col(4);
     }
 
     @include media-breakpoint-up(xl) {
-        @include make-col(6);
+        @include make-col(12);
     }
 }
 
+.progress-bar-absolute {
+    @extend .progress-bar;
+    position: absolute;
+    top: 0;
+    left: 5px;
+    bottom: 0;
+    right: 5px;
+}
+
+.statusBar__maxHp {
+    @extend .progress;
+    background-color: $highlight-bg;
+}
+
+.statusBar__recentHp {
+    @extend .progress-bar-absolute;
+    background-color: greenyellow;
+}
+
+.statusBar__currentHp {
+    @extend .progress-bar-absolute;
+    background-color: green;
+}
+
+.statusBar__currentHp_warning {
+    @extend .progress-bar-absolute;
+    background-color: yellow;
+}
+
+.statusBar__currentHp_critical {
+    @extend .progress-bar-absolute;
+    background-color: red;
+}
+
+.statusBar__hpLabel {
+    @extend .progress-bar-absolute;
+    background-color: transparent;
+}
+
+.statusBar__maxEp {
+    @extend .progress;
+    background-color: $highlight-bg;
+}
+
+.statusBar__currentEp {
+    @extend .progress-bar-absolute;
+    background-color: blue;
+}
+
+.statusBar__reservedEp {
+    @extend .progress-bar-absolute;
+    background-color: darkslategrey;
+}
+
+.statusBar__epLabel {
+    @extend .progress-bar-absolute;
+    background-color: transparent;
+}
+
+.statusBar__nextLevelXp {
+    @extend .progress;
+    background-color: $highlight-bg;
+}
+
+.statusBar__currentXp {
+    @extend .progress-bar-absolute;
+    background-color: teal;
+}
+
+.statusBar__xpLabel {
+    @extend .progress-bar-absolute;
+    background-color: transparent;
+}
+
 .abilityBar {
+    @extend .sidepanel;
     @extend .frame;
 }
 
@@ -192,6 +312,7 @@ input::placeholder {
 }
 
 .inventory {
+    @extend .sidepanel;
     @extend .frame;
 }
 

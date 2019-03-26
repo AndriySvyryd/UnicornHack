@@ -17,10 +17,11 @@ namespace UnicornHack.Hubs
                 {
                     var race = raceEntity.Race;
                     properties = state == null
-                        ? new List<object>(5)
-                        : new List<object>(6) {(int)state};
+                        ? new List<object>(4)
+                        : new List<object>(5) {(int)state};
                     properties.Add(raceEntity.Id);
-                    properties.Add(race.TemplateName);
+                    properties.Add(context.Services.Language.GetString(race, abbreviate: false));
+                    properties.Add(context.Services.Language.GetString(race, abbreviate: true));
                     properties.Add(race.Level);
                     return properties;
                 }
@@ -48,7 +49,15 @@ namespace UnicornHack.Hubs
                         if (name.IsModified)
                         {
                             properties.Add(i);
-                            properties.Add(race.TemplateName);
+                            properties.Add(context.Services.Language.GetString(race, abbreviate: false));
+
+                            i++;
+                            properties.Add(i);
+                            properties.Add(context.Services.Language.GetString(race, abbreviate: true));
+                        }
+                        else
+                        {
+                            i++;
                         }
 
                         i++;

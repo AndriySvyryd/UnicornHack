@@ -65,6 +65,11 @@ namespace UnicornHack.Services.English
         public virtual string GetString(ItemComponent item, int quantity, SenseType sense)
             => (sense & SenseType.Sight) == 0 ? "something" : GetString(item, quantity);
 
+        public string GetString(RaceComponent race, bool abbreviate)
+            => abbreviate
+                ? race.TemplateName.Substring(0, 2)
+                : race.TemplateName;
+
         public virtual string GetString(ItemComponent item, int quantity, bool definiteDeterminer = false)
         {
             var itemName = item.TemplateName + (item.Name == null ? "" : " named \"" + item.Name + "\"");
