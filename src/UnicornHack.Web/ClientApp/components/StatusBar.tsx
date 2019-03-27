@@ -29,10 +29,10 @@ export class StatusBar extends React.Component<IStatusBarProps, {}> {
                     <div className="statusBar__recentHp" role="progressbar" aria-valuenow={player.hp} aria-valuemin={0}
                         aria-valuemax={player.maxHp} style={{ maxWidth: (100 * player.hp / player.maxHp) + '%' }}>
                     </div>
-                    <div className={currentHpClass} role="progressbar" aria-label="HP" aria-valuenow={player.hp} aria-valuemin={0}
+                    <div className={currentHpClass} role="progressbar" aria-labelledby="hpLabel" aria-valuenow={player.hp} aria-valuemin={0}
                         aria-valuemax={player.maxHp} style={{ maxWidth: (100 * player.hp / player.maxHp) + '%' }}>
                     </div>
-                    <div className="statusBar__hpLabel">
+                    <div className="statusBar__hpLabel" id="hpLabel">
                         HP: {player.hp}/{player.maxHp}
                     </div>
                 </div>
@@ -42,20 +42,20 @@ export class StatusBar extends React.Component<IStatusBarProps, {}> {
                     <div className="statusBar__reservedEp" role="progressbar" aria-valuenow={player.ep + player.reservedEp} aria-valuemin={0}
                         aria-valuemax={player.maxEp} style={{ maxWidth: (100 * (player.ep + player.reservedEp) / player.maxEp) + '%' }}>
                     </div>
-                    <div className="statusBar__currentEp" role="progressbar" aria-label="EP" aria-valuenow={player.ep} aria-valuemin={0}
+                    <div className="statusBar__currentEp" role="progressbar" aria-labelledby="epLabel" aria-valuenow={player.ep} aria-valuemin={0}
                         aria-valuemax={player.maxEp} style={{ maxWidth: (100 * player.ep / player.maxEp) + '%' }}>
                     </div>
-                    <div className="statusBar__epLabel">
+                    <div className="statusBar__epLabel" id="epLabel">
                         {ep}
                     </div>
                 </div>
             </div>
             <div className="statusBar__element">
                 <div className="statusBar__nextLevelXp">
-                    <div className="statusBar__currentXp" role="progressbar" aria-label="XP" aria-valuenow={player.xP} aria-valuemin={0}
+                    <div className="statusBar__currentXp" role="progressbar" aria-labelledby="xpLabel" aria-valuenow={player.xP} aria-valuemin={0}
                         aria-valuemax={player.nextLevelXP} style={{ maxWidth: (100 * player.xP / player.nextLevelXP) + '%' }}>
                     </div>
-                    <div className="statusBar__xpLabel">
+                    <div className="statusBar__xpLabel" id="xpLabel">
                         XP: {player.xP}/{player.nextLevelXP}
                     </div>
                 </div>

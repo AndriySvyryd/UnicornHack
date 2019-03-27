@@ -55,6 +55,13 @@ input::placeholder {
 
 .game {
     @include make-row();
+    padding: 5px 0 5px 5px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
 }
 
 .game__map {
@@ -87,9 +94,7 @@ input::placeholder {
     @include media-breakpoint-up(xxl) {
         @include make-col(6);
     }
-}
 
-.game__sidepanelContainer {
     @include make-row();
     margin: 0;
 }
@@ -150,6 +155,11 @@ input::placeholder {
 .chat {
     @extend .sidepanel;
     @extend .frame;
+
+    @include media-breakpoint-up(xxl) {
+        @include make-col(12);
+    }
+
     @include make-row();
     margin: 0;
 }

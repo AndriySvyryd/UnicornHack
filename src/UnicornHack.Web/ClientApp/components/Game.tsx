@@ -1,11 +1,9 @@
 ﻿import * as React from 'react';
 import * as signalR from '@aspnet/signalr';
 import { MessagePackHubProtocol } from '@aspnet/signalr-protocol-msgpack';
-import * as Mousetrap from 'mousetrap';
-import 'mousetrap/plugins/record/mousetrap-record';
 import { action, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { HotKeys } from 'react-hotkeys';
+import { HotKeys, IgnoreKeys } from 'react-hotkeys';
 import { Chat, IMessage, MessageType } from './Chat';
 import { StatusBar } from './StatusBar';
 import { Inventory } from './Inventory';
@@ -36,6 +34,7 @@ export class Game extends React.Component<IGameProps, {}> {
     keyHandlers: any;
     connection: signalR.HubConnection;
     styles: MapStyles = new MapStyles();
+    hotKeyContainer: React.RefObject<HTMLInputElement>;
 
     constructor(props: IGameProps) {
         super(props);
@@ -60,19 +59,12 @@ export class Game extends React.Component<IGameProps, {}> {
         connection.on('ReceiveState', this.processServerState);
         connection.on('ReceiveUIRequest', this.handleUIRequest);
 
-        connection.start()
-            .then(() => { this.getFullState() }) // TODO: wait for mount
-            .catch(e => this.addError((e || '').toString()));
-
         this.connection = connection;
 
         this.player.name = props.playerName;
         new PlayerRace().addTo(this.player.races);
 
-        Mousetrap.addKeycodes({
-            12: 'numpad5',
-            144: 'numlock'
-        });
+        // https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values
         this.keyMap = {
             'moveNorth': ['up', '8', 'k'],
             'moveEast': ['right', '6', 'l'],
@@ -82,67 +74,67 @@ export class Game extends React.Component<IGameProps, {}> {
             'moveSouthEast': ['pagedown', '3', 'n'],
             'moveSouthWest': ['end', '1', 'b'],
             'moveNorthWest': ['home', '7', 'y'],
-            'moveUp': 'shift+,',
-            'moveDown': 'shift+.',
-            'wait': ['numpad5', '5', '.'],
+            'wait': ['Clear', '5', '.'],
+            'clear': 'Escape'
         };
 
         this.keyHandlers = {
-            'moveNorth': (event: ExtendedKeyboardEvent) => {
+            'moveNorth': (event: KeyboardEvent) => {
                 this.performAction(PlayerAction.MoveOneCell, Direction.North);
                 event.preventDefault();
             },
-            'moveEast': (event: ExtendedKeyboardEvent) => {
+            'moveEast': (event: KeyboardEvent) => {
                 this.performAction(PlayerAction.MoveOneCell, Direction.East);
                 event.preventDefault();
             },
-            'moveSouth': (event: ExtendedKeyboardEvent) => {
+            'moveSouth': (event: KeyboardEvent) => {
                 this.performAction(PlayerAction.MoveOneCell, Direction.South);
                 event.preventDefault();
             },
-            'moveWest': (event: ExtendedKeyboardEvent) => {
+            'moveWest': (event: KeyboardEvent) => {
                 this.performAction(PlayerAction.MoveOneCell, Direction.West);
                 event.preventDefault();
             },
-            'moveNorthEast': (event: ExtendedKeyboardEvent) => {
+            'moveNorthEast': (event: KeyboardEvent) => {
                 this.performAction(PlayerAction.MoveOneCell, Direction.Northeast);
                 event.preventDefault();
             },
-            'moveSouthEast': (event: ExtendedKeyboardEvent) => {
+            'moveSouthEast': (event: KeyboardEvent) => {
                 this.performAction(PlayerAction.MoveOneCell, Direction.Southeast);
                 event.preventDefault();
             },
-            'moveSouthWest': (event: ExtendedKeyboardEvent) => {
+            'moveSouthWest': (event: KeyboardEvent) => {
                 this.performAction(PlayerAction.MoveOneCell, Direction.Southwest);
                 event.preventDefault();
             },
-            'moveNorthWest': (event: ExtendedKeyboardEvent) => {
+            'moveNorthWest': (event: KeyboardEvent) => {
                 this.performAction(PlayerAction.MoveOneCell, Direction.Northwest);
                 event.preventDefault();
             },
-            'moveUp': (event: ExtendedKeyboardEvent) => {
-                this.performAction(PlayerAction.MoveOneCell, Direction.Up);
-                event.preventDefault();
-            },
-            'moveDown': (event: ExtendedKeyboardEvent) => {
-                this.performAction(PlayerAction.MoveOneCell, Direction.Down);
-                event.preventDefault();
-            },
-            'wait': (event: ExtendedKeyboardEvent) => {
+            'wait': (event: KeyboardEvent) => {
                 this.performAction(PlayerAction.Wait);
                 event.preventDefault();
             },
-            'record': (event: ExtendedKeyboardEvent) => this.recordKey()
+            'clear': (event: KeyboardEvent) => {
+                this.queryGame(GameQueryType.Clear);
+                event.preventDefault();
+            }
         };
 
         this.queryGame = this.queryGame.bind(this);
         this.performAction = this.performAction.bind(this);
         this.sendMessage = this.sendMessage.bind(this);
+        this.hotKeyContainer = React.createRef();
     }
 
-    recordKey() {
-        console.log('Recording key sequence');
-        Mousetrap.record(keys => console.log(keys.join(' ')));
+    componentDidMount() {
+        this.connection.start()
+            .then(() => { this.getFullState() })
+            .catch(e => this.addError((e || '').toString()));
+
+        if (this.hotKeyContainer.current !== null) {
+            this.hotKeyContainer.current.focus();
+        }
     }
 
     private getFullState() {
@@ -168,6 +160,9 @@ export class Game extends React.Component<IGameProps, {}> {
     private queryGame(queryType: GameQueryType, ...args: Array<number>) {
         this.connection.invoke('QueryGame', this.props.playerName, queryType, args)
             .catch(e => this.addError((e || '').toString()));
+        if (queryType === GameQueryType.Clear && this.hotKeyContainer.current !== null) {
+            this.hotKeyContainer.current.focus();
+        }
     }
 
     @action.bound
@@ -182,6 +177,10 @@ export class Game extends React.Component<IGameProps, {}> {
             this.waiting = true;
             this.connection.invoke('PerformAction', this.props.playerName, action, target, target2)
                 .catch(e => this.addError((e || '').toString()));
+        }
+
+        if (this.hotKeyContainer.current !== null) {
+            this.hotKeyContainer.current.focus();
         }
     }
 
@@ -218,7 +217,7 @@ export class Game extends React.Component<IGameProps, {}> {
         const firstTimeLoading = level.depth === -1;
 
         return (
-            <div>
+            <HotKeys innerRef={this.hotKeyContainer} keyMap={this.keyMap} handlers={this.keyHandlers}>
                 <div style={{
                     display: firstTimeLoading ? 'block' : 'none'
                 }}>Loading, please wait...</div>
@@ -226,26 +225,23 @@ export class Game extends React.Component<IGameProps, {}> {
                     display: firstTimeLoading ? 'none' : 'flex'
                 }}>
                     <div className="game__map">
-                        <HotKeys keyMap={this.keyMap} handlers={this.keyHandlers}>
-                            <MapDisplay level={level} styles={this.styles} performAction={this.performAction} />
-                            <GameLog messages={this.player.log} />
-                        </HotKeys>
+                        <MapDisplay level={level} styles={this.styles} performAction={this.performAction} />
+                        <GameLog messages={this.player.log} />
                     </div>
 
                     <div className="game__sidepanel">
-                        <HotKeys keyMap={this.keyMap} handlers={this.keyHandlers}>
-                            <div className="game__sidepanelContainer">
-                                <StatusBar player={this.player} levelName={level.branchName} levelDepth={level.depth} />
-                                <AbilityBar abilities={this.player.abilities} player={this.player}
-                                    performAction={this.performAction} queryGame={this.queryGame} />
-                                <Inventory items={this.player.inventory} performAction={this.performAction} />
-                            </div>
-                        </HotKeys>
+                        <StatusBar player={this.player} levelName={level.branchName} levelDepth={level.depth} />
+                        <AbilityBar abilities={this.player.abilities} player={this.player}
+                            performAction={this.performAction} queryGame={this.queryGame} />
+                        <Inventory items={this.player.inventory} performAction={this.performAction} />
                         <Chat sendMessage={this.sendMessage} messages={this.messages} />
                     </div>
-                    <AbilitySelection data={this.dialogData} performAction={this.performAction} queryGame={this.queryGame} />
+
+                    <IgnoreKeys only='' except='Escape'>
+                        <AbilitySelection data={this.dialogData} performAction={this.performAction} queryGame={this.queryGame} />
+                    </IgnoreKeys>
                 </div>
-            </div>
+            </HotKeys>
         );
     }
 }

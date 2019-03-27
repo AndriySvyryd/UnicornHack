@@ -36,8 +36,9 @@ interface IAbilityBarProps {
 @observer
 export class AbilityLine extends React.Component<IAbilityProps, {}> {
     render() {
+        const showAbilities: (() => void) = () => this.props.queryGame(GameQueryType.SlottableAbilities, this.props.slot);
         const slot = <a tabIndex={(this.props.slot + 1) * 2}
-            onClick={() => this.props.queryGame(GameQueryType.SlottableAbilities, this.props.slot)}>
+            onClick={showAbilities} onKeyPress={(e) => { if (e.key == 'Enter') { showAbilities() } }}>
             <span className="abilityBar__slot">{this.props.slot === -1 ? "D" : this.props.slot + 1}:</span></a>;
 
         // TODO: Activate targeting mode for targetted abilities        
@@ -45,13 +46,12 @@ export class AbilityLine extends React.Component<IAbilityProps, {}> {
         var ability = <span>{this.props.ability === null ? "" : this.props.ability.name}</span>;
         if (this.props.ability !== null
             && (this.props.ability.activation & ActivationType.ManualActivation) !== 0) {
-
             if (this.props.ability.cooldownTick == null
                 && this.props.ability.cooldownXpLeft == null) {
-
-                ability = <a tabIndex={(this.props.slot + 1) * 2 + 1}
-                    onClick={() => this.props.performAction(PlayerAction.UseAbilitySlot, this.props.slot, null)
-                    }>{ability}</a>;
+                const useAbilitySlot: (() => void) = () => this.props.performAction(PlayerAction.UseAbilitySlot, this.props.slot, null);
+                ability = <a tabIndex={(this.props.slot + 1) * 2 + 1} onClick={useAbilitySlot}
+                    onKeyPress={(e) => { if (e.key == 'Enter') { useAbilitySlot() } }}
+                >{ability}</a>;
             } else {
                 var timeout = "[";
                 if (this.props.ability.cooldownTick != null) {

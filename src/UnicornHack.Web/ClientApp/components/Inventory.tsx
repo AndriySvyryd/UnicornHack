@@ -23,10 +23,11 @@ class InventoryLine extends React.Component<IItemProps, {}> {
     render() {
         const itemLine: any[] = [];
         if (this.props.item.equippedSlot !== null) {
+            const unequip: (() => void) = () =>
+                this.props.performAction(PlayerAction.UnequipItem, this.props.item.id, null);
             itemLine.push(' [');
-            itemLine.push(<a tabIndex={0} key="eqipped" onClick={
-                () => this.props.performAction(PlayerAction.UnequipItem, this.props.item.id, null)
-            }>{this.props.item.equippedSlot}</a>);
+            itemLine.push(<a tabIndex={0} key="eqipped" onClick={unequip}
+                onKeyPress={(e) => { if (e.key == 'Enter') { unequip() } }}>{this.props.item.equippedSlot}</a>);
             itemLine.push('] ');
         } else if (this.props.item.equippableSlots.size !== 0) {
             itemLine.push(' (');
@@ -37,18 +38,17 @@ class InventoryLine extends React.Component<IItemProps, {}> {
                     itemLine.push(' ');
                 }
                 first = false;
+                const equip: (() => void) = () => this.props.performAction(PlayerAction.EquipItem, this.props.item.id, s.id);
                 itemLine.push(
-                    <a tabIndex={0} key={s.id} onClick={
-                        () => this.props.performAction(PlayerAction.EquipItem, this.props.item.id, s.id)
-                    }>{s.name}</a>);
+                    <a tabIndex={0} key={s.id} onClick={equip} onKeyPress={(e) => { if (e.key == 'Enter') { equip() } }}
+                    >{s.name}</a>);
             });
             itemLine.push(')');
         }
 
+        const drop: (() => void) = () => this.props.performAction(PlayerAction.DropItem, this.props.item.id, null);
         itemLine.push(' ');
-        itemLine.push(<a tabIndex={0} key="drop" onClick={
-            () => this.props.performAction(PlayerAction.DropItem, this.props.item.id, null)
-        }>drop</a>);
+        itemLine.push(<a tabIndex={0} key="drop" onClick={drop} onKeyPress={(e) => { if (e.key == 'Enter') { drop() } }}>drop</a>);
 
         return (<div>{this.props.item.name}{itemLine}</div>);
     }
