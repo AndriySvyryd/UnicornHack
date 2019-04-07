@@ -22,12 +22,9 @@ namespace UnicornHack.Utils.DataLoading
         public T Find(string name)
         {
             EnsureLoaded();
-            if (NameLookup.TryGetValue(name, out var variant))
-            {
-                return variant;
-            }
-
-            return null;
+            return name != null && NameLookup.TryGetValue(name, out var variant)
+                ? variant
+                : null;
         }
 
         public IEnumerable<T> GetAll()

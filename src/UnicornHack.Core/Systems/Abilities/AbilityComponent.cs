@@ -1,7 +1,6 @@
 ﻿using System;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
-using UnicornHack.Systems.Time;
 
 namespace UnicornHack.Systems.Abilities
 {
@@ -11,7 +10,7 @@ namespace UnicornHack.Systems.Abilities
         public const string WeaponScalingDelay = "weaponScaling";
 
         private string _name;
-        private int? _level;
+        private int _level;
         private GameEntity _ownerEntity;
         private int? _ownerId;
         private ActivationType _activation;
@@ -44,7 +43,7 @@ namespace UnicornHack.Systems.Abilities
             set => SetWithNotify(value, ref _name);
         }
 
-        public int? Level
+        public int Level
         {
             get => _level;
             set => SetWithNotify(value, ref _level);

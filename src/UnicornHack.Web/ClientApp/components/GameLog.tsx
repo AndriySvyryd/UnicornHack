@@ -2,26 +2,12 @@
 import { observer } from 'mobx-react';
 import { LogEntry } from '../transport/Model';
 
-@observer
-export class GameLog extends React.Component<IGameLogProps, {}> {
-    render() {
-        const messages = Array.from(this.props.messages.values(),
-            l => <GameLogLine entry={l} key={l.id} />);
-        return (<div className="log">{messages}</div>);
-    }
-}
+export const GameLog = observer((props: IGameLogProps) => {
+    const messages = Array.from(props.messages.values(), l =>
+        <div key={l.id}>{l.message}</div>);
+    return <div className="gameLog" role="log">{messages}</div>;
+});
 
 interface IGameLogProps {
     messages: Map<string, LogEntry>
-}
-
-@observer
-export class GameLogLine extends React.Component<IGameLogLineProps, {}> {
-    render() {
-        return <div>{this.props.entry.message}</div>;
-    }
-}
-
-interface IGameLogLineProps {
-    entry: LogEntry
 }

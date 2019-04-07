@@ -1,33 +1,31 @@
 ﻿import * as React from 'React';
 import * as scss from '../styles/site.scss'
 import { observer } from 'mobx-react';
-import { Level, MapFeature, Tile } from '../transport/Model';
+import { Level, Tile } from '../transport/Model';
 import { MapStyles, ITileStyle } from '../styles/MapStyles';
 import { PlayerAction } from '../transport/PlayerAction';
 import { Direction } from 'ClientApp/transport/Direction';
+import { MapFeature } from 'ClientApp/transport/MapFeature';
+import { action } from 'mobx';
 
-@observer
-export class MapDisplay extends React.Component<IMapProps, {}> {
-    render() {
-        const level = this.props.level;
+export const MapDisplay = observer((props: IMapProps) => {
+    const level = props.level;
 
-        const map = new Array<React.ReactElement<any>>(level.height);
-        for (let y = 0; y < level.height; y++) {
-            map[y] = <MapRow
-                y={y}
-                row={level.tiles[y]}
-                styles={this.props.styles}
-                indexToPoint={level.indexToPoint}
-                performAction={this.props.performAction}
-                key={y} />;
-        }
-
-        return (
-            <div className="mapContainer" >
-                <div className="map">{map}</div>
-            </div>);
+    const map = new Array<React.ReactElement<any>>(level.height);
+    for (let y = 0; y < level.height; y++) {
+        map[y] = <MapRow
+            y={y}
+            row={level.tiles[y]}
+            styles={props.styles}
+            indexToPoint={level.indexToPoint}
+            performAction={props.performAction}
+            key={y} />;
     }
-}
+
+    return <div className="mapContainer">
+        <div className="map">{map}</div>
+    </div>;
+});
 
 interface IMapProps {
     level: Level;
@@ -35,20 +33,17 @@ interface IMapProps {
     performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
 }
 
-@observer
-class MapRow extends React.Component<IRowProps, {}> {
-    render() {
-        const row = this.props.row.map((t, x) =>
-            <MapTile
-                x={x} y={this.props.y}
-                tile={t}
-                styles={this.props.styles}
-                performAction={this.props.performAction}
-                key={x} />
-        );
-        return (<div className="map__row">{row}</div>);
-    }
-}
+const MapRow = observer((props: IRowProps) => {
+    const row = props.row.map((t, x) =>
+        <MapTile
+            x={x} y={props.y}
+            tile={t}
+            styles={props.styles}
+            performAction={props.performAction}
+            key={x} />
+    );
+    return <div className="map__row">{row}</div>;
+});
 
 interface IRowProps {
     y: number;
@@ -60,15 +55,63 @@ interface IRowProps {
 
 @observer
 class MapTile extends React.Component<ITileProps, {}> {
+    @action.bound
+    move(event: React.MouseEvent<HTMLDivElement>) {
+        this.props.performAction(PlayerAction.MoveToCell, Level.pack(this.props.x, this.props.y), null);
+    }
+
+    @action.bound
+    wait(event: React.MouseEvent<HTMLDivElement>) {
+        this.props.performAction(PlayerAction.Wait, null, null);
+    }
+
+    @action.bound
+    attack(event: React.MouseEvent<HTMLDivElement>) {
+        this.props.performAction(PlayerAction.UseAbilitySlot, null, Level.pack(this.props.x, this.props.y));
+    }
+
+    getBackground(heading: Direction, glyph: ITileStyle) {
+        var direction = '';
+        switch (heading) {
+            case Direction.East:
+                direction = '90deg';
+                break;
+            case Direction.Northeast:
+                direction = '45deg';
+                break;
+            case Direction.North:
+                direction = '0deg';
+                break;
+            case Direction.Northwest:
+                direction = '315deg';
+                break;
+            case Direction.West:
+                direction = '270deg';
+                break;
+            case Direction.Southwest:
+                direction = '225deg';
+                break;
+            case Direction.South:
+                direction = '180deg';
+                break;
+            case Direction.Southeast:
+                direction = '135deg';
+                break;
+        }
+
+        const mapBackground = scss.body_bg;
+        const highlightBackground = glyph.style.backgroundColor || scss.enemy_bg;
+        return `linear-gradient(${direction}, ${mapBackground} 25%, ${highlightBackground})`;
+    }
+
     render() {
         const tile = this.props.tile;
         const styles = this.props.styles;
         let glyph: ITileStyle;
-        let onClick: ((() => void) | undefined) =
-            () => this.props.performAction(PlayerAction.MoveToCell, Level.pack(this.props.x, this.props.y), null);
-        // TODO: Also change pointer
+        let onClick: undefined | ((event: React.MouseEvent<HTMLDivElement>) => void) = this.move;
 
-        var content: (JSX.Element | string) = "";
+        // TODO: Also change pointer
+        var content: (JSX.Element | string) = '';
         if (tile.actor != null) {
             glyph = styles.actors[tile.actor.baseName];
             if (glyph == undefined) {
@@ -82,47 +125,14 @@ class MapTile extends React.Component<ITileProps, {}> {
 
             // TODO: check position instead of base name
             if (tile.actor.baseName == 'player') {
-                onClick = () => this.props.performAction(
-                    PlayerAction.Wait, null, null);
+                onClick = this.wait;
             } else {
-                onClick = () => this.props.performAction(
-                    PlayerAction.UseAbilitySlot, null, Level.pack(this.props.x, this.props.y));
+                onClick = this.attack;
             }
-
-            var direction = '';
-            switch (tile.actor.heading) {
-                case Direction.East:
-                    direction = '90deg';
-                    break;
-                case Direction.Northeast:
-                    direction = '45deg';
-                    break;
-                case Direction.North:
-                    direction = '0deg';
-                    break;
-                case Direction.Northwest:
-                    direction = '315deg';
-                    break;
-                case Direction.West:
-                    direction = '270deg';
-                    break;
-                case Direction.Southwest:
-                    direction = '225deg';
-                    break;
-                case Direction.South:
-                    direction = '180deg';
-                    break;
-                case Direction.Southeast:
-                    direction = '135deg';
-                    break;
-            }
-
-            const mapBackground = scss.body_bg;
-            const highlightBackground = glyph.style.backgroundColor || scss.enemy_bg;
-            const inlineStyle = {
-                backgroundImage: `linear-gradient(${direction}, ${mapBackground} 25%, ${highlightBackground})`
-            };
-            content = <div onClick={onClick} style={inlineStyle}>{glyph.char}</div>;
+            
+            content = <div onClick={onClick} style={{ backgroundImage: this.getBackground(tile.actor.heading, glyph) }}>
+                {glyph.char}
+            </div>;
             onClick = undefined;
         } else if (tile.item != null) {
             const type = tile.item.type;
@@ -164,9 +174,9 @@ class MapTile extends React.Component<ITileProps, {}> {
         }
 
         const opacity = 0.3 + ((tile.visibility / 255) * 0.7);
-        return (<div className="map__tile" style={Object.assign({ opacity: opacity }, glyph.style)} onClick={onClick}>
+        return <div className="map__tile" style={Object.assign({ opacity: opacity }, glyph.style)} onClick={onClick}>
             {content}
-        </div>);
+        </div>;
     }
 }
 

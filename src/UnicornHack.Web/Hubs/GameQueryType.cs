@@ -3,6 +3,9 @@
     public enum GameQueryType
     {
         Clear,
-        SlottableAbilities
+        SlottableAbilities,
+        PlayerAttributes,
+        PlayerAdaptations,
+        PlayerSkills
     }
 }

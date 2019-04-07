@@ -5,6 +5,7 @@ import { action, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { HotKeys, IgnoreKeys } from 'react-hotkeys';
 import { Chat, IMessage, MessageType } from './Chat';
+import { CharacterScreen } from './CharacterScreen';
 import { StatusBar } from './StatusBar';
 import { Inventory } from './Inventory';
 import { AbilityBar } from './AbilityBar';
@@ -216,33 +217,39 @@ export class Game extends React.Component<IGameProps, {}> {
         const level = this.player.level;
         const firstTimeLoading = level.depth === -1;
 
-        return (
-            <HotKeys innerRef={this.hotKeyContainer} keyMap={this.keyMap} handlers={this.keyHandlers}>
-                <div style={{
-                    display: firstTimeLoading ? 'block' : 'none'
-                }}>Loading, please wait...</div>
-                <div className="game" style={{
-                    display: firstTimeLoading ? 'none' : 'flex'
-                }}>
-                    <div className="game__map">
-                        <MapDisplay level={level} styles={this.styles} performAction={this.performAction} />
-                        <GameLog messages={this.player.log} />
-                    </div>
+        return <HotKeys innerRef={this.hotKeyContainer} keyMap={this.keyMap} handlers={this.keyHandlers}>
+            <div aria-hidden={!firstTimeLoading} style={{
+                display: firstTimeLoading ? 'block' : 'none'
+            }}>Loading, please wait...</div>
+            <div className="game" aria-hidden={firstTimeLoading} style={{
+                display: firstTimeLoading ? 'none' : 'flex'
+            }}>
+                <div className="game__map">
+                    <MapDisplay level={level} styles={this.styles} performAction={this.performAction} />
+                    <GameLog messages={this.player.log} />
+                </div>
 
-                    <div className="game__sidepanel">
-                        <StatusBar player={this.player} levelName={level.branchName} levelDepth={level.depth} />
-                        <AbilityBar abilities={this.player.abilities} player={this.player}
-                            performAction={this.performAction} queryGame={this.queryGame} />
+                <div className="game__sidepanel">
+                    <div className="sidepanel">
+                        <StatusBar player={this.player} levelName={level.branchName} levelDepth={level.depth} queryGame={this.queryGame} />
+                    </div>
+                    <div className="sidepanel">
+                        <AbilityBar player={this.player} performAction={this.performAction} queryGame={this.queryGame} />
+                    </div>
+                    <div className="sidepanel">
                         <Inventory items={this.player.inventory} performAction={this.performAction} />
+                    </div>
+                    <div className="sidepanel">
                         <Chat sendMessage={this.sendMessage} messages={this.messages} />
                     </div>
-
-                    <IgnoreKeys only='' except='Escape'>
-                        <AbilitySelection data={this.dialogData} performAction={this.performAction} queryGame={this.queryGame} />
-                    </IgnoreKeys>
                 </div>
-            </HotKeys>
-        );
+
+                <IgnoreKeys only='' except='Escape'>
+                    <AbilitySelection data={this.dialogData} performAction={this.performAction} queryGame={this.queryGame} />
+                    <CharacterScreen data={this.dialogData} player={this.player} performAction={this.performAction} queryGame={this.queryGame} />
+                </IgnoreKeys>
+            </div>
+        </HotKeys>;
     }
 }
 

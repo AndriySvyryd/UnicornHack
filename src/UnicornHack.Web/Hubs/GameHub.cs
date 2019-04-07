@@ -60,6 +60,7 @@ namespace UnicornHack.Hubs
                 && player.Entity.Being.IsAlive)
             {
                 var manager = player.Entity.Manager;
+                var context = new SerializationContext(_dbContext, player.Entity, _gameServices);
                 switch (queryType)
                 {
                     case GameQueryType.SlottableAbilities:
@@ -68,7 +69,6 @@ namespace UnicornHack.Hubs
                         var abilities = new List<object>();
                         result.Add(abilities);
 
-                        var context = new SerializationContext(_dbContext, player.Entity, _gameServices);
                         foreach (var abilityEntity in manager.AbilitiesToAffectableRelationship[player.EntityId])
                         {
                             var ability = abilityEntity.Ability;
@@ -100,6 +100,15 @@ namespace UnicornHack.Hubs
                             }
                         }
 
+                        break;
+                    case GameQueryType.PlayerAttributes:
+                        result.Add(PlayerSnapshot.SerializeAttributes(player.Entity, context));
+                        break;
+                    case GameQueryType.PlayerAdaptations:
+                        result.Add(PlayerSnapshot.SerializeAdaptations(player.Entity, context));
+                        break;
+                    case GameQueryType.PlayerSkills:
+                        result.Add(PlayerSnapshot.SerializeSkills(player.Entity, context));
                         break;
                     default:
                         throw new InvalidOperationException($"Query type {intQueryType} not supported");

@@ -60,6 +60,7 @@ namespace UnicornHack.Generation
             ability.Delay = Delay;
             ability.EnergyPointCost = EnergyPointCost;
             ability.Template = this;
+            ability.Level = level;
 
             effectEntity.Ability = ability;
             AddEffects(Effects, ability, manager);

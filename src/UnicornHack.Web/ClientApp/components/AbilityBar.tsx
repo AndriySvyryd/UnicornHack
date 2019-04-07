@@ -4,42 +4,53 @@ import { Ability, Player } from '../transport/Model';
 import { PlayerAction } from '../transport/PlayerAction';
 import { GameQueryType } from '../transport/GameQueryType';
 import { ActivationType } from '../transport/ActivationType';
+import { action } from 'mobx';
 
-@observer
-export class AbilityBar extends React.Component<IAbilityBarProps, {}> {
-    render() {
-        const slots = new Array(9);
-        for (var i = 1; i < slots.length; i++) {
-            const slot = i - 1;
-            var slottedAbility = null;
-            for (var ability of this.props.abilities.values()) {
-                if (ability.slot === slot) {
-                    slottedAbility = ability;
-                    break;
-                }
+export const AbilityBar = observer((props: IAbilityBarProps) => {
+    const slots = new Array(9);
+    for (var i = 1; i < slots.length; i++) {
+        const slot = i - 1;
+        var slottedAbility = null;
+        for (var ability of props.player.abilities.values()) {
+            if (ability.slot === slot) {
+                slottedAbility = ability;
+                break;
             }
-
-            slots[i] = <AbilityLine ability={slottedAbility} player={this.props.player} slot={slot} key={i} performAction={this.props.performAction} queryGame={this.props.queryGame} />
         }
 
-        return (<div className="abilityBar">{slots}</div>);
+        slots[i] = <AbilityLine ability={slottedAbility} player={props.player} slot={slot} key={i}
+            performAction={props.performAction} queryGame={props.queryGame} />
     }
-}
+
+    return <div className="abilityBar">{slots}</div>;
+});
 
 interface IAbilityBarProps {
-    abilities: Map<string, Ability>;
     player: Player
     performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
     queryGame: (intQueryType: GameQueryType, ...args: Array<number>) => void;
 }
 
 @observer
-export class AbilityLine extends React.Component<IAbilityProps, {}> {
+class AbilityLine extends React.Component<IAbilityProps, {}> {
+    @action.bound
+    showAbilities(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
+        if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
+            this.props.queryGame(GameQueryType.SlottableAbilities, this.props.slot);
+        }
+    }
+
+    @action.bound
+    useAbilitySlot(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
+        if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
+            this.props.performAction(PlayerAction.UseAbilitySlot, this.props.slot, null);
+        }
+    }
+
     render() {
-        const showAbilities: (() => void) = () => this.props.queryGame(GameQueryType.SlottableAbilities, this.props.slot);
-        const slot = <a tabIndex={(this.props.slot + 1) * 2}
-            onClick={showAbilities} onKeyPress={(e) => { if (e.key == 'Enter') { showAbilities() } }}>
-            <span className="abilityBar__slot">{this.props.slot === -1 ? "D" : this.props.slot + 1}:</span></a>;
+        const slot = <a tabIndex={(this.props.slot + 1) * 2} onClick={this.showAbilities} onKeyPress={this.showAbilities}>
+            <span className="abilityBar__slot">{this.props.slot === -1 ? 'D' : this.props.slot + 1}:</span>
+        </a>;
 
         // TODO: Activate targeting mode for targetted abilities        
 
@@ -48,22 +59,20 @@ export class AbilityLine extends React.Component<IAbilityProps, {}> {
             && (this.props.ability.activation & ActivationType.ManualActivation) !== 0) {
             if (this.props.ability.cooldownTick == null
                 && this.props.ability.cooldownXpLeft == null) {
-                const useAbilitySlot: (() => void) = () => this.props.performAction(PlayerAction.UseAbilitySlot, this.props.slot, null);
-                ability = <a tabIndex={(this.props.slot + 1) * 2 + 1} onClick={useAbilitySlot}
-                    onKeyPress={(e) => { if (e.key == 'Enter') { useAbilitySlot() } }}
+                ability = <a tabIndex={(this.props.slot + 1) * 2 + 1} onClick={this.useAbilitySlot} onKeyPress={this.useAbilitySlot}
                 >{ability}</a>;
             } else {
-                var timeout = "[";
+                var timeout = '[';
                 if (this.props.ability.cooldownTick != null) {
-                    timeout += (this.props.ability.cooldownTick - this.props.player.currentTick) / 100.0 + " AUT";
+                    timeout += (this.props.ability.cooldownTick - this.props.player.currentTick) / 100.0 + ' AUT';
                 }
 
                 if (this.props.ability.cooldownXpLeft != null) {
-                    timeout += this.props.ability.cooldownXpLeft + " XP";
+                    timeout += this.props.ability.cooldownXpLeft + ' XP';
                 }
 
                 timeout = timeout.trimRight();
-                timeout += "]";
+                timeout += ']';
 
                 ability = <span>{ability} {timeout}</span>;
             }

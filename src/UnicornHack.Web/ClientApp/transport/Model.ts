@@ -1,8 +1,10 @@
-/// <reference path='../../node_modules/@types/node/index.d.ts' />
-
 import { observable, computed, action } from "mobx";
 import { ActivationType } from "./ActivationType";
 import { Direction } from "./Direction";
+import { EntityState } from "./EntityState";
+import { ItemType } from "./ItemType";
+import { MapFeature } from "./MapFeature";
+import { DirectionFlags } from "./DirectionFlags";
 
 export class Player {
     @observable id: number = 0;
@@ -1036,106 +1038,4 @@ export class Connection {
         }
         return this;
     }
-}
-
-export const enum MapFeature {
-    Default = 0,
-    RockFloor = 1,
-    StoneFloor = 2,
-    RockWall = 3,
-    StoneWall = 4,
-    StoneArchway = 5,
-    Pool = 14,
-    Unexplored = 255
-}
-
-export const enum DirectionFlags {
-    None = 0,
-    East = 1 << 0,
-    Northeast = 1 << 1,
-    North = 1 << 2,
-    Northwest = 1 << 3,
-    West = 1 << 4,
-    Southwest = 1 << 5,
-    South = 1 << 6,
-    Southeast = 1 << 7,
-    Up = 1 << 8,
-    Down = 1 << 9,
-    Center = 1 << 10,
-    NorthAndEast = North | East,
-    NorthAndWest = North | West,
-    SouthAndWest = South | West,
-    SouthAndEast = South | East,
-    Longitudinal = North | South,
-    Latitudinal = West | East,
-    Diagonal = Northeast | Southwest,
-    AntiDiagonal = Northwest | Southeast,
-    NorthEastWest = North | East | West,
-    NorthEastSouth = North | East | South,
-    NorthWestSouth = North | West | South,
-    SouthEastWest = South | East | West,
-    NorthwestCorner = West | Northwest | North,
-    NortheastCorner = North | Northeast | East,
-    SoutheastCorner = East | Southeast | South,
-    SouthwestCorner = South | Southwest | West,
-    Cross = Longitudinal | Latitudinal,
-    DiagonalCross = Diagonal | AntiDiagonal,
-    NorthSemicircle = NorthwestCorner | NortheastCorner,
-    EastSemicircle = NortheastCorner | SoutheastCorner,
-    SouthSemicircle = SoutheastCorner | SouthwestCorner,
-    WestSemicircle = SouthwestCorner | NorthwestCorner,
-    Circle = NorthSemicircle | SouthSemicircle
-}
-
-export const enum ItemType {
-    None = 0,
-    Coin = 1 << 0,
-    Container = 1 << 1,
-    WeaponMeleeHand = 1 << 2,
-    WeaponMeleeShort = 1 << 3,
-    WeaponMeleeMedium = 1 << 4,
-    WeaponMeleeLong = 1 << 5,
-    WeaponRangedClose = 1 << 6,
-    WeaponRangedShort = 1 << 7,
-    WeaponRangedMedium = 1 << 8,
-    WeaponRangedLong = 1 << 9,
-    WeaponAmmoContainer = 1 << 10,
-    WeaponProjectile = 1 << 11,
-    Shield = 1 << 14,
-    ArmorTorso = 1 << 15,
-    ArmorHead = 1 << 16,
-    ArmorFeet = 1 << 17,
-    ArmorHands = 1 << 18,
-    LightArmor = 1 << 19,
-    HeavyArmor = 1 << 20,
-    AccessoryBack = 1 << 21,
-    AccessoryNeck = 1 << 22,
-    SkillBook = 1 << 23,
-    Potion = 1 << 24,
-    Rune = 1 << 25,
-    Orb = 1 << 26,
-    Figurine = 1 << 27,
-    Trinket = 1 << 28,
-
-    WeaponMelee = WeaponMeleeHand | WeaponMeleeShort | WeaponMeleeMedium | WeaponMeleeLong,
-
-    WeaponRanged = WeaponRangedClose | WeaponRangedShort | WeaponRangedMedium | WeaponRangedLong | WeaponProjectile,
-
-    Weapon = WeaponMelee | WeaponRanged,
-
-    Armor = Shield | ArmorTorso | ArmorHead | ArmorFeet | ArmorHands
-}
-
-export const enum ItemComplexity {
-    Normal = 0,
-    Intricate,
-    Exotic
-}
-
-export const enum EntityState {
-    Detached = 0,
-    Unchanged,
-    Deleted,
-    Modified,
-    Added,
 }

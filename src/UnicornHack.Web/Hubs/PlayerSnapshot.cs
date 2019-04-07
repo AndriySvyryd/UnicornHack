@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using UnicornHack.Data.Abilities;
+using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
@@ -218,6 +220,117 @@ namespace UnicornHack.Hubs
 
             return properties;
         }
+
+        public static List<object> SerializeAttributes(GameEntity playerEntity, SerializationContext context)
+        {
+            var being = playerEntity.Being;
+            return new List<object>(23)
+            {
+                being.Might,
+                being.Speed,
+                being.Focus,
+                being.Perception,
+                being.Regeneration,
+                being.EnergyRegeneration,
+                being.Armor,
+                being.Deflection,
+                being.Evasion,
+                being.PhysicalResistance,
+                being.MagicResistance,
+                being.BleedingResistance,
+                being.AcidResistance,
+                being.ColdResistance,
+                being.ElectricityResistance,
+                being.FireResistance,
+                being.PsychicResistance,
+                being.ToxinResistance,
+                being.VoidResistance,
+                being.SonicResistance,
+                being.StunResistance,
+                being.LightResistance,
+                being.WaterResistance
+            };
+        }
+
+        public static List<object> SerializeAdaptations(GameEntity playerEntity, SerializationContext context)
+        {
+            var traits = new List<(string, int)>();
+            var mutations = new List<(string, int)>();
+            foreach (var effectEntity in context.Manager.AppliedEffectsToAffectableEntityRelationship[playerEntity.Id])
+            {
+                var effect = effectEntity.Effect;
+                if (effect.EffectType != EffectType.AddAbility
+                    || effect.TargetName == null
+                    || !(Ability.Loader.Find(effect.TargetName) is LeveledAbility template))
+                {
+                    continue;
+                }
+
+                switch (template.Type)
+                {
+                    case AbilityType.Trait:
+                        traits.Add((template.Name, effect.Amount.Value));
+                        break;
+                    case AbilityType.Mutation:
+                        mutations.Add((template.Name, effect.Amount.Value));
+                        break;
+                    default:
+                        continue;
+                }
+            }
+
+            return new List<object>(4)
+            {
+                playerEntity.Player.TraitPoints,
+                playerEntity.Player.MutationPoints,
+                traits,
+                mutations
+            };
+        }
+
+        public static List<object> SerializeSkills(GameEntity playerEntity, SerializationContext context)
+        {
+            var manager = context.Manager;
+            var playerId = playerEntity.Id;
+
+            return new List<object>(31)
+            {
+                playerEntity.Player.SkillPoints,
+                GetAbilityLevel(nameof(AbilityData.HandWeapons), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.ShortWeapons), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.MediumWeapons), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.LongWeapons), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.CloseRangeWeapons), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.ShortRangeWeapons), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.MediumRangeWeapons), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.LongRangeWeapons), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.OneHanded), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.TwoHanded), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.DualWielding), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.Acrobatics), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.LightArmor), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.HeavyArmor), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.AirSourcery), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.BloodSourcery), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.EarthSourcery), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.FireSourcery), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.SpiritSourcery), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.WaterSourcery), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.Conjuration), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.Enchantment), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.Evocation), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.Malediction), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.Illusion), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.Transmutation), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.Assassination), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.Stealth), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.Artifice), playerId, manager),
+                GetAbilityLevel(nameof(AbilityData.Leadership), playerId, manager)
+            };
+        }
+
+        private static int GetAbilityLevel(string abilityName, int playerId, GameManager manager)
+            => manager.AffectableAbilitiesIndex[(playerId, abilityName)]?.Ability.Level ?? 0;
 
         private static IEnumerable<LogEntry> GetLogEntries(PlayerComponent player)
             => player.LogEntries.OrderBy(e => e, LogEntry.Comparer)

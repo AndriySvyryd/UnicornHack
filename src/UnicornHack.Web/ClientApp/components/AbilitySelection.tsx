@@ -5,6 +5,7 @@ import { Ability } from '../transport/Model';
 import { GameQueryType } from '../transport/GameQueryType';
 import { PlayerAction } from "../transport/PlayerAction";
 import { UIData } from '../transport/UIData';
+import { action } from 'mobx';
 
 @observer
 export class AbilitySelection extends React.Component<IAbilitySelectionProps, {}> {
@@ -23,21 +24,31 @@ export class AbilitySelection extends React.Component<IAbilitySelectionProps, {}
         }
     }
 
+    @action.bound
+    clear(event: React.MouseEvent<HTMLDivElement>) {
+        this.props.queryGame(GameQueryType.Clear);
+    }
+
+    stopPropagation(e: React.SyntheticEvent<{}>) {
+        e.stopPropagation;
+    }
+
     render() {
         var abilities = Array.from(this.props.data.slottableAbilities.values(),
-            i => <AbilitySelectionLine ability={i} slot={coalesce(this.props.data.abilitySlot, -3)} key={i.id} performAction={this.props.performAction} queryGame={this.props.queryGame} />);
+            i => <AbilitySelectionLine ability={i} slot={coalesce(this.props.data.abilitySlot, -3)}
+                key={i.id} performAction={this.props.performAction} queryGame={this.props.queryGame} />);
 
-        abilities.push(<AbilitySelectionLine ability={null} slot={coalesce(this.props.data.abilitySlot, -3)} key={-1} performAction={this.props.performAction} queryGame={this.props.queryGame} />);
+        abilities.push(<AbilitySelectionLine ability={null} slot={coalesce(this.props.data.abilitySlot, -3)}
+            key={-1} performAction={this.props.performAction} queryGame={this.props.queryGame} />);
 
-        return <div className="dialog__overlay" ref={this.container} tabIndex={100} style={{
-            display: this.props.data.abilitySlot === null ? 'none' : 'block'
-        }} onClick={() => this.props.queryGame(GameQueryType.Clear)}>
-            <div className="abilitySlotSelection__wrapper">
-                <div className="abilitySlotSelection" onClick={(e) => e.stopPropagation()}>
-                    <div><h4>Select ability:</h4></div>
-                    <br />
-                    <ul>{abilities}</ul>
-                </div>
+        const hidden = this.props.data.abilitySlot === null;
+        return <div className="dialog__overlay" ref={this.container} tabIndex={100} aria-hidden={hidden}
+            style={{ display: hidden ? 'none' : 'flex' }} onClick={this.clear}
+        >
+            <div className="abilitySlotSelection" onClick={this.stopPropagation} role="dialog" aria-labelledby="abilitySelection">
+                <h4 id="abilitySelection">Select ability for slot {this.props.data.abilitySlot}:</h4>
+                <br />
+                <ul>{abilities}</ul>
             </div>
         </div>;
     }
@@ -50,7 +61,16 @@ interface IAbilitySelectionProps {
 }
 
 @observer
-export class AbilitySelectionLine extends React.Component<IAbilityLineProps, {}> {
+class AbilitySelectionLine extends React.Component<IAbilityLineProps, {}> {
+    @action.bound
+    setAbilitySlot(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
+        if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
+            this.props.queryGame(GameQueryType.Clear);
+            this.props.performAction(
+                PlayerAction.SetAbilitySlot, this.props.ability === null ? 0 : this.props.ability.id, this.props.slot);
+        }
+    }
+
     render() {
         var name = "none";
         if (this.props.ability !== null) {
@@ -66,13 +86,11 @@ export class AbilitySelectionLine extends React.Component<IAbilityLineProps, {}>
             }
         }
 
-        const setAbilitySlot: (() => void) = () => {
-            this.props.queryGame(GameQueryType.Clear);
-            this.props.performAction(
-                PlayerAction.SetAbilitySlot, this.props.ability === null ? 0 : this.props.ability.id, this.props.slot);
-        };
         return <li><a tabIndex={(this.props.ability === null ? 0 : 100 + this.props.ability.id)}
-            onClick={setAbilitySlot} onKeyPress={(e) => { if (e.key == 'Enter') { setAbilitySlot() } }}>{name}</a></li>;
+            onClick={this.setAbilitySlot} onKeyPress={this.setAbilitySlot}
+        >
+            {name}
+        </a></li>;
     }
 }
 

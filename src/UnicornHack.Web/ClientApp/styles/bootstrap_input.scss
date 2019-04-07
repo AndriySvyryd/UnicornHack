@@ -21,15 +21,26 @@ $teal: $base00;
 
 $primary: $blue;
 $secondary: $base01;
+$success: $green;
+$info: $cyan;
+$warning: $yellow;
+$danger: $red;
 $light: $base2;
-$dark: $cyan;
+$dark: $base02;
+
+$theme-colors: ();
 
 $body-bg: $base03;
 $body-color: $base1;
 $highlight-bg: $base02;
-$highlight-color: $base3;
+$highlight-color: $base2;
+
 $input-bg: $base3;
 $input-color: $base01;
+$nav-tabs-link-active-bg: $highlight-bg;
+$nav-tabs-link-active-color: $highlight-color;
+$progress-bar-color: $highlight-color;
+$progress-font-size: 1rem;
 
 $enable-rounded: false;
 
@@ -38,4 +49,3 @@ $grid-breakpoints: ( xxs: 0, xs: 321px, sm: 576px, md: 768px, lg: 992px, xl: 120
 $container-max-widths: ( xs: 13000px, sm: 14000px, md: 15000px, lg: 16000px, xl: 17000px, xxl: 18000px );
 
 $font-family-monospace: DejaVuSansMono, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-$progress-font-size: 1rem;
