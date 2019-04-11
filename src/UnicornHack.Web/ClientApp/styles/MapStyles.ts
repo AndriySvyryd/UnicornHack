@@ -1,7 +1,7 @@
 ﻿import { CSSProperties } from 'React';
-import { MapFeature } from 'ClientApp/transport/MapFeature';
-import { ItemType } from 'ClientApp/transport/ItemType';
-import { DirectionFlags } from 'ClientApp/transport/DirectionFlags';
+import { MapFeature } from '../transport/MapFeature';
+import { ItemType } from '../transport/ItemType';
+import { DirectionFlags } from '../transport/DirectionFlags';
 
 export class MapStyles {
     actors = new MapActorStyles();

@@ -42,13 +42,12 @@ namespace UnicornHack.Hubs
                         context.Services.Language.GetString(item, item.GetQuantity(manager), SenseType.Sight));
                     var slots = manager.ItemUsageSystem.GetEquipableSlots(item, context.Observer.Physical.Size)
                         .GetNonRedundantFlags(removeComposites: true)
-                        .Select(s => new object[]
-                            {(int)s, context.Services.Language.GetString(s, context.Observer, abbreviate: true)})
+                        .Select(s => Serialize(s, context))
                         .ToList();
                     properties.Add(slots.Count > 0 ? slots : null);
                     properties.Add(item.EquippedSlot == EquipmentSlot.None
                         ? null
-                        : context.Services.Language.GetString(item.EquippedSlot, context.Observer, abbreviate: true));
+                        : Serialize(item.EquippedSlot, context));
                     return properties;
                 }
                 case EntityState.Deleted:
@@ -82,8 +81,7 @@ namespace UnicornHack.Hubs
                     {
                         var slots = manager.ItemUsageSystem.GetEquipableSlots(item, physicalObserver.Size)
                             .GetNonRedundantFlags(removeComposites: true)
-                            .Select(s => new object[]
-                                {(int)s, context.Services.Language.GetString(s, context.Observer, abbreviate: true)})
+                            .Select(s => Serialize(s, context))
                             .ToList();
 
                         properties.Add(i);
@@ -97,13 +95,19 @@ namespace UnicornHack.Hubs
                         properties.Add(i);
                         properties.Add(item.EquippedSlot == EquipmentSlot.None
                             ? null
-                            : context.Services.Language.GetString(item.EquippedSlot, context.Observer,
-                                abbreviate: true));
-                    }
+                            : Serialize(item.EquippedSlot, context));
+                        }
 
                     return properties.Count > 2 ? properties : null;
                 }
             }
         }
+
+        private static object[] Serialize(EquipmentSlot slot, SerializationContext context) => new object[]
+        {
+            (int)slot,
+            context.Services.Language.GetString(slot, context.Observer, abbreviate: true),
+            context.Services.Language.GetString(slot, context.Observer, abbreviate: false)
+        };
     }
 }

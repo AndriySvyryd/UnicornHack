@@ -7,8 +7,8 @@ import { MapFeature } from "./MapFeature";
 import { DirectionFlags } from "./DirectionFlags";
 
 export class Player {
-    @observable id: number = 0;
-    @observable name: string = '';
+    id: number = 0;
+    name: string = '';
     @observable currentTick: number = -1;
     @observable nextActionTick: number = 0;
     @observable hp: number = 0;
@@ -336,7 +336,7 @@ export class Tile {
 
 export class MapActor {
     protected static actorPropertyCount: number = 6;
-    @observable id: number = 0;
+    id: number = 0;
     @observable baseName: string = '';
     @observable name: string = '';
     @observable levelX: number = 0;
@@ -459,7 +459,7 @@ export class MapActor {
 }
 
 export class MapItem {
-    @observable id: number = -1;
+    id: number = -1;
     @observable type: ItemType = ItemType.None;
     @observable baseName: string = '';
     @observable name: string = '';
@@ -580,12 +580,12 @@ export class MapItem {
 }
 
 export class Item {
-    @observable id: number = -1;
+    id: number = -1;
     @observable type: ItemType = ItemType.None;
     @observable baseName: string = '';
     @observable name: string = '';
     @observable equippableSlots: Map<string, EquipableSlot> = new Map<string, EquipableSlot>();
-    @observable equippedSlot: string = '';
+    @observable equippedSlot: EquipableSlot | null = null;
 
     @action
     static expandToCollection(compactItem: any[], collection: Map<string, Item>, parentState: EntityState) {
@@ -631,11 +631,16 @@ export class Item {
         item.type = compactItem[i++];
         item.baseName = compactItem[i++];
         item.name = compactItem[i++];
-        const slots = compactItem[i++];
-        if (slots != null) {
-            slots.map((s: any[]) => EquipableSlot.expandToCollection(s, item.equippableSlots, EntityState.Added));
+
+        const equippableSlots = compactItem[i++];
+        if (equippableSlots != null) {
+            equippableSlots.map((s: any[]) => EquipableSlot.expandToCollection(s, item.equippableSlots, EntityState.Added));
         }
-        item.equippedSlot = compactItem[i++];
+
+        const equippedSlot = compactItem[i++];
+        if (equippedSlot != null) {
+            item.equippedSlot = EquipableSlot.expand(equippedSlot, 0);
+        }
         return item;
     }
 
@@ -653,7 +658,10 @@ export class Item {
                         (s: any[]) => EquipableSlot.expandToCollection(s, this.equippableSlots, EntityState.Modified));
                     break;
                 case 5:
-                    this.equippedSlot = compactItem[i++];
+                    const equippedSlot = compactItem[i++];
+                    this.equippedSlot = equippedSlot == null
+                        ? null
+                        : EquipableSlot.expand(equippedSlot, 0);
                     break;
                 default:
                     return i - 1;
@@ -675,7 +683,8 @@ export class Item {
 }
 
 export class EquipableSlot {
-    @observable id: number = -1;
+    id: number = -1;
+    @observable shortName: string = '';
     @observable name: string = '';
 
     @action
@@ -687,6 +696,7 @@ export class EquipableSlot {
     static expand(compactSlot: any[], i: number): EquipableSlot {
         const slot = new EquipableSlot();
         slot.id = compactSlot[i++];
+        slot.shortName = compactSlot[i++];
         slot.name = compactSlot[i++];
 
         return slot;
@@ -699,7 +709,7 @@ export class EquipableSlot {
 }
 
 export class Ability {
-    @observable id: number = -1;
+    id: number = -1;
     @observable name: string = '';
     @observable activation: ActivationType = ActivationType.Default;
     @observable slot: number | null = null;
@@ -785,7 +795,7 @@ export class Ability {
 }
 
 export class LogEntry {
-    @observable id: number = -1;
+    id: number = -1;
     @observable message: string = '';
 
     @action
@@ -853,7 +863,7 @@ export class LogEntry {
 }
 
 export class PlayerRace {
-    @observable id: number = 0;
+    id: number = 0;
     @observable name: string = '';
     @observable shortName: string = '';
     @observable xpLevel: number = 0;
@@ -931,7 +941,7 @@ export class PlayerRace {
 }
 
 export class Connection {
-    @observable id: number = -1;
+    id: number = -1;
     @observable levelX: number = -1;
     @observable levelY: number = -1;
     @observable isDown: boolean = true;

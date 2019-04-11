@@ -220,7 +220,9 @@ export class Game extends React.Component<IGameProps, {}> {
         return <HotKeys innerRef={this.hotKeyContainer} keyMap={this.keyMap} handlers={this.keyHandlers}>
             <div aria-hidden={!firstTimeLoading} style={{
                 display: firstTimeLoading ? 'block' : 'none'
-            }}>Loading, please wait...</div>
+            }}>
+                <div className="spinner-border spinner-border-sm" /> Loading, please wait...
+            </div>
             <div className="game" aria-hidden={firstTimeLoading} style={{
                 display: firstTimeLoading ? 'none' : 'flex'
             }}>

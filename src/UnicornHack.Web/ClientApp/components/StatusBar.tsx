@@ -1,9 +1,11 @@
 ﻿import * as React from 'React';
+import { action } from 'mobx';
 import { observer } from 'mobx-react';
 import { Player, PlayerRace } from '../transport/Model';
 import { GameQueryType } from '../transport/GameQueryType';
+import { capitalize } from '../Util';
 import { MeterBar } from './MeterBar';
-import { action } from 'mobx';
+import { TooltipTrigger } from './TooltipTrigger';
 
 @observer
 export class StatusBar extends React.Component<IStatusBarProps, {}> {
@@ -16,8 +18,7 @@ export class StatusBar extends React.Component<IStatusBarProps, {}> {
 
     render() {
         const player = this.props.player;
-        const playerName = <a tabIndex={1} onClick={this.showCharacterScreen} onKeyPress={this.showCharacterScreen}
-        >
+        const playerName = <a tabIndex={1} onClick={this.showCharacterScreen} onKeyPress={this.showCharacterScreen}>
             {player.name}
         </a>;
 
@@ -101,12 +102,20 @@ interface IPlayerStatusProps {
     player: Player;
 }
 
-const RaceStatus = observer((props: IRaceStatusProps) => {
-    const raceString = `${props.race.shortName}(${props.race.xpLevel}) `;
-    if (props.isLearning) {
-        return <span className="font-weight-bold">{raceString}</span>;
+const RaceStatus = observer(({ race, isLearning }: IRaceStatusProps) => {
+    const raceString = `${race.shortName}(${race.xpLevel}) `;
+    var className = '';
+    if (isLearning) {
+        className = 'font-weight-bold';
     }
-    return <span>{raceString}</span>;
+
+    return <TooltipTrigger
+        id={`tooltip-race-${race.id}`}
+        delay={100}
+        tooltip={capitalize(race.name)}
+    >
+        <span className={className}>{raceString}</span>
+    </TooltipTrigger>;
 });
 
 interface IRaceStatusProps {

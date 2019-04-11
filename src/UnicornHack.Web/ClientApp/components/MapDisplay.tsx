@@ -1,12 +1,14 @@
 ﻿import * as React from 'React';
 import * as scss from '../styles/site.scss'
-import { observer } from 'mobx-react';
-import { Level, Tile } from '../transport/Model';
-import { MapStyles, ITileStyle } from '../styles/MapStyles';
-import { PlayerAction } from '../transport/PlayerAction';
-import { Direction } from 'ClientApp/transport/Direction';
-import { MapFeature } from 'ClientApp/transport/MapFeature';
 import { action } from 'mobx';
+import { observer } from 'mobx-react';
+import { MapStyles, ITileStyle } from '../styles/MapStyles';
+import { Level, Tile } from '../transport/Model';
+import { PlayerAction } from '../transport/PlayerAction';
+import { Direction } from '../transport/Direction';
+import { MapFeature } from '../transport/MapFeature';
+import { capitalize } from '../Util';
+import { TooltipTrigger } from './TooltipTrigger';
 
 export const MapDisplay = observer((props: IMapProps) => {
     const level = props.level;
@@ -123,16 +125,25 @@ class MapTile extends React.Component<ITileProps, {}> {
                 throw `Actor type ${tile.actor.baseName} not supported.`;
             }
 
+            let tooltip: string;
             // TODO: check position instead of base name
             if (tile.actor.baseName == 'player') {
                 onClick = this.wait;
+                tooltip = capitalize(tile.actor.name)
             } else {
                 onClick = this.attack;
+                tooltip = 'Attack ' + tile.actor.baseName;
             }
             
-            content = <div onClick={onClick} style={{ backgroundImage: this.getBackground(tile.actor.heading, glyph) }}>
-                {glyph.char}
-            </div>;
+            content = <TooltipTrigger
+                id={`tooltip-actor-${tile.actor.id}`}
+                delay={100}
+                tooltip={tooltip}
+            >
+                <div onClick={onClick} style={{ backgroundImage: this.getBackground(tile.actor.heading, glyph) }}>
+                    {glyph.char}
+                </div>
+            </TooltipTrigger>;
             onClick = undefined;
         } else if (tile.item != null) {
             const type = tile.item.type;
@@ -140,6 +151,14 @@ class MapTile extends React.Component<ITileProps, {}> {
             if (glyph == undefined) {
                 throw `Item type ${type} not supported.`;
             }
+
+            content = <TooltipTrigger
+                id={`tooltip-item-${tile.item.id}`}
+                delay={100}
+                tooltip={capitalize(tile.item.baseName)}
+            >
+                <span>{glyph.char}</span>
+            </TooltipTrigger>
         } else if (tile.connection != null) {
             glyph = styles.connections[tile.connection.isDown ? 1 : 0];
             if (glyph == undefined) {

@@ -1,8 +1,9 @@
 import * as React from 'React';
+import { action } from 'mobx';
 import { observer } from 'mobx-react';
 import { Item, EquipableSlot } from '../transport/Model';
 import { PlayerAction } from "../transport/PlayerAction";
-import { action } from 'mobx';
+import { TooltipTrigger } from './TooltipTrigger';
 
 export const Inventory = observer((props: IInventoryProps) => {
     const items = Array.from(props.items.values(), i =>
@@ -38,7 +39,14 @@ class InventoryLine extends React.Component<IItemProps, {}> {
         if (item.equippedSlot !== null) {
             itemLine.push(' [');
             itemLine.push(
-                <a tabIndex={0} key="eqipped" onClick={this.unequip} onKeyPress={this.unequip}>{item.equippedSlot}</a>);
+                <TooltipTrigger
+                    key="eqipped"
+                    id={`tooltip-unequip-${item.id}`}
+                    delay={100}
+                    tooltip={'Unequip from ' + item.equippedSlot.name}
+                >
+                    <a tabIndex={0} onClick={this.unequip} onKeyPress={this.unequip}>{item.equippedSlot.shortName}</a>
+                </TooltipTrigger>);
             itemLine.push('] ');
         } else if (item.equippableSlots.size !== 0) {
             itemLine.push(' (');
@@ -76,7 +84,14 @@ class Equip extends React.Component<IEquipProps, {}> {
     }
 
     render() {
-        return <a tabIndex={0} onClick={this.equip} onKeyPress={this.equip}>{this.props.slot.name}</a>;
+        const { item, slot } = this.props;
+        return <TooltipTrigger
+            id={`tooltip-equip-${slot.id}-${item.id}`}
+            delay={100}
+            tooltip={'Equip to ' + slot.name}
+        >
+            <a tabIndex={0} onClick={this.equip} onKeyPress={this.equip}>{slot.shortName}</a>
+        </TooltipTrigger>;
     }
 }
 
