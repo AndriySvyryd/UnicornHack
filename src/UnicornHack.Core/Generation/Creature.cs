@@ -21,6 +21,7 @@ namespace UnicornHack.Generation
         private ActorNoiseType? _noise;
         private Species? _species;
         private SpeciesClass? _speciesClass;
+        private string _englishDescription;
         private int? _movementDelay;
         private Material? _material;
         private Sex? _sex;
@@ -111,6 +112,12 @@ namespace UnicornHack.Generation
         {
             get => _speciesClass ?? BaseCreature?.SpeciesClass;
             set => _speciesClass = value;
+        }
+
+        public string EnglishDescription
+        {
+            get => _englishDescription ?? BaseCreature?.EnglishDescription;
+            set => _englishDescription = value;
         }
 
         public Material? Material
@@ -620,8 +627,7 @@ namespace UnicornHack.Generation
                 {nameof(BaseName), (o, v) => v != null},
                 {nameof(Species), (o, v) => (Species?)v != (o.BaseCreature?.Species)},
                 {nameof(SpeciesClass), (o, v) => (SpeciesClass?)v != (o.BaseCreature?.SpeciesClass)},
-                {nameof(MovementDelay), (o, v) => (int?)v != (o.BaseCreature?.MovementDelay)},
-                {nameof(Material), (o, v) => (Material?)v != (o.BaseCreature?.Material)},
+                {nameof(EnglishDescription), (o, v) => (string)v != (o.BaseCreature?.EnglishDescription)},
                 {nameof(Abilities), (o, v) => ((ICollection<Ability>)v).Count != 0},
                 {nameof(InitialLevel), (o, v) => (byte)v != 0},
                 // ReSharper disable once CompareOfFloatsByEqualityOperator
@@ -637,6 +643,8 @@ namespace UnicornHack.Generation
                 {nameof(Sex), (o, v) => (Sex?)v != (o.BaseCreature?.Sex)},
                 {nameof(Size), (o, v) => (int?)v != (o.BaseCreature?.Size)},
                 {nameof(Weight), (o, v) => (int?)v != (o.BaseCreature?.Weight)},
+                {nameof(MovementDelay), (o, v) => (int?)v != (o.BaseCreature?.MovementDelay)},
+                {nameof(Material), (o, v) => (Material?)v != (o.BaseCreature?.Material)},
                 {nameof(Perception), (o, v) => (int?)v != (o.BaseCreature?.Perception)},
                 {nameof(Might), (o, v) => (int?)v != (o.BaseCreature?.Might)},
                 {nameof(Speed), (o, v) => (int?)v != (o.BaseCreature?.Speed)},

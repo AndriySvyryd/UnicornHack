@@ -6,6 +6,7 @@ import { MapStyles, ITileStyle } from '../styles/MapStyles';
 import { Level, Tile } from '../transport/Model';
 import { PlayerAction } from '../transport/PlayerAction';
 import { Direction } from '../transport/Direction';
+import { GameQueryType } from '../transport/GameQueryType';
 import { MapFeature } from '../transport/MapFeature';
 import { capitalize } from '../Util';
 import { TooltipTrigger } from './TooltipTrigger';
@@ -21,6 +22,7 @@ export const MapDisplay = observer((props: IMapProps) => {
             styles={props.styles}
             indexToPoint={level.indexToPoint}
             performAction={props.performAction}
+            queryGame={props.queryGame}
             key={y} />;
     }
 
@@ -33,6 +35,7 @@ interface IMapProps {
     level: Level;
     styles: MapStyles;
     performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
+    queryGame: (intQueryType: GameQueryType, ...args: Array<number>) => void;
 }
 
 const MapRow = observer((props: IRowProps) => {
@@ -42,6 +45,7 @@ const MapRow = observer((props: IRowProps) => {
             tile={t}
             styles={props.styles}
             performAction={props.performAction}
+            queryGame={props.queryGame}
             key={x} />
     );
     return <div className="map__row">{row}</div>;
@@ -53,6 +57,7 @@ interface IRowProps {
     styles: MapStyles;
     indexToPoint: number[][];
     performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
+    queryGame: (intQueryType: GameQueryType, ...args: Array<number>) => void;
 }
 
 @observer
@@ -70,6 +75,20 @@ class MapTile extends React.Component<ITileProps, {}> {
     @action.bound
     attack(event: React.MouseEvent<HTMLDivElement>) {
         this.props.performAction(PlayerAction.UseAbilitySlot, null, Level.pack(this.props.x, this.props.y));
+    }
+
+    @action.bound
+    playerAttributes(event: React.MouseEvent<HTMLDivElement>) {
+        this.props.queryGame(GameQueryType.PlayerAttributes);
+        event.preventDefault();
+    }
+
+    @action.bound
+    actorAttributes(event: React.MouseEvent<HTMLDivElement>) {
+        if (this.props.tile.actor != null) {
+            this.props.queryGame(GameQueryType.ActorAttributes, this.props.tile.actor.id);
+        }
+        event.preventDefault();
     }
 
     getBackground(heading: Direction, glyph: ITileStyle) {
@@ -111,6 +130,7 @@ class MapTile extends React.Component<ITileProps, {}> {
         const styles = this.props.styles;
         let glyph: ITileStyle;
         let onClick: undefined | ((event: React.MouseEvent<HTMLDivElement>) => void) = this.move;
+        let onContextMenu: undefined | ((event: React.MouseEvent<HTMLDivElement>) => void);
 
         // TODO: Also change pointer
         var content: (JSX.Element | string) = '';
@@ -129,18 +149,21 @@ class MapTile extends React.Component<ITileProps, {}> {
             // TODO: check position instead of base name
             if (tile.actor.baseName == 'player') {
                 onClick = this.wait;
+                onContextMenu = this.playerAttributes;
                 tooltip = capitalize(tile.actor.name)
             } else {
                 onClick = this.attack;
-                tooltip = 'Attack ' + tile.actor.baseName;
+                onContextMenu = this.actorAttributes;
+                tooltip = 'Attack ' + tile.actor.name;
             }
-            
+
+            const style: React.CSSProperties = { backgroundImage: this.getBackground(tile.actor.heading, glyph) };
             content = <TooltipTrigger
                 id={`tooltip-actor-${tile.actor.id}`}
                 delay={100}
                 tooltip={tooltip}
             >
-                <div onClick={onClick} style={{ backgroundImage: this.getBackground(tile.actor.heading, glyph) }}>
+                <div onClick={onClick} onContextMenu={onContextMenu} style={style}>
                     {glyph.char}
                 </div>
             </TooltipTrigger>;
@@ -205,4 +228,5 @@ interface ITileProps {
     tile: Tile;
     styles: MapStyles;
     performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
+    queryGame: (intQueryType: GameQueryType, ...args: Array<number>) => void;
 }

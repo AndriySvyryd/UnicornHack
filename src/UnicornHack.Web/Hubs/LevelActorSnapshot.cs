@@ -28,21 +28,20 @@ namespace UnicornHack.Hubs
                         : new List<object>(7) {(int)state};
                     properties.Add(actorKnowledge.EntityId);
                     // TODO: Move to language service
-                    if ((actorKnowledge.SensedType & SenseType.Sight) != SenseType.None)
+                    if (actorKnowledge.SensedType.CanIdentify())
                     {
                         properties.Add(ai != null
                             ? manager.RacesToBeingRelationship[actorKnowledge.KnownEntityId].Values.First().Race
                                 .TemplateName
                             : "player");
-                        properties.Add(ai != null
-                            ? ai.ProperName
-                            : knownEntity.Player.ProperName);
+                        properties.Add(context.Services.Language.GetActorName(knownEntity, actorKnowledge.SensedType));
                     }
                     else
                     {
                         properties.Add(null);
                         properties.Add(null);
                     }
+
                     properties.Add(position.LevelX);
                     properties.Add(position.LevelY);
                     properties.Add((byte)position.Heading);
@@ -72,7 +71,7 @@ namespace UnicornHack.Hubs
                     var sensedType = knowledgeEntry.Property(nameof(KnowledgeComponent.SensedType));
                     if (sensedType.IsModified)
                     {
-                        var canIdentify = (actorKnowledge.SensedType & SenseType.Sight) != SenseType.None;
+                        var canIdentify = actorKnowledge.SensedType.CanIdentify();
                         properties.Add(i);
                         properties.Add(!canIdentify
                             ? null
@@ -85,9 +84,7 @@ namespace UnicornHack.Hubs
                         properties.Add(i);
                         properties.Add(!canIdentify
                             ? null
-                            : ai != null
-                                ? ai.ProperName
-                                : knownEntity.Player.ProperName);
+                            : context.Services.Language.GetActorName(knownEntity, actorKnowledge.SensedType));
                     }
                     else
                     {
@@ -125,6 +122,59 @@ namespace UnicornHack.Hubs
                     return properties.Count > 2 ? properties : null;
                 }
             }
+        }
+
+        public static List<object> SerializeAttributes(GameEntity actorEntity, SenseType sense, SerializationContext context)
+        {
+            var canIdentify = actorEntity != null
+                                  && (sense & (SenseType.Sight | SenseType.Touch)) != SenseType.None;
+            if (!canIdentify)
+            {
+                return new List<object>();
+            }
+
+            var being = actorEntity.Being;
+            var sensor = actorEntity.Sensor;
+            return new List<object>(37)
+            {
+                context.Services.Language.GetActorName(actorEntity, sense),
+                context.Services.Language.GetActorDescription(actorEntity),
+                actorEntity.Position.MovementDelay,
+                sensor.PrimaryFOVQuadrants,
+                sensor.PrimaryVisionRange,
+                sensor.TotalFOVQuadrants,
+                sensor.SecondaryVisionRange,
+                sensor.Infravision,
+                sensor.InvisibilityDetection,
+                being.Visibility,
+                being.HitPoints,
+                being.HitPointMaximum,
+                being.EnergyPoints,
+                being.EnergyPointMaximum,
+                being.Might,
+                being.Speed,
+                being.Focus,
+                being.Perception,
+                being.Regeneration,
+                being.EnergyRegeneration,
+                being.Armor,
+                being.Deflection,
+                being.Evasion,
+                being.PhysicalResistance,
+                being.MagicResistance,
+                being.BleedingResistance,
+                being.AcidResistance,
+                being.ColdResistance,
+                being.ElectricityResistance,
+                being.FireResistance,
+                being.PsychicResistance,
+                being.ToxinResistance,
+                being.VoidResistance,
+                being.SonicResistance,
+                being.StunResistance,
+                being.LightResistance,
+                being.WaterResistance
+            };
         }
     }
 }

@@ -1,11 +1,12 @@
 import * as React from 'React';
 import { action, computed } from 'mobx';
 import { observer } from 'mobx-react';
-import { Tabs, Tab } from './Tabs';
 import { GameQueryType } from '../transport/GameQueryType';
 import { Player } from '../transport/Model';
 import { PlayerAction } from '../transport/PlayerAction';
-import { PlayerAttributes, PlayerAdaptations, PlayerSkills } from '../transport/UIData';
+import { ActorAttributes, PlayerAdaptations, PlayerSkills } from '../transport/DialogData';
+import { Tabs, Tab } from './Tabs';
+import { AttributesScreen } from './CreatureProperties';
 
 @observer
 export class CharacterScreen extends React.Component<ICharacterScreenProps, {}> {
@@ -21,7 +22,7 @@ export class CharacterScreen extends React.Component<ICharacterScreenProps, {}> 
         if ((this.props.data.playerAttributes !== null
             || this.props.data.playerAdaptations !== null
             || this.props.data.playerSkills !== null)
-            && this.container.current !== null) {
+                && this.container.current !== null) {
             this.container.current.focus();
         }
     }
@@ -60,6 +61,7 @@ export class CharacterScreen extends React.Component<ICharacterScreenProps, {}> 
     @action.bound
     clear(event: React.MouseEvent<HTMLDivElement>) {
         this.props.queryGame(GameQueryType.Clear);
+        event.preventDefault();
     }
 
     stopPropagation(e: React.SyntheticEvent<{}>) {
@@ -67,18 +69,19 @@ export class CharacterScreen extends React.Component<ICharacterScreenProps, {}> 
     }
 
     render() {
-        return <div className="dialog__overlay" ref={this.container} tabIndex={100} aria-hidden={this.hidden}
-            style={{ display: this.hidden ? 'none' : 'flex' }} onClick={this.clear}
-        >
-            <div className="characterScreen" onClick={this.stopPropagation} role="dialog" aria-label="Character screen"
-            >
+        if (this.hidden) {
+            return <></>
+        }
+
+        return <div className="dialog__overlay" ref={this.container} tabIndex={100} onClick={this.clear} onContextMenu={this.clear}>
+            <div className="characterScreen" onClick={this.stopPropagation} role="dialog" aria-label="Character screen">
                 <Tabs
                     id="tabs"
                     activeKey={this.activeKey}
                     onSelect={this.handleTabSelection}
                 >
                     <Tab eventKey="attributes" title="Attributes">
-                        <AttributesScreen data={this.props.data} />
+                        <AttributesScreen actorAttributes={this.props.data.playerAttributes} />
                     </Tab>
                     <Tab eventKey="adaptations" title="Adaptations">
                         <AdaptationsScreen data={this.props.data} />
@@ -98,108 +101,6 @@ interface ICharacterScreenProps {
     performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
     queryGame: (queryType: GameQueryType, ...args: Array<number>) => void;
 }
-
-const AttributesScreen = observer((props: ICharacterSubScreenProps) => {
-    const playerAttributes = props.data.playerAttributes;
-    if (playerAttributes == null) {
-        return <></>;
-    }
-
-    return <div className="characterScreen__content">
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Might:</div>
-            <div className="characterScreen__value">{playerAttributes.Might}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Focus:</div>
-            <div className="characterScreen__value">{playerAttributes.Focus}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Speed:</div>
-            <div className="characterScreen__value">{playerAttributes.Speed}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Perception:</div>
-            <div className="characterScreen__value">{playerAttributes.Perception}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Regeneration:</div>
-            <div className="characterScreen__value">{playerAttributes.Regeneration}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Energy regeneration:</div>
-            <div className="characterScreen__value">{playerAttributes.EnergyRegeneration}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Armor:</div>
-            <div className="characterScreen__value">{playerAttributes.Armor}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Deflection:</div>
-            <div className="characterScreen__value">{playerAttributes.Deflection}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Evasion:</div>
-            <div className="characterScreen__value">{playerAttributes.Evasion}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Physical resistance:</div>
-            <div className="characterScreen__value">{playerAttributes.PhysicalResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Magic resistance:</div>
-            <div className="characterScreen__value">{playerAttributes.MagicResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Bleeding resistance:</div>
-            <div className="characterScreen__value">{playerAttributes.BleedingResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Acid resistance:</div>
-            <div className="characterScreen__value">{playerAttributes.AcidResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Cold resistance:</div>
-            <div className="characterScreen__value">{playerAttributes.ColdResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Electricity resistance:</div>
-            <div className="characterScreen__value">{playerAttributes.ElectricityResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Fire resistance:</div>
-            <div className="characterScreen__value">{playerAttributes.FireResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Psychic resistance:</div>
-            <div className="characterScreen__value">{playerAttributes.PsychicResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Toxin resistance:</div>
-            <div className="characterScreen__value">{playerAttributes.ToxinResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Void resistance:</div>
-            <div className="characterScreen__value">{playerAttributes.VoidResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Sonic resistance:</div>
-            <div className="characterScreen__value">{playerAttributes.SonicResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Stun resistance:</div>
-            <div className="characterScreen__value">{playerAttributes.StunResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Light resistance:</div>
-            <div className="characterScreen__value">{playerAttributes.LightResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Water resistance:</div>
-            <div className="characterScreen__value">{playerAttributes.WaterResistance}</div>
-        </div>
-    </div>;
-});
 
 const AdaptationsScreen = observer((props: ICharacterSubScreenProps) => {
     const playerAdaptations = props.data.playerAdaptations;
@@ -366,7 +267,7 @@ interface ICharacterSubScreenProps {
 }
 
 interface ICharacterScreenData {
-    playerAttributes: PlayerAttributes | null;
+    playerAttributes: ActorAttributes | null;
     playerAdaptations: PlayerAdaptations | null;
     playerSkills: PlayerSkills | null;
 }

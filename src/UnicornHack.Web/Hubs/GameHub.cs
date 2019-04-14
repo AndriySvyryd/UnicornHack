@@ -102,13 +102,19 @@ namespace UnicornHack.Hubs
 
                         break;
                     case GameQueryType.PlayerAttributes:
-                        result.Add(PlayerSnapshot.SerializeAttributes(player.Entity, context));
+                        result.Add(LevelActorSnapshot.SerializeAttributes(player.Entity, SenseType.Sight, context));
                         break;
                     case GameQueryType.PlayerAdaptations:
                         result.Add(PlayerSnapshot.SerializeAdaptations(player.Entity, context));
                         break;
                     case GameQueryType.PlayerSkills:
                         result.Add(PlayerSnapshot.SerializeSkills(player.Entity, context));
+                        break;
+                    case GameQueryType.ActorAttributes:
+                        var knowledge = manager.FindEntity(arguments[0])?.Knowledge;
+
+                        result.Add(LevelActorSnapshot.SerializeAttributes(
+                            knowledge?.KnownEntity, knowledge?.SensedType ?? SenseType.None, context));
                         break;
                     default:
                         throw new InvalidOperationException($"Query type {intQueryType} not supported");

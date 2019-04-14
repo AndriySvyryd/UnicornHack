@@ -1,11 +1,11 @@
 ﻿import * as React from 'React';
+import { action } from 'mobx';
 import { observer } from 'mobx-react';
-import { coalesce } from '../Util';
 import { Ability } from '../transport/Model';
 import { GameQueryType } from '../transport/GameQueryType';
 import { PlayerAction } from "../transport/PlayerAction";
-import { UIData } from '../transport/UIData';
-import { action } from 'mobx';
+import { DialogData } from '../transport/DialogData';
+import { coalesce } from '../Util';
 
 @observer
 export class AbilitySelection extends React.Component<IAbilitySelectionProps, {}> {
@@ -27,6 +27,7 @@ export class AbilitySelection extends React.Component<IAbilitySelectionProps, {}
     @action.bound
     clear(event: React.MouseEvent<HTMLDivElement>) {
         this.props.queryGame(GameQueryType.Clear);
+        event.preventDefault();
     }
 
     stopPropagation(e: React.SyntheticEvent<{}>) {
@@ -34,6 +35,10 @@ export class AbilitySelection extends React.Component<IAbilitySelectionProps, {}
     }
 
     render() {
+        if (this.props.data.abilitySlot === null) {
+            return <></>
+        }
+
         var abilities = Array.from(this.props.data.slottableAbilities.values(),
             i => <AbilitySelectionLine ability={i} slot={coalesce(this.props.data.abilitySlot, -3)}
                 key={i.id} performAction={this.props.performAction} queryGame={this.props.queryGame} />);
@@ -41,10 +46,7 @@ export class AbilitySelection extends React.Component<IAbilitySelectionProps, {}
         abilities.push(<AbilitySelectionLine ability={null} slot={coalesce(this.props.data.abilitySlot, -3)}
             key={-1} performAction={this.props.performAction} queryGame={this.props.queryGame} />);
 
-        const hidden = this.props.data.abilitySlot === null;
-        return <div className="dialog__overlay" ref={this.container} tabIndex={100} aria-hidden={hidden}
-            style={{ display: hidden ? 'none' : 'flex' }} onClick={this.clear}
-        >
+        return <div className="dialog__overlay" ref={this.container} tabIndex={100} onClick={this.clear} onContextMenu={this.clear}>
             <div className="abilitySlotSelection" onClick={this.stopPropagation} role="dialog" aria-labelledby="abilitySelection">
                 <h4 id="abilitySelection">Select ability for slot {this.props.data.abilitySlot}:</h4>
                 <br />
@@ -55,7 +57,7 @@ export class AbilitySelection extends React.Component<IAbilitySelectionProps, {}
 }
 
 interface IAbilitySelectionProps {
-    data: UIData;
+    data: DialogData;
     performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
     queryGame: (intQueryType: GameQueryType, ...args: Array<number>) => void;
 }

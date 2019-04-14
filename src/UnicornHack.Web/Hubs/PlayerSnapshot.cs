@@ -51,7 +51,10 @@ namespace UnicornHack.Hubs
         }
 
         public static List<object> Serialize(
-            GameEntity playerEntity, EntityState state, PlayerSnapshot snapshot, List<object> serializedLevel,
+            GameEntity playerEntity,
+            EntityState state,
+            PlayerSnapshot snapshot,
+            List<object> serializedLevel,
             SerializationContext context)
         {
             var manager = context.Manager;
@@ -219,37 +222,6 @@ namespace UnicornHack.Hubs
             }
 
             return properties;
-        }
-
-        public static List<object> SerializeAttributes(GameEntity playerEntity, SerializationContext context)
-        {
-            var being = playerEntity.Being;
-            return new List<object>(23)
-            {
-                being.Might,
-                being.Speed,
-                being.Focus,
-                being.Perception,
-                being.Regeneration,
-                being.EnergyRegeneration,
-                being.Armor,
-                being.Deflection,
-                being.Evasion,
-                being.PhysicalResistance,
-                being.MagicResistance,
-                being.BleedingResistance,
-                being.AcidResistance,
-                being.ColdResistance,
-                being.ElectricityResistance,
-                being.FireResistance,
-                being.PsychicResistance,
-                being.ToxinResistance,
-                being.VoidResistance,
-                being.SonicResistance,
-                being.StunResistance,
-                being.LightResistance,
-                being.WaterResistance
-            };
         }
 
         public static List<object> SerializeAdaptations(GameEntity playerEntity, SerializationContext context)

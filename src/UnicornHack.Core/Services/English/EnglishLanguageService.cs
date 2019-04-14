@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Services.LogEvents;
 using UnicornHack.Systems.Abilities;
@@ -21,17 +22,27 @@ namespace UnicornHack.Services.English
 
         #region Game concepts
 
-        protected virtual string GetString(GameEntity beingEntity, EnglishPerson person, SenseType sense)
+        public string GetActorName(GameEntity actorEntity, SenseType sense)
+            => GetString(actorEntity, EnglishPerson.Third, sense.CanIdentify(), definiteDeterminer: null);
+
+        public string GetActorDescription(GameEntity actorEntity)
+            => actorEntity.HasComponent(EntityComponent.Player)
+                ? ""
+                : Creature.Loader.Get(
+                        actorEntity.Manager.RacesToBeingRelationship[actorEntity.Id].Values.First().Race.TemplateName)
+                    .EnglishDescription;
+
+        protected virtual string GetString(GameEntity actorEntity, EnglishPerson person, SenseType sense)
             => GetString(
-                beingEntity,
+                actorEntity,
                 person,
-                canIdentify: sense.CanIdentify(),
+                sense.CanIdentify(),
                 definiteDeterminer: true);
 
         protected virtual string GetString(
-            GameEntity beingEntity, EnglishPerson person, bool canIdentify, bool definiteDeterminer = false)
+            GameEntity actorEntity, EnglishPerson person, bool canIdentify, bool? definiteDeterminer = false)
         {
-            if (beingEntity == null)
+            if (actorEntity == null)
             {
                 return null;
             }
@@ -47,19 +58,24 @@ namespace UnicornHack.Services.English
                 return "something";
             }
 
-            var properName = beingEntity.AI?.ProperName ?? beingEntity.Player?.ProperName;
+            var properName = actorEntity.AI?.ProperName ?? actorEntity.Player?.ProperName;
             if (properName != null)
             {
                 return properName;
             }
 
-            var name = definiteDeterminer ? "the" : "a";
-            foreach (var raceEntity in beingEntity.Manager.RacesToBeingRelationship[beingEntity.Id].Values)
+            var name = "";
+            foreach (var raceEntity in actorEntity.Manager.RacesToBeingRelationship[actorEntity.Id].Values)
             {
                 name += " " + raceEntity.Race.TemplateName;
             }
 
-            return name;
+            if (definiteDeterminer.HasValue)
+            {
+                name = (definiteDeterminer.Value ? "the" : "a") + name;
+            }
+
+            return name.Trim();
         }
 
         public virtual string GetString(ItemComponent item, int quantity, SenseType sense)

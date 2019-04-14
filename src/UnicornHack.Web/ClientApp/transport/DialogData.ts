@@ -1,17 +1,18 @@
 ﻿import { action, observable } from 'mobx';
 import { EntityState } from './EntityState';
-import { Ability } from './Model';
 import { GameQueryType } from './GameQueryType';
+import { Ability } from './Model';
 
-export class UIData {
+export class DialogData {
     @observable abilitySlot: number | null = null;
     @observable slottableAbilities: Map<string, Ability> = new Map<string, Ability>();
-    @observable playerAttributes: PlayerAttributes | null = null;
+    @observable playerAttributes: ActorAttributes | null = null;
     @observable playerAdaptations: PlayerAdaptations | null = null;
     @observable playerSkills: PlayerSkills | null = null;
+    @observable actorAttributes: ActorAttributes | null = null;
 
     @action.bound
-    update(compactData: any[]): UIData {
+    update(compactData: any[]): DialogData {
         let i = 0;
 
         this.clear();
@@ -25,13 +26,16 @@ export class UIData {
                     (s: any[]) => Ability.expandToCollection(s, this.slottableAbilities, EntityState.Added));
                 break;
             case GameQueryType.PlayerAttributes:
-                this.playerAttributes = PlayerAttributes.expand(compactData[i++]);
+                this.playerAttributes = ActorAttributes.expand(compactData[i++]);
                 break;
             case GameQueryType.PlayerAdaptations:
                 this.playerAdaptations = PlayerAdaptations.expand(compactData[i++]);
                 break;
             case GameQueryType.PlayerSkills:
                 this.playerSkills = PlayerSkills.expand(compactData[i++]);
+                break;
+            case GameQueryType.ActorAttributes:
+                this.actorAttributes = ActorAttributes.expand(compactData[i++]);
                 break;
             default:
                 console.error("Unhandled GameQueryType %d", queryType);
@@ -47,10 +51,25 @@ export class UIData {
         this.playerAttributes = null;
         this.playerAdaptations = null;
         this.playerSkills = null;
+        this.actorAttributes = null;
     }
 }
 
-export class PlayerAttributes {
+export class ActorAttributes {
+    @observable Name: string | null = null;
+    @observable Description: string = '';
+    @observable MovementDelay: number = 0;
+    @observable PrimaryFOVQuadrants: number = 0;
+    @observable PrimaryVisionRange: number = 0;
+    @observable TotalFOVQuadrants: number = 0;
+    @observable SecondaryVisionRange: number = 0;
+    @observable Infravision: boolean = false;
+    @observable InvisibilityDetection: boolean = false;
+    @observable Visibility: number = 0;
+    @observable HitPoints: number = 0;
+    @observable HitPointMaximum: number = 0;
+    @observable EnergyPoints: number = 0;
+    @observable EnergyPointMaximum: number = 0;
     @observable Might: number = 0;
     @observable Speed: number = 0;
     @observable Focus: number = 0;
@@ -76,9 +95,27 @@ export class PlayerAttributes {
     @observable WaterResistance: number = 0;
 
     @action
-    static expand(compactAttributes: any[]): PlayerAttributes {
+    static expand(compactAttributes: any[]): ActorAttributes {
         var i = 0;
-        const attributes = new PlayerAttributes();
+        const attributes = new ActorAttributes();
+        if (compactAttributes.length == 0) {
+            return attributes;
+        }
+
+        attributes.Name = compactAttributes[i++];
+        attributes.Description = compactAttributes[i++];
+        attributes.MovementDelay = compactAttributes[i++];
+        attributes.PrimaryFOVQuadrants = compactAttributes[i++];
+        attributes.PrimaryVisionRange = compactAttributes[i++];
+        attributes.TotalFOVQuadrants = compactAttributes[i++];
+        attributes.SecondaryVisionRange = compactAttributes[i++];
+        attributes.Infravision = compactAttributes[i++];
+        attributes.InvisibilityDetection = compactAttributes[i++];
+        attributes.Visibility = compactAttributes[i++];
+        attributes.HitPoints = compactAttributes[i++];
+        attributes.HitPointMaximum = compactAttributes[i++];
+        attributes.EnergyPoints = compactAttributes[i++];
+        attributes.EnergyPointMaximum = compactAttributes[i++];
         attributes.Might = compactAttributes[i++];
         attributes.Speed = compactAttributes[i++];
         attributes.Focus = compactAttributes[i++];

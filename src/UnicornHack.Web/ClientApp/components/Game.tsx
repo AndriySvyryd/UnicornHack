@@ -4,20 +4,21 @@ import { MessagePackHubProtocol } from '@aspnet/signalr-protocol-msgpack';
 import { action, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { HotKeys, IgnoreKeys } from 'react-hotkeys';
-import { Chat, IMessage, MessageType } from './Chat';
-import { CharacterScreen } from './CharacterScreen';
-import { StatusBar } from './StatusBar';
-import { Inventory } from './Inventory';
-import { AbilityBar } from './AbilityBar';
-import { AbilitySelection } from './AbilitySelection';
-import { MapDisplay } from './MapDisplay';
-import { GameLog } from './GameLog';
 import { MapStyles } from '../styles/MapStyles';
 import { Player, PlayerRace } from '../transport/Model';
 import { PlayerAction } from "../transport/PlayerAction";
 import { Direction } from "../transport/Direction";
-import { UIData } from '../transport/UIData';
+import { DialogData } from '../transport/DialogData';
 import { GameQueryType } from '../transport/GameQueryType';
+import { AbilityBar } from './AbilityBar';
+import { AbilitySelection } from './AbilitySelection';
+import { Chat, IMessage, MessageType } from './Chat';
+import { CharacterScreen } from './CharacterScreen';
+import { CreatureProperties } from './CreatureProperties';
+import { Inventory } from './Inventory';
+import { GameLog } from './GameLog';
+import { MapDisplay } from './MapDisplay';
+import { StatusBar } from './StatusBar';
 
 interface IGameProps {
     playerName: string;
@@ -28,7 +29,7 @@ interface IGameProps {
 export class Game extends React.Component<IGameProps, {}> {
     @observable player: Player = new Player();
     @observable messages: IMessage[] = [];
-    @observable dialogData: UIData = new UIData();
+    @observable dialogData: DialogData = new DialogData();
     @observable waiting: boolean = true;
     actionQueue: IAction[] = [];
     keyMap: any;
@@ -218,16 +219,18 @@ export class Game extends React.Component<IGameProps, {}> {
         const firstTimeLoading = level.depth === -1;
 
         return <HotKeys innerRef={this.hotKeyContainer} keyMap={this.keyMap} handlers={this.keyHandlers}>
-            <div aria-hidden={!firstTimeLoading} style={{
-                display: firstTimeLoading ? 'block' : 'none'
+            <div className="dialog__overlay" aria-hidden={!firstTimeLoading} style={{
+                display: firstTimeLoading ? 'flex' : 'none', background: 'transparent'
             }}>
-                <div className="spinner-border spinner-border-sm" /> Loading, please wait...
+                <div className="loading">
+                    <div className="spinner-border spinner-border-sm" /> Loading, please wait...
+                </div>    
             </div>
             <div className="game" aria-hidden={firstTimeLoading} style={{
                 display: firstTimeLoading ? 'none' : 'flex'
             }}>
                 <div className="game__map">
-                    <MapDisplay level={level} styles={this.styles} performAction={this.performAction} />
+                    <MapDisplay level={level} styles={this.styles} performAction={this.performAction} queryGame={this.queryGame}/>
                     <GameLog messages={this.player.log} />
                 </div>
 
@@ -249,6 +252,7 @@ export class Game extends React.Component<IGameProps, {}> {
                 <IgnoreKeys only='' except='Escape'>
                     <AbilitySelection data={this.dialogData} performAction={this.performAction} queryGame={this.queryGame} />
                     <CharacterScreen data={this.dialogData} player={this.player} performAction={this.performAction} queryGame={this.queryGame} />
+                    <CreatureProperties data={this.dialogData} queryGame={this.queryGame} />
                 </IgnoreKeys>
             </div>
         </HotKeys>;

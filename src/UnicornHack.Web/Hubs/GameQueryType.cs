@@ -6,6 +6,7 @@
         SlottableAbilities,
         PlayerAttributes,
         PlayerAdaptations,
-        PlayerSkills
+        PlayerSkills,
+        ActorAttributes
     }
 }
