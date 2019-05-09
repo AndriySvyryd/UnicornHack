@@ -6,13 +6,13 @@ import * as contains from 'dom-helpers/query/contains';
 import * as Overlays from 'react-overlays';
 
 @observer
-export class TooltipTrigger extends React.Component<TooltipTriggerProps> {
+export class TooltipTrigger extends React.Component<ITooltipTriggerProps> {
     _trigger: React.RefObject<any>;
     _show: IObservableValue<boolean> = observable.box(false);
     _timeout: any;
     _ariaModifier: PopperJS.BaseModifier;
 
-    constructor(props: TooltipTriggerProps) {
+    constructor(props: ITooltipTriggerProps) {
         super(props);
 
         this._trigger = React.createRef();
@@ -195,7 +195,7 @@ enum TriggerType {
     Focus = 1 << 2
 }
 
-interface TooltipTriggerProps {
+interface ITooltipTriggerProps {
     id: string;
     tooltip: React.ReactNode | (() => React.ReactNode);
     trigger?: TriggerType;
@@ -205,25 +205,23 @@ interface TooltipTriggerProps {
     popperConfig?: PopperJS.PopperOptions;
 }
 
-const OverlayWrapper = observer(({ id, placement, observableShow, children,...outerProps }: OverlayWrapperProps) => {
-    return (
-        <Overlays.Overlay placement={placement as any} show={observableShow.get()} {...outerProps}>
-            {({ props: overlayProps, arrowProps, show, ...props }: OverlayChildProps) => {
-                return <Tooltip
-                    {...props}
-                    {...overlayProps}
-                    arrowProps={arrowProps}
-                    id={id}
-                    className={(show ? 'show' : '')}
-                >
-                    {children}
-                </Tooltip>;
-            }}
-        </Overlays.Overlay>
-    );
-});
+const OverlayWrapper = observer(({ id, placement, observableShow, children, ...outerProps }: IOverlayWrapperProps) =>
+    <Overlays.Overlay placement={placement as any} show={observableShow.get()} {...outerProps}>
+        {({ props: overlayProps, arrowProps, show, ...props }: IOverlayChildProps) =>
+            <Tooltip
+                {...props}
+                {...overlayProps}
+                arrowProps={arrowProps}
+                id={id}
+                className={(show ? 'show' : '')}
+            >
+                {children}
+            </Tooltip>
+        }
+    </Overlays.Overlay>
+);
 
-interface OverlayWrapperProps extends React.ComponentPropsWithoutRef<any>{
+interface IOverlayWrapperProps extends React.ComponentPropsWithoutRef<any>{
     id: string;
     target: React.ReactInstance | (() => React.ReactInstance);
     observableShow: IObservableValue<boolean>;
@@ -234,7 +232,7 @@ interface OverlayWrapperProps extends React.ComponentPropsWithoutRef<any>{
     rootCloseEvent?: 'click' | 'mousedown';
 }
 
-interface OverlayChildProps extends React.ComponentPropsWithRef<any> {
+interface IOverlayChildProps extends React.ComponentPropsWithRef<any> {
     props: React.ComponentPropsWithRef<any>;
     arrowProps: React.ComponentPropsWithRef<any>;
     show: boolean;
@@ -250,21 +248,19 @@ const Tooltip = React.forwardRef(({
     outOfBoundaries,
     scheduleUpdate,
     ...props
-}: TooltipProps, ref: React.Ref<HTMLDivElement>) => {
-    return (
-        <div
-            ref={ref}
-            className={`${className == undefined ? '' : className + ' '}tooltip bs-tooltip-${placement}`}
-            style={style}
-            role="tooltip"
-            x-placement={placement}
-            {...props}
-        >
-            <div className="arrow" {...arrowProps} />
-            <div className="tooltip-inner">{children}</div>
-        </div>
-    );
-});
+}: TooltipProps, ref: React.Ref<HTMLDivElement>) =>
+    <div
+        ref={ref}
+        className={`${className == undefined ? '' : className + ' '}tooltip bs-tooltip-${placement}`}
+        style={style}
+        role="tooltip"
+        x-placement={placement}
+        {...props}
+    >
+        <div className="arrow" {...arrowProps} />
+        <div className="tooltip-inner">{children}</div>
+    </div>
+);
 
 interface TooltipProps extends PopperChildrenProps {
     id: string;

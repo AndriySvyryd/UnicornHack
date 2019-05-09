@@ -6,7 +6,6 @@ using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Actors;
-using UnicornHack.Systems.Faculties;
 using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 using Xunit;

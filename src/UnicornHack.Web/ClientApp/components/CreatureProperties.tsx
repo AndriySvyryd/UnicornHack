@@ -1,56 +1,37 @@
 import * as React from 'React';
-import { action } from 'mobx';
+import { computed } from 'mobx';
 import { observer } from 'mobx-react';
-import { GameQueryType } from '../transport/GameQueryType';
 import { ActorAttributes } from '../transport/DialogData';
 import { capitalize } from '../Util';
+import { AbilitiesList } from './AbilityProperties';
+import { Dialog } from './Dialog';
+import { IGameContext } from './Game';
+import { PropertyRow } from './PropertyRow';
 
-@observer
-export class CreatureProperties extends React.Component<ICreaturePropertiesProps, {}> {
-    container: React.RefObject<HTMLDivElement>;
+export const CreaturePropertiesDialog = observer((props: ICreaturePropertiesProps) => {
+    const { data, context } = props;
+    return <Dialog context={context} show={computed(() => data.actorAttributes != null)}>
+        <CreatureProperties {...props} />
+    </Dialog>;
+});
 
-    constructor(props: ICreaturePropertiesProps) {
-        super(props);
-
-        this.container = React.createRef();
+const CreatureProperties = observer((props: ICreaturePropertiesProps) => {
+    const actorAttributes = props.data.actorAttributes;
+    if (actorAttributes == null) {
+        throw "Rendered CreatureProperties with no data";
     }
 
-    componentDidUpdate(prevProps: any) {
-        if (this.props.data.actorAttributes !== null
-            && this.container.current !== null) {
-            this.container.current.focus();
-        }
-    }
-
-    @action.bound
-    clear(event: React.MouseEvent<HTMLDivElement>) {
-        this.props.queryGame(GameQueryType.Clear);
-        event.preventDefault();
-    }
-
-    stopPropagation(e: React.SyntheticEvent<{}>) {
-        e.stopPropagation;
-    }
-
-    render() {
-        if (this.props.data.actorAttributes == null) {
-            return <></>
-        }
-
-        const title = capitalize(this.props.data.actorAttributes.Name || "Unknown creature");
-        return <div className="dialog__overlay" ref={this.container} tabIndex={100} onClick={this.clear} onContextMenu={this.clear}>
-            <div className="creatureProperties" onClick={this.stopPropagation} role="dialog" aria-label="Creature properties">
-                <h2>{title}</h2>
-                <div>{this.props.data.actorAttributes.Description}</div>
-                {this.props.data.actorAttributes.Name == null ? <></> : <AttributesScreen actorAttributes={this.props.data.actorAttributes} />}
-            </div>
-        </div>;
-    }
-}
+    const title = capitalize(actorAttributes.name || "Unknown creature");
+    return <div className="creatureProperties" role="dialog" aria-label="Creature properties">
+        <h2>{title}</h2>
+        <div>{actorAttributes.description}</div>
+        {actorAttributes.name == null ? <></> : <AttributesScreen actorAttributes={actorAttributes} />}
+    </div>;
+});
 
 interface ICreaturePropertiesProps {
     data: IActorPropertiesData;
-    queryGame: (queryType: GameQueryType, ...args: Array<number>) => void;
+    context: IGameContext;
 }
 
 export const AttributesScreen = observer((props: IActorPropertiesData) => {
@@ -60,138 +41,43 @@ export const AttributesScreen = observer((props: IActorPropertiesData) => {
     }
 
     return <div className="characterScreen__content">
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Hit points:</div>
-            <div className="characterScreen__value">{actorAttributes.HitPoints}/{actorAttributes.HitPointMaximum}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Energy points:</div>
-            <div className="characterScreen__value">{actorAttributes.EnergyPoints}/{actorAttributes.EnergyPointMaximum}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Might:</div>
-            <div className="characterScreen__value">{actorAttributes.Might}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Focus:</div>
-            <div className="characterScreen__value">{actorAttributes.Focus}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Speed:</div>
-            <div className="characterScreen__value">{actorAttributes.Speed}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Perception:</div>
-            <div className="characterScreen__value">{actorAttributes.Perception}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Primary FOV:</div>
-            <div className="characterScreen__value">{actorAttributes.PrimaryFOVQuadrants * 90}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Primary vision range:</div>
-            <div className="characterScreen__value">{actorAttributes.PrimaryVisionRange}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Total FOV:</div>
-            <div className="characterScreen__value">{actorAttributes.TotalFOVQuadrants * 90}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Secondary vision range:</div>
-            <div className="characterScreen__value">{actorAttributes.SecondaryVisionRange}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Infravision:</div>
-            <div className="characterScreen__value">{actorAttributes.Infravision}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Invisibility detection:</div>
-            <div className="characterScreen__value">{actorAttributes.InvisibilityDetection}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Visibility:</div>
-            <div className="characterScreen__value">{actorAttributes.Visibility}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Movement delay:</div>
-            <div className="characterScreen__value">{actorAttributes.MovementDelay}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Regeneration:</div>
-            <div className="characterScreen__value">{actorAttributes.Regeneration}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Energy regeneration:</div>
-            <div className="characterScreen__value">{actorAttributes.EnergyRegeneration}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Armor:</div>
-            <div className="characterScreen__value">{actorAttributes.Armor}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Deflection:</div>
-            <div className="characterScreen__value">{actorAttributes.Deflection}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Evasion:</div>
-            <div className="characterScreen__value">{actorAttributes.Evasion}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Physical resistance:</div>
-            <div className="characterScreen__value">{actorAttributes.PhysicalResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Magic resistance:</div>
-            <div className="characterScreen__value">{actorAttributes.MagicResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Bleeding resistance:</div>
-            <div className="characterScreen__value">{actorAttributes.BleedingResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Acid resistance:</div>
-            <div className="characterScreen__value">{actorAttributes.AcidResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Cold resistance:</div>
-            <div className="characterScreen__value">{actorAttributes.ColdResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Electricity resistance:</div>
-            <div className="characterScreen__value">{actorAttributes.ElectricityResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Fire resistance:</div>
-            <div className="characterScreen__value">{actorAttributes.FireResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Psychic resistance:</div>
-            <div className="characterScreen__value">{actorAttributes.PsychicResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Toxin resistance:</div>
-            <div className="characterScreen__value">{actorAttributes.ToxinResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Void resistance:</div>
-            <div className="characterScreen__value">{actorAttributes.VoidResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Sonic resistance:</div>
-            <div className="characterScreen__value">{actorAttributes.SonicResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Stun resistance:</div>
-            <div className="characterScreen__value">{actorAttributes.StunResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Light resistance:</div>
-            <div className="characterScreen__value">{actorAttributes.LightResistance}</div>
-        </div>
-        <div className="characterScreen__row">
-            <div className="characterScreen__label">Water resistance:</div>
-            <div className="characterScreen__value">{actorAttributes.WaterResistance}</div>
-        </div>
+        <PropertyRow label="Hit points" value={actorAttributes.hitPoints + '/' + actorAttributes.hitPointMaximum} />
+        <PropertyRow label="Energy points" value={actorAttributes.energyPoints + '/' + actorAttributes.energyPointMaximum} />
+        <PropertyRow label="Regeneration" value={actorAttributes.regeneration} />
+        <PropertyRow label="Energy regeneration" value={actorAttributes.energyRegeneration} />
+        <PropertyRow label="Might" value={actorAttributes.might} />
+        <PropertyRow label="Focus" value={actorAttributes.focus} />
+        <PropertyRow label="Speed" value={actorAttributes.speed} />
+        <PropertyRow label="Perception" value={actorAttributes.perception} />
+        <PropertyRow label="Primary FOV" value={actorAttributes.primaryFOVQuadrants * 90} />
+        <PropertyRow label="Primary vision range" value={actorAttributes.primaryVisionRange} />
+        <PropertyRow label="Total FOV" value={actorAttributes.totalFOVQuadrants * 90} />
+        <PropertyRow label="Secondary vision range" value={actorAttributes.secondaryVisionRange} />
+        <PropertyRow label="Infravision" value={actorAttributes.infravision} />
+        <PropertyRow label="Invisibility detection" value={actorAttributes.invisibilityDetection} />
+        <PropertyRow label="Infravisible" value={actorAttributes.infravisible} />
+        <PropertyRow label="Visibility" value={actorAttributes.visibility} />
+        <PropertyRow label="Movement delay" value={actorAttributes.movementDelay} />
+        <PropertyRow label="Size" value={actorAttributes.size} />
+        <PropertyRow label="Weight" value={actorAttributes.weight} />
+        <PropertyRow label="Armor" value={actorAttributes.armor} />
+        <PropertyRow label="Deflection" value={actorAttributes.deflection} />
+        <PropertyRow label="Evasion" value={actorAttributes.evasion} />
+        <PropertyRow label="Physical resistance" value={actorAttributes.physicalResistance} />
+        <PropertyRow label="Magic resistance" value={actorAttributes.magicResistance} />
+        <PropertyRow label="Bleeding resistance" value={actorAttributes.bleedingResistance} />
+        <PropertyRow label="Acid resistance" value={actorAttributes.acidResistance} />
+        <PropertyRow label="Cold resistance" value={actorAttributes.coldResistance} />
+        <PropertyRow label="Electricity resistance" value={actorAttributes.electricityResistance} />
+        <PropertyRow label="Fire resistance" value={actorAttributes.fireResistance} />
+        <PropertyRow label="Psychic resistance" value={actorAttributes.psychicResistance} />
+        <PropertyRow label="Toxin resistance" value={actorAttributes.toxinResistance} />
+        <PropertyRow label="Void resistance" value={actorAttributes.voidResistance} />
+        <PropertyRow label="Sonic resistance" value={actorAttributes.sonicResistance} />
+        <PropertyRow label="Stun resistance" value={actorAttributes.stunResistance} />
+        <PropertyRow label="Light resistance" value={actorAttributes.lightResistance} />
+        <PropertyRow label="Water resistance" value={actorAttributes.waterResistance} />
+        {actorAttributes.abilities.size > 0 ? <AbilitiesList abilities={actorAttributes.abilities} /> : ""}
     </div>;
 });
 

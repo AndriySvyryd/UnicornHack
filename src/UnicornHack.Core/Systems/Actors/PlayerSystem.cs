@@ -333,7 +333,7 @@ namespace UnicornHack.Systems.Actors
 
             var position = playerEntity.Position;
             var shouldMoveCloser = false;
-            if ((ability.Activation & ActivationType.ManualActivation) == 0)
+            if ((ability.Activation & ActivationType.Manual) == 0)
             {
                 shouldMoveCloser = position.LevelCell.DistanceTo(targetCell) > ability.Range;
                 // TODO: Check LOS and move closer if none

@@ -118,10 +118,10 @@ namespace UnicornHack.Systems.Abilities
             }
 
             var being = ability.OwnerEntity.Being ?? targetEffectsMessage.ActivatorEntity.Being;
-            if (ability.EnergyPointCost > 0
+            if (ability.EnergyCost > 0
                 && being != null)
             {
-                if (being.EnergyPoints < ability.EnergyPointCost)
+                if (being.EnergyPoints < ability.EnergyCost)
                 {
                     targetEffectsMessage.ActivationError = $"Not enough EP to activate ability {ability.EntityId}.";
                     return targetEffectsMessage;
@@ -131,11 +131,11 @@ namespace UnicornHack.Systems.Abilities
                 {
                     if ((ability.Activation & ActivationType.Continuous) != 0)
                     {
-                        being.ReservedEnergyPoints += ability.EnergyPointCost;
+                        being.ReservedEnergyPoints += ability.EnergyCost;
                     }
                     else
                     {
-                        being.EnergyPoints -= ability.EnergyPointCost;
+                        being.EnergyPoints -= ability.EnergyCost;
                     }
                 }
             }
@@ -254,7 +254,7 @@ namespace UnicornHack.Systems.Abilities
         {
             switch (ability.Activation)
             {
-                case ActivationType.ManualActivation:
+                case ActivationType.Manual:
                 case ActivationType.WhileToggled:
                     return activatorPosition.Heading.Value;
                 case ActivationType.Targeted:
@@ -661,7 +661,7 @@ namespace UnicornHack.Systems.Abilities
             return true;
         }
 
-        private IEnumerable<GameEntity> GetTriggeredAbilities(
+        public static IEnumerable<GameEntity> GetTriggeredAbilities(
             int entityId, ActivationType trigger, GameManager manager)
             => manager.AbilitiesToAffectableRelationship[entityId]
                 .Select(a => a.Ability)
@@ -721,7 +721,7 @@ namespace UnicornHack.Systems.Abilities
             }
         }
 
-        private ActivationType GetTrigger(AbilityComponent ability)
+        public static ActivationType GetTrigger(AbilityComponent ability)
         {
             switch (ability.Action)
             {
@@ -967,13 +967,13 @@ namespace UnicornHack.Systems.Abilities
         {
             ChangeState(active: false, ability, activatorEntity, manager);
 
-            if (ability.EnergyPointCost > 0
+            if (ability.EnergyCost > 0
                 && (ability.Activation & ActivationType.Continuous) != 0)
             {
                 var being = ability.OwnerEntity.Being ?? activatorEntity.Being;
                 if (being != null)
                 {
-                    being.ReservedEnergyPoints -= ability.EnergyPointCost;
+                    being.ReservedEnergyPoints -= ability.EnergyCost;
                 }
             }
 

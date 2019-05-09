@@ -1,7 +1,18 @@
 ﻿import { action, observable } from 'mobx';
+import { capitalize } from '../Util';
 import { EntityState } from './EntityState';
 import { GameQueryType } from './GameQueryType';
-import { Ability } from './Model';
+import { Ability, EquipableSlot } from './Model';
+import { ItemType } from './ItemType';
+import { Material } from './Material';
+import { ItemComplexity } from './ItemComplexity';
+import { ActivationType } from './ActivationType';
+import { TargetingType } from './TargetingType';
+import { TargetingShape } from './TargetingShape';
+import { AbilitySuccessCondition } from './AbilitySuccessCondition';
+import { EffectType } from './EffectType';
+import { ValueCombinationFunction } from './ValueCombinationFunction';
+import { EffectDuration } from './EffectDuration';
 
 export class DialogData {
     @observable abilitySlot: number | null = null;
@@ -10,6 +21,9 @@ export class DialogData {
     @observable playerAdaptations: PlayerAdaptations | null = null;
     @observable playerSkills: PlayerSkills | null = null;
     @observable actorAttributes: ActorAttributes | null = null;
+    @observable itemAttributes: ItemAttributes | null = null;
+    @observable abilityAttributes: AbilityAttributes | null = null;
+    @observable staticDescription: string | null = null;
 
     @action.bound
     update(compactData: any[]): DialogData {
@@ -22,7 +36,7 @@ export class DialogData {
                 break;
             case GameQueryType.SlottableAbilities:
                 this.abilitySlot = compactData[i++];
-                compactData[i++].map(
+                compactData[i++].forEach(
                     (s: any[]) => Ability.expandToCollection(s, this.slottableAbilities, EntityState.Added));
                 break;
             case GameQueryType.PlayerAttributes:
@@ -36,6 +50,15 @@ export class DialogData {
                 break;
             case GameQueryType.ActorAttributes:
                 this.actorAttributes = ActorAttributes.expand(compactData[i++]);
+                break;
+            case GameQueryType.ItemAttributes:
+                this.itemAttributes = ItemAttributes.expand(compactData[i++]);
+                break;
+            case GameQueryType.AbilityAttributes:
+                this.abilityAttributes = AbilityAttributes.expand(compactData[i++]);
+                break;
+            case GameQueryType.StaticDescription:
+                this.staticDescription = compactData[i++];
                 break;
             default:
                 console.error("Unhandled GameQueryType %d", queryType);
@@ -52,47 +75,54 @@ export class DialogData {
         this.playerAdaptations = null;
         this.playerSkills = null;
         this.actorAttributes = null;
+        this.itemAttributes = null;
+        this.abilityAttributes = null;
+        this.staticDescription = null;
     }
 }
 
 export class ActorAttributes {
-    @observable Name: string | null = null;
-    @observable Description: string = '';
-    @observable MovementDelay: number = 0;
-    @observable PrimaryFOVQuadrants: number = 0;
-    @observable PrimaryVisionRange: number = 0;
-    @observable TotalFOVQuadrants: number = 0;
-    @observable SecondaryVisionRange: number = 0;
-    @observable Infravision: boolean = false;
-    @observable InvisibilityDetection: boolean = false;
-    @observable Visibility: number = 0;
-    @observable HitPoints: number = 0;
-    @observable HitPointMaximum: number = 0;
-    @observable EnergyPoints: number = 0;
-    @observable EnergyPointMaximum: number = 0;
-    @observable Might: number = 0;
-    @observable Speed: number = 0;
-    @observable Focus: number = 0;
-    @observable Perception: number = 0;
-    @observable Regeneration: number = 0;
-    @observable EnergyRegeneration: number = 0;
-    @observable Armor: number = 0;
-    @observable Deflection: number = 0;
-    @observable Evasion: number = 0;
-    @observable PhysicalResistance: number = 0;
-    @observable MagicResistance: number = 0;
-    @observable BleedingResistance: number = 0;
-    @observable AcidResistance: number = 0;
-    @observable ColdResistance: number = 0;
-    @observable ElectricityResistance: number = 0;
-    @observable FireResistance: number = 0;
-    @observable PsychicResistance: number = 0;
-    @observable ToxinResistance: number = 0;
-    @observable VoidResistance: number = 0;
-    @observable SonicResistance: number = 0;
-    @observable StunResistance: number = 0;
-    @observable LightResistance: number = 0;
-    @observable WaterResistance: number = 0;
+    @observable name: string | null = null;
+    @observable description: string = '';
+    @observable movementDelay: number = 0;
+    @observable size: number = 0;
+    @observable weight: number = 0;
+    @observable primaryFOVQuadrants: number = 0;
+    @observable primaryVisionRange: number = 0;
+    @observable totalFOVQuadrants: number = 0;
+    @observable secondaryVisionRange: number = 0;
+    @observable infravision: boolean = false;
+    @observable invisibilityDetection: boolean = false;
+    @observable infravisible: boolean = false;
+    @observable visibility: number = 0;
+    @observable hitPoints: number = 0;
+    @observable hitPointMaximum: number = 0;
+    @observable energyPoints: number = 0;
+    @observable energyPointMaximum: number = 0;
+    @observable might: number = 0;
+    @observable speed: number = 0;
+    @observable focus: number = 0;
+    @observable perception: number = 0;
+    @observable regeneration: number = 0;
+    @observable energyRegeneration: number = 0;
+    @observable armor: number = 0;
+    @observable deflection: number = 0;
+    @observable evasion: number = 0;
+    @observable physicalResistance: number = 0;
+    @observable magicResistance: number = 0;
+    @observable bleedingResistance: number = 0;
+    @observable acidResistance: number = 0;
+    @observable coldResistance: number = 0;
+    @observable electricityResistance: number = 0;
+    @observable fireResistance: number = 0;
+    @observable psychicResistance: number = 0;
+    @observable toxinResistance: number = 0;
+    @observable voidResistance: number = 0;
+    @observable sonicResistance: number = 0;
+    @observable stunResistance: number = 0;
+    @observable lightResistance: number = 0;
+    @observable waterResistance: number = 0;
+    @observable abilities: Map<string, AbilityAttributes> = new Map<string, AbilityAttributes>();
 
     @action
     static expand(compactAttributes: any[]): ActorAttributes {
@@ -102,136 +132,291 @@ export class ActorAttributes {
             return attributes;
         }
 
-        attributes.Name = compactAttributes[i++];
-        attributes.Description = compactAttributes[i++];
-        attributes.MovementDelay = compactAttributes[i++];
-        attributes.PrimaryFOVQuadrants = compactAttributes[i++];
-        attributes.PrimaryVisionRange = compactAttributes[i++];
-        attributes.TotalFOVQuadrants = compactAttributes[i++];
-        attributes.SecondaryVisionRange = compactAttributes[i++];
-        attributes.Infravision = compactAttributes[i++];
-        attributes.InvisibilityDetection = compactAttributes[i++];
-        attributes.Visibility = compactAttributes[i++];
-        attributes.HitPoints = compactAttributes[i++];
-        attributes.HitPointMaximum = compactAttributes[i++];
-        attributes.EnergyPoints = compactAttributes[i++];
-        attributes.EnergyPointMaximum = compactAttributes[i++];
-        attributes.Might = compactAttributes[i++];
-        attributes.Speed = compactAttributes[i++];
-        attributes.Focus = compactAttributes[i++];
-        attributes.Perception = compactAttributes[i++];
-        attributes.Regeneration = compactAttributes[i++];
-        attributes.EnergyRegeneration = compactAttributes[i++];
-        attributes.Armor = compactAttributes[i++];
-        attributes.Deflection = compactAttributes[i++];
-        attributes.Evasion = compactAttributes[i++];
-        attributes.PhysicalResistance = compactAttributes[i++];
-        attributes.MagicResistance = compactAttributes[i++];
-        attributes.BleedingResistance = compactAttributes[i++];
-        attributes.AcidResistance = compactAttributes[i++];
-        attributes.ColdResistance = compactAttributes[i++];
-        attributes.ElectricityResistance = compactAttributes[i++];
-        attributes.FireResistance = compactAttributes[i++];
-        attributes.PsychicResistance = compactAttributes[i++];
-        attributes.ToxinResistance = compactAttributes[i++];
-        attributes.VoidResistance = compactAttributes[i++];
-        attributes.SonicResistance = compactAttributes[i++];
-        attributes.StunResistance = compactAttributes[i++];
-        attributes.LightResistance = compactAttributes[i++];
-        attributes.WaterResistance = compactAttributes[i++];
+        attributes.name = compactAttributes[i++];
+        attributes.description = compactAttributes[i++];
+        attributes.movementDelay = compactAttributes[i++];
+        attributes.size = compactAttributes[i++];
+        attributes.weight = compactAttributes[i++];
+        attributes.primaryFOVQuadrants = compactAttributes[i++];
+        attributes.primaryVisionRange = compactAttributes[i++];
+        attributes.totalFOVQuadrants = compactAttributes[i++];
+        attributes.secondaryVisionRange = compactAttributes[i++];
+        attributes.infravision = compactAttributes[i++];
+        attributes.invisibilityDetection = compactAttributes[i++];
+        attributes.infravisible = compactAttributes[i++];
+        attributes.visibility = compactAttributes[i++];
+        attributes.hitPoints = compactAttributes[i++];
+        attributes.hitPointMaximum = compactAttributes[i++];
+        attributes.energyPoints = compactAttributes[i++];
+        attributes.energyPointMaximum = compactAttributes[i++];
+        attributes.might = compactAttributes[i++];
+        attributes.speed = compactAttributes[i++];
+        attributes.focus = compactAttributes[i++];
+        attributes.perception = compactAttributes[i++];
+        attributes.regeneration = compactAttributes[i++];
+        attributes.energyRegeneration = compactAttributes[i++];
+        attributes.armor = compactAttributes[i++];
+        attributes.deflection = compactAttributes[i++];
+        attributes.evasion = compactAttributes[i++];
+        attributes.physicalResistance = compactAttributes[i++];
+        attributes.magicResistance = compactAttributes[i++];
+        attributes.bleedingResistance = compactAttributes[i++];
+        attributes.acidResistance = compactAttributes[i++];
+        attributes.coldResistance = compactAttributes[i++];
+        attributes.electricityResistance = compactAttributes[i++];
+        attributes.fireResistance = compactAttributes[i++];
+        attributes.psychicResistance = compactAttributes[i++];
+        attributes.toxinResistance = compactAttributes[i++];
+        attributes.voidResistance = compactAttributes[i++];
+        attributes.sonicResistance = compactAttributes[i++];
+        attributes.stunResistance = compactAttributes[i++];
+        attributes.lightResistance = compactAttributes[i++];
+        attributes.waterResistance = compactAttributes[i++];
+
+        if (compactAttributes.length > i) {
+            (<any[]>compactAttributes[i++]).forEach((a: any[]) => AbilityAttributes.expand(a).addTo(attributes.abilities));
+        }
 
         return attributes;
     }
 }
 
 export class PlayerSkills {
-    @observable SkillPoints: number = 0;
-    @observable HandWeapons: number = 0;
-    @observable ShortWeapons: number = 0;
-    @observable MediumWeapons: number = 0;
-    @observable LongWeapons: number = 0;
-    @observable CloseRangeWeapons: number = 0;
-    @observable ShortRangeWeapons: number = 0;
-    @observable MediumRangeWeapons: number = 0;
-    @observable LongRangeWeapons: number = 0;
-    @observable OneHanded: number = 0;
-    @observable TwoHanded: number = 0;
-    @observable DualWielding: number = 0;
-    @observable Acrobatics: number = 0;
-    @observable LightArmor: number = 0;
-    @observable HeavyArmor: number = 0;
-    @observable AirSourcery: number = 0;
-    @observable BloodSourcery: number = 0;
-    @observable EarthSourcery: number = 0;
-    @observable FireSourcery: number = 0;
-    @observable SpiritSourcery: number = 0;
-    @observable WaterSourcery: number = 0;
-    @observable Conjuration: number = 0;
-    @observable Enchantment: number = 0;
-    @observable Evocation: number = 0;
-    @observable Malediction: number = 0;
-    @observable Illusion: number = 0;
-    @observable Transmutation: number = 0;
-    @observable Assassination: number = 0;
-    @observable Stealth: number = 0;
-    @observable Artifice: number = 0;
-    @observable Leadership: number = 0;
+    @observable skillPoints: number = 0;
+    @observable handWeapons: number = 0;
+    @observable shortWeapons: number = 0;
+    @observable mediumWeapons: number = 0;
+    @observable longWeapons: number = 0;
+    @observable closeRangeWeapons: number = 0;
+    @observable shortRangeWeapons: number = 0;
+    @observable mediumRangeWeapons: number = 0;
+    @observable longRangeWeapons: number = 0;
+    @observable oneHanded: number = 0;
+    @observable twoHanded: number = 0;
+    @observable dualWielding: number = 0;
+    @observable acrobatics: number = 0;
+    @observable lightArmor: number = 0;
+    @observable heavyArmor: number = 0;
+    @observable airSourcery: number = 0;
+    @observable bloodSourcery: number = 0;
+    @observable earthSourcery: number = 0;
+    @observable fireSourcery: number = 0;
+    @observable spiritSourcery: number = 0;
+    @observable waterSourcery: number = 0;
+    @observable conjuration: number = 0;
+    @observable enchantment: number = 0;
+    @observable evocation: number = 0;
+    @observable malediction: number = 0;
+    @observable illusion: number = 0;
+    @observable transmutation: number = 0;
+    @observable assassination: number = 0;
+    @observable stealth: number = 0;
+    @observable artifice: number = 0;
+    @observable leadership: number = 0;
 
     @action
     static expand(compactSkills: any[]): PlayerSkills {
         var i = 0;
         const skills = new PlayerSkills();
-        skills.SkillPoints = compactSkills[i++];
-        skills.HandWeapons = compactSkills[i++];
-        skills.ShortWeapons = compactSkills[i++];
-        skills.MediumWeapons = compactSkills[i++];
-        skills.LongWeapons = compactSkills[i++];
-        skills.CloseRangeWeapons = compactSkills[i++];
-        skills.ShortRangeWeapons = compactSkills[i++];
-        skills.MediumRangeWeapons = compactSkills[i++];
-        skills.LongRangeWeapons = compactSkills[i++];
-        skills.OneHanded = compactSkills[i++];
-        skills.TwoHanded = compactSkills[i++];
-        skills.DualWielding = compactSkills[i++];
-        skills.Acrobatics = compactSkills[i++];
-        skills.LightArmor = compactSkills[i++];
-        skills.HeavyArmor = compactSkills[i++];
-        skills.AirSourcery = compactSkills[i++];
-        skills.BloodSourcery = compactSkills[i++];
-        skills.EarthSourcery = compactSkills[i++];
-        skills.FireSourcery = compactSkills[i++];
-        skills.SpiritSourcery = compactSkills[i++];
-        skills.WaterSourcery = compactSkills[i++];
-        skills.Conjuration = compactSkills[i++];
-        skills.Enchantment = compactSkills[i++];
-        skills.Evocation = compactSkills[i++];
-        skills.Malediction = compactSkills[i++];
-        skills.Illusion = compactSkills[i++];
-        skills.Transmutation = compactSkills[i++];
-        skills.Assassination = compactSkills[i++];
-        skills.Stealth = compactSkills[i++];
-        skills.Artifice = compactSkills[i++];
-        skills.Leadership = compactSkills[i++];
+        skills.skillPoints = compactSkills[i++];
+        skills.handWeapons = compactSkills[i++];
+        skills.shortWeapons = compactSkills[i++];
+        skills.mediumWeapons = compactSkills[i++];
+        skills.longWeapons = compactSkills[i++];
+        skills.closeRangeWeapons = compactSkills[i++];
+        skills.shortRangeWeapons = compactSkills[i++];
+        skills.mediumRangeWeapons = compactSkills[i++];
+        skills.longRangeWeapons = compactSkills[i++];
+        skills.oneHanded = compactSkills[i++];
+        skills.twoHanded = compactSkills[i++];
+        skills.dualWielding = compactSkills[i++];
+        skills.acrobatics = compactSkills[i++];
+        skills.lightArmor = compactSkills[i++];
+        skills.heavyArmor = compactSkills[i++];
+        skills.airSourcery = compactSkills[i++];
+        skills.bloodSourcery = compactSkills[i++];
+        skills.earthSourcery = compactSkills[i++];
+        skills.fireSourcery = compactSkills[i++];
+        skills.spiritSourcery = compactSkills[i++];
+        skills.waterSourcery = compactSkills[i++];
+        skills.conjuration = compactSkills[i++];
+        skills.enchantment = compactSkills[i++];
+        skills.evocation = compactSkills[i++];
+        skills.malediction = compactSkills[i++];
+        skills.illusion = compactSkills[i++];
+        skills.transmutation = compactSkills[i++];
+        skills.assassination = compactSkills[i++];
+        skills.stealth = compactSkills[i++];
+        skills.artifice = compactSkills[i++];
+        skills.leadership = compactSkills[i++];
 
         return skills;
     }
 }
 
 export class PlayerAdaptations {
-    @observable TraitPoints: number = 0;
-    @observable MutationPoints: number = 0;
-    @observable Traits: Map<string, number> = new Map<string, number>();
-    @observable Mutations: Map<string, number> = new Map<string, number>();
+    @observable traitPoints: number = 0;
+    @observable mutationPoints: number = 0;
+    @observable traits: Map<string, number> = new Map<string, number>();
+    @observable mutations: Map<string, number> = new Map<string, number>();
 
     @action
     static expand(compactSkills: any[]): PlayerAdaptations {
         var i = 0;
         const adaptations = new PlayerAdaptations();
-        adaptations.TraitPoints = compactSkills[i++];
-        adaptations.MutationPoints = compactSkills[i++];
-        adaptations.Traits = compactSkills[i++];
-        adaptations.Mutations = compactSkills[i++];
+        adaptations.traitPoints = compactSkills[i++];
+        adaptations.mutationPoints = compactSkills[i++];
+        adaptations.traits = compactSkills[i++];
+        adaptations.mutations = compactSkills[i++];
 
         return adaptations;
+    }
+}
+
+export class ItemAttributes {
+    @observable name: string | null = null;
+    @observable description: string = '';
+    @observable type: ItemType = ItemType.None;
+    @observable material: Material = Material.Default;
+    @observable size: number = 0;
+    @observable weight: number = 0;
+    @observable hindrance: number = 0;
+    @observable complexity: ItemComplexity = 0;
+    @observable requiredMight: number = 0;
+    @observable requiredSpeed: number = 0;
+    @observable requiredFocus: number = 0;
+    @observable requiredPerception: number = 0;
+    @observable equippableSlots: Map<string, EquipableSlot> = new Map<string, EquipableSlot>();
+    @observable abilities: Map<string, AbilityAttributes> = new Map<string, AbilityAttributes>();
+
+    @action
+    static expand(compactAttributes: any[]): ItemAttributes {
+        var i = 0;
+        const attributes = new ItemAttributes();
+        attributes.name = compactAttributes[i++];
+        attributes.description = compactAttributes[i++];
+        attributes.type = compactAttributes[i++];
+        attributes.material = compactAttributes[i++];
+        attributes.size = compactAttributes[i++];
+        attributes.weight = compactAttributes[i++];
+        attributes.hindrance = compactAttributes[i++];
+        attributes.complexity = compactAttributes[i++];
+        attributes.requiredMight = compactAttributes[i++];
+        attributes.requiredSpeed = compactAttributes[i++];
+        attributes.requiredFocus = compactAttributes[i++];
+        attributes.requiredPerception = compactAttributes[i++];
+        const equippableSlots = compactAttributes[i++];
+        if (equippableSlots != null) {
+            equippableSlots.forEach((s: any[]) => EquipableSlot.expandToCollection(s, attributes.equippableSlots, EntityState.Added));
+        }
+
+        if (compactAttributes.length > i) {
+            (<any[]>compactAttributes[i++]).forEach((a: any[]) => AbilityAttributes.expand(a).addTo(attributes.abilities));
+        }
+
+        return attributes;
+    }
+}
+
+export class AbilityAttributes {
+    id: number = -1;
+    @observable name: string | null = null;
+    @observable level: number = 0;
+    @observable activation: ActivationType = ActivationType.Default;
+    @observable activationCondition: number | null = null;
+    @observable targetingType: TargetingType = TargetingType.Single;
+    @observable targetingShape: TargetingShape = TargetingShape.Line;
+    @observable range: number = 0;
+    @observable headingDeviation: number = 0;
+    @observable energyCost: number = 0;
+    @observable delay: number = 0;
+    @observable cooldown: number = 0;
+    @observable cooldownTicksLeft: number = 0;
+    @observable xpCooldown: number = 0;
+    @observable xpCooldownLeft: number = 0;
+    @observable successCondition: AbilitySuccessCondition = AbilitySuccessCondition.Default;
+    @observable effects: Map<string, EffectAttributes> = new Map<string, EffectAttributes>();
+    @observable description: string | null = null;
+    //@observable type: AbilityType = AbilityType.Default;
+    //@observable cost: number = 0;
+    //@observable accuracy: number = 0;
+
+    @action
+    static expand(compactAttributes: any[]): AbilityAttributes {
+        var i = 0;
+        const attributes = new AbilityAttributes();
+        attributes.id = compactAttributes[i++];
+        attributes.name = compactAttributes[i++];
+        attributes.level = compactAttributes[i++];
+        attributes.activation = compactAttributes[i++];
+        attributes.activationCondition = compactAttributes[i++];
+        attributes.targetingType = compactAttributes[i++];
+        attributes.targetingShape = compactAttributes[i++];
+        attributes.range = compactAttributes[i++];
+        attributes.headingDeviation = compactAttributes[i++];
+        attributes.energyCost = compactAttributes[i++];
+        attributes.delay = compactAttributes[i++];
+        attributes.cooldown = compactAttributes[i++];
+        attributes.cooldownTicksLeft = compactAttributes[i++];
+        attributes.xpCooldown = compactAttributes[i++];
+        attributes.xpCooldownLeft = compactAttributes[i++];
+        attributes.successCondition = compactAttributes[i++];
+        (<any[]>compactAttributes[i++]).forEach((a: any[]) => EffectAttributes.expand(a).addTo(attributes.effects));
+
+        if (compactAttributes.length > i) {
+            attributes.description = compactAttributes[i++];
+            //attributes.type = compactAttributes[i++];
+            //attributes.cost = compactAttributes[i++];
+            //attributes.accuracy = compactAttributes[i++];
+        }
+
+        return attributes;
+    }
+
+    @action.bound
+    addTo(map: Map<string, AbilityAttributes>) {
+        map.set(this.id.toString(), this);
+    }
+
+    getName(): string {
+        if (this.name == null) {
+            return "Ability";
+        }
+
+        return capitalize(this.name) + (this.level == 0 ? '' : ' ' + this.level.toString());
+    } 
+}
+
+export class EffectAttributes {
+    id: number = -1;
+    @observable type: EffectType = EffectType.Default;
+    @observable shouldTargetActivator: boolean = false;
+    @observable amount: string | null = null;
+    @observable function: ValueCombinationFunction = ValueCombinationFunction.Sum;
+    @observable targetName: string | null = null;
+    @observable secondaryAmount: number | null = null;
+    @observable duration: EffectDuration = EffectDuration.Instant;
+    @observable durationAmount: string | null = null;
+
+    @action
+    static expand(compactAttributes: any[]): EffectAttributes {
+        var i = 0;
+        const attributes = new EffectAttributes();
+        attributes.id = compactAttributes[i++];
+        attributes.type = compactAttributes[i++];
+        attributes.shouldTargetActivator = compactAttributes[i++];
+        attributes.amount = compactAttributes[i++];
+        attributes.function = compactAttributes[i++];
+        attributes.targetName = compactAttributes[i++];
+        attributes.secondaryAmount = compactAttributes[i++];
+        attributes.duration = compactAttributes[i++];
+        attributes.durationAmount = compactAttributes[i++];
+
+        return attributes;
+    }
+
+    @action.bound
+    addTo(map: Map<string, EffectAttributes>) {
+        map.set(this.id.toString(), this);
     }
 }

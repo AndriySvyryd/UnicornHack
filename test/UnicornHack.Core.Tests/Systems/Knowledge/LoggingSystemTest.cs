@@ -89,35 +89,43 @@ namespace UnicornHack.Systems.Knowledge
                 "The Demogorgon tries to cast a spell at Dudley, but misses.",
                 manager);
 
-            Verify(demogorgon, playerEntity, player2Entity, SenseType.Sight, SenseType.Sight, AbilityAction.Spell, manager, null,
+            Verify(demogorgon, playerEntity, player2Entity, SenseType.Sight, SenseType.Sight, AbilityAction.Spell,
+                manager, null,
                 expectedMessage: "The Demogorgon tries to cast a spell at Dudley, but misses.");
 
             Verify(demogorgon, nymph, playerEntity, SenseType.Sound, SenseType.Sight, AbilityAction.Sting, manager, 11,
                 expectedMessage: "You hear a noise.");
 
-            Verify(nymph, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch, SenseType.Sight | SenseType.Touch,
+            Verify(nymph, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch,
+                SenseType.Sight | SenseType.Touch,
                 AbilityAction.Punch, manager, 11,
                 expectedMessage: "The water nymph punches you! [11 pts.]");
 
-            Verify(nymph, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch, SenseType.Sight | SenseType.Touch,
+            Verify(nymph, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch,
+                SenseType.Sight | SenseType.Touch,
                 AbilityAction.Spit, manager, null,
                 expectedMessage: "The water nymph tries to spit at you, but misses.");
 
-            Verify(playerEntity, demogorgon, playerEntity, SenseType.Sight | SenseType.Touch, SenseType.Sight, AbilityAction.Hug, manager, 11,
+            Verify(playerEntity, demogorgon, playerEntity, SenseType.Sight | SenseType.Touch, SenseType.Sight,
+                AbilityAction.Hug, manager, 11,
                 expectedMessage: "You squeeze the Demogorgon. (11 pts.)");
 
-            Verify(playerEntity, demogorgon, playerEntity, SenseType.Sight | SenseType.Touch, SenseType.Telepathy | SenseType.Touch,
+            Verify(playerEntity, demogorgon, playerEntity, SenseType.Sight | SenseType.Touch,
+                SenseType.Telepathy | SenseType.Touch,
                 AbilityAction.Trample, manager, null,
                 expectedMessage: "You try to trample the Demogorgon, but miss.");
 
-            Verify(demogorgon, demogorgon, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Claw, manager, 11,
+            Verify(demogorgon, demogorgon, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Claw, manager,
+                11,
                 expectedMessage: "The Demogorgon claws himself. (11 pts.)");
 
-            Verify(playerEntity, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch, SenseType.Sight | SenseType.Touch,
+            Verify(playerEntity, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch,
+                SenseType.Sight | SenseType.Touch,
                 AbilityAction.Kick, manager, 12,
                 expectedMessage: "You kick yourself! [12 pts.]");
 
-            Verify(nymph, playerEntity, playerEntity, SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Touch,
+            Verify(nymph, playerEntity, playerEntity, SenseType.Sight | SenseType.Sound,
+                SenseType.Sight | SenseType.Touch,
                 AbilityAction.Scream, manager, 0,
                 expectedMessage: "The water nymph screams at you! You are unaffected.");
 
@@ -129,55 +137,70 @@ namespace UnicornHack.Systems.Knowledge
 
             var dagger = ItemData.Dagger.Instantiate(playerEntity.Manager).Referenced;
 
-            Verify(playerEntity, null, playerEntity, SenseType.Touch | SenseType.Telepathy, SenseType.Sight, AbilityAction.Slash, manager, null,
+            Verify(playerEntity, null, playerEntity, SenseType.Touch | SenseType.Telepathy, SenseType.Sight,
+                AbilityAction.Slash, manager, null,
                 weapon: dagger,
                 expectedMessage: "You slash the air.");
 
             var bow = ItemData.Shortbow.Instantiate(playerEntity.Manager).Referenced;
             var arrow = ItemData.Arrow.Instantiate(playerEntity.Manager).Referenced;
 
-            Verify(nymph, playerEntity, playerEntity, SenseType.Sight, SenseType.None, AbilityAction.Shoot, manager, null, weapon: bow,
+            Verify(nymph, playerEntity, playerEntity, SenseType.Sight, SenseType.None, AbilityAction.Shoot, manager,
+                null, weapon: bow,
                 expectedMessage: null);
 
-            Verify(nymph, playerEntity, playerEntity, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11, weapon: arrow,
-                expectedMessage: "An arrow hits you! [11 pts.]");
+            Verify(nymph, playerEntity, playerEntity, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11,
+                weapon: arrow,
+                expectedMessage: "Something hits you! [11 pts.]");
 
-            Verify(nymph, playerEntity, playerEntity, SenseType.SoundDistant, SenseType.None, AbilityAction.Shoot, manager, null,
+            Verify(nymph, playerEntity, playerEntity, SenseType.SoundDistant, SenseType.None, AbilityAction.Shoot,
+                manager, null,
                 weapon: bow,
                 expectedMessage: null);
 
-            Verify(nymph, playerEntity, playerEntity, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, null, weapon: arrow,
+            Verify(nymph, playerEntity, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager,
+                null, weapon: arrow,
                 expectedMessage: "An arrow misses you.");
 
-            Verify(playerEntity, demogorgon, playerEntity, SenseType.Sight, SenseType.None, AbilityAction.Shoot, manager, null, weapon: bow,
+            Verify(playerEntity, demogorgon, playerEntity, SenseType.Sight, SenseType.None, AbilityAction.Shoot,
+                manager, null, weapon: bow,
                 expectedMessage: null);
 
-            Verify(playerEntity, demogorgon, playerEntity, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11, weapon: arrow,
+            Verify(playerEntity, demogorgon, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager,
+                11, weapon: arrow,
                 expectedMessage: "An arrow hits the Demogorgon. (11 pts.)");
 
-            Verify(nymph, demogorgon, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Shoot, manager, null, weapon: bow,
+            Verify(nymph, demogorgon, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Shoot, manager, null,
+                weapon: bow,
                 expectedMessage: "You hear a noise.");
 
-            Verify(nymph, demogorgon, playerEntity, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 2, weapon: arrow,
+            Verify(nymph, demogorgon, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager, 2,
+                weapon: arrow,
                 expectedMessage: "An arrow hits the Demogorgon. (2 pts.)");
 
             var throwingKnife = ItemData.ThrowingKnife.Instantiate(playerEntity.Manager).Referenced;
 
-            Verify(nymph, playerEntity, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Throw, manager, null,
+            Verify(nymph, playerEntity, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Throw,
+                manager,
+                null,
                 weapon: throwingKnife,
                 expectedMessage: null);
 
-            Verify(nymph, playerEntity, playerEntity, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11, weapon: throwingKnife,
+            Verify(nymph, playerEntity, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager,
+                11,
+                weapon: throwingKnife,
                 expectedMessage: "A throwing knife hits you! [11 pts.]");
 
-            Verify(playerEntity, null, playerEntity, SenseType.None, SenseType.None, AbilityAction.Hit, manager, null, weapon: throwingKnife,
+            Verify(playerEntity, null, playerEntity, SenseType.None, SenseType.None, AbilityAction.Hit, manager, null,
+                weapon: throwingKnife,
                 expectedMessage: null);
 
             Verify(nymph, demogorgon, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Throw, manager, null,
                 weapon: throwingKnife,
                 expectedMessage: "You hear a noise.");
 
-            Verify(nymph, demogorgon, playerEntity, SenseType.None, SenseType.SoundDistant, AbilityAction.Hit, manager, 2,
+            Verify(nymph, demogorgon, playerEntity, SenseType.None, SenseType.SoundDistant, AbilityAction.Hit, manager,
+                2,
                 weapon: throwingKnife,
                 expectedMessage: "You hear a distant noise.");
         }
@@ -307,7 +330,7 @@ namespace UnicornHack.Systems.Knowledge
 
             var sword = ItemData.LongSword.Instantiate(level.Entity.Manager).Referenced;
 
-            Assert.Equal("You equip a long sword in the main hand for melee.", languageService.GetString(new ItemEquipmentEvent(
+            Assert.Equal("You equip the long sword in the main hand for melee.", languageService.GetString(new ItemEquipmentEvent(
                 player, player, sword, SenseType.Sight | SenseType.Touch,
                 SenseType.Sight | SenseType.Touch, EquipmentSlot.GraspPrimaryMelee)));
         }
@@ -333,7 +356,7 @@ namespace UnicornHack.Systems.Knowledge
 
             var sword = ItemData.LongSword.Instantiate(level.Entity.Manager).Referenced;
 
-            Assert.Equal("You unequip a long sword.", languageService.GetString(new ItemEquipmentEvent(
+            Assert.Equal("You unequip the long sword.", languageService.GetString(new ItemEquipmentEvent(
                 player, player, sword, SenseType.Sight | SenseType.Touch,
                 SenseType.Sight | SenseType.Touch, EquipmentSlot.None)));
         }
@@ -354,12 +377,12 @@ namespace UnicornHack.Systems.Knowledge
                     SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Sound,
                     SenseType.Sight | SenseType.Sound, consumed: false, successful: true)));
 
-            Assert.Equal("You drink from a flask of healing.", languageService.GetString(
+            Assert.Equal("You drink from the flask of healing.", languageService.GetString(
                 new ItemActivationEvent(player, flask, player, player,
                     SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Touch,
                     SenseType.Sight | SenseType.Touch, consumed: false, successful: true)));
 
-            Assert.Equal("You drink a potion of experience.", languageService.GetString(
+            Assert.Equal("You drink the potion of experience.", languageService.GetString(
                 new ItemActivationEvent(player, potion, player, player,
                     SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Touch,
                     SenseType.Sight | SenseType.Touch, consumed: true, successful: true)));

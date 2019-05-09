@@ -1,20 +1,20 @@
 import * as React from 'React';
 import { action } from 'mobx';
 import { observer } from 'mobx-react';
+import { GameQueryType } from '../transport/GameQueryType';
 import { Item, EquipableSlot } from '../transport/Model';
 import { PlayerAction } from "../transport/PlayerAction";
+import { IGameContext } from './Game';
 import { TooltipTrigger } from './TooltipTrigger';
 
 export const Inventory = observer((props: IInventoryProps) => {
-    const items = Array.from(props.items.values(), i =>
-        <InventoryLine item={i} key={i.id} performAction={props.performAction} />);
-
+    const items = Array.from(props.context.player.inventory.values(), i =>
+        <InventoryLine item={i} key={i.id} context={props.context} />);
     return <div className="inventory">{items}</div>;
 });
 
 interface IInventoryProps {
-    items: Map<string, Item>;
-    performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
+    context: IGameContext;
 }
 
 @observer
@@ -22,15 +22,21 @@ class InventoryLine extends React.Component<IItemProps, {}> {
     @action.bound
     unequip(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
-            this.props.performAction(PlayerAction.UnequipItem, this.props.item.id, null);
+            this.props.context.performAction(PlayerAction.UnequipItem, this.props.item.id, null);
         }
     }
 
     @action.bound
     drop(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
-            this.props.performAction(PlayerAction.DropItem, this.props.item.id, null);
+            this.props.context.performAction(PlayerAction.DropItem, this.props.item.id, null);
         }
+    }
+
+    @action.bound
+    showAttributes(event: React.MouseEvent<HTMLDivElement>) {
+        this.props.context.showDialog(GameQueryType.ItemAttributes, this.props.item.id);
+        event.preventDefault();
     }
 
     render() {
@@ -45,7 +51,7 @@ class InventoryLine extends React.Component<IItemProps, {}> {
                     delay={100}
                     tooltip={'Unequip from ' + item.equippedSlot.name}
                 >
-                    <a tabIndex={0} onClick={this.unequip} onKeyPress={this.unequip}>{item.equippedSlot.shortName}</a>
+                    <a tabIndex={0} role="button" onClick={this.unequip} onKeyPress={this.unequip}>{item.equippedSlot.shortName}</a>
                 </TooltipTrigger>);
             itemLine.push('] ');
         } else if (item.equippableSlots.size !== 0) {
@@ -63,15 +69,15 @@ class InventoryLine extends React.Component<IItemProps, {}> {
         }
 
         itemLine.push(' ');
-        itemLine.push(<a tabIndex={0} key="drop" onClick={this.drop} onKeyPress={this.drop}>drop</a>);
+        itemLine.push(<a tabIndex={0} role="button" key="drop" onClick={this.drop} onKeyPress={this.drop}>drop</a>);
 
-        return <div>{item.name}{itemLine}</div>;
+        return <div onContextMenu={this.showAttributes}>{item.name}{itemLine}</div>;
     }
 }
 
 interface IItemProps {
     item: Item;
-    performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
+    context: IGameContext;
 }
 
 @observer
@@ -79,7 +85,7 @@ class Equip extends React.Component<IEquipProps, {}> {
     @action.bound
     equip(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
-            this.props.performAction(PlayerAction.EquipItem, this.props.item.id, this.props.slot.id);
+            this.props.context.performAction(PlayerAction.EquipItem, this.props.item.id, this.props.slot.id);
         }
     }
 
@@ -90,7 +96,7 @@ class Equip extends React.Component<IEquipProps, {}> {
             delay={100}
             tooltip={'Equip to ' + slot.name}
         >
-            <a tabIndex={0} onClick={this.equip} onKeyPress={this.equip}>{slot.shortName}</a>
+            <a tabIndex={0} role="button" onClick={this.equip} onKeyPress={this.equip}>{slot.shortName}</a>
         </TooltipTrigger>;
     }
 }
@@ -98,5 +104,5 @@ class Equip extends React.Component<IEquipProps, {}> {
 interface IEquipProps {
     item: Item;
     slot: EquipableSlot;
-    performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
+    context: IGameContext;
 }

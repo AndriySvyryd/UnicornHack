@@ -12,6 +12,7 @@ namespace UnicornHack.Generation
     public class Ability : ILoadable, ICSScriptSerializable
     {
         public string Name { get; set; }
+        public string EnglishDescription { get; set; }
         public AbilityType Type { get; set; }
         public int Cost { get; set; }
         public ActivationType Activation { get; set; }
@@ -58,7 +59,7 @@ namespace UnicornHack.Generation
             ability.Cooldown = Cooldown;
             ability.XPCooldown = XPCooldown;
             ability.Delay = Delay;
-            ability.EnergyPointCost = EnergyPointCost;
+            ability.EnergyCost = EnergyPointCost;
             ability.Template = this;
             ability.Level = level;
 
@@ -102,6 +103,7 @@ namespace UnicornHack.Generation
             where TAbility : Ability => new Dictionary<string, Func<TAbility, object, bool>>
         {
             {nameof(Name), (o, v) => v != default},
+            {nameof(EnglishDescription), (o, v) => v != default},
             {nameof(Type), (o, v) => (AbilityType)v != default},
             {nameof(Cost), (o, v) => (int)v != default},
             {nameof(Activation), (o, v) => (ActivationType)v != default},

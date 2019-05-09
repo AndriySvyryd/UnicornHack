@@ -55,27 +55,19 @@ function getClientConfig(env) {
                             'css-modules-typescript-loader',
                             {
                                 loader: 'css-loader',
-                                options: { sourceMap: true, camelCase: 'dashesOnly', importLoaders: 4 }
+                                options: { sourceMap: true, camelCase: 'dashesOnly', importLoaders: 3 }
                             },
                             { loader: 'postcss-loader', options: { sourceMap: true } },
                             { loader: 'resolve-url-loader', options: { sourceMap: true } },
-                            { loader: 'sass-loader', options: { sourceMap: true } },
-                            {
-                                loader: 'sass-resources-loader',
-                                options: { resources: './ClientApp/styles/sass-resources.scss' }
-                            }
+                            { loader: 'sass-loader', options: { sourceMap: true } }
                         ]
                         : [
                             MiniCssExtractPlugin.loader,
                             'css-modules-typescript-loader',
-                            { loader: 'css-loader', options: { camelCase: 'dashesOnly', importLoaders: 4 } },
+                            { loader: 'css-loader', options: { camelCase: 'dashesOnly', importLoaders: 3 } },
                             { loader: 'postcss-loader' },
                             { loader: 'resolve-url-loader' },
-                            { loader: 'sass-loader' },
-                            {
-                                loader: 'sass-resources-loader',
-                                options: { resources: './ClientApp/styles/sass-resources.scss' }
-                            }
+                            { loader: 'sass-loader' }
                         ]
                 }
             ]

@@ -1,6 +1,7 @@
 import * as React from 'React';
-import { observer } from 'mobx-react';
+import { observer, Provider } from 'mobx-react';
 import { action } from 'mobx';
+import { IKeyContext } from './KeyContext';
 
 @observer
 export class Tabs extends React.Component<ITabsProps, {}> {
@@ -10,14 +11,9 @@ export class Tabs extends React.Component<ITabsProps, {}> {
             return child;
         }
 
-        const tabProps: INavTab = Object.assign({ ...(child as unknown as Tab).props }, {
-            id: this.props.id,
-            activeKey: this.props.activeKey,
-            tabIndex: this.props.baseTabIndex === undefined ? -1 : this.props.baseTabIndex + index,
-            onSelect: this.props.onSelect
-        });
-
-        return <NavTab {...tabProps} />;
+        const childProps = (child as unknown as Tab).props;
+        return <NavTab id={this.props.id} eventKey={childProps.eventKey} title={childProps.title} keyContext={this.props.keyContext}
+            tabIndex={this.props.baseTabIndex === undefined ? -1 : this.props.baseTabIndex + index} />;
     }
 
     @action.bound
@@ -27,34 +23,35 @@ export class Tabs extends React.Component<ITabsProps, {}> {
         }
 
         const childProps = (child as unknown as Tab).props;
-        return <TabPane id={this.props.id} activeKey={this.props.activeKey} eventKey={childProps.eventKey}>
+        return <TabPane id={this.props.id} eventKey={childProps.eventKey} keyContext={this.props.keyContext}>
             {childProps.children}
         </TabPane>;
     }
 
     render() {
-        return <>
-            <nav className="nav nav-tabs nav-fill" role="tablist">
-                {React.Children.map(this.props.children, this.renderTab)}
-            </nav>
-            <div className="tab-content">
-                {React.Children.map(this.props.children, this.renderContent)}
+        return <Provider keyContext={this.props.keyContext}>
+            <div>
+                <nav className="nav nav-tabs nav-fill" role="tablist">
+                    {React.Children.map(this.props.children, this.renderTab)}
+                </nav>
+                <div className="tab-content">
+                    {React.Children.map(this.props.children, this.renderContent)}
+                </div>
             </div>
-        </>;
+        </Provider>;
     }
 }
 
 interface ITabsProps {
     id: string;
-    activeKey: string;
-    onSelect: (eventKey: any, e: React.SyntheticEvent<{}>) => void;
+    keyContext: IKeyContext;
     baseTabIndex?: number;
 }
 
 export class Tab extends React.Component<ITabProps, {}> {
     render(): React.ReactNode {
         throw new Error(
-            'ReactBootstrap: The `Tab` component is not meant to be rendered! ' +
+            "The `Tab` component is not meant to be rendered! " +
             "It's an abstract component that is only valid as a direct Child of the `Tabs` Component. "
         );
     }
@@ -71,21 +68,21 @@ class NavTab extends React.Component<INavTab, {}> {
     @action.bound
     setAbilitySlot(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
-            this.props.onSelect(this.props.eventKey, event);
+            this.props.keyContext.onSelect(this.props.eventKey, event);
         }
     }
 
     render() {
         const {
             id,
-            activeKey,
+            keyContext,
             title,
             disabled,
             tabIndex,
             eventKey
         } = this.props;
 
-        let isActive = activeKey === eventKey;
+        let isActive = keyContext.activeKey === eventKey;
 
         return <a
             id={`${id}-tab-${eventKey}`}
@@ -106,20 +103,19 @@ interface INavTab {
     id: string;
     eventKey: string;
     title: string;
-    activeKey: string;
+    keyContext: IKeyContext;
     disabled?: boolean;
     tabIndex: number;
-    onSelect: (eventKey: string, e: React.SyntheticEvent<{}>) => void;
 }
 
 const TabPane = observer((props: ITabPaneProps) => {
     const {
         id,
-        activeKey,
+        keyContext,
         eventKey
     } = props;
 
-    let isActive = activeKey === eventKey;
+    let isActive = keyContext.activeKey === eventKey;
 
     return <div
         id={`${id}-tabpane-${eventKey}`}
@@ -135,6 +131,6 @@ const TabPane = observer((props: ITabPaneProps) => {
 interface ITabPaneProps {
     id: string;
     eventKey: string;
-    activeKey: string;
+    keyContext: IKeyContext;
     children?: React.ReactNode;
 }

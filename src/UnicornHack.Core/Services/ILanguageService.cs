@@ -8,9 +8,9 @@ namespace UnicornHack.Services
 {
     public interface ILanguageService
     {
-        string GetPropertyString(string propertyName, bool abbreviate);
+        string GetPropertyName(string propertyName, bool abbreviate);
         string GetActorName(GameEntity actorEntity, SenseType sense);
-        string GetActorDescription(GameEntity actorEntity);
+        string GetDescription(string id, DescriptionCategory category);
         string GetString(ItemComponent item, int quantity, SenseType sense);
         string GetString(RaceComponent race, bool abbreviate);
         string GetString(AbilityComponent ability);

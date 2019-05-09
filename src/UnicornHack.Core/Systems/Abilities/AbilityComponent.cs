@@ -26,7 +26,7 @@ namespace UnicornHack.Systems.Abilities
         private int _xpCooldown;
         private int? _cooldownTick;
         private int? _cooldownXpLeft;
-        private int _energyPointCost;
+        private int _energyCost;
         private string _delay;
         private bool _isActive;
         private bool _isUsable = true;
@@ -140,10 +140,10 @@ namespace UnicornHack.Systems.Abilities
             set => SetWithNotify(value, ref _cooldownXpLeft);
         }
 
-        public int EnergyPointCost
+        public int EnergyCost
         {
-            get => _energyPointCost;
-            set => SetWithNotify(value, ref _energyPointCost);
+            get => _energyCost;
+            set => SetWithNotify(value, ref _energyCost);
         }
 
         public string Delay
@@ -267,7 +267,7 @@ namespace UnicornHack.Systems.Abilities
             ability.Cooldown = Cooldown;
             ability.XPCooldown = XPCooldown;
             ability.Delay = Delay;
-            ability.EnergyPointCost = EnergyPointCost;
+            ability.EnergyCost = EnergyCost;
 
             abilityEffectEntity.Ability = ability;
 
@@ -301,7 +301,7 @@ namespace UnicornHack.Systems.Abilities
             _xpCooldown = default;
             _cooldownTick = default;
             _cooldownXpLeft = default;
-            _energyPointCost = default;
+            _energyCost = default;
             _delay = default;
             _isActive = default;
             _isUsable = true;

@@ -23,24 +23,28 @@ namespace UnicornHack.Services.English
         #region Game concepts
 
         public string GetActorName(GameEntity actorEntity, SenseType sense)
-            => GetString(actorEntity, EnglishPerson.Third, sense.CanIdentify(), definiteDeterminer: null);
+            => GetString(actorEntity, EnglishPerson.Third, sense, definiteDeterminer: null);
 
-        public string GetActorDescription(GameEntity actorEntity)
-            => actorEntity.HasComponent(EntityComponent.Player)
-                ? ""
-                : Creature.Loader.Get(
-                        actorEntity.Manager.RacesToBeingRelationship[actorEntity.Id].Values.First().Race.TemplateName)
-                    .EnglishDescription;
+        public string GetDescription(string id, DescriptionCategory category)
+        {
+            switch (category)
+            {
+                case DescriptionCategory.Creature:
+                    return Creature.Loader.Get(id).EnglishDescription;
+            }
+
+            return "";
+        }
 
         protected virtual string GetString(GameEntity actorEntity, EnglishPerson person, SenseType sense)
             => GetString(
                 actorEntity,
                 person,
-                sense.CanIdentify(),
+                sense,
                 definiteDeterminer: true);
 
         protected virtual string GetString(
-            GameEntity actorEntity, EnglishPerson person, bool canIdentify, bool? definiteDeterminer = false)
+            GameEntity actorEntity, EnglishPerson person, SenseType sense, bool? definiteDeterminer = false)
         {
             if (actorEntity == null)
             {
@@ -53,7 +57,7 @@ namespace UnicornHack.Services.English
                     EnglishPronounForm.Normal, EnglishNumber.Singular, person, gender: null);
             }
 
-            if (!canIdentify)
+            if (!sense.CanIdentify())
             {
                 return "something";
             }
@@ -79,15 +83,20 @@ namespace UnicornHack.Services.English
         }
 
         public virtual string GetString(ItemComponent item, int quantity, SenseType sense)
-            => (sense & SenseType.Sight) == 0 ? "something" : GetString(item, quantity);
+            => GetString(item, quantity, sense, definiteDeterminer: null);
 
         public string GetString(RaceComponent race, bool abbreviate)
             => abbreviate
                 ? race.TemplateName.Substring(0, 2)
                 : race.TemplateName;
 
-        public virtual string GetString(ItemComponent item, int quantity, bool definiteDeterminer = false)
+        public virtual string GetString(ItemComponent item, int quantity, SenseType sense, bool? definiteDeterminer)
         {
+            if (!sense.CanIdentify())
+            {
+                return "something";
+            }
+
             var itemName = item.TemplateName + (item.Name == null ? "" : " named \"" + item.Name + "\"");
             if (quantity > 1)
             {
@@ -95,16 +104,16 @@ namespace UnicornHack.Services.English
                        EnglishMorphologicalProcessor.ProcessNoun(itemName, EnglishNounForm.Plural);
             }
 
-            return (EnglishMorphologicalProcessor.IsPlural(itemName)
+            return (EnglishMorphologicalProcessor.IsPlural(itemName) || definiteDeterminer == null
                        ? ""
-                       : definiteDeterminer
+                       : definiteDeterminer.Value
                            ? "the "
                            : EnglishMorphologicalProcessor.IsVocal(itemName[0])
                                ? "an "
                                : "a ") + itemName;
         }
 
-        public virtual string GetPropertyString(string propertyName, bool abbreviate)
+        public virtual string GetPropertyName(string propertyName, bool abbreviate)
         {
             if (!abbreviate)
             {
@@ -409,7 +418,7 @@ namespace UnicornHack.Services.English
             if (@event.Hit)
             {
                 var attackSentence = ToSentence(
-                    GetString(weapon, 1,
+                    GetString(weapon, 1, @event.AttackerSensed,
                         definiteDeterminer: !isProjectile && attackerPerson == EnglishPerson.Second),
                     EnglishMorphologicalProcessor.ProcessVerb(attackVerb, EnglishVerbForm.ThirdPersonSingularPresent),
                     @event.AttackerEntity != @event.VictimEntity
@@ -433,7 +442,7 @@ namespace UnicornHack.Services.English
             return victim == null
                 ? null
                 : ToSentence(
-                    GetString(weapon, 1,
+                    GetString(weapon, 1, @event.AttackerSensed,
                         definiteDeterminer: !isProjectile && attackerPerson == EnglishPerson.Second),
                     EnglishMorphologicalProcessor.ProcessVerb("miss", EnglishVerbForm.ThirdPersonSingularPresent),
                     victim);
@@ -467,7 +476,8 @@ namespace UnicornHack.Services.English
             return ToSentence(
                 GetString(@event.PickerEntity, pickerPerson, @event.PickerSensed),
                 EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "pick up", pickerPerson),
-                GetString(@event.ItemEntity.Item, @event.Quantity));
+                GetString(@event.ItemEntity.Item, @event.Quantity, @event.ItemSensed,
+                    definiteDeterminer: pickerPerson == EnglishPerson.Second));
         }
 
         public virtual string GetString(in ItemDropEvent @event)
@@ -478,7 +488,8 @@ namespace UnicornHack.Services.English
             return ToSentence(
                 GetString(@event.DropperEntity, dropperPerson, @event.DropperSensed),
                 EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "drop", dropperPerson),
-                GetString(@event.ItemEntity.Item, @event.Quantity));
+                GetString(@event.ItemEntity.Item, @event.Quantity, @event.ItemSensed,
+                    definiteDeterminer: dropperPerson == EnglishPerson.Second));
         }
 
         public virtual string GetString(in ItemActivationEvent @event)
@@ -495,7 +506,8 @@ namespace UnicornHack.Services.English
             return ToSentence(
                 GetString(@event.ActivatorEntity, consumerPerson, @event.ActivatorSensed),
                 EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verb, consumerPerson),
-                GetString(@event.ItemEntity.Item, 1, @event.ItemSensed));
+                GetString(@event.ItemEntity.Item, 1, @event.ItemSensed,
+                    definiteDeterminer: consumerPerson == EnglishPerson.Second));
         }
 
         public virtual string GetString(in ItemEquipmentEvent @event)
@@ -503,13 +515,13 @@ namespace UnicornHack.Services.English
             var equipperPerson = @event.SensorEntity == @event.EquipperEntity
                 ? EnglishPerson.Second
                 : EnglishPerson.Third;
-            // TODO: Use the definite determiner for items when the (un)equipper is the sensor
+
             if (@event.Slot == EquipmentSlot.None)
             {
                 return ToSentence(
                     GetString(@event.EquipperEntity, equipperPerson, @event.EquipperSensed),
                     EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "unequip", equipperPerson),
-                    GetString(@event.ItemEntity.Item, 1, @event.ItemSensed));
+                    GetString(@event.ItemEntity.Item, 1, @event.ItemSensed, definiteDeterminer: equipperPerson == EnglishPerson.Second));
             }
 
             var slotKnown = (@event.EquipperSensed & SenseType.Sight) != 0
@@ -517,7 +529,7 @@ namespace UnicornHack.Services.English
             return ToSentence(
                 GetString(@event.EquipperEntity, equipperPerson, @event.EquipperSensed),
                 EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "equip", equipperPerson),
-                GetString(@event.ItemEntity.Item, 1, @event.ItemSensed),
+                GetString(@event.ItemEntity.Item, 1, @event.ItemSensed, definiteDeterminer: equipperPerson == EnglishPerson.Second),
                 slotKnown ? PrepositionFor(@event.Slot) : null,
                 slotKnown ? GetString(@event.Slot, @event.EquipperEntity, abbreviate: false) : null);
         }
@@ -552,7 +564,7 @@ namespace UnicornHack.Services.English
             return Format(
                 "Welcome to the {0}, {1}!",
                 manager.FindEntity(playerEntity.Position.LevelId).Level.Branch.Name,
-                GetString(playerEntity, EnglishPerson.Third, true));
+                GetString(playerEntity, EnglishPerson.Third, SenseType.Sight));
         }
 
         public virtual string UnableToMove(Direction direction) => Format("Can't move {0}.", GetString(direction));
@@ -592,6 +604,11 @@ namespace UnicornHack.Services.English
 
         private static StringBuilder Capitalize(StringBuilder builder)
         {
+            if (builder.Length == 0)
+            {
+                return builder;
+            }
+
             var first = builder[index: 0];
             builder.Remove(startIndex: 0, length: 1).Insert(index: 0, value: char.ToUpper(first));
 

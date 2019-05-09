@@ -1,4 +1,4 @@
-export const enum ItemType {
+export enum ItemType {
     None = 0,
     Coin = 1 << 0,
     Container = 1 << 1,

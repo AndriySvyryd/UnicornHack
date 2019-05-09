@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using UnicornHack.Generation;
 using UnicornHack.Primitives;
+using UnicornHack.Services;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Items;
 using UnicornHack.Utils;
@@ -109,5 +111,45 @@ namespace UnicornHack.Hubs
             context.Services.Language.GetString(slot, context.Observer, abbreviate: true),
             context.Services.Language.GetString(slot, context.Observer, abbreviate: false)
         };
+
+        public static List<object> SerializeAttributes(GameEntity itemEntity, SenseType sense, SerializationContext context)
+        {
+            var canIdentify = itemEntity != null && sense.CanIdentify();
+            if (!canIdentify)
+            {
+                return new List<object>();
+            }
+
+            var manager = itemEntity.Manager;
+            var item = itemEntity.Item;
+            var template = Item.Loader.Get(item.TemplateName);
+            var physical = itemEntity.Physical;
+            var equipableSlots = manager.ItemUsageSystem.GetEquipableSlots(item, context.Observer.Physical.Size)
+                .GetNonRedundantFlags(removeComposites: true)
+                .Select(s => Serialize(s, context))
+                .ToList();
+            return new List<object>(13)
+            {
+                context.Services.Language.GetString(item, item.GetQuantity(manager), sense),
+                context.Services.Language.GetDescription(item.TemplateName, DescriptionCategory.Item),
+                item.Type,
+                (int)physical.Material,
+                physical.Size,
+                physical.Weight,
+                item.Hindrance,
+                template.Complexity,
+                template.RequiredMight,
+                template.RequiredSpeed,
+                template.RequiredFocus,
+                template.RequiredPerception,
+                equipableSlots,
+                manager.AbilitiesToAffectableRelationship[itemEntity.Id]
+                    .Where(a => a.Ability.IsUsable
+                                && a.Ability.Activation != ActivationType.Default
+                                && a.Ability.Activation != ActivationType.Always
+                                && a.Ability.Activation != ActivationType.WhilePossessed)
+                    .Select(a => AbilitySnapshot.SerializeAttributes(a, context.Observer, context)).ToList()
+            };
+        }
     }
 }

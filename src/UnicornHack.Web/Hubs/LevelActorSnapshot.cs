@@ -2,6 +2,7 @@
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using UnicornHack.Primitives;
+using UnicornHack.Services;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 
@@ -27,7 +28,7 @@ namespace UnicornHack.Hubs
                         ? new List<object>(6)
                         : new List<object>(7) {(int)state};
                     properties.Add(actorKnowledge.EntityId);
-                    // TODO: Move to language service
+
                     if (actorKnowledge.SensedType.CanIdentify())
                     {
                         properties.Add(ai != null
@@ -126,8 +127,7 @@ namespace UnicornHack.Hubs
 
         public static List<object> SerializeAttributes(GameEntity actorEntity, SenseType sense, SerializationContext context)
         {
-            var canIdentify = actorEntity != null
-                                  && (sense & (SenseType.Sight | SenseType.Touch)) != SenseType.None;
+            var canIdentify = actorEntity != null && sense.CanIdentify();
             if (!canIdentify)
             {
                 return new List<object>();
@@ -135,17 +135,26 @@ namespace UnicornHack.Hubs
 
             var being = actorEntity.Being;
             var sensor = actorEntity.Sensor;
-            return new List<object>(37)
+            var physical = actorEntity.Physical;
+            var description = actorEntity.HasComponent(EntityComponent.Player)
+                ? ""
+                : context.Services.Language.GetDescription(
+                    actorEntity.Manager.RacesToBeingRelationship[actorEntity.Id].Values.First().Race.TemplateName,
+                    DescriptionCategory.Creature);
+            var result = new List<object>(40)
             {
                 context.Services.Language.GetActorName(actorEntity, sense),
-                context.Services.Language.GetActorDescription(actorEntity),
+                description,
                 actorEntity.Position.MovementDelay,
+                physical.Size,
+                physical.Weight,
                 sensor.PrimaryFOVQuadrants,
                 sensor.PrimaryVisionRange,
                 sensor.TotalFOVQuadrants,
                 sensor.SecondaryVisionRange,
                 sensor.Infravision,
                 sensor.InvisibilityDetection,
+                physical.Infravisible,
                 being.Visibility,
                 being.HitPoints,
                 being.HitPointMaximum,
@@ -175,6 +184,19 @@ namespace UnicornHack.Hubs
                 being.LightResistance,
                 being.WaterResistance
             };
+
+            if (!actorEntity.HasComponent(EntityComponent.Player))
+            {
+                result.Add(actorEntity.Manager.AbilitiesToAffectableRelationship[actorEntity.Id]
+                    .Where(a => a.Ability.IsUsable
+                                && a.Ability.Activation != ActivationType.Default
+                                && a.Ability.Activation != ActivationType.Always
+                                && a.Ability.Activation != ActivationType.OnMeleeAttack
+                                && a.Ability.Activation != ActivationType.OnRangedAttack) // Instead add the effects to the corresponding abilities
+                    .Select(a => AbilitySnapshot.SerializeAttributes(a, actorEntity, context)).ToList());
+            }
+
+            return result;
         }
     }
 }

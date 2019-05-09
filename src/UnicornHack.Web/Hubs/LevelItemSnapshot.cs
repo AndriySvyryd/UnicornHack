@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using UnicornHack.Primitives;
+using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 
 namespace UnicornHack.Hubs
@@ -28,16 +29,28 @@ namespace UnicornHack.Hubs
                 case EntityState.Added:
                 {
                     var manager = context.Manager;
-                    var item = knowledgeEntity.Knowledge.KnownEntity.Item;
+                    var itemKnowledge = knowledgeEntity.Knowledge;
+                    var item = itemKnowledge.KnownEntity.Item;
                     var position = knowledgeEntity.Position;
                     properties = state == null
                         ? new List<object>(6)
                         : new List<object>(7) {(int)state};
                     properties.Add(knowledgeEntity.Id);
-                    properties.Add((int)item.Type);
-                    properties.Add(item.TemplateName);
-                    properties.Add(
-                        context.Services.Language.GetString(item, item.GetQuantity(manager), SenseType.Sight));
+
+                    if (itemKnowledge.SensedType.CanIdentify())
+                    {
+                        properties.Add((int)item.Type);
+                        properties.Add(item.TemplateName);
+                        properties.Add(
+                            context.Services.Language.GetString(item, item.GetQuantity(manager), itemKnowledge.SensedType));
+                    }
+                    else
+                    {
+                        properties.Add((int)ItemType.None);
+                        properties.Add(null);
+                        properties.Add(null);
+                    }
+
                     properties.Add(position.LevelX);
                     properties.Add(position.LevelY);
                     return properties;
@@ -51,7 +64,8 @@ namespace UnicornHack.Hubs
                 default:
                 {
                     var manager = context.Manager;
-                    var item = knowledgeEntity.Knowledge.KnownEntity.Item;
+                    var itemKnowledge = knowledgeEntity.Knowledge;
+                    var item = itemKnowledge.KnownEntity.Item;
                     var position = knowledgeEntity.Position;
                     properties = new List<object>(2)
                     {
@@ -59,8 +73,33 @@ namespace UnicornHack.Hubs
                         knowledgeEntity.Id
                     };
 
-                    var i = 3;
-                    var newName = context.Services.Language.GetString(item, item.GetQuantity(manager), SenseType.Sight);
+                    var i = 1;
+
+                    var knowledgeEntry = context.DbContext.Entry(itemKnowledge);
+                    var sensedType = knowledgeEntry.Property(nameof(KnowledgeComponent.SensedType));
+                    if (sensedType.IsModified)
+                    {
+                        var canIdentify = itemKnowledge.SensedType.CanIdentify();
+                        properties.Add(i);
+                        properties.Add(!canIdentify
+                            ? (int)ItemType.None
+                            : item.Type);
+
+                        i++;
+                        properties.Add(i);
+                        properties.Add(!canIdentify
+                            ? null
+                            : item.TemplateName);
+                    }
+                    else
+                    {
+                        i++;
+                    }
+
+                    i++;
+                    var newName = itemKnowledge.SensedType.CanIdentify()
+                        ? context.Services.Language.GetString(item, item.GetQuantity(manager), itemKnowledge.SensedType)
+                        : null;
                     if (snapshot.NameSnapshot != newName)
                     {
                         properties.Add(i);

@@ -4,39 +4,35 @@ import { MessagePackHubProtocol } from '@aspnet/signalr-protocol-msgpack';
 import { action, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { HotKeys, IgnoreKeys } from 'react-hotkeys';
-import { MapStyles } from '../styles/MapStyles';
 import { Player, PlayerRace } from '../transport/Model';
 import { PlayerAction } from "../transport/PlayerAction";
 import { Direction } from "../transport/Direction";
 import { DialogData } from '../transport/DialogData';
 import { GameQueryType } from '../transport/GameQueryType';
 import { AbilityBar } from './AbilityBar';
-import { AbilitySelection } from './AbilitySelection';
+import { AbilitySelectionDialog } from './AbilitySelection';
 import { Chat, IMessage, MessageType } from './Chat';
-import { CharacterScreen } from './CharacterScreen';
-import { CreatureProperties } from './CreatureProperties';
+import { CharacterScreenDialog } from './CharacterScreen';
+import { CreaturePropertiesDialog } from './CreatureProperties';
 import { Inventory } from './Inventory';
 import { GameLog } from './GameLog';
 import { MapDisplay } from './MapDisplay';
 import { StatusBar } from './StatusBar';
-
-interface IGameProps {
-    playerName: string;
-    baseUrl: string;
-}
+import { ItemPropertiesDialog } from './ItemProperties';
+import { AbilityPropertiesDialog } from './AbilityProperties';
 
 @observer
 export class Game extends React.Component<IGameProps, {}> {
     @observable player: Player = new Player();
-    @observable messages: IMessage[] = [];
-    @observable dialogData: DialogData = new DialogData();
-    @observable waiting: boolean = true;
-    actionQueue: IAction[] = [];
-    keyMap: any;
-    keyHandlers: any;
-    connection: signalR.HubConnection;
-    styles: MapStyles = new MapStyles();
-    hotKeyContainer: React.RefObject<HTMLInputElement>;
+    @observable private _messages: IMessage[] = [];
+    @observable private _dialogData: DialogData = new DialogData();
+    @observable private _waiting: boolean = true;
+    @observable private _firstTimeLoading: boolean = true;
+    private _actionQueue: IAction[] = [];
+    private _keyMap: any;
+    private _keyHandlers: any;
+    private _connection: signalR.HubConnection;
+    private _hotKeyContainer: React.RefObject<HTMLInputElement>;
 
     constructor(props: IGameProps) {
         super(props);
@@ -61,13 +57,13 @@ export class Game extends React.Component<IGameProps, {}> {
         connection.on('ReceiveState', this.processServerState);
         connection.on('ReceiveUIRequest', this.handleUIRequest);
 
-        this.connection = connection;
+        this._connection = connection;
 
         this.player.name = props.playerName;
         new PlayerRace().addTo(this.player.races);
 
         // https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values
-        this.keyMap = {
+        this._keyMap = {
             'moveNorth': ['up', '8', 'k'],
             'moveEast': ['right', '6', 'l'],
             'moveSouth': ['down', '2', 'j'],
@@ -80,7 +76,7 @@ export class Game extends React.Component<IGameProps, {}> {
             'clear': 'Escape'
         };
 
-        this.keyHandlers = {
+        this._keyHandlers = {
             'moveNorth': (event: KeyboardEvent) => {
                 this.performAction(PlayerAction.MoveOneCell, Direction.North);
                 event.preventDefault();
@@ -118,29 +114,27 @@ export class Game extends React.Component<IGameProps, {}> {
                 event.preventDefault();
             },
             'clear': (event: KeyboardEvent) => {
-                this.queryGame(GameQueryType.Clear);
+                this.showDialog(GameQueryType.Clear);
                 event.preventDefault();
             }
         };
 
-        this.queryGame = this.queryGame.bind(this);
-        this.performAction = this.performAction.bind(this);
         this.sendMessage = this.sendMessage.bind(this);
-        this.hotKeyContainer = React.createRef();
+        this._hotKeyContainer = React.createRef();
     }
 
     componentDidMount() {
-        this.connection.start()
+        this._connection.start()
             .then(() => { this.getFullState() })
             .catch(e => this.addError((e || '').toString()));
 
-        if (this.hotKeyContainer.current !== null) {
-            this.hotKeyContainer.current.focus();
+        if (this._hotKeyContainer.current !== null) {
+            this._hotKeyContainer.current.focus();
         }
     }
 
     private getFullState() {
-        this.connection.invoke('GetState', this.props.playerName)
+        this._connection.invoke('GetState', this.props.playerName)
             .then(this.processServerState)
             .catch(e => this.addError((e || '').toString()));
     }
@@ -155,41 +149,48 @@ export class Game extends React.Component<IGameProps, {}> {
         }
 
         this.player = newPlayer;
+        this._firstTimeLoading = false;
 
         this.performQueuedActions();
-    }
-
-    private queryGame(queryType: GameQueryType, ...args: Array<number>) {
-        this.connection.invoke('QueryGame', this.props.playerName, queryType, args)
-            .catch(e => this.addError((e || '').toString()));
-        if (queryType === GameQueryType.Clear && this.hotKeyContainer.current !== null) {
-            this.hotKeyContainer.current.focus();
-        }
+        // TODO: Get additional static data
     }
 
     @action.bound
     handleUIRequest(compactRequest: any[]) {
-        this.dialogData = this.dialogData.update(compactRequest);
+        this._dialogData = this._dialogData.update(compactRequest);
     }
 
-    private performAction(action: PlayerAction, target: (number | null) = null, target2: (number | null) = null) {
-        if (this.waiting) {
-            this.actionQueue.push({ action: action, target: target, target2: target2 });
+    showDialog = (queryType: GameQueryType, ...args: Array<number>) => {
+        this._connection.invoke('ShowDialog', this.props.playerName, queryType, args)
+            .catch(e => this.addError((e || '').toString()));
+        if (queryType === GameQueryType.Clear && this._hotKeyContainer.current !== null) {
+            this._hotKeyContainer.current.focus();
+        }
+    };
+
+    queryGame = (queryType: GameQueryType, ...args: Array<number>) => {
+        this._connection.invoke('QueryGame', this.props.playerName, queryType, args)
+            .catch(e => this.addError((e || '').toString()));
+    };
+
+    performAction = (action: PlayerAction, target: (number | null) = null, target2: (number | null) = null) => {
+        if (this._waiting) {
+            this._actionQueue.push({ action: action, target: target, target2: target2 });
         } else {
-            this.waiting = true;
-            this.connection.invoke('PerformAction', this.props.playerName, action, target, target2)
+            this._waiting = true;
+            this._connection.invoke('PerformAction', this.props.playerName, action, target, target2)
                 .catch(e => this.addError((e || '').toString()));
         }
 
-        if (this.hotKeyContainer.current !== null) {
-            this.hotKeyContainer.current.focus();
+        if (this._hotKeyContainer.current !== null) {
+            this._hotKeyContainer.current.focus();
         }
-    }
+    };
 
     private performQueuedActions() {
-        this.waiting = false;
-        if (this.actionQueue.length > 0) {
-            const action = this.actionQueue.shift();
+        this._waiting = false;
+        if (this._actionQueue.length > 0) {
+            const action = this._actionQueue.shift();
             if (action == undefined) {
                 return;
             }
@@ -198,7 +199,7 @@ export class Game extends React.Component<IGameProps, {}> {
     }
 
     private sendMessage(outgoingMessage: string) {
-        this.connection.invoke('SendMessage', outgoingMessage)
+        this._connection.invoke('SendMessage', outgoingMessage)
             .catch(e => this.addError((e || '').toString()));
     }
 
@@ -207,7 +208,7 @@ export class Game extends React.Component<IGameProps, {}> {
         if (this.player.level.depth === -1) {
             this.player.level.depth = 0;
         }
-        this.messages.push({ id: this.messages.length, userName: userName, text: text, type: type } as IMessage);
+        this._messages.push({ id: this._messages.length, userName: userName, text: text, type: type } as IMessage);
     };
 
     private addError(error: string) {
@@ -215,10 +216,9 @@ export class Game extends React.Component<IGameProps, {}> {
     }
 
     render() {
-        const level = this.player.level;
-        const firstTimeLoading = level.depth === -1;
+        const firstTimeLoading = this._firstTimeLoading;
 
-        return <HotKeys innerRef={this.hotKeyContainer} keyMap={this.keyMap} handlers={this.keyHandlers}>
+        return <HotKeys innerRef={this._hotKeyContainer} keyMap={this._keyMap} handlers={this._keyHandlers}>
             <div className="dialog__overlay" aria-hidden={!firstTimeLoading} style={{
                 display: firstTimeLoading ? 'flex' : 'none', background: 'transparent'
             }}>
@@ -230,37 +230,51 @@ export class Game extends React.Component<IGameProps, {}> {
                 display: firstTimeLoading ? 'none' : 'flex'
             }}>
                 <div className="game__map">
-                    <MapDisplay level={level} styles={this.styles} performAction={this.performAction} queryGame={this.queryGame}/>
+                    <MapDisplay context={this} />
                     <GameLog messages={this.player.log} />
                 </div>
 
                 <div className="game__sidepanel">
                     <div className="sidepanel">
-                        <StatusBar player={this.player} levelName={level.branchName} levelDepth={level.depth} queryGame={this.queryGame} />
+                        <StatusBar context={this} />
                     </div>
                     <div className="sidepanel">
-                        <AbilityBar player={this.player} performAction={this.performAction} queryGame={this.queryGame} />
+                        <AbilityBar context={this} />
                     </div>
                     <div className="sidepanel">
-                        <Inventory items={this.player.inventory} performAction={this.performAction} />
+                        <Inventory context={this} />
                     </div>
                     <div className="sidepanel">
-                        <Chat sendMessage={this.sendMessage} messages={this.messages} />
+                        <Chat sendMessage={this.sendMessage} messages={this._messages} />
                     </div>
                 </div>
 
                 <IgnoreKeys only='' except='Escape'>
-                    <AbilitySelection data={this.dialogData} performAction={this.performAction} queryGame={this.queryGame} />
-                    <CharacterScreen data={this.dialogData} player={this.player} performAction={this.performAction} queryGame={this.queryGame} />
-                    <CreatureProperties data={this.dialogData} queryGame={this.queryGame} />
+                    <AbilitySelectionDialog context={this} data={this._dialogData} />
+                    <CharacterScreenDialog context={this} data={this._dialogData} />
+                    <CreaturePropertiesDialog context={this} data={this._dialogData} />
+                    <ItemPropertiesDialog context={this} data={this._dialogData} />
+                    <AbilityPropertiesDialog context={this} data={this._dialogData} />
                 </IgnoreKeys>
             </div>
         </HotKeys>;
     }
 }
 
+interface IGameProps {
+    playerName: string;
+    baseUrl: string;
+}
+
 interface IAction {
     action: PlayerAction;
     target: (number | null);
     target2: (number | null);
+}
+
+export interface IGameContext {
+    player: Player;
+    performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
+    showDialog: (intQueryType: GameQueryType, ...args: Array<number>) => void;
+    queryGame: (intQueryType: GameQueryType, ...args: Array<number>) => void;
 }

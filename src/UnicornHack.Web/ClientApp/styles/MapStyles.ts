@@ -47,7 +47,7 @@ export class WallStyles {
     [index: number]: ITileStyle;
 
     constructor() {
-        const defaultStyle = { color: 'grey' };
+        const defaultStyle = { color: 'grey', backgroundColor: 'dimgrey' };
         this[DirectionFlags.None] = { char: '●', style: defaultStyle };
         this[DirectionFlags.North] = { char: '╹', style: defaultStyle };
         this[DirectionFlags.East] = { char: '╺', style: defaultStyle };
@@ -81,6 +81,8 @@ export class ItemStyles {
     [index: number]: ITileStyle;
 
     constructor() {
+        this[ItemType.None] = { char: '?', style: { color: 'gray' } };
+
         this[ItemType.Coin] = { char: '$', style: { color: 'gold' } };
 
         this[ItemType.AccessoryNeck] = { char: '"', style: { color: 'limegreen' } };

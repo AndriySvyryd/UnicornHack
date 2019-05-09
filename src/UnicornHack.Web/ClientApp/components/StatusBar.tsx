@@ -4,6 +4,7 @@ import { observer } from 'mobx-react';
 import { Player, PlayerRace } from '../transport/Model';
 import { GameQueryType } from '../transport/GameQueryType';
 import { capitalize } from '../Util';
+import { IGameContext } from './Game';
 import { MeterBar } from './MeterBar';
 import { TooltipTrigger } from './TooltipTrigger';
 
@@ -12,15 +13,12 @@ export class StatusBar extends React.Component<IStatusBarProps, {}> {
     @action.bound
     showCharacterScreen(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
-            this.props.queryGame(GameQueryType.PlayerAttributes);
+            this.props.context.showDialog(GameQueryType.PlayerAttributes);
         }
     }
 
     render() {
-        const player = this.props.player;
-        const playerName = <a tabIndex={1} onClick={this.showCharacterScreen} onKeyPress={this.showCharacterScreen}>
-            {player.name}
-        </a>;
+        const player = this.props.context.player;
 
         //TODO: Add status effects
         return <div className="statusBar__wrapper"><div className="statusBar" role="status">
@@ -34,20 +32,17 @@ export class StatusBar extends React.Component<IStatusBarProps, {}> {
                 <XpBar player={player} />
             </div>
             <div className="statusBar__element">
-                {playerName} {<RaceList player={player} />}
+                <RaceList player={player} showCharacterScreen={this.showCharacterScreen} />
             </div>
             <div className="statusBar__element">
-                {this.props.levelName}:{this.props.levelDepth} AUT: {player.nextActionTick / 100}
+                <PlayerLocation player={player} />
             </div>
         </div></div>;
     }
 }
 
 interface IStatusBarProps {
-    player: Player;
-    levelName: string;
-    levelDepth: number;
-    queryGame: (intQueryType: GameQueryType, ...args: Array<number>) => void;
+    context: IGameContext;
 }
 
 const HpBar = observer((props: IPlayerStatusProps) => {
@@ -90,22 +85,28 @@ const XpBar = observer((props: IPlayerStatusProps) => {
     </MeterBar>;
 });
 
-const RaceList = observer((props: IPlayerStatusProps) => {
-    const player = props.player;
-    const learningRace = player.learningRace;
-    return <>
-        {Array.from(player.races.values(), r => <RaceStatus race={r} isLearning={r === learningRace} key={r.id} />)}
-    </>;
-});
-
 interface IPlayerStatusProps {
     player: Player;
 }
 
-const RaceStatus = observer(({ race, isLearning }: IRaceStatusProps) => {
+const RaceList = observer((props: IPlayerRacesProps) => {
+    const player = props.player;
+    const races = Array.from(player.races.values(), r => <RaceStatus race={r} player={player} key={r.id} />);
+    return <>
+        <a tabIndex={1} role="button" onClick={props.showCharacterScreen} onKeyPress={props.showCharacterScreen}>
+            {player.name}
+        </a> {races}
+    </>;
+});
+
+interface IPlayerRacesProps extends IPlayerStatusProps {
+    showCharacterScreen: ((event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) => void)
+};
+
+const RaceStatus = observer(({ race, player }: IRaceStatusProps) => {
     const raceString = `${race.shortName}(${race.xpLevel}) `;
     var className = '';
-    if (isLearning) {
+    if (race.id === player.learningRace.id) {
         className = 'font-weight-bold';
     }
 
@@ -118,7 +119,12 @@ const RaceStatus = observer(({ race, isLearning }: IRaceStatusProps) => {
     </TooltipTrigger>;
 });
 
-interface IRaceStatusProps {
+interface IRaceStatusProps extends IPlayerStatusProps {
     race: PlayerRace;
-    isLearning: boolean;
 }
+
+const PlayerLocation = observer((props: IPlayerStatusProps) => {
+    const player = props.player;
+    const level = player.level;
+    return <span>{level.branchName}: {level.depth} AUT: {player.nextActionTick / 100}</span>;
+});

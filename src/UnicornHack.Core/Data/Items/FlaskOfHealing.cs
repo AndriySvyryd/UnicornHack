@@ -15,7 +15,7 @@ namespace UnicornHack.Data.Items
                 new Ability
                 {
                     Name = "Drink",
-                    Activation = ActivationType.ManualActivation,
+                    Activation = ActivationType.Manual,
                     Action = AbilityAction.Drink,
                     XPCooldown = 25,
                     Delay = "100",

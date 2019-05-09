@@ -5,6 +5,7 @@
     "moduleResolution": "node",
     "target": "es2015",
     "jsx": "react",
+    //"incremental": true,
     "sourceMap": true,
     "lib": [ "es2015", "dom", "dom.iterable", "scripthost" ],
     "strict": true,

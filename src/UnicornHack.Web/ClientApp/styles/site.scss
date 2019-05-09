@@ -1,14 +1,18 @@
+@import "sass-resources";
 @import "node_modules/bootstrap/scss/utilities/_background";
 @import "node_modules/bootstrap/scss/utilities/_text";
 @import "node_modules/bootstrap/scss/_reboot";
 @import "node_modules/bootstrap/scss/_progress";
 @import "node_modules/bootstrap/scss/_buttons";
+@import "node_modules/bootstrap/scss/_close";
 @import "node_modules/bootstrap/scss/_code";
 @import "node_modules/bootstrap/scss/_forms";
 @import "node_modules/bootstrap/scss/_nav";
 @import "node_modules/bootstrap/scss/_spinners";
 @import "node_modules/bootstrap/scss/_type";
 @import "node_modules/bootstrap/scss/_tooltip";
+@import "node_modules/bootstrap/scss/_card";
+@import "node_modules/bootstrap/scss/_transitions";
 
 @font-face {
     font-family: DejaVuSansMono;
@@ -44,6 +48,14 @@ input::placeholder {
     flex: 0 0 auto;
     width: auto;
     max-width: 100%;
+}
+
+.accordion {
+    > .card {
+        &:last-of-type {
+            border-bottom: $card-border-width solid $card-border-color;
+        }
+    }
 }
 
 .intro {
@@ -143,7 +155,6 @@ input::placeholder {
     }
 
     @include make-row();
-
     margin-top: -$grid-gutter-width/2;
     padding-right: 0;
 }
@@ -200,7 +211,7 @@ input::placeholder {
 }
 
 .bg-reservedEp {
-    background-color: $base00;    
+    background-color: $base00;
 }
 
 .bg-currentXp {
@@ -273,6 +284,7 @@ input::placeholder {
 }
 
 .dialog__overlay {
+    @include make-row();
     position: fixed;
     padding: 0;
     margin: 0;
@@ -280,13 +292,18 @@ input::placeholder {
     left: 0;
     width: 100%;
     height: 100%;
-    display: flex;
     background: rgba(127,127,127,0.25);
 }
 
-.abilitySlotSelection, .characterScreen, .creatureProperties {
+.dialog__overlayContent {
+    @include make-row();
+    margin: auto;
+    max-height: 100%;
+    flex: 1 1 auto;
+}
+
+.abilitySlotSelection, .characterScreen, .creatureProperties, .itemProperties, .abilityProperties {
     @extend .frame;
-    position: relative;
     margin: auto;
     max-height: 100%;
     overflow: auto;
@@ -294,51 +311,91 @@ input::placeholder {
 }
 
 .characterScreen {
-    width: 100%;
+    flex: 1 1 auto;
+}
+
+.abilityList {
+    padding-top: $grid-gutter-width;
 }
 
 .characterScreen__content {
+    @extend .checkered;
     @include make-row();
-    width: 100%;
     padding: $grid-gutter-width $grid-gutter-width 0 $grid-gutter-width;
 }
 
-.characterScreen__content .characterScreen__row:nth-child(8n),
-.characterScreen__content .characterScreen__row:nth-child(8n+1),
-.characterScreen__content .characterScreen__row:nth-child(8n+3),
-.characterScreen__content .characterScreen__row:nth-child(8n+6) {
-    @include media-breakpoint-up(xl) {
-        background-color: $body-bg;
-    }
+.abilityScreen__header {
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
-.characterScreen__content .characterScreen__row:nth-child(8n+2),
-.characterScreen__content .characterScreen__row:nth-child(8n+4),
-.characterScreen__content .characterScreen__row:nth-child(8n+5),
-.characterScreen__content .characterScreen__row:nth-child(8n+7) {
-    @include media-breakpoint-up(xl) {
-        background-color: darken($body-bg, 2%);
-    }
+.abilityScreen__name {
+    @include make-col-ready();
+    @include make-col(12);
+    text-align: left;
+    font-weight: bold;
+    height: 100%;
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
-.characterScreen__content .characterScreen__row:nth-child(6n+1),
-.characterScreen__content .characterScreen__row:nth-child(6n+3),
-.characterScreen__content .characterScreen__row:nth-child(6n+5) {
-    @include media-breakpoint-only(lg) {
-        background-color: $body-bg;
-    }
-}
-
-.characterScreen__content .characterScreen__row:nth-child(6n),
-.characterScreen__content .characterScreen__row:nth-child(6n+2),
-.characterScreen__content .characterScreen__row:nth-child(6n+4) {
-    @include media-breakpoint-only(lg) {
-        background-color: darken($body-bg, 2%);
-    }
-}
-
-.characterScreen__row {
+.abilityScreen__effects {
+    @include make-col-ready();
+    @include make-col(12);
     @include make-row();
+    padding-top: $grid-gutter-width;
+}
+
+.abilityScreen__effectsTitle, .abilityScreen__title {
+    @include make-col-ready();
+    @include make-col(12);
+}
+
+.effectScreen__content {
+    @extend .checkered;
+    @include make-col-ready();
+    @include make-col(12);
+    @include make-row();
+    border: 1px solid rgba($body-color, 0.5);
+}
+
+.checkered .property__row:nth-child(8n),
+.checkered .property__row:nth-child(8n+1),
+.checkered .property__row:nth-child(8n+3),
+.checkered .property__row:nth-child(8n+6) {
+    @include media-breakpoint-up(xl) {
+        background-color: $body-bg;
+    }
+}
+
+.checkered .property__row:nth-child(8n+2),
+.checkered .property__row:nth-child(8n+4),
+.checkered .property__row:nth-child(8n+5),
+.checkered .property__row:nth-child(8n+7) {
+    @include media-breakpoint-up(xl) {
+        background-color: darken($body-bg, 2%);
+    }
+}
+
+.checkered .property__row:nth-child(6n+1),
+.checkered .property__row:nth-child(6n+3),
+.checkered .property__row:nth-child(6n+5) {
+    @include media-breakpoint-only(lg) {
+        background-color: $body-bg;
+    }
+}
+
+.checkered .property__row:nth-child(6n),
+.checkered .property__row:nth-child(6n+2),
+.checkered .property__row:nth-child(6n+4) {
+    @include media-breakpoint-only(lg) {
+        background-color: darken($body-bg, 2%);
+    }
+}
+
+.property__row {
+    @include make-row();
+    @include make-col-ready();
 
     @include media-breakpoint-down(sm) {
         @include make-col(12);
@@ -360,19 +417,30 @@ input::placeholder {
     display: inline-flex;
 }
 
-.characterScreen__label {
+.property__row_wide {
     @include make-col-ready();
-    @include make-col(10);
 
-    padding: 0;
+    @include media-breakpoint-up(sm) {
+        @include make-col(12);
+    }
+
+    @include media-breakpoint-up(lg) {
+        @include make-col(6);
+    }
+}
+
+.property__row_multi-line {
+    @include make-col-ready();
+    @include make-col(12);
+}
+
+.property__label {
     white-space: nowrap;
 }
 
-.characterScreen__value {
-    @include make-col-ready();
-    @include make-col(2);
-
-    padding: 0;
+.property__value {
+    padding-left: $grid-gutter-width;
+    white-space: nowrap;
 }
 
 :export {

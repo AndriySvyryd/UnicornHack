@@ -9,20 +9,20 @@ import { Direction } from '../transport/Direction';
 import { GameQueryType } from '../transport/GameQueryType';
 import { MapFeature } from '../transport/MapFeature';
 import { capitalize } from '../Util';
+import { IGameContext } from './Game';
 import { TooltipTrigger } from './TooltipTrigger';
 
 export const MapDisplay = observer((props: IMapProps) => {
-    const level = props.level;
-
+    const level = props.context.player.level;
+    const styles = new MapStyles();
     const map = new Array<React.ReactElement<any>>(level.height);
     for (let y = 0; y < level.height; y++) {
         map[y] = <MapRow
             y={y}
             row={level.tiles[y]}
-            styles={props.styles}
+            styles={styles}
             indexToPoint={level.indexToPoint}
-            performAction={props.performAction}
-            queryGame={props.queryGame}
+            context={props.context}
             key={y} />;
     }
 
@@ -32,10 +32,7 @@ export const MapDisplay = observer((props: IMapProps) => {
 });
 
 interface IMapProps {
-    level: Level;
-    styles: MapStyles;
-    performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
-    queryGame: (intQueryType: GameQueryType, ...args: Array<number>) => void;
+    context: IGameContext;
 }
 
 const MapRow = observer((props: IRowProps) => {
@@ -44,8 +41,7 @@ const MapRow = observer((props: IRowProps) => {
             x={x} y={props.y}
             tile={t}
             styles={props.styles}
-            performAction={props.performAction}
-            queryGame={props.queryGame}
+            context={props.context}
             key={x} />
     );
     return <div className="map__row">{row}</div>;
@@ -56,39 +52,51 @@ interface IRowProps {
     row: Tile[];
     styles: MapStyles;
     indexToPoint: number[][];
-    performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
-    queryGame: (intQueryType: GameQueryType, ...args: Array<number>) => void;
+    context: IGameContext;
 }
 
 @observer
 class MapTile extends React.Component<ITileProps, {}> {
-    @action.bound
-    move(event: React.MouseEvent<HTMLDivElement>) {
-        this.props.performAction(PlayerAction.MoveToCell, Level.pack(this.props.x, this.props.y), null);
-    }
+    private _clickAction: TileAction = TileAction.None;
+    private _contextMenuAction: TileAction = TileAction.None;
 
     @action.bound
-    wait(event: React.MouseEvent<HTMLDivElement>) {
-        this.props.performAction(PlayerAction.Wait, null, null);
-    }
-
-    @action.bound
-    attack(event: React.MouseEvent<HTMLDivElement>) {
-        this.props.performAction(PlayerAction.UseAbilitySlot, null, Level.pack(this.props.x, this.props.y));
-    }
-
-    @action.bound
-    playerAttributes(event: React.MouseEvent<HTMLDivElement>) {
-        this.props.queryGame(GameQueryType.PlayerAttributes);
+    handleClick(event: React.MouseEvent<HTMLDivElement>) {
+        this.handleEvent(this._clickAction);
         event.preventDefault();
     }
 
     @action.bound
-    actorAttributes(event: React.MouseEvent<HTMLDivElement>) {
-        if (this.props.tile.actor != null) {
-            this.props.queryGame(GameQueryType.ActorAttributes, this.props.tile.actor.id);
+    handleContextMenu(event: React.MouseEvent<HTMLDivElement>) {
+        this.handleEvent(this._contextMenuAction);
+        event.preventDefault();
+    }
+
+    handleEvent(action: TileAction) {
+        switch (action) {
+            case TileAction.Wait:
+                this.props.context.performAction(PlayerAction.Wait, null, null);
+                break;
+            case TileAction.Move:
+                this.props.context.performAction(PlayerAction.MoveToCell, Level.pack(this.props.x, this.props.y), null);
+                break;
+            case TileAction.Attack:
+                this.props.context.performAction(PlayerAction.UseAbilitySlot, null, Level.pack(this.props.x, this.props.y));
+                break;
+            case TileAction.PlayerAttributes:
+                this.props.context.showDialog(GameQueryType.PlayerAttributes);
+                break;
+            case TileAction.ActorAttributes:
+                if (this.props.tile.actor != null) {
+                    this.props.context.showDialog(GameQueryType.ActorAttributes, this.props.tile.actor.id);
+                }
+                break;
+            case TileAction.ItemAttributes:
+                if (this.props.tile.item != null) {
+                    this.props.context.showDialog(GameQueryType.ItemAttributes, this.props.tile.item.id);
+                }
+                break;
         }
-        event.preventDefault();
     }
 
     getBackground(heading: Direction, glyph: ITileStyle) {
@@ -126,14 +134,13 @@ class MapTile extends React.Component<ITileProps, {}> {
     }
 
     render() {
-        const tile = this.props.tile;
-        const styles = this.props.styles;
+        const { x, y, tile, styles, context } = this.props;
         let glyph: ITileStyle;
-        let onClick: undefined | ((event: React.MouseEvent<HTMLDivElement>) => void) = this.move;
-        let onContextMenu: undefined | ((event: React.MouseEvent<HTMLDivElement>) => void);
+        let inlineStyle: React.CSSProperties = {};
+        let tooltip: string | null = null;
+        this._clickAction = TileAction.Move;
+        this._contextMenuAction = TileAction.None;
 
-        // TODO: Also change pointer
-        var content: (JSX.Element | string) = '';
         if (tile.actor != null) {
             glyph = styles.actors[tile.actor.baseName];
             if (glyph == undefined) {
@@ -145,29 +152,18 @@ class MapTile extends React.Component<ITileProps, {}> {
                 throw `Actor type ${tile.actor.baseName} not supported.`;
             }
 
-            let tooltip: string;
-            // TODO: check position instead of base name
-            if (tile.actor.baseName == 'player') {
-                onClick = this.wait;
-                onContextMenu = this.playerAttributes;
+            if (tile.actor.baseName == 'player'
+                && tile.actor.name == context.player.name) {
+                this._clickAction = TileAction.Wait;
+                this._contextMenuAction = TileAction.PlayerAttributes;
                 tooltip = capitalize(tile.actor.name)
             } else {
-                onClick = this.attack;
-                onContextMenu = this.actorAttributes;
+                this._clickAction = TileAction.Attack;
+                this._contextMenuAction = TileAction.ActorAttributes;
                 tooltip = 'Attack ' + tile.actor.name;
             }
 
-            const style: React.CSSProperties = { backgroundImage: this.getBackground(tile.actor.heading, glyph) };
-            content = <TooltipTrigger
-                id={`tooltip-actor-${tile.actor.id}`}
-                delay={100}
-                tooltip={tooltip}
-            >
-                <div onClick={onClick} onContextMenu={onContextMenu} style={style}>
-                    {glyph.char}
-                </div>
-            </TooltipTrigger>;
-            onClick = undefined;
+            inlineStyle = { backgroundImage: this.getBackground(tile.actor.heading, glyph) };
         } else if (tile.item != null) {
             const type = tile.item.type;
             glyph = styles.items[type];
@@ -175,13 +171,8 @@ class MapTile extends React.Component<ITileProps, {}> {
                 throw `Item type ${type} not supported.`;
             }
 
-            content = <TooltipTrigger
-                id={`tooltip-item-${tile.item.id}`}
-                delay={100}
-                tooltip={capitalize(tile.item.baseName)}
-            >
-                <span>{glyph.char}</span>
-            </TooltipTrigger>
+            this._contextMenuAction = TileAction.ItemAttributes;
+            tooltip = capitalize(tile.item.baseName || "Unknown item");
         } else if (tile.connection != null) {
             glyph = styles.connections[tile.connection.isDown ? 1 : 0];
             if (glyph == undefined) {
@@ -207,18 +198,29 @@ class MapTile extends React.Component<ITileProps, {}> {
                 case MapFeature.StoneArchway:
                     break;
                 default:
-                    onClick = undefined;
+                    this._clickAction = TileAction.None;
             }
         }
 
-        if (content == '') {
-            content = glyph.char;
+        // TODO: Change pointer depending on the action
+        const opacity = 0.3 + ((tile.visibility / 255) * 0.7);
+        const content = <div className="map__tile" role="button" style={Object.assign({ opacity: opacity }, glyph.style, inlineStyle)}
+            onClick={this.handleClick} onContextMenu={this.handleContextMenu}
+        >
+            {glyph.char}
+        </div>;
+
+        if (tooltip == null) {
+            return <>{ content }</>;
         }
 
-        const opacity = 0.3 + ((tile.visibility / 255) * 0.7);
-        return <div className="map__tile" style={Object.assign({ opacity: opacity }, glyph.style)} onClick={onClick}>
+        return <TooltipTrigger
+            id={`tooltip-tile-${x}-${y}`}
+            delay={100}
+            tooltip={tooltip}
+        >
             {content}
-        </div>;
+        </TooltipTrigger>
     }
 }
 
@@ -227,6 +229,15 @@ interface ITileProps {
     y: number;
     tile: Tile;
     styles: MapStyles;
-    performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
-    queryGame: (intQueryType: GameQueryType, ...args: Array<number>) => void;
+    context: IGameContext;
+}
+
+enum TileAction {
+    None,
+    Wait,
+    Move,
+    Attack,
+    PlayerAttributes,
+    ActorAttributes,
+    ItemAttributes
 }

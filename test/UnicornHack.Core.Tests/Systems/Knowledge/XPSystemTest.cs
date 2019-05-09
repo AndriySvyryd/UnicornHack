@@ -213,7 +213,7 @@ namespace UnicornHack.Systems.Knowledge
                 debuffAbilityEntity = abilityEntityReference.Referenced;
 
                 var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
-                ability.Activation = ActivationType.ManualActivation;
+                ability.Activation = ActivationType.Manual;
                 ability.OwnerEntity = playerEntity;
 
                 debuffAbilityEntity.Ability = ability;

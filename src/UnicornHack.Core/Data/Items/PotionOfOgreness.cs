@@ -15,7 +15,7 @@ namespace UnicornHack.Data.Items
                 new Ability
                 {
                     Name = "Drink",
-                    Activation = ActivationType.ManualActivation,
+                    Activation = ActivationType.Manual,
                     Action = AbilityAction.Drink,
                     Delay = "100",
                     Effects = new HashSet<Effect>

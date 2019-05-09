@@ -5,6 +5,8 @@ import { EntityState } from "./EntityState";
 import { ItemType } from "./ItemType";
 import { MapFeature } from "./MapFeature";
 import { DirectionFlags } from "./DirectionFlags";
+import { TargetingShape } from "./TargetingShape";
+import { TargetingType } from "./TargetingType";
 
 export class Player {
     id: number = 0;
@@ -80,13 +82,13 @@ export class Player {
         currentPlayer.currentTick = compactPlayer[i++];
         currentPlayer.level = Level.expand(compactPlayer[i++], currentPlayer.level, EntityState.Added);
         currentPlayer.races.clear();
-        compactPlayer[i++].map((a: any[]) => PlayerRace.expandToCollection(a, currentPlayer.races, EntityState.Added));
+        compactPlayer[i++].forEach((a: any[]) => PlayerRace.expandToCollection(a, currentPlayer.races, EntityState.Added));
         currentPlayer.inventory.clear();
-        compactPlayer[i++].map((a: any[]) => Item.expandToCollection(a, currentPlayer.inventory, EntityState.Added));
+        compactPlayer[i++].forEach((a: any[]) => Item.expandToCollection(a, currentPlayer.inventory, EntityState.Added));
         currentPlayer.abilities.clear();
-        compactPlayer[i++].map((a: any[]) => Ability.expandToCollection(a, currentPlayer.abilities, EntityState.Added));
+        compactPlayer[i++].forEach((a: any[]) => Ability.expandToCollection(a, currentPlayer.abilities, EntityState.Added));
         currentPlayer.log.clear();
-        compactPlayer[i++].map((a: any[]) => LogEntry.expandToCollection(a, currentPlayer.log, EntityState.Added));
+        compactPlayer[i++].forEach((a: any[]) => LogEntry.expandToCollection(a, currentPlayer.log, EntityState.Added));
         currentPlayer.nextActionTick = compactPlayer[i++];
         currentPlayer.nextLevelXP = compactPlayer[i++];
         currentPlayer.xP = compactPlayer[i++];
@@ -106,17 +108,17 @@ export class Player {
                     this.level = Level.expand(compactPlayer[i++], this.level, EntityState.Modified);
                     break;
                 case 3:
-                    compactPlayer[i++].map((a: any[]) => PlayerRace.expandToCollection(a, this.races, EntityState.Modified));
+                    compactPlayer[i++].forEach((a: any[]) => PlayerRace.expandToCollection(a, this.races, EntityState.Modified));
                     break;
                 case 4:
-                    compactPlayer[i++].map((a: any[]) => Item.expandToCollection(a, this.inventory, EntityState.Modified));
+                    compactPlayer[i++].forEach((a: any[]) => Item.expandToCollection(a, this.inventory, EntityState.Modified));
                     break;
                 case 5:
-                    compactPlayer[i++].map(
+                    compactPlayer[i++].forEach(
                         (a: any[]) => Ability.expandToCollection(a, this.abilities, EntityState.Modified));
                     break;
                 case 6:
-                    compactPlayer[i++].map((a: any[]) => LogEntry.expandToCollection(a, this.log, EntityState.Modified));
+                    compactPlayer[i++].forEach((a: any[]) => LogEntry.expandToCollection(a, this.log, EntityState.Modified));
                     break;
                 case 7:
                     this.nextActionTick = compactPlayer[i++];
@@ -267,11 +269,11 @@ export class Level {
         }
 
         currentLevel.actors.clear();
-        actors.map((a: any[]) => MapActor.expandToCollection(a, currentLevel.actors, currentLevel.tiles, EntityState.Added));
+        actors.forEach((a: any[]) => MapActor.expandToCollection(a, currentLevel.actors, currentLevel.tiles, EntityState.Added));
         currentLevel.items.clear();
-        items.map((a: any[]) => MapItem.expandToCollection(a, currentLevel.items, currentLevel.tiles, EntityState.Added));
+        items.forEach((a: any[]) => MapItem.expandToCollection(a, currentLevel.items, currentLevel.tiles, EntityState.Added));
         currentLevel.connections.clear();
-        connections.map((a: any[]) => Connection.expandToCollection(a, currentLevel.connections, currentLevel.tiles, EntityState.Added));
+        connections.forEach((a: any[]) => Connection.expandToCollection(a, currentLevel.connections, currentLevel.tiles, EntityState.Added));
 
         return currentLevel;
     }
@@ -281,15 +283,15 @@ export class Level {
         for (; i < compactLevel.length;) {
             switch (compactLevel[i++]) {
                 case 2:
-                    compactLevel[i++].map(
+                    compactLevel[i++].forEach(
                         (a: any[]) => MapActor.expandToCollection(a, this.actors, this.tiles, EntityState.Modified));
                     break;
                 case 3:
-                    compactLevel[i++].map(
+                    compactLevel[i++].forEach(
                         (a: any[]) => MapItem.expandToCollection(a, this.items, this.tiles, EntityState.Modified));
                     break;
                 case 4:
-                    compactLevel[i++].map(
+                    compactLevel[i++].forEach(
                         (a: any[]) => Connection.expandToCollection(a, this.connections, this.tiles, EntityState.Modified));
                     break;
                 case 5:
@@ -582,8 +584,8 @@ export class MapItem {
 export class Item {
     id: number = -1;
     @observable type: ItemType = ItemType.None;
-    @observable baseName: string = '';
-    @observable name: string = '';
+    @observable baseName: string | null = null;
+    @observable name: string | null = null;
     @observable equippableSlots: Map<string, EquipableSlot> = new Map<string, EquipableSlot>();
     @observable equippedSlot: EquipableSlot | null = null;
 
@@ -634,7 +636,7 @@ export class Item {
 
         const equippableSlots = compactItem[i++];
         if (equippableSlots != null) {
-            equippableSlots.map((s: any[]) => EquipableSlot.expandToCollection(s, item.equippableSlots, EntityState.Added));
+            equippableSlots.forEach((s: any[]) => EquipableSlot.expandToCollection(s, item.equippableSlots, EntityState.Added));
         }
 
         const equippedSlot = compactItem[i++];
@@ -649,12 +651,18 @@ export class Item {
 
         for (; i < compactItem.length;) {
             switch (compactItem[i++]) {
+                case 1:
+                    this.type = compactItem[i++];
+                    break;
+                case 2:
+                    this.baseName = compactItem[i++];
+                    break;
                 case 3:
                     this.name = compactItem[i++];
                     break;
                 case 4:
                     this.equippableSlots.clear();
-                    compactItem[i++].map(
+                    compactItem[i++].forEach(
                         (s: any[]) => EquipableSlot.expandToCollection(s, this.equippableSlots, EntityState.Modified));
                     break;
                 case 5:
@@ -715,6 +723,8 @@ export class Ability {
     @observable slot: number | null = null;
     @observable cooldownTick: number | null = null;
     @observable cooldownXpLeft: number | null = null;
+    @observable targetingType: TargetingType = TargetingType.Single;
+    @observable targetingShape: TargetingShape = TargetingShape.Line;
 
     @action
     static expandToCollection(compactAbility: any[], collection: Map<string, Ability>, parentState: EntityState) {
@@ -757,6 +767,8 @@ export class Ability {
         ability.slot = compactAbility[i++];
         ability.cooldownTick = compactAbility[i++];
         ability.cooldownXpLeft = compactAbility[i++];
+        ability.targetingType = compactAbility[i++];
+        ability.targetingShape = compactAbility[i++];
 
         return ability;
     }
@@ -781,6 +793,12 @@ export class Ability {
                     break;
                 case 5:
                     this.cooldownXpLeft = compactAbility[i++];
+                    break;
+                case 6:
+                    this.targetingType = compactAbility[i++];
+                    break;
+                case 7:
+                    this.targetingShape = compactAbility[i++];
                     break;
             }
         }

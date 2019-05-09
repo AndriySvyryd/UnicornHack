@@ -1,11 +1,11 @@
-﻿export const enum ActivationType {
+﻿export enum ActivationType {
     Default = 0,
     Always = 1 << 0,
     WhileToggled = 1 << 1,
     WhilePossessed = 1 << 2,
     WhileEquipped = 1 << 3,
     WhileAboveLevel = 1 << 4,
-    ManualActivation = 1 << 5,
+    Manual = 1 << 5,
     Targeted = 1 << 6,
     OnMeleeAttack = 1 << 7,
     OnRangedAttack = 1 << 8,
@@ -15,7 +15,7 @@
     OnDigestion = 1 << 15,
 
     Continuous = Always | WhileToggled | WhilePossessed | WhileEquipped | WhileAboveLevel,
-    Slottable = WhileToggled | ManualActivation | Targeted,
+    Slottable = WhileToggled | Manual | Targeted,
     OnAttack = OnMeleeAttack | OnRangedAttack,
     OnHit = OnMeleeHit | OnRangedHit
 }

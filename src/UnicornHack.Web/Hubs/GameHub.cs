@@ -43,87 +43,129 @@ namespace UnicornHack.Hubs
                 new SerializationContext(_dbContext, player.Entity, _gameServices));
         }
 
-        public Task QueryGame(string playerName, int intQueryType, int[] arguments)
+        public Task ShowDialog(string playerName, int intQueryType, int[] arguments)
+        {
+            var results = (GameQueryType)intQueryType == GameQueryType.Clear
+                ? new List<object> {intQueryType}
+                : QueryGame(playerName, intQueryType, arguments);
+
+            // TODO: only send to clients watching this player
+            return Clients.All.SendAsync("ReceiveUIRequest", results);
+        }
+
+        public List<object> QueryGame(string playerName, int intQueryType, int[] arguments)
         {
             var queryType = (GameQueryType)intQueryType;
             var result = new List<object> { intQueryType };
 
-            if (queryType == GameQueryType.Clear)
+            var player = FindPlayer(playerName);
+            if (player?.Entity.Being.IsAlive != true)
             {
-                // TODO: only send to clients watching this player
-                return Clients.All.SendAsync("ReceiveUIRequest", result);
+                return result;
             }
 
-            var player = FindPlayer(playerName);
-
-            if (player != null
-                && player.Entity.Being.IsAlive)
+            var manager = player.Entity.Manager;
+            var context = new SerializationContext(_dbContext, player.Entity, _gameServices);
+            switch (queryType)
             {
-                var manager = player.Entity.Manager;
-                var context = new SerializationContext(_dbContext, player.Entity, _gameServices);
-                switch (queryType)
-                {
-                    case GameQueryType.SlottableAbilities:
-                        var slot = arguments[0];
-                        result.Add(slot);
-                        var abilities = new List<object>();
-                        result.Add(abilities);
+                case GameQueryType.SlottableAbilities:
+                    var slot = arguments[0];
+                    result.Add(slot);
+                    var abilities = new List<object>();
+                    result.Add(abilities);
 
-                        foreach (var abilityEntity in manager.AbilitiesToAffectableRelationship[player.EntityId])
+                    foreach (var slottableAbilityEntity in manager.AbilitiesToAffectableRelationship[player.EntityId])
+                    {
+                        var ability = slottableAbilityEntity.Ability;
+                        if (!ability.IsUsable)
                         {
-                            var ability = abilityEntity.Ability;
-                            if (!ability.IsUsable)
-                            {
-                                continue;
-                            }
-
-                            if (slot == AbilitySlottingSystem.DefaultMeleeAttackSlot)
-                            {
-                                if (ability.Template?.Type == AbilityType.DefaultAttack
-                                    && ((WieldingAbility)ability.Template).ItemType == ItemType.WeaponMelee)
-                                {
-                                    abilities.Add(AbilitySnapshot.Serialize(abilityEntity, null, context));
-                                }
-                            }
-                            else if (slot == AbilitySlottingSystem.DefaultRangedAttackSlot)
-                            {
-                                if (ability.Template?.Type == AbilityType.DefaultAttack
-                                    && ((WieldingAbility)ability.Template).ItemType == ItemType.WeaponRanged)
-                                {
-                                    abilities.Add(AbilitySnapshot.Serialize(abilityEntity, null, context));
-                                }
-                            }
-                            else if ((ability.Activation & ActivationType.Slottable) != 0
-                                    && ability.Template?.Type != AbilityType.DefaultAttack)
-                            {
-                                abilities.Add(AbilitySnapshot.Serialize(abilityEntity, null, context));
-                            }
+                            continue;
                         }
 
-                        break;
-                    case GameQueryType.PlayerAttributes:
-                        result.Add(LevelActorSnapshot.SerializeAttributes(player.Entity, SenseType.Sight, context));
-                        break;
-                    case GameQueryType.PlayerAdaptations:
-                        result.Add(PlayerSnapshot.SerializeAdaptations(player.Entity, context));
-                        break;
-                    case GameQueryType.PlayerSkills:
-                        result.Add(PlayerSnapshot.SerializeSkills(player.Entity, context));
-                        break;
-                    case GameQueryType.ActorAttributes:
-                        var knowledge = manager.FindEntity(arguments[0])?.Knowledge;
+                        if (slot == AbilitySlottingSystem.DefaultMeleeAttackSlot)
+                        {
+                            if (ability.Template?.Type == AbilityType.DefaultAttack
+                                && ((WieldingAbility)ability.Template).ItemType == ItemType.WeaponMelee)
+                            {
+                                abilities.Add(AbilitySnapshot.Serialize(slottableAbilityEntity, null, context));
+                            }
+                        }
+                        else if (slot == AbilitySlottingSystem.DefaultRangedAttackSlot)
+                        {
+                            if (ability.Template?.Type == AbilityType.DefaultAttack
+                                && ((WieldingAbility)ability.Template).ItemType == ItemType.WeaponRanged)
+                            {
+                                abilities.Add(AbilitySnapshot.Serialize(slottableAbilityEntity, null, context));
+                            }
+                        }
+                        else if ((ability.Activation & ActivationType.Slottable) != 0
+                                 && ability.Template?.Type != AbilityType.DefaultAttack)
+                        {
+                            abilities.Add(AbilitySnapshot.Serialize(slottableAbilityEntity, null, context));
+                        }
+                    }
 
-                        result.Add(LevelActorSnapshot.SerializeAttributes(
-                            knowledge?.KnownEntity, knowledge?.SensedType ?? SenseType.None, context));
-                        break;
-                    default:
-                        throw new InvalidOperationException($"Query type {intQueryType} not supported");
-                }
+                    break;
+                case GameQueryType.PlayerAttributes:
+                    result.Add(LevelActorSnapshot.SerializeAttributes(player.Entity, SenseType.Sight, context));
+                    break;
+                case GameQueryType.PlayerAdaptations:
+                    result.Add(PlayerSnapshot.SerializeAdaptations(player.Entity, context));
+                    break;
+                case GameQueryType.PlayerSkills:
+                    result.Add(PlayerSnapshot.SerializeSkills(player.Entity, context));
+                    break;
+                case GameQueryType.ActorAttributes:
+                    var actorKnowledge = manager.FindEntity(arguments[0])?.Knowledge;
+
+                    result.Add(LevelActorSnapshot.SerializeAttributes(
+                        actorKnowledge?.KnownEntity, actorKnowledge?.SensedType ?? SenseType.None, context));
+                    break;
+                case GameQueryType.ItemAttributes:
+                    var itemEntity = manager.FindEntity(arguments[0]);
+                    var item = itemEntity?.Item;
+                    var itemKnowledge = itemEntity?.Knowledge;
+
+                    if (item != null)
+                    {
+                        result.Add(InventoryItemSnapshot.SerializeAttributes(itemEntity, SenseType.Sight, context));
+                    }
+                    else
+                    {
+                        result.Add(InventoryItemSnapshot.SerializeAttributes(
+                            itemKnowledge?.KnownEntity, itemKnowledge?.SensedType ?? SenseType.None, context));
+                    }
+
+                    break;
+                case GameQueryType.AbilityAttributes:
+                    var abilityEntity = manager.FindEntity(arguments[0]);
+
+                    var ownerEntity = abilityEntity.Ability.OwnerEntity;
+                    var activatorEntity = abilityEntity.Ability.OwnerEntity.HasComponent(EntityComponent.Item)
+                        ? player.Entity
+                        : ownerEntity;
+
+                    result.Add(AbilitySnapshot.SerializeAttributes(abilityEntity, activatorEntity, context));
+                    break;
+                default:
+                    throw new InvalidOperationException($"Query type {intQueryType} not supported");
             }
 
-            // TODO: only send to clients watching this player
-            return Clients.All.SendAsync("ReceiveUIRequest", result);
+            return result;
         }
+
+        public Task ShowStaticDescriptionDialog(string playerName, string topicId, DescriptionCategory category)
+        {
+            // TODO: only send to clients watching this player
+            return Clients.All.SendAsync("ReceiveUIRequest", QueryStaticDescription(topicId, category));
+        }
+
+        public List<object> QueryStaticDescription(string topicId, DescriptionCategory category)
+            => new List<object>(2)
+            {
+                GameQueryType.StaticDescription,
+                _gameServices.Language.GetDescription(topicId, category)
+            };
 
         public async Task PerformAction(string playerName, int intAction, int? target, int? target2)
         {

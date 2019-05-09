@@ -11,7 +11,7 @@ namespace UnicornHack.Primitives
         WhilePossessed = 1 << 2,
         WhileEquipped = 1 << 3,
         WhileAboveLevel = 1 << 4,
-        ManualActivation = 1 << 5,
+        Manual = 1 << 5,
         Targeted = 1 << 6,
         OnMeleeAttack = 1 << 7,
         OnRangedAttack = 1 << 8,
@@ -21,7 +21,7 @@ namespace UnicornHack.Primitives
         OnDigestion = 1 << 15,
 
         Continuous = Always | WhileToggled | WhilePossessed | WhileEquipped | WhileAboveLevel,
-        Slottable = WhileToggled | ManualActivation | Targeted,
+        Slottable = WhileToggled | Manual | Targeted,
         OnAttack = OnMeleeAttack | OnRangedAttack,
         OnHit = OnMeleeHit | OnRangedHit
     }

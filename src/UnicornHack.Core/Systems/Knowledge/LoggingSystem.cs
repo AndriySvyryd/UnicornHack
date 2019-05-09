@@ -159,7 +159,8 @@ namespace UnicornHack.Systems.Knowledge
                 activatableEntity = activatableEntity.Ability?.OwnerEntity;
             }
 
-            if (activatableEntity?.HasComponent(EntityComponent.Item) == true)
+            if ((ability.Activation & ActivationType.Manual) != 0
+                && activatableEntity?.HasComponent(EntityComponent.Item) == true)
             {
                 foreach (var playerEntity in manager.Players)
                 {

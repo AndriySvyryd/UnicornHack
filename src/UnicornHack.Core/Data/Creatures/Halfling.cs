@@ -12,23 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "halfling",
             Species = Species.Halfling,
             MovementDelay = 133,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
-                {
-                    Activation = ActivationType.OnMeleeAttack,
-                    Action = AbilityAction.Modifier,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "30"}}
-                },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Range = 1,
-                    Action = AbilityAction.Punch,
-                    Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
-                }
-            },
             InitialLevel = 1,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},
             GenerationFlags = GenerationFlags.NonPolymorphable,

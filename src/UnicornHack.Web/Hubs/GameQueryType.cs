@@ -7,6 +7,9 @@
         PlayerAttributes,
         PlayerAdaptations,
         PlayerSkills,
-        ActorAttributes
+        ActorAttributes,
+        ItemAttributes,
+        AbilityAttributes,
+        StaticDescription
     }
 }
