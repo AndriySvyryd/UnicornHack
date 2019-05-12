@@ -68,7 +68,6 @@
                 case EffectType.SonicDamage:
                 case EffectType.Wither:
                 case EffectType.PhysicalDamage:
-                case EffectType.DrainEnergy:
                 case EffectType.DrainLife:
                     return true;
                 default:

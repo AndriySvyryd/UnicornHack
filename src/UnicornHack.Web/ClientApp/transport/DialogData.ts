@@ -16,7 +16,7 @@ import { EffectDuration } from './EffectDuration';
 
 export class DialogData {
     @observable abilitySlot: number | null = null;
-    @observable slottableAbilities: Map<string, Ability> = new Map<string, Ability>();
+    @observable slottableAbilities: Map<number, Ability> = new Map<number, Ability>();
     @observable playerAttributes: ActorAttributes | null = null;
     @observable playerAdaptations: PlayerAdaptations | null = null;
     @observable playerSkills: PlayerSkills | null = null;
@@ -122,7 +122,7 @@ export class ActorAttributes {
     @observable stunResistance: number = 0;
     @observable lightResistance: number = 0;
     @observable waterResistance: number = 0;
-    @observable abilities: Map<string, AbilityAttributes> = new Map<string, AbilityAttributes>();
+    @observable abilities: Map<number, AbilityAttributes> = new Map<number, AbilityAttributes>();
 
     @action
     static expand(compactAttributes: any[]): ActorAttributes {
@@ -286,8 +286,8 @@ export class ItemAttributes {
     @observable requiredSpeed: number = 0;
     @observable requiredFocus: number = 0;
     @observable requiredPerception: number = 0;
-    @observable equippableSlots: Map<string, EquipableSlot> = new Map<string, EquipableSlot>();
-    @observable abilities: Map<string, AbilityAttributes> = new Map<string, AbilityAttributes>();
+    @observable equippableSlots: Map<number, EquipableSlot> = new Map<number, EquipableSlot>();
+    @observable abilities: Map<number, AbilityAttributes> = new Map<number, AbilityAttributes>();
 
     @action
     static expand(compactAttributes: any[]): ItemAttributes {
@@ -307,7 +307,7 @@ export class ItemAttributes {
         attributes.requiredPerception = compactAttributes[i++];
         const equippableSlots = compactAttributes[i++];
         if (equippableSlots != null) {
-            equippableSlots.forEach((s: any[]) => EquipableSlot.expandToCollection(s, attributes.equippableSlots, EntityState.Added));
+            equippableSlots.forEach((s: any[]) => EquipableSlot.expandToCollection(s, attributes.equippableSlots));
         }
 
         if (compactAttributes.length > i) {
@@ -374,8 +374,8 @@ export class AbilityAttributes {
     }
 
     @action.bound
-    addTo(map: Map<string, AbilityAttributes>) {
-        map.set(this.id.toString(), this);
+    addTo(map: Map<number, AbilityAttributes>) {
+        map.set(this.id, this);
     }
 
     getName(): string {

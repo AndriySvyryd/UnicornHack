@@ -100,7 +100,7 @@ export const AbilitiesList = observer((props: IAbilitiesListData) => {
 });
 
 export interface IAbilitiesListData {
-    abilities: Map<string, AbilityAttributes>;
+    abilities: Map<number, AbilityAttributes>;
 }
 
 const EffectsList = observer(({ effects }: IEffectsListData) => {

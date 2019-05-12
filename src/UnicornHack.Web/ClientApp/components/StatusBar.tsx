@@ -112,7 +112,6 @@ const RaceStatus = observer(({ race, player }: IRaceStatusProps) => {
 
     return <TooltipTrigger
         id={`tooltip-race-${race.id}`}
-        delay={100}
         tooltip={capitalize(race.name)}
     >
         <span className={className}>{raceString}</span>

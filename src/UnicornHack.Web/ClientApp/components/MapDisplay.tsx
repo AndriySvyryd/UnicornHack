@@ -216,7 +216,6 @@ class MapTile extends React.Component<ITileProps, {}> {
 
         return <TooltipTrigger
             id={`tooltip-tile-${x}-${y}`}
-            delay={100}
             tooltip={tooltip}
         >
             {content}

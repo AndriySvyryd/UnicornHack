@@ -21,10 +21,10 @@ export class Player {
     @observable level: Level = new Level();
     @observable xP: number = 0;
     @observable nextLevelXP: number = 0;
-    @observable inventory: Map<string, Item> = new Map<string, Item>();
-    @observable abilities: Map<string, Ability> = new Map<string, Ability>();
-    @observable log: Map<string, LogEntry> = new Map<string, LogEntry>();
-    @observable races: Map<string, PlayerRace> = new Map<string, PlayerRace>();
+    @observable inventory: Map<number, Item> = new Map<number, Item>();
+    @observable abilities: Map<number, Ability> = new Map<number, Ability>();
+    @observable log: Map<number, LogEntry> = new Map<number, LogEntry>();
+    @observable races: Map<number, PlayerRace> = new Map<number, PlayerRace>();
 
     @computed get learningRace(): PlayerRace {
         let learningRace: PlayerRace | null = null;
@@ -160,9 +160,9 @@ export class Level {
     @observable width: number = 1;
     @observable tiles: Array<Array<Tile>> = [[new Tile()]];
 
-    actors: Map<string, MapActor> = new Map<string, MapActor>();
-    items: Map<string, MapItem> = new Map<string, MapItem>();
-    connections: Map<string, Connection> = new Map<string, Connection>();
+    actors: Map<number, MapActor> = new Map<number, MapActor>();
+    items: Map<number, MapItem> = new Map<number, MapItem>();
+    connections: Map<number, Connection> = new Map<number, Connection>();
     indexToPoint: number[][] = [[0]];
 
     @action
@@ -346,7 +346,7 @@ export class MapActor {
     @observable heading: Direction = 0;
 
     @action
-    static expandToCollection(compactActor: any[], collection: Map<string, MapActor>, tiles: Tile[][], parentState: EntityState) {
+    static expandToCollection(compactActor: any[], collection: Map<number, MapActor>, tiles: Tile[][], parentState: EntityState) {
         let i = 0;
         if (parentState === EntityState.Added) {
             this.expand(compactActor, i, tiles).addTo(collection).set(tiles);
@@ -359,7 +359,7 @@ export class MapActor {
                 this.expand(compactActor, i, tiles).addTo(collection).set(tiles);
                 break;
             case EntityState.Deleted:
-                const id = compactActor[i++].toString();
+                const id = compactActor[i++];
                 const existingActor = collection.get(id);
                 if (existingActor == undefined) {
                     throw 'Actor ' + id + ' not deleted';
@@ -370,7 +370,7 @@ export class MapActor {
                 break;
             case EntityState.Modified:
                 {
-                    const id = compactActor[i++].toString();
+                    const id = compactActor[i++];
                     const existingActor = collection.get(id);
                     if (existingActor == undefined) {
                         throw 'Actor ' + id + ' not found';
@@ -440,8 +440,8 @@ export class MapActor {
         return i;
     }
 
-    addTo(map: Map<string, MapActor>): MapActor {
-        map.set(this.id.toString(), this);
+    addTo(map: Map<number, MapActor>): MapActor {
+        map.set(this.id, this);
         return this;
     }
 
@@ -469,7 +469,7 @@ export class MapItem {
     @observable levelY: number = -1;
 
     @action
-    static expandToCollection(compactItem: any[], collection: Map<string, MapItem>, tiles: Tile[][] | null, parentState: EntityState) {
+    static expandToCollection(compactItem: any[], collection: Map<number, MapItem>, tiles: Tile[][] | null, parentState: EntityState) {
         let i = 0;
         if (parentState === EntityState.Added) {
             this.expand(compactItem, i).addTo(collection).set(tiles);
@@ -482,7 +482,7 @@ export class MapItem {
                 this.expand(compactItem, i).addTo(collection).set(tiles);
                 break;
             case EntityState.Deleted:
-                const id = compactItem[i++].toString();
+                const id = compactItem[i++];
                 const existingItem = collection.get(id);
                 if (existingItem == undefined) {
                     throw 'Item ' + id + ' not deleted';
@@ -493,7 +493,7 @@ export class MapItem {
                 break;
             case EntityState.Modified:
                 {
-                    const id = compactItem[i++].toString();
+                    const id = compactItem[i++];
                     const existingItem = collection.get(id);
                     if (existingItem == undefined) {
                         throw 'Item ' + id + ' not found';
@@ -555,8 +555,8 @@ export class MapItem {
         return i;
     }
 
-    addTo(map: Map<string, MapItem>): MapItem {
-        map.set(this.id.toString(), this);
+    addTo(map: Map<number, MapItem>): MapItem {
+        map.set(this.id, this);
         return this;
     }
 
@@ -586,11 +586,11 @@ export class Item {
     @observable type: ItemType = ItemType.None;
     @observable baseName: string | null = null;
     @observable name: string | null = null;
-    @observable equippableSlots: Map<string, EquipableSlot> = new Map<string, EquipableSlot>();
+    @observable equippableSlots: Map<number, EquipableSlot> = new Map<number, EquipableSlot>();
     @observable equippedSlot: EquipableSlot | null = null;
 
     @action
-    static expandToCollection(compactItem: any[], collection: Map<string, Item>, parentState: EntityState) {
+    static expandToCollection(compactItem: any[], collection: Map<number, Item>, parentState: EntityState) {
         let i = 0;
         if (parentState === EntityState.Added) {
             this.expand(compactItem, i).addTo(collection);
@@ -604,7 +604,7 @@ export class Item {
                 break;
             }
             case EntityState.Deleted: {
-                const id = compactItem[i++].toString();
+                const id = compactItem[i++];
                 const existingItem = collection.get(id);
                 if (existingItem == undefined) {
                     throw 'Item ' + id + ' not deleted';
@@ -614,7 +614,7 @@ export class Item {
                 break;
             }
             case EntityState.Modified: {
-                const id = compactItem[i++].toString();
+                const id = compactItem[i++];
                 const existingItem = collection.get(id);
                 if (existingItem == undefined) {
                     throw 'Item ' + id + ' not found';
@@ -636,7 +636,7 @@ export class Item {
 
         const equippableSlots = compactItem[i++];
         if (equippableSlots != null) {
-            equippableSlots.forEach((s: any[]) => EquipableSlot.expandToCollection(s, item.equippableSlots, EntityState.Added));
+            equippableSlots.forEach((s: any[]) => EquipableSlot.expandToCollection(s, item.equippableSlots));
         }
 
         const equippedSlot = compactItem[i++];
@@ -663,7 +663,7 @@ export class Item {
                 case 4:
                     this.equippableSlots.clear();
                     compactItem[i++].forEach(
-                        (s: any[]) => EquipableSlot.expandToCollection(s, this.equippableSlots, EntityState.Modified));
+                        (s: any[]) => EquipableSlot.expandToCollection(s, this.equippableSlots));
                     break;
                 case 5:
                     const equippedSlot = compactItem[i++];
@@ -684,8 +684,8 @@ export class Item {
         return this.updateImplementation(compactItem);
     }
 
-    addTo(map: Map<string, Item>): Item {
-        map.set(this.id.toString(), this);
+    addTo(map: Map<number, Item>): Item {
+        map.set(this.id, this);
         return this;
     }
 }
@@ -696,7 +696,7 @@ export class EquipableSlot {
     @observable name: string = '';
 
     @action
-    static expandToCollection(compactSlot: any[], collection: Map<string, EquipableSlot>, parentState: EntityState) {
+    static expandToCollection(compactSlot: any[], collection: Map<number, EquipableSlot>) {
         this.expand(compactSlot, 0).addTo(collection);
     }
 
@@ -711,8 +711,8 @@ export class EquipableSlot {
     }
 
     @action.bound
-    addTo(map: Map<string, EquipableSlot>) {
-        map.set(this.id.toString(), this);
+    addTo(map: Map<number, EquipableSlot>) {
+        map.set(this.id, this);
     }
 }
 
@@ -727,7 +727,7 @@ export class Ability {
     @observable targetingShape: TargetingShape = TargetingShape.Line;
 
     @action
-    static expandToCollection(compactAbility: any[], collection: Map<string, Ability>, parentState: EntityState) {
+    static expandToCollection(compactAbility: any[], collection: Map<number, Ability>, parentState: EntityState) {
         let i = 0;
         if (parentState === EntityState.Added) {
             this.expand(compactAbility, i).addTo(collection);
@@ -807,17 +807,18 @@ export class Ability {
     }
 
     @action.bound
-    addTo(map: Map<string, Ability>) {
-        map.set(this.id.toString(), this);
+    addTo(map: Map<number, Ability>) {
+        map.set(this.id, this);
     }
 }
 
 export class LogEntry {
     id: number = -1;
     @observable message: string = '';
+    @observable ticks: string = '';
 
     @action
-    static expandToCollection(compactLogEntry: any[], collection: Map<string, LogEntry>, parentState: EntityState) {
+    static expandToCollection(compactLogEntry: any[], collection: Map<number, LogEntry>, parentState: EntityState) {
         let i = 0;
         if (parentState === EntityState.Added) {
             this.expand(compactLogEntry, i).addTo(collection);
@@ -830,14 +831,14 @@ export class LogEntry {
                 this.expand(compactLogEntry, i).addTo(collection);
                 break;
             case EntityState.Deleted:
-                const id = compactLogEntry[i++].toString();
+                const id = compactLogEntry[i++];
                 if (!collection.delete(id)) {
                     throw 'LogEntry ' + id + ' not deleted';
                 }
                 break;
             case EntityState.Modified:
                 {
-                    const id = compactLogEntry[i++].toString();
+                    const id = compactLogEntry[i++];
                     const existingLogEntry = collection.get(id);
                     if (existingLogEntry == undefined) {
                         throw 'LogEntry ' + id + ' not found';
@@ -853,6 +854,7 @@ export class LogEntry {
         const logEntry = new LogEntry();
         logEntry.id = compactLogEntry[i++];
         logEntry.message = compactLogEntry[i++];
+        logEntry.ticks = compactLogEntry[i++];
 
         return logEntry;
     }
@@ -866,6 +868,9 @@ export class LogEntry {
                 case 1:
                     this.message = compactLogEntry[i++];
                     break;
+                case 2:
+                    this.ticks = compactLogEntry[i++];
+                    break;
                 default:
                     return i - 1;
             }
@@ -875,8 +880,8 @@ export class LogEntry {
     }
 
     @action.bound
-    addTo(map: Map<string, LogEntry>) {
-        map.set(this.id.toString(), this);
+    addTo(map: Map<number, LogEntry>) {
+        map.set(this.id, this);
     }
 }
 
@@ -887,7 +892,7 @@ export class PlayerRace {
     @observable xpLevel: number = 0;
 
     @action
-    static expandToCollection(compactPlayerRace: any[], collection: Map<string, PlayerRace>, parentState: EntityState) {
+    static expandToCollection(compactPlayerRace: any[], collection: Map<number, PlayerRace>, parentState: EntityState) {
         let i = 0;
         if (parentState === EntityState.Added) {
             this.expand(compactPlayerRace, i).addTo(collection);
@@ -953,8 +958,8 @@ export class PlayerRace {
     }
 
     @action.bound
-    addTo(map: Map<string, PlayerRace>) {
-        map.set(this.id.toString(), this);
+    addTo(map: Map<number, PlayerRace>) {
+        map.set(this.id, this);
     }
 }
 
@@ -965,7 +970,7 @@ export class Connection {
     @observable isDown: boolean = true;
 
     @action
-    static expandToCollection(compactConnection: any[], collection: Map<string, Connection>, tiles: Tile[][], parentState: EntityState) {
+    static expandToCollection(compactConnection: any[], collection: Map<number, Connection>, tiles: Tile[][], parentState: EntityState) {
         let i = 0;
         if (parentState === EntityState.Added) {
             this.expand(compactConnection, i).addTo(collection).set(tiles);
@@ -978,7 +983,7 @@ export class Connection {
                 this.expand(compactConnection, i).addTo(collection).set(tiles);
                 break;
             case EntityState.Deleted:
-                const id = compactConnection[i++].toString();
+                const id = compactConnection[i++];
                 const existingConnection = collection.get(id);
                 if (existingConnection == undefined) {
                     throw 'Connection ' + id + ' not deleted';
@@ -988,7 +993,7 @@ export class Connection {
                 break;
             case EntityState.Modified:
                 {
-                    const id = compactConnection[i++].toString();
+                    const id = compactConnection[i++];
                     const existingConnection = collection.get(id);
                     if (existingConnection == undefined) {
                         throw 'Connection ' + id + ' not found';
@@ -1048,8 +1053,8 @@ export class Connection {
         return i;
     }
 
-    addTo(map: Map<string, Connection>): Connection {
-        map.set(this.id.toString(), this);
+    addTo(map: Map<number, Connection>): Connection {
+        map.set(this.id, this);
         return this;
     }
 

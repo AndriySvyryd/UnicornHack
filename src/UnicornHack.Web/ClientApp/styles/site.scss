@@ -72,6 +72,11 @@ input::placeholder {
     margin: auto;
 }
 
+.annotatedText {
+    //text-decoration: underline dashed;
+    border-bottom: 1px dashed;
+}
+
 .game {
     @include make-row();
     padding: $grid-gutter-width/2 0 $grid-gutter-width/2 $grid-gutter-width/2;

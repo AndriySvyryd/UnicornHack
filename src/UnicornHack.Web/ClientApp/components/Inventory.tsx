@@ -48,7 +48,6 @@ class InventoryLine extends React.Component<IItemProps, {}> {
                 <TooltipTrigger
                     key="eqipped"
                     id={`tooltip-unequip-${item.id}`}
-                    delay={100}
                     tooltip={'Unequip from ' + item.equippedSlot.name}
                 >
                     <a tabIndex={0} role="button" onClick={this.unequip} onKeyPress={this.unequip}>{item.equippedSlot.shortName}</a>
@@ -93,7 +92,6 @@ class Equip extends React.Component<IEquipProps, {}> {
         const { item, slot } = this.props;
         return <TooltipTrigger
             id={`tooltip-equip-${slot.id}-${item.id}`}
-            delay={100}
             tooltip={'Equip to ' + slot.name}
         >
             <a tabIndex={0} role="button" onClick={this.equip} onKeyPress={this.equip}>{slot.shortName}</a>

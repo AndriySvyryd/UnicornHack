@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
-using System.Linq;
 using System.Text;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
@@ -19,6 +18,8 @@ namespace UnicornHack.Services.English
 
         private EnglishMorphologicalProcessor EnglishMorphologicalProcessor { get; } =
             new EnglishMorphologicalProcessor();
+
+        private TaggingService TaggingService { get; } = new TaggingService();
 
         #region Game concepts
 
@@ -44,7 +45,7 @@ namespace UnicornHack.Services.English
                 definiteDeterminer: true);
 
         protected virtual string GetString(
-            GameEntity actorEntity, EnglishPerson person, SenseType sense, bool? definiteDeterminer = false)
+            GameEntity actorEntity, EnglishPerson person, SenseType sense, bool? definiteDeterminer)
         {
             if (actorEntity == null)
             {
@@ -450,13 +451,12 @@ namespace UnicornHack.Services.English
 
         protected virtual string FormatDamage(IReadOnlyList<GameEntity> effects, bool reflexive, string victimPronoun)
         {
-            // TODO: Differentiate damage types
-            var damage = effects.Select(e => e.Effect).Where(e => e.EffectType.IsDamage())
-                .Aggregate(0, (d, e) => d + e.Amount.Value);
+            // TODO: EffectType.DrainEnergy
+            var damageTag = TaggingService.GetDamageTag(effects, out var damageTaken);
 
-            return damage == 0
-                ? ToSentence(victimPronoun, reflexive ? "are" : "is", "unaffected.")
-                : Format(reflexive ? "[{0} pts.]" : "({0} pts.)", damage);
+            return damageTaken
+                ? Format(reflexive ? "[{0} pts.]" : "({0} pts.)", damageTag)
+                : ToSentence(victimPronoun, reflexive ? "are" : "is", "unaffected.");
         }
 
         public virtual string GetString(in DeathEvent @event)

@@ -47,8 +47,8 @@ export class WallStyles {
     [index: number]: ITileStyle;
 
     constructor() {
-        const defaultStyle = { color: 'grey', backgroundColor: 'dimgrey' };
-        this[DirectionFlags.None] = { char: '●', style: defaultStyle };
+        const defaultStyle = { color: 'grey', backgroundColor: 'darkslategray' };
+        this[DirectionFlags.None] = { char: '●', style: { color: 'grey' } };
         this[DirectionFlags.North] = { char: '╹', style: defaultStyle };
         this[DirectionFlags.East] = { char: '╺', style: defaultStyle };
         this[DirectionFlags.NorthAndEast] = { char: '┗', style: defaultStyle };

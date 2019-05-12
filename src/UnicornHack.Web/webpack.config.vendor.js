@@ -44,8 +44,8 @@ function getClientConfig(env) {
         },
         entry: {
             vendor: [
-                '@aspnet/signalr', '@aspnet/signalr-protocol-msgpack', 'buffer',
-                'mobx', 'mobx-react', 'react', 'react-dom', 'react-hotkeys', 'react-overlays'
+                '@aspnet/signalr', '@aspnet/signalr-protocol-msgpack', 'buffer', 'domhandler', 'htmlparser2', 'lodash-es',
+                'mobx', 'mobx-react', 'react', 'react-dom', 'react-hotkeys', 'react-overlays', 'react-transition-group'
             ]
         },
         plugins: [

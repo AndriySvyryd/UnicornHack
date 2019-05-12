@@ -14,14 +14,16 @@ namespace UnicornHack.Hubs
                     return new List<object>
                     {
                         entry.Id,
-                        ToString(entry)
+                        entry.Message,
+                        FormatTicks(entry)
                     };
                 case EntityState.Added:
                     return new List<object>
                     {
                         (int)state,
                         entry.Id,
-                        ToString(entry)
+                        entry.Message,
+                        FormatTicks(entry)
                     };
                 case EntityState.Deleted:
                     return new List<object>
@@ -40,17 +42,23 @@ namespace UnicornHack.Hubs
                     var i = 1;
                     var tick = logEntry.Property(nameof(LogEntry.Tick));
                     var message = logEntry.Property(nameof(LogEntry.Message));
-                    if (tick.IsModified
-                        || message.IsModified)
+                    if (message.IsModified)
                     {
                         properties.Add(i);
-                        properties.Add(ToString(entry));
+                        properties.Add(entry.Message);
+                    }
+
+                    i++;
+                    if (tick.IsModified)
+                    {
+                        properties.Add(i);
+                        properties.Add(FormatTicks(entry));
                     }
 
                     return properties.Count > 2 ? properties : null;
             }
         }
 
-        private static string ToString(LogEntry entry) => $"{entry.Tick / 100f:0000.00}: {entry.Message}";
+        private static string FormatTicks(LogEntry entry) => $"{entry.Tick / 100f:0000.00}";
     }
 }

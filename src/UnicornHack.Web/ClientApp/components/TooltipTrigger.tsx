@@ -221,7 +221,7 @@ const OverlayWrapper = observer(({ id, placement, observableShow, children, ...o
     </Overlays.Overlay>
 );
 
-interface IOverlayWrapperProps extends React.ComponentPropsWithoutRef<any>{
+interface IOverlayWrapperProps extends React.ComponentPropsWithoutRef<any> {
     id: string;
     target: React.ReactInstance | (() => React.ReactInstance);
     observableShow: IObservableValue<boolean>;
