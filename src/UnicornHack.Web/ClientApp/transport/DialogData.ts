@@ -24,6 +24,8 @@ export class DialogData {
     @observable itemAttributes: ItemAttributes | null = null;
     @observable abilityAttributes: AbilityAttributes | null = null;
     @observable staticDescription: string | null = null;
+    dialogHistory: [GameQueryType, number[]][] = [];
+    currentDialog: [GameQueryType, number[]] | undefined;
 
     @action.bound
     update(compactData: any[]): DialogData {

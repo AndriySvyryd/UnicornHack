@@ -73,7 +73,8 @@ export class Game extends React.Component<IGameProps, {}> {
             'moveSouthWest': ['end', '1', 'b'],
             'moveNorthWest': ['home', '7', 'y'],
             'wait': ['Clear', '5', '.'],
-            'clear': 'Escape'
+            'clear': 'Escape',
+            'back': 'BackSpace'
         };
 
         this._keyHandlers = {
@@ -115,6 +116,10 @@ export class Game extends React.Component<IGameProps, {}> {
             },
             'clear': (event: KeyboardEvent) => {
                 this.showDialog(GameQueryType.Clear);
+                event.preventDefault();
+            },
+            'back': (event: KeyboardEvent) => {
+                this.showDialog(GameQueryType.Back);
                 event.preventDefault();
             }
         };
@@ -161,8 +166,28 @@ export class Game extends React.Component<IGameProps, {}> {
     }
 
     showDialog = (queryType: GameQueryType, ...args: Array<number>) => {
+        if (queryType == GameQueryType.Back) {
+            var lastQuery = this._dialogData.dialogHistory.pop();
+            if (lastQuery != undefined) {
+                queryType = lastQuery[0];
+                args = lastQuery[1];
+            } else {
+                queryType = GameQueryType.Clear;
+            }
+            this._dialogData.currentDialog = lastQuery;
+        } else if (queryType == GameQueryType.Clear) {
+            this._dialogData.dialogHistory = [];
+            this._dialogData.currentDialog = undefined;
+        } else {
+            if (this._dialogData.currentDialog != undefined) {
+                this._dialogData.dialogHistory.push(this._dialogData.currentDialog);
+            }
+            this._dialogData.currentDialog = [queryType, args];
+        }
+
         this._connection.invoke('ShowDialog', this.props.playerName, queryType, args)
             .catch(e => this.addError((e || '').toString()));
+
         if (queryType === GameQueryType.Clear && this._hotKeyContainer.current !== null) {
             this._hotKeyContainer.current.focus();
         }
@@ -249,7 +274,7 @@ export class Game extends React.Component<IGameProps, {}> {
                     </div>
                 </div>
 
-                <IgnoreKeys only='' except='Escape'>
+                <IgnoreKeys only={[]} except={["Escape"]}>//, "Backspace"
                     <AbilitySelectionDialog context={this} data={this._dialogData} />
                     <CharacterScreenDialog context={this} data={this._dialogData} />
                     <CreaturePropertiesDialog context={this} data={this._dialogData} />

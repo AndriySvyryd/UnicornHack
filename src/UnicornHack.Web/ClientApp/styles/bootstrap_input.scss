@@ -39,6 +39,8 @@ $input-bg: $base3;
 $input-color: $base01;
 $nav-tabs-link-active-bg: $highlight-bg;
 $nav-tabs-link-active-color: $highlight-color;
+$nav-tabs-border-color: $body-color;
+$nav-tabs-link-active-border-color: $body-color $body-color $nav-tabs-link-active-bg;
 $progress-bar-color: $highlight-color;
 $progress-font-size: 1rem;
 $tooltip-bg: $base3;

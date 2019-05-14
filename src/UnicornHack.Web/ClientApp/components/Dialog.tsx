@@ -1,4 +1,4 @@
-import * as React from 'React';
+﻿import * as React from 'React';
 import { action, IComputedValue } from 'mobx';
 import { observer } from 'mobx-react';
 import { GameQueryType } from '../transport/GameQueryType';
@@ -26,6 +26,11 @@ export class Dialog extends React.Component<IDialogProps, {}> {
         event.preventDefault();
     }
 
+    @action.bound
+    back() {
+        this.props.context.showDialog(GameQueryType.Back);
+    }
+
     stopPropagation(event: React.SyntheticEvent<{}>) {
         event.stopPropagation();
         event.preventDefault();
@@ -38,6 +43,7 @@ export class Dialog extends React.Component<IDialogProps, {}> {
 
         return <div className="dialog__overlay" ref={this._container} tabIndex={100} onClick={this.clear} onContextMenu={this.clear}>
             <div className="dialog__overlayContent" onClick={this.stopPropagation} onContextMenu={this.stopPropagation}>
+                <button type="button" className="dialog__backButton" onClick={this.back}>{"<"}</button>
                 {this.props.children}
             </div>
         </div>;

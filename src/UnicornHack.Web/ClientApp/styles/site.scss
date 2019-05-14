@@ -307,6 +307,15 @@ input::placeholder {
     flex: 1 1 auto;
 }
 
+.dialog__backButton {
+    @extend .btn;
+    @extend .btn-secondary;
+    color: $highlight-color;
+    position: absolute;
+    right: 0;
+    padding: 0 0.5rem 0 0.5rem;
+}
+
 .abilitySlotSelection, .characterScreen, .creatureProperties, .itemProperties, .abilityProperties {
     @extend .frame;
     margin: auto;

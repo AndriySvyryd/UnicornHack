@@ -22,9 +22,9 @@ const AbilitySelection = observer(({ context, data }: IAbilitySelectionProps) =>
     }
 
     var abilities = Array.from(data.slottableAbilities.values(),
-        i => <AbilitySelectionLine ability={i} slot={coalesce(data.abilitySlot, -3)} key={i.id} context={context} />);
+        i => <AbilitySelectionLine ability={i} slot={coalesce<number>(data.abilitySlot, -3)} key={i.id} context={context} />);
 
-    abilities.push(<AbilitySelectionLine ability={null} slot={coalesce(data.abilitySlot, -3)} key={-1} context={context} />);
+    abilities.push(<AbilitySelectionLine ability={null} slot={coalesce<number>(data.abilitySlot, -3)} key={-1} context={context} />);
 
     return <div className="abilitySlotSelection" role="dialog" aria-labelledby="abilitySelection">
         <h4 id="abilitySelection">Select ability for slot {data.abilitySlot}:</h4>

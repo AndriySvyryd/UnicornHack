@@ -57,7 +57,7 @@ const ElementHandlers: Map<string, (node: htmlparser2.DomElement, index: number)
         ]);
 
 const DamageTooltip = (props: IDamageProps) =>
-    <TooltipTrigger id={"damage-" + props.index} tooltip={formatDamage(props)}>
+    <TooltipTrigger id={`tooltip-damage-${props.index}`} tooltip={formatDamage(props)}>
         <span className="annotatedText">{props.children}</span>
     </TooltipTrigger>;
 

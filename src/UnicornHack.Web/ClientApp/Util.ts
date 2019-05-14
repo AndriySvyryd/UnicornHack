@@ -1,4 +1,4 @@
-﻿export function coalesce(value: any, fallback: any): any {
+﻿export function coalesce<T>(value: T | null | undefined, fallback: T): T {
     return value === null || value === undefined ? fallback : value;
 }
 
