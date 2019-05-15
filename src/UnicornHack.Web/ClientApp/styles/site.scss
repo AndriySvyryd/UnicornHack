@@ -301,10 +301,16 @@ input::placeholder {
 }
 
 .dialog__overlayContent {
-    @include make-row();
     margin: auto;
     max-height: 100%;
-    flex: 1 1 auto;
+}
+
+.dialog__title {
+    @include make-col-ready();
+    @include make-col(12);
+    left: -$grid-gutter-width/2;
+    top: -$grid-gutter-width/2;
+    font-size: x-large;
 }
 
 .dialog__backButton {
@@ -312,12 +318,15 @@ input::placeholder {
     @extend .btn-secondary;
     color: $highlight-color;
     position: absolute;
+    top: 0;
     right: 0;
     padding: 0 0.5rem 0 0.5rem;
 }
 
 .abilitySlotSelection, .characterScreen, .creatureProperties, .itemProperties, .abilityProperties {
+    @include make-row();
     @extend .frame;
+    position: relative;
     margin: auto;
     max-height: 100%;
     overflow: auto;

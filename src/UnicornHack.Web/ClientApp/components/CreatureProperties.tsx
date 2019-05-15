@@ -10,7 +10,10 @@ import { PropertyRow } from './PropertyRow';
 
 export const CreaturePropertiesDialog = observer((props: ICreaturePropertiesProps) => {
     const { data, context } = props;
-    return <Dialog context={context} show={computed(() => data.actorAttributes != null)}>
+    return <Dialog context={context} show={computed(() => data.actorAttributes != null)} className="creatureProperties"
+        title={computed(() =>
+            capitalize(data.actorAttributes == null || data.actorAttributes.name == null ? "Unknown creature" : data.actorAttributes.name))}
+    >
         <CreatureProperties {...props} />
     </Dialog>;
 });
@@ -18,15 +21,13 @@ export const CreaturePropertiesDialog = observer((props: ICreaturePropertiesProp
 const CreatureProperties = observer((props: ICreaturePropertiesProps) => {
     const actorAttributes = props.data.actorAttributes;
     if (actorAttributes == null) {
-        throw "Rendered CreatureProperties with no data";
+        return <></>;
     }
 
-    const title = capitalize(actorAttributes.name || "Unknown creature");
-    return <div className="creatureProperties" role="dialog" aria-label="Creature properties">
-        <h2>{title}</h2>
+    return <>
         <div>{actorAttributes.description}</div>
-        {actorAttributes.name == null ? <></> : <AttributesScreen actorAttributes={actorAttributes} />}
-    </div>;
+        <ActorAttributesScreen actorAttributes={actorAttributes} />
+    </>;
 });
 
 interface ICreaturePropertiesProps {
@@ -34,7 +35,7 @@ interface ICreaturePropertiesProps {
     context: IGameContext;
 }
 
-export const AttributesScreen = observer((props: IActorPropertiesData) => {
+export const ActorAttributesScreen = observer((props: IActorPropertiesData) => {
     const actorAttributes = props.actorAttributes;
     if (actorAttributes == null) {
         return <></>;

@@ -5,32 +5,30 @@ import { Ability } from '../transport/Model';
 import { GameQueryType } from '../transport/GameQueryType';
 import { PlayerAction } from "../transport/PlayerAction";
 import { DialogData } from '../transport/DialogData';
-import { coalesce } from '../Util';
 import { Dialog } from './Dialog';
 import { IGameContext } from './Game';
 
 export const AbilitySelectionDialog = observer((props: IAbilitySelectionProps) => {
     const { data, context } = props;
-    return <Dialog context={context} show={computed(() => data.abilitySlot != null)}>
+    return <Dialog context={context} show={computed(() => data.abilitySlot != null)} className="abilitySlotSelection"
+        title={computed(() => "Select ability for slot " + data.abilitySlot)}
+    >
         <AbilitySelection {...props} />
     </Dialog>;
 });
 
 const AbilitySelection = observer(({ context, data }: IAbilitySelectionProps) => {
-    if (data.abilitySlot == null) {
-        throw "Rendered AbilitySelection with no data";
+    const slot = data.abilitySlot;
+    if (slot == null) {
+        return <></>;
     }
 
     var abilities = Array.from(data.slottableAbilities.values(),
-        i => <AbilitySelectionLine ability={i} slot={coalesce<number>(data.abilitySlot, -3)} key={i.id} context={context} />);
+        i => <AbilitySelectionLine ability={i} slot={slot} key={i.id} context={context} />);
 
-    abilities.push(<AbilitySelectionLine ability={null} slot={coalesce<number>(data.abilitySlot, -3)} key={-1} context={context} />);
+    abilities.push(<AbilitySelectionLine ability={null} slot={slot} key={-1} context={context} />);
 
-    return <div className="abilitySlotSelection" role="dialog" aria-labelledby="abilitySelection">
-        <h4 id="abilitySelection">Select ability for slot {data.abilitySlot}:</h4>
-        <br />
-        <ul>{abilities}</ul>
-    </div>;
+    return <ul>{abilities}</ul>;
 });
 
 interface IAbilitySelectionProps {

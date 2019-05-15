@@ -274,7 +274,7 @@ export class Game extends React.Component<IGameProps, {}> {
                     </div>
                 </div>
 
-                <IgnoreKeys only={[]} except={["Escape"]}>//, "Backspace"
+                <IgnoreKeys only={[]} except={["Escape"]}>
                     <AbilitySelectionDialog context={this} data={this._dialogData} />
                     <CharacterScreenDialog context={this} data={this._dialogData} />
                     <CreaturePropertiesDialog context={this} data={this._dialogData} />

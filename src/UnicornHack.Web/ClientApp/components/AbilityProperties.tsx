@@ -17,32 +17,32 @@ import { PropertyRow } from './PropertyRow';
 
 export const AbilityPropertiesDialog = observer((props: IAbilityPropertiesProps) => {
     const { data, context } = props;
-    return <Dialog context={context} show={computed(() => data.abilityAttributes != null)}>
+
+    return <Dialog context={context} show={computed(() => data.abilityAttributes != null)} className="abilityProperties"
+        title={computed(() => data.abilityAttributes == null ? '' : data.abilityAttributes.getName())}
+    >
         <AbilityProperties {...props} />
     </Dialog>;
 });
 
-const AbilityProperties = observer((props: IAbilityPropertiesProps) => {
-    const abilityAttributes = props.data.abilityAttributes;
-    if (abilityAttributes == null) {
-        throw "Rendered with no data";
-    }
-
-    return <div className="abilityProperties" role="dialog" aria-label="Ability properties">
-        <h2>{abilityAttributes.getName()}</h2>
-        <AbilityAttributesScreen abilityAttributes={abilityAttributes} />
-    </div>;
-});
-
-interface IAbilityPropertiesProps {
+export interface IAbilityPropertiesProps {
     data: IAbilityPropertiesData;
     context: IGameContext;
 }
 
+const AbilityProperties = observer((props: IAbilityPropertiesProps) => {
+    const abilityAttributes = props.data.abilityAttributes;
+    if (abilityAttributes == null) {
+        return <></>;
+    }
+
+    return <AbilityAttributesScreen abilityAttributes={abilityAttributes} />;
+});
+
 export const AbilityAttributesScreen = observer((props: IAbilityPropertiesData) => {
     const abilityAttributes = props.abilityAttributes;
     if (abilityAttributes == null) {
-        throw "Rendered with no data";
+        return <></>;
     }
 
     return <div className="characterScreen__content">
@@ -70,7 +70,7 @@ export const AbilityAttributesScreen = observer((props: IAbilityPropertiesData) 
     </div>;
 });
 
-export interface IAbilityPropertiesData {
+interface IAbilityPropertiesData {
     abilityAttributes: AbilityAttributes | null;
 }
 

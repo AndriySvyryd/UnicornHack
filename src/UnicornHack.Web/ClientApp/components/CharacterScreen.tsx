@@ -3,7 +3,7 @@ import { action, computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { GameQueryType } from '../transport/GameQueryType';
 import { ActorAttributes, PlayerAdaptations, PlayerSkills } from '../transport/DialogData';
-import { AttributesScreen } from './CreatureProperties';
+import { ActorAttributesScreen } from './CreatureProperties';
 import { Dialog } from './Dialog';
 import { IGameContext } from './Game';
 import { IKeyContext } from './KeyContext';
@@ -13,25 +13,23 @@ import { Tabs, Tab } from './Tabs';
 export const CharacterScreenDialog = observer((props: ICharacterScreenProps) => {
     const { data, context } = props;
     const show = computed(() => data.playerAttributes !== null || data.playerAdaptations !== null || data.playerSkills !== null);
-    return <Dialog context={context} show={show}>
+    return <Dialog context={context} show={show} className="characterScreen">
         <CharacterScreen {...props} />
     </Dialog>;
 });
 
 const CharacterScreen = observer((props: ICharacterScreenProps) => {
-    return <div className="characterScreen" role="dialog" aria-label="Character screen">
-        <Tabs id="tabs" keyContext={new CharacterKeyContext(props)}>
-            <Tab eventKey="attributes" title="Attributes">
-                <AttributesScreen actorAttributes={props.data.playerAttributes} />
-            </Tab>
-            <Tab eventKey="adaptations" title="Adaptations">
-                <AdaptationsScreen data={props.data} />
-            </Tab>
-            <Tab eventKey="skills" title="Skills">
-                <SkillsScreen data={props.data} />
-            </Tab>
-        </Tabs>
-    </div>;
+    return <Tabs id="tabs" keyContext={new CharacterKeyContext(props)}>
+        <Tab eventKey="attributes" title="Attributes">
+            <AttributesScreen data={props.data} />
+        </Tab>
+        <Tab eventKey="adaptations" title="Adaptations">
+            <AdaptationsScreen data={props.data} />
+        </Tab>
+        <Tab eventKey="skills" title="Skills">
+            <SkillsScreen data={props.data} />
+        </Tab>
+    </Tabs>;
 });
 
 interface ICharacterScreenProps {
@@ -71,6 +69,15 @@ class CharacterKeyContext implements IKeyContext {
                 : 'skills';
     }
 }
+
+const AttributesScreen = observer((props: ICharacterSubScreenProps) => {
+    const playerAttributes = props.data.playerAttributes;
+    if (playerAttributes == null) {
+        return <></>;
+    }
+
+    return <ActorAttributesScreen actorAttributes={playerAttributes} />;
+});
 
 const AdaptationsScreen = observer((props: ICharacterSubScreenProps) => {
     const playerAdaptations = props.data.playerAdaptations;
