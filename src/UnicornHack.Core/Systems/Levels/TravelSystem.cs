@@ -170,11 +170,11 @@ namespace UnicornHack.Systems.Levels
         }
 
         public Direction? GetFirstStepFromShortestPath(
-            LevelComponent level, Point origin, Point target, Direction initialDirection)
+            LevelComponent level, Point origin, Point target, Direction initialDirection, bool knownOnly = false)
         {
             var nextPoint = target;
 
-            var path = GetShortestPath(level, origin, target, initialDirection);
+            var path = GetShortestPath(level, origin, target, initialDirection, knownOnly);
             if (path == null)
             {
                 return null;
@@ -191,8 +191,10 @@ namespace UnicornHack.Systems.Levels
         }
 
         public List<Point> GetShortestPath(
-            LevelComponent level, Point start, Point target, Direction initialDirection)
-            => level.PathFinder.FindPath(start, target, initialDirection, CanMoveTo, level);
+            LevelComponent level, Point start, Point target, Direction initialDirection, bool knownOnly = false)
+            => knownOnly
+                ? level.PathFinder.FindPath(start, target, initialDirection, CanMoveToKnown, level)
+                : level.PathFinder.FindPath(start, target, initialDirection, CanMoveTo, level);
 
         public IReadOnlyList<Direction> GetPossibleMovementDirections(
             PositionComponent currentPosition,
@@ -254,6 +256,17 @@ namespace UnicornHack.Systems.Levels
 
             var index = level.PointToIndex[locationX, locationY];
             return ((MapFeature)level.Terrain[index]).CanMoveTo() ? (int?)index : null;
+        }
+
+        private int? CanMoveToKnown(byte locationX, byte locationY, LevelComponent level)
+        {
+            if (locationX >= level.Width || locationY >= level.Height)
+            {
+                return null;
+            }
+
+            var index = level.PointToIndex[locationX, locationY];
+            return ((MapFeature)level.KnownTerrain[index]).CanMoveTo() ? (int?)index : null;
         }
     }
 }

@@ -188,10 +188,10 @@ namespace UnicornHack.Systems.Actors
 
         private bool Move(Point targetCell, GameEntity playerEntity, GameManager manager)
         {
-            // TODO: Only consider known terrain, avoid actors and connections
+            // TODO: avoid actors and connections
             var position = playerEntity.Position;
             var direction = manager.TravelSystem.GetFirstStepFromShortestPath(
-                position.LevelEntity.Level, position.LevelCell, targetCell, position.Heading.Value);
+                position.LevelEntity.Level, position.LevelCell, targetCell, position.Heading.Value, knownOnly: true);
             if (direction == null)
             {
                 manager.LoggingSystem.WriteLog(

@@ -144,7 +144,7 @@ class MapTile extends React.Component<ITileProps, {}> {
         if (tile.actor != null) {
             glyph = styles.actors[tile.actor.baseName];
             if (glyph == undefined) {
-                glyph = Object.assign({}, styles.actors['default'], { char: tile.actor.baseName[0] });
+                glyph = Object.assign({ char: tile.actor.baseName[0] }, styles.actors['default']);
             }
 
             // TODO: Add more creatures
@@ -190,15 +190,6 @@ class MapTile extends React.Component<ITileProps, {}> {
                 } else {
                     throw `Map feature ${feature} not supported.`;
                 }
-            }
-
-            switch (tile.feature) {
-                case MapFeature.RockFloor:
-                case MapFeature.StoneFloor:
-                case MapFeature.StoneArchway:
-                    break;
-                default:
-                    this._clickAction = TileAction.None;
             }
         }
 

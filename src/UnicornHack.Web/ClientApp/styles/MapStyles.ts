@@ -13,7 +13,7 @@ export class MapStyles {
 
 export interface ITileStyle {
     style: CSSProperties;
-    char: string;
+    char?: string;
 }
 
 class MapActorStyles {
@@ -27,7 +27,7 @@ class MapActorStyles {
     'firefly': ITileStyle = { char: 'F', style: { color: 'darkorange' } };
     'giant ant': ITileStyle = { char: 'a', style: { color: 'gray' } };
     'jaguar': ITileStyle = { char: 'j', style: { color: 'orange' } };
-    'default': ITileStyle = { char: 'x', style: { color: 'red' } };
+    'default': ITileStyle = { style: { color: 'red' } };
 }
 
 export class MapFeatureStyles {
