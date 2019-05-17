@@ -50,7 +50,9 @@ class InventoryLine extends React.Component<IItemProps, {}> {
                     id={`tooltip-unequip-${item.id}`}
                     tooltip={'Unequip from ' + item.equippedSlot.name}
                 >
-                    <a tabIndex={0} role="button" onClick={this.unequip} onKeyPress={this.unequip}>{item.equippedSlot.shortName}</a>
+                    <a className="annotatedText" tabIndex={0} role="button" onClick={this.unequip} onKeyPress={this.unequip}>
+                        {item.equippedSlot.shortName}
+                    </a>
                 </TooltipTrigger>);
             itemLine.push('] ');
         } else if (item.equippableSlots.size !== 0) {
@@ -70,7 +72,7 @@ class InventoryLine extends React.Component<IItemProps, {}> {
         itemLine.push(' ');
         itemLine.push(<a tabIndex={0} role="button" key="drop" onClick={this.drop} onKeyPress={this.drop}>drop</a>);
 
-        return <div onContextMenu={this.showAttributes}>{item.name}{itemLine}</div>;
+        return <div className="contextLink" onContextMenu={this.showAttributes}>{item.name}{itemLine}</div>;
     }
 }
 
@@ -94,7 +96,7 @@ class Equip extends React.Component<IEquipProps, {}> {
             id={`tooltip-equip-${slot.id}-${item.id}`}
             tooltip={'Equip to ' + slot.name}
         >
-            <a tabIndex={0} role="button" onClick={this.equip} onKeyPress={this.equip}>{slot.shortName}</a>
+            <a className="annotatedText" tabIndex={0} role="button" onClick={this.equip} onKeyPress={this.equip}>{slot.shortName}</a>
         </TooltipTrigger>;
     }
 }

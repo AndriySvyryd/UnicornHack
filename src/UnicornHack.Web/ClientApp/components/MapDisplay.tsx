@@ -194,8 +194,9 @@ class MapTile extends React.Component<ITileProps, {}> {
         }
 
         // TODO: Change pointer depending on the action
+        const className = "map__tile" + (this._contextMenuAction == TileAction.None ? "" : " contextLink");
         const opacity = 0.3 + ((tile.visibility / 255) * 0.7);
-        const content = <div className="map__tile" role="button" style={Object.assign({ opacity: opacity }, glyph.style, inlineStyle)}
+        const content = <div className={className} role="button" style={Object.assign({ opacity: opacity }, glyph.style, inlineStyle)}
             onClick={this.handleClick} onContextMenu={this.handleContextMenu}
         >
             {glyph.char}

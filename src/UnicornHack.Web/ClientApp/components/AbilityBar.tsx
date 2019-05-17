@@ -83,10 +83,10 @@ class AbilityLine extends React.Component<IAbilityProps, {}> {
                 timeout = timeout.trimRight();
                 timeout += ']';
 
-                ability = <span onContextMenu={this.showAttributes}>{ability} {timeout}</span>;
+                ability = <span className="contextLink" onContextMenu={this.showAttributes}>{ability} {timeout}</span>;
             }
         } else {
-            ability = <span onContextMenu={this.showAttributes}>{ability}</span>;
+            ability = <span className="contextLink" onContextMenu={this.showAttributes}>{ability}</span>;
         }
 
         return <div>{slot} {ability}</div>;

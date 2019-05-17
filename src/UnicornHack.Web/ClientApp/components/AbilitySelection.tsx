@@ -70,7 +70,7 @@ class AbilitySelectionLine extends React.Component<IAbilityLineProps, {}> {
             }
         }
 
-        return <li><a tabIndex={(this.props.ability === null ? 0 : 100 + this.props.ability.id)} role="button"
+        return <li><a className="contextLink" tabIndex={(this.props.ability === null ? 0 : 100 + this.props.ability.id)} role="button" 
             onClick={this.setAbilitySlot} onKeyPress={this.setAbilitySlot} onContextMenu={this.showAttributes}
         >
             {name}

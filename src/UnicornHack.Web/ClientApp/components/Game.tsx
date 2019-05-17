@@ -244,10 +244,10 @@ export class Game extends React.Component<IGameProps, {}> {
         const firstTimeLoading = this._firstTimeLoading;
 
         return <HotKeys innerRef={this._hotKeyContainer} keyMap={this._keyMap} handlers={this._keyHandlers}>
-            <div className="dialog__overlay" aria-hidden={!firstTimeLoading} style={{
+            <div className="loading__screen" aria-hidden={!firstTimeLoading} style={{
                 display: firstTimeLoading ? 'flex' : 'none', background: 'transparent'
             }}>
-                <div className="loading">
+                <div className="loading__text">
                     <div className="spinner-border spinner-border-sm" /> Loading, please wait...
                 </div>    
             </div>

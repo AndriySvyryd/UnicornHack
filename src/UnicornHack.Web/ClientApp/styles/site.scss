@@ -68,13 +68,22 @@ input::placeholder {
     border: 1px solid $body-color;
 }
 
-.loading {
+.loading__screen {
+    @extend .dialog__overlay;
+    cursor: progress;
+}
+
+.loading__text {
     margin: auto;
 }
 
 .annotatedText {
     //text-decoration: underline dashed;
     border-bottom: 1px dashed;
+}
+
+.contextLink {
+    cursor: context-menu;
 }
 
 .game {
@@ -118,6 +127,7 @@ input::placeholder {
     line-height: 20px;
     font-size: 18px;
     overflow: auto;
+    cursor: default;
 }
 
 .map__row {
@@ -129,6 +139,11 @@ input::placeholder {
     float: left;
     width: 0.6rem;
     white-space: pre;
+}
+
+.map__tile:hover {
+    box-shadow: 0 0 0 0.5rem rgba(255,255,255,0.5) inset;
+    opacity: 1 !important;
 }
 
 .map__tile_fullwidth {
