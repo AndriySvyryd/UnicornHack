@@ -246,7 +246,7 @@ Seed: " + level.Game.InitialSeed);
                                 symbol = '█';
                                 break;
                             case MapFeature.StoneWall:
-                                var neighbours = (DirectionFlags)level.WallNeighbours[i] & DirectionFlags.Cross;
+                                var neighbours = (DirectionFlags)level.WallNeighbors[i] & DirectionFlags.Cross;
                                 switch (neighbours)
                                 {
                                     case DirectionFlags.None:

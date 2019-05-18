@@ -1,6 +1,6 @@
 using System;
 
-namespace UnicornHack.Generation.Map
+namespace UnicornHack.Primitives
 {
     [Flags]
     public enum ConnectionDirection

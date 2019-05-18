@@ -16,6 +16,7 @@ import { EffectDuration } from './EffectDuration';
 
 export class DialogData {
     @observable abilitySlot: number | null = null;
+    @observable postGameStatistics: PostGameStatistics | null = null;
     @observable slottableAbilities: Map<number, Ability> = new Map<number, Ability>();
     @observable playerAttributes: ActorAttributes | null = null;
     @observable playerAdaptations: PlayerAdaptations | null = null;
@@ -35,6 +36,9 @@ export class DialogData {
         var queryType = compactData[i++];
         switch (queryType) {
             case GameQueryType.Clear:
+                break;
+            case GameQueryType.PostGameStatistics:
+                this.postGameStatistics = PostGameStatistics.expand(compactData[i++]);
                 break;
             case GameQueryType.SlottableAbilities:
                 this.abilitySlot = compactData[i++];
@@ -80,6 +84,14 @@ export class DialogData {
         this.itemAttributes = null;
         this.abilityAttributes = null;
         this.staticDescription = null;
+    }
+}
+
+export class PostGameStatistics {
+    @action
+    static expand(compactStatisctics: any[]): PostGameStatistics {
+        const statisctics = new PostGameStatistics();
+        return statisctics;
     }
 }
 

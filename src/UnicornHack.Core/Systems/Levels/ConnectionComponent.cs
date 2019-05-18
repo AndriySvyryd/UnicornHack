@@ -1,4 +1,5 @@
 ﻿using UnicornHack.Generation;
+using UnicornHack.Primitives;
 using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Systems.Levels
@@ -9,6 +10,7 @@ namespace UnicornHack.Systems.Levels
         private int _targetLevelId;
         private byte? _targetLevelX;
         private byte? _targetLevelY;
+        private ConnectionDirection? _connectionDirection;
 
         public ConnectionComponent()
             => ComponentId = (int)EntityComponent.Connection;
@@ -43,11 +45,18 @@ namespace UnicornHack.Systems.Levels
             }
         }
 
+        public ConnectionDirection? Direction
+        {
+            get => _connectionDirection;
+            set => SetWithNotify(value, ref _connectionDirection);
+        }
+
         protected override void Clean()
         {
             _targetLevelId = default;
             _targetLevelX = default;
             _targetLevelY = default;
+            _connectionDirection = default;
 
             base.Clean();
         }

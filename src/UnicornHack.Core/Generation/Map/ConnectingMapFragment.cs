@@ -88,8 +88,8 @@ namespace UnicornHack.Generation.Map
         protected virtual void CreateConnection(LevelComponent level, Point point, char? glyph)
             => CreateConnection(level, point, Connections.FirstOrDefault(c => c.Glyph == glyph));
 
-        protected virtual ConnectionComponent CreateConnection(LevelComponent level, Point point,
-            LevelConnection connectionDefinition)
+        protected virtual void CreateConnection(
+            LevelComponent level, Point point, LevelConnection connectionDefinition)
         {
             var manager = level.Entity.Manager;
 
@@ -99,21 +99,19 @@ namespace UnicornHack.Generation.Map
                 if (connection.TargetLevelX == null)
                 {
                     var target = manager.FindEntity(connection.TargetLevelId).Level;
-                    if ((connectionDefinition?.BranchName == null ||
-                         connectionDefinition.BranchName == target.BranchName)
-                        && (connectionDefinition?.Depth == null ||
-                            connectionDefinition.Depth == target.Depth))
+                    if ((connectionDefinition?.BranchName == null
+                         || connectionDefinition.BranchName == target.BranchName)
+                        && (connectionDefinition?.Depth == null
+                            || connectionDefinition.Depth == target.Depth)
+                        && LevelConnection.AreMatchingDirection(connection.Direction, connectionDefinition?.Direction))
                     {
-                        return LevelConnection.CreateReceivingConnection(level, point, connection);
+                        LevelConnection.CreateReceivingConnection(level, point, connection, connectionDefinition?.Direction);
+                        return;
                     }
                 }
             }
 
-            return connectionDefinition?.BranchName != null
-                ? LevelConnection.CreateSourceConnection(level, point, connectionDefinition.BranchName,
-                    connectionDefinition.Depth ?? 1)
-                : LevelConnection.CreateSourceConnection(level, point, level.BranchName,
-                    connectionDefinition?.Depth ?? (byte)(level.Depth + 1));
+            LevelConnection.CreateSourceConnection(level, point, connectionDefinition);
         }
 
         public static readonly CSScriptLoader<ConnectingMapFragment> Loader =
@@ -122,7 +120,7 @@ namespace UnicornHack.Generation.Map
         private static readonly CSScriptSerializer Serializer =
             new PropertyCSScriptSerializer<ConnectingMapFragment>(GetPropertyConditions<ConnectingMapFragment>());
 
-        protected static new Dictionary<string, Func<TConnectingMapFragment, object, bool>>
+        protected new static Dictionary<string, Func<TConnectingMapFragment, object, bool>>
             GetPropertyConditions<TConnectingMapFragment>() where TConnectingMapFragment : ConnectingMapFragment
         {
             var propertyConditions = MapFragment.GetPropertyConditions<TConnectingMapFragment>();

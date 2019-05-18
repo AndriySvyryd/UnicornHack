@@ -25,7 +25,7 @@ namespace UnicornHack.Generation
                 level.Depth = depth;
                 level.Terrain = new byte[0];
                 level.KnownTerrain = new byte[0];
-                level.WallNeighbours = new byte[0];
+                level.WallNeighbors = new byte[0];
                 level.VisibleTerrain = new byte[0];
                 level.VisibleNeighbours = new byte[0];
                 level.VisibleTerrain = new byte[0];
@@ -78,7 +78,7 @@ namespace UnicornHack.Generation
             levelComponent.Width = fragment.LevelWidth;
 
             levelComponent.Terrain = new byte[levelComponent.Height * levelComponent.Width];
-            levelComponent.WallNeighbours = new byte[levelComponent.Height * levelComponent.Width];
+            levelComponent.WallNeighbors = new byte[levelComponent.Height * levelComponent.Width];
             levelComponent.VisibleNeighbours = new byte[levelComponent.Height * levelComponent.Width];
             levelComponent.VisibleTerrain = new byte[levelComponent.Height * levelComponent.Width];
             levelComponent.KnownTerrain = new byte[levelComponent.Height * levelComponent.Width];

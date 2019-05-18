@@ -68,15 +68,6 @@ input::placeholder {
     border: 1px solid $body-color;
 }
 
-.loading__screen {
-    @extend .dialog__overlay;
-    cursor: progress;
-}
-
-.loading__text {
-    margin: auto;
-}
-
 .annotatedText {
     //text-decoration: underline dashed;
     border-bottom: 1px dashed;
@@ -338,7 +329,17 @@ input::placeholder {
     padding: 0 0.5rem 0 0.5rem;
 }
 
-.abilitySlotSelection, .characterScreen, .creatureProperties, .itemProperties, .abilityProperties {
+.loading__screen {
+    @extend .dialog__overlay;
+    background: transparent;
+    cursor: progress;
+}
+
+.loading__text {
+    margin: auto;
+}
+
+.postGameStatistics, .abilitySlotSelection, .characterScreen, .creatureProperties, .itemProperties, .abilityProperties {
     @include make-row();
     @extend .frame;
     position: relative;
@@ -346,6 +347,11 @@ input::placeholder {
     max-height: 100%;
     overflow: auto;
     background-color: $highlight-bg;
+}
+
+.postGameStatistics__newGame {
+    width: 100%;
+    text-align: center;
 }
 
 .characterScreen {

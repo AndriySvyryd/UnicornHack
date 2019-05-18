@@ -39,9 +39,9 @@ namespace UnicornHack.Hubs
             ItemsSnapshot.Clear();
             ItemsSnapshot.AddRange(items, i => new LevelItemSnapshot().Snapshot(i, context));
 
-            var abilities = GetConnections(levelEntity, manager);
+            var connections = GetConnections(levelEntity, manager);
             ConnectionsSnapshot.Clear();
-            ConnectionsSnapshot.AddRange(abilities);
+            ConnectionsSnapshot.AddRange(connections);
 
             return this;
         }
@@ -67,19 +67,19 @@ namespace UnicornHack.Hubs
                         }
                     }
 
-                    var wallNeighbours = new List<short>();
-                    for (short j = 0; j < level.WallNeighbours.Length; j++)
+                    var wallNeighbors = new List<short>();
+                    for (short j = 0; j < level.WallNeighbors.Length; j++)
                     {
                         if (level.KnownTerrain[j] == (byte)MapFeature.Unexplored)
                         {
                             continue;
                         }
 
-                        var neighbours = level.WallNeighbours[j] & (byte)DirectionFlags.Cross;
-                        if (neighbours != (byte)DirectionFlags.None)
+                        var neighbors = level.WallNeighbors[j] & (byte)DirectionFlags.Cross;
+                        if (neighbors != (byte)DirectionFlags.None)
                         {
-                            wallNeighbours.Add(j);
-                            wallNeighbours.Add((byte)neighbours);
+                            wallNeighbors.Add(j);
+                            wallNeighbors.Add((byte)neighbors);
                         }
                     }
 
@@ -105,7 +105,7 @@ namespace UnicornHack.Hubs
                     properties.Add(GetConnections(levelEntity, manager)
                         .Select(c => ConnectionSnapshot.Serialize(c, null, context)).ToList());
                     properties.Add(knownTerrain);
-                    properties.Add(wallNeighbours);
+                    properties.Add(wallNeighbors);
                     properties.Add(visibleTerrain);
                     properties.Add(level.BranchName);
                     properties.Add(level.Depth);
@@ -155,7 +155,7 @@ namespace UnicornHack.Hubs
                     if (levelEntry.State != EntityState.Unchanged)
                     {
                         i++;
-                        var wallNeighboursChanges = new List<object>();
+                        var wallNeighborsChanges = new List<object>();
                         var knownTerrainChanges = new List<object>(level.KnownTerrainChanges.Count * 2);
                         if (level.KnownTerrainChanges.Count > 0)
                         {
@@ -164,8 +164,8 @@ namespace UnicornHack.Hubs
                                 knownTerrainChanges.Add(terrainChange.Key);
                                 knownTerrainChanges.Add(terrainChange.Value);
 
-                                wallNeighboursChanges.Add(terrainChange.Key);
-                                wallNeighboursChanges.Add(level.WallNeighbours[terrainChange.Key] &
+                                wallNeighborsChanges.Add(terrainChange.Key);
+                                wallNeighborsChanges.Add(level.WallNeighbors[terrainChange.Key] &
                                                           (byte)DirectionFlags.Cross);
                             }
                         }
@@ -200,15 +200,15 @@ namespace UnicornHack.Hubs
                                     continue;
                                 }
 
-                                wallNeighboursChanges.Add(wallNeighboursChange.Key);
-                                wallNeighboursChanges.Add(wallNeighboursChange.Value & (byte)DirectionFlags.Cross);
+                                wallNeighborsChanges.Add(wallNeighboursChange.Key);
+                                wallNeighborsChanges.Add(wallNeighboursChange.Value & (byte)DirectionFlags.Cross);
                             }
                         }
 
-                        if (wallNeighboursChanges.Count > 0)
+                        if (wallNeighborsChanges.Count > 0)
                         {
                             properties.Add(i);
-                            properties.Add(wallNeighboursChanges);
+                            properties.Add(wallNeighborsChanges);
                         }
 
                         i++;
@@ -234,7 +234,9 @@ namespace UnicornHack.Hubs
         private static IEnumerable<GameEntity> GetConnections(GameEntity levelEntity, GameManager manager)
             => manager.LevelKnowledgesToLevelRelationship[levelEntity.Id]
                 .Select(c => c.Knowledge)
-                .Where(c => c.KnownEntity.HasComponent(EntityComponent.Connection))
+                .Where(c => c.KnownEntity.HasComponent(EntityComponent.Connection)
+                            && (c.KnownEntity.Connection.Direction == null
+                                || (c.KnownEntity.Connection.Direction & ConnectionDirection.Source) != 0))
                 .Select(c => c.Entity);
 
         private static IEnumerable<GameEntity> GetItems(GameEntity levelEntity, GameManager manager)

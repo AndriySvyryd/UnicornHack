@@ -21,7 +21,7 @@ namespace UnicornHack.Systems.Levels
         private byte[] _visibleNeighbours;
         private byte[] _terrain;
         private byte[] _knownTerrain;
-        private byte[] _wallNeighbours;
+        private byte[] _wallNeighbors;
 
         public LevelComponent()
             => ComponentId = (int)EntityComponent.Level;
@@ -93,10 +93,10 @@ namespace UnicornHack.Systems.Levels
         }
 
         // TODO: Track known neighbours as well
-        public byte[] WallNeighbours
+        public byte[] WallNeighbors
         {
-            get => _wallNeighbours;
-            set => SetWithNotify(value, ref _wallNeighbours);
+            get => _wallNeighbors;
+            set => SetWithNotify(value, ref _wallNeighbors);
         }
 
         // Untracked properties
@@ -144,7 +144,7 @@ namespace UnicornHack.Systems.Levels
             _visibleNeighbours = default;
             _terrain = default;
             _knownTerrain = default;
-            _wallNeighbours = default;
+            _wallNeighbors = default;
 
             base.Clean();
         }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Time
@@ -11,7 +12,8 @@ namespace UnicornHack.Systems.Time
 
         public void AdvanceToNextPlayerTurn(GameManager manager)
         {
-            while (manager.Game.ActingPlayer == null)
+            while (manager.Game.ActingPlayer == null
+                   && manager.Players.Any(p => p.Being.IsAlive))
             {
                 EnqueueAdvanceTurn(manager);
                 manager.Queue.ProcessQueue(manager);

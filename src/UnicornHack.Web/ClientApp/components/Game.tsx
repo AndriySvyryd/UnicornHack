@@ -20,6 +20,7 @@ import { MapDisplay } from './MapDisplay';
 import { StatusBar } from './StatusBar';
 import { ItemPropertiesDialog } from './ItemProperties';
 import { AbilityPropertiesDialog } from './AbilityProperties';
+import { PostGameStatisticsDialog } from './PostGameStatistics';
 
 @observer
 export class Game extends React.Component<IGameProps, {}> {
@@ -241,18 +242,18 @@ export class Game extends React.Component<IGameProps, {}> {
     }
 
     render() {
-        const firstTimeLoading = this._firstTimeLoading;
-
-        return <HotKeys innerRef={this._hotKeyContainer} keyMap={this._keyMap} handlers={this._keyHandlers}>
-            <div className="loading__screen" aria-hidden={!firstTimeLoading} style={{
-                display: firstTimeLoading ? 'flex' : 'none', background: 'transparent'
-            }}>
+        const loading = !this._firstTimeLoading
+            ? ''
+            : <div className="loading__screen">
                 <div className="loading__text">
                     <div className="spinner-border spinner-border-sm" /> Loading, please wait...
-                </div>    
-            </div>
-            <div className="game" aria-hidden={firstTimeLoading} style={{
-                display: firstTimeLoading ? 'none' : 'flex'
+                </div>
+            </div>;
+
+        return <HotKeys innerRef={this._hotKeyContainer} keyMap={this._keyMap} handlers={this._keyHandlers}>
+            {loading}
+            <div className="game" aria-hidden={this._firstTimeLoading} style={{
+                display: this._firstTimeLoading ? 'none' : 'flex'
             }}>
                 <div className="game__map">
                     <MapDisplay context={this} />
@@ -275,6 +276,7 @@ export class Game extends React.Component<IGameProps, {}> {
                 </div>
 
                 <IgnoreKeys only={[]} except={["Escape"]}>
+                    <PostGameStatisticsDialog context={this} data={this._dialogData} />
                     <AbilitySelectionDialog context={this} data={this._dialogData} />
                     <CharacterScreenDialog context={this} data={this._dialogData} />
                     <CreaturePropertiesDialog context={this} data={this._dialogData} />

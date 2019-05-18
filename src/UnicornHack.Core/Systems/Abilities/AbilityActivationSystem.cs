@@ -471,7 +471,11 @@ namespace UnicornHack.Systems.Abilities
 
         public MessageProcessingResult Process(DiedMessage message, GameManager manager)
         {
-            DeactivateAbilities(message.BeingEntity.Id, ActivationType.Continuous, message.BeingEntity, manager);
+            var beingEntity = message.BeingEntity;
+            if (!beingEntity.HasComponent(EntityComponent.Player))
+            {
+                DeactivateAbilities(beingEntity.Id, ActivationType.Continuous, beingEntity, manager);
+            }
 
             return MessageProcessingResult.ContinueProcessing;
         }

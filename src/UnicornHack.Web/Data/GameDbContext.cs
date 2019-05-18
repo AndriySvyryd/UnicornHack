@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using UnicornHack.Hubs;
@@ -672,10 +673,10 @@ namespace UnicornHack.Data
         }
 
         void IRepository.Add<T>(T entity)
-            => Add(entity);
+            => Entry(entity).State = EntityState.Added;
 
         void IRepository.Remove(object entity)
-            => Remove(entity);
+            => Entry(entity).State = EntityState.Deleted;
 
         public void RemoveTracked(object entity)
         {
@@ -781,6 +782,8 @@ namespace UnicornHack.Data
             Games.Remove(game);
 
             SaveChanges();
+
+            Debug.Assert(!ChangeTracker.Entries().Any());
         }
     }
 }

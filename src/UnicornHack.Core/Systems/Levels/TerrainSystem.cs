@@ -32,14 +32,14 @@ namespace UnicornHack.Systems.Levels
 
                     if (levelComponent.TerrainChanges != null)
                     {
-                        ModifyNeighbours(levelComponent, levelComponent.WallNeighbours,
+                        ModifyNeighbours(levelComponent, levelComponent.WallNeighbors,
                             levelComponent.WallNeighboursChanges, point, add: false);
                     }
 
                     break;
                 case MapFeature.StoneArchway:
                 case MapFeature.StoneWall:
-                    ModifyNeighbours(levelComponent, levelComponent.WallNeighbours,
+                    ModifyNeighbours(levelComponent, levelComponent.WallNeighbors,
                         levelComponent.WallNeighboursChanges, point, add: true);
 
                     if (levelComponent.TerrainChanges != null

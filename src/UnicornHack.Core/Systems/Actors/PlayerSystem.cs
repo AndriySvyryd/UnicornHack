@@ -409,10 +409,10 @@ namespace UnicornHack.Systems.Actors
                 var player = message.InitialContainer?.Player;
                 if (player == null)
                 {
-                    var finalContainderId = message.ItemEntity.Item.ContainerId;
-                    if (finalContainderId != null)
+                    var finalContainerId = message.ItemEntity.Item.ContainerId;
+                    if (finalContainerId != null)
                     {
-                        player = manager.FindEntity(finalContainderId.Value).Player;
+                        player = manager.FindEntity(finalContainerId.Value).Player;
                     }
                 }
 

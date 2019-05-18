@@ -2,7 +2,8 @@
 {
     public enum GameQueryType
     {
-        Clear,
+        Clear = 0,
+        PostGameStatistics,
         SlottableAbilities,
         PlayerAttributes,
         PlayerAdaptations,

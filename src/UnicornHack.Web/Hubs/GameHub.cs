@@ -209,7 +209,15 @@ namespace UnicornHack.Hubs
                     new SerializationContext(_dbContext, playerEntity, _gameServices));
 
                 // TODO: only send to clients watching this player
-                await Clients.All.SendAsync("ReceiveState", serializedPlayer);
+                await Clients.All.SendAsync("ReceiveState", serializedPlayer).ConfigureAwait(false);
+
+                if (!playerEntity.Being.IsAlive)
+                {
+                    var results = new List<object> { GameQueryType.PostGameStatistics, new List<object>() };
+
+                    // TODO: only send to clients watching this player
+                    await Clients.All.SendAsync("ReceiveUIRequest", results).ConfigureAwait(false);
+                }
             }
 
             _dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
@@ -289,7 +297,7 @@ namespace UnicornHack.Hubs
                 if (level.WallNeighboursChanges == null
                     || level.WallNeighboursChanges.Count > 0)
                 {
-                    levelEntry.Property(l => l.WallNeighbours).IsModified = true;
+                    levelEntry.Property(l => l.WallNeighbors).IsModified = true;
                 }
 
                 // TODO: Move VisibleTerrainSnapshot and VisibleTerrainChanges to the snapshot
@@ -416,13 +424,13 @@ namespace UnicornHack.Hubs
                 Initialize(loadedGame);
 
                 _dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
-                EntityAttacher.Attach(cachedGame, _dbContext);
+                EntityAttacher.Attach(loadedGame, _dbContext);
                 _dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
             }
             else
             {
                 Initialize(loadedGame);
-                _dbContext.Attach(loadedGame);
+                EntityAttacher.Attach(loadedGame, _dbContext);
 
                 loadedGame = _dbContext.LoadGame(loadedGame.Id);
 
@@ -434,6 +442,10 @@ namespace UnicornHack.Hubs
             if (!_dbContext.PlayerComponents.Local.Any(pc => pc.Entity.Being.IsAlive))
             {
                 _dbContext.Clean(loadedGame);
+                _dbContext.ChangeTracker.Tracked -= OnTracked;
+                _dbContext.ChangeTracker.StateChanged -= OnStateChanged;
+
+                _gameServices.SharedCache.Remove(loadedGame);
                 return null;
             }
 
@@ -453,7 +465,6 @@ namespace UnicornHack.Hubs
             }
 
             _dbContext.Manager = game.Manager;
-
             _dbContext.ChangeTracker.Tracked += OnTracked;
             _dbContext.ChangeTracker.StateChanged += OnStateChanged;
         }

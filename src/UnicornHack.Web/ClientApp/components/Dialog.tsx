@@ -22,8 +22,10 @@ export class Dialog extends React.Component<IDialogProps, {}> {
 
     @action.bound
     clear(event: React.MouseEvent<HTMLDivElement>) {
-        this.props.context.showDialog(GameQueryType.Clear);
-        event.preventDefault();
+        if (!this.props.modal) {
+            this.props.context.showDialog(GameQueryType.Clear);
+            event.preventDefault();
+        }
     }
 
     @action.bound
@@ -33,7 +35,6 @@ export class Dialog extends React.Component<IDialogProps, {}> {
 
     stopPropagation(event: React.SyntheticEvent<{}>) {
         event.stopPropagation();
-        event.preventDefault();
     }
 
     render() {
@@ -41,12 +42,12 @@ export class Dialog extends React.Component<IDialogProps, {}> {
             return <></>
         }
 
-        const { title, className, children } = this.props;
+        const { title, className, children, modal } = this.props;
         return <div className="dialog__overlay" ref={this._container} tabIndex={100} onClick={this.clear} onContextMenu={this.clear}>
             <div className="dialog__overlayContent" onClick={this.stopPropagation} onContextMenu={this.stopPropagation}>
                 <div className={className} role="dialog" aria-label={title != undefined ? title.get() : undefined}>
                     {title != undefined ? <div className="dialog__title">{title.get()}</div> : <></>}
-                    <button type="button" className="dialog__backButton" onClick={this.back}>{"<"}</button>
+                    {!modal ? <button type="button" className="dialog__backButton" onClick={this.back}>{"<"}</button> : <></>}                    
                     {children}
                 </div>
             </div>
@@ -59,4 +60,5 @@ interface IDialogProps {
     show: IComputedValue<boolean>;
     className?: string;
     title?: IComputedValue<string>;
+    modal?: boolean;
 }

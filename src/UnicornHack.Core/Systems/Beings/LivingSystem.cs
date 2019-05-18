@@ -43,6 +43,7 @@ namespace UnicornHack.Systems.Beings
                     if (message.OldValue > 0
                         && message.NewValue <= 0)
                     {
+                        being.HitPoints = 0;
                         EnqueueDiedMessage(message.Entity, manager);
                     }
 
