@@ -10,7 +10,7 @@ namespace UnicornHack.Generation
     {
         public byte ExpectedInitialCount { get; set; } = 8;
 
-        public virtual void Fill(LevelComponent level, List<Room> rooms)
+        public virtual void Fill(LevelComponent level, IReadOnlyList<Room> rooms)
         {
             var manager = level.Entity.Manager;
             var actorsCount = manager.LevelActorsToLevelRelationship[level.EntityId].Count;

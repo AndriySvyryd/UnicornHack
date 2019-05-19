@@ -3,6 +3,7 @@ using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
+using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.DataStructures;
 using Xunit;
 
@@ -46,7 +47,7 @@ namespace UnicornHack.Systems.Senses
 .";
             TestHelper.AssertTerrain(level, expectedKnownMap, level.KnownTerrain);
 
-            var travelMessage = manager.TravelSystem.CreateTravelMessage(manager);
+            var travelMessage = TravelMessage.Create(manager);
             travelMessage.Entity = player;
             travelMessage.TargetHeading = Direction.South;
             travelMessage.TargetCell = player.Position.LevelCell;

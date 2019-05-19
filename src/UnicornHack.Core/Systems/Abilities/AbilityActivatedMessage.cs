@@ -7,6 +7,11 @@ namespace UnicornHack.Systems.Abilities
 {
     public class AbilityActivatedMessage : IMessage
     {
+        public const string Name = "AbilityActivated";
+
+        public static AbilityActivatedMessage Create(GameManager manager)
+            => manager.Queue.CreateMessage<AbilityActivatedMessage>(Name);
+
         private GameEntity _activatorEntity;
         private GameEntity _abilityEntity;
         private GameEntity _targetEntity;
@@ -49,7 +54,6 @@ namespace UnicornHack.Systems.Abilities
         public ImmutableList<GameEntity> EffectsToApply { get; set; }
         public string ActivationError { get; set; }
         public bool SuccessfulApplication { get; set; }
-        public int Delay { get; set; }
 
         public AbilityActivatedMessage Clone(GameManager manager)
         {
@@ -62,7 +66,6 @@ namespace UnicornHack.Systems.Abilities
             abilityActivatedMessage.Trigger = Trigger;
             abilityActivatedMessage.EffectsToApply = EffectsToApply;
             abilityActivatedMessage.ActivationError = ActivationError;
-            abilityActivatedMessage.Delay = Delay;
             return abilityActivatedMessage;
         }
 
@@ -78,7 +81,6 @@ namespace UnicornHack.Systems.Abilities
             EffectsToApply = default;
             ActivationError = default;
             SuccessfulApplication = default;
-            Delay = default;
         }
     }
 }

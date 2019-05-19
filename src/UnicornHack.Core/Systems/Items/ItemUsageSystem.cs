@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using UnicornHack.Primitives;
+using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Time;
 using UnicornHack.Utils.MessagingECS;
 
@@ -8,12 +9,6 @@ namespace UnicornHack.Systems.Items
 {
     public class ItemUsageSystem : IGameSystem<EquipItemMessage>
     {
-        public const string EquipItemMessageName = "EquipItem";
-        public const string ItemEquippedMessageName = "ItemEquipped";
-
-        public EquipItemMessage CreateEquipItemMessage(GameManager manager)
-            => manager.Queue.CreateMessage<EquipItemMessage>(EquipItemMessageName);
-
         public bool CanEquipItem(EquipItemMessage message, GameManager manager)
         {
             using (var equipped = TryEquip(message, manager, pretend: true))
@@ -26,6 +21,7 @@ namespace UnicornHack.Systems.Items
         {
             var equipped = TryEquip(message, manager);
 
+            // TODO: log a message on failure
             manager.Enqueue(equipped);
 
             return MessageProcessingResult.ContinueProcessing;
@@ -34,7 +30,7 @@ namespace UnicornHack.Systems.Items
         private ItemEquippedMessage TryEquip(EquipItemMessage message, GameManager manager, bool pretend = false)
         {
             var item = message.ItemEntity.Item;
-            var equippedMessage = manager.Queue.CreateMessage<ItemEquippedMessage>(ItemEquippedMessageName);
+            var equippedMessage = ItemEquippedMessage.Create(manager);
             equippedMessage.ItemEntity = message.ItemEntity;
             equippedMessage.ActorEntity = message.ActorEntity;
             equippedMessage.Slot = message.Slot;
@@ -148,11 +144,11 @@ namespace UnicornHack.Systems.Items
                 {
                     return equippedMessage;
                 }
+                
+                item.EquippedSlot = message.Slot;
 
                 // TODO: Calculate delay
-                equippedMessage.Delay += TimeSystem.DefaultActionDelay;
-
-                item.EquippedSlot = message.Slot;
+                DelayMessage.Enqueue(message.ActorEntity, TimeSystem.DefaultActionDelay / 2, manager);
             }
             else
             {
@@ -175,7 +171,7 @@ namespace UnicornHack.Systems.Items
                 item.EquippedSlot = EquipmentSlot.None;
 
                 // TODO: Calculate delay
-                equippedMessage.Delay += TimeSystem.DefaultActionDelay;
+                DelayMessage.Enqueue(message.ActorEntity, TimeSystem.DefaultActionDelay / 2, manager);
             }
 
             return equippedMessage;
@@ -184,7 +180,7 @@ namespace UnicornHack.Systems.Items
         private bool Unequip(
             GameEntity equippedItem, GameEntity actorEntity, GameManager manager, bool pretend)
         {
-            var unequipMessage = CreateEquipItemMessage(manager);
+            var unequipMessage = EquipItemMessage.Create(manager);
             unequipMessage.ItemEntity = equippedItem;
             unequipMessage.ActorEntity = actorEntity;
             unequipMessage.Slot = EquipmentSlot.None;

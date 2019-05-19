@@ -264,7 +264,7 @@ namespace UnicornHack.Systems.Faculties
                 }
             }
 
-            var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.Slot = melee
                 ? AbilitySlottingSystem.DefaultMeleeAttackSlot
                 : AbilitySlottingSystem.DefaultRangedAttackSlot;

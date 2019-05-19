@@ -6,6 +6,11 @@ namespace UnicornHack.Systems.Levels
 {
     public class TravelMessage : IMessage
     {
+        public const string Name = "Travel";
+
+        public static TravelMessage Create(GameManager manager)
+            => manager.Queue.CreateMessage<TravelMessage>(Name);
+
         private GameEntity _entity;
 
         public GameEntity Entity

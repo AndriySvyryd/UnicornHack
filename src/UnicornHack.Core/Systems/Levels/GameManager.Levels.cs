@@ -46,8 +46,8 @@ namespace UnicornHack
                 (effectEntity, _, __) => effectEntity.RemoveComponent(EntityComponent.Position));
 
             TravelSystem = new TravelSystem();
-            queue.Add<TravelMessage>(TravelSystem, TravelSystem.TravelMessageName, 0);
-            queue.Add<DiedMessage>(TravelSystem, LivingSystem.DiedMessageName, 6);
+            queue.Add<TravelMessage>(TravelSystem, TravelMessage.Name, 0);
+            queue.Add<DiedMessage>(TravelSystem, DiedMessage.Name, 6);
         }
     }
 }

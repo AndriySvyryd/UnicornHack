@@ -5,6 +5,11 @@ namespace UnicornHack.Systems.Items
 {
     public class MoveItemMessage : IMessage
     {
+        public const string Name = "MoveItem";
+
+        public static MoveItemMessage Create(GameManager manager)
+            => manager.Queue.CreateMessage<MoveItemMessage>(Name);
+
         private GameEntity _itemEntity;
         private GameEntity _targetContainerEntity;
         private GameEntity _targetLevelEntity;

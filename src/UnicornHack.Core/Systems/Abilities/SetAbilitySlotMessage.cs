@@ -4,6 +4,11 @@ namespace UnicornHack.Systems.Abilities
 {
     public class SetAbilitySlotMessage : IMessage
     {
+        public const string Name = "SetAbilitySlot";
+
+        public static SetAbilitySlotMessage Create(GameManager manager)
+            => manager.Queue.CreateMessage<SetAbilitySlotMessage>(Name);
+
         private GameEntity _abilityEntity;
         private GameEntity _ownerEntity;
 

@@ -12,10 +12,6 @@ namespace UnicornHack.Systems.Abilities
     {
         public static int DefaultMeleeAttackSlot = -1;
         public static int DefaultRangedAttackSlot = -2;
-        public const string SetAbilitySlotMessageName = "SetAbilitySlot";
-
-        public SetAbilitySlotMessage CreateSetAbilitySlotMessage(GameManager manager)
-            => manager.Queue.CreateMessage<SetAbilitySlotMessage>(SetAbilitySlotMessageName);
 
         public MessageProcessingResult Process(SetAbilitySlotMessage message, GameManager manager)
         {
@@ -88,7 +84,7 @@ namespace UnicornHack.Systems.Abilities
                 if (oldSlot == null
                     && (ability.Activation & ActivationType.WhileToggled) != 0)
                 {
-                    var activationMessage = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);
+                    var activationMessage = ActivateAbilityMessage.Create(manager);
                     activationMessage.AbilityEntity = message.AbilityEntity;
                     activationMessage.ActivatorEntity = ability.OwnerEntity;
                     activationMessage.TargetEntity = ability.OwnerEntity;
@@ -109,7 +105,7 @@ namespace UnicornHack.Systems.Abilities
                     && ability.Slot != null)
                 {
                     var deactivateMessage =
-                        manager.AbilityActivationSystem.CreateDeactivateAbilityMessage(manager);
+                        DeactivateAbilityMessage.Create(manager);
                     deactivateMessage.AbilityEntity = message.AbilityEntity;
                     deactivateMessage.ActivatorEntity = ability.OwnerEntity;
 
@@ -163,7 +159,7 @@ namespace UnicornHack.Systems.Abilities
 
         private void ResetSlot(GameEntity abilityEntity, GameManager manager)
         {
-            var resetMessage = CreateSetAbilitySlotMessage(manager);
+            var resetMessage = SetAbilitySlotMessage.Create(manager);
             resetMessage.AbilityEntity = abilityEntity;
 
             Process(resetMessage, manager);

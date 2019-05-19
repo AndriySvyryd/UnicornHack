@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
@@ -12,21 +13,9 @@ namespace UnicornHack.Systems.Actors
 {
     public class PlayerSystem :
         IGameSystem<PerformActionMessage>,
-        IGameSystem<AbilityActivatedMessage>,
-        IGameSystem<TraveledMessage>,
-        IGameSystem<ItemEquippedMessage>,
-        IGameSystem<ItemMovedMessage>,
-        IGameSystem<DiedMessage>
+        IGameSystem<DiedMessage>,
+        IGameSystem<DelayMessage>
     {
-        public const string PerformPlayerActionMessageName = "PerformPlayerAction";
-
-        public void EnqueuePlayerAction(GameEntity entity, GameManager manager)
-        {
-            var message = manager.Queue.CreateMessage<PerformActionMessage>(PerformPlayerActionMessageName);
-            message.Actor = entity;
-            manager.Enqueue(message);
-        }
-
         public MessageProcessingResult Process(PerformActionMessage message, GameManager manager)
         {
             if (!ProcessTurn(message, manager))
@@ -42,11 +31,7 @@ namespace UnicornHack.Systems.Actors
             var playerEntity = message.Actor;
             var player = playerEntity.Player;
 
-            if (!playerEntity.Being.IsAlive)
-            {
-                player.NextActionTick += TimeSystem.DefaultActionDelay;
-                return false;
-            }
+            Debug.Assert(playerEntity.Being.IsAlive);
 
             // TODO: add an option to stop here and display current state while performing multi-action commands (every x actions)
 
@@ -131,7 +116,7 @@ namespace UnicornHack.Systems.Actors
                         return false;
                     }
 
-                    var dropMessage = manager.ItemMovingSystem.CreateMoveItemMessage(manager);
+                    var dropMessage = MoveItemMessage.Create(manager);
                     dropMessage.ItemEntity = itemToDrop;
                     dropMessage.TargetLevelEntity = position.LevelEntity;
                     dropMessage.TargetCell = position.LevelCell;
@@ -146,7 +131,7 @@ namespace UnicornHack.Systems.Actors
                         return false;
                     }
 
-                    var equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+                    var equipMessage = EquipItemMessage.Create(manager);
                     equipMessage.ActorEntity = playerEntity;
                     equipMessage.ItemEntity = itemToEquip;
                     equipMessage.Slot = slot;
@@ -160,7 +145,7 @@ namespace UnicornHack.Systems.Actors
                         return false;
                     }
 
-                    var unequipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+                    var unequipMessage = EquipItemMessage.Create(manager);
                     unequipMessage.ActorEntity = playerEntity;
                     unequipMessage.ItemEntity = itemToUnequip;
                     unequipMessage.Slot = EquipmentSlot.None;
@@ -168,7 +153,7 @@ namespace UnicornHack.Systems.Actors
                     manager.Enqueue(unequipMessage);
                     break;
                 case PlayerAction.SetAbilitySlot:
-                    var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+                    var setSlotMessage = SetAbilitySlotMessage.Create(manager);
                     setSlotMessage.AbilityEntity = manager.FindEntity(target);
                     setSlotMessage.OwnerEntity = playerEntity;
                     setSlotMessage.Slot = target2;
@@ -213,12 +198,11 @@ namespace UnicornHack.Systems.Actors
             {
                 var abilityEntity = manager.AbilitySlottingSystem.GetAbility(
                     playerEntity.Id, AbilitySlottingSystem.DefaultMeleeAttackSlot, manager);
-                return abilityEntity == null
-                    ? false
-                    : ActivateAbility(abilityEntity, playerEntity, targetCell, conflictingActor, manager);
+                return abilityEntity != null
+                       && ActivateAbility(abilityEntity, playerEntity, targetCell, conflictingActor, manager);
             }
 
-            var travelMessage = manager.TravelSystem.CreateTravelMessage(manager);
+            var travelMessage = TravelMessage.Create(manager);
             travelMessage.Entity = playerEntity;
             travelMessage.TargetHeading = direction;
             travelMessage.TargetCell = onlyChangeHeading
@@ -236,23 +220,6 @@ namespace UnicornHack.Systems.Actors
 
             manager.Enqueue(travelMessage);
             return true;
-        }
-
-        public MessageProcessingResult Process(TraveledMessage message, GameManager state)
-        {
-            if (!message.Successful)
-            {
-                return MessageProcessingResult.ContinueProcessing;
-            }
-
-            var player = message.Entity.Player;
-            if (player != null)
-            {
-                player.NextActionTick += message.Delay;
-                return MessageProcessingResult.ContinueProcessing;
-            }
-
-            return MessageProcessingResult.ContinueProcessing;
         }
 
         private GameEntity GetItem(int itemId, GameEntity playerEntity, GameManager manager)
@@ -355,7 +322,7 @@ namespace UnicornHack.Systems.Actors
                 return true;
             }
 
-            var activationMessage = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);
+            var activationMessage = ActivateAbilityMessage.Create(manager);
             activationMessage.AbilityEntity = abilityEntity;
             activationMessage.ActivatorEntity = playerEntity;
             activationMessage.TargetEntity = targetEntity;
@@ -370,56 +337,12 @@ namespace UnicornHack.Systems.Actors
             return true;
         }
 
-        public MessageProcessingResult Process(AbilityActivatedMessage message, GameManager manager)
+        public MessageProcessingResult Process(DelayMessage message, GameManager state)
         {
-            if (message.Delay != 0)
+            var player = message.ActorEntity.Player;
+            if (player?.NextActionTick != null)
             {
-                var player = message.ActivatorEntity.Player;
-                if (player != null)
-                {
-                    player.NextActionTick += message.Delay;
-                }
-            }
-
-            return MessageProcessingResult.ContinueProcessing;
-        }
-
-        public MessageProcessingResult Process(ItemEquippedMessage message, GameManager manager)
-        {
-            // TODO: show a message on fail
-            if (message.Successful
-                && message.Delay != 0)
-            {
-                var player = message.ActorEntity.Player;
-                if (player != null)
-                {
-                    player.NextActionTick += message.Delay;
-                }
-            }
-
-            return MessageProcessingResult.ContinueProcessing;
-        }
-
-        public MessageProcessingResult Process(ItemMovedMessage message, GameManager manager)
-        {
-            // TODO: show a message on fail
-            if (message.Successful
-                && message.Delay != 0)
-            {
-                var player = message.InitialContainer?.Player;
-                if (player == null)
-                {
-                    var finalContainerId = message.ItemEntity.Item.ContainerId;
-                    if (finalContainerId != null)
-                    {
-                        player = manager.FindEntity(finalContainerId.Value).Player;
-                    }
-                }
-
-                if (player != null)
-                {
-                    player.NextActionTick += message.Delay;
-                }
+                player.NextActionTick += message.Delay;
             }
 
             return MessageProcessingResult.ContinueProcessing;

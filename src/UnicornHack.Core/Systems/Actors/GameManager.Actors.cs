@@ -1,7 +1,6 @@
 ﻿using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
-using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.MessagingECS;
 
@@ -66,12 +65,9 @@ namespace UnicornHack
                 (effectEntity, _, __) => effectEntity.RemoveComponent(EntityComponent.Position));
 
             AISystem = new AISystem();
-            queue.Add<PerformActionMessage>(AISystem, AISystem.PerformAIActionMessageName, 0);
-            queue.Add<AbilityActivatedMessage>(AISystem, AbilityActivationSystem.AbilityActivatedMessageName, 1);
-            queue.Add<TraveledMessage>(AISystem, TravelSystem.TraveledMessageName, 1);
-            queue.Add<ItemMovedMessage>(AISystem, ItemMovingSystem.ItemMovedMessageName, 2);
-            queue.Add<ItemEquippedMessage>(AISystem, ItemUsageSystem.ItemEquippedMessageName, 2);
-            queue.Add<DiedMessage>(AISystem, LivingSystem.DiedMessageName, 4);
+            queue.Add<PerformActionMessage>(AISystem, PerformActionMessage.AIName, 0);
+            queue.Add<DelayMessage>(AISystem, DelayMessage.Name, 0);
+            queue.Add<DiedMessage>(AISystem, DiedMessage.Name, 4);
             queue.Add<EntityAddedMessage<GameEntity>>(AISystem,
                 AbilitiesToAffectableRelationship.GetEntityAddedMessageName(),
                 1);
@@ -80,12 +76,9 @@ namespace UnicornHack
                 1);
 
             PlayerSystem = new PlayerSystem();
-            queue.Add<PerformActionMessage>(PlayerSystem, PlayerSystem.PerformPlayerActionMessageName, 0);
-            queue.Add<AbilityActivatedMessage>(PlayerSystem, AbilityActivationSystem.AbilityActivatedMessageName, 2);
-            queue.Add<TraveledMessage>(PlayerSystem, TravelSystem.TraveledMessageName, 2);
-            queue.Add<ItemMovedMessage>(PlayerSystem, ItemMovingSystem.ItemMovedMessageName, 3);
-            queue.Add<ItemEquippedMessage>(PlayerSystem, ItemUsageSystem.ItemEquippedMessageName, 3);
-            queue.Add<DiedMessage>(PlayerSystem, LivingSystem.DiedMessageName, 5);
+            queue.Add<PerformActionMessage>(PlayerSystem, PerformActionMessage.PlayerName, 0);
+            queue.Add<DelayMessage>(PlayerSystem, DelayMessage.Name, 1);
+            queue.Add<DiedMessage>(PlayerSystem, DiedMessage.Name, 5);
         }
     }
 }

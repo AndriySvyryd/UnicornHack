@@ -5,6 +5,11 @@ namespace UnicornHack.Systems.Items
 {
     public class ItemEquippedMessage : IMessage
     {
+        public const string Name = "ItemEquipped";
+
+        public static ItemEquippedMessage Create(GameManager manager)
+            => manager.Queue.CreateMessage<ItemEquippedMessage>(Name);
+
         private GameEntity _itemEntity;
         private GameEntity _actorEntity;
 
@@ -33,7 +38,6 @@ namespace UnicornHack.Systems.Items
         public EquipmentSlot Slot { get; set; }
         public EquipmentSlot OldSlot { get; set; }
         public bool Successful { get; set; }
-        public int Delay { get; set; }
         public bool SuppressLog { get; set; }
 
         string IMessage.MessageName { get; set; }
@@ -45,7 +49,6 @@ namespace UnicornHack.Systems.Items
             Slot = default;
             OldSlot = default;
             Successful = default;
-            Delay = default;
             SuppressLog = default;
         }
     }

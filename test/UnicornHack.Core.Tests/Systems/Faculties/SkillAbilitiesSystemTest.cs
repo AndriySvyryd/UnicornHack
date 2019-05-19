@@ -4,6 +4,7 @@ using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Items;
 using UnicornHack.Utils.DataStructures;
 using Xunit;
 
@@ -62,7 +63,7 @@ namespace UnicornHack.Systems.Faculties
 
             DeactivateAbility(conjurationBookAbility, manager);
 
-            var moveItemMessage = manager.ItemMovingSystem.CreateMoveItemMessage(manager);
+            var moveItemMessage = MoveItemMessage.Create(manager);
             moveItemMessage.ItemEntity = firstWaterBook;
             moveItemMessage.TargetCell = new Point(0, 0);
             moveItemMessage.TargetLevelEntity = level.Entity;
@@ -77,7 +78,7 @@ namespace UnicornHack.Systems.Faculties
             Assert.True(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)].Ability
                 .IsUsable);
 
-            var deactivateMessage = manager.AbilityActivationSystem.CreateDeactivateAbilityMessage(manager);
+            var deactivateMessage = DeactivateAbilityMessage.Create(manager);
             deactivateMessage.AbilityEntity =
                 manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)];
             deactivateMessage.ActivatorEntity = playerEntity;
@@ -115,7 +116,7 @@ namespace UnicornHack.Systems.Faculties
 
             var swordEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id]
                 .Single(e => e.Item.TemplateName == ItemData.LongSword.Name);
-            var equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            var equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = swordEntity;
             equipMessage.Slot = EquipmentSlot.GraspBothMelee;
@@ -124,7 +125,7 @@ namespace UnicornHack.Systems.Faculties
 
             var staffEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id]
                 .Single(e => e.Item.TemplateName == ItemData.FireStaff.Name);
-            equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = staffEntity;
             equipMessage.Slot = EquipmentSlot.GraspBothRanged;
@@ -143,7 +144,7 @@ namespace UnicornHack.Systems.Faculties
 
         private static GameEntity ActivateAbility(GameEntity abilityEntity, int slot, GameManager manager)
         {
-            var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = abilityEntity;
             setSlotMessage.Slot = slot;
 
@@ -154,7 +155,7 @@ namespace UnicornHack.Systems.Faculties
 
         private static void DeactivateAbility(GameEntity abilityEntity, GameManager manager)
         {
-            var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = abilityEntity;
 
             manager.Enqueue(setSlotMessage);

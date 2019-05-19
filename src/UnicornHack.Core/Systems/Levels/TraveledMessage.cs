@@ -6,6 +6,11 @@ namespace UnicornHack.Systems.Levels
 {
     public class TraveledMessage : IMessage
     {
+        public const string Name = "Traveled";
+
+        public static TraveledMessage Create(GameManager manager)
+            => manager.Queue.CreateMessage<TraveledMessage>(Name);
+
         private GameEntity _entity;
         private GameEntity _initialLevel;
 
@@ -34,7 +39,6 @@ namespace UnicornHack.Systems.Levels
         public Direction InitialHeading { get; set; }
         public Point InitialLevelCell { get; set; }
         public bool Successful { get; set; }
-        public int Delay { get; set; }
 
         string IMessage.MessageName { get; set; }
 
@@ -45,7 +49,6 @@ namespace UnicornHack.Systems.Levels
             InitialHeading = default;
             InitialLevelCell = default;
             Successful = default;
-            Delay = default;
         }
     }
 }

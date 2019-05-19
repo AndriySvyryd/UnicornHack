@@ -4,6 +4,11 @@ namespace UnicornHack.Systems.Abilities
 {
     public class DeactivateAbilityMessage : IMessage
     {
+        public const string Name = "DeactivateAbility";
+
+        public static DeactivateAbilityMessage Create(GameManager manager)
+            => manager.Queue.CreateMessage<DeactivateAbilityMessage>(Name);
+
         private GameEntity _activatorEntity;
         private GameEntity _abilityEntity;
 

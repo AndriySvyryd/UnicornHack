@@ -209,8 +209,11 @@ namespace UnicornHack.Generation.Map
                 // TODO: find doorway candidates in the perimeter walls
             }
 
-            return new Room(level, new Rectangle(target.Value, PayloadArea.Width, PayloadArea.Height), doorwayPoints,
-                insidePoints);
+            return new Room(level,
+                new Rectangle(target.Value, PayloadArea.Width, PayloadArea.Height),
+                doorwayPoints,
+                insidePoints,
+                this);
         }
 
         protected virtual void Write(char c, Point point, LevelComponent level,
@@ -361,8 +364,11 @@ namespace UnicornHack.Generation.Map
 
             var doorwayPoints = perimeter.Count > 7 ? FindDoorwayPoints(perimeter, level) : null;
 
-            return new Room(level, new Rectangle(new Point(left, firstPoint.Y), new Point(right, lastPoint.Y)),
-                doorwayPoints, insidePoints);
+            return new Room(level,
+                new Rectangle(new Point(left, firstPoint.Y), new Point(right, lastPoint.Y)),
+                doorwayPoints,
+                insidePoints,
+                this);
         }
 
         private static List<Point> FindDoorwayPoints(

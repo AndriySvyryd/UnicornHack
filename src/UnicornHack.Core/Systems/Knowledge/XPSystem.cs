@@ -17,9 +17,6 @@ namespace UnicornHack.Systems.Knowledge
         IGameSystem<EntityAddedMessage<GameEntity>>,
         IGameSystem<EntityRemovedMessage<GameEntity>>
     {
-        public const string XPGainedMessageName = "XPGained";
-        public const string LeveledUpMessageName = "LeveledUp";
-
         public MessageProcessingResult Process(VisibleTerrainChangedMessage message, GameManager manager)
         {
             if (message.TilesExplored > 0)
@@ -137,7 +134,7 @@ namespace UnicornHack.Systems.Knowledge
 
                     UpdateNextLevelXP(actorEntity);
 
-                    var leveledUp = manager.Queue.CreateMessage<LeveledUpMessage>(LeveledUpMessageName);
+                    var leveledUp = LeveledUpMessage.Create(manager);
                     leveledUp.Entity = actorEntity;
                     leveledUp.Race = race;
                     leveledUp.SkillPointsGained = template.SkillPointRate;
@@ -151,7 +148,7 @@ namespace UnicornHack.Systems.Knowledge
                 }
             }
 
-            var xpGained = manager.Queue.CreateMessage<XPGainedMessage>(XPGainedMessageName);
+            var xpGained = XPGainedMessage.Create(manager);
             xpGained.Entity = actorEntity;
             xpGained.ExperiencePoints = xp;
             manager.Enqueue(xpGained);

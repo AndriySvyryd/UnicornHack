@@ -144,7 +144,7 @@ namespace UnicornHack.Generation
                     itemEntityReference.Referenced.Item.Count = quantity;
                 }
 
-                var moveMessage = manager.ItemMovingSystem.CreateMoveItemMessage(manager);
+                var moveMessage = MoveItemMessage.Create(manager);
                 moveMessage.ItemEntity = itemEntityReference.Referenced;
                 moveMessage.TargetContainerEntity = container;
 
@@ -175,7 +175,7 @@ namespace UnicornHack.Generation
                     itemEntityReference.Referenced.Item.Count = quantity;
                 }
 
-                var moveMessage = manager.ItemMovingSystem.CreateMoveItemMessage(manager);
+                var moveMessage = MoveItemMessage.Create(manager);
                 moveMessage.ItemEntity = itemEntityReference.Referenced;
                 moveMessage.TargetLevelEntity = levelEntity;
                 moveMessage.TargetCell = cell;

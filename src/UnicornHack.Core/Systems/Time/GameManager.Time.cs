@@ -71,7 +71,7 @@ namespace UnicornHack
                 TickComparer.Instance);
 
             TimeSystem = new TimeSystem();
-            queue.Add(TimeSystem, TimeSystem.AdvanceTurnMessageName, 0);
+            queue.Add(TimeSystem, AdvanceTurnMessage.Name, 0);
         }
     }
 }

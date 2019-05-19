@@ -28,18 +28,21 @@ namespace UnicornHack.Generation.Map
 
         public IReadOnlyList<Point> DoorwayPoints { get; }
         public IReadOnlyList<Point> InsidePoints { get; }
+        public MapFragment Fragment { get; }
 
         public Room(
             LevelComponent level,
             Rectangle boundingRectangle,
             IReadOnlyList<Point> doorwayPoints,
-            IReadOnlyList<Point> insidePoints)
+            IReadOnlyList<Point> insidePoints,
+            MapFragment fragment)
         {
             Level = level;
 
             BoundingRectangle = boundingRectangle;
             DoorwayPoints = doorwayPoints ?? new Point[0];
             InsidePoints = insidePoints ?? new Point[0];
+            Fragment = fragment;
         }
 
         public Room GetClosest(IEnumerable<Room> rooms)

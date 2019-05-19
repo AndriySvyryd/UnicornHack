@@ -92,12 +92,12 @@ namespace UnicornHack
 
             AbilityActivationSystem = new AbilityActivationSystem();
             queue.Add<ActivateAbilityMessage>(AbilityActivationSystem,
-                AbilityActivationSystem.ActivateAbilityMessageName, 0);
+                ActivateAbilityMessage.Name, 0);
             queue.Add<DeactivateAbilityMessage>(AbilityActivationSystem,
-                AbilityActivationSystem.DeactivateAbilityMessageName, 0);
-            queue.Add<ItemEquippedMessage>(AbilityActivationSystem, ItemUsageSystem.ItemEquippedMessageName, 0);
-            queue.Add<DiedMessage>(AbilityActivationSystem, LivingSystem.DiedMessageName, 2);
-            queue.Add<LeveledUpMessage>(AbilityActivationSystem, XPSystem.LeveledUpMessageName, 0);
+                DeactivateAbilityMessage.Name, 0);
+            queue.Add<ItemEquippedMessage>(AbilityActivationSystem, ItemEquippedMessage.Name, 0);
+            queue.Add<DiedMessage>(AbilityActivationSystem, DiedMessage.Name, 2);
+            queue.Add<LeveledUpMessage>(AbilityActivationSystem, LeveledUpMessage.Name, 0);
             queue.Add<EntityAddedMessage<GameEntity>>(
                 AbilityActivationSystem, AbilitiesToAffectableRelationship.GetEntityAddedMessageName(), 0);
             queue.Add<EntityRemovedMessage<GameEntity>>(
@@ -105,7 +105,7 @@ namespace UnicornHack
 
             AbilitySlottingSystem = new AbilitySlottingSystem();
             queue.Add<SetAbilitySlotMessage>(AbilitySlottingSystem,
-                AbilitySlottingSystem.SetAbilitySlotMessageName, 0);
+                SetAbilitySlotMessage.Name, 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, bool>>(AbilitySlottingSystem,
                 AbilitiesToAffectableRelationship.GetPropertyValueChangedMessageName(nameof(AbilityComponent.IsUsable)),
                 0);

@@ -3,6 +3,8 @@ using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
+using UnicornHack.Systems.Items;
+using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.DataStructures;
 using Xunit;
 
@@ -61,13 +63,13 @@ namespace UnicornHack.Systems.Knowledge
             Assert.Equal(SenseType.Sight, connectionKnowledge.Knowledge.SensedType);
             Assert.Same(manager.LevelKnowledgeToLevelCellIndex[(level.EntityId, 0, 1)].Single(), connectionKnowledge);
 
-            var travelMessage = manager.TravelSystem.CreateTravelMessage(manager);
+            var travelMessage = TravelMessage.Create(manager);
             travelMessage.Entity = nymph;
             travelMessage.TargetHeading = Direction.East;
             travelMessage.TargetCell = new Point(1, 1);
             manager.Enqueue(travelMessage);
 
-            var moveMessage = manager.ItemMovingSystem.CreateMoveItemMessage(manager);
+            var moveMessage = MoveItemMessage.Create(manager);
             moveMessage.ItemEntity = dagger;
             moveMessage.TargetLevelEntity = level.Entity;
             moveMessage.TargetCell = new Point(1, 0);

@@ -51,7 +51,7 @@ namespace UnicornHack.Systems.Effects
                 acidEffectEntity.Effect = effect;
             }
 
-            var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = toggledAbility;
             setSlotMessage.Slot = 0;
 
@@ -92,7 +92,7 @@ namespace UnicornHack.Systems.Effects
             Assert.Equal(0, playerEntity.Being.AcidResistance);
             Assert.Equal(10, playerEntity.Being.ColdResistance);
 
-            setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = toggledAbility;
 
             manager.Enqueue(setSlotMessage);

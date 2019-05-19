@@ -6,6 +6,11 @@ namespace UnicornHack.Systems.Knowledge
 {
     public class LeveledUpMessage : IMessage
     {
+        public const string Name = "LeveledUp";
+
+        public static LeveledUpMessage Create(GameManager manager)
+            => manager.Queue.CreateMessage<LeveledUpMessage>(Name);
+
         private GameEntity _entity;
         private RaceComponent _race;
 

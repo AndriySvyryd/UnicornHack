@@ -740,14 +740,14 @@ export class Ability {
                 this.expand(compactAbility, i).addTo(collection);
                 break;
             case EntityState.Deleted:
-                const id = compactAbility[i++].toString();
+                const id = compactAbility[i++];
                 if (!collection.delete(id)) {
                     throw 'Ability ' + id + ' not deleted';
                 }
                 break;
             case EntityState.Modified:
                 {
-                    const id = compactAbility[i++].toString();
+                    const id = compactAbility[i++];
                     const existingAbility = collection.get(id);
                     if (existingAbility == undefined) {
                         throw 'Ability ' + id + ' not found';
@@ -905,14 +905,14 @@ export class PlayerRace {
                 this.expand(compactPlayerRace, i).addTo(collection);
                 break;
             case EntityState.Deleted:
-                const id = compactPlayerRace[i++].toString();
+                const id = compactPlayerRace[i++];
                 if (!collection.delete(id)) {
                     throw 'PlayerRace ' + id + ' not deleted';
                 }
                 break;
             case EntityState.Modified:
                 {
-                    const id = compactPlayerRace[i++].toString();
+                    const id = compactPlayerRace[i++];
                     const existingPlayerRace = collection.get(id);
                     if (existingPlayerRace == undefined) {
                         throw 'PlayerRace ' + id + ' not found';

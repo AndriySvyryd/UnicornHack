@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnicornHack.Generation.Map;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Levels;
@@ -90,7 +91,7 @@ namespace UnicornHack.Generation
             levelComponent.EnsureInitialized();
 
             var rooms = fragment.Layout.Fill(levelComponent, fragment);
-            fragment.CreatureGenerator.Fill(levelComponent, rooms);
+            fragment.CreatureGenerator.Fill(levelComponent, rooms.Where(r => !(r.Fragment is ConnectingMapFragment)).ToList());
             fragment.ItemGenerator.Fill(levelComponent, rooms);
 
             return rooms;

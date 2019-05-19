@@ -3,7 +3,9 @@ using System.Linq;
 using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
+using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Time;
 using UnicornHack.Utils.DataStructures;
 using Xunit;
 
@@ -25,7 +27,7 @@ namespace UnicornHack.Systems.Items
 
             var shieldEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single();
 
-            var equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            var equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = shieldEntity;
             equipMessage.Slot = EquipmentSlot.GraspBothMelee;
@@ -38,7 +40,7 @@ namespace UnicornHack.Systems.Items
                 .Single(a => (a.Activation & ActivationType.Slottable) != 0
                              && a.Template?.Type != AbilityType.DefaultAttack);
 
-            var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = shieldAbility.Entity;
             setSlotMessage.Slot = 0;
             manager.Enqueue(setSlotMessage);
@@ -47,12 +49,12 @@ namespace UnicornHack.Systems.Items
             Assert.True(shieldAbility.IsActive);
             Assert.Equal(30, playerEntity.Being.FireResistance);
 
-            equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = shieldEntity;
             manager.Enqueue(equipMessage);
 
-            var moveItemMessage = manager.ItemMovingSystem.CreateMoveItemMessage(manager);
+            var moveItemMessage = MoveItemMessage.Create(manager);
             moveItemMessage.ItemEntity = shieldEntity;
             moveItemMessage.TargetCell = new Point(0,0);
             moveItemMessage.TargetLevelEntity = level.Entity;
@@ -65,7 +67,7 @@ namespace UnicornHack.Systems.Items
             Assert.True(shieldAbility.IsActive);
 
             var deactivateMessage =
-                manager.AbilityActivationSystem.CreateDeactivateAbilityMessage(manager);
+                DeactivateAbilityMessage.Create(manager);
             deactivateMessage.AbilityEntity = shieldAbility.Entity;
             deactivateMessage.ActivatorEntity = playerEntity;
             manager.Enqueue(deactivateMessage);
@@ -76,12 +78,12 @@ namespace UnicornHack.Systems.Items
             Assert.Equal(0, playerEntity.Being.FireResistance);
             Assert.Equal(200, shieldAbility.CooldownTick);
 
-            equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = shieldEntity;
             manager.Enqueue(equipMessage);
 
-            moveItemMessage = manager.ItemMovingSystem.CreateMoveItemMessage(manager);
+            moveItemMessage = MoveItemMessage.Create(manager);
             moveItemMessage.ItemEntity = shieldEntity;
             moveItemMessage.TargetCell = new Point(0, 0);
             moveItemMessage.TargetLevelEntity = level.Entity;
@@ -92,22 +94,27 @@ namespace UnicornHack.Systems.Items
             Assert.Equal(EquipmentSlot.GraspBothMelee, shieldEntity.Item.EquippedSlot);
             Assert.NotNull(manager.AffectableAbilitiesIndex[(playerEntity.Id, shieldAbility.Name)]);
 
-            manager.TimeSystem.EnqueueAdvanceTurn(manager);
+            AdvanceTurnMessage.Enqueue(manager);
             manager.Queue.ProcessQueue(manager);
-            manager.TimeSystem.EnqueueAdvanceTurn(manager);
+
+            player.NextAction = PlayerAction.Wait;
+            AdvanceTurnMessage.Enqueue(manager);
             manager.Queue.ProcessQueue(manager);
-            manager.TimeSystem.EnqueueAdvanceTurn(manager);
+            AdvanceTurnMessage.Enqueue(manager);
+            manager.Queue.ProcessQueue(manager);
+            AdvanceTurnMessage.Enqueue(manager);
             manager.Queue.ProcessQueue(manager);
 
             Assert.Null(shieldAbility.CooldownTick);
             Assert.Equal(200, manager.Game.CurrentTick);
 
-            equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = shieldEntity;
             manager.Enqueue(equipMessage);
             manager.Queue.ProcessQueue(manager);
 
+            Assert.Null(shieldAbility.CooldownTick);
             Assert.Equal(EquipmentSlot.None, shieldEntity.Item.EquippedSlot);
             Assert.Null(shieldAbility.Entity);
         }
@@ -126,7 +133,7 @@ namespace UnicornHack.Systems.Items
 
             var shieldEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single();
 
-            var equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            var equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = shieldEntity;
             equipMessage.Slot = EquipmentSlot.GraspBothMelee;
@@ -139,9 +146,9 @@ namespace UnicornHack.Systems.Items
                 .Single(a => (a.Activation & ActivationType.Slottable) != 0
                              && a.Template?.Type != AbilityType.DefaultAttack);
 
-            Assert.Equal(100, player.NextActionTick);
+            Assert.Equal(50, player.NextActionTick);
 
-            var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = shieldAbility.Entity;
             setSlotMessage.Slot = 0;
             manager.Enqueue(setSlotMessage);
@@ -149,9 +156,9 @@ namespace UnicornHack.Systems.Items
 
             Assert.True(shieldAbility.IsActive);
             Assert.Equal(30, playerEntity.Being.FireResistance);
-            Assert.Equal(150, player.NextActionTick);
+            Assert.Equal(100, player.NextActionTick);
 
-            equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = shieldEntity;
             equipMessage.Force = true;
@@ -167,9 +174,9 @@ namespace UnicornHack.Systems.Items
                 .Single(a => (a.Activation & ActivationType.Slottable) != 0
                              && a.Template?.Type != AbilityType.DefaultAttack);
             Assert.Equal(200, activateAbility.CooldownTick);
-            Assert.Equal(250, player.NextActionTick);
+            Assert.Equal(150, player.NextActionTick);
 
-            equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = shieldEntity;
             equipMessage.Slot = EquipmentSlot.GraspBothMelee;
@@ -177,7 +184,7 @@ namespace UnicornHack.Systems.Items
             manager.Enqueue(equipMessage);
             manager.Queue.ProcessQueue(manager);
 
-            var moveItemMessage = manager.ItemMovingSystem.CreateMoveItemMessage(manager);
+            var moveItemMessage = MoveItemMessage.Create(manager);
             moveItemMessage.ItemEntity = shieldEntity;
             moveItemMessage.TargetCell = new Point(0, 0);
             moveItemMessage.TargetLevelEntity = level.Entity;
@@ -188,7 +195,7 @@ namespace UnicornHack.Systems.Items
             Assert.Equal(EquipmentSlot.GraspBothMelee, shieldEntity.Item.EquippedSlot);
             Assert.Equal(1, manager.EntityItemsToContainerRelationship[playerEntity.Id].Count);
 
-            moveItemMessage = manager.ItemMovingSystem.CreateMoveItemMessage(manager);
+            moveItemMessage = MoveItemMessage.Create(manager);
             moveItemMessage.ItemEntity = shieldEntity;
             moveItemMessage.TargetCell = new Point(0, 0);
             moveItemMessage.TargetLevelEntity = level.Entity;
@@ -215,7 +222,7 @@ namespace UnicornHack.Systems.Items
             Assert.Equal(100, playerEntity.Being.Visibility);
 
             var cloakEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single();
-            var equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            var equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = cloakEntity;
             equipMessage.Slot = EquipmentSlot.Back;
@@ -230,7 +237,7 @@ namespace UnicornHack.Systems.Items
 
             playerEntity.Being.EnergyPoints = 20;
 
-            equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = cloakEntity;
 
@@ -242,7 +249,7 @@ namespace UnicornHack.Systems.Items
             Assert.Equal(0, playerEntity.Being.ReservedEnergyPoints);
             Assert.Equal(100, playerEntity.Being.Visibility);
 
-            equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = cloakEntity;
             equipMessage.Slot = EquipmentSlot.Back;

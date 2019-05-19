@@ -64,9 +64,9 @@ namespace UnicornHack
 
             EffectApplicationSystem = new EffectApplicationSystem();
             queue.Add<AbilityActivatedMessage>(EffectApplicationSystem,
-                AbilityActivationSystem.AbilityActivatedMessageName, 0);
+                AbilityActivatedMessage.Name, 0);
             queue.Add<ApplyEffectMessage>(EffectApplicationSystem,
-                EffectApplicationSystem.ApplyEffectMessageName, 0);
+                ApplyEffectMessage.Name, 0);
             queue.Add<EntityAddedMessage<GameEntity>>(EffectApplicationSystem,
                 AffectableEntities.GetEntityAddedMessageName(), 0);
             queue.Add<EntityAddedMessage<GameEntity>>(EffectApplicationSystem,

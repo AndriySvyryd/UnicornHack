@@ -5,6 +5,11 @@ namespace UnicornHack.Systems.Items
 {
     public class EquipItemMessage : IMessage
     {
+        public const string Name = "EquipItem";
+
+        public static EquipItemMessage Create(GameManager manager)
+            => manager.Queue.CreateMessage<EquipItemMessage>(Name);
+
         private GameEntity _itemEntity;
         private GameEntity _actorEntity;
 

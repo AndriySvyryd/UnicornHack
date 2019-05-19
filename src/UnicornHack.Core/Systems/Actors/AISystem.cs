@@ -3,7 +3,6 @@ using System.Linq;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
-using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
 using UnicornHack.Utils.MessagingECS;
@@ -12,22 +11,11 @@ namespace UnicornHack.Systems.Actors
 {
     public class AISystem :
         IGameSystem<PerformActionMessage>,
-        IGameSystem<AbilityActivatedMessage>,
-        IGameSystem<TraveledMessage>,
-        IGameSystem<ItemEquippedMessage>,
-        IGameSystem<ItemMovedMessage>,
         IGameSystem<DiedMessage>,
         IGameSystem<EntityAddedMessage<GameEntity>>,
-        IGameSystem<PropertyValueChangedMessage<GameEntity, bool>>
+        IGameSystem<PropertyValueChangedMessage<GameEntity, bool>>,
+        IGameSystem<DelayMessage>
     {
-        public const string PerformAIActionMessageName = "PerformAIAction";
-
-        public void EnqueueAIAction(GameEntity entity, GameManager manager)
-        {
-            var message = manager.Queue.CreateMessage<PerformActionMessage>(PerformAIActionMessageName);
-            message.Actor = entity;
-            manager.Enqueue(message);
-        }
 
         public MessageProcessingResult Process(PerformActionMessage message, GameManager manager)
         {
@@ -53,7 +41,7 @@ namespace UnicornHack.Systems.Actors
                 return MessageProcessingResult.ContinueProcessing;
             }
 
-            var travelMessage = manager.TravelSystem.CreateTravelMessage(manager);
+            var travelMessage = TravelMessage.Create(manager);
             travelMessage.Entity = actor;
 
             var directionToMove = TryGetDirectionToPlayer(actor, manager);
@@ -138,7 +126,7 @@ namespace UnicornHack.Systems.Actors
                     continue;
                 }
 
-                var activationMessage = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);
+                var activationMessage = ActivateAbilityMessage.Create(manager);
                 activationMessage.AbilityEntity = abilityEntity;
                 activationMessage.ActivatorEntity = aiEntity;
                 activationMessage.TargetEntity = targetEntity;
@@ -154,20 +142,6 @@ namespace UnicornHack.Systems.Actors
             }
 
             return false;
-        }
-
-        public MessageProcessingResult Process(AbilityActivatedMessage message, GameManager manager)
-        {
-            if (message.Delay != 0)
-            {
-                var ai = message.ActivatorEntity.AI;
-                if (ai != null)
-                {
-                    ai.NextActionTick += message.Delay;
-                }
-            }
-
-            return MessageProcessingResult.ContinueProcessing;
         }
 
         private Direction? TryGetDirectionToPlayer(GameEntity aiEntity, GameManager manager)
@@ -199,55 +173,12 @@ namespace UnicornHack.Systems.Actors
             return null;
         }
 
-        public MessageProcessingResult Process(TraveledMessage message, GameManager manager)
+        public MessageProcessingResult Process(DelayMessage message, GameManager state)
         {
-            if (message.Successful
-                && message.Delay != 0)
+            var ai = message.ActorEntity.AI;
+            if (ai?.NextActionTick != null)
             {
-                var ai = message.Entity.AI;
-                if (ai != null)
-                {
-                    ai.NextActionTick += message.Delay;
-                }
-            }
-
-            return MessageProcessingResult.ContinueProcessing;
-        }
-
-        public MessageProcessingResult Process(ItemEquippedMessage message, GameManager manager)
-        {
-            if (message.Successful
-                && message.Delay != 0)
-            {
-                var ai = message.ActorEntity.AI;
-                if (ai != null)
-                {
-                    ai.NextActionTick += message.Delay;
-                }
-            }
-
-            return MessageProcessingResult.ContinueProcessing;
-        }
-
-        public MessageProcessingResult Process(ItemMovedMessage message, GameManager manager)
-        {
-            if (message.Successful
-                && message.Delay != 0)
-            {
-                var ai = message.InitialContainer?.AI;
-                if (ai == null)
-                {
-                    var finalContainerId = message.ItemEntity.Item.ContainerId;
-                    if (finalContainerId != null)
-                    {
-                        ai = manager.FindEntity(finalContainerId.Value).AI;
-                    }
-                }
-
-                if (ai != null)
-                {
-                    ai.NextActionTick += message.Delay;
-                }
+                ai.NextActionTick += message.Delay;
             }
 
             return MessageProcessingResult.ContinueProcessing;
@@ -274,6 +205,8 @@ namespace UnicornHack.Systems.Actors
         public MessageProcessingResult Process(
             PropertyValueChangedMessage<GameEntity, bool> message, GameManager manager)
         {
+            Debug.Assert(message.ChangedPropertyName == nameof(AbilityComponent.IsUsable));
+
             TrySlot((AbilityComponent)message.ChangedComponent, manager);
 
             return MessageProcessingResult.ContinueProcessing;
@@ -298,7 +231,7 @@ namespace UnicornHack.Systems.Actors
                     continue;
                 }
 
-                var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+                var setSlotMessage = SetAbilitySlotMessage.Create(manager);
                 setSlotMessage.Slot = i;
                 setSlotMessage.AbilityEntity = ability.Entity;
 

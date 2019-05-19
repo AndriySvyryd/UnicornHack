@@ -24,16 +24,6 @@ namespace UnicornHack.Systems.Abilities
         IGameSystem<EntityAddedMessage<GameEntity>>,
         IGameSystem<EntityRemovedMessage<GameEntity>>
     {
-        public const string ActivateAbilityMessageName = "ActivateAbility";
-        public const string DeactivateAbilityMessageName = "DeactivateAbility";
-        public const string AbilityActivatedMessageName = "AbilityActivated";
-
-        public ActivateAbilityMessage CreateActivateAbilityMessage(GameManager manager)
-            => manager.CreateMessage<ActivateAbilityMessage>(ActivateAbilityMessageName);
-
-        public DeactivateAbilityMessage CreateDeactivateAbilityMessage(GameManager manager)
-            => manager.CreateMessage<DeactivateAbilityMessage>(DeactivateAbilityMessageName);
-
         public bool CanActivateAbility(ActivateAbilityMessage activateAbilityMessage, bool shouldThrow)
         {
             using (var message = Activate(activateAbilityMessage, pretend: true))
@@ -76,7 +66,7 @@ namespace UnicornHack.Systems.Abilities
         private AbilityActivatedMessage Activate(ActivateAbilityMessage activateMessage, bool pretend)
         {
             var manager = activateMessage.AbilityEntity.Manager;
-            var targetEffectsMessage = manager.CreateMessage<AbilityActivatedMessage>(AbilityActivatedMessageName);
+            var targetEffectsMessage = AbilityActivatedMessage.Create(manager);
             targetEffectsMessage.AbilityEntity = activateMessage.AbilityEntity;
             targetEffectsMessage.ActivatorEntity = activateMessage.ActivatorEntity;
             targetEffectsMessage.TargetCell = activateMessage.TargetCell;
@@ -139,16 +129,15 @@ namespace UnicornHack.Systems.Abilities
                 }
             }
 
+            var delay = 0;
             if ((ability.Activation & ActivationType.Slottable) != 0)
             {
-                var delay = ability.GetActualDelay(activateMessage.ActivatorEntity);
+                delay = ability.GetActualDelay(activateMessage.ActivatorEntity);
                 if (delay == -1)
                 {
                     targetEffectsMessage.ActivationError = $"Speed too low to activate ability {ability.EntityId}.";
                     return targetEffectsMessage;
                 }
-
-                targetEffectsMessage.Delay = delay;
 
                 var activatorPosition = activateMessage.ActivatorEntity.Position;
                 if (activatorPosition != null)
@@ -157,7 +146,7 @@ namespace UnicornHack.Systems.Abilities
                         activateMessage.TargetCell ?? activateMessage.TargetEntity.Position.LevelCell);
                     if (requiredHeading != activatorPosition.Heading)
                     {
-                        var travelMessage = manager.TravelSystem.CreateTravelMessage(manager);
+                        var travelMessage = TravelMessage.Create(manager);
                         travelMessage.Entity = activateMessage.ActivatorEntity;
                         travelMessage.TargetHeading = requiredHeading;
                         travelMessage.TargetCell = activatorPosition.LevelCell;
@@ -182,7 +171,7 @@ namespace UnicornHack.Systems.Abilities
                 return targetEffectsMessage;
             }
 
-            var selfEffectsMessage = manager.CreateMessage<AbilityActivatedMessage>(AbilityActivatedMessageName);
+            var selfEffectsMessage = AbilityActivatedMessage.Create(manager);
             selfEffectsMessage.AbilityEntity = activateMessage.AbilityEntity;
             selfEffectsMessage.ActivatorEntity = activateMessage.ActivatorEntity;
             selfEffectsMessage.TargetEntity = activateMessage.ActivatorEntity;
@@ -242,6 +231,8 @@ namespace UnicornHack.Systems.Abilities
                     manager.ReturnMessage(activation.TargetMessage);
                 }
             }
+
+            DelayMessage.Enqueue(activateMessage.ActivatorEntity, delay, manager);
 
             return null;
         }
@@ -436,7 +427,7 @@ namespace UnicornHack.Systems.Abilities
 
             if (message.Slot != EquipmentSlot.None)
             {
-                var activation = CreateActivateAbilityMessage(manager);
+                var activation = ActivateAbilityMessage.Create(manager);
                 activation.ActivatorEntity = message.ActorEntity;
                 activation.TargetEntity = message.ActorEntity;
 
@@ -451,7 +442,7 @@ namespace UnicornHack.Systems.Abilities
                 {
                     manager.ReturnMessage(activation);
 
-                    var unequipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+                    var unequipMessage = EquipItemMessage.Create(manager);
                     unequipMessage.ActorEntity = message.ActorEntity;
                     unequipMessage.ItemEntity = message.ItemEntity;
                     unequipMessage.SuppressLog = true;
@@ -499,7 +490,7 @@ namespace UnicornHack.Systems.Abilities
                     continue;
                 }
 
-                var activation = CreateActivateAbilityMessage(manager);
+                var activation = ActivateAbilityMessage.Create(manager);
                 activation.ActivatorEntity = ability.OwnerEntity;
                 activation.TargetEntity = ability.OwnerEntity;
                 activation.AbilityEntity = abilityEntity;
@@ -552,7 +543,7 @@ namespace UnicornHack.Systems.Abilities
                     if (message.ReferencedEntity != null
                         && message.ReferencedEntity.HasComponent(EntityComponent.Being))
                     {
-                        var activation = CreateActivateAbilityMessage(manager);
+                        var activation = ActivateAbilityMessage.Create(manager);
                         activation.ActivatorEntity = message.ReferencedEntity;
                         activation.TargetEntity = message.ReferencedEntity;
 
@@ -632,7 +623,7 @@ namespace UnicornHack.Systems.Abilities
 
         private void Activate(AbilityComponent ability, GameManager manager)
         {
-            var activation = CreateActivateAbilityMessage(manager);
+            var activation = ActivateAbilityMessage.Create(manager);
             activation.ActivatorEntity = ability.OwnerEntity;
             activation.TargetEntity = ability.OwnerEntity;
             activation.AbilityEntity = ability.Entity;

@@ -10,12 +10,6 @@ namespace UnicornHack.Systems.Levels
 {
     public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
     {
-        public const string TravelMessageName = "Travel";
-        public const string TraveledMessageName = "Traveled";
-
-        public TravelMessage CreateTravelMessage(GameManager manager)
-            => manager.Queue.CreateMessage<TravelMessage>(TravelMessageName);
-
         public bool CanTravel(TravelMessage message, GameManager manager)
         {
             using (var traveled = TryTravel(message, manager, pretend: true))
@@ -35,7 +29,7 @@ namespace UnicornHack.Systems.Levels
         {
             var position = message.Entity.Position;
             var heading = position.Heading.Value;
-            var traveledMessage = manager.Queue.CreateMessage<TraveledMessage>(TraveledMessageName);
+            var traveledMessage = TraveledMessage.Create(manager);
             traveledMessage.Entity = message.Entity;
             traveledMessage.InitialLevel = position.LevelEntity;
             traveledMessage.InitialHeading = position.Heading.Value;
@@ -46,13 +40,14 @@ namespace UnicornHack.Systems.Levels
                 return traveledMessage;
             }
 
+            var delay = 0;
             var turnDirection = message.TargetHeading;
             if (!pretend
                 && position.Heading != turnDirection)
             {
                 var octants = turnDirection.ClosestOctantsTo(heading);
 
-                traveledMessage.Delay += (position.MovementDelay * octants) / 4;
+                delay += (position.MovementDelay * octants) / 4;
 
                 position.Heading = turnDirection;
             }
@@ -115,7 +110,8 @@ namespace UnicornHack.Systems.Levels
             }
 
             // TODO: take terrain into account
-            traveledMessage.Delay += position.MovementDelay;
+            delay += position.MovementDelay;
+            DelayMessage.Enqueue(message.Entity, delay, manager);
 
             return traveledMessage;
         }
@@ -148,7 +144,7 @@ namespace UnicornHack.Systems.Levels
 
             position.LevelCell = position.LevelCell.Translate(possibleDirectionsToMove[directionIndex].AsVector());
 
-            using (var travelMessage = manager.TravelSystem.CreateTravelMessage(manager))
+            using (var travelMessage = TravelMessage.Create(manager))
             {
                 travelMessage.Entity = entity;
                 travelMessage.TargetHeading = position.Heading.Value;

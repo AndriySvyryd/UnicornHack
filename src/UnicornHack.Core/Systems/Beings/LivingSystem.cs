@@ -10,7 +10,6 @@ namespace UnicornHack.Systems.Beings
         IGameSystem<XPGainedMessage>,
         IGameSystem<PropertyValueChangedMessage<GameEntity, int>>
     {
-        public const string DiedMessageName = "Died";
         public const string AttributedAbilityName = "attributed";
 
         public MessageProcessingResult Process(XPGainedMessage message, GameManager manager)
@@ -44,7 +43,7 @@ namespace UnicornHack.Systems.Beings
                         && message.NewValue <= 0)
                     {
                         being.HitPoints = 0;
-                        EnqueueDiedMessage(message.Entity, manager);
+                        DiedMessage.Enqueue(message.Entity, manager);
                     }
 
                     break;
@@ -56,26 +55,8 @@ namespace UnicornHack.Systems.Beings
 
                     if (message.OldValue == 1)
                     {
+                        // Being just created
                         being.HitPoints = message.NewValue;
-
-                        // TODO: Move to AI/Player system
-                        // Initialize NextActionTick here so that actors don't try to act before they have HP
-                        var ai = message.Entity.AI;
-                        if (ai != null)
-                        {
-                            if (ai.NextActionTick == null)
-                            {
-                                ai.NextActionTick = manager.Game.CurrentTick;
-                            }
-                        }
-                        else
-                        {
-                            var player = message.Entity.Player;
-                            if (player != null)
-                            {
-                                player.NextActionTick = manager.Game.CurrentTick;
-                            }
-                        }
                     }
 
                     break;
@@ -122,13 +103,6 @@ namespace UnicornHack.Systems.Beings
             }
 
             return MessageProcessingResult.ContinueProcessing;
-        }
-
-        private void EnqueueDiedMessage(GameEntity entity, GameManager manager)
-        {
-            var died = manager.Queue.CreateMessage<DiedMessage>(DiedMessageName);
-            died.BeingEntity = entity;
-            manager.Enqueue(died);
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Linq;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Items;
 using UnicornHack.Utils;
 using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
@@ -19,8 +20,6 @@ namespace UnicornHack.Systems.Effects
         IGameSystem<PropertyValueChangedMessage<GameEntity, int?>>,
         IGameSystem<PropertyValueChangedMessage<GameEntity, string>>
     {
-        public const string EffectsAppliedMessageName = "EffectsApplied";
-        public const string ApplyEffectMessageName = "ApplyEffect";
         public const string InnateAbilityName = "innate";
 
         public MessageProcessingResult Process(AbilityActivatedMessage message, GameManager manager)
@@ -30,7 +29,7 @@ namespace UnicornHack.Systems.Effects
                 return MessageProcessingResult.ContinueProcessing;
             }
 
-            var effectsAppliedMessage = manager.Queue.CreateMessage<EffectsAppliedMessage>(EffectsAppliedMessageName);
+            var effectsAppliedMessage = EffectsAppliedMessage.Create(manager);
             effectsAppliedMessage.ActivatorEntity = message.ActivatorEntity;
             effectsAppliedMessage.TargetEntity = message.TargetEntity;
             effectsAppliedMessage.AbilityEntity = message.AbilityEntity;
@@ -446,7 +445,7 @@ namespace UnicornHack.Systems.Effects
                     var movee = manager.FindEntity(effect.TargetEntityId.Value);
                     if (movee.HasComponent(EntityComponent.Item))
                     {
-                        var moveItemMessage = manager.ItemMovingSystem.CreateMoveItemMessage(manager);
+                        var moveItemMessage = MoveItemMessage.Create(manager);
                         moveItemMessage.ItemEntity = movee;
                         moveItemMessage.SuppressLog = true;
                         moveItemMessage.Force = true;
@@ -785,7 +784,7 @@ namespace UnicornHack.Systems.Effects
                         if (abilitySlot != null)
                         {
                             // TODO: Try set slot even if no duplicate ability present yet
-                            var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+                            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
                             setSlotMessage.AbilityName = abilityName;
                             setSlotMessage.OwnerEntity = targetEntity;
                             setSlotMessage.Slot = abilitySlot;
@@ -898,7 +897,7 @@ namespace UnicornHack.Systems.Effects
                         if (abilityEntity != null)
                         {
                             var deactivateMessage =
-                                manager.AbilityActivationSystem.CreateDeactivateAbilityMessage(manager);
+                                DeactivateAbilityMessage.Create(manager);
                             deactivateMessage.AbilityEntity = abilityEntity;
                             deactivateMessage.ActivatorEntity = targetEntity;
                             manager.Enqueue(deactivateMessage);
@@ -973,7 +972,7 @@ namespace UnicornHack.Systems.Effects
         private static void EnqueueApplyEffect(GameEntity targetEntity, GameEntity effectEntity, GameManager manager)
         {
             var sourceAbilityEntity = manager.FindEntity(effectEntity.Effect.ContainingAbilityId);
-            var applyEffectMessage = manager.Queue.CreateMessage<ApplyEffectMessage>(ApplyEffectMessageName);
+            var applyEffectMessage = ApplyEffectMessage.Create(manager);
             applyEffectMessage.ActivatorEntity = sourceAbilityEntity.Ability.OwnerEntity;
             applyEffectMessage.TargetEntity = targetEntity;
             applyEffectMessage.EffectEntity = effectEntity;

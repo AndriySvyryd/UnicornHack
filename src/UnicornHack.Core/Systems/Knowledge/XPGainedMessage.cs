@@ -4,6 +4,11 @@ namespace UnicornHack.Systems.Knowledge
 {
     public class XPGainedMessage : IMessage
     {
+        public const string Name = "XPGained";
+
+        public static XPGainedMessage Create(GameManager manager)
+            => manager.Queue.CreateMessage<XPGainedMessage>(Name);
+
         private GameEntity _entity;
 
         public GameEntity Entity

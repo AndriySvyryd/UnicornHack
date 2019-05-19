@@ -39,7 +39,7 @@ namespace UnicornHack
                 referencingKeepAlive: false);
 
             SkillAbilitiesSystem = new SkillAbilitiesSystem();
-            queue.Add<ItemEquippedMessage>(SkillAbilitiesSystem, ItemUsageSystem.ItemEquippedMessageName, 4);
+            queue.Add<ItemEquippedMessage>(SkillAbilitiesSystem, ItemEquippedMessage.Name, 4);
             queue.Add<PropertyValueChangedMessage<GameEntity, ExtremityType>>(SkillAbilitiesSystem,
                 Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.UpperExtremities)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,

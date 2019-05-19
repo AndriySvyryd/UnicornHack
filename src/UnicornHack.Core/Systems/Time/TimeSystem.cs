@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
+using UnicornHack.Systems.Actors;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Time
 {
     public class TimeSystem : IGameSystem<AdvanceTurnMessage>
     {
-        public const string AdvanceTurnMessageName = "AdvanceTurn";
         public const int DefaultActionDelay = 100;
 
         public void AdvanceToNextPlayerTurn(GameManager manager)
@@ -15,16 +15,11 @@ namespace UnicornHack.Systems.Time
             while (manager.Game.ActingPlayer == null
                    && manager.Players.Any(p => p.Being.IsAlive))
             {
-                EnqueueAdvanceTurn(manager);
+                AdvanceTurnMessage.Enqueue(manager);
                 manager.Queue.ProcessQueue(manager);
             }
         }
 
-        public void EnqueueAdvanceTurn(GameManager manager)
-            => manager.Enqueue(manager.Queue.CreateMessage<AdvanceTurnMessage>(AdvanceTurnMessageName),
-                lowPriority: true);
-
-        // TODO: Handle ability timeout
         public MessageProcessingResult Process(AdvanceTurnMessage message, GameManager manager)
         {
             if (manager.TemporalEntitiesIndex.Count == 0)
@@ -46,14 +41,14 @@ namespace UnicornHack.Systems.Time
             var ai = entity.AI;
             if (ai != null)
             {
-                manager.AISystem.EnqueueAIAction(entity, manager);
+                PerformActionMessage.EnqueueAI(entity, manager);
                 return MessageProcessingResult.ContinueProcessing;
             }
 
             var player = entity.Player;
             if (player != null)
             {
-                manager.PlayerSystem.EnqueuePlayerAction(entity, manager);
+                PerformActionMessage.EnqueuePlayer(entity, manager);
                 return MessageProcessingResult.ContinueProcessing;
             }
 

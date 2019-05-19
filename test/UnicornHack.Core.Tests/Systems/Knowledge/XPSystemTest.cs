@@ -7,6 +7,7 @@ using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.DataStructures;
 using Xunit;
 
@@ -31,7 +32,7 @@ namespace UnicornHack.Systems.Knowledge
 
             Assert.Equal(9, player.Being.ExperiencePoints);
 
-            var travelMessage = manager.TravelSystem.CreateTravelMessage(manager);
+            var travelMessage = TravelMessage.Create(manager);
             travelMessage.Entity = player;
             travelMessage.TargetHeading = Direction.East;
             travelMessage.TargetCell = new Point(0, 0);

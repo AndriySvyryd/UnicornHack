@@ -47,7 +47,7 @@ namespace UnicornHack.Systems.Abilities
                 bleedingEffectEntity.Effect = effect;
             }
 
-            var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = toggledAbility;
             setSlotMessage.Slot = 0;
             manager.Enqueue(setSlotMessage);
@@ -83,7 +83,7 @@ namespace UnicornHack.Systems.Abilities
                 bleedingEffectEntity.Effect = effect;
             }
 
-            setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = targetedAbility;
             setSlotMessage.Slot = 0;
             manager.Enqueue(setSlotMessage);
@@ -94,7 +94,7 @@ namespace UnicornHack.Systems.Abilities
             Assert.Equal(0, targetedAbility.Ability.Slot);
             Assert.Equal(0, playerEntity.Being.BleedingResistance);
 
-            setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.OwnerEntity = playerEntity;
             setSlotMessage.Slot = 0;
             manager.Enqueue(setSlotMessage);
@@ -102,7 +102,7 @@ namespace UnicornHack.Systems.Abilities
             Assert.Null(targetedAbility.Ability.Slot);
             Assert.Null(manager.SlottedAbilitiesIndex[(playerEntity.Id, 0)]);
 
-            setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = targetedAbility;
             setSlotMessage.Slot = 0;
             manager.Enqueue(setSlotMessage);
@@ -113,14 +113,14 @@ namespace UnicornHack.Systems.Abilities
             manager.Queue.ProcessQueue(manager);
             Assert.Null(targetedAbility.Ability.Slot);
 
-            setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = targetedAbility;
             setSlotMessage.Slot = 0;
             Assert.Throws<InvalidOperationException>(() => manager.AbilitySlottingSystem.Process(setSlotMessage, manager));
             Assert.Null(targetedAbility.Ability.Slot);
 
             targetedAbility.Ability.IsUsable = true;
-            setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = targetedAbility;
             setSlotMessage.Slot = AbilitySlottingSystem.DefaultMeleeAttackSlot;
             Assert.Throws<InvalidOperationException>(() => manager.AbilitySlottingSystem.Process(setSlotMessage, manager));
@@ -139,13 +139,13 @@ namespace UnicornHack.Systems.Abilities
 
             var alwaysAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
                 .First(a => (a.Ability.Activation & ActivationType.Always) != 0);
-            setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = alwaysAbility;
             setSlotMessage.Slot = 0;
             Assert.Throws<InvalidOperationException>(() => manager.AbilitySlottingSystem.Process(setSlotMessage, manager));
             Assert.Null(alwaysAbility.Ability.Slot);
 
-            setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = targetedAbility;
             setSlotMessage.Slot = playerEntity.Being.AbilitySlotCount - 1;
             manager.Enqueue(setSlotMessage);

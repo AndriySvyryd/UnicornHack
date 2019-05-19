@@ -12,12 +12,7 @@ namespace UnicornHack.Systems.Items
 {
     public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<TraveledMessage>, IGameSystem<DiedMessage>
     {
-        public const string MoveItemMessageName = "MoveItem";
-        public const string ItemMovedMessageName = "ItemMoved";
         public static readonly int DefaultInventorySize = 26;
-
-        public MoveItemMessage CreateMoveItemMessage(GameManager manager)
-            => manager.Queue.CreateMessage<MoveItemMessage>(MoveItemMessageName);
 
         public bool CanMoveItem(MoveItemMessage message, GameManager manager)
         {
@@ -32,6 +27,8 @@ namespace UnicornHack.Systems.Items
             var moved = TryMove(message, manager);
 
             manager.Enqueue(moved);
+
+            // TODO: log a message on failure
             return MessageProcessingResult.ContinueProcessing;
         }
 
@@ -47,7 +44,7 @@ namespace UnicornHack.Systems.Items
             if (levelItem != null)
             {
                 // Pickup item on move over
-                var moveMessage = CreateMoveItemMessage(manager);
+                var moveMessage = MoveItemMessage.Create(manager);
                 moveMessage.ItemEntity = levelItem;
                 moveMessage.TargetContainerEntity = message.Entity;
 
@@ -62,7 +59,7 @@ namespace UnicornHack.Systems.Items
             var position = message.BeingEntity.Position;
             foreach (var item in manager.EntityItemsToContainerRelationship[message.BeingEntity.Id])
             {
-                var moveItemMessage = CreateMoveItemMessage(manager);
+                var moveItemMessage = MoveItemMessage.Create(manager);
                 moveItemMessage.ItemEntity = item;
                 moveItemMessage.TargetCell = position.LevelCell;
                 moveItemMessage.TargetLevelEntity = position.LevelEntity;
@@ -80,7 +77,7 @@ namespace UnicornHack.Systems.Items
             var itemEntity = message.ItemEntity;
             var item = itemEntity.Item;
             var position = itemEntity.Position;
-            var itemMovedMessage = manager.Queue.CreateMessage<ItemMovedMessage>(ItemMovedMessageName);
+            var itemMovedMessage = ItemMovedMessage.Create(manager);
             itemMovedMessage.ItemEntity = itemEntity;
             itemMovedMessage.InitialLevelCell = position?.LevelCell;
             itemMovedMessage.InitialContainer = item.ContainerId != null
@@ -102,7 +99,7 @@ namespace UnicornHack.Systems.Items
                 if (item.ContainerId != null
                     && item.EquippedSlot != EquipmentSlot.None)
                 {
-                    var equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+                    var equipMessage = EquipItemMessage.Create(manager);
                     equipMessage.ActorEntity = manager.FindEntity(item.ContainerId.Value);
                     equipMessage.ItemEntity = itemEntity;
                     equipMessage.SuppressLog = true;
@@ -117,12 +114,11 @@ namespace UnicornHack.Systems.Items
                     manager.ItemUsageSystem.Process(equipMessage, manager);
                 }
 
-                itemMovedMessage.Delay += TimeSystem.DefaultActionDelay;
-
+                GameEntity initialTopContainer = null;
                 var initialPosition = itemMovedMessage.InitialLevelCell;
                 if (initialPosition == null)
                 {
-                    var initialTopContainer = itemMovedMessage.InitialContainer != null
+                    initialTopContainer = itemMovedMessage.InitialContainer != null
                         ? manager.ItemMovingSystem.GetTopContainer(itemMovedMessage.InitialContainer, manager)
                         : itemEntity;
                     initialPosition = initialTopContainer.Position?.LevelCell;
@@ -164,7 +160,8 @@ namespace UnicornHack.Systems.Items
 
                         itemEntity.Position = position;
 
-                        return itemMovedMessage;
+                        leftover = null;
+                        break;
                     }
 
                     leftover = TryStackWith(itemMovedMessage, existingItem.Item, pretend);
@@ -181,6 +178,16 @@ namespace UnicornHack.Systems.Items
                     // TODO: Create a sack
                     return itemMovedMessage;
                 }
+
+                if (initialTopContainer != null
+                    && !pretend)
+                {
+                    // TODO: Calculate delay
+                    DelayMessage.Enqueue(initialTopContainer, TimeSystem.DefaultActionDelay / 2, manager);
+                }
+
+                itemMovedMessage.Successful = true;
+                return itemMovedMessage;
             }
             else
             {
@@ -222,10 +229,18 @@ namespace UnicornHack.Systems.Items
                         // TODO: Update container weight
                     }
                 }
-            }
 
-            itemMovedMessage.Successful = true;
-            return itemMovedMessage;
+                if (message.TargetContainerEntity != null
+                    && itemMovedMessage.InitialLevelCell != null
+                    && !pretend)
+                {
+                    // TODO: Calculate delay
+                    DelayMessage.Enqueue(message.TargetContainerEntity, TimeSystem.DefaultActionDelay / 2, manager);
+                }
+
+                itemMovedMessage.Successful = true;
+                return itemMovedMessage;
+            }
         }
 
         private static ItemComponent TryStackWith(

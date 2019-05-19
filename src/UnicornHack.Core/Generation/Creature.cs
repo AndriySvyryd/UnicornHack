@@ -452,6 +452,7 @@ namespace UnicornHack.Generation
                 var creatureEntity = creatureEntityReference.Referenced;
 
                 var ai = manager.CreateComponent<AIComponent>(EntityComponent.AI);
+                ai.NextActionTick = manager.Game.CurrentTick;
                 ai.Behavior = Behavior;
                 if (Noise != null)
                 {

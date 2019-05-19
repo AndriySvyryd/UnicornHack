@@ -5,6 +5,11 @@ namespace UnicornHack.Systems.Effects
 {
     public class ApplyEffectMessage : IMessage
     {
+        public const string Name = "ApplyEffect";
+
+        public static ApplyEffectMessage Create(GameManager manager)
+            => manager.Queue.CreateMessage<ApplyEffectMessage>(Name);
+
         private GameEntity _activatorEntity;
         private GameEntity _effectEntity;
         private GameEntity _targetEntity;

@@ -6,6 +6,8 @@ using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Items;
+using UnicornHack.Systems.Time;
 using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 using Xunit;
@@ -26,7 +28,7 @@ namespace UnicornHack.Systems.Abilities
 
             var manager = level.Entity.Manager;
             var listener = new AbilityActivatedListener();
-            manager.Queue.Add(listener, AbilityActivationSystem.AbilityActivatedMessageName, -1);
+            manager.Queue.Add(listener, AbilityActivatedMessage.Name, -1);
 
             var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(2, 0));
             playerEntity.Position.Heading = Direction.West;
@@ -39,7 +41,7 @@ namespace UnicornHack.Systems.Abilities
             manager.Queue.ProcessQueue(manager);
 
             var bow = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single();
-            var equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            var equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = bow;
             equipMessage.Slot = EquipmentSlot.GraspBothRanged;
@@ -53,7 +55,7 @@ namespace UnicornHack.Systems.Abilities
             Assert.Equal(0, nymphAbility.Ability.Slot);
 
             var attackAbility = manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.TwoHandedRangedAttack.Name)];
-            var activateAbilityMessage = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);
+            var activateAbilityMessage = ActivateAbilityMessage.Create(manager);
             activateAbilityMessage.ActivatorEntity = playerEntity;
             activateAbilityMessage.TargetCell = nymph.Position.LevelCell;
             activateAbilityMessage.AbilityEntity = attackAbility;
@@ -74,13 +76,13 @@ namespace UnicornHack.Systems.Abilities
                 Assert.Equal(new Point(2, 2), m.TargetCell);
             };
 
-            Assert.Equal(100, playerEntity.Player.NextActionTick);
+            Assert.Equal(50, playerEntity.Player.NextActionTick);
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(1, messageCount);
-            Assert.Equal(350, playerEntity.Player.NextActionTick);
+            Assert.Equal(150, playerEntity.Player.NextActionTick);
 
-            activateAbilityMessage = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);
+            activateAbilityMessage = ActivateAbilityMessage.Create(manager);
             activateAbilityMessage.ActivatorEntity = playerEntity;
             activateAbilityMessage.TargetCell = elemental.Position.LevelCell;
             activateAbilityMessage.AbilityEntity = attackAbility;
@@ -106,12 +108,12 @@ namespace UnicornHack.Systems.Abilities
             var iceShardAbility = manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)];
             iceShardAbility.Ability.SuccessCondition = AbilitySuccessCondition.Default;
 
-            var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = iceShardAbility;
             setSlotMessage.Slot = 0;
             manager.Enqueue(setSlotMessage);
 
-            activateAbilityMessage = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);
+            activateAbilityMessage = ActivateAbilityMessage.Create(manager);
             activateAbilityMessage.ActivatorEntity = playerEntity;
             activateAbilityMessage.TargetCell = nymph.Position.LevelCell;
             activateAbilityMessage.AbilityEntity = iceShardAbility;
@@ -122,7 +124,7 @@ namespace UnicornHack.Systems.Abilities
             Assert.Equal(1, messageCount);
             Assert.Equal(1100, iceShardAbility.Ability.CooldownTick);
 
-            activateAbilityMessage = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);
+            activateAbilityMessage = ActivateAbilityMessage.Create(manager);
             activateAbilityMessage.ActivatorEntity = playerEntity;
             activateAbilityMessage.TargetCell = nymph.Position.LevelCell;
             activateAbilityMessage.AbilityEntity = iceShardAbility;
@@ -150,7 +152,7 @@ namespace UnicornHack.Systems.Abilities
             Assert.Equal(0, playerEntity.Being.ReservedEnergyPoints);
             var toggledAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
                 .Single(a => (a.Ability.Activation & ActivationType.WhileToggled) != 0);
-            var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = toggledAbility;
             setSlotMessage.Slot = 1;
 
@@ -162,7 +164,7 @@ namespace UnicornHack.Systems.Abilities
             Assert.Null(toggledAbility.Ability.CooldownTick);
             Assert.Equal(50, playerEntity.Being.ReservedEnergyPoints);
 
-            setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = toggledAbility;
 
             manager.Enqueue(setSlotMessage);
@@ -174,31 +176,31 @@ namespace UnicornHack.Systems.Abilities
             Assert.Equal(0, playerEntity.Being.ReservedEnergyPoints);
 
             player.NextAction = PlayerAction.Wait;
-            manager.TimeSystem.EnqueueAdvanceTurn(manager);
+            AdvanceTurnMessage.Enqueue(manager);
             manager.Queue.ProcessQueue(manager);
 
             player.NextAction = PlayerAction.Wait;
-            manager.TimeSystem.EnqueueAdvanceTurn(manager);
+            AdvanceTurnMessage.Enqueue(manager);
             manager.Queue.ProcessQueue(manager);
 
             player.NextAction = PlayerAction.Wait;
-            manager.TimeSystem.EnqueueAdvanceTurn(manager);
+            AdvanceTurnMessage.Enqueue(manager);
             manager.Queue.ProcessQueue(manager);
 
-            manager.TimeSystem.EnqueueAdvanceTurn(manager);
+            AdvanceTurnMessage.Enqueue(manager);
             manager.Queue.ProcessQueue(manager);
 
             Assert.Null(toggledAbility.Ability.CooldownTick);
             Assert.Equal(200, manager.Game.CurrentTick);
 
-            setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = toggledAbility;
             manager.Enqueue(setSlotMessage);
             manager.Queue.ProcessQueue(manager);
 
             Assert.Null(toggledAbility.Ability.Slot);
 
-            setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = toggledAbility;
             setSlotMessage.Slot = 1;
 

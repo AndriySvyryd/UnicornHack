@@ -7,6 +7,7 @@ using UnicornHack.Generation.Map;
 using UnicornHack.Primitives;
 using UnicornHack.Services;
 using UnicornHack.Services.English;
+using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
@@ -351,12 +352,12 @@ Seed: " + level.Game.InitialSeed);
         public static GameEntity ActivateAbility(
             GameEntity abilityEntity, GameEntity playerEntity, GameManager manager, int slot = 0)
         {
-            var setSlotMessage = manager.AbilitySlottingSystem.CreateSetAbilitySlotMessage(manager);
+            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = abilityEntity;
             setSlotMessage.Slot = slot;
             manager.Enqueue(setSlotMessage);
 
-            var activateAbilityMessage = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);
+            var activateAbilityMessage = ActivateAbilityMessage.Create(manager);
             activateAbilityMessage.ActivatorEntity = playerEntity;
             activateAbilityMessage.TargetEntity = playerEntity;
             activateAbilityMessage.AbilityEntity = abilityEntity;

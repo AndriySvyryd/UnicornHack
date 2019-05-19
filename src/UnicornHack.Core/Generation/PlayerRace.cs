@@ -37,6 +37,7 @@ namespace UnicornHack.Generation
                 var playerEntity = playerEntityReference.Referenced;
 
                 var player = manager.CreateComponent<PlayerComponent>(EntityComponent.Player);
+                player.NextActionTick = manager.Game.CurrentTick;
                 player.ProperName = name;
 
                 playerEntity.Player = player;

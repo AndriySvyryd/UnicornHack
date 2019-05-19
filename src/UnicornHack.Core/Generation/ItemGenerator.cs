@@ -10,7 +10,7 @@ namespace UnicornHack.Generation
     {
         public byte ExpectedInitialCount { get; set; } = 3;
 
-        public virtual void Fill(LevelComponent level, List<Room> rooms)
+        public virtual void Fill(LevelComponent level, IReadOnlyList<Room> rooms)
         {
             var manager = level.Entity.Manager;
             var itemsToPlace = level.GenerationRandom.NextBinomial(0.5f,

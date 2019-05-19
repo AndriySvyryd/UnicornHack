@@ -86,8 +86,11 @@ namespace UnicornHack.Services
                         continue;
                 }
 
-                damageTaken = true;
                 totalDamage += effect.Amount.Value;
+                if (totalDamage != 0)
+                {
+                    damageTaken = true;
+                }
             }
 
             builder.Append(">");

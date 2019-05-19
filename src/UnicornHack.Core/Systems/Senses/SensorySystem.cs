@@ -9,8 +9,6 @@ namespace UnicornHack.Systems.Senses
 {
     public class SensorySystem : IGameSystem<TraveledMessage>, IGameSystem<EntityAddedMessage<GameEntity>>
     {
-        public const string VisibleTerrainChangedMessageName = "VisibleTerrainChanged";
-
         public MessageProcessingResult Process(TraveledMessage message, GameManager manager)
         {
             if (!message.Successful)
@@ -167,12 +165,7 @@ namespace UnicornHack.Systems.Senses
                 }
             }
 
-            var terrainChanged =
-                manager.Queue.CreateMessage<VisibleTerrainChangedMessage>(VisibleTerrainChangedMessageName);
-            terrainChanged.LevelEntity = level.Entity;
-            terrainChanged.TilesExplored = tilesExplored;
-
-            manager.Enqueue(terrainChanged);
+            VisibleTerrainChangedMessage.Enqueue(level.Entity, tilesExplored, manager);
 
             return level.VisibleTerrain;
         }

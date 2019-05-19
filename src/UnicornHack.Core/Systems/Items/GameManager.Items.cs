@@ -77,12 +77,12 @@ namespace UnicornHack
                 referencingKeepAlive: true);
 
             ItemMovingSystem = new ItemMovingSystem();
-            queue.Add<MoveItemMessage>(ItemMovingSystem, ItemMovingSystem.MoveItemMessageName, 0);
-            queue.Add<TraveledMessage>(ItemMovingSystem, TravelSystem.TraveledMessageName, 0);
-            queue.Add<DiedMessage>(ItemMovingSystem, LivingSystem.DiedMessageName, 0);
+            queue.Add<MoveItemMessage>(ItemMovingSystem, MoveItemMessage.Name, 0);
+            queue.Add<TraveledMessage>(ItemMovingSystem, TraveledMessage.Name, 0);
+            queue.Add<DiedMessage>(ItemMovingSystem, DiedMessage.Name, 0);
 
             ItemUsageSystem = new ItemUsageSystem();
-            queue.Add(ItemUsageSystem, ItemUsageSystem.EquipItemMessageName, 0);
+            queue.Add(ItemUsageSystem, EquipItemMessage.Name, 0);
 
             queue.Add<EntityAddedMessage<GameEntity>>(
                 AbilityActivationSystem, EntityItemsToContainerRelationship.GetEntityAddedMessageName(), 0);

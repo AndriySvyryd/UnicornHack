@@ -5,6 +5,11 @@ namespace UnicornHack.Systems.Abilities
 {
     public class ActivateAbilityMessage : IMessage
     {
+        public const string Name = "ActivateAbility";
+
+        public static ActivateAbilityMessage Create(GameManager manager)
+            => manager.Queue.CreateMessage<ActivateAbilityMessage>(Name);
+
         private GameEntity _activatorEntity;
         private GameEntity _abilityEntity;
         private GameEntity _targetEntity;
@@ -48,7 +53,7 @@ namespace UnicornHack.Systems.Abilities
         {
             var manager = message.ActivatorEntity.Manager;
 
-            var abilityMessage = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);
+            var abilityMessage = ActivateAbilityMessage.Create(manager);
             abilityMessage.AbilityEntity = message.AbilityEntity;
             abilityMessage.ActivatorEntity = message.ActivatorEntity;
             abilityMessage.TargetEntity = message.TargetEntity;

@@ -8,6 +8,7 @@ using UnicornHack.Services.English;
 using UnicornHack.Services.LogEvents;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Items;
 using UnicornHack.Utils.DataStructures;
 using Xunit;
 
@@ -41,7 +42,7 @@ namespace UnicornHack.Systems.Knowledge
 
             var swordEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id]
                 .Single(e => e.Item.TemplateName == ItemData.LongSword.Name);
-            var equipMessage = manager.ItemUsageSystem.CreateEquipItemMessage(manager);
+            var equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = swordEntity;
             equipMessage.Slot = EquipmentSlot.GraspBothMelee;
@@ -53,7 +54,7 @@ namespace UnicornHack.Systems.Knowledge
 
             Verify(demogorgon, nymph, playerEntity, player2Entity,
                 manager.AbilitiesToAffectableRelationship[demogorgon.Id].ElementAt(3), success: true,
-                "The Demogorgon stings the water nymph. (18 pts.)",
+                "The Demogorgon stings the water nymph. (<damage drain='18'>18</damage> pts.)",
                 "The Demogorgon stings something.",
                 manager);
 
@@ -66,8 +67,8 @@ namespace UnicornHack.Systems.Knowledge
             Verify(playerEntity, demogorgon, playerEntity, player2Entity,
                 manager.AbilitiesToAffectableRelationship[playerEntity.Id]
                     .Single(a => a.Ability.Slot == AbilitySlottingSystem.DefaultMeleeAttackSlot), success: true,
-                "You slash the Demogorgon. (89 pts.)",
-                "Dudley slashes the Demogorgon. (89 pts.)",
+                "You slash the Demogorgon. (<damage physical='89'>89</damage> pts.)",
+                "Dudley slashes the Demogorgon. (<damage physical='89'>89</damage> pts.)",
                 manager);
 
             Verify(playerEntity, demogorgon, playerEntity, player2Entity,
@@ -99,7 +100,7 @@ namespace UnicornHack.Systems.Knowledge
             Verify(nymph, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch,
                 SenseType.Sight | SenseType.Touch,
                 AbilityAction.Punch, manager, 11,
-                expectedMessage: "The water nymph punches you! [11 pts.]");
+                expectedMessage: "The water nymph punches you! [<damage physical='11'>11</damage> pts.]");
 
             Verify(nymph, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch,
                 SenseType.Sight | SenseType.Touch,
@@ -108,7 +109,7 @@ namespace UnicornHack.Systems.Knowledge
 
             Verify(playerEntity, demogorgon, playerEntity, SenseType.Sight | SenseType.Touch, SenseType.Sight,
                 AbilityAction.Hug, manager, 11,
-                expectedMessage: "You squeeze the Demogorgon. (11 pts.)");
+                expectedMessage: "You squeeze the Demogorgon. (<damage physical='11'>11</damage> pts.)");
 
             Verify(playerEntity, demogorgon, playerEntity, SenseType.Sight | SenseType.Touch,
                 SenseType.Telepathy | SenseType.Touch,
@@ -117,12 +118,12 @@ namespace UnicornHack.Systems.Knowledge
 
             Verify(demogorgon, demogorgon, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Claw, manager,
                 11,
-                expectedMessage: "The Demogorgon claws himself. (11 pts.)");
+                expectedMessage: "The Demogorgon claws himself. (<damage physical='11'>11</damage> pts.)");
 
             Verify(playerEntity, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch,
                 SenseType.Sight | SenseType.Touch,
                 AbilityAction.Kick, manager, 12,
-                expectedMessage: "You kick yourself! [12 pts.]");
+                expectedMessage: "You kick yourself! [<damage physical='12'>12</damage> pts.]");
 
             Verify(nymph, playerEntity, playerEntity, SenseType.Sight | SenseType.Sound,
                 SenseType.Sight | SenseType.Touch,
@@ -151,7 +152,7 @@ namespace UnicornHack.Systems.Knowledge
 
             Verify(nymph, playerEntity, playerEntity, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11,
                 weapon: arrow,
-                expectedMessage: "Something hits you! [11 pts.]");
+                expectedMessage: "Something hits you! [<damage physical='11'>11</damage> pts.]");
 
             Verify(nymph, playerEntity, playerEntity, SenseType.SoundDistant, SenseType.None, AbilityAction.Shoot,
                 manager, null,
@@ -168,7 +169,7 @@ namespace UnicornHack.Systems.Knowledge
 
             Verify(playerEntity, demogorgon, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager,
                 11, weapon: arrow,
-                expectedMessage: "An arrow hits the Demogorgon. (11 pts.)");
+                expectedMessage: "An arrow hits the Demogorgon. (<damage physical='11'>11</damage> pts.)");
 
             Verify(nymph, demogorgon, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Shoot, manager, null,
                 weapon: bow,
@@ -176,7 +177,7 @@ namespace UnicornHack.Systems.Knowledge
 
             Verify(nymph, demogorgon, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager, 2,
                 weapon: arrow,
-                expectedMessage: "An arrow hits the Demogorgon. (2 pts.)");
+                expectedMessage: "An arrow hits the Demogorgon. (<damage physical='2'>2</damage> pts.)");
 
             var throwingKnife = ItemData.ThrowingKnife.Instantiate(playerEntity.Manager).Referenced;
 
@@ -189,7 +190,7 @@ namespace UnicornHack.Systems.Knowledge
             Verify(nymph, playerEntity, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager,
                 11,
                 weapon: throwingKnife,
-                expectedMessage: "A throwing knife hits you! [11 pts.]");
+                expectedMessage: "A throwing knife hits you! [<damage physical='11'>11</damage> pts.]");
 
             Verify(playerEntity, null, playerEntity, SenseType.None, SenseType.None, AbilityAction.Hit, manager, null,
                 weapon: throwingKnife,
@@ -216,7 +217,7 @@ namespace UnicornHack.Systems.Knowledge
             string expectedMessage2,
             GameManager manager)
         {
-            var activationMessage = manager.AbilityActivationSystem.CreateActivateAbilityMessage(manager);
+            var activationMessage = ActivateAbilityMessage.Create(manager);
             activationMessage.AbilityEntity = ability;
             activationMessage.ActivatorEntity = attacker;
             activationMessage.TargetEntity = victim;
