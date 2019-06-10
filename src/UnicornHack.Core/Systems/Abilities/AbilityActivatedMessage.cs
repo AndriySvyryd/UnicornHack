@@ -53,7 +53,7 @@ namespace UnicornHack.Systems.Abilities
         public ActivationType Trigger { get; set; }
         public ImmutableList<GameEntity> EffectsToApply { get; set; }
         public string ActivationError { get; set; }
-        public bool SuccessfulApplication { get; set; }
+        public ApplicationOutcome Outcome { get; set; }
 
         public AbilityActivatedMessage Clone(GameManager manager)
         {
@@ -80,7 +80,7 @@ namespace UnicornHack.Systems.Abilities
             Trigger = default;
             EffectsToApply = default;
             ActivationError = default;
-            SuccessfulApplication = default;
+            Outcome = default;
         }
     }
 }

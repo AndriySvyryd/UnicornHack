@@ -75,7 +75,7 @@ export class Game extends React.Component<IGameProps, {}> {
             'moveNorthWest': ['home', '7', 'y'],
             'wait': ['Clear', '5', '.'],
             'clear': 'Escape',
-            'back': 'BackSpace'
+            'back': 'Backspace'
         };
 
         this._keyHandlers = {
@@ -275,7 +275,7 @@ export class Game extends React.Component<IGameProps, {}> {
                     </div>
                 </div>
 
-                <IgnoreKeys only={[]} except={["Escape"]}>
+                <IgnoreKeys only={[]} except={["Escape", "Backspace"]}>
                     <PostGameStatisticsDialog context={this} data={this._dialogData} />
                     <AbilitySelectionDialog context={this} data={this._dialogData} />
                     <CharacterScreenDialog context={this} data={this._dialogData} />

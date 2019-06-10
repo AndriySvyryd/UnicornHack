@@ -58,6 +58,10 @@ input::placeholder {
     }
 }
 
+.tooltip-inner {
+    max-width: 100%;
+}
+
 .intro {
     @include make-row();
 }

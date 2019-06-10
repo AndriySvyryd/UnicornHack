@@ -45,7 +45,7 @@
     "precss": "^4.0.0",
     "react": "^16.8.5",
     "react-dom": "^16.8.5",
-    "react-hotkeys": "2.0.0-pre4",
+    "react-hotkeys": "2.0.0-pre6",
     "react-overlays": "^1.2.0",
     "react-transition-group": "^4.0.0",
     "resolve-url-loader": "^3.0.1",

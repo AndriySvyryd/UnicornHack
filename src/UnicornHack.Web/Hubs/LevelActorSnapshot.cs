@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using UnicornHack.Primitives;
 using UnicornHack.Services;
+using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 
@@ -46,6 +48,50 @@ namespace UnicornHack.Hubs
                     properties.Add(position.LevelX);
                     properties.Add(position.LevelY);
                     properties.Add((byte)position.Heading);
+
+                    if (actorKnowledge.SensedType.CanIdentify()
+                        && ai != null)
+                    {
+                        int? _ = null;
+                        var meleeAttack =
+                            manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: true, manager);
+                        SerializeAttackSummary(
+                            meleeAttack,
+                            knownEntity,
+                            context.Observer, properties,
+                            index: ref _,
+                            manager: manager);
+
+                        var rangedAttack =
+                            manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: false, manager);
+                        SerializeAttackSummary(
+                            rangedAttack,
+                            knownEntity,
+                            context.Observer, properties,
+                            index: ref _,
+                            manager: manager);
+
+                        meleeAttack = manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: true, manager);
+                        SerializeAttackSummary(
+                            meleeAttack,
+                            context.Observer,
+                            knownEntity,
+                            properties,
+                            index: ref _,
+                            manager: manager);
+
+                        rangedAttack = manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: false, manager);
+                        SerializeAttackSummary(
+                            rangedAttack,
+                            context.Observer,
+                            knownEntity,
+                            properties,
+                            index: ref _,
+                            manager: manager);
+
+                        return properties;
+                    }
+
                     return properties;
                 }
                 case EntityState.Deleted:
@@ -68,7 +114,7 @@ namespace UnicornHack.Hubs
                     };
 
                     var knowledgeEntry = context.DbContext.Entry(actorKnowledge);
-                    var i = 1;
+                    int? i = 1;
                     var sensedType = knowledgeEntry.Property(nameof(KnowledgeComponent.SensedType));
                     if (sensedType.IsModified)
                     {
@@ -119,10 +165,144 @@ namespace UnicornHack.Hubs
                             properties.Add((byte)position.Heading);
                         }
                     }
+                    else
+                    {
+                        i += 3;
+                    }
+
+                    if (ai != null)
+                    {
+                        var canIdentify = actorKnowledge.SensedType.CanIdentify();
+                        var meleeAttack = canIdentify
+                            ? manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: true, manager)
+                            : null;
+                        SerializeAttackSummary(
+                            meleeAttack,
+                            knownEntity,
+                            context.Observer,
+                            properties,
+                            index: ref i, manager: manager);
+
+                        var rangedAttack = canIdentify
+                            ? manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: false, manager)
+                            : null;
+                        SerializeAttackSummary(
+                            rangedAttack,
+                            knownEntity,
+                            context.Observer,
+                            properties,
+                            index: ref i,
+                            manager: manager);
+
+                        meleeAttack = canIdentify
+                            ? manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: true, manager)
+                            : null;
+                        SerializeAttackSummary(
+                            meleeAttack,
+                            context.Observer,
+                            knownEntity, properties,
+                            index: ref i,
+                            manager: manager);
+
+                        rangedAttack = canIdentify
+                            ? manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: false, manager)
+                            : null;
+                        SerializeAttackSummary(
+                            rangedAttack,
+                            context.Observer,
+                            knownEntity,
+                            properties,
+                            index: ref i,
+                            manager: manager);
+
+                    }
 
                     return properties.Count > 2 ? properties : null;
                 }
             }
+        }
+
+        private static void SerializeAttackSummary(
+            GameEntity attackEntity,
+            GameEntity attackerEntity,
+            GameEntity victimEntity,
+            List<object> result,
+            ref int? index,
+            GameManager manager)
+        {
+            AttackStats stats = null;
+            if (attackEntity != null)
+            {
+                var activateMessage = ActivateAbilityMessage.Create(manager);
+                activateMessage.AbilityEntity = attackEntity;
+                activateMessage.ActivatorEntity = attackerEntity;
+                activateMessage.TargetEntity = victimEntity;
+
+                stats = manager.AbilityActivationSystem.GetAttackStats(activateMessage);
+                manager.ReturnMessage(activateMessage);
+            }
+
+            if (stats == null)
+            {
+                if (!index.HasValue)
+                {
+                    result.Add(null);
+                    result.Add(null);
+                    result.Add(null);
+                    result.Add(null);
+                }
+                else
+                {
+                    index = index.Value + 1;
+                    result.Add(index.Value);
+                    result.Add(null);
+                    index = index.Value + 3;
+                }
+
+                return;
+            }
+
+            if (index.HasValue)
+            {
+                index = index.Value + 1;
+                result.Add(index.Value);
+            }
+
+            result.Add(stats.Delay);
+
+            if (index.HasValue)
+            {
+                index = index.Value + 1;
+                result.Add(index.Value);
+            }
+
+            result.Add(string.Join(", ", stats.HitProbabilities.Select(p => p + "%")));
+
+            if (index.HasValue)
+            {
+                index = index.Value + 1;
+                result.Add(index.Value);
+            }
+            
+            result.Add(string.Join(", ", stats.Damages));
+
+            if (index.HasValue)
+            {
+                index = index.Value + 1;
+                result.Add(index.Value);
+            }
+
+            var expectedDamage = 0;
+            // ReSharper disable once LoopCanBeConvertedToQuery
+            for (var i = 0; i < stats.Damages.Count; i++)
+            {
+                expectedDamage += stats.Damages[i] * stats.HitProbabilities[i];
+            }
+
+            var ticksToKill = expectedDamage <= 0
+                ? 0
+                : Math.Ceiling(victimEntity.Being.HitPoints * 100f / expectedDamage) * stats.Delay;
+            result.Add(ticksToKill);
         }
 
         public static List<object> SerializeAttributes(GameEntity actorEntity, SenseType sense, SerializationContext context)

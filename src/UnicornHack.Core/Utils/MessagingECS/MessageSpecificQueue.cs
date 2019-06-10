@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace UnicornHack.Utils.MessagingECS
 {
@@ -21,24 +22,13 @@ namespace UnicornHack.Utils.MessagingECS
             => _consumers.Add(order, consumer);
 
         public TMessage CreateMessage()
-        {
-            if (_pooledMessage != null)
-            {
-                var message = _pooledMessage;
-                _pooledMessage = null;
-                return message;
-            }
-
-            return new TMessage();
-        }
+            => Interlocked.Exchange(ref _pooledMessage, null)
+               ?? new TMessage();
 
         public void ReturnMessage(TMessage message)
         {
             message.Dispose();
-            if (_pooledMessage != null)
-            {
-                _pooledMessage = message;
-            }
+            Interlocked.CompareExchange(ref _pooledMessage, message, null);
         }
 
         public void Enqueue(TMessage body) => _queue.Enqueue(body);

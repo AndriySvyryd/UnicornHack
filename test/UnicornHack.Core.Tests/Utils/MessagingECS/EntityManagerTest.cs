@@ -37,12 +37,8 @@ namespace UnicornHack.Utils.MessagingECS
 
                 Assert.Same(entity, manager.FindEntity(entity.Id));
 
-                var message = manager.CreateRemoveComponentMessage();
+                RemoveComponentMessage.Enqueue(entity, EntityComponent.Level, manager);
 
-                message.Entity = entity;
-                message.Component = EntityComponent.Level;
-
-                manager.Enqueue(message);
                 Assert.NotNull(manager.FindEntity(entity.Id));
                 Assert.True(entity.HasComponent(EntityComponent.Level));
 

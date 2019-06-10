@@ -117,11 +117,29 @@ namespace UnicornHack.Systems.Actors
 
         private bool Attack(GameEntity aiEntity, GameEntity targetEntity, GameManager manager)
         {
+            var abilityEntity = GetDefaultAttack(aiEntity, targetEntity, null, manager);
+            if (abilityEntity == null)
+            {
+                return false;
+            }
+
+            var activationMessage = ActivateAbilityMessage.Create(manager);
+            activationMessage.AbilityEntity = abilityEntity;
+            activationMessage.ActivatorEntity = aiEntity;
+            activationMessage.TargetEntity = targetEntity;
+            manager.Enqueue(activationMessage);
+
+            return true;
+        }
+
+        public GameEntity GetDefaultAttack(GameEntity aiEntity, GameEntity targetEntity, bool? melee, GameManager manager)
+        {
             foreach (var abilityEntity in manager.AbilitiesToAffectableRelationship[aiEntity.Id])
             {
                 var ability = abilityEntity.Ability;
                 if (ability.Activation != ActivationType.Targeted
-                    || !ability.IsUsable)
+                    || !ability.IsUsable
+                    || melee == (ability.Range != 1))
                 {
                     continue;
                 }
@@ -130,18 +148,17 @@ namespace UnicornHack.Systems.Actors
                 activationMessage.AbilityEntity = abilityEntity;
                 activationMessage.ActivatorEntity = aiEntity;
                 activationMessage.TargetEntity = targetEntity;
-
                 if (!manager.AbilityActivationSystem.CanActivateAbility(activationMessage, shouldThrow: false))
                 {
                     manager.Queue.ReturnMessage(activationMessage);
                     continue;
                 }
 
-                manager.Enqueue(activationMessage);
-                return true;
+                manager.Queue.ReturnMessage(activationMessage);
+                return abilityEntity;
             }
 
-            return false;
+            return null;
         }
 
         private Direction? TryGetDirectionToPlayer(GameEntity aiEntity, GameManager manager)

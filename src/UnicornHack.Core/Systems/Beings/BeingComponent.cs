@@ -18,6 +18,7 @@ namespace UnicornHack.Systems.Beings
         private int _focus;
         private int _energyRegeneration;
         private int _regeneration;
+        private int _accuracy;
         private int _evasion;
         private int _deflection;
         private int _armor;
@@ -174,6 +175,13 @@ namespace UnicornHack.Systems.Beings
         {
             get => _regeneration;
             set => SetWithNotify(value, ref _regeneration);
+        }
+
+        [Property]
+        public int Accuracy
+        {
+            get => _accuracy;
+            set => SetWithNotify(value, ref _accuracy);
         }
 
         [Property]
@@ -396,6 +404,7 @@ namespace UnicornHack.Systems.Beings
             _focus = default;
             _energyRegeneration = default;
             _regeneration = default;
+            _accuracy = default;
             _evasion = default;
             _deflection = default;
             _armor = default;

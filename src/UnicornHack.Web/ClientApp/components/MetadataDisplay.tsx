@@ -43,8 +43,8 @@ function handleTag(node: htmlparser2.DomElement, index: number) {
     }
 }
 
-const ElementHandlers: Map<string, (node: htmlparser2.DomElement, index: number) => React.ReactNode> =
-    new Map<string, (node: htmlparser2.DomElement, index: number) => React.ReactNode>(
+const ElementHandlers: Map<string, (node: htmlparser2.DomElement, index: number) => React.ReactElement> =
+    new Map<string, (node: htmlparser2.DomElement, index: number) => React.ReactElement>(
         [
             ["text", node => node.data],
             ["tag", handleTag],
@@ -61,7 +61,7 @@ const DamageTooltip = (props: IDamageProps) =>
         <span className="annotatedText">{props.children}</span>
     </TooltipTrigger>;
 
-function formatDamage(props: IDamageProps): React.ReactNode {
+function formatDamage(props: IDamageProps): React.ReactElement {
     var result = '';
     if (props.physical != undefined) {
         result += ' physical: ' + props.physical;
@@ -115,7 +115,7 @@ function formatDamage(props: IDamageProps): React.ReactNode {
         result += ' life drain: ' + props.drain;
     }
 
-    return result.trim();
+    return <>{result.trim()}</>;
 }
 
 interface IDamageProps extends React.ComponentPropsWithoutRef<any> {

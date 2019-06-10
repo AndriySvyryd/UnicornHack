@@ -92,10 +92,7 @@ namespace UnicornHack.Systems.Knowledge
                     var newExpiration = effect.ExpirationXp - xp;
                     if (newExpiration < 0)
                     {
-                        var removeComponentMessage = manager.CreateRemoveComponentMessage();
-                        removeComponentMessage.Entity = xpEntity;
-                        removeComponentMessage.Component = EntityComponent.Effect;
-                        manager.Enqueue(removeComponentMessage, lowPriority: true);
+                        RemoveComponentMessage.Enqueue(xpEntity, EntityComponent.Effect, manager);
                     }
                     else
                     {

@@ -33,6 +33,7 @@ namespace UnicornHack.Generation
         private int? _focus;
         private int? _energyRegeneration;
         private int? _regeneration;
+        private int? _accuracy;
         private int? _evasion;
         private int? _magicResistance;
         private int? _armor;
@@ -178,6 +179,12 @@ namespace UnicornHack.Generation
         {
             get => _regeneration ?? BaseCreature?.Regeneration;
             set => _regeneration = value;
+        }
+        
+        public int? Accuracy
+        {
+            get => _accuracy ?? BaseCreature?.Accuracy;
+            set => _accuracy = value;
         }
 
         public int? Evasion
@@ -538,6 +545,8 @@ namespace UnicornHack.Generation
                             abilityEntity.Id, manager);
                         CreatePropertyEffect(nameof(BeingComponent.Regeneration), Regeneration, abilityEntity.Id,
                             manager);
+                        CreatePropertyEffect(nameof(BeingComponent.Accuracy), Accuracy, abilityEntity.Id,
+                            manager);
                         CreatePropertyEffect(nameof(BeingComponent.Evasion), Evasion, abilityEntity.Id,
                             manager);
                         CreatePropertyEffect(nameof(BeingComponent.Deflection), Deflection,
@@ -626,9 +635,9 @@ namespace UnicornHack.Generation
             {
                 {nameof(Name), (o, v) => v != null},
                 {nameof(BaseName), (o, v) => v != null},
-                {nameof(Species), (o, v) => (Species?)v != (o.BaseCreature?.Species)},
-                {nameof(SpeciesClass), (o, v) => (SpeciesClass?)v != (o.BaseCreature?.SpeciesClass)},
-                {nameof(EnglishDescription), (o, v) => (string)v != (o.BaseCreature?.EnglishDescription)},
+                {nameof(Species), (o, v) => (Species?)v != o.BaseCreature?.Species},
+                {nameof(SpeciesClass), (o, v) => (SpeciesClass?)v != o.BaseCreature?.SpeciesClass},
+                {nameof(EnglishDescription), (o, v) => (string)v != o.BaseCreature?.EnglishDescription},
                 {nameof(Abilities), (o, v) => ((ICollection<Ability>)v).Count != 0},
                 {nameof(InitialLevel), (o, v) => (byte)v != 0},
                 // ReSharper disable once CompareOfFloatsByEqualityOperator
@@ -641,61 +650,62 @@ namespace UnicornHack.Generation
                 {nameof(GenerationFlags), (o, v) => (GenerationFlags)v != GenerationFlags.None},
                 {nameof(Behavior), (o, v) => (AIBehavior)v != AIBehavior.None},
                 {nameof(Noise), (o, v) => (ActorNoiseType)v != (o.BaseCreature?.Noise ?? ActorNoiseType.Silent)},
-                {nameof(Sex), (o, v) => (Sex?)v != (o.BaseCreature?.Sex)},
-                {nameof(Size), (o, v) => (int?)v != (o.BaseCreature?.Size)},
-                {nameof(Weight), (o, v) => (int?)v != (o.BaseCreature?.Weight)},
-                {nameof(MovementDelay), (o, v) => (int?)v != (o.BaseCreature?.MovementDelay)},
-                {nameof(Material), (o, v) => (Material?)v != (o.BaseCreature?.Material)},
-                {nameof(Perception), (o, v) => (int?)v != (o.BaseCreature?.Perception)},
-                {nameof(Might), (o, v) => (int?)v != (o.BaseCreature?.Might)},
-                {nameof(Speed), (o, v) => (int?)v != (o.BaseCreature?.Speed)},
-                {nameof(Focus), (o, v) => (int?)v != (o.BaseCreature?.Focus)},
-                {nameof(EnergyRegeneration), (o, v) => (int?)v != (o.BaseCreature?.EnergyRegeneration)},
-                {nameof(Regeneration), (o, v) => (int?)v != (o.BaseCreature?.Regeneration)},
-                {nameof(Evasion), (o, v) => (int?)v != (o.BaseCreature?.Evasion)},
-                {nameof(Deflection), (o, v) => (int?)v != (o.BaseCreature?.Deflection)},
-                {nameof(Armor), (o, v) => (int?)v != (o.BaseCreature?.Armor)},
-                {nameof(PhysicalResistance), (o, v) => (int?)v != (o.BaseCreature?.PhysicalResistance)},
-                {nameof(MagicResistance), (o, v) => (int?)v != (o.BaseCreature?.MagicResistance)},
-                {nameof(AcidResistance), (o, v) => (int?)v != (o.BaseCreature?.AcidResistance)},
-                {nameof(BleedingResistance), (o, v) => (int?)v != (o.BaseCreature?.BleedingResistance)},
-                {nameof(ColdResistance), (o, v) => (int?)v != (o.BaseCreature?.ColdResistance)},
-                {nameof(ElectricityResistance), (o, v) => (int?)v != (o.BaseCreature?.ElectricityResistance)},
-                {nameof(FireResistance), (o, v) => (int?)v != (o.BaseCreature?.FireResistance)},
-                {nameof(LightResistance), (o, v) => (int?) v != (o.BaseCreature?.LightResistance)},
-                {nameof(PsychicResistance), (o, v) => (int?) v != (o.BaseCreature?.PsychicResistance)},
-                {nameof(SonicResistance), (o, v) => (int?) v != (o.BaseCreature?.SonicResistance)},
-                {nameof(StunResistance), (o, v) => (int?) v != (o.BaseCreature?.StunResistance)},
-                {nameof(ToxinResistance), (o, v) => (int?) v != (o.BaseCreature?.ToxinResistance)},
-                {nameof(VoidResistance), (o, v) => (int?) v != (o.BaseCreature?.VoidResistance)},
-                {nameof(WaterResistance), (o, v) => (int?)v != (o.BaseCreature?.WaterResistance)},
-                {nameof(Reflective), (o, v) => (bool?)v != (o.BaseCreature?.Reflective)},
-                {nameof(SlimingImmune), (o, v) => (bool?)v != (o.BaseCreature?.SlimingImmune)},
-                {nameof(StoningImmune), (o, v) => (bool?)v != (o.BaseCreature?.StoningImmune)},
-                {nameof(HeadType), (o, v) => (HeadType?)v != (o.BaseCreature?.HeadType)},
-                {nameof(TorsoType), (o, v) => (TorsoType?)v != (o.BaseCreature?.TorsoType)},
-                {nameof(UpperExtremities), (o, v) => (ExtremityType?)v != (o.BaseCreature?.UpperExtremities)},
-                {nameof(LowerExtremities), (o, v) => (ExtremityType?)v != (o.BaseCreature?.LowerExtremities)},
-                {nameof(BackExtremities), (o, v) => (ExtremityType?)v != (o.BaseCreature?.BackExtremities)},
-                {nameof(RespirationType), (o, v) => (RespirationType?)v != (o.BaseCreature?.RespirationType)},
-                {nameof(LocomotionType), (o, v) => (LocomotionType?)v != (o.BaseCreature?.LocomotionType)},
-                {nameof(InventorySize), (o, v) => (int?)v != (o.BaseCreature?.InventorySize)},
-                {nameof(EyeCount), (o, v) => (int?)v != (o.BaseCreature?.EyeCount)},
-                {nameof(NoiseLevel), (o, v) => (int?)v != (o.BaseCreature?.NoiseLevel)},
-                {nameof(VisibilityLevel), (o, v) => (int?)v != (o.BaseCreature?.VisibilityLevel)},
-                {nameof(AcuityLevel), (o, v) => (int?)v != (o.BaseCreature?.AcuityLevel)},
-                {nameof(HearingLevel), (o, v) => (int?)v != (o.BaseCreature?.HearingLevel)},
-                {nameof(Telepathic), (o, v) => (int?)v != (o.BaseCreature?.Telepathic)},
-                {nameof(Infravisible), (o, v) => (bool?)v != (o.BaseCreature?.Infravisible)},
-                {nameof(Infravision), (o, v) => (bool?)v != (o.BaseCreature?.Infravision)},
-                {nameof(InvisibilityDetection), (o, v) => (bool?)v != (o.BaseCreature?.InvisibilityDetection)},
-                {nameof(Clairvoyant), (o, v) => (bool?)v != (o.BaseCreature?.Clairvoyant)},
-                {nameof(Clingy), (o, v) => (bool?)v != (o.BaseCreature?.Clingy)},
-                {nameof(Displaced), (o, v) => (bool?)v != (o.BaseCreature?.Displaced)},
-                {nameof(Lycanthropy), (o, v) => (string)v != (o.BaseCreature?.Lycanthropy)},
-                {nameof(Mindless), (o, v) => (bool?)v != (o.BaseCreature?.Mindless)},
-                {nameof(NonAnimal), (o, v) => (bool?)v != (o.BaseCreature?.NonAnimal)},
-                {nameof(Reanimation), (o, v) => (bool?)v != (o.BaseCreature?.Reanimation)}
+                {nameof(Sex), (o, v) => (Sex?)v != o.BaseCreature?.Sex},
+                {nameof(Size), (o, v) => (int?)v != o.BaseCreature?.Size},
+                {nameof(Weight), (o, v) => (int?)v != o.BaseCreature?.Weight},
+                {nameof(MovementDelay), (o, v) => (int?)v != o.BaseCreature?.MovementDelay},
+                {nameof(Material), (o, v) => (Material?)v != o.BaseCreature?.Material},
+                {nameof(Perception), (o, v) => (int?)v != o.BaseCreature?.Perception},
+                {nameof(Might), (o, v) => (int?)v != o.BaseCreature?.Might},
+                {nameof(Speed), (o, v) => (int?)v != o.BaseCreature?.Speed},
+                {nameof(Focus), (o, v) => (int?)v != o.BaseCreature?.Focus},
+                {nameof(EnergyRegeneration), (o, v) => (int?)v != o.BaseCreature?.EnergyRegeneration},
+                {nameof(Regeneration), (o, v) => (int?)v != o.BaseCreature?.Regeneration},
+                {nameof(Accuracy), (o, v) => (int?)v != o.BaseCreature?.Accuracy},
+                {nameof(Evasion), (o, v) => (int?)v != o.BaseCreature?.Evasion},
+                {nameof(Deflection), (o, v) => (int?)v != o.BaseCreature?.Deflection},
+                {nameof(Armor), (o, v) => (int?)v != o.BaseCreature?.Armor},
+                {nameof(PhysicalResistance), (o, v) => (int?)v != o.BaseCreature?.PhysicalResistance},
+                {nameof(MagicResistance), (o, v) => (int?)v != o.BaseCreature?.MagicResistance},
+                {nameof(AcidResistance), (o, v) => (int?)v != o.BaseCreature?.AcidResistance},
+                {nameof(BleedingResistance), (o, v) => (int?)v != o.BaseCreature?.BleedingResistance},
+                {nameof(ColdResistance), (o, v) => (int?)v != o.BaseCreature?.ColdResistance},
+                {nameof(ElectricityResistance), (o, v) => (int?)v != o.BaseCreature?.ElectricityResistance},
+                {nameof(FireResistance), (o, v) => (int?)v != o.BaseCreature?.FireResistance},
+                {nameof(LightResistance), (o, v) => (int?) v != o.BaseCreature?.LightResistance},
+                {nameof(PsychicResistance), (o, v) => (int?) v != o.BaseCreature?.PsychicResistance},
+                {nameof(SonicResistance), (o, v) => (int?) v != o.BaseCreature?.SonicResistance},
+                {nameof(StunResistance), (o, v) => (int?) v != o.BaseCreature?.StunResistance},
+                {nameof(ToxinResistance), (o, v) => (int?) v != o.BaseCreature?.ToxinResistance},
+                {nameof(VoidResistance), (o, v) => (int?) v != o.BaseCreature?.VoidResistance},
+                {nameof(WaterResistance), (o, v) => (int?)v != o.BaseCreature?.WaterResistance},
+                {nameof(Reflective), (o, v) => (bool?)v != o.BaseCreature?.Reflective},
+                {nameof(SlimingImmune), (o, v) => (bool?)v != o.BaseCreature?.SlimingImmune},
+                {nameof(StoningImmune), (o, v) => (bool?)v != o.BaseCreature?.StoningImmune},
+                {nameof(HeadType), (o, v) => (HeadType?)v != o.BaseCreature?.HeadType},
+                {nameof(TorsoType), (o, v) => (TorsoType?)v != o.BaseCreature?.TorsoType},
+                {nameof(UpperExtremities), (o, v) => (ExtremityType?)v != o.BaseCreature?.UpperExtremities},
+                {nameof(LowerExtremities), (o, v) => (ExtremityType?)v != o.BaseCreature?.LowerExtremities},
+                {nameof(BackExtremities), (o, v) => (ExtremityType?)v != o.BaseCreature?.BackExtremities},
+                {nameof(RespirationType), (o, v) => (RespirationType?)v != o.BaseCreature?.RespirationType},
+                {nameof(LocomotionType), (o, v) => (LocomotionType?)v != o.BaseCreature?.LocomotionType},
+                {nameof(InventorySize), (o, v) => (int?)v != o.BaseCreature?.InventorySize},
+                {nameof(EyeCount), (o, v) => (int?)v != o.BaseCreature?.EyeCount},
+                {nameof(NoiseLevel), (o, v) => (int?)v != o.BaseCreature?.NoiseLevel},
+                {nameof(VisibilityLevel), (o, v) => (int?)v != o.BaseCreature?.VisibilityLevel},
+                {nameof(AcuityLevel), (o, v) => (int?)v != o.BaseCreature?.AcuityLevel},
+                {nameof(HearingLevel), (o, v) => (int?)v != o.BaseCreature?.HearingLevel},
+                {nameof(Telepathic), (o, v) => (int?)v != o.BaseCreature?.Telepathic},
+                {nameof(Infravisible), (o, v) => (bool?)v != o.BaseCreature?.Infravisible},
+                {nameof(Infravision), (o, v) => (bool?)v != o.BaseCreature?.Infravision},
+                {nameof(InvisibilityDetection), (o, v) => (bool?)v != o.BaseCreature?.InvisibilityDetection},
+                {nameof(Clairvoyant), (o, v) => (bool?)v != o.BaseCreature?.Clairvoyant},
+                {nameof(Clingy), (o, v) => (bool?)v != o.BaseCreature?.Clingy},
+                {nameof(Displaced), (o, v) => (bool?)v != o.BaseCreature?.Displaced},
+                {nameof(Lycanthropy), (o, v) => (string)v != o.BaseCreature?.Lycanthropy},
+                {nameof(Mindless), (o, v) => (bool?)v != o.BaseCreature?.Mindless},
+                {nameof(NonAnimal), (o, v) => (bool?)v != o.BaseCreature?.NonAnimal},
+                {nameof(Reanimation), (o, v) => (bool?)v != o.BaseCreature?.Reanimation}
             };
 
         public ICSScriptSerializer GetSerializer() => Serializer;

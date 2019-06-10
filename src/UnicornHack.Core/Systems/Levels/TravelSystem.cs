@@ -120,11 +120,7 @@ namespace UnicornHack.Systems.Levels
         {
             if (!message.BeingEntity.HasComponent(EntityComponent.Player))
             {
-                var removeComponentMessage = manager.CreateRemoveComponentMessage();
-                removeComponentMessage.Entity = message.BeingEntity;
-                removeComponentMessage.Component = EntityComponent.Position;
-
-                manager.Enqueue(removeComponentMessage, lowPriority: true);
+                RemoveComponentMessage.Enqueue(message.BeingEntity, EntityComponent.Position, manager);
             }
 
             return MessageProcessingResult.ContinueProcessing;

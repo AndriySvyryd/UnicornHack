@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
@@ -52,14 +53,26 @@ namespace UnicornHack.Systems.Knowledge
             playerEntity.Player.LogEntries.Clear();
             player2Entity.Player.LogEntries.Clear();
 
+            var demogorgonSting = manager.AbilitiesToAffectableRelationship[demogorgon.Id].ElementAt(3);
+
+            var activateMessage = ActivateAbilityMessage.Create(manager);
+            activateMessage.AbilityEntity = demogorgonSting;
+            activateMessage.ActivatorEntity = demogorgon;
+            activateMessage.TargetEntity = nymph;
+
+            var stats = manager.AbilityActivationSystem.GetAttackStats(activateMessage);
+            manager.ReturnMessage(activateMessage);
+
+            Assert.Equal(18, stats.Damages.Aggregate(0, (s, d) => s + d));
+
             Verify(demogorgon, nymph, playerEntity, player2Entity,
-                manager.AbilitiesToAffectableRelationship[demogorgon.Id].ElementAt(3), success: true,
+                demogorgonSting, success: true,
                 "The Demogorgon stings the water nymph. (<damage drain='18'>18</damage> pts.)",
                 "The Demogorgon stings something.",
                 manager);
 
             Verify(demogorgon, nymph, playerEntity, player2Entity,
-                manager.AbilitiesToAffectableRelationship[demogorgon.Id].ElementAt(3), success: false,
+                demogorgonSting, success: false,
                 "The Demogorgon tries to sting the water nymph, but misses.",
                 "The Demogorgon tries to sting something, but misses.",
                 manager);
@@ -225,7 +238,7 @@ namespace UnicornHack.Systems.Knowledge
 
             manager.Enqueue(activationMessage);
 
-            ((TestRandom)manager.Game.Random).EnqueueNextBool(success);
+            ((TestRandom)manager.Game.Random).EnqueueNextBool(!success);
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(expectedMessage1,

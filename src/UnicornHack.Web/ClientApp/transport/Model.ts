@@ -344,6 +344,10 @@ export class MapActor {
     @observable levelX: number = 0;
     @observable levelY: number = 0;
     @observable heading: Direction = 0;
+    @observable meleeAttack: AttackSummary | null = null;
+    @observable rangeAttack: AttackSummary | null = null;
+    @observable meleeDefense: AttackSummary | null = null;
+    @observable rangeDefense: AttackSummary | null = null;
 
     @action
     static expandToCollection(compactActor: any[], collection: Map<number, MapActor>, tiles: Tile[][], parentState: EntityState) {
@@ -392,6 +396,17 @@ export class MapActor {
         actor.levelX = compactActor[i++];
         actor.levelY = compactActor[i++];
         actor.heading = compactActor[i++];
+
+        if (compactActor.length > i) {
+            actor.meleeAttack = AttackSummary.expand(compactActor, i);
+            i += 4;
+            actor.rangeAttack = AttackSummary.expand(compactActor, i);
+            i += 4;
+            actor.meleeDefense = AttackSummary.expand(compactActor, i);
+            i += 4;
+            actor.rangeDefense = AttackSummary.expand(compactActor, i);
+        }
+
         return actor;
     }
 
@@ -401,7 +416,8 @@ export class MapActor {
 
         let unset = false;
         for (; i < compactActor.length;) {
-            switch (compactActor[i++]) {
+            var index = compactActor[i++];
+            switch (index) {
                 case 1:
                     let baseName = compactActor[i++];
                     this.baseName = baseName === null ? '' : baseName;
@@ -426,10 +442,55 @@ export class MapActor {
                     this.heading = compactActor[i++];
                     break;
                 default:
-                    if (unset) {
-                        this.set(tiles);
+                    if (index > 21) {
+                        if (unset) {
+                            this.set(tiles);
+                        }
+
+                        return i - 1;
                     }
-                    return i - 1;
+
+                    let offset = index - 6;
+                    switch (Math.floor(offset / 4)) {
+                        case 0:
+                            if (this.meleeAttack == null) {
+                                this.meleeAttack = new AttackSummary();
+                            }
+
+                            if (!this.meleeAttack.update(compactActor, i++, offset % 4)) {
+                                this.meleeAttack = null;
+                            }
+                            break;
+                        case 1:
+                            if (this.rangeAttack == null) {
+                                this.rangeAttack = new AttackSummary();
+                            }
+
+                            if (!this.rangeAttack.update(compactActor, i++, offset % 4)) {
+                                this.rangeAttack = null;
+                            }
+                            break;
+                        case 2:
+                            if (this.meleeDefense == null) {
+                                this.meleeDefense = new AttackSummary();
+                            }
+
+                            if (!this.meleeDefense.update(compactActor, i++, offset % 4)) {
+                                this.meleeDefense = null;
+                            }
+                            break;
+                        case 3:
+                            if (this.rangeDefense == null) {
+                                this.rangeDefense = new AttackSummary();
+                            }
+
+                            if (!this.rangeDefense.update(compactActor, i++, offset % 4)) {
+                                this.rangeDefense = null;
+                            }
+                            break;
+                        default:
+                            throw "Unexpected index " + Math.floor(offset / 4);
+                    }
             }
         }
 
@@ -457,6 +518,51 @@ export class MapActor {
             tile.actor = null;
         }
         return this;
+    }
+}
+
+export class AttackSummary {
+    @observable delay: number = 0;
+    @observable hitProbability: string = '';
+    @observable damage: string = '';
+    @observable ticksToKill: number = 0;
+
+    @action
+    static expand(compactAttack: any[], i: number): AttackSummary | null {
+        const attack = new AttackSummary();
+        var delay = compactAttack[i++];
+        if (delay == null) {
+            return null;
+        }
+        attack.delay = delay;
+        attack.hitProbability = compactAttack[i++];
+        attack.damage = compactAttack[i++];
+        attack.ticksToKill = compactAttack[i++];
+        return attack;
+    }
+
+    @action.bound
+    update(compactAttack: any[], i: number, offset: number) : boolean {
+        switch (offset) {
+            case 0:
+                var delay = compactAttack[i++];
+                if (delay == null) {
+                    return false;
+                }
+                this.delay = delay;
+                break;
+            case 1:
+                this.hitProbability = compactAttack[i++];
+                break;
+            case 2:
+                this.damage = compactAttack[i++];
+                break;
+            case 3:
+                this.ticksToKill = compactAttack[i++];
+                break;
+        }
+
+        return true;
     }
 }
 

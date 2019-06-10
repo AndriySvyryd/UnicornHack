@@ -273,21 +273,24 @@ namespace UnicornHack.Systems.Actors
             else
             {
                 var vectorToTarget = playerEntity.Position.LevelCell.DifferenceTo(targetCell);
-                if (vectorToTarget.Length() > 1)
-                {
-                    abilityEntity =
-                        manager.AbilitySlottingSystem.GetAbility(playerEntity.Id, AbilitySlottingSystem.DefaultRangedAttackSlot, manager);
-                }
-
+                abilityEntity = GetDefaultAttack(playerEntity, vectorToTarget.Length() <= 1, manager);
                 if (abilityEntity == null)
                 {
-                    abilityEntity =
-                        manager.AbilitySlottingSystem.GetAbility(playerEntity.Id, AbilitySlottingSystem.DefaultMeleeAttackSlot, manager);
+                    // TODO: Log a message
+                    return false;
                 }
             }
 
             return ActivateAbility(abilityEntity, playerEntity, targetCell, targetActor, manager);
         }
+
+        public GameEntity GetDefaultAttack(GameEntity playerEntity, bool melee, GameManager manager)
+            => manager.AbilitySlottingSystem.GetAbility(
+                playerEntity.Id,
+                melee
+                    ? AbilitySlottingSystem.DefaultMeleeAttackSlot
+                    : AbilitySlottingSystem.DefaultRangedAttackSlot,
+                manager);
 
         private bool ActivateAbility(GameEntity abilityEntity, GameEntity playerEntity,
             Point targetCell, GameEntity targetEntity, GameManager manager)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
@@ -37,10 +38,16 @@ namespace UnicornHack.Hubs
 
         public List<object> GetState(string playerName)
         {
+            // TODO: Avoid using a DbContext
             var player = FindPlayer(playerName) ?? CreatePlayer(playerName);
 
-            return _protocol.Serialize(player.Entity, EntityState.Added, null,
+            // TODO: Get a read lock
+            var gameState = _protocol.Serialize(player.Entity, EntityState.Added, null,
                 new SerializationContext(_dbContext, player.Entity, _gameServices));
+
+            Debug.Assert(_dbContext.ChangeTracker.Entries().All(e => e.State == EntityState.Unchanged));
+
+            return gameState;
         }
 
         public Task ShowDialog(string playerName, int intQueryType, int[] arguments)
@@ -116,11 +123,13 @@ namespace UnicornHack.Hubs
                     result.Add(PlayerSnapshot.SerializeSkills(player.Entity, context));
                     break;
                 case GameQueryType.ActorAttributes:
+                {
                     var actorKnowledge = manager.FindEntity(arguments[0])?.Knowledge;
 
                     result.Add(LevelActorSnapshot.SerializeAttributes(
                         actorKnowledge?.KnownEntity, actorKnowledge?.SensedType ?? SenseType.None, context));
                     break;
+                }
                 case GameQueryType.ItemAttributes:
                     var itemEntity = manager.FindEntity(arguments[0]);
                     var item = itemEntity?.Item;
@@ -277,7 +286,8 @@ namespace UnicornHack.Hubs
                 var level = levelEntity.Level;
 
                 var levelEntry = _dbContext.Entry(level);
-                if (levelEntry.State == EntityState.Added)
+                if (levelEntry.State == EntityState.Added
+                    || level.Width == 0)
                 {
                     continue;
                 }

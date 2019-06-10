@@ -3,7 +3,7 @@ import * as scss from '../styles/site.scss'
 import { action } from 'mobx';
 import { observer } from 'mobx-react';
 import { MapStyles, ITileStyle } from '../styles/MapStyles';
-import { Level, Tile } from '../transport/Model';
+import { Level, Tile, AttackSummary } from '../transport/Model';
 import { PlayerAction } from '../transport/PlayerAction';
 import { Direction } from '../transport/Direction';
 import { GameQueryType } from '../transport/GameQueryType';
@@ -133,11 +133,18 @@ class MapTile extends React.Component<ITileProps, {}> {
         return `linear-gradient(${direction}, ${mapBackground} 25%, ${highlightBackground})`;
     }
 
+    private getAttackSummary(attack: AttackSummary, attackName: string, victim: string): React.ReactElement {
+        return <div>
+            {`${attackName} - toHit: ${attack.hitProbability}, dmg: ${attack.damage}, delay: ${
+                attack.delay / 100} AUT, expected time to defeat: `}<b>{attack.ticksToKill / 100} AUT</b>
+            </div>;
+    }
+
     render() {
         const { x, y, tile, styles, context } = this.props;
         let glyph: ITileStyle;
         let inlineStyle: React.CSSProperties = {};
-        let tooltip: string | null = null;
+        let tooltip: string | React.ReactElement | null = null;
         this._clickAction = TileAction.Move;
         this._contextMenuAction = TileAction.None;
 
@@ -156,11 +163,25 @@ class MapTile extends React.Component<ITileProps, {}> {
                 && tile.actor.name == context.player.name) {
                 this._clickAction = TileAction.Wait;
                 this._contextMenuAction = TileAction.PlayerAttributes;
-                tooltip = capitalize(tile.actor.name)
+                tooltip = capitalize(tile.actor.name);
             } else {
                 this._clickAction = TileAction.Attack;
                 this._contextMenuAction = TileAction.ActorAttributes;
-                tooltip = 'Attack ' + tile.actor.name;
+                tooltip = <div>
+                    <p>{'Attack ' + tile.actor.name}</p>
+                    {tile.actor.meleeAttack == null
+                        ? <></>
+                        : this.getAttackSummary(tile.actor.meleeAttack, `${capitalize(tile.actor.name)}'s melee attack`, 'you')}
+                    {tile.actor.rangeAttack == null
+                        ? <></>
+                        : this.getAttackSummary(tile.actor.rangeAttack, `${capitalize(tile.actor.name)}'s range attack`, 'you')}
+                    {tile.actor.meleeDefense == null
+                        ? <></>
+                        : this.getAttackSummary(tile.actor.meleeDefense, 'Your melee attack', tile.actor.name)}
+                    {tile.actor.rangeDefense == null
+                        ? <></>
+                        : this.getAttackSummary(tile.actor.rangeDefense, 'Your range attack', tile.actor.name)}
+                </div>;
             }
 
             inlineStyle = { backgroundImage: this.getBackground(tile.actor.heading, glyph) };

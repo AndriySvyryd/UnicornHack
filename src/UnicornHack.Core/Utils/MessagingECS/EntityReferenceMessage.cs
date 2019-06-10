@@ -7,6 +7,16 @@
     public class EntityReferenceMessage<TEntity> : IMessage
         where TEntity : Entity
     {
+        public const string Name = "EntityReference";
+
+        public static void Enqueue(GameEntity entity, GameManager manager)
+        {
+            var message = manager.Queue.CreateMessage<EntityReferenceMessage<GameEntity>>(Name);
+            message.Entity = entity;
+
+            manager.Enqueue(message, lowPriority: true);
+        }
+
         private TEntity _entity;
 
         public TEntity Entity

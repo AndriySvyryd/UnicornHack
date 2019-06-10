@@ -26,7 +26,7 @@ namespace UnicornHack.Systems.Abilities
     {
         public bool CanActivateAbility(ActivateAbilityMessage activateAbilityMessage, bool shouldThrow)
         {
-            using (var message = Activate(activateAbilityMessage, pretend: true))
+            using (var message = Activate(activateAbilityMessage, pretend: true, stats: null))
             {
                 if (!string.IsNullOrEmpty(message.ActivationError) && shouldThrow)
                 {
@@ -37,16 +37,17 @@ namespace UnicornHack.Systems.Abilities
             }
         }
 
-        private void EnqueueAbilityActivated(AbilityActivatedMessage abilityActivatedMessage, GameManager manager)
+        public AttackStats GetAttackStats(ActivateAbilityMessage activateAbilityMessage)
         {
-            Debug.Assert(abilityActivatedMessage.EffectsToApply != null);
-            manager.Enqueue(abilityActivatedMessage);
+            var stats = new AttackStats();
+            var activated = Activate(activateAbilityMessage, pretend: true, stats);
+            return string.IsNullOrEmpty(activated?.ActivationError) ? stats : null;
         }
 
         MessageProcessingResult IMessageConsumer<ActivateAbilityMessage, GameManager>.Process(
             ActivateAbilityMessage message, GameManager manager)
         {
-            var abilityActivatedMessage = Activate(message, pretend: false);
+            var abilityActivatedMessage = Activate(message, pretend: false, stats: null);
             if (abilityActivatedMessage != null)
             {
                 if (!string.IsNullOrEmpty(abilityActivatedMessage.ActivationError))
@@ -56,14 +57,14 @@ namespace UnicornHack.Systems.Abilities
 
                 if (abilityActivatedMessage.ActivationError == null)
                 {
-                    EnqueueAbilityActivated(abilityActivatedMessage, manager);
+                    manager.Enqueue(abilityActivatedMessage);
                 }
             }
 
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        private AbilityActivatedMessage Activate(ActivateAbilityMessage activateMessage, bool pretend)
+        private AbilityActivatedMessage Activate(ActivateAbilityMessage activateMessage, bool pretend, AttackStats stats)
         {
             var manager = activateMessage.AbilityEntity.Manager;
             var targetEffectsMessage = AbilityActivatedMessage.Create(manager);
@@ -139,6 +140,11 @@ namespace UnicornHack.Systems.Abilities
                     return targetEffectsMessage;
                 }
 
+                if (stats != null)
+                {
+                    stats.Delay = delay;
+                }
+
                 var activatorPosition = activateMessage.ActivatorEntity.Position;
                 if (activatorPosition != null)
                 {
@@ -166,7 +172,8 @@ namespace UnicornHack.Systems.Abilities
                 }
             }
 
-            if (pretend)
+            if (pretend
+                && stats == null)
             {
                 return targetEffectsMessage;
             }
@@ -189,14 +196,21 @@ namespace UnicornHack.Systems.Abilities
             var activatedAbilities = new HashSet<AbilityComponent>();
             var activations = GetActivations(targetEffectsMessage, selfEffectsMessage, activatedAbilities);
 
-            foreach (var activatedAbility in activatedAbilities)
+            if (!pretend)
             {
-                ChangeState(active: true, activatedAbility, activateMessage.ActivatorEntity, manager);
-            }
+                foreach (var activatedAbility in activatedAbilities)
+                {
+                    ChangeState(active: true, activatedAbility, activateMessage.ActivatorEntity, manager);
+                }
 
-            if (!selfEffectsMessage.EffectsToApply.IsEmpty)
-            {
-                manager.Process(selfEffectsMessage);
+                if (!selfEffectsMessage.EffectsToApply.IsEmpty)
+                {
+                    manager.Process(selfEffectsMessage);
+                }
+                else
+                {
+                    manager.ReturnMessage(selfEffectsMessage);
+                }
             }
             else
             {
@@ -205,9 +219,10 @@ namespace UnicornHack.Systems.Abilities
 
             foreach (var activation in activations)
             {
-                if (activation.ActivationMessage.TargetEntity == null)
+                if (!pretend
+                    && activation.ActivationMessage.TargetEntity == null)
                 {
-                    EnqueueAbilityActivated(activation.ActivationMessage, manager);
+                    manager.Enqueue(activation.ActivationMessage);
                 }
 
                 foreach (var (target, exposure) in GetTargets(activation.ActivationMessage))
@@ -215,10 +230,34 @@ namespace UnicornHack.Systems.Abilities
                     var targetMessage = (activation.TargetMessage ?? activation.ActivationMessage).Clone(manager);
                     targetMessage.TargetEntity = target;
 
-                    DetermineSuccess(targetMessage, exposure, manager);
+                    if (pretend)
+                    {
+                        if (target == activateMessage.TargetEntity)
+                        {
+                            var melee = activation.ActivationMessage.AbilityEntity.Ability.Range == 1;
+                            var hitProbability = DetermineOutcome(
+                                targetMessage,
+                                melee ? BeveledVisibilityCalculator.MaxVisibility : exposure,
+                                pretend: true);
+                            stats.HitProbabilities.Add(hitProbability);
 
-                    // TODO: Trigger abilities on target
-                    EnqueueAbilityActivated(targetMessage, manager);
+                            var damage = manager.EffectApplicationSystem.GetExpectedDamage(targetMessage, manager);
+                            stats.Damages.Add(damage);
+
+                            manager.ReturnMessage(targetMessage);
+                        }
+                        else
+                        {
+                            manager.ReturnMessage(targetMessage);
+                        }
+                    }
+                    else
+                    {
+                        DetermineOutcome(targetMessage, exposure, pretend: false);
+
+                        // TODO: Trigger abilities on target
+                        manager.Enqueue(targetMessage);
+                    }
                 }
 
                 if (activation.ActivationMessage.TargetEntity != null)
@@ -232,7 +271,10 @@ namespace UnicornHack.Systems.Abilities
                 }
             }
 
-            DelayMessage.Enqueue(activateMessage.ActivatorEntity, delay, manager);
+            if (!pretend)
+            {
+                DelayMessage.Enqueue(activateMessage.ActivatorEntity, delay, manager);
+            }
 
             return null;
         }
@@ -864,74 +906,135 @@ namespace UnicornHack.Systems.Abilities
             }
         }
 
-        private void DetermineSuccess(AbilityActivatedMessage message, byte exposure, GameManager manager)
+        private int DetermineOutcome(AbilityActivatedMessage message, byte exposure, bool pretend)
         {
-            var game = manager.Game;
-            var ability = message.AbilityEntity.Ability;
+            if (message.TargetEntity == null)
+            {
+                message.Outcome = ApplicationOutcome.Miss;
+                return 0;
+            }
+
+            var deflectionProbability = GetDeflectionProbability(
+                message.AbilityEntity, message.ActivatorEntity, message.TargetEntity, exposure);
+            if (!pretend
+                && DetermineSuccess(message.TargetEntity, deflectionProbability))
+            {
+                message.Outcome = ApplicationOutcome.Deflection;
+                return 0;
+            }
+
+            var evasionProbability = GetEvasionProbability(
+                message.AbilityEntity, message.ActivatorEntity, message.TargetEntity, exposure);
+            if (!pretend
+                && DetermineSuccess(message.TargetEntity, evasionProbability))
+            {
+                message.Outcome = ApplicationOutcome.Miss;
+                return 0;
+            }
+
+            message.Outcome = ApplicationOutcome.Success;
+            return pretend ? (100 - deflectionProbability) * (100 - evasionProbability) / 100 : 100;
+        }
+
+        private static AbilitySuccessCondition GetSuccessCondition(AbilityComponent ability)
+        {
             var successCondition = ability.SuccessCondition;
             if (successCondition == AbilitySuccessCondition.Default)
             {
-                var activation = ability.Activation;
-                if ((activation & ActivationType.OnAttack) != ActivationType.Default)
+                successCondition = (ability.Activation & ActivationType.OnAttack) != 0
+                    ? AbilitySuccessCondition.Attack
+                    : (GetTrigger(ability) & ActivationType.OnAttack) != 0
+                        ? AbilitySuccessCondition.Attack
+                        : AbilitySuccessCondition.Always;
+            }
+
+            return successCondition;
+        }
+
+        private int GetAttackRating(
+            GameEntity abilityEntity, GameEntity activatorEntity, GameEntity targetEntity, byte? exposure)
+        {
+            if (exposure == null)
+            {
+                var position = targetEntity.Position;
+                var ability = abilityEntity.Ability;
+                var los = GetLOSTargets(
+                    activatorEntity, position.LevelCell, position.LevelEntity, ability.TargetingType, ability.Range);
+
+                if (los.Count == 0
+                    || los.Last().Item1 != targetEntity)
                 {
-                    successCondition = AbilitySuccessCondition.Attack;
+                    exposure = 0;
                 }
                 else
                 {
-                    var trigger = GetTrigger(ability);
-                    if ((trigger & ActivationType.OnAttack) != ActivationType.Default)
-                    {
-                        successCondition = AbilitySuccessCondition.Attack;
-                    }
-                    else
-                    {
-                        successCondition = AbilitySuccessCondition.Always;
-                    }
+                    exposure = los.Last().Item2;
                 }
             }
 
-            var success = true;
-            if (message.TargetEntity == null)
+            var attackRating = activatorEntity.Being.Accuracy;
+            if (exposure.Value < BeveledVisibilityCalculator.MaxVisibility)
             {
-                success = false;
+                attackRating = attackRating * exposure.Value / BeveledVisibilityCalculator.MaxVisibility;
             }
-            else if (successCondition != AbilitySuccessCondition.Always)
+
+            // TODO: Add perception penalty using best sense
+            return attackRating;
+        }
+
+        public int GetDeflectionProbability(GameEntity abilityEntity, GameEntity activatorEntity, GameEntity targetEntity, byte? exposure)
+        {
+            switch (GetSuccessCondition(abilityEntity.Ability))
             {
-                int defenseRating;
-                switch (successCondition)
-                {
-                    case AbilitySuccessCondition.Attack:
-                        defenseRating = message.TargetEntity.Being.Deflection;
-                        defenseRating += message.TargetEntity.Being.Evasion;
-                        break;
-                    case AbilitySuccessCondition.UnblockableAttack:
-                        defenseRating = message.TargetEntity.Being.Evasion;
-                        break;
-                    case AbilitySuccessCondition.UnavoidableAttack:
-                        defenseRating = message.TargetEntity.Being.Deflection;
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+                case AbilitySuccessCondition.Attack:
+                case AbilitySuccessCondition.UnavoidableAttack:
+                    var attackRating = GetAttackRating(abilityEntity, activatorEntity, targetEntity, exposure);
+                    return GetMissProbability(attackRating, targetEntity.Being.Deflection);
+                case AbilitySuccessCondition.UnblockableAttack:
+                case AbilitySuccessCondition.Always:
+                    return 0;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
 
-                if (exposure < BeveledVisibilityCalculator.MaxVisibility)
-                {
-                    // TODO: This should decrease attack rating instead
-                    defenseRating += (BeveledVisibilityCalculator.MaxVisibility - exposure) * 10
-                                  / BeveledVisibilityCalculator.MaxVisibility;
-                }
+        public int GetEvasionProbability(GameEntity abilityEntity, GameEntity activatorEntity, GameEntity targetEntity, byte? exposure)
+        {
+            switch (GetSuccessCondition(abilityEntity.Ability))
+            {
+                case AbilitySuccessCondition.Attack:
+                case AbilitySuccessCondition.UnblockableAttack:
+                    var attackRating = GetAttackRating(abilityEntity, activatorEntity, targetEntity, exposure);
+                    return GetMissProbability(attackRating, targetEntity.Being.Evasion);
+                case AbilitySuccessCondition.UnavoidableAttack:
+                case AbilitySuccessCondition.Always:
+                    return 0;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
 
-                if (defenseRating > 100)
-                {
-                    defenseRating = 100;
-                }
+        private bool DetermineSuccess(GameEntity victimEntity, int successProbability)
+        {
+            var entropyState = victimEntity.Being.EntropyState;
+            var success = victimEntity.Game.Random.NextBool(successProbability, ref entropyState);
+            victimEntity.Being.EntropyState = entropyState;
+            return success;
+        }
 
-                var entropyState = message.TargetEntity.Being.EntropyState;
-                success = game.Random.NextBool(100 - defenseRating, ref entropyState);
-                message.TargetEntity.Being.EntropyState = entropyState;
+        private int GetMissProbability(int attackRating, int defenseRating)
+        {
+            if (attackRating <= 0)
+            {
+                return 100;
             }
 
-            message.SuccessfulApplication = success;
+            if (defenseRating <= 0)
+            {
+                return 0;
+            }
+
+            return (int)Math.Round(100 / (1 + Math.Pow(2, (attackRating - defenseRating) / 16.0)));
         }
 
         private void DeactivateAbilities(
@@ -973,11 +1076,7 @@ namespace UnicornHack.Systems.Abilities
 
             foreach (var appliedEffect in manager.AppliedEffectsToSourceAbilityRelationship[ability.EntityId].ToList())
             {
-                var removeComponentMessage = manager.CreateRemoveComponentMessage();
-                removeComponentMessage.Entity = appliedEffect;
-                removeComponentMessage.Component = EntityComponent.Effect;
-
-                manager.Enqueue(removeComponentMessage, lowPriority: true);
+                RemoveComponentMessage.Enqueue(appliedEffect, EntityComponent.Effect, manager);
             }
 
             if (ability.Slot != null

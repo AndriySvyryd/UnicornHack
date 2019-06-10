@@ -97,7 +97,14 @@ namespace UnicornHack.Systems.Beings
                     var evasionEffect = manager.EffectApplicationSystem.GetPropertyEffect(
                         message.Entity, nameof(BeingComponent.Evasion), AttributedAbilityName);
 
-                    evasionEffect.Amount = message.NewValue * 5;
+                    evasionEffect.Amount = 50 + message.NewValue * 5;
+
+                    break;
+                case nameof(BeingComponent.Perception):
+                    var accuracyEffect = manager.EffectApplicationSystem.GetPropertyEffect(
+                        message.Entity, nameof(BeingComponent.Accuracy), AttributedAbilityName);
+
+                    accuracyEffect.Amount = message.NewValue * 10;
 
                     break;
             }

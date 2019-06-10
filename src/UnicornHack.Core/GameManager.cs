@@ -8,9 +8,6 @@ namespace UnicornHack
         IGameSystem<RemoveComponentMessage>,
         IGameSystem<EntityReferenceMessage<GameEntity>>
     {
-        public const string RemoveComponentMessageName = "RemoveComponent";
-        public const string EntityReferenceMessageName = "EntityReference";
-
         private readonly string[] _componentPropertyNames;
 
         public GameManager()
@@ -23,8 +20,8 @@ namespace UnicornHack
         protected override void InitializeSystems(IMessageQueue queue)
         {
             var gameQueue = (SequentialMessageQueue<GameManager>)queue;
-            gameQueue.Add<RemoveComponentMessage>(this, RemoveComponentMessageName, 0);
-            gameQueue.Add<EntityReferenceMessage<GameEntity>>(this, EntityReferenceMessageName, 0);
+            gameQueue.Add<RemoveComponentMessage>(this, RemoveComponentMessage.Name, 0);
+            gameQueue.Add<EntityReferenceMessage<GameEntity>>(this, EntityReferenceMessage<GameEntity>.Name, 0);
 
             InitializeLevels(gameQueue);
             InitializeBeings(gameQueue);
@@ -82,22 +79,12 @@ namespace UnicornHack
             where TMessage : class, IMessage, new()
             => Queue.Process(message, this);
 
-        public RemoveComponentMessage CreateRemoveComponentMessage()
-            => Queue.CreateMessage<RemoveComponentMessage>(RemoveComponentMessageName);
-
         MessageProcessingResult IMessageConsumer<RemoveComponentMessage, GameManager>.Process(
             RemoveComponentMessage message, GameManager manager)
         {
             message.Entity.RemoveComponent(message.Component);
 
             return MessageProcessingResult.ContinueProcessing;
-        }
-
-        public EntityReferenceMessage<GameEntity> CreateEntityReferenceMessage(GameEntity entity)
-        {
-            var message = Queue.CreateMessage<EntityReferenceMessage<GameEntity>>(EntityReferenceMessageName);
-            message.Entity = entity;
-            return message;
         }
 
         MessageProcessingResult IMessageConsumer<EntityReferenceMessage<GameEntity>, GameManager>.Process(

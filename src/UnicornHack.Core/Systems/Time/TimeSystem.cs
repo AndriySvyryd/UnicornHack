@@ -63,10 +63,7 @@ namespace UnicornHack.Systems.Time
             var appliedEffect = entity.Effect;
             if (appliedEffect != null)
             {
-                var removeComponentMessage = manager.CreateRemoveComponentMessage();
-                removeComponentMessage.Entity = entity;
-                removeComponentMessage.Component = EntityComponent.Effect;
-                manager.Enqueue(removeComponentMessage, lowPriority: true);
+                RemoveComponentMessage.Enqueue(entity, EntityComponent.Effect, manager);
                 return MessageProcessingResult.ContinueProcessing;
             }
 

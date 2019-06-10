@@ -182,7 +182,7 @@ export class TooltipTrigger extends React.Component<ITooltipTriggerProps> {
                 onHide={this.handleHide}
                 target={this.getTarget}
             >
-                {tooltip}
+                <TooltipWrapper tooltip={tooltip} observableShow={this._show} />
             </OverlayWrapper>
         </>;
     }
@@ -197,12 +197,27 @@ enum TriggerType {
 
 interface ITooltipTriggerProps {
     id: string;
-    tooltip: React.ReactNode | (() => React.ReactNode);
+    tooltip: string | React.ReactElement | (() => React.ReactElement);
     trigger?: TriggerType;
     delay?: number | { show: number; hide: number };
     placement?: PopperJS.Placement;
     initialShow?: boolean;
     popperConfig?: PopperJS.PopperOptions;
+}
+
+const TooltipWrapper = observer(({ observableShow, tooltip }: ITooltipWrapperProps) => {
+    return observableShow.get()
+        ? tooltip instanceof Function
+            ? tooltip()
+            : typeof tooltip == "string"
+                ? <>{tooltip}</>
+                : tooltip
+        : <></>;
+});
+
+interface ITooltipWrapperProps extends React.ComponentPropsWithoutRef<any> {
+    tooltip: string | React.ReactElement | (() => React.ReactElement);
+    observableShow: IObservableValue<boolean>;
 }
 
 const OverlayWrapper = observer(({ id, placement, observableShow, children, ...outerProps }: IOverlayWrapperProps) =>

@@ -19,6 +19,14 @@ namespace UnicornHack
 
         public override bool NextBool(int successProbability, ref int entropyState)
         {
+            switch (successProbability)
+            {
+                case 0:
+                    return false;
+                case 100:
+                    return true;
+            }
+
             if (_boolsToReturn != null
                 && _boolsToReturn.Count > 0)
             {

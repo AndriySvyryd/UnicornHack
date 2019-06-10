@@ -40,6 +40,11 @@ namespace UnicornHack.Systems.Abilities
 
             manager.Queue.ProcessQueue(manager);
 
+            Assert.Equal(100, playerEntity.Being.Accuracy);
+            Assert.Equal(100, playerEntity.Being.Evasion);
+            Assert.Equal(50, elemental.Being.Accuracy);
+            Assert.Equal(75, elemental.Being.Evasion);
+
             var bow = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single();
             var equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
@@ -55,6 +60,7 @@ namespace UnicornHack.Systems.Abilities
             Assert.Equal(0, nymphAbility.Ability.Slot);
 
             var attackAbility = manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.TwoHandedRangedAttack.Name)];
+
             var activateAbilityMessage = ActivateAbilityMessage.Create(manager);
             activateAbilityMessage.ActivatorEntity = playerEntity;
             activateAbilityMessage.TargetCell = nymph.Position.LevelCell;
@@ -106,7 +112,11 @@ namespace UnicornHack.Systems.Abilities
 
             nymph.Being.HitPoints = nymph.Being.HitPointMaximum;
             var iceShardAbility = manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)];
-            iceShardAbility.Ability.SuccessCondition = AbilitySuccessCondition.Default;
+            Assert.Equal(39,
+                manager.AbilityActivationSystem.GetEvasionProbability(iceShardAbility, playerEntity, nymph, null));
+
+            Assert.Equal(100,
+                manager.AbilityActivationSystem.GetEvasionProbability(iceShardAbility, playerEntity, elemental, null));
 
             var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = iceShardAbility;
