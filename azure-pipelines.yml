@@ -11,33 +11,39 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
-- task: DotNetCoreCLI@2
+- name: Restore
+  task: DotNetCoreCLI@2
   inputs:
     command: 'restore'
 
-- task: DotNetCoreCLI@2
+- name: Build
+  task: DotNetCoreCLI@2
   inputs:
     command: 'build'
     projects: '**/*.csproj'
     arguments: '--configuration $(buildConfiguration)'
 
-- task: DotNetCoreCLI@2
+- name: Test
+  task: DotNetCoreCLI@2
   inputs:
     command: 'test'
     projects: '**/*.Tests/*.csproj'
     arguments: '--configuration $(buildConfiguration) --collect "Code coverage"'
 
-- task: DotNetCoreCLI@2
+- name: Benchmark
+  task: DotNetCoreCLI@2
   inputs:
     command: 'run'
-    projects: 'test/UnicornHack.Core.PerformanceTests/UnicornHack.Core.PerformanceTests.csproj'
+    arguments: '--configuration $(buildConfiguration) --project test\UnicornHack.Core.PerformanceTests\UnicornHack.Core.PerformanceTests.csproj --filter * --artifacts $(Build.ArtifactStagingDirectory)'
 
-- task: DotNetCoreCLI@2
+- name: Publish
+  task: DotNetCoreCLI@2
   inputs:
     command: 'publish'
     publishWebProjects: true
-    modifyOutputPath: false
-    zipAfterPublish: True
+    modifyOutputPath: true
+    zipAfterPublish: true
     arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)'
 
-- task: PublishBuildArtifacts@1
+- name: Upload Artifacts
+  task: PublishBuildArtifacts@1

@@ -1,7 +1,5 @@
 ﻿using BenchmarkDotNet.Attributes;
-using UnicornHack.Systems.Abilities;
-using UnicornHack.Systems.Effects;
-using UnicornHack.Utils.MessagingECS;
+using UnicornHack.Systems.Levels;
 
 namespace UnicornHack.PerformanceTests.Utils.MessagingECS
 {
@@ -9,45 +7,38 @@ namespace UnicornHack.PerformanceTests.Utils.MessagingECS
     {
         public int EntityCount = 1000000;
 
-        private Entity[] _abilityEntities;
-        private EffectComponent[] _effects;
+        private GameEntity _levelEntity;
+        private ConnectionComponent[] _connections;
 
         [GlobalSetup(Target = nameof(UpdateRelationship))]
         public void RelationshipSetup()
         {
             var manager = TestHelper.CreateGameManager();
 
-            if (_abilityEntities == null
-                || _abilityEntities.Length != EntityCount)
+            if (_connections == null
+                || _connections.Length != EntityCount)
             {
-                _abilityEntities = new Entity[EntityCount];
+                _connections = new ConnectionComponent[EntityCount];
             }
 
-            if (_effects == null
-                || _effects.Length != EntityCount)
-            {
-                _effects = new EffectComponent[EntityCount];
-            }
+            _levelEntity = manager.CreateEntity().Referenced;
+            _levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
 
             for (var i = 0; i < EntityCount; i++)
             {
-                var abilityEntity = manager.CreateEntity().Referenced;
-                abilityEntity.AddComponent<AbilityComponent>((int)EntityComponent.Ability);
-                _abilityEntities[i] = abilityEntity;
-
                 var effectEntity = manager.CreateEntity().Referenced;
-                _effects[i] = effectEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
+                _connections[i] = effectEntity.AddComponent<ConnectionComponent>((int)EntityComponent.Connection);
             }
         }
 
         [GlobalCleanup(Target = nameof(UpdateRelationship))]
         public void RelationshipCleanup()
         {
-            var context = _abilityEntities[0].Manager;
+            var context = _levelEntity.Manager;
+            _levelEntity.RemoveReference(context);
             for (var i = 0; i < EntityCount; i++)
             {
-                _effects[i].Entity.RemoveReference(context);
-                _abilityEntities[i].RemoveReference(context);
+                _connections[i].Entity.RemoveReference(context);
             }
         }
 
@@ -56,7 +47,7 @@ namespace UnicornHack.PerformanceTests.Utils.MessagingECS
         {
             for (var i = 0; i < EntityCount; i++)
             {
-                _effects[i].ContainingAbilityId = _abilityEntities[i].Id;
+                _connections[i].TargetLevelId = _levelEntity.Id;
             }
         }
     }
