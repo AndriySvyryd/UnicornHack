@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "ratwere",
             Species = Species.Rat,
             SpeciesClass = SpeciesClass.Rodent | SpeciesClass.ShapeChanger,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,15 +19,19 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 250,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect> {new ConferLycanthropy {VariantName = "ratwere"}}
                 }
             },
@@ -38,6 +41,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Sqeek,
             Size = 2,
             Weight = 150,
+            MovementDelay = 100,
             Perception = 2,
             Might = 2,
             Speed = 2,

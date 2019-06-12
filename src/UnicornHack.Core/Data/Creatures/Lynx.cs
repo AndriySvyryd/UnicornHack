@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "lynx",
             Species = Species.Cat,
             SpeciesClass = SpeciesClass.Feline,
-            MovementDelay = 80,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,30 +19,37 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Claw,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Claw,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*physicalScaling"}}
                 }
             },
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},
             Noise = ActorNoiseType.Growl,
             Weight = 400,
+            MovementDelay = 80,
             Perception = 3,
             Might = 2,
             Speed = 3,

@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "gas spore",
             Species = Species.FloatingSphere,
-            MovementDelay = 400,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -19,15 +18,19 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Explosion,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "140"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "140*mentalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Explosion,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Deafen {Duration = EffectDuration.UntilTimeout, DurationAmount = "27"}}
                 }
@@ -37,6 +40,7 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.None,
             Size = 2,
             Weight = 10,
+            MovementDelay = 400,
             Perception = 1,
             Might = 1,
             Speed = 1,

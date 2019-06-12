@@ -12,8 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "fog cloud",
             Species = Species.Cloud,
             SpeciesClass = SpeciesClass.Extraplanar,
-            MovementDelay = 1200,
-            Material = Material.Air,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -21,7 +19,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = "3"}}
                 },
@@ -49,6 +49,8 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.None,
             Size = 16,
             Weight = 1,
+            MovementDelay = 1200,
+            Material = Material.Air,
             Perception = 2,
             Might = 2,
             Speed = 2,

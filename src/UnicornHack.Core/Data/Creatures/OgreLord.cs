@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "ogre lord",
             Species = Species.Ogre,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -25,8 +24,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
                 }
             },
             InitialLevel = 7,
@@ -38,6 +39,7 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.Male,
             Size = 8,
             Weight = 1650,
+            MovementDelay = 100,
             Perception = 4,
             Might = 4,
             Speed = 4,

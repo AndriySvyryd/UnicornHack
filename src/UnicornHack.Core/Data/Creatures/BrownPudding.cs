@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "brown pudding",
             Species = Species.Pudding,
-            MovementDelay = 400,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -19,8 +18,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blight {Damage = "30"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Blight {Damage = "30*physicalScaling"}}
                 },
                 new Ability
                 {
@@ -30,6 +31,7 @@ namespace UnicornHack.Data.Creatures
             InitialLevel = 5,
             Sex = Sex.None,
             Weight = 512,
+            MovementDelay = 400,
             Perception = 3,
             Might = 2,
             Speed = 3,

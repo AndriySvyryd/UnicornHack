@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "vampire lord",
             Species = Species.Vampire,
             SpeciesClass = SpeciesClass.ShapeChanger | SpeciesClass.Undead,
-            MovementDelay = 85,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -26,16 +25,20 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "15*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new DrainLife {Amount = 4}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new DrainLife {Amount = "8*physicalScaling"}}
                 }
             },
             InitialLevel = 12,
@@ -45,6 +48,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Hiss,
             Sex = Sex.Male,
             Weight = 1000,
+            MovementDelay = 85,
             Perception = 7,
             Might = 6,
             Speed = 7,

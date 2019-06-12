@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "gray unicorn",
             Species = Species.Unicorn,
             SpeciesClass = SpeciesClass.Quadrupedal,
-            MovementDelay = 50,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,16 +19,20 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Headbutt,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "60"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "60*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Kick,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "30"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "30*physicalScaling"}}
                 }
             },
             InitialLevel = 4,
@@ -39,6 +42,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Neigh,
             Size = 8,
             Weight = 1300,
+            MovementDelay = 50,
             Perception = 3,
             Might = 2,
             Speed = 3,

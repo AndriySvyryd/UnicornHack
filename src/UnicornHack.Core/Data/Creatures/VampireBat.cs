@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "vampire bat",
             Species = Species.Bat,
             SpeciesClass = SpeciesClass.Bird,
-            MovementDelay = 60,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,15 +19,19 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "30"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "30*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                     {
                         new ChangeProperty<int>
@@ -46,6 +49,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Sqeek,
             Size = 1,
             Weight = 100,
+            MovementDelay = 60,
             Perception = 3,
             Might = 2,
             Speed = 3,

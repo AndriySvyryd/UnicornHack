@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "ghast",
             Species = Species.Ghoul,
             SpeciesClass = SpeciesClass.Undead,
-            MovementDelay = 150,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,15 +19,19 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Claw,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Claw,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = "3"}}
                 }
@@ -38,6 +41,7 @@ namespace UnicornHack.Data.Creatures
             PreviousStageName = "ghoul",
             Noise = ActorNoiseType.Growl,
             Weight = 400,
+            MovementDelay = 150,
             Perception = 8,
             Might = 8,
             Speed = 8,

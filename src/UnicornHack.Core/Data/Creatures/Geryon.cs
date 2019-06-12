@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "Geryon",
             Species = Species.DemonMajor,
             SpeciesClass = SpeciesClass.Demon,
-            MovementDelay = 400,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,24 +19,30 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Claw,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Claw,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Sting,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blight {Damage = "50"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Blight {Damage = "50*physicalScaling"}}
                 }
             },
             InitialLevel = 30,
@@ -48,6 +53,7 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.Male,
             Size = 16,
             Weight = 2500,
+            MovementDelay = 400,
             Perception = 16,
             Might = 16,
             Speed = 16,

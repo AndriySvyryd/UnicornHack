@@ -18,7 +18,7 @@ namespace UnicornHack.Data.Items
                     Range = 1,
                     Action = AbilityAction.Hit,
                     Delay = "100*weaponScaling",
-                    Effects = new HashSet<Effect> {new Freeze {Damage = "40*weaponScaling" } }
+                    Effects = new HashSet<Effect> {new Freeze {Damage = "40*weaponScaling"}}
                 }
             },
             Type = ItemType.WeaponMeleeShort,

@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "lightning bug",
             Species = Species.Beetle,
             SpeciesClass = SpeciesClass.Vermin,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,8 +19,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Shock {Damage = "10"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Shock {Damage = "25*physicalScaling"}}
                 }
             },
             InitialLevel = 1,
@@ -30,7 +31,8 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Buzz,
             Size = 1,
             Weight = 10,
-            Perception = 1,
+            MovementDelay = 100,
+            Perception = 7,
             Might = 1,
             Speed = 5,
             Focus = 1,

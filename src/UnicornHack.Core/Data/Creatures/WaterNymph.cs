@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "water nymph",
             Species = Species.Nymph,
             SpeciesClass = SpeciesClass.Fey,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,7 +19,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = "2"}}
                 },
@@ -29,7 +30,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                     {
                         new StealItem()
@@ -42,6 +45,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Seduction,
             Sex = Sex.Female,
             Weight = 600,
+            MovementDelay = 100,
             Perception = 2,
             Might = 5,
             Speed = 8,

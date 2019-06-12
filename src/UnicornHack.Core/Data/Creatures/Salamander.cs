@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "salamander",
             Species = Species.Salamander,
             SpeciesClass = SpeciesClass.Extraplanar,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -26,32 +25,40 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Burn {Damage = "30"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Burn {Damage = "30*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Hug,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Burn {Damage = "70"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Burn {Damage = "70*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Hug,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Burn {Damage = "100"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Burn {Damage = "100*physicalScaling"}}
                 }
             },
             InitialLevel = 10,
@@ -60,6 +67,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Mumble,
             Size = 8,
             Weight = 1500,
+            MovementDelay = 100,
             Perception = 6,
             Might = 6,
             Speed = 6,

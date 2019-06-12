@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "iron golem",
             Species = Species.Golem,
-            MovementDelay = 200,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -19,22 +18,27 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "220"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "220*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Breath,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 250,
-                    Effects = new HashSet<Effect> {new Blight {Damage = "140"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Blight {Damage = "140*mentalScaling"}}
                 }
             },
             InitialLevel = 18,
             Sex = Sex.None,
             Size = 8,
             Weight = 2000,
+            MovementDelay = 200,
             Perception = 10,
             Might = 10,
             Speed = 10,

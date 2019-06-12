@@ -12,8 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "shade",
             Species = Species.Ghost,
             SpeciesClass = SpeciesClass.Undead,
-            MovementDelay = 120,
-            Material = Material.Air,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -21,7 +19,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = "7"}}
                 },
@@ -30,7 +30,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Slow {Duration = EffectDuration.UntilTimeout, DurationAmount = "3"}}
                 }
@@ -42,6 +44,8 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.Wandering | AIBehavior.Stalking,
             Noise = ActorNoiseType.Howl,
             Weight = 0,
+            MovementDelay = 120,
+            Material = Material.Air,
             Perception = 7,
             Might = 6,
             Speed = 7,

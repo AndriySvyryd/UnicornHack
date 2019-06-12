@@ -18,7 +18,7 @@ namespace UnicornHack.Data.Items
                     Range = 1,
                     Action = AbilityAction.Punch,
                     Delay = "100*weaponScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*weaponScaling" } }
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*weaponScaling"}}
                 }
             },
             Type = ItemType.WeaponMeleeHand,

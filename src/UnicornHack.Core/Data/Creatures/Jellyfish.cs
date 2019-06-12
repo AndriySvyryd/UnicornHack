@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "jellyfish",
             Species = Species.Jellyfish,
-            MovementDelay = 400,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -19,14 +18,17 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Sting,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blight {Damage = "60"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Blight {Damage = "60*physicalScaling"}}
                 }
             },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
             Size = 2,
             Weight = 80,
+            MovementDelay = 400,
             Perception = 2,
             Might = 2,
             Speed = 2,

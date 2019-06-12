@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "wolfwere",
             Species = Species.Wolf,
             SpeciesClass = SpeciesClass.Canine | SpeciesClass.ShapeChanger,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,15 +19,19 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 250,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect> {new ConferLycanthropy {VariantName = "wolfwere"}}
                 }
             },
@@ -37,6 +40,7 @@ namespace UnicornHack.Data.Creatures
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
             Noise = ActorNoiseType.Bark,
             Weight = 500,
+            MovementDelay = 100,
             Perception = 3,
             Might = 2,
             Speed = 3,

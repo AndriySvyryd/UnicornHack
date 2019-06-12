@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "eyedra",
             Species = Species.FloatingSphere,
             SpeciesClass = SpeciesClass.Aberration,
-            MovementDelay = 300,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,23 +19,29 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "30"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "30*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Gaze,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 350,
-                    Effects = new HashSet<Effect> {new Wither {Damage = "50"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Wither {Damage = "50*mentalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Gaze,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 350,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Slow {Duration = EffectDuration.UntilTimeout, DurationAmount = "13"}}
                 },
@@ -45,7 +50,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Gaze,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 350,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = "13"}}
                 },
@@ -54,7 +61,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Gaze,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 350,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Confuse {Duration = EffectDuration.UntilTimeout, DurationAmount = "13"}}
                 },
@@ -63,7 +72,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Gaze,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 350,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                     {
                         new Stone()
@@ -74,8 +85,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Gaze,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 350,
-                    Effects = new HashSet<Effect> {new DrainEnergy {Amount = 3}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new DrainEnergy {Amount = "3*mentalScaling"}}
                 }
             },
             InitialLevel = 8,
@@ -84,6 +97,7 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.Wandering,
             Sex = Sex.None,
             Weight = 250,
+            MovementDelay = 300,
             Perception = 5,
             Might = 4,
             Speed = 5,

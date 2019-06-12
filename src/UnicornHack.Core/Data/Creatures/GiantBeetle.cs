@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "giant beetle",
             Species = Species.Beetle,
             SpeciesClass = SpeciesClass.Vermin,
-            MovementDelay = 200,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,14 +19,17 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100*physicalScaling"}}
                 }
             },
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 4F},
             Size = 1,
             Weight = 10,
+            MovementDelay = 200,
             Perception = 3,
             Might = 2,
             Speed = 3,

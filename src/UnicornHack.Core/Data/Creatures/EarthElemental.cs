@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "earth elemental",
             Species = Species.Elemental,
             SpeciesClass = SpeciesClass.Extraplanar,
-            MovementDelay = 200,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,15 +19,19 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "140"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "140*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Stun {Duration = EffectDuration.UntilTimeout, DurationAmount = "2"}}
                 }
@@ -38,6 +41,7 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.None,
             Size = 16,
             Weight = 2500,
+            MovementDelay = 200,
             Perception = 5,
             Might = 4,
             Speed = 5,

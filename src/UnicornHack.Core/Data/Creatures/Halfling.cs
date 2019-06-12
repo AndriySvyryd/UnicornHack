@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using UnicornHack.Generation;
-using UnicornHack.Generation.Effects;
 using UnicornHack.Primitives;
 
 namespace UnicornHack.Data.Creatures
@@ -11,14 +9,14 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "halfling",
             Species = Species.Halfling,
-            MovementDelay = 133,
             InitialLevel = 1,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},
             GenerationFlags = GenerationFlags.NonPolymorphable,
             Behavior = AIBehavior.AlignmentAware | AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Speach,
             Weight = 500,
-            Perception = 4,
+            MovementDelay = 133,
+            Perception = 9,
             Might = 2,
             Speed = 6,
             Focus = 2,

@@ -10,7 +10,8 @@ namespace UnicornHack.Data.Fragments
         {
             Name = "surface",
             GenerationWeight = new BranchWeight {Matched = new InfiniteWeight(), Name = "surface"},
-            Connections = new[] {new LevelConnection {BranchName = "dungeon", Glyph = '>', Direction = ConnectionDirection.Source}},
+            Connections = new[]
+                {new LevelConnection {Direction = ConnectionDirection.Source, BranchName = "dungeon", Glyph = '>'}},
             NoRandomDoorways = true,
             LevelHeight = 3,
             LevelWidth = 3,

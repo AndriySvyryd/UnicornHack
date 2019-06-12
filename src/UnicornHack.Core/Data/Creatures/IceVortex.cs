@@ -12,8 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "ice vortex",
             Species = Species.Vortex,
             SpeciesClass = SpeciesClass.Extraplanar,
-            MovementDelay = 60,
-            Material = Material.Air,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -21,7 +19,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = "4"}}
                 },
@@ -46,6 +46,8 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.None,
             Size = 16,
             Weight = 0,
+            MovementDelay = 60,
+            Material = Material.Air,
             Perception = 3,
             Might = 2,
             Speed = 3,

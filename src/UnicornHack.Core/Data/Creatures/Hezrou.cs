@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "hezrou",
             Species = Species.DemonMajor,
             SpeciesClass = SpeciesClass.Demon,
-            MovementDelay = 200,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,24 +19,30 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Claw,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Claw,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50*physicalScaling"}}
                 }
             },
             InitialLevel = 7,
@@ -47,6 +52,7 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.Stalking,
             Size = 8,
             Weight = 1600,
+            MovementDelay = 200,
             Perception = 4,
             Might = 4,
             Speed = 4,

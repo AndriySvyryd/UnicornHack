@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "green dragon",
             Species = Species.Dragon,
             SpeciesClass = SpeciesClass.Reptile,
-            MovementDelay = 133,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,32 +19,40 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Breath,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blight {Damage = "140"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Blight {Damage = "140*mentalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "90"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "90*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Claw,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Claw,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50*physicalScaling"}}
                 }
             },
             InitialLevel = 15,
@@ -55,6 +62,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Roar,
             Size = 32,
             Weight = 4500,
+            MovementDelay = 133,
             Perception = 8,
             Might = 8,
             Speed = 8,

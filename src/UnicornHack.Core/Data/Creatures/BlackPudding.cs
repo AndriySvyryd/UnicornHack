@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "black pudding",
             Species = Species.Pudding,
-            MovementDelay = 200,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -19,8 +18,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Corrode {Damage = "130"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Corrode {Damage = "130*physicalScaling"}}
                 },
                 new Ability
                 {
@@ -30,6 +31,7 @@ namespace UnicornHack.Data.Creatures
             InitialLevel = 10,
             Sex = Sex.None,
             Weight = 512,
+            MovementDelay = 200,
             Perception = 6,
             Might = 6,
             Speed = 6,

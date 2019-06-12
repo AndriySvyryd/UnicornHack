@@ -1,5 +1,4 @@
-﻿using System;
-using UnicornHack.Generation;
+﻿using UnicornHack.Generation;
 using UnicornHack.Primitives;
 
 namespace UnicornHack.Systems.Abilities
@@ -7,8 +6,6 @@ namespace UnicornHack.Systems.Abilities
     [Component(Id = (int)EntityComponent.Ability)]
     public class AbilityComponent : GameComponent
     {
-        public const string WeaponScalingDelay = "weaponScaling";
-
         private string _name;
         private int _level;
         private GameEntity _ownerEntity;
@@ -205,48 +202,6 @@ namespace UnicornHack.Systems.Abilities
                 _template = value;
                 _templateLoaded = true;
             }
-        }
-
-        public int GetActualDelay(GameEntity activator)
-        {
-            if (Delay == null)
-            {
-                return 0;
-            }
-
-            if (int.TryParse(Delay, out var intDelay))
-            {
-                return intDelay;
-            }
-
-            var parts = Delay.Split('*');
-            if (parts.Length != 2)
-            {
-                throw new InvalidOperationException(Delay + " unsupported operation");
-            }
-
-            if (!int.TryParse(parts[0], out var baseDelay))
-            {
-                throw new InvalidOperationException(Delay + " unsupported factor");
-            }
-
-            if (parts[1] != WeaponScalingDelay)
-            {
-                throw new InvalidOperationException(Delay + " unsupported scaling");
-            }
-
-            // TODO: Move scaling formula
-            var item = OwnerEntity.Item;
-            var requiredSpeed = Item.Loader.Get(item.TemplateName)?.RequiredSpeed ?? 0;
-            var difference = activator.Being.Speed - requiredSpeed;
-            var divisor = 100 + requiredSpeed * (difference + Math.Min(0, difference));
-
-            if (divisor <= 0)
-            {
-                return -1;
-            }
-
-            return 100 * baseDelay / divisor;
         }
 
         public AbilityComponent AddToEffect(GameEntity abilityEffectEntity, bool includeEffects = true)

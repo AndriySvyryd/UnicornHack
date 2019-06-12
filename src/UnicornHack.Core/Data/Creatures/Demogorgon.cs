@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "Demogorgon",
             Species = Species.DemonMajor,
             SpeciesClass = SpeciesClass.Demon,
-            MovementDelay = 80,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,7 +19,8 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Spell,
-                    Delay = "100",
+                    SuccessCondition = AbilitySuccessCondition.Attack,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
                 },
                 new Ability
@@ -28,20 +28,25 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Sting,
-                    Delay = "100",
-                    Effects = new HashSet<Effect> {new DrainLife {Amount = 20}}
+                    SuccessCondition = AbilitySuccessCondition.Attack,
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new DrainLife {Amount = "20*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Claw,
-                    Delay = "100",
+                    SuccessCondition = AbilitySuccessCondition.Attack,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                     {
-                        new Burn {Damage = "20"},
+                        new Burn {Damage = "20*physicalScaling"},
                         new ChangeProperty<int>
-                            {PropertyName = "Might", Duration = EffectDuration.UntilTimeout, DurationAmount = "10000"}
+                        {
+                            PropertyName = "Might", Value = -3, Duration = EffectDuration.UntilTimeout,
+                            DurationAmount = "1000"
+                        }
                     }
                 },
                 new Ability
@@ -49,8 +54,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Claw,
-                    Delay = "100",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "25"}}
+                    SuccessCondition = AbilitySuccessCondition.Attack,
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "25*physicalScaling"}}
                 }
             },
             InitialLevel = 30,
@@ -61,6 +67,7 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.Male,
             Size = 8,
             Weight = 1500,
+            MovementDelay = 80,
             Perception = 16,
             Might = 16,
             Speed = 16,

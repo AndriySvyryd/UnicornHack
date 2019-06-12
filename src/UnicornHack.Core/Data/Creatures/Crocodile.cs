@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "crocodile",
             Species = Species.Crocodile,
             SpeciesClass = SpeciesClass.Reptile,
-            MovementDelay = 133,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,8 +19,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100*physicalScaling"}}
                 }
             },
             InitialLevel = 8,
@@ -29,6 +30,7 @@ namespace UnicornHack.Data.Creatures
             PreviousStageName = "baby crocodile",
             Size = 8,
             Weight = 1500,
+            MovementDelay = 133,
             Perception = 5,
             Might = 4,
             Speed = 5,

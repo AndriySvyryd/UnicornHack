@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "rock piercer",
             Species = Species.Piercer,
-            MovementDelay = 1200,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -19,14 +18,17 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70*physicalScaling"}}
                 }
             },
             InitialLevel = 3,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},
             Size = 2,
             Weight = 200,
+            MovementDelay = 1200,
             Perception = 2,
             Might = 2,
             Speed = 2,

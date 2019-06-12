@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "shark",
             Species = Species.Fish,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -19,14 +18,17 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "170"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "170*physicalScaling"}}
                 }
             },
             InitialLevel = 7,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             Size = 8,
             Weight = 1000,
+            MovementDelay = 100,
             Perception = 4,
             Might = 4,
             Speed = 4,

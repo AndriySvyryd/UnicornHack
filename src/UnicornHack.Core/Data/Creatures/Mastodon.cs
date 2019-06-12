@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "mastodon",
             Species = Species.Quadruped,
             SpeciesClass = SpeciesClass.Quadrupedal,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,16 +19,20 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Headbutt,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "180"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "180*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Headbutt,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "180"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "180*physicalScaling"}}
                 }
             },
             InitialLevel = 20,
@@ -37,6 +40,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Roar,
             Size = 8,
             Weight = 3800,
+            MovementDelay = 100,
             Perception = 11,
             Might = 10,
             Speed = 11,

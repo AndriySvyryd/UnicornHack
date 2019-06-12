@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "fox",
             Species = Species.Fox,
             SpeciesClass = SpeciesClass.Canine,
-            MovementDelay = 80,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,8 +19,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*physicalScaling"}}
                 }
             },
             InitialLevel = 1,
@@ -29,7 +30,8 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Bark,
             Size = 2,
             Weight = 300,
-            Perception = 5,
+            MovementDelay = 80,
+            Perception = 8,
             Might = 3,
             Speed = 2,
             Focus = 1,

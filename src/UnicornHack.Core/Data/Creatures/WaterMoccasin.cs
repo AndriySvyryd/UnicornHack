@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "water moccasin",
             Species = Species.Snake,
             SpeciesClass = SpeciesClass.Reptile,
-            MovementDelay = 80,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,8 +19,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blight {Damage = "30"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Blight {Damage = "30*physicalScaling"}}
                 }
             },
             InitialLevel = 4,
@@ -30,6 +31,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Hiss,
             Size = 2,
             Weight = 150,
+            MovementDelay = 80,
             Perception = 3,
             Might = 2,
             Speed = 3,

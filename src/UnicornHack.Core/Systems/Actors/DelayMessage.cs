@@ -6,12 +6,9 @@ namespace UnicornHack.Systems.Beings
     {
         public const string Name = "Delay";
 
-        public static DelayMessage Create(GameManager manager)
-            => manager.Queue.CreateMessage<DelayMessage>(Name);
-
         public static void Enqueue(GameEntity actorEntity, int delay, GameManager manager)
         {
-            var delayMessage = Create(manager);
+            var delayMessage = manager.Queue.CreateMessage<DelayMessage>(Name);
             delayMessage.ActorEntity = actorEntity;
             delayMessage.Delay = delay;
             manager.Enqueue(delayMessage);

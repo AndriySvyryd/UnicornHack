@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "piranha",
             Species = Species.Fish,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -19,8 +18,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70*physicalScaling"}}
                 }
             },
             InitialLevel = 5,
@@ -28,6 +29,7 @@ namespace UnicornHack.Data.Creatures
             GenerationFlags = GenerationFlags.SmallGroup,
             Size = 1,
             Weight = 60,
+            MovementDelay = 100,
             Perception = 3,
             Might = 2,
             Speed = 3,

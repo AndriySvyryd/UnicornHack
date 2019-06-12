@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "golden naga",
             Species = Species.Naga,
             SpeciesClass = SpeciesClass.Aberration,
-            MovementDelay = 85,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,16 +19,20 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Spell,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Wither {Damage = "140"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Wither {Damage = "140*mentalScaling"}}
                 }
             },
             InitialLevel = 10,
@@ -38,6 +41,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Hiss,
             Size = 16,
             Weight = 1500,
+            MovementDelay = 85,
             Perception = 6,
             Might = 6,
             Speed = 6,

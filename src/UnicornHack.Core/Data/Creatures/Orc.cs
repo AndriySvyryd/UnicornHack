@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "orc",
             Species = Species.Orc,
-            MovementDelay = 133,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -25,8 +24,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
                 }
             },
             InitialLevel = 1,
@@ -36,6 +37,7 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.GoldCollector | AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Grunt,
             Weight = 1000,
+            MovementDelay = 133,
             Perception = 5,
             Might = 8,
             Speed = 3,

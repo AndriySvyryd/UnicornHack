@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "guardian naga hatchling",
             Species = Species.Naga,
             SpeciesClass = SpeciesClass.Aberration,
-            MovementDelay = 120,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,8 +19,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*physicalScaling"}}
                 }
             },
             InitialLevel = 3,
@@ -29,6 +30,7 @@ namespace UnicornHack.Data.Creatures
             NextStageName = "guardian naga",
             Noise = ActorNoiseType.Hiss,
             Weight = 500,
+            MovementDelay = 120,
             Perception = 2,
             Might = 2,
             Speed = 2,

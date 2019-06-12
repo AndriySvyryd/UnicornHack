@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "cobra",
             Species = Species.Snake,
             SpeciesClass = SpeciesClass.Reptile,
-            MovementDelay = 66,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,15 +19,19 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blight {Damage = "50"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Blight {Damage = "50*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Spit,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Blind {Duration = EffectDuration.UntilTimeout, DurationAmount = "5"}}
                 }
@@ -37,6 +40,7 @@ namespace UnicornHack.Data.Creatures
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
             Noise = ActorNoiseType.Hiss,
             Weight = 250,
+            MovementDelay = 66,
             Perception = 4,
             Might = 4,
             Speed = 4,

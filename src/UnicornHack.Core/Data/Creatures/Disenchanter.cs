@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "disenchanter",
             Species = Species.Disenchanter,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -19,18 +18,22 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new DrainEnergy {Amount = 5}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new DrainEnergy {Amount = "10*mentalScaling"}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new DrainEnergy {Amount = 2}}
+                    Activation = ActivationType.OnMeleeHit,
+                    Effects = new HashSet<Effect> {new DrainEnergy {Amount = "5*mentalScaling"}}
                 }
             },
             InitialLevel = 12,
             GenerationWeight = new DefaultWeight {Multiplier = 3F},
             Noise = ActorNoiseType.Growl,
             Weight = 750,
+            MovementDelay = 100,
             Perception = 7,
             Might = 6,
             Speed = 7,

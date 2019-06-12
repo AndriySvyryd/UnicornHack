@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "freezing sphere",
             Species = Species.FloatingSphere,
             SpeciesClass = SpeciesClass.Extraplanar,
-            MovementDelay = 92,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,8 +19,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Explosion,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Freeze {Damage = "140"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Freeze {Damage = "140*mentalScaling"}}
                 }
             },
             InitialLevel = 6,
@@ -29,6 +30,7 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.None,
             Size = 2,
             Weight = 10,
+            MovementDelay = 92,
             Perception = 4,
             Might = 4,
             Speed = 4,

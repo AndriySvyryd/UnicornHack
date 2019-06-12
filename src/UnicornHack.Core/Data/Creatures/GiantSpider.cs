@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "giant spider",
             Species = Species.Spider,
             SpeciesClass = SpeciesClass.Vermin,
-            MovementDelay = 80,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,15 +19,19 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blight {Damage = "50"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Blight {Damage = "50*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                     {
                         new ChangeProperty<int>
@@ -42,6 +45,7 @@ namespace UnicornHack.Data.Creatures
             InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 6F},
             Weight = 150,
+            MovementDelay = 80,
             Perception = 3,
             Might = 2,
             Speed = 3,

@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "shrieker",
             Species = Species.Fungus,
-            MovementDelay = 1200,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -19,7 +18,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Scream,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Deafen {Duration = EffectDuration.UntilTimeout, DurationAmount = "3"}}
                 }
@@ -29,6 +30,7 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.None,
             Size = 2,
             Weight = 100,
+            MovementDelay = 1200,
             Perception = 2,
             Might = 2,
             Speed = 2,

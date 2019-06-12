@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "leprechaun",
             Species = Species.Leprechaun,
             SpeciesClass = SpeciesClass.Fey,
-            MovementDelay = 80,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,7 +19,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Claw,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                     {
                         new StealGold()
@@ -33,6 +34,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Laugh,
             Size = 1,
             Weight = 60,
+            MovementDelay = 80,
             Perception = 3,
             Might = 2,
             Speed = 3,

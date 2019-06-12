@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "Yeenoghu",
             Species = Species.DemonMajor,
             SpeciesClass = SpeciesClass.Demon,
-            MovementDelay = 66,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -26,15 +25,19 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Claw,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Confuse {Duration = EffectDuration.UntilTimeout, DurationAmount = "9"}}
                 },
@@ -43,7 +46,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = "3"}}
                 },
@@ -52,8 +57,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Spell,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Wither {Damage = "70"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Wither {Damage = "70*mentalScaling"}}
                 }
             },
             InitialLevel = 30,
@@ -64,6 +71,7 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.Male,
             Size = 8,
             Weight = 1500,
+            MovementDelay = 66,
             Perception = 16,
             Might = 16,
             Speed = 16,

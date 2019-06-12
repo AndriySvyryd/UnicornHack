@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
@@ -24,6 +25,9 @@ namespace UnicornHack.Systems.Abilities
         IGameSystem<EntityAddedMessage<GameEntity>>,
         IGameSystem<EntityRemovedMessage<GameEntity>>
     {
+        public const string WeaponDelayScaling = "weaponScaling";
+        public const string AttackDelayScaling = "attackScaling";
+
         public bool CanActivateAbility(ActivateAbilityMessage activateAbilityMessage, bool shouldThrow)
         {
             using (var message = Activate(activateAbilityMessage, pretend: true, stats: null))
@@ -41,7 +45,7 @@ namespace UnicornHack.Systems.Abilities
         {
             var stats = new AttackStats();
             var activated = Activate(activateAbilityMessage, pretend: true, stats);
-            return string.IsNullOrEmpty(activated?.ActivationError) ? stats : null;
+            return String.IsNullOrEmpty(activated?.ActivationError) ? stats : null;
         }
 
         MessageProcessingResult IMessageConsumer<ActivateAbilityMessage, GameManager>.Process(
@@ -50,7 +54,7 @@ namespace UnicornHack.Systems.Abilities
             var abilityActivatedMessage = Activate(message, pretend: false, stats: null);
             if (abilityActivatedMessage != null)
             {
-                if (!string.IsNullOrEmpty(abilityActivatedMessage.ActivationError))
+                if (!String.IsNullOrEmpty(abilityActivatedMessage.ActivationError))
                 {
                     throw new InvalidOperationException(abilityActivatedMessage.ActivationError);
                 }
@@ -133,7 +137,7 @@ namespace UnicornHack.Systems.Abilities
             var delay = 0;
             if ((ability.Activation & ActivationType.Slottable) != 0)
             {
-                delay = ability.GetActualDelay(activateMessage.ActivatorEntity);
+                delay = GetActualDelay(ability, activateMessage.ActivatorEntity);
                 if (delay == -1)
                 {
                     targetEffectsMessage.ActivationError = $"Speed too low to activate ability {ability.EntityId}.";
@@ -1094,7 +1098,7 @@ namespace UnicornHack.Systems.Abilities
                 {
                     if (ability.Cooldown > 0)
                     {
-                        var delay = ability.GetActualDelay(activatorEntity);
+                        var delay = GetActualDelay(ability, activatorEntity);
                         Debug.Assert(delay != -1);
 
                         ability.CooldownTick = manager.Game.CurrentTick + ability.Cooldown + delay;
@@ -1125,6 +1129,56 @@ namespace UnicornHack.Systems.Abilities
                 {
                     ability.CooldownXpLeft = activatorEntity.Player.NextLevelXP * ability.XPCooldown / 100;
                 }
+            }
+        }
+
+        public int GetActualDelay(AbilityComponent ability, GameEntity activator)
+        {
+            if (ability.Delay == null)
+            {
+                return 0;
+            }
+
+            if (int.TryParse(ability.Delay, out var intDelay))
+            {
+                return intDelay;
+            }
+
+            var parts = ability.Delay.Split('*');
+            if (parts.Length != 2)
+            {
+                throw new InvalidOperationException(ability.Delay + " unsupported operation");
+            }
+
+            if (!int.TryParse(parts[0], out var baseDelay))
+            {
+                throw new InvalidOperationException(ability.Delay + " unsupported factor");
+            }
+
+            switch (parts[1])
+            {
+                case AttackDelayScaling:
+                {
+                    var divisor = 100 + 10 * activator.Being.Speed;
+
+                    return 100 * baseDelay / divisor;
+                }
+                case WeaponDelayScaling:
+                {
+                    var item = ability.OwnerEntity.Item;
+                    var requiredSpeed = Item.Loader.Get(item.TemplateName)?.RequiredSpeed ?? 0;
+                    var difference = activator.Being.Speed - requiredSpeed;
+                    var divisor = 100 + requiredSpeed * (difference + Math.Min(0, difference));
+
+                    if (divisor <= 0)
+                    {
+                        return -1;
+                    }
+
+                    return 100 * baseDelay / divisor;
+                }
+                default:
+                    throw new InvalidOperationException(ability.Delay + " unsupported scaling " + parts[1]);
             }
         }
 

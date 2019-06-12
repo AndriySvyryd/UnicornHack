@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "human",
             Species = Species.Human,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -25,8 +24,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
                 }
             },
             InitialLevel = 1,
@@ -35,6 +36,7 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Speach,
             Weight = 1000,
+            MovementDelay = 100,
             Perception = 10,
             Might = 10,
             Speed = 10,

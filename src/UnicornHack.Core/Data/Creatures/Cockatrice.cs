@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "cockatrice",
             Species = Species.Cockatrice,
             SpeciesClass = SpeciesClass.MagicalBeast,
-            MovementDelay = 200,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,15 +19,19 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                     {
                         new Stone()
@@ -49,6 +52,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Hiss,
             Size = 2,
             Weight = 30,
+            MovementDelay = 200,
             Perception = 3,
             Might = 2,
             Speed = 3,

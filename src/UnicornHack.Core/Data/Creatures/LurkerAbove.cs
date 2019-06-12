@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "lurker above",
             Species = Species.Trapper,
-            MovementDelay = 400,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -19,7 +18,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = "4"}}
                 },
@@ -39,6 +40,7 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.Stalking,
             Size = 8,
             Weight = 800,
+            MovementDelay = 400,
             Perception = 6,
             Might = 6,
             Speed = 6,

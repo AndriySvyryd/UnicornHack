@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "firefly",
             Species = Species.Beetle,
             SpeciesClass = SpeciesClass.Vermin,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,8 +19,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Burn {Damage = "10"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Burn {Damage = "10*physicalScaling"}}
                 }
             },
             InitialLevel = 1,
@@ -30,6 +31,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Buzz,
             Size = 1,
             Weight = 10,
+            MovementDelay = 100,
             Perception = 1,
             Might = 1,
             Speed = 5,

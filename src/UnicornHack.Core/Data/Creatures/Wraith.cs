@@ -12,8 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "wraith",
             Species = Species.Wraith,
             SpeciesClass = SpeciesClass.Undead,
-            MovementDelay = 100,
-            Material = Material.Air,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -21,12 +19,15 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new DrainLife {Amount = 2}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new DrainLife {Amount = "10*physicalScaling"}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new DrainLife {Amount = 1}}
+                    Activation = ActivationType.OnMeleeHit,
+                    Effects = new HashSet<Effect> {new DrainLife {Amount = "5*physicalScaling"}}
                 }
             },
             InitialLevel = 6,
@@ -34,6 +35,8 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.Stalking,
             Noise = ActorNoiseType.Howl,
             Weight = 0,
+            MovementDelay = 100,
+            Material = Material.Air,
             Perception = 4,
             Might = 4,
             Speed = 4,

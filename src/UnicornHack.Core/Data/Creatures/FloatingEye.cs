@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "floating eye",
             Species = Species.FloatingSphere,
             SpeciesClass = SpeciesClass.Aberration,
-            MovementDelay = 1200,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -28,6 +27,7 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.None,
             Size = 2,
             Weight = 10,
+            MovementDelay = 1200,
             Perception = 2,
             Might = 2,
             Speed = 2,

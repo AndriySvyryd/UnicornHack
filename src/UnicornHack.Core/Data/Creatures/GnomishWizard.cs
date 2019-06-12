@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "gnomish wizard",
             Species = Species.Gnome,
-            MovementDelay = 150,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -19,7 +18,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Spell,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
                 }
             },
@@ -31,6 +32,7 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.Male,
             Size = 2,
             Weight = 700,
+            MovementDelay = 150,
             Perception = 2,
             Might = 2,
             Speed = 2,

@@ -12,8 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "ghost",
             Species = Species.Ghost,
             SpeciesClass = SpeciesClass.Undead,
-            MovementDelay = 400,
-            Material = Material.Air,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -21,8 +19,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
                 }
             },
             InitialLevel = 10,
@@ -31,6 +31,8 @@ namespace UnicornHack.Data.Creatures
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
             Behavior = AIBehavior.Wandering | AIBehavior.Stalking,
             Weight = 0,
+            MovementDelay = 400,
+            Material = Material.Air,
             Perception = 6,
             Might = 6,
             Speed = 6,

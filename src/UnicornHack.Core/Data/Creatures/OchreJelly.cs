@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "ochre jelly",
             Species = Species.Jelly,
-            MovementDelay = 400,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -19,7 +18,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = "4"}}
                 },
@@ -40,6 +41,7 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.None,
             Size = 2,
             Weight = 100,
+            MovementDelay = 400,
             Perception = 4,
             Might = 4,
             Speed = 4,

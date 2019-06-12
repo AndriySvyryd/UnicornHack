@@ -1,7 +1,6 @@
 ﻿using System;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
-using UnicornHack.Systems.Abilities;
 
 namespace UnicornHack.Systems.Effects
 {
@@ -137,82 +136,6 @@ namespace UnicornHack.Systems.Effects
             }
 
             throw new InvalidOperationException("Can't parse duration " + DurationAmount);
-        }
-
-        public int GetActualAmount(GameEntity activator)
-        {
-            if (AmountExpression == null)
-            {
-                return Amount.Value;
-            }
-
-            if (int.TryParse(AmountExpression, out var intAmount))
-            {
-                return intAmount;
-            }
-
-            var parts = AmountExpression.Split('*');
-            if (parts.Length != 2)
-            {
-                throw new InvalidOperationException(AmountExpression + " unsupported operation");
-            }
-
-            if (!int.TryParse(parts[0], out var baseFactor))
-            {
-                throw new InvalidOperationException(AmountExpression + " unsupported factor");
-            }
-
-            if (parts[1] != AbilityComponent.WeaponScalingDelay)
-            {
-                throw new InvalidOperationException(AmountExpression + " unsupported scaling");
-            }
-
-            // TODO: Move scaling formula
-            var item = Entity.Manager.FindEntity(ContainingAbilityId).Ability.OwnerEntity.Item;
-            
-            var handnessMultiplier = GetMultiplier(item.EquippedSlot);
-            if (handnessMultiplier <= 0)
-            {
-                return 0;
-            }
-
-            var baseMultiplier = GetMultiplier(EquipmentSlot.GraspPrimaryMelee);
-            var requiredMight = Item.Loader.Get(item.TemplateName)?.RequiredMight ?? 0;
-            var mightDifference = activator.Being.Might * handnessMultiplier - requiredMight * baseMultiplier;
-            var requiredFocus = Item.Loader.Get(item.TemplateName)?.RequiredFocus ?? 0;
-            var focusDifference = activator.Being.Focus * handnessMultiplier - requiredFocus * baseMultiplier;
-            var scale = 100
-                        + ((requiredMight * (mightDifference + Math.Min(0, mightDifference)))
-                         + (requiredFocus * (focusDifference + Math.Min(0, focusDifference)))) / handnessMultiplier;
-
-            if (scale <= 0)
-            {
-                return 0;
-            }
-
-            return baseFactor * scale / 100;
-        }
-
-        private int GetMultiplier(EquipmentSlot slot)
-        {
-            var multiplier = 0;
-            switch (slot)
-            {
-                case EquipmentSlot.GraspBothMelee:
-                case EquipmentSlot.GraspBothRanged:
-                    multiplier = 5;
-                    break;
-                case EquipmentSlot.GraspPrimaryMelee:
-                case EquipmentSlot.GraspPrimaryRanged:
-                    multiplier = 3;
-                    break;
-                case EquipmentSlot.GraspSecondaryMelee:
-                case EquipmentSlot.GraspSecondaryRanged:
-                    multiplier = 2;
-                    break;
-            }
-
-            return multiplier;
         }
 
         public EffectComponent AddToAbility(GameEntity abilityEntity)

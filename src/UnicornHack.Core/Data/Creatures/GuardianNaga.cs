@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "guardian naga",
             Species = Species.Naga,
             SpeciesClass = SpeciesClass.Aberration,
-            MovementDelay = 75,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,16 +19,20 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Spit,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blight {Damage = "140"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Blight {Damage = "140*physicalScaling"}}
                 }
             },
             InitialLevel = 12,
@@ -38,6 +41,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Hiss,
             Size = 16,
             Weight = 1500,
+            MovementDelay = 75,
             Perception = 7,
             Might = 6,
             Speed = 7,

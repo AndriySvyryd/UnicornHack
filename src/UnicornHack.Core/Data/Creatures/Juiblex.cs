@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "Juiblex",
             Species = Species.DemonMajor,
             SpeciesClass = SpeciesClass.Demon,
-            MovementDelay = 400,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,7 +19,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = "20"}}
                 },
@@ -36,8 +37,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Spit,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Corrode {Damage = "100"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Corrode {Damage = "100*physicalScaling"}}
                 }
             },
             InitialLevel = 30,
@@ -48,6 +51,7 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.Male,
             Size = 8,
             Weight = 1500,
+            MovementDelay = 400,
             Perception = 16,
             Might = 16,
             Speed = 16,

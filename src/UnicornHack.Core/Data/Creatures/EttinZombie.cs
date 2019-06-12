@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "ettin zombie",
             Species = Species.Giant,
             SpeciesClass = SpeciesClass.Undead,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,16 +19,20 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "90"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "90*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "90"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "90*physicalScaling"}}
                 }
             },
             InitialLevel = 10,
@@ -39,6 +42,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Moan,
             Size = 16,
             Weight = 2250,
+            MovementDelay = 100,
             Perception = 6,
             Might = 6,
             Speed = 6,

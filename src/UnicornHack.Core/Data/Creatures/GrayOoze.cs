@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "gray ooze",
             Species = Species.Ooze,
-            MovementDelay = 1200,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -19,16 +18,20 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "90"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "90*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Soak {Damage = "90"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Soak {Damage = "90*physicalScaling"}}
                 },
                 new Ability
                 {
@@ -39,6 +42,7 @@ namespace UnicornHack.Data.Creatures
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
             Sex = Sex.None,
             Weight = 500,
+            MovementDelay = 1200,
             Perception = 2,
             Might = 2,
             Speed = 2,

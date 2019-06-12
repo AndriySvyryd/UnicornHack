@@ -63,11 +63,11 @@ namespace UnicornHack.Systems.Knowledge
             var stats = manager.AbilityActivationSystem.GetAttackStats(activateMessage);
             manager.ReturnMessage(activateMessage);
 
-            Assert.Equal(18, stats.Damages.Aggregate(0, (s, d) => s + d));
+            Assert.Equal(46, stats.Damages.Aggregate(0, (s, d) => s + d));
 
             Verify(demogorgon, nymph, playerEntity, player2Entity,
                 demogorgonSting, success: true,
-                "The Demogorgon stings the water nymph. (<damage drain='18'>18</damage> pts.)",
+                "The Demogorgon stings the water nymph. (<damage drain='46'>46</damage> pts.)",
                 "The Demogorgon stings something.",
                 manager);
 

@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "violet fungus",
             Species = Species.Fungus,
-            MovementDelay = 1200,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -19,15 +18,19 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blight {Damage = "30"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Blight {Damage = "30*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                     {
                         new Stick()
@@ -39,6 +42,7 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.None,
             Size = 2,
             Weight = 100,
+            MovementDelay = 1200,
             Perception = 2,
             Might = 2,
             Speed = 2,

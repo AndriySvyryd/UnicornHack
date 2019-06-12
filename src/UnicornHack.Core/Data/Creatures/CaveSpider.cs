@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "cave spider",
             Species = Species.Spider,
             SpeciesClass = SpeciesClass.Vermin,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,8 +19,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
                 }
             },
             InitialLevel = 1,
@@ -29,6 +30,7 @@ namespace UnicornHack.Data.Creatures
             GenerationFlags = GenerationFlags.SmallGroup,
             Size = 2,
             Weight = 50,
+            MovementDelay = 100,
             Perception = 1,
             Might = 3,
             Speed = 3,

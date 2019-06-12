@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "Dispater",
             Species = Species.DemonMajor,
             SpeciesClass = SpeciesClass.Demon,
-            MovementDelay = 80,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -26,15 +25,19 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Spell,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
                 }
             },
@@ -46,6 +49,7 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.Male,
             Size = 8,
             Weight = 1500,
+            MovementDelay = 80,
             Perception = 16,
             Might = 16,
             Speed = 16,

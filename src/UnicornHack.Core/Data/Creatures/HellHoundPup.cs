@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "hell hound pup",
             Species = Species.Dog,
             SpeciesClass = SpeciesClass.Canine,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,16 +19,20 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Breath,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Burn {Damage = "70"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Burn {Damage = "70*mentalScaling"}}
                 }
             },
             InitialLevel = 7,
@@ -39,6 +42,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Bark,
             Size = 2,
             Weight = 250,
+            MovementDelay = 100,
             Perception = 4,
             Might = 4,
             Speed = 4,

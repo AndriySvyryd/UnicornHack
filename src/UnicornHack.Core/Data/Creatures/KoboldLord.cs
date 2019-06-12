@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "kobold lord",
             Species = Species.Kobold,
-            MovementDelay = 200,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -25,8 +24,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
                 }
             },
             InitialLevel = 3,
@@ -37,6 +38,7 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.Male,
             Size = 2,
             Weight = 500,
+            MovementDelay = 200,
             Perception = 2,
             Might = 2,
             Speed = 2,

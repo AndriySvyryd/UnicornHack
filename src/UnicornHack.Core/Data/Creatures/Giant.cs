@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "giant",
             Species = Species.Giant,
-            MovementDelay = 200,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -25,8 +24,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
                 }
             },
             InitialLevel = 6,
@@ -36,6 +37,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Boast,
             Size = 16,
             Weight = 2250,
+            MovementDelay = 200,
             Perception = 4,
             Might = 4,
             Speed = 4,

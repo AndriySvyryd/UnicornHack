@@ -18,7 +18,7 @@ namespace UnicornHack.Data.Items
                     Range = 1,
                     Action = AbilityAction.Slash,
                     Delay = "100*weaponScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70*weaponScaling" } }
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70*weaponScaling"}}
                 }
             },
             Type = ItemType.WeaponMeleeMedium,

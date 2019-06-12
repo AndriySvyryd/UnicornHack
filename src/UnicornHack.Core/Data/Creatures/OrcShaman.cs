@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "orc shaman",
             Species = Species.Orc,
-            MovementDelay = 133,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -19,7 +18,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Spell,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
                 }
             },
@@ -28,6 +29,7 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.GoldCollector | AIBehavior.MagicUser,
             Noise = ActorNoiseType.Grunt,
             Weight = 1000,
+            MovementDelay = 133,
             Perception = 2,
             Might = 2,
             Speed = 2,

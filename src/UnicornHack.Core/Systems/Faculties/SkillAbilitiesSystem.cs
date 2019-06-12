@@ -26,7 +26,7 @@ namespace UnicornHack.Systems.Faculties
         public const string TwoHandedRangedWeaponAttackName = "two handed ranged weapon attack";
 
         public readonly string DefaultWeaponDelay =
-            TimeSystem.DefaultActionDelay + "*" + AbilityComponent.WeaponScalingDelay;
+            TimeSystem.DefaultActionDelay + "*" + AbilityActivationSystem.WeaponDelayScaling;
 
         public MessageProcessingResult Process(ItemEquippedMessage message, GameManager manager)
         {
@@ -332,7 +332,7 @@ namespace UnicornHack.Systems.Faculties
                         weaponAttack.Range = abilityToActivate.Range;
                         weaponAttack.TargetingType = abilityToActivate.TargetingType;
                         weaponAttack.TargetingShape = abilityToActivate.TargetingShape;
-                        weaponAttack.Delay = abilityToActivate.GetActualDelay(ownerEntity).ToString();
+                        weaponAttack.Delay = manager.AbilityActivationSystem.GetActualDelay(abilityToActivate, ownerEntity).ToString();
                     }
 
                     foreach (var effectEntity in manager.EffectsToContainingAbilityRelationship[weaponAttack.EntityId])
@@ -380,12 +380,14 @@ namespace UnicornHack.Systems.Faculties
                 return;
             }
 
+            var manager = ownerEntity.Manager;
+
             // TODO: Only use weapon values when not specified by the ability
             ability.Range = firstWeaponAbility.Range;
             ability.HeadingDeviation = firstWeaponAbility.HeadingDeviation;
             ability.TargetingShape = firstWeaponAbility.TargetingShape;
             ability.TargetingType = firstWeaponAbility.TargetingType;
-            var delay = firstWeaponAbility.GetActualDelay(ownerEntity);
+            var delay = manager.AbilityActivationSystem.GetActualDelay(firstWeaponAbility, ownerEntity);
 
             if (secondWeaponAbility != null)
             {
@@ -409,7 +411,7 @@ namespace UnicornHack.Systems.Faculties
                     ability.TargetingType = secondWeaponAbility.TargetingType;
                 }
 
-                var secondDelay = secondWeaponAbility.GetActualDelay(ownerEntity);
+                var secondDelay = manager.AbilityActivationSystem.GetActualDelay(secondWeaponAbility, ownerEntity);
                 if ((secondDelay > delay
                      || secondDelay == -1)
                     && delay != -1)
@@ -418,8 +420,8 @@ namespace UnicornHack.Systems.Faculties
                 }
             }
 
+            // TODO: Use an expression instead of precalculating the result
             ability.Delay = delay.ToString();
-            var manager = ownerEntity.Manager;
 
             GameEntity firstEffectEntity = null;
             foreach (var effectEntity in manager.EffectsToContainingAbilityRelationship[ability.EntityId])

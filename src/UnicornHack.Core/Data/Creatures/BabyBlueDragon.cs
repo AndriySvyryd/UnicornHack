@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "baby blue dragon",
             Species = Species.Dragon,
             SpeciesClass = SpeciesClass.Reptile,
-            MovementDelay = 133,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,8 +19,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70*physicalScaling"}}
                 }
             },
             InitialLevel = 12,
@@ -30,6 +31,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Roar,
             Size = 8,
             Weight = 1500,
+            MovementDelay = 133,
             Perception = 7,
             Might = 6,
             Speed = 7,

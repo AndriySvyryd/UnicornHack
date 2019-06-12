@@ -12,8 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "fire elemental",
             Species = Species.Elemental,
             SpeciesClass = SpeciesClass.Extraplanar,
-            MovementDelay = 100,
-            Material = Material.Air,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -21,8 +19,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Burn {Damage = "100"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Burn {Damage = "100*physicalScaling"}}
                 },
                 new Ability
                 {
@@ -34,6 +34,8 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.None,
             Size = 16,
             Weight = 0,
+            MovementDelay = 100,
+            Material = Material.Air,
             Perception = 5,
             Might = 4,
             Speed = 5,

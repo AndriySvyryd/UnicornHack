@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "archon",
             Species = Species.Angel,
             SpeciesClass = SpeciesClass.Celestial,
-            MovementDelay = 75,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -26,24 +25,30 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Spell,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Wither {Damage = "140"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Wither {Damage = "140*mentalScaling"}}
                 }
             },
             InitialLevel = 19,
@@ -54,6 +59,7 @@ namespace UnicornHack.Data.Creatures
                        AIBehavior.MagicUser,
             Noise = ActorNoiseType.Speach,
             Weight = 1000,
+            MovementDelay = 75,
             Perception = 10,
             Might = 10,
             Speed = 10,

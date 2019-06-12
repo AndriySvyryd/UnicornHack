@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "kobold mummy",
             Species = Species.Kobold,
             SpeciesClass = SpeciesClass.Undead,
-            MovementDelay = 200,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,8 +19,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "30"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "30*physicalScaling"}}
                 }
             },
             InitialLevel = 3,
@@ -29,6 +30,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Moan,
             Size = 2,
             Weight = 400,
+            MovementDelay = 200,
             Perception = 2,
             Might = 2,
             Speed = 2,

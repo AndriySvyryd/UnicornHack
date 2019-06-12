@@ -22,6 +22,9 @@ namespace UnicornHack.Systems.Effects
         IGameSystem<PropertyValueChangedMessage<GameEntity, string>>
     {
         public const string InnateAbilityName = "innate";
+        public const string WeaponDamageScaling = "weaponScaling";
+        public const string PhysicalEffectScaling = "physicalScaling";
+        public const string MentalEffectScaling = "mentalScaling";
 
         public MessageProcessingResult Process(AbilityActivatedMessage message, GameManager manager)
         {
@@ -93,7 +96,7 @@ namespace UnicornHack.Systems.Effects
                         }
 
                         // TODO: Take effectComponent.Function into account
-                        damageEffects[key] = (effect.GetActualAmount(message.ActivatorEntity) + previousDamage.Damage,
+                        damageEffects[key] = (GetActualAmount(effect, message.ActivatorEntity) + previousDamage.Damage,
                             effectEntity);
                         break;
                     default:
@@ -398,7 +401,7 @@ namespace UnicornHack.Systems.Effects
                 appliedEffect.SourceAbilityId = effect.ContainingAbilityId;
                 appliedEffect.Amount = amountOverride
                                        ?? (effect.Amount != null || effect.AmountExpression != null
-                                           ? effect.GetActualAmount(activatorEntity)
+                                           ? GetActualAmount(effect, activatorEntity)
                                            : (int?)null);
                 appliedEffect.Duration = effect.Duration;
                 appliedEffect.DurationAmount = effect.DurationAmount;
@@ -447,7 +450,7 @@ namespace UnicornHack.Systems.Effects
             }
         }
 
-        private static int GetDamage(EffectComponent effect, BeingComponent being, GameEntity activatorEntity, int? amountOverride)
+        private int GetDamage(EffectComponent effect, BeingComponent being, GameEntity activatorEntity, int? amountOverride)
         {
             var absorption = 0;
             var resistance = 0;
@@ -498,7 +501,7 @@ namespace UnicornHack.Systems.Effects
                     break;
             }
 
-            var damage = amountOverride ?? effect.GetActualAmount(activatorEntity);
+            var damage = amountOverride ?? GetActualAmount(effect, activatorEntity);
             if (absorption > 0)
             {
                 damage -= absorption;
@@ -542,7 +545,7 @@ namespace UnicornHack.Systems.Effects
                         }
 
                         // TODO: Take effectComponent.Function into account
-                        damageEffects[key] = (effect.GetActualAmount(message.ActivatorEntity) + previousDamage.Damage,
+                        damageEffects[key] = (GetActualAmount(effect, message.ActivatorEntity) + previousDamage.Damage,
                             effectEntity);
                         break;
                     default:
@@ -648,7 +651,7 @@ namespace UnicornHack.Systems.Effects
                     }
                     else
                     {
-                        appliedEffect.Amount = effect.GetActualAmount(activator);
+                        appliedEffect.Amount = GetActualAmount(effect, activator);
                     }
                 }
 
@@ -917,7 +920,8 @@ namespace UnicornHack.Systems.Effects
         {
             var abilityName = abilityEffect.TargetName;
             var level = 0;
-            var activeEffects = new List<EffectComponent> {abilityEffect};
+            var activeEffects = new List<EffectComponent>
+                {abilityEffect};
             foreach (var duplicateEffectEntity in
                 manager.AppliedEffectsToAffectableEntityRelationship[abilityEffect.AffectedEntityId.Value])
             {
@@ -949,6 +953,95 @@ namespace UnicornHack.Systems.Effects
             }
 
             return level;
+        }
+
+        public int GetActualAmount(EffectComponent effect, GameEntity activator)
+        {
+            if (effect.AmountExpression == null)
+            {
+                return effect.Amount.Value;
+            }
+
+            if (int.TryParse(effect.AmountExpression, out var intAmount))
+            {
+                return intAmount;
+            }
+
+            var parts = effect.AmountExpression.Split('*');
+            if (parts.Length != 2)
+            {
+                throw new InvalidOperationException(effect.AmountExpression + " unsupported operation");
+            }
+
+            if (!int.TryParse(parts[0], out var baseFactor))
+            {
+                throw new InvalidOperationException(effect.AmountExpression + " unsupported factor");
+            }
+
+            switch (parts[1])
+            {
+                case WeaponDamageScaling:
+                {
+                    var item = effect.Entity.Manager.FindEntity(effect.ContainingAbilityId).Ability.OwnerEntity.Item;
+
+                    var handnessMultiplier = GetHandnessMultiplier(item.EquippedSlot);
+                    if (handnessMultiplier <= 0)
+                    {
+                        return 0;
+                    }
+
+                    var baseMultiplier = GetHandnessMultiplier(EquipmentSlot.GraspPrimaryMelee);
+                    var requiredMight = Item.Loader.Get(item.TemplateName)?.RequiredMight ?? 0;
+                    var mightDifference = activator.Being.Might * handnessMultiplier - requiredMight * baseMultiplier;
+                    var requiredFocus = Item.Loader.Get(item.TemplateName)?.RequiredFocus ?? 0;
+                    var focusDifference = activator.Being.Focus * handnessMultiplier - requiredFocus * baseMultiplier;
+                    var scale = 100
+                                + ((requiredMight * (mightDifference + Math.Min(0, mightDifference)))
+                                   + (requiredFocus * (focusDifference + Math.Min(0, focusDifference)))) /
+                                handnessMultiplier;
+
+                    if (scale <= 0)
+                    {
+                        return 0;
+                    }
+
+                    return baseFactor * scale / 100;
+                }
+                case PhysicalEffectScaling:
+                {
+                    var scale = 10 + activator.Being.Might;
+                    return baseFactor * scale / 10;
+                }
+                case MentalEffectScaling:
+                {
+                    var scale = 10 + activator.Being.Focus;
+                    return baseFactor * scale / 10;
+                }
+                default:
+                    throw new InvalidOperationException(effect.AmountExpression + " unsupported scaling");
+            }
+        }
+
+        private int GetHandnessMultiplier(EquipmentSlot slot)
+        {
+            var multiplier = 0;
+            switch (slot)
+            {
+                case EquipmentSlot.GraspBothMelee:
+                case EquipmentSlot.GraspBothRanged:
+                    multiplier = 5;
+                    break;
+                case EquipmentSlot.GraspPrimaryMelee:
+                case EquipmentSlot.GraspPrimaryRanged:
+                    multiplier = 3;
+                    break;
+                case EquipmentSlot.GraspSecondaryMelee:
+                case EquipmentSlot.GraspSecondaryRanged:
+                    multiplier = 2;
+                    break;
+            }
+
+            return multiplier;
         }
 
         /// <summary>

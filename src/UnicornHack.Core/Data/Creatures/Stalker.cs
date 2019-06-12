@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "stalker",
             Species = Species.Elemental,
             SpeciesClass = SpeciesClass.Extraplanar,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,8 +19,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Claw,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100*physicalScaling"}}
                 }
             },
             InitialLevel = 8,
@@ -29,6 +30,7 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.Wandering | AIBehavior.Stalking,
             Size = 8,
             Weight = 900,
+            MovementDelay = 100,
             Perception = 5,
             Might = 4,
             Speed = 5,

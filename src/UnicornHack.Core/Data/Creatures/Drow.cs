@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "drow",
             Species = Species.Elf,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -25,15 +24,19 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = "5"}}
                 }
@@ -44,6 +47,7 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.AlignmentAware | AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Speach,
             Weight = 800,
+            MovementDelay = 100,
             Perception = 4,
             Might = 4,
             Speed = 4,

@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "doppelganger",
             Species = Species.Doppelganger,
             SpeciesClass = SpeciesClass.ShapeChanger,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -26,8 +25,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
                 }
             },
             InitialLevel = 9,
@@ -35,6 +36,7 @@ namespace UnicornHack.Data.Creatures
             Behavior = AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Imitate,
             Weight = 1000,
+            MovementDelay = 100,
             Perception = 5,
             Might = 4,
             Speed = 5,

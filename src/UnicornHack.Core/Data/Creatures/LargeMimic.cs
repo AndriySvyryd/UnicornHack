@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "large mimic",
             Species = Species.Mimic,
             SpeciesClass = SpeciesClass.ShapeChanger,
-            MovementDelay = 400,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,15 +19,19 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "90"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "90*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                     {
                         new Stick()
@@ -40,6 +43,7 @@ namespace UnicornHack.Data.Creatures
             PreviousStageName = "small mimic",
             NextStageName = "giant mimic",
             Weight = 600,
+            MovementDelay = 400,
             Perception = 5,
             Might = 4,
             Speed = 5,

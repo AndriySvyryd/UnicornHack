@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "deep sheep",
             Species = Species.Quadruped,
             SpeciesClass = SpeciesClass.Quadrupedal,
-            MovementDelay = 133,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,16 +19,20 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Headbutt,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "40"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "40*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*physicalScaling"}}
                 }
             },
             InitialLevel = 2,
@@ -37,6 +40,7 @@ namespace UnicornHack.Data.Creatures
             GenerationFlags = GenerationFlags.SmallGroup,
             Noise = ActorNoiseType.Bleat,
             Weight = 600,
+            MovementDelay = 133,
             Perception = 2,
             Might = 2,
             Speed = 2,

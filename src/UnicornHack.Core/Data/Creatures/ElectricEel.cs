@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "electric eel",
             Species = Species.Eel,
-            MovementDelay = 120,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -19,15 +18,19 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Shock {Damage = "140"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Shock {Damage = "140*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Hug,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                         {new Bind {Duration = EffectDuration.UntilTimeout, DurationAmount = "10"}}
                 }
@@ -37,6 +40,7 @@ namespace UnicornHack.Data.Creatures
             PreviousStageName = "giant eel",
             Size = 8,
             Weight = 600,
+            MovementDelay = 120,
             Perception = 4,
             Might = 4,
             Speed = 4,

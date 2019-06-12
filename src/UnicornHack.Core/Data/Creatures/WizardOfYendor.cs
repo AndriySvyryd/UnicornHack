@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "Wizard of Yendor",
             Species = Species.Human,
-            MovementDelay = 100,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -19,15 +18,19 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "130"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "130*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Spell,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
                 }
             },
@@ -38,6 +41,7 @@ namespace UnicornHack.Data.Creatures
             Noise = ActorNoiseType.Cuss,
             Sex = Sex.Male,
             Weight = 1000,
+            MovementDelay = 100,
             Perception = 16,
             Might = 16,
             Speed = 16,

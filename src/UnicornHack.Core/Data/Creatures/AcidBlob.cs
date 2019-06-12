@@ -11,13 +11,12 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "acid blob",
             Species = Species.Blob,
-            MovementDelay = 400,
             Abilities = new HashSet<Ability>
             {
                 new Ability
                 {
-                    Name = "splashback",
-                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Corrode {Damage = "40"}}
+                    Name = "splashback", Activation = ActivationType.OnMeleeHit,
+                    Effects = new HashSet<Effect> {new Corrode {Damage = "40"}}
                 }
             },
             InitialLevel = 1,
@@ -26,6 +25,7 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.None,
             Size = 1,
             Weight = 30,
+            MovementDelay = 400,
             Perception = 1,
             Might = 5,
             Speed = 1,

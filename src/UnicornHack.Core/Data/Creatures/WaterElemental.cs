@@ -12,8 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "water elemental",
             Species = Species.Elemental,
             SpeciesClass = SpeciesClass.Extraplanar,
-            MovementDelay = 200,
-            Material = Material.Air,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -21,16 +19,20 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "170"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "170*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Punch,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Soak {Damage = "30"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Soak {Damage = "30*physicalScaling"}}
                 },
                 new Ability
                 {
@@ -42,6 +44,8 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.None,
             Size = 16,
             Weight = 2500,
+            MovementDelay = 200,
+            Material = Material.Air,
             Perception = 5,
             Might = 4,
             Speed = 5,

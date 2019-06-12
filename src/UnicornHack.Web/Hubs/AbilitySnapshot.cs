@@ -128,7 +128,7 @@ namespace UnicornHack.Hubs
                 ability.Range,
                 ability.HeadingDeviation,
                 ability.EnergyCost,
-                ability.GetActualDelay(activator),
+                context.Manager.AbilityActivationSystem.GetActualDelay(ability, activator),
                 ability.Cooldown,
                 ability.CooldownTick == null ? 0 : ability.CooldownTick.Value - context.Manager.Game.CurrentTick,
                 ability.XPCooldown,

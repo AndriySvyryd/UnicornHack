@@ -12,8 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "black light",
             Species = Species.FloatingSphere,
             SpeciesClass = SpeciesClass.Extraplanar,
-            MovementDelay = 80,
-            Material = Material.Air,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -21,7 +19,9 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 20,
                     Action = AbilityAction.Explosion,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
+                    Delay = "100*attackScaling",
                     Effects = new HashSet<Effect> {new Confuse {DurationAmount = "27"}}
                 }
             },
@@ -30,6 +30,8 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.None,
             Size = 2,
             Weight = 0,
+            MovementDelay = 80,
+            Material = Material.Air,
             Perception = 3,
             Might = 2,
             Speed = 3,

@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "baby long worm",
             Species = Species.Worm,
             SpeciesClass = SpeciesClass.Vermin,
-            MovementDelay = 400,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,14 +19,17 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*physicalScaling"}}
                 }
             },
             InitialLevel = 2,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},
             NextStageName = "long worm",
             Weight = 600,
+            MovementDelay = 400,
             Perception = 2,
             Might = 2,
             Speed = 2,

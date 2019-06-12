@@ -12,7 +12,6 @@ namespace UnicornHack.Data.Creatures
             Name = "giant ant",
             Species = Species.Ant,
             SpeciesClass = SpeciesClass.Vermin,
-            MovementDelay = 66,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -20,8 +19,10 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.Targeted,
                     Range = 1,
                     Action = AbilityAction.Bite,
+                    SuccessCondition = AbilitySuccessCondition.Attack,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20"}}
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*physicalScaling"}}
                 }
             },
             InitialLevel = 2,
@@ -30,6 +31,7 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.None,
             Size = 1,
             Weight = 10,
+            MovementDelay = 66,
             Perception = 2,
             Might = 2,
             Speed = 2,
