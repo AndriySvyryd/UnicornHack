@@ -83,7 +83,11 @@ namespace UnicornHack.Editor
             => Verify(script, item, i => i.Name);
 
         private static void Verify(string script, Ability item)
-            => Verify(script, item, i => i.Name);
+            => Verify(script, item, i => i.Name, a =>
+            {
+                Validate(a, "itself");
+                return null;
+            });
 
         private static void Verify(string script, Branch branch)
             => Verify(script, branch, b => b.Name);
@@ -97,7 +101,7 @@ namespace UnicornHack.Editor
         private static void Verify(string script, DefiningMapFragment fragment)
             => Verify(script, fragment, f => f.Name, VerifyNoUnicode);
 
-        private static bool VerifyNoUnicode(MapFragment fragment)
+        private static string VerifyNoUnicode(MapFragment fragment)
         {
             int x = 0, y = 0;
             foreach (var character in fragment.Map)
@@ -114,28 +118,33 @@ namespace UnicornHack.Editor
 
                 if (character != (byte)character)
                 {
-                    throw new InvalidOperationException($"Invalid character '{character}' at {x},{y}");
+                    return $"Invalid character '{character}' at {x},{y}";
                 }
 
                 x++;
             }
 
-            return true;
+            return null;
         }
 
         private static void Verify<T>(string script, T variant,
             Func<T, string> getName,
-            Func<T, bool> isValid = null,
+            Func<T, string> validate = null,
             Func<T, ISet<Ability>> getAbilities = null)
         {
             try
             {
                 var serializedVariant = script == null ? variant : CSScriptLoaderHelpers.Load<T>(script);
                 var name = getName(variant);
-                if (name != getName(serializedVariant)
-                    || (isValid != null && !isValid(serializedVariant)))
+                if (name != getName(serializedVariant))
                 {
-                    throw new InvalidOperationException("Invalid");
+                    throw new InvalidOperationException(name + " has invalid name.");
+                }
+                var validationError = validate?.Invoke(serializedVariant);
+                if (name != getName(serializedVariant)
+                    || validationError != null)
+                {
+                    throw new InvalidOperationException(name + " is not valid: " + validationError);
                 }
 
                 var abilities = getAbilities?.Invoke(serializedVariant);

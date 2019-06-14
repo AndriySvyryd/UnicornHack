@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
@@ -261,6 +260,61 @@ namespace UnicornHack.Systems.Items
             Assert.Equal(20, playerEntity.Being.EnergyPoints);
             Assert.Equal(0, playerEntity.Being.ReservedEnergyPoints);
             Assert.Equal(100, playerEntity.Being.Visibility);
+        }
+
+        [Fact]
+        public void Items_add_hindrance_when_requirements_not_met()
+        {
+            var level = TestHelper.BuildLevel(".");
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var player = playerEntity.Player;
+            player.NextAction = PlayerAction.Wait;
+            var manager = playerEntity.Manager;
+            ItemData.LongSword.Instantiate(playerEntity);
+
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(0, playerEntity.Being.Hindrance);
+            Assert.Equal(100, playerEntity.Being.Evasion);
+            Assert.Equal(100, playerEntity.Position.MovementDelay);
+            Assert.Equal(100, playerEntity.Position.TurningDelay);
+
+            var swordEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single();
+
+            var equipMessage = EquipItemMessage.Create(manager);
+            equipMessage.ActorEntity = playerEntity;
+            equipMessage.ItemEntity = swordEntity;
+            equipMessage.Slot = EquipmentSlot.GraspPrimaryMelee;
+
+            manager.Enqueue(equipMessage);
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(1, playerEntity.Being.Hindrance);
+            Assert.Equal(95, playerEntity.Being.Evasion);
+            Assert.Equal(111, playerEntity.Position.MovementDelay);
+            Assert.Equal(111, playerEntity.Position.TurningDelay);
+
+            equipMessage = EquipItemMessage.Create(manager);
+            equipMessage.ActorEntity = playerEntity;
+            equipMessage.ItemEntity = swordEntity;
+            equipMessage.Slot = EquipmentSlot.None;
+
+            manager.Enqueue(equipMessage);
+            manager.Queue.ProcessQueue(manager);
+
+            equipMessage = EquipItemMessage.Create(manager);
+            equipMessage.ActorEntity = playerEntity;
+            equipMessage.ItemEntity = swordEntity;
+            equipMessage.Slot = EquipmentSlot.GraspSecondaryMelee;
+
+            manager.Enqueue(equipMessage);
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(EquipmentSlot.GraspSecondaryMelee, swordEntity.Item.EquippedSlot);
+            Assert.Equal(4, playerEntity.Being.Hindrance);
+            Assert.Equal(80, playerEntity.Being.Evasion);
+            Assert.Equal(166, playerEntity.Position.MovementDelay);
+            Assert.Equal(166, playerEntity.Position.TurningDelay);
         }
     }
 }

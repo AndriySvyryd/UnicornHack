@@ -10,6 +10,17 @@ namespace UnicornHack.Systems.Abilities
         public static ActivateAbilityMessage Create(GameManager manager)
             => manager.Queue.CreateMessage<ActivateAbilityMessage>(Name);
 
+        public static ActivateAbilityMessage Create(GameEntity abilityEntity, GameEntity activatorEntity, GameEntity targetEntity)
+        {
+            var activationMessage = abilityEntity.Manager.Queue.CreateMessage<ActivateAbilityMessage>(Name);
+
+            activationMessage.AbilityEntity = abilityEntity;
+            activationMessage.ActivatorEntity = activatorEntity;
+            activationMessage.TargetEntity = targetEntity;
+
+            return activationMessage;
+        }
+
         private GameEntity _activatorEntity;
         private GameEntity _abilityEntity;
         private GameEntity _targetEntity;

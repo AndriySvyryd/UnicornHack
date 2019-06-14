@@ -39,7 +39,8 @@ namespace UnicornHack.Systems.Effects
 
         private EffectsAppliedMessage ApplyEffects(AbilityActivatedMessage message, bool pretend)
         {
-            if (message.TargetEntity?.Being.IsAlive != true)
+            if (message.TargetEntity == null
+                || message.TargetEntity.Being?.IsAlive == false)
             {
                 return null;
             }
@@ -457,7 +458,7 @@ namespace UnicornHack.Systems.Effects
             switch (effect.EffectType)
             {
                 case EffectType.PhysicalDamage:
-                    absorption = being.Armor - effect.SecondaryAmount ?? 0;
+                    absorption = being.Armor - (effect.SecondaryAmount ?? 0);
                     resistance = being.PhysicalResistance;
                     break;
                 case EffectType.Burn:
@@ -516,7 +517,7 @@ namespace UnicornHack.Systems.Effects
             return damage;
         }
 
-        public int GetExpectedDamage(AbilityActivatedMessage message, GameManager manager)
+        public int GetExpectedDamage(AbilityActivatedMessage message)
         {
             var totalDamage = 0;
             var damageEffects = new Dictionary<EffectType, (int Damage, GameEntity EffectEntity)>();
@@ -982,19 +983,26 @@ namespace UnicornHack.Systems.Effects
             {
                 case WeaponDamageScaling:
                 {
-                    var item = effect.Entity.Manager.FindEntity(effect.ContainingAbilityId).Ability.OwnerEntity.Item;
+                    var manager = effect.Entity.Manager;
+                    var item = manager.FindEntity(effect.ContainingAbilityId).Ability.OwnerEntity.Item;
 
-                    var handnessMultiplier = GetHandnessMultiplier(item.EquippedSlot);
+                    var handnessMultiplier = manager.SkillAbilitiesSystem.GetHandnessMultiplier(item.EquippedSlot);
                     if (handnessMultiplier <= 0)
                     {
                         return 0;
                     }
 
-                    var baseMultiplier = GetHandnessMultiplier(EquipmentSlot.GraspPrimaryMelee);
-                    var requiredMight = Item.Loader.Get(item.TemplateName)?.RequiredMight ?? 0;
-                    var mightDifference = activator.Being.Might * handnessMultiplier - requiredMight * baseMultiplier;
-                    var requiredFocus = Item.Loader.Get(item.TemplateName)?.RequiredFocus ?? 0;
-                    var focusDifference = activator.Being.Focus * handnessMultiplier - requiredFocus * baseMultiplier;
+                    var baseMultiplier =
+                        manager.SkillAbilitiesSystem.GetHandnessMultiplier(EquipmentSlot.GraspPrimaryMelee);
+                    var template = Item.Loader.Get(item.TemplateName);
+                    var skillBonus = manager.SkillAbilitiesSystem.GetItemSkillBonus(template, activator.Player);
+
+                    var requiredMight = template?.RequiredMight ?? 0;
+                    var mightDifference = activator.Being.Might * handnessMultiplier - requiredMight * baseMultiplier +
+                                          skillBonus * baseMultiplier;
+                    var requiredFocus = template?.RequiredFocus ?? 0;
+                    var focusDifference = activator.Being.Focus * handnessMultiplier - requiredFocus * baseMultiplier +
+                                          skillBonus * baseMultiplier;
                     var scale = 100
                                 + ((requiredMight * (mightDifference + Math.Min(0, mightDifference)))
                                    + (requiredFocus * (focusDifference + Math.Min(0, focusDifference)))) /
@@ -1022,33 +1030,12 @@ namespace UnicornHack.Systems.Effects
             }
         }
 
-        private int GetHandnessMultiplier(EquipmentSlot slot)
-        {
-            var multiplier = 0;
-            switch (slot)
-            {
-                case EquipmentSlot.GraspBothMelee:
-                case EquipmentSlot.GraspBothRanged:
-                    multiplier = 5;
-                    break;
-                case EquipmentSlot.GraspPrimaryMelee:
-                case EquipmentSlot.GraspPrimaryRanged:
-                    multiplier = 3;
-                    break;
-                case EquipmentSlot.GraspSecondaryMelee:
-                case EquipmentSlot.GraspSecondaryRanged:
-                    multiplier = 2;
-                    break;
-            }
-
-            return multiplier;
-        }
-
         /// <summary>
         ///     Returns a permanently applied effect that affects the specified property.
         ///     The effect amount can be changed without having to reapply it.
         /// </summary>
-        public EffectComponent GetPropertyEffect(GameEntity entity, string propertyName, string abilityName)
+        public EffectComponent GetOrAddPropertyEffect(
+            GameEntity entity, string propertyName, string abilityName, ValueCombinationFunction? function = null)
         {
             var manager = entity.Manager;
             var abilityEntity = GetOrAddPermanentAbility(entity.Id, abilityName, manager);
@@ -1056,7 +1043,7 @@ namespace UnicornHack.Systems.Effects
             return manager.EffectsToContainingAbilityRelationship[abilityEntity.Id].Select(e => e.Effect)
                        .FirstOrDefault(e => e.EffectType == EffectType.ChangeProperty
                                             && e.TargetName == propertyName)
-                   ?? AddPropertyEffect(abilityEntity.Id, propertyName, manager);
+                   ?? AddPropertyEffect(abilityEntity.Id, propertyName, function ?? ValueCombinationFunction.MeanRoundDown, manager);
         }
 
         /// <summary>
@@ -1096,7 +1083,7 @@ namespace UnicornHack.Systems.Effects
             return propertyAbility;
         }
 
-        private EffectComponent AddPropertyEffect(int abilityId, string propertyName, GameManager manager)
+        private EffectComponent AddPropertyEffect(int abilityId, string propertyName, ValueCombinationFunction function, GameManager manager)
         {
             using (var effectReference = manager.CreateEntity())
             {
@@ -1105,7 +1092,7 @@ namespace UnicornHack.Systems.Effects
                 effect.ContainingAbilityId = abilityId;
                 effect.EffectType = EffectType.ChangeProperty;
                 effect.Duration = EffectDuration.Infinite;
-                effect.Function = ValueCombinationFunction.MeanRoundDown;
+                effect.Function = function;
                 effect.TargetName = propertyName;
                 effect.Amount = 0;
 
@@ -1394,7 +1381,7 @@ namespace UnicornHack.Systems.Effects
                 return null;
             }
 
-            if (effect == null)
+            if (effect != null)
             {
                 activeEffects.Add(effect);
             }

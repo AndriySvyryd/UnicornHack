@@ -5,6 +5,7 @@ using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Time;
@@ -25,6 +26,8 @@ namespace UnicornHack.Systems.Faculties
         public const string SecondaryRangedWeaponAttackName = "secondary ranged weapon attack";
         public const string TwoHandedRangedWeaponAttackName = "two handed ranged weapon attack";
 
+        public const string EquippedAbilityName = "equipped";
+
         public readonly string DefaultWeaponDelay =
             TimeSystem.DefaultActionDelay + "*" + AbilityActivationSystem.WeaponDelayScaling;
 
@@ -42,6 +45,8 @@ namespace UnicornHack.Systems.Faculties
                 {
                     RecalculateWeaponAbilities(message.ActorEntity, melee: false, manager);
                 }
+
+                RecalculateHindrance(message.ActorEntity, manager);
             }
 
             return MessageProcessingResult.ContinueProcessing;
@@ -69,17 +74,19 @@ namespace UnicornHack.Systems.Faculties
                 case nameof(PlayerComponent.MediumWeapons):
                 case nameof(PlayerComponent.LongWeapons):
                     RecalculateWeaponAbilities(message.Entity, melee: true, manager);
+                    RecalculateHindrance(message.Entity, manager);
                     break;
                 case nameof(PlayerComponent.CloseRangeWeapons):
                 case nameof(PlayerComponent.ShortRangeWeapons):
                 case nameof(PlayerComponent.MediumRangeWeapons):
                 case nameof(PlayerComponent.LongRangeWeapons):
                     RecalculateWeaponAbilities(message.Entity, melee: false, manager);
+                    RecalculateHindrance(message.Entity, manager);
                     break;
                 case nameof(PlayerComponent.LightArmor):
                 case nameof(PlayerComponent.HeavyArmor):
                 case nameof(PlayerComponent.Artifice):
-                    // TODO: Update hindrance
+                    RecalculateHindrance(message.Entity, manager);
                     break;
                 default:
                     throw new InvalidOperationException($"Property {message.ChangedPropertyName} not supported.");
@@ -484,18 +491,120 @@ namespace UnicornHack.Systems.Faculties
         private bool CanUseWeapons(GameEntity actorEntity)
             => actorEntity.Being.UpperExtremities == ExtremityType.GraspingFingers;
 
-        private void SetDamage(AbilityComponent attack, int damage, GameManager manager)
+        private void RecalculateHindrance(GameEntity actorEntity, GameManager manager)
         {
-            foreach (var effectEntity in manager.EffectsToContainingAbilityRelationship[attack.EntityId])
+            var being = actorEntity.Being;
+            var hindrance = 0;
+
+            foreach (var itemEntity in manager.EntityItemsToContainerRelationship[actorEntity.Id])
             {
-                var effect = effectEntity.Effect;
-                if (effect.EffectType != EffectType.PhysicalDamage)
+                var item = itemEntity.Item;
+                if (item.EquippedSlot == EquipmentSlot.None)
                 {
                     continue;
                 }
 
-                effect.Amount = damage;
-                break;
+                var baseMultiplier = 1;
+                var handnessMultiplier = GetHandnessMultiplier(item.EquippedSlot);
+                if (handnessMultiplier > 0)
+                {
+                    baseMultiplier =
+                        manager.SkillAbilitiesSystem.GetHandnessMultiplier(EquipmentSlot.GraspPrimaryMelee);
+                }
+                else
+                {
+                    handnessMultiplier = 1;
+                }
+
+                var template = Item.Loader.Get(item.TemplateName);
+                var skillBonus = GetItemSkillBonus(template, actorEntity.Player) * baseMultiplier;
+
+                var requiredMight = template?.RequiredMight ?? 0;
+                var mightDifference = requiredMight * baseMultiplier - being.Might * handnessMultiplier -
+                                      skillBonus;
+                var requiredFocus = template?.RequiredFocus ?? 0;
+                var focusDifference = requiredFocus * baseMultiplier - being.Focus * handnessMultiplier -
+                                      skillBonus;
+                var requiredSpeed = template?.RequiredSpeed ?? 0;
+                var speedDifference = requiredSpeed * baseMultiplier - being.Speed * handnessMultiplier -
+                                      skillBonus;
+                var requiredPerception = template?.RequiredPerception ?? 0;
+                var perceptionDifference = requiredPerception * baseMultiplier - being.Perception * handnessMultiplier -
+                                           skillBonus;
+                var addedHindrance =
+                    Math.Max(
+                        Math.Max(
+                            Math.Max(
+                                Math.Max(0, mightDifference),
+                                focusDifference),
+                            speedDifference),
+                        perceptionDifference) / baseMultiplier;
+
+                hindrance += addedHindrance;
+            }
+
+            var hindranceEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
+                actorEntity, nameof(BeingComponent.Hindrance), EquippedAbilityName);
+
+            hindranceEffect.Amount = hindrance;
+        }
+
+        public int GetItemSkillBonus(Item template, PlayerComponent player)
+        {
+            if (player == null)
+            {
+                return 0;
+            }
+
+            var itemSkill = GetItemSkill(template?.Type ?? ItemType.None, player);
+            if (itemSkill != null)
+            {
+                var skillDifference = GetRequiredSkillLevel(template?.Complexity) - itemSkill;
+                if (skillDifference > 0)
+                {
+                    return skillDifference.Value;
+                }
+            }
+
+            return 0;
+        }
+
+        public int GetHandnessMultiplier(EquipmentSlot slot)
+        {
+            var multiplier = 0;
+            switch (slot)
+            {
+                case EquipmentSlot.GraspBothMelee:
+                case EquipmentSlot.GraspBothRanged:
+                    multiplier = 5;
+                    break;
+                case EquipmentSlot.GraspPrimaryMelee:
+                case EquipmentSlot.GraspPrimaryRanged:
+                    multiplier = 3;
+                    break;
+                case EquipmentSlot.GraspSecondaryMelee:
+                case EquipmentSlot.GraspSecondaryRanged:
+                    multiplier = 2;
+                    break;
+            }
+
+            return multiplier;
+        }
+
+        private int GetRequiredSkillLevel(ItemComplexity? complexity)
+        {
+            switch (complexity)
+            {
+                case null:
+                    return 0;
+                case ItemComplexity.Normal:
+                    return 1;
+                case ItemComplexity.Intricate:
+                    return 2;
+                case ItemComplexity.Exotic:
+                    return 3;
+                default:
+                    throw new InvalidOperationException("Unhandled complexity " + complexity);
             }
         }
 

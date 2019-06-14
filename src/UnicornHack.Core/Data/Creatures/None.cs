@@ -11,10 +11,10 @@ namespace UnicornHack.Data.Creatures
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
             Weight = 0,
-            Perception = 1,
-            Might = 1,
-            Speed = 1,
-            Focus = 1
+            Perception = -9,
+            Might = -9,
+            Speed = -9,
+            Focus = -9
         };
     }
 }

@@ -55,7 +55,6 @@ const ItemAttributesScreen = observer((props: IItemPropertiesProps) => {
             <PropertyRow label="Material" value={Material[itemAttributes.material]} />
             <PropertyRow label="Size" value={itemAttributes.size} />
             <PropertyRow label="Weight" value={itemAttributes.weight} />
-            <PropertyRow label="Hindrance" value={itemAttributes.hindrance} />
             <PropertyRow label="Complexity" value={ItemComplexity[itemAttributes.complexity]} />
             <PropertyRow label="Required might" value={itemAttributes.requiredMight} />
             <PropertyRow label="Required speed" value={itemAttributes.requiredSpeed} />

@@ -5,7 +5,8 @@ namespace UnicornHack.Generation
 {
     public class Affectable
     {
-        protected void CreatePropertyEffect(string propertyName, int? value, int abilityId, GameManager manager)
+        protected void CreatePropertyEffect(
+            string propertyName, int? value, int abilityId, GameManager manager, ValueCombinationFunction? function = null)
         {
             if (value == null)
             {
@@ -19,7 +20,7 @@ namespace UnicornHack.Generation
                 effect.Duration = EffectDuration.Infinite;
                 effect.TargetName = propertyName;
                 effect.Amount = value;
-                effect.Function = ValueCombinationFunction.MeanRoundDown;
+                effect.Function = function ?? ValueCombinationFunction.Sum;
                 effect.ContainingAbilityId = abilityId;
 
                 effectEntityReference.Referenced.Effect = effect;

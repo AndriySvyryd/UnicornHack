@@ -122,6 +122,7 @@ export class ActorAttributes {
     @observable armor: number = 0;
     @observable deflection: number = 0;
     @observable evasion: number = 0;
+    @observable hindrance: number = 0;
     @observable physicalResistance: number = 0;
     @observable magicResistance: number = 0;
     @observable bleedingResistance: number = 0;
@@ -172,6 +173,7 @@ export class ActorAttributes {
         attributes.armor = compactAttributes[i++];
         attributes.deflection = compactAttributes[i++];
         attributes.evasion = compactAttributes[i++];
+        attributes.hindrance = compactAttributes[i++];
         attributes.physicalResistance = compactAttributes[i++];
         attributes.magicResistance = compactAttributes[i++];
         attributes.bleedingResistance = compactAttributes[i++];
@@ -294,7 +296,6 @@ export class ItemAttributes {
     @observable material: Material = Material.Default;
     @observable size: number = 0;
     @observable weight: number = 0;
-    @observable hindrance: number = 0;
     @observable complexity: ItemComplexity = 0;
     @observable requiredMight: number = 0;
     @observable requiredSpeed: number = 0;
@@ -313,7 +314,6 @@ export class ItemAttributes {
         attributes.material = compactAttributes[i++];
         attributes.size = compactAttributes[i++];
         attributes.weight = compactAttributes[i++];
-        attributes.hindrance = compactAttributes[i++];
         attributes.complexity = compactAttributes[i++];
         attributes.requiredMight = compactAttributes[i++];
         attributes.requiredSpeed = compactAttributes[i++];

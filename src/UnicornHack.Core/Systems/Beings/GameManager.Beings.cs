@@ -65,6 +65,8 @@ namespace UnicornHack
                 Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.Speed)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,
                 Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.Perception)), 0);
+            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,
+                Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.Hindrance)), 0);
         }
     }
 }

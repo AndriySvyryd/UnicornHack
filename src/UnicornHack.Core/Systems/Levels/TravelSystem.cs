@@ -47,7 +47,7 @@ namespace UnicornHack.Systems.Levels
             {
                 var octants = turnDirection.ClosestOctantsTo(heading);
 
-                delay += (position.MovementDelay * octants) / 4;
+                delay += (position.TurningDelay * octants) / 4;
 
                 position.Heading = turnDirection;
             }

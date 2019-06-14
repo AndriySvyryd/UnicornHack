@@ -349,6 +349,7 @@ namespace UnicornHack.Hubs
                 being.Armor,
                 being.Deflection,
                 being.Evasion,
+                being.Hindrance,
                 being.PhysicalResistance,
                 being.MagicResistance,
                 being.BleedingResistance,

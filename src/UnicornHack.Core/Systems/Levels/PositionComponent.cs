@@ -15,6 +15,7 @@ namespace UnicornHack.Systems.Levels
         private byte _levelY;
         private Direction? _heading;
         private int _movementDelay;
+        private int _turningDelay;
 
         public PositionComponent()
             => ComponentId = (int)EntityComponent.Position;
@@ -47,12 +48,18 @@ namespace UnicornHack.Systems.Levels
             set => SetWithNotify(value, ref _heading);
         }
 
-        // TODO: Separate delay for turning
         [Property(MinValue = 0)]
         public int MovementDelay
         {
             get => _movementDelay;
             set => SetWithNotify(value, ref _movementDelay);
+        }
+
+        [Property(MinValue = 0)]
+        public int TurningDelay
+        {
+            get => _turningDelay;
+            set => SetWithNotify(value, ref _turningDelay);
         }
 
         // Unmapped properties
@@ -137,6 +144,7 @@ namespace UnicornHack.Systems.Levels
             _levelY = default;
             _heading = default;
             _movementDelay = default;
+            _turningDelay = default;
 
             base.Clean();
         }

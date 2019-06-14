@@ -73,43 +73,77 @@ namespace UnicornHack.Systems.Beings
 
                     break;
                 case nameof(BeingComponent.Might):
-                    var hpEffect = manager.EffectApplicationSystem.GetPropertyEffect(
+                    var hpEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
                         message.Entity, nameof(BeingComponent.HitPointMaximum), AttributedAbilityName);
 
                     hpEffect.Amount = message.NewValue * 10;
 
                     break;
                 case nameof(BeingComponent.Focus):
-                    var epEffect = manager.EffectApplicationSystem.GetPropertyEffect(
+                    var epEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
                         message.Entity, nameof(BeingComponent.EnergyPointMaximum), AttributedAbilityName);
 
                     epEffect.Amount = message.NewValue * 10;
 
                     break;
                 case nameof(BeingComponent.Speed):
-                    var movementEffect = manager.EffectApplicationSystem.GetPropertyEffect(
-                        message.Entity, nameof(PositionComponent.MovementDelay), AttributedAbilityName);
-
-                    movementEffect.Amount = message.NewValue == 0
-                        ? 0
-                        : TimeSystem.DefaultActionDelay * 10 / message.NewValue;
-
-                    var evasionEffect = manager.EffectApplicationSystem.GetPropertyEffect(
-                        message.Entity, nameof(BeingComponent.Evasion), AttributedAbilityName);
-
-                    evasionEffect.Amount = 50 + message.NewValue * 5;
+                {
+                    var effectiveSpeed = message.NewValue - being.Hindrance;
+                    CalculateMovementDelay(effectiveSpeed, message.Entity, manager);
+                    CalculateTurningDelay(effectiveSpeed, message.Entity, manager);
+                    CalculateEvasion(effectiveSpeed, message.Entity, manager);
 
                     break;
+                }
                 case nameof(BeingComponent.Perception):
-                    var accuracyEffect = manager.EffectApplicationSystem.GetPropertyEffect(
+                {
+                    var accuracyEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
                         message.Entity, nameof(BeingComponent.Accuracy), AttributedAbilityName);
 
                     accuracyEffect.Amount = message.NewValue * 10;
 
                     break;
+                }
+                case nameof(BeingComponent.Hindrance):
+                {
+                    var effectiveSpeed = being.Speed - message.NewValue;
+                    CalculateMovementDelay(effectiveSpeed, message.Entity, manager);
+                    CalculateTurningDelay(effectiveSpeed, message.Entity, manager);
+                    CalculateEvasion(effectiveSpeed, message.Entity, manager);
+
+                    break;
+                }
             }
 
             return MessageProcessingResult.ContinueProcessing;
+        }
+
+        private void CalculateEvasion(int effectiveSpeed, GameEntity beingEntity, GameManager manager)
+        {
+            var evasionEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
+                beingEntity, nameof(BeingComponent.Evasion), AttributedAbilityName);
+
+            evasionEffect.Amount = 50 + effectiveSpeed * 5;
+        }
+
+        private void CalculateMovementDelay(int effectiveSpeed, GameEntity beingEntity, GameManager manager)
+        {
+            var movementEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
+                beingEntity, nameof(PositionComponent.MovementDelay), AttributedAbilityName);
+
+            movementEffect.Amount = effectiveSpeed == 0
+                ? 0
+                : TimeSystem.DefaultActionDelay * 10 / effectiveSpeed;
+        }
+
+        private void CalculateTurningDelay(int effectiveSpeed, GameEntity beingEntity, GameManager manager)
+        {
+            var turningEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
+                beingEntity, nameof(PositionComponent.TurningDelay), AttributedAbilityName);
+
+            turningEffect.Amount = effectiveSpeed == 0
+                ? 0
+                : TimeSystem.DefaultActionDelay * 10 / effectiveSpeed;
         }
     }
 }

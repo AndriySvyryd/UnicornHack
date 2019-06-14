@@ -23,6 +23,7 @@ namespace UnicornHack.Generation
         private SpeciesClass? _speciesClass;
         private string _englishDescription;
         private int? _movementDelay;
+        private int? _turningDelay;
         private Material? _material;
         private Sex? _sex;
         private int? _size;
@@ -133,6 +134,12 @@ namespace UnicornHack.Generation
             set => _movementDelay = value;
         }
 
+        public int? TurningDelay
+        {
+            get => _turningDelay ?? BaseCreature?.TurningDelay;
+            set => _turningDelay = value;
+        }
+
         public int? Size
         {
             get => _size ?? BaseCreature?.Size;
@@ -180,7 +187,7 @@ namespace UnicornHack.Generation
             get => _regeneration ?? BaseCreature?.Regeneration;
             set => _regeneration = value;
         }
-        
+
         public int? Accuracy
         {
             get => _accuracy ?? BaseCreature?.Accuracy;
@@ -529,30 +536,30 @@ namespace UnicornHack.Generation
                         var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
                         ability.Name = EffectApplicationSystem.InnateAbilityName;
                         ability.Activation = ActivationType.Always;
+                        ability.SuccessCondition = AbilitySuccessCondition.Always;
 
                         abilityEntity.Ability = ability;
 
-                        CreatePropertyEffect(nameof(PositionComponent.MovementDelay), MovementDelay, abilityEntity.Id,
-                            manager);
-                        CreatePropertyEffect(nameof(PhysicalComponent.Size), Size, abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(PhysicalComponent.Weight), Weight, abilityEntity.Id, manager);
+                        CreatePropertyEffect(
+                            nameof(PositionComponent.MovementDelay), MovementDelay, abilityEntity.Id, manager);
+                        CreatePropertyEffect(
+                            nameof(PositionComponent.TurningDelay), TurningDelay, abilityEntity.Id, manager);
+                        CreatePropertyEffect(nameof(PhysicalComponent.Size), Size, abilityEntity.Id, manager,
+                            ValueCombinationFunction.MeanRoundDown);
+                        CreatePropertyEffect(nameof(PhysicalComponent.Weight), Weight, abilityEntity.Id, manager,
+                            ValueCombinationFunction.MeanRoundDown);
                         CreatePropertyEffect(nameof(BeingComponent.Perception), Perception, abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Might), Might, abilityEntity.Id,
-                            manager);
+                        CreatePropertyEffect(nameof(BeingComponent.Might), Might, abilityEntity.Id, manager);
                         CreatePropertyEffect(nameof(BeingComponent.Speed), Speed, abilityEntity.Id, manager);
                         CreatePropertyEffect(nameof(BeingComponent.Focus), Focus, abilityEntity.Id, manager);
                         CreatePropertyEffect(nameof(BeingComponent.EnergyRegeneration), EnergyRegeneration,
                             abilityEntity.Id, manager);
                         CreatePropertyEffect(nameof(BeingComponent.Regeneration), Regeneration, abilityEntity.Id,
                             manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Accuracy), Accuracy, abilityEntity.Id,
-                            manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Evasion), Evasion, abilityEntity.Id,
-                            manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Deflection), Deflection,
-                            abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Armor), Armor,
-                            abilityEntity.Id, manager);
+                        CreatePropertyEffect(nameof(BeingComponent.Accuracy), Accuracy, abilityEntity.Id, manager);
+                        CreatePropertyEffect(nameof(BeingComponent.Evasion), Evasion, abilityEntity.Id, manager);
+                        CreatePropertyEffect(nameof(BeingComponent.Deflection), Deflection, abilityEntity.Id, manager);
+                        CreatePropertyEffect(nameof(BeingComponent.Armor), Armor, abilityEntity.Id, manager);
                         CreatePropertyEffect(nameof(BeingComponent.PhysicalResistance), PhysicalResistance,
                             abilityEntity.Id, manager);
                         CreatePropertyEffect(nameof(BeingComponent.MagicResistance), MagicResistance, abilityEntity.Id,
@@ -584,7 +591,7 @@ namespace UnicornHack.Generation
                         CreatePropertyEffect(nameof(BeingComponent.UpperExtremities), (int?)UpperExtremities,
                             abilityEntity.Id, manager);
 
-                        // TODO: Populate other property
+                        // TODO: Populate other properties
                     }
 
                     appliedEffectEntity.Ability.OwnerEntity = creatureEntity;
@@ -654,6 +661,7 @@ namespace UnicornHack.Generation
                 {nameof(Size), (o, v) => (int?)v != o.BaseCreature?.Size},
                 {nameof(Weight), (o, v) => (int?)v != o.BaseCreature?.Weight},
                 {nameof(MovementDelay), (o, v) => (int?)v != o.BaseCreature?.MovementDelay},
+                {nameof(TurningDelay), (o, v) => (int?)v != o.BaseCreature?.TurningDelay},
                 {nameof(Material), (o, v) => (Material?)v != o.BaseCreature?.Material},
                 {nameof(Perception), (o, v) => (int?)v != o.BaseCreature?.Perception},
                 {nameof(Might), (o, v) => (int?)v != o.BaseCreature?.Might},
@@ -672,12 +680,12 @@ namespace UnicornHack.Generation
                 {nameof(ColdResistance), (o, v) => (int?)v != o.BaseCreature?.ColdResistance},
                 {nameof(ElectricityResistance), (o, v) => (int?)v != o.BaseCreature?.ElectricityResistance},
                 {nameof(FireResistance), (o, v) => (int?)v != o.BaseCreature?.FireResistance},
-                {nameof(LightResistance), (o, v) => (int?) v != o.BaseCreature?.LightResistance},
-                {nameof(PsychicResistance), (o, v) => (int?) v != o.BaseCreature?.PsychicResistance},
-                {nameof(SonicResistance), (o, v) => (int?) v != o.BaseCreature?.SonicResistance},
-                {nameof(StunResistance), (o, v) => (int?) v != o.BaseCreature?.StunResistance},
-                {nameof(ToxinResistance), (o, v) => (int?) v != o.BaseCreature?.ToxinResistance},
-                {nameof(VoidResistance), (o, v) => (int?) v != o.BaseCreature?.VoidResistance},
+                {nameof(LightResistance), (o, v) => (int?)v != o.BaseCreature?.LightResistance},
+                {nameof(PsychicResistance), (o, v) => (int?)v != o.BaseCreature?.PsychicResistance},
+                {nameof(SonicResistance), (o, v) => (int?)v != o.BaseCreature?.SonicResistance},
+                {nameof(StunResistance), (o, v) => (int?)v != o.BaseCreature?.StunResistance},
+                {nameof(ToxinResistance), (o, v) => (int?)v != o.BaseCreature?.ToxinResistance},
+                {nameof(VoidResistance), (o, v) => (int?)v != o.BaseCreature?.VoidResistance},
                 {nameof(WaterResistance), (o, v) => (int?)v != o.BaseCreature?.WaterResistance},
                 {nameof(Reflective), (o, v) => (bool?)v != o.BaseCreature?.Reflective},
                 {nameof(SlimingImmune), (o, v) => (bool?)v != o.BaseCreature?.SlimingImmune},

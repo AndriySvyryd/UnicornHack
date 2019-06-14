@@ -45,7 +45,7 @@ namespace UnicornHack.Systems.Abilities
         {
             var stats = new AttackStats();
             var activated = Activate(activateAbilityMessage, pretend: true, stats);
-            return String.IsNullOrEmpty(activated?.ActivationError) ? stats : null;
+            return string.IsNullOrEmpty(activated?.ActivationError) ? stats : null;
         }
 
         MessageProcessingResult IMessageConsumer<ActivateAbilityMessage, GameManager>.Process(
@@ -245,7 +245,7 @@ namespace UnicornHack.Systems.Abilities
                                 pretend: true);
                             stats.HitProbabilities.Add(hitProbability);
 
-                            var damage = manager.EffectApplicationSystem.GetExpectedDamage(targetMessage, manager);
+                            var damage = manager.EffectApplicationSystem.GetExpectedDamage(targetMessage);
                             stats.Damages.Add(damage);
 
                             manager.ReturnMessage(targetMessage);
@@ -581,7 +581,7 @@ namespace UnicornHack.Systems.Abilities
                     {
                         Debug.Assert(!ability.IsActive);
 
-                        Activate(ability, manager);
+                        SelfActivate(ability, manager);
                     }
 
                     break;
@@ -589,12 +589,12 @@ namespace UnicornHack.Systems.Abilities
                     if (message.ReferencedEntity != null
                         && message.ReferencedEntity.HasComponent(EntityComponent.Being))
                     {
-                        var activation = ActivateAbilityMessage.Create(manager);
-                        activation.ActivatorEntity = message.ReferencedEntity;
-                        activation.TargetEntity = message.ReferencedEntity;
+                        var activationTemplate = ActivateAbilityMessage.Create(manager);
+                        activationTemplate.ActivatorEntity = message.ReferencedEntity;
+                        activationTemplate.TargetEntity = message.ReferencedEntity;
 
-                        ActivateAbilities(message.Entity.Id, ActivationType.WhilePossessed, activation, manager, pretend: false);
-                        manager.ReturnMessage(activation);
+                        ActivateAbilities(message.Entity.Id, ActivationType.WhilePossessed, activationTemplate, manager, pretend: false);
+                        manager.ReturnMessage(activationTemplate);
                     }
 
                     break;
@@ -608,7 +608,7 @@ namespace UnicornHack.Systems.Abilities
                             && !containingAbility.IsActive
                             && manager.EffectsToContainingAbilityRelationship[containingAbility.EntityId].Count == 1)
                         {
-                            Activate(containingAbility, manager);
+                            SelfActivate(containingAbility, manager);
                         }
                     }
 
@@ -667,14 +667,9 @@ namespace UnicornHack.Systems.Abilities
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        private void Activate(AbilityComponent ability, GameManager manager)
+        private void SelfActivate(AbilityComponent ability, GameManager manager)
         {
-            var activation = ActivateAbilityMessage.Create(manager);
-            activation.ActivatorEntity = ability.OwnerEntity;
-            activation.TargetEntity = ability.OwnerEntity;
-            activation.AbilityEntity = ability.Entity;
-
-            manager.Process(activation);
+            manager.Process(ActivateAbilityMessage.Create(ability.Entity, ability.OwnerEntity, ability.OwnerEntity));
         }
 
         public bool ActivateAbilities(
@@ -916,6 +911,12 @@ namespace UnicornHack.Systems.Abilities
             {
                 message.Outcome = ApplicationOutcome.Miss;
                 return 0;
+            }
+
+            if (GetSuccessCondition(message.AbilityEntity.Ability) == AbilitySuccessCondition.Always)
+            {
+                message.Outcome = ApplicationOutcome.Success;
+                return 100;
             }
 
             var deflectionProbability = GetDeflectionProbability(
@@ -1166,8 +1167,10 @@ namespace UnicornHack.Systems.Abilities
                 case WeaponDelayScaling:
                 {
                     var item = ability.OwnerEntity.Item;
-                    var requiredSpeed = Item.Loader.Get(item.TemplateName)?.RequiredSpeed ?? 0;
-                    var difference = activator.Being.Speed - requiredSpeed;
+                    var template = Item.Loader.Get(item.TemplateName);
+                    var skillBonus = activator.Manager.SkillAbilitiesSystem.GetItemSkillBonus(template, activator.Player);
+                    var requiredSpeed = template?.RequiredSpeed ?? 0;
+                    var difference = activator.Being.Speed - requiredSpeed + skillBonus;
                     var divisor = 100 + requiredSpeed * (difference + Math.Min(0, difference));
 
                     if (divisor <= 0)

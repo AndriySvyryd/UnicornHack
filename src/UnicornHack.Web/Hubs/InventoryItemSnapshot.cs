@@ -136,7 +136,6 @@ namespace UnicornHack.Hubs
                 (int)physical.Material,
                 physical.Size,
                 physical.Weight,
-                item.Hindrance,
                 template.Complexity,
                 template.RequiredMight,
                 template.RequiredSpeed,

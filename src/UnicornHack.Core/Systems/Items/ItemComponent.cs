@@ -16,7 +16,6 @@ namespace UnicornHack.Systems.Items
         private EquipmentSlot _equippedSlot;
         private int _maxStackSize;
         private int? _count;
-        private int _hindrance;
 
         public ItemComponent()
             => ComponentId = (int)EntityComponent.Item;
@@ -75,13 +74,6 @@ namespace UnicornHack.Systems.Items
             set => SetWithNotify(value, ref _count);
         }
 
-        [Property(MinValue = 0, MaxValue = 10)]
-        public int Hindrance
-        {
-            get => _hindrance;
-            set => SetWithNotify(value, ref _hindrance);
-        }
-
         public int GetQuantity(GameManager manager)
             => Count ?? (Entity.Physical.Capacity == null
                    ? 1
@@ -98,7 +90,6 @@ namespace UnicornHack.Systems.Items
             _equippedSlot = default;
             _maxStackSize = default;
             _count = default;
-            _hindrance = default;
 
             base.Clean();
         }

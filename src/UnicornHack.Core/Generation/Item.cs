@@ -22,7 +22,6 @@ namespace UnicornHack.Generation
         private int? _weight;
         private SizeCategory? _equipableSizes;
         private EquipmentSlot? _equipableSlots;
-        private int? _hindrance;
         private int? _stackSize;
         private bool? _countable;
         private bool? _nameable;
@@ -63,12 +62,6 @@ namespace UnicornHack.Generation
         {
             get => _weight ?? BaseItem?.Weight;
             set => _weight = value;
-        }
-
-        public int? Hindrance
-        {
-            get => _hindrance ?? BaseItem?.Hindrance;
-            set => _hindrance = value;
         }
 
         public int? StackSize
@@ -244,10 +237,9 @@ namespace UnicornHack.Generation
                 var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
                 ability.Name = EffectApplicationSystem.InnateAbilityName;
                 ability.Activation = ActivationType.Always;
+                ability.SuccessCondition = AbilitySuccessCondition.Always;
 
                 appliedEffectEntity.Ability = ability;
-
-                CreatePropertyEffect(nameof(ItemComponent.Hindrance), Hindrance, appliedEffectEntity.Id, manager);
 
                 ability.OwnerId = itemEntity.Id;
                 appliedEffect.AffectedEntityId = itemEntity.Id;
@@ -368,7 +360,6 @@ namespace UnicornHack.Generation
             },
             {nameof(Material), (o, v) => (Material?)v != o.BaseItem?.Material},
             {nameof(Weight), (o, v) => (int?)v != o.BaseItem?.Weight},
-            {nameof(Hindrance), (o, v) => (int?)v != o.BaseItem?.Hindrance},
             {nameof(StackSize), (o, v) => (int?)v != o.BaseItem?.StackSize},
             {nameof(Countable), (o, v) => (bool?)v != o.BaseItem?.Countable},
             {nameof(Nameable), (o, v) => (bool?)v != o.BaseItem?.Nameable},
