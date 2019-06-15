@@ -118,7 +118,7 @@ namespace UnicornHack
             queue.Add<EffectsAppliedMessage>(KnowledgeSystem, EffectsAppliedMessage.Name, 1);
 
             XPSystem = new XPSystem();
-            queue.Add<VisibleTerrainChangedMessage>(XPSystem, VisibleTerrainChangedMessage.Name, 1);
+            queue.Add<KnownTerrainChangedMessage>(XPSystem, KnownTerrainChangedMessage.Name, 1);
             queue.Add<DiedMessage>(XPSystem, DiedMessage.Name, 3);
             queue.Add<EntityAddedMessage<GameEntity>>(XPSystem, Races.GetEntityAddedMessageName(), 0);
             queue.Add<EntityRemovedMessage<GameEntity>>(XPSystem, Races.GetEntityRemovedMessageName(), 0);

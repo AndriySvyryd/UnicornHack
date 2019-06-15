@@ -34,6 +34,8 @@ namespace UnicornHack.Systems.Levels
             traveledMessage.InitialLevel = position.LevelEntity;
             traveledMessage.InitialHeading = position.Heading.Value;
             traveledMessage.InitialLevelCell = position.LevelCell;
+            traveledMessage.TargetHeading = message.TargetHeading;
+            traveledMessage.TargetCell = message.TargetCell;
 
             if (position.MovementDelay == 0)
             {

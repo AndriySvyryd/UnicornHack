@@ -12,12 +12,12 @@ namespace UnicornHack.Systems.Knowledge
     ///     Handles player XP
     /// </summary>
     public class XPSystem :
-        IGameSystem<VisibleTerrainChangedMessage>,
+        IGameSystem<KnownTerrainChangedMessage>,
         IGameSystem<DiedMessage>,
         IGameSystem<EntityAddedMessage<GameEntity>>,
         IGameSystem<EntityRemovedMessage<GameEntity>>
     {
-        public MessageProcessingResult Process(VisibleTerrainChangedMessage message, GameManager manager)
+        public MessageProcessingResult Process(KnownTerrainChangedMessage message, GameManager manager)
         {
             if (message.TilesExplored > 0)
             {

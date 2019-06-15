@@ -21,14 +21,14 @@ namespace UnicornHack
                 .ConfigureAppConfiguration(
                     (hostingContext, config) =>
                     {
-                        IHostingEnvironment hostingEnvironment = hostingContext.HostingEnvironment;
+                        var hostingEnvironment = hostingContext.HostingEnvironment;
                         config
                             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                             .AddJsonFile($"appsettings.{hostingEnvironment.EnvironmentName}.json", optional: true,
                                 reloadOnChange: true);
                         if (hostingEnvironment.IsDevelopment())
                         {
-                            Assembly assembly = Assembly.Load(new AssemblyName(hostingEnvironment.ApplicationName));
+                            var assembly = Assembly.Load(new AssemblyName(hostingEnvironment.ApplicationName));
                             if (assembly != null)
                             {
                                 config.AddUserSecrets(assembly, true);

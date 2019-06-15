@@ -2,17 +2,18 @@
 
 namespace UnicornHack.Systems.Senses
 {
-    public class VisibleTerrainChangedMessage : IMessage
+    public class KnownTerrainChangedMessage : IMessage
     {
-        public const string Name = "VisibleTerrainChanged";
+        public const string Name = "KnownTerrainChanged";
 
-        public static VisibleTerrainChangedMessage Create(GameManager manager)
-            => manager.Queue.CreateMessage<VisibleTerrainChangedMessage>(Name);
+        public static KnownTerrainChangedMessage Create(GameManager manager)
+            => manager.Queue.CreateMessage<KnownTerrainChangedMessage>(Name);
 
-        public static void Enqueue(GameEntity levelEntity, GameManager manager)
+        public static void Enqueue(GameEntity levelEntity, int tilesExplored, GameManager manager)
         {
             var terrainChanged = Create(manager);
             terrainChanged.LevelEntity = levelEntity;
+            terrainChanged.TilesExplored = tilesExplored;
 
             manager.Enqueue(terrainChanged);
         }
@@ -30,11 +31,14 @@ namespace UnicornHack.Systems.Senses
             }
         }
 
+        public int TilesExplored { get; set; }
+
         string IMessage.MessageName { get; set; }
 
         public void Dispose()
         {
             LevelEntity = default;
+            TilesExplored = default;
         }
     }
 }

@@ -6,17 +6,17 @@ namespace UnicornHack.Systems.Levels
 {
     public static class TerrainSystem
     {
-        public static void SetTerrain(MapFeature feature, Point point, LevelComponent levelComponent)
+        public static void SetTerrain(MapFeature feature, Point point, LevelComponent level)
         {
-            var index = levelComponent.PointToIndex[point.X, point.Y];
-            levelComponent.Terrain[index] = (byte)feature;
-            if (levelComponent.TerrainChanges != null)
+            var index = level.PointToIndex[point.X, point.Y];
+            level.Terrain[index] = (byte)feature;
+            if (level.TerrainChanges != null)
             {
-                levelComponent.TerrainChanges[index] = (byte)feature;
-                if (levelComponent.VisibleTerrain[index] != 0)
+                level.TerrainChanges[index] = (byte)feature;
+                if (level.VisibleTerrain[index] != 0)
                 {
-                    levelComponent.KnownTerrain[index] = (byte)feature;
-                    levelComponent.KnownTerrainChanges[index] = (byte)feature;
+                    level.KnownTerrain[index] = (byte)feature;
+                    level.KnownTerrainChanges[index] = (byte)feature;
                 }
             }
 
@@ -25,35 +25,35 @@ namespace UnicornHack.Systems.Levels
                 case MapFeature.Pool:
                 case MapFeature.RockFloor:
                 case MapFeature.StoneFloor:
-                    if (ModifyNeighbours(levelComponent, levelComponent.VisibleNeighbours, null, point, add: true))
+                    if (ModifyNeighbors(level, level.VisibleNeighbours, null, point, add: true))
                     {
-                        levelComponent.VisibleNeighboursChanged = true;
+                        level.VisibleNeighboursChanged = true;
                     }
 
-                    if (levelComponent.TerrainChanges != null)
+                    if (level.TerrainChanges != null)
                     {
-                        ModifyNeighbours(levelComponent, levelComponent.WallNeighbors,
-                            levelComponent.WallNeighboursChanges, point, add: false);
+                        ModifyNeighbors(level, level.WallNeighbors,
+                            level.WallNeighboursChanges, point, add: false);
                     }
 
                     break;
                 case MapFeature.StoneArchway:
                 case MapFeature.StoneWall:
-                    ModifyNeighbours(levelComponent, levelComponent.WallNeighbors,
-                        levelComponent.WallNeighboursChanges, point, add: true);
+                    ModifyNeighbors(level, level.WallNeighbors,
+                        level.WallNeighboursChanges, point, add: true);
 
-                    if (levelComponent.TerrainChanges != null
-                        && ModifyNeighbours(levelComponent, levelComponent.VisibleNeighbours, null, point, add: false))
+                    if (level.TerrainChanges != null
+                        && ModifyNeighbors(level, level.VisibleNeighbours, null, point, add: false))
                     {
-                        levelComponent.VisibleNeighboursChanged = true;
+                        level.VisibleNeighboursChanged = true;
                     }
 
                     break;
             }
         }
 
-        private static bool ModifyNeighbours(
-            LevelComponent levelComponent, byte[] neighbours, Dictionary<int, byte> changes, Point point, bool add)
+        private static bool ModifyNeighbors(LevelComponent level, byte[] neighbors, Dictionary<int, byte> changes,
+            Point point, bool add)
         {
             var changed = false;
             for (var directionIndex = 0; directionIndex < 8; directionIndex++)
@@ -61,22 +61,22 @@ namespace UnicornHack.Systems.Levels
                 var direction = Vector.MovementDirections[directionIndex];
                 var newLocation = point.Translate(direction);
 
-                if (!levelComponent.IsValid(newLocation))
+                if (!level.IsValid(newLocation))
                 {
                     continue;
                 }
 
-                var newLocationIndex = levelComponent.PointToIndex[newLocation.X, newLocation.Y];
-                var neighbourBit = (byte)(1 << Vector.OppositeDirectionIndexes[directionIndex]);
-                var oldValue = neighbours[newLocationIndex];
+                var newLocationIndex = level.PointToIndex[newLocation.X, newLocation.Y];
+                var neighborBit = (byte)(1 << Vector.OppositeDirectionIndexes[directionIndex]);
+                var oldValue = neighbors[newLocationIndex];
                 var newValue = add
-                    ? (byte)(oldValue | neighbourBit)
-                    : (byte)(oldValue & (byte)~neighbourBit);
+                    ? (byte)(oldValue | neighborBit)
+                    : (byte)(oldValue & (byte)~neighborBit);
 
                 if (oldValue != newValue)
                 {
                     changed = true;
-                    neighbours[newLocationIndex] = newValue;
+                    neighbors[newLocationIndex] = newValue;
                     if (changes != null)
                     {
                         changes[newLocationIndex] = newValue;

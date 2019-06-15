@@ -79,6 +79,7 @@ namespace UnicornHack
             queue.Add<PerformActionMessage>(PlayerSystem, PerformActionMessage.PlayerName, 0);
             queue.Add<DelayMessage>(PlayerSystem, DelayMessage.Name, 1);
             queue.Add<DiedMessage>(PlayerSystem, DiedMessage.Name, 5);
+            queue.Add<TraveledMessage>(PlayerSystem, TraveledMessage.Name, 1);
         }
     }
 }

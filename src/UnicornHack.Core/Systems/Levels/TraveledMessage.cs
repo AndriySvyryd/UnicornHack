@@ -38,6 +38,8 @@ namespace UnicornHack.Systems.Levels
 
         public Direction InitialHeading { get; set; }
         public Point InitialLevelCell { get; set; }
+        public Direction TargetHeading { get; set; }
+        public Point TargetCell { get; set; }
         public bool Successful { get; set; }
 
         string IMessage.MessageName { get; set; }
@@ -48,6 +50,8 @@ namespace UnicornHack.Systems.Levels
             InitialLevel = default;
             InitialHeading = default;
             InitialLevelCell = default;
+            TargetHeading = default;
+            TargetCell = default;
             Successful = default;
         }
     }

@@ -51,6 +51,17 @@ namespace UnicornHack.Systems.Knowledge
                 UpdateEntityKnowledge(message.Entity, manager.LevelActors.Matcher, manager,
                     additionalCellToTest: message.InitialLevelCell);
             }
+            else if (message.Entity.HasComponent(EntityComponent.Player))
+            {
+                var level = message.Entity.Position.LevelEntity.Level;
+                var index = level.PointToIndex[message.TargetCell.X, message.TargetCell.Y];
+
+                var tilesExplored = RevealTerrain(index, level);
+                if (tilesExplored > 0)
+                {
+                    KnownTerrainChangedMessage.Enqueue(level.Entity, tilesExplored, manager);
+                }
+            }
 
             return MessageProcessingResult.ContinueProcessing;
         }
@@ -162,6 +173,27 @@ namespace UnicornHack.Systems.Knowledge
             }
         }
 
+        public int RevealTerrain(int index, LevelComponent level)
+        {
+            var terrain = level.Terrain[index];
+            var knownTerrain = level.KnownTerrain[index];
+            if (knownTerrain != terrain)
+            {
+                level.KnownTerrain[index] = terrain;
+                if (level.KnownTerrainChanges != null)
+                {
+                    level.KnownTerrainChanges[index] = terrain;
+                }
+
+                if (knownTerrain == (byte)MapFeature.Unexplored)
+                {
+                    return 1;
+                }
+            }
+
+            return 0;
+        }
+
         public MessageProcessingResult Process(ItemMovedMessage message, GameManager manager)
         {
             if (message.Successful)
@@ -182,7 +214,6 @@ namespace UnicornHack.Systems.Knowledge
                 return MessageProcessingResult.ContinueProcessing;
             }
 
-            var targetPosition = message.TargetEntity.Position;
             foreach (var playerEntity in manager.Players)
             {
                 var attackerSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity) ??

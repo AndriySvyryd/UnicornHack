@@ -14,7 +14,8 @@ namespace UnicornHack.Systems.Actors
     public class PlayerSystem :
         IGameSystem<PerformActionMessage>,
         IGameSystem<DiedMessage>,
-        IGameSystem<DelayMessage>
+        IGameSystem<DelayMessage>,
+        IGameSystem<TraveledMessage>
     {
         public MessageProcessingResult Process(PerformActionMessage message, GameManager manager)
         {
@@ -57,10 +58,7 @@ namespace UnicornHack.Systems.Actors
                 });
             }
 
-            player.NextAction = null;
-            player.NextActionTarget = null;
-            player.NextActionTarget2 = null;
-            player.QueuedAction = false;
+            ResetAction(player);
 
             var position = playerEntity.Position;
             switch (action)
@@ -171,6 +169,14 @@ namespace UnicornHack.Systems.Actors
             return true;
         }
 
+        private static void ResetAction(PlayerComponent player)
+        {
+            player.NextAction = null;
+            player.NextActionTarget = null;
+            player.NextActionTarget2 = null;
+            player.QueuedAction = false;
+        }
+
         private bool Move(Point targetCell, GameEntity playerEntity, GameManager manager)
         {
             // TODO: avoid actors and connections
@@ -179,8 +185,7 @@ namespace UnicornHack.Systems.Actors
                 position.LevelEntity.Level, position.LevelCell, targetCell, position.Heading.Value, knownOnly: true);
             if (direction == null)
             {
-                manager.LoggingSystem.WriteLog(
-                    manager.Game.Services.Language.NoPath(), playerEntity, manager);
+                manager.LoggingSystem.WriteLog(manager.Game.Services.Language.NoPath(), playerEntity, manager);
                 return false;
             }
 
@@ -210,16 +215,28 @@ namespace UnicornHack.Systems.Actors
                 : position.LevelCell.Translate(travelMessage.TargetHeading.AsVector());
             travelMessage.MoveOffConflicting = true;
 
-            if (!manager.TravelSystem.CanTravel(travelMessage, manager))
-            {
-                manager.LoggingSystem.WriteLog(
-                    manager.Game.Services.Language.UnableToMove(direction), playerEntity, manager);
-                manager.Queue.ReturnMessage(travelMessage);
-                return false;
-            }
-
             manager.Enqueue(travelMessage);
             return true;
+        }
+
+        public MessageProcessingResult Process(TraveledMessage message, GameManager state)
+        {
+            var player = message.Entity.Player;
+            if (!message.Successful
+                && player != null)
+            {
+                var manager = message.Entity.Manager;
+                manager.LoggingSystem.WriteLog(
+                    manager.Game.Services.Language.UnableToMove(message.TargetHeading), message.Entity, manager);
+                ResetAction(player);
+
+                if (manager.Game.ActingPlayer == null)
+                {
+                    manager.Game.ActingPlayer = message.Entity;
+                }
+            }
+
+            return MessageProcessingResult.ContinueProcessing;
         }
 
         private GameEntity GetItem(int itemId, GameEntity playerEntity, GameManager manager)
@@ -261,7 +278,7 @@ namespace UnicornHack.Systems.Actors
                     manager.LevelActorToLevelCellIndex[(playerEntity.Position.LevelId, targetCell.X, targetCell.Y)];
             }
 
-            GameEntity abilityEntity = null;
+            GameEntity abilityEntity;
             if (slot.HasValue)
             {
                 abilityEntity = manager.AbilitySlottingSystem.GetAbility(playerEntity.Id, slot.Value, manager);

@@ -126,7 +126,7 @@ namespace UnicornHack.Systems.Senses
             return (true, -1);
         }
 
-        private byte[] UpdateVisibleTerrain(LevelComponent level, GameManager manager)
+        private void UpdateVisibleTerrain(LevelComponent level, GameManager manager)
         {
             Array.Clear(level.VisibleTerrain, 0, level.VisibleTerrain.Length);
 
@@ -152,22 +152,12 @@ namespace UnicornHack.Systems.Senses
                     level.VisibleTerrain[i] = visibility;
 
                     // KnownTerrain updated here instead of a separate method for performance
-                    if (level.KnownTerrain[i] == (byte)MapFeature.Unexplored)
-                    {
-                        tilesExplored++;
-                        var terrain = level.Terrain[i];
-                        level.KnownTerrain[i] = terrain;
-                        if (level.KnownTerrainChanges != null)
-                        {
-                            level.KnownTerrainChanges[i] = terrain;
-                        }
-                    }
+                    tilesExplored += manager.KnowledgeSystem.RevealTerrain(i, level);
                 }
             }
 
-            VisibleTerrainChangedMessage.Enqueue(level.Entity, tilesExplored, manager);
-
-            return level.VisibleTerrain;
+            VisibleTerrainChangedMessage.Enqueue(level.Entity, manager);
+            KnownTerrainChangedMessage.Enqueue(level.Entity, tilesExplored, manager);
         }
 
         public SenseType SensedByPlayer(GameEntity target, Point targetPosition)
