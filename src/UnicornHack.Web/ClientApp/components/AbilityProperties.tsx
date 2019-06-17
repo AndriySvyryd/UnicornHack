@@ -64,11 +64,37 @@ export const AbilityAttributesScreen = observer((props: IAbilityPropertiesData) 
         <PropertyRow label="Cooldown ticks left" value={abilityAttributes.cooldownTicksLeft} show={abilityAttributes.cooldownTicksLeft != 0} />
         <PropertyRow label="XP cooldown" value={abilityAttributes.xpCooldown} show={abilityAttributes.xpCooldown != 0} />
         <PropertyRow label="XP cooldown left" value={abilityAttributes.xpCooldownLeft} show={abilityAttributes.xpCooldownLeft != 0} />
-        <PropertyRow label="Success condition" value={AbilitySuccessCondition[abilityAttributes.successCondition]}
-            show={abilityAttributes.successCondition != AbilitySuccessCondition.Default} />
-        <EffectsList effects={abilityAttributes.effects} />
+        {RenderSubAbilities(abilityAttributes)}
     </div>;
 });
+
+function RenderSubAbilities(abilityAttributes: AbilityAttributes) {
+    if (abilityAttributes.subAbilities.length == 1
+        || abilityAttributes.subAbilities.every(e => e.successCondition == AbilitySuccessCondition.Always || e.accuracy == 0)) {
+        const firstSubAbility = abilityAttributes.subAbilities[0];
+        var effects = new Map<number, EffectAttributes>();
+        abilityAttributes.selfEffects.forEach((e, k) => effects.set(k, e));
+        abilityAttributes.subAbilities.forEach(s => s.effects.forEach((e, k) => effects.set(k, e)));
+        return <>
+            <PropertyRow label="Attack type" value={AbilitySuccessCondition[firstSubAbility.successCondition]}
+                show={firstSubAbility.successCondition != AbilitySuccessCondition.Always} />
+            <PropertyRow label="Accuracy" value={firstSubAbility.accuracy} show={firstSubAbility.accuracy != 0} />
+            <EffectsList effects={effects} />
+        </>;
+    } else {
+        var subAbilities = abilityAttributes.subAbilities.map((s, i) => {
+            return <div className="property__row_multi-line">
+                <br />
+                <h5 className="property__row_multi-line">Attack {i+1}:</h5>
+                <PropertyRow label="Attack type" value={AbilitySuccessCondition[s.successCondition]}
+                    show={s.successCondition != AbilitySuccessCondition.Always} />
+                <PropertyRow label="Accuracy" value={s.accuracy} show={s.accuracy != 0} />
+                <EffectsList effects={s.effects} />
+            </div>;
+        });
+        return <>{subAbilities}</>
+    }
+}
 
 interface IAbilityPropertiesData {
     abilityAttributes: AbilityAttributes | null;
@@ -92,7 +118,7 @@ export const AbilitiesList = observer((props: IAbilitiesListData) => {
             </AccordionCollapse>
         </div>);
     return <div className="property__row_multi-line abilityList">
-        <h3 className="abilityScreen__title">Abilities:</h3>
+        <h4 className="abilityScreen__title">Abilities:</h4>
         <Accordion>
             {abilities}
         </Accordion>
@@ -105,13 +131,13 @@ export interface IAbilitiesListData {
 
 const EffectsList = observer(({ effects }: IEffectsListData) => {
     return <div className="abilityScreen__effects">
-        <h5 className="abilityScreen__effectsTitle">Effects:</h5>
+        <h6 className="abilityScreen__effectsTitle">Effects:</h6>
         {Array.from(effects.values(), e => <EffectPropertiesScreen key={e.id} effect={e} />)}
     </div>;
 });
 
 interface IEffectsListData {
-    effects: Map<string, EffectAttributes>;
+    effects: Map<number, EffectAttributes>;
 }
 
 const EffectPropertiesScreen = observer(({ effect }: IEffectPropertiesData) => {

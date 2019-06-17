@@ -23,9 +23,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Trigger = ActivationType.OnMeleeAttack,
                     Range = 1,
                     Action = AbilityAction.Punch,
-                    SuccessCondition = AbilitySuccessCondition.Attack,
+                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                    Accuracy = "5+attackScaling",
                     Cooldown = 100,
                     Delay = "100*attackScaling",
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
@@ -33,9 +35,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Trigger = ActivationType.OnMeleeAttack,
                     Range = 1,
                     Action = AbilityAction.Claw,
-                    SuccessCondition = AbilitySuccessCondition.Attack,
+                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                    Accuracy = "5+attackScaling",
                     Cooldown = 100,
                     Delay = "100*attackScaling",
                     Effects = new HashSet<Effect> {new DrainLife {Amount = "2*physicalScaling"}}
@@ -43,9 +47,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Trigger = ActivationType.OnRangedAttack,
                     Range = 20,
                     Action = AbilityAction.Spell,
-                    SuccessCondition = AbilitySuccessCondition.Attack,
+                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                    Accuracy = "5+attackScaling",
                     Cooldown = 100,
                     Delay = "100*attackScaling",
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}

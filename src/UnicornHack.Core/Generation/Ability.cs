@@ -25,7 +25,7 @@ namespace UnicornHack.Generation
         public TargetingType TargetingType { get; set; }
         public AbilityAction Action { get; set; }
         public AbilitySuccessCondition SuccessCondition { get; set; }
-        public int? Accuracy { get; set; }
+        public string Accuracy { get; set; }
 
         /// <summary>
         ///     Amount of ticks that need to pass after the ability has been used or deactivated before it can be used again.
@@ -33,7 +33,7 @@ namespace UnicornHack.Generation
         public int Cooldown { get; set; }
 
         /// <summary>
-        ///     Amount of experience points as percent of XP required for the next level that a player need to gain after the
+        ///     Amount of experience points adjusted by level depth that a player need to gain after the
         ///     ability has been used or deactivated before it can be used again.
         /// </summary>
         public int XPCooldown { get; set; }
@@ -56,6 +56,7 @@ namespace UnicornHack.Generation
             ability.TargetingType = TargetingType;
             ability.Action = Action;
             ability.SuccessCondition = SuccessCondition;
+            ability.Accuracy = Accuracy;
             ability.Cooldown = Cooldown;
             ability.XPCooldown = XPCooldown;
             ability.Delay = Delay;

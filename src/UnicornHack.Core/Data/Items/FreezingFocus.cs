@@ -17,6 +17,8 @@ namespace UnicornHack.Data.Items
                     Activation = ActivationType.OnMeleeAttack,
                     Range = 1,
                     Action = AbilityAction.Hit,
+                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                    Accuracy = "5+weaponScaling",
                     Delay = "100*weaponScaling",
                     Effects = new HashSet<Effect> {new Freeze {Damage = "40*weaponScaling"}}
                 }

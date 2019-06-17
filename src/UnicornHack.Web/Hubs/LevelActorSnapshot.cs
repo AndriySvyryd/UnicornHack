@@ -276,15 +276,17 @@ namespace UnicornHack.Hubs
                 result.Add(index.Value);
             }
 
-            result.Add(string.Join(", ", stats.HitProbabilities.Select(p => p + "%")));
+            result.Add(string.Join(", ", stats.SubAttacks.Select(s => s.HitProbability).Select(p => p + "%")));
 
             if (index.HasValue)
             {
                 index = index.Value + 1;
                 result.Add(index.Value);
             }
-            
-            result.Add(string.Join(", ", stats.Damages));
+
+            var damages = stats.SubAttacks.Select(s
+                => manager.EffectApplicationSystem.GetExpectedDamage(s.Effects, attackerEntity, victimEntity)).ToList();
+            result.Add(string.Join(", ", damages));
 
             if (index.HasValue)
             {
@@ -294,9 +296,9 @@ namespace UnicornHack.Hubs
 
             var expectedDamage = 0;
             // ReSharper disable once LoopCanBeConvertedToQuery
-            for (var i = 0; i < stats.Damages.Count; i++)
+            for (var i = 0; i < stats.SubAttacks.Count; i++)
             {
-                expectedDamage += stats.Damages[i] * stats.HitProbabilities[i];
+                expectedDamage += damages[i] * stats.SubAttacks[i].HitProbability;
             }
 
             var ticksToKill = expectedDamage <= 0
@@ -305,7 +307,8 @@ namespace UnicornHack.Hubs
             result.Add(ticksToKill);
         }
 
-        public static List<object> SerializeAttributes(GameEntity actorEntity, SenseType sense, SerializationContext context)
+        public static List<object> SerializeAttributes(
+            GameEntity actorEntity, SenseType sense, SerializationContext context)
         {
             var canIdentify = actorEntity != null && sense.CanIdentify();
             if (!canIdentify)
@@ -321,7 +324,7 @@ namespace UnicornHack.Hubs
                 : context.Services.Language.GetDescription(
                     actorEntity.Manager.RacesToBeingRelationship[actorEntity.Id].Values.First().Race.TemplateName,
                     DescriptionCategory.Creature);
-            var result = new List<object>(40)
+            var result = new List<object>(42)
             {
                 context.Services.Language.GetActorName(actorEntity, sense),
                 description,
@@ -348,6 +351,7 @@ namespace UnicornHack.Hubs
                 being.EnergyRegeneration,
                 being.Armor,
                 being.Deflection,
+                being.Accuracy,
                 being.Evasion,
                 being.Hindrance,
                 being.PhysicalResistance,
@@ -366,16 +370,18 @@ namespace UnicornHack.Hubs
                 being.WaterResistance
             };
 
-            if (!actorEntity.HasComponent(EntityComponent.Player))
-            {
-                result.Add(actorEntity.Manager.AbilitiesToAffectableRelationship[actorEntity.Id]
-                    .Where(a => a.Ability.IsUsable
-                                && a.Ability.Activation != ActivationType.Default
-                                && a.Ability.Activation != ActivationType.Always
-                                && a.Ability.Activation != ActivationType.OnMeleeAttack
-                                && a.Ability.Activation != ActivationType.OnRangedAttack) // Instead add the effects to the corresponding abilities
-                    .Select(a => AbilitySnapshot.SerializeAttributes(a, actorEntity, context)).ToList());
-            }
+            var isPlayer = actorEntity.HasComponent(EntityComponent.Player);
+
+            result.Add(actorEntity.Manager.AbilitiesToAffectableRelationship[actorEntity.Id]
+                .Where(a => a.Ability.IsUsable
+                            && ((!isPlayer
+                                 && a.Ability.Activation != ActivationType.Default
+                                 && a.Ability.Activation != ActivationType.Always
+                                 && a.Ability.Activation != ActivationType.OnMeleeAttack
+                                 && a.Ability.Activation != ActivationType.OnRangedAttack)
+                                || (isPlayer
+                                    && a.Ability.Template?.Type == AbilityType.DefaultAttack)))
+                .Select(a => AbilitySnapshot.SerializeAttributes(a, actorEntity, context)).ToList());
 
             return result;
         }

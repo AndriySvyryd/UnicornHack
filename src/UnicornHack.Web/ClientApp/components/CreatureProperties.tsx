@@ -63,6 +63,7 @@ export const ActorAttributesScreen = observer((props: IActorPropertiesData) => {
         <PropertyRow label="Weight" value={actorAttributes.weight} />
         <PropertyRow label="Armor" value={actorAttributes.armor} />
         <PropertyRow label="Deflection" value={actorAttributes.deflection} />
+        <PropertyRow label="Accuracy" value={actorAttributes.accuracy} />
         <PropertyRow label="Evasion" value={actorAttributes.evasion} />
         <PropertyRow label="Hindrance" value={actorAttributes.hindrance} />
         <PropertyRow label="Physical resistance" value={actorAttributes.physicalResistance} />

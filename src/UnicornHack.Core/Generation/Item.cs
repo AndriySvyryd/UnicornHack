@@ -213,6 +213,8 @@ namespace UnicornHack.Generation
 
             var physical = manager.CreateComponent<PhysicalComponent>(EntityComponent.Physical);
             physical.Material = Material ?? Primitives.Material.Default;
+            physical.Weight = Weight ?? 0;
+            physical.Size = 0;
 
             if ((item.Type & ItemType.Container) != 0)
             {

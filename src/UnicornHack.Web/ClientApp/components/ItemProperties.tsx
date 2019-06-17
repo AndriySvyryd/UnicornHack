@@ -53,16 +53,13 @@ const ItemAttributesScreen = observer((props: IItemPropertiesProps) => {
         <div className="characterScreen__content">
             <PropertyRow label="Type" value={ItemType[itemAttributes.type]} />
             <PropertyRow label="Material" value={Material[itemAttributes.material]} />
-            <PropertyRow label="Size" value={itemAttributes.size} />
             <PropertyRow label="Weight" value={itemAttributes.weight} />
-            <PropertyRow label="Complexity" value={ItemComplexity[itemAttributes.complexity]} />
-            <PropertyRow label="Required might" value={itemAttributes.requiredMight} />
-            <PropertyRow label="Required speed" value={itemAttributes.requiredSpeed} />
-            <PropertyRow label="Required focus" value={itemAttributes.requiredFocus} />
-            <PropertyRow label="Required perception" value={itemAttributes.requiredPerception} />
-            <div className="property__row property__row_wide">
-                <div className="property__label">Equippable slots:</div><div className="property__value">{slots}</div>
-            </div>
+            <PropertyRow label="Complexity" value={ItemComplexity[itemAttributes.complexity]} show={itemAttributes.complexity != ItemComplexity.Normal} />
+            <PropertyRow label="Required might" value={itemAttributes.requiredMight} show={itemAttributes.requiredMight != 0} />
+            <PropertyRow label="Required speed" value={itemAttributes.requiredSpeed} show={itemAttributes.requiredSpeed != 0} />
+            <PropertyRow label="Required focus" value={itemAttributes.requiredFocus} show={itemAttributes.requiredFocus != 0} />
+            <PropertyRow label="Required perception" value={itemAttributes.requiredPerception} show={itemAttributes.requiredPerception != 0} />
+            <PropertyRow label="Equippable slots" classname="property__row property__row_wide" value={slots} show={slots.length != 0} />
             <AbilitiesList abilities={itemAttributes.abilities} />
         </div>
     </>;

@@ -16,9 +16,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Trigger = ActivationType.OnMeleeAttack,
                     Range = 1,
                     Action = AbilityAction.Touch,
-                    SuccessCondition = AbilitySuccessCondition.Attack,
+                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                    Accuracy = "5+attackScaling",
                     Cooldown = 100,
                     Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
@@ -28,7 +30,11 @@ namespace UnicornHack.Data.Creatures
                 },
                 new Ability
                 {
-                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect>
+                    Activation = ActivationType.OnMeleeHit,
+                    Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.UnblockableAttack,
+                    Accuracy = "10+attackScaling",
+                    Effects = new HashSet<Effect>
                     {
                         new Slime()
                     }

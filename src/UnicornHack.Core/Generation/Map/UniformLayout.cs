@@ -12,8 +12,8 @@ namespace UnicornHack.Generation.Map
     {
         private Dimensions _lotSize;
 
-        public Dimensions MaxLotSize { get; set; } = new Dimensions(20, 20);
-        public Dimensions MinLotSize { get; set; } = new Dimensions(6, 6);
+        public Dimensions MaxLotSize { get; set; } = new Dimensions(15, 15);
+        public Dimensions MinLotSize { get; set; } = new Dimensions(5, 5);
         protected int LotPlacementAttempts { get; set; } = 16;
 
         public override List<Room> Fill(LevelComponent level, DefiningMapFragment fragment)

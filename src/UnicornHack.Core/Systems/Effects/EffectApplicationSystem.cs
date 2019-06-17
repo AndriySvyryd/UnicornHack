@@ -430,12 +430,12 @@ namespace UnicornHack.Systems.Effects
                         if (player != null)
                         {
                             appliedEffect.ExpirationXp =
-                                affectedEntity.Player.NextLevelXP * effect.GetActualDurationAmount() / 100;
+                                affectedEntity.Position.LevelEntity.Level.Difficulty * effect.GetActualDurationAmount();
                         }
                         else
                         {
                             appliedEffect.ExpirationTick =
-                                manager.Game.CurrentTick + effect.GetActualDurationAmount() * 100;
+                                manager.Game.CurrentTick + effect.GetActualDurationAmount() * 20;
                         }
 
                         break;
@@ -517,11 +517,11 @@ namespace UnicornHack.Systems.Effects
             return damage;
         }
 
-        public int GetExpectedDamage(AbilityActivatedMessage message)
+        public int GetExpectedDamage(IEnumerable<GameEntity> effects, GameEntity activatorEntity, GameEntity targetEntity)
         {
             var totalDamage = 0;
             var damageEffects = new Dictionary<EffectType, (int Damage, GameEntity EffectEntity)>();
-            foreach (var effectEntity in message.EffectsToApply)
+            foreach (var effectEntity in effects)
             {
                 var effect = effectEntity.Effect;
                 switch (effect.EffectType)
@@ -546,7 +546,7 @@ namespace UnicornHack.Systems.Effects
                         }
 
                         // TODO: Take effectComponent.Function into account
-                        damageEffects[key] = (GetActualAmount(effect, message.ActivatorEntity) + previousDamage.Damage,
+                        damageEffects[key] = (GetActualAmount(effect, activatorEntity) + previousDamage.Damage,
                             effectEntity);
                         break;
                     default:
@@ -557,7 +557,7 @@ namespace UnicornHack.Systems.Effects
             foreach (var damageEffect in damageEffects)
             {
                 totalDamage += GetDamage(
-                    damageEffect.Value.EffectEntity.Effect, message.TargetEntity.Being, message.ActivatorEntity, damageEffect.Value.Damage);
+                    damageEffect.Value.EffectEntity.Effect, targetEntity.Being, activatorEntity, damageEffect.Value.Damage);
             }
 
             return totalDamage;
@@ -986,7 +986,11 @@ namespace UnicornHack.Systems.Effects
                     var manager = effect.Entity.Manager;
                     var item = manager.FindEntity(effect.ContainingAbilityId).Ability.OwnerEntity.Item;
 
-                    var handnessMultiplier = manager.SkillAbilitiesSystem.GetHandnessMultiplier(item.EquippedSlot);
+                    //TODO: Show stats for each equipable slot
+                    var slot = item.EquippedSlot == EquipmentSlot.None
+                        ? EquipmentSlot.GraspPrimaryMelee
+                        : item.EquippedSlot;
+                    var handnessMultiplier = manager.SkillAbilitiesSystem.GetHandnessMultiplier(slot);
                     if (handnessMultiplier <= 0)
                     {
                         return 0;

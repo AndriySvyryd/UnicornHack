@@ -27,6 +27,8 @@ namespace UnicornHack.Systems.Abilities
     {
         public const string WeaponDelayScaling = "weaponScaling";
         public const string AttackDelayScaling = "attackScaling";
+        public const string WeaponAccuracyScaling = "weaponScaling";
+        public const string AttackAccuracyScaling = "attackScaling";
 
         public bool CanActivateAbility(ActivateAbilityMessage activateAbilityMessage, bool shouldThrow)
         {
@@ -188,14 +190,10 @@ namespace UnicornHack.Systems.Abilities
             selfEffectsMessage.TargetEntity = activateMessage.ActivatorEntity;
             selfEffectsMessage.EffectsToApply = ImmutableList.Create<GameEntity>();
 
-            var abilityTrigger = ability.Trigger == ActivationType.Default
-                ? GetTrigger(ability)
-                : ability.Trigger;
-
-            targetEffectsMessage.Trigger = abilityTrigger;
+            targetEffectsMessage.Trigger = ability.Trigger;
             targetEffectsMessage.EffectsToApply = ImmutableList.Create<GameEntity>();
 
-            AddTriggeredEffects(targetEffectsMessage, selfEffectsMessage, ability.EntityId, abilityTrigger, manager);
+            AddTriggeredEffects(targetEffectsMessage, selfEffectsMessage, ability.EntityId, ability.Trigger, manager);
 
             var activatedAbilities = new HashSet<AbilityComponent>();
             var activations = GetActivations(targetEffectsMessage, selfEffectsMessage, activatedAbilities);
@@ -218,6 +216,7 @@ namespace UnicornHack.Systems.Abilities
             }
             else
             {
+                stats.SelfEffects = selfEffectsMessage.EffectsToApply;
                 manager.ReturnMessage(selfEffectsMessage);
             }
 
@@ -238,15 +237,23 @@ namespace UnicornHack.Systems.Abilities
                     {
                         if (target == activateMessage.TargetEntity)
                         {
+                            var subStats = new SubAttackStats();
+                            subStats.SuccessCondition = targetMessage.AbilityEntity.Ability.SuccessCondition;
+
+                            var accuracy = manager.AbilityActivationSystem.GetAccuracy(ability, targetMessage.ActivatorEntity);
+                            subStats.Accuracy = accuracy;
+
                             var melee = activation.ActivationMessage.AbilityEntity.Ability.Range == 1;
                             var hitProbability = DetermineOutcome(
                                 targetMessage,
                                 melee ? BeveledVisibilityCalculator.MaxVisibility : exposure,
-                                pretend: true);
-                            stats.HitProbabilities.Add(hitProbability);
+                                pretend: true,
+                                accuracy);
+                            subStats.HitProbability = hitProbability;
 
-                            var damage = manager.EffectApplicationSystem.GetExpectedDamage(targetMessage);
-                            stats.Damages.Add(damage);
+                            subStats.Effects = targetMessage.EffectsToApply;
+
+                            stats.SubAttacks.Add(subStats);
 
                             manager.ReturnMessage(targetMessage);
                         }
@@ -756,47 +763,6 @@ namespace UnicornHack.Systems.Abilities
             }
         }
 
-        public static ActivationType GetTrigger(AbilityComponent ability)
-        {
-            switch (ability.Action)
-            {
-                case AbilityAction.Default:
-                case AbilityAction.Modifier:
-                case AbilityAction.Drink:
-                    return ActivationType.Default;
-                case AbilityAction.Hit:
-                case AbilityAction.Slash:
-                case AbilityAction.Chop:
-                case AbilityAction.Stab:
-                case AbilityAction.Poke:
-                case AbilityAction.Impale:
-                case AbilityAction.Bludgeon:
-                case AbilityAction.Punch:
-                case AbilityAction.Kick:
-                case AbilityAction.Touch:
-                case AbilityAction.Headbutt:
-                case AbilityAction.Claw:
-                case AbilityAction.Bite:
-                case AbilityAction.Suck:
-                case AbilityAction.Sting:
-                case AbilityAction.Hug:
-                case AbilityAction.Trample:
-                case AbilityAction.Digestion:
-                    return ActivationType.OnMeleeAttack;
-                case AbilityAction.Shoot:
-                case AbilityAction.Throw:
-                case AbilityAction.Spit:
-                case AbilityAction.Breath:
-                case AbilityAction.Gaze:
-                case AbilityAction.Scream:
-                case AbilityAction.Spell:
-                case AbilityAction.Explosion:
-                    return ActivationType.OnRangedAttack;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(ability), ability.Action.ToString());
-            }
-        }
-
         private IReadOnlyCollection<(GameEntity, byte)> GetTargets(in AbilityActivatedMessage activationMessage)
         {
             if (activationMessage.TargetEntity != null)
@@ -905,7 +871,7 @@ namespace UnicornHack.Systems.Abilities
             }
         }
 
-        private int DetermineOutcome(AbilityActivatedMessage message, byte exposure, bool pretend)
+        private int DetermineOutcome(AbilityActivatedMessage message, byte exposure, bool pretend, int? accuracy = null)
         {
             if (message.TargetEntity == null)
             {
@@ -913,14 +879,9 @@ namespace UnicornHack.Systems.Abilities
                 return 0;
             }
 
-            if (GetSuccessCondition(message.AbilityEntity.Ability) == AbilitySuccessCondition.Always)
-            {
-                message.Outcome = ApplicationOutcome.Success;
-                return 100;
-            }
-
+            accuracy = accuracy ?? GetAccuracy(message.AbilityEntity.Ability, message.ActivatorEntity);
             var deflectionProbability = GetDeflectionProbability(
-                message.AbilityEntity, message.ActivatorEntity, message.TargetEntity, exposure);
+                message.AbilityEntity, message.ActivatorEntity, message.TargetEntity, exposure, accuracy);
             if (!pretend
                 && DetermineSuccess(message.TargetEntity, deflectionProbability))
             {
@@ -929,7 +890,7 @@ namespace UnicornHack.Systems.Abilities
             }
 
             var evasionProbability = GetEvasionProbability(
-                message.AbilityEntity, message.ActivatorEntity, message.TargetEntity, exposure);
+                message.AbilityEntity, message.ActivatorEntity, message.TargetEntity, exposure, accuracy);
             if (!pretend
                 && DetermineSuccess(message.TargetEntity, evasionProbability))
             {
@@ -941,28 +902,15 @@ namespace UnicornHack.Systems.Abilities
             return pretend ? (100 - deflectionProbability) * (100 - evasionProbability) / 100 : 100;
         }
 
-        private static AbilitySuccessCondition GetSuccessCondition(AbilityComponent ability)
-        {
-            var successCondition = ability.SuccessCondition;
-            if (successCondition == AbilitySuccessCondition.Default)
-            {
-                successCondition = (ability.Activation & ActivationType.OnAttack) != 0
-                    ? AbilitySuccessCondition.Attack
-                    : (GetTrigger(ability) & ActivationType.OnAttack) != 0
-                        ? AbilitySuccessCondition.Attack
-                        : AbilitySuccessCondition.Always;
-            }
-
-            return successCondition;
-        }
-
         private int GetAttackRating(
-            GameEntity abilityEntity, GameEntity activatorEntity, GameEntity targetEntity, byte? exposure)
+            GameEntity abilityEntity, GameEntity activatorEntity, GameEntity targetEntity, byte? exposure, int? accuracy)
         {
+            var ability = abilityEntity.Ability;
+            var attackRating = accuracy ?? GetAccuracy(ability, activatorEntity);
+
             if (exposure == null)
             {
                 var position = targetEntity.Position;
-                var ability = abilityEntity.Ability;
                 var los = GetLOSTargets(
                     activatorEntity, position.LevelCell, position.LevelEntity, ability.TargetingType, ability.Range);
 
@@ -977,7 +925,6 @@ namespace UnicornHack.Systems.Abilities
                 }
             }
 
-            var attackRating = activatorEntity.Being.Accuracy;
             if (exposure.Value < BeveledVisibilityCalculator.MaxVisibility)
             {
                 attackRating = attackRating * exposure.Value / BeveledVisibilityCalculator.MaxVisibility;
@@ -987,13 +934,61 @@ namespace UnicornHack.Systems.Abilities
             return attackRating;
         }
 
-        public int GetDeflectionProbability(GameEntity abilityEntity, GameEntity activatorEntity, GameEntity targetEntity, byte? exposure)
+        public int GetAccuracy(AbilityComponent ability, GameEntity activatorEntity)
         {
-            switch (GetSuccessCondition(abilityEntity.Ability))
+            var accuracy = activatorEntity.Being.Accuracy;
+            if (ability.Accuracy == null)
             {
-                case AbilitySuccessCondition.Attack:
+                return accuracy;
+            }
+
+            if (int.TryParse(ability.Accuracy, out var intAccuracy))
+            {
+                return intAccuracy;
+            }
+
+            var parts = ability.Accuracy.Split('+');
+            if (parts.Length != 2)
+            {
+                throw new InvalidOperationException(ability.Accuracy + " unsupported operation");
+            }
+
+            if (!int.TryParse(parts[0], out var baseAccuracy))
+            {
+                throw new InvalidOperationException(ability.Accuracy + " unsupported summand");
+            }
+
+            switch (parts[1])
+            {
+                case AttackAccuracyScaling:
+                {
+                    return baseAccuracy + accuracy;
+                }
+                case WeaponAccuracyScaling:
+                {
+                    var item = ability.OwnerEntity.Item;
+                    var template = Item.Loader.Get(item.TemplateName);
+                    var skillBonus =
+                        activatorEntity.Manager.SkillAbilitiesSystem.GetItemSkillBonus(template, activatorEntity.Player);
+                    var requiredPerception = template?.RequiredPerception?? 0;
+                    var difference = activatorEntity.Being.Perception - requiredPerception + skillBonus;
+                    var accuracyModifier = requiredPerception * (difference + Math.Min(0, difference));
+
+                    return baseAccuracy + accuracy + accuracyModifier;
+                }
+                default:
+                    throw new InvalidOperationException(ability.Accuracy + " unsupported scaling " + parts[1]);
+            }
+        }
+
+        public int GetDeflectionProbability(
+            GameEntity abilityEntity, GameEntity activatorEntity, GameEntity targetEntity, byte? exposure, int? accuracy)
+        {
+            switch (abilityEntity.Ability.SuccessCondition)
+            {
+                case AbilitySuccessCondition.NormalAttack:
                 case AbilitySuccessCondition.UnavoidableAttack:
-                    var attackRating = GetAttackRating(abilityEntity, activatorEntity, targetEntity, exposure);
+                    var attackRating = GetAttackRating(abilityEntity, activatorEntity, targetEntity, exposure, accuracy);
                     return GetMissProbability(attackRating, targetEntity.Being.Deflection);
                 case AbilitySuccessCondition.UnblockableAttack:
                 case AbilitySuccessCondition.Always:
@@ -1003,13 +998,14 @@ namespace UnicornHack.Systems.Abilities
             }
         }
 
-        public int GetEvasionProbability(GameEntity abilityEntity, GameEntity activatorEntity, GameEntity targetEntity, byte? exposure)
+        public int GetEvasionProbability(
+            GameEntity abilityEntity, GameEntity activatorEntity, GameEntity targetEntity, byte? exposure, int? accuracy)
         {
-            switch (GetSuccessCondition(abilityEntity.Ability))
+            switch (abilityEntity.Ability.SuccessCondition)
             {
-                case AbilitySuccessCondition.Attack:
+                case AbilitySuccessCondition.NormalAttack:
                 case AbilitySuccessCondition.UnblockableAttack:
-                    var attackRating = GetAttackRating(abilityEntity, activatorEntity, targetEntity, exposure);
+                    var attackRating = GetAttackRating(abilityEntity, activatorEntity, targetEntity, exposure, accuracy);
                     return GetMissProbability(attackRating, targetEntity.Being.Evasion);
                 case AbilitySuccessCondition.UnavoidableAttack:
                 case AbilitySuccessCondition.Always:

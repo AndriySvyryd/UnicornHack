@@ -17,9 +17,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Trigger = ActivationType.OnMeleeAttack,
                     Range = 1,
                     Action = AbilityAction.Punch,
-                    SuccessCondition = AbilitySuccessCondition.Attack,
+                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                    Accuracy = "5+attackScaling",
                     Cooldown = 100,
                     Delay = "100*attackScaling",
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "170*physicalScaling"}}
@@ -27,16 +29,22 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Trigger = ActivationType.OnMeleeAttack,
                     Range = 1,
                     Action = AbilityAction.Punch,
-                    SuccessCondition = AbilitySuccessCondition.Attack,
+                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                    Accuracy = "5+attackScaling",
                     Cooldown = 100,
                     Delay = "100*attackScaling",
                     Effects = new HashSet<Effect> {new Soak {Damage = "30*physicalScaling"}}
                 },
                 new Ability
                 {
-                    Activation = ActivationType.OnMeleeHit, Effects = new HashSet<Effect> {new Soak {Damage = "30"}}
+                    Activation = ActivationType.OnMeleeHit,
+                    Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.UnblockableAttack,
+                    Accuracy = "10+attackScaling",
+                    Effects = new HashSet<Effect> {new Soak {Damage = "30*physicalScaling"}}
                 }
             },
             InitialLevel = 8,

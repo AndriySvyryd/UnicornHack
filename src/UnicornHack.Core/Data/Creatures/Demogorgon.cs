@@ -17,27 +17,33 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Trigger = ActivationType.OnRangedAttack,
                     Range = 20,
                     Action = AbilityAction.Spell,
-                    SuccessCondition = AbilitySuccessCondition.Attack,
+                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                    Accuracy = "5+attackScaling",
                     Delay = "100*attackScaling",
                     Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Trigger = ActivationType.OnMeleeAttack,
                     Range = 1,
                     Action = AbilityAction.Sting,
-                    SuccessCondition = AbilitySuccessCondition.Attack,
+                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                    Accuracy = "5+attackScaling",
                     Delay = "100*attackScaling",
                     Effects = new HashSet<Effect> {new DrainLife {Amount = "20*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Trigger = ActivationType.OnMeleeAttack,
                     Range = 1,
                     Action = AbilityAction.Claw,
-                    SuccessCondition = AbilitySuccessCondition.Attack,
+                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                    Accuracy = "5+attackScaling",
                     Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                     {
@@ -52,9 +58,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Trigger = ActivationType.OnMeleeAttack,
                     Range = 1,
                     Action = AbilityAction.Claw,
-                    SuccessCondition = AbilitySuccessCondition.Attack,
+                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                    Accuracy = "5+attackScaling",
                     Delay = "100*attackScaling",
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "25*physicalScaling"}}
                 }

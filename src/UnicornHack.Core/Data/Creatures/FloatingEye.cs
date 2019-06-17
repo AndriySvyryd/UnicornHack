@@ -17,8 +17,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.OnMeleeHit,
+                    Action = AbilityAction.Gaze,
+                    SuccessCondition = AbilitySuccessCondition.UnblockableAttack,
+                    Accuracy = "10+attackScaling",
                     Effects = new HashSet<Effect>
-                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = "35"}}
+                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = "200"}}
                 }
             },
             InitialLevel = 2,

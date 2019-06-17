@@ -16,9 +16,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Trigger = ActivationType.OnMeleeAttack,
                     Range = 1,
                     Action = AbilityAction.Bite,
-                    SuccessCondition = AbilitySuccessCondition.Attack,
+                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                    Accuracy = "5+attackScaling",
                     Cooldown = 100,
                     Delay = "100*attackScaling",
                     Effects = new HashSet<Effect> {new Shock {Damage = "140*physicalScaling"}}
@@ -26,9 +28,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Trigger = ActivationType.OnMeleeAttack,
                     Range = 1,
                     Action = AbilityAction.Hug,
-                    SuccessCondition = AbilitySuccessCondition.Attack,
+                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                    Accuracy = "5+attackScaling",
                     Cooldown = 100,
                     Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>

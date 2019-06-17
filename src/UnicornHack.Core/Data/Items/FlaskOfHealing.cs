@@ -17,7 +17,7 @@ namespace UnicornHack.Data.Items
                     Name = "Drink",
                     Activation = ActivationType.Manual,
                     Action = AbilityAction.Drink,
-                    XPCooldown = 25,
+                    XPCooldown = 100,
                     Delay = "100",
                     Effects = new HashSet<Effect> {new Heal {Amount = "50"}}
                 }

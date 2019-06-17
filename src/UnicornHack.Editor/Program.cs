@@ -77,15 +77,28 @@ namespace UnicornHack.Editor
             => Verify(script, player, p => p.Name, getAbilities: c => c.Abilities);
 
         private static void Verify(string script, Item item)
-            => Verify(script, item, i => i.Name, getAbilities: c => c.Abilities);
+            => Verify(script, item, i => i.Name, i =>
+            {
+                if (i.Weight == null)
+                {
+                    return "no weight";
+                }
+
+                if (i.Material == null)
+                {
+                    return "no material";
+                }
+
+                return null;
+            }, getAbilities: c => c.Abilities);
 
         private static void Verify(string script, ItemGroup item)
             => Verify(script, item, i => i.Name);
 
-        private static void Verify(string script, Ability item)
-            => Verify(script, item, i => i.Name, a =>
+        private static void Verify(string script, Ability ability)
+            => Verify(script, ability, i => i.Name, a =>
             {
-                Validate(a, "itself");
+                Validate(a, "itself", ability);
                 return null;
             });
 
@@ -152,7 +165,7 @@ namespace UnicornHack.Editor
                 {
                     foreach (var ability in abilities)
                     {
-                        Validate(ability, name);
+                        Validate(ability, name, variant);
                     }
                 }
             }
@@ -163,13 +176,49 @@ namespace UnicornHack.Editor
             }
         }
 
-        private static void Validate(Ability ability, string ownerName)
+        private static void Validate<T>(Ability ability, string ownerName, T owner)
         {
             if ((ability.Activation & ActivationType.Slottable) != 0
                 && ability.Delay == null && ability.Cooldown == 0 && ability.XPCooldown == 0)
             {
                 throw new InvalidOperationException(
                     $"Ability {ability.Name} on {ownerName} has no delay or cooldown");
+            }
+
+            var onItem = owner is Item;
+            var isAttack = ability.SuccessCondition == AbilitySuccessCondition.NormalAttack
+                            || ability.SuccessCondition == AbilitySuccessCondition.UnavoidableAttack
+                            || ability.SuccessCondition == AbilitySuccessCondition.UnblockableAttack;
+            if (isAttack
+                && ability.Accuracy == null)
+            {
+                throw new InvalidOperationException(
+                    $"Ability {ability.Name} on {ownerName} has no accuracy");
+            }
+
+            if (isAttack
+                && ability.Action == AbilityAction.Default)
+            {
+                throw new InvalidOperationException(
+                    $"Ability {ability.Name} on {ownerName} has no action");
+            }
+
+            if (isAttack
+                && ability.Trigger == ActivationType.Default
+                && (ability.Activation & ActivationType.OnHit) == 0
+                && !onItem)
+            {
+                throw new InvalidOperationException(
+                    $"Ability {ability.Name} on {ownerName} has no trigger");
+            }
+
+            if ((ability.Effects == null
+                || ability.Effects.Count == 0)
+                && !onItem
+                && !(ability is LeveledAbility))
+            {
+                throw new InvalidOperationException(
+                    $"Ability {ability.Name} on {ownerName} has no effects");
             }
 
             if (ability.Effects == null)
@@ -184,7 +233,7 @@ namespace UnicornHack.Editor
                     case AddAbility addAbility:
                         if (addAbility.Ability != null)
                         {
-                            Validate(addAbility.Ability, ownerName);
+                            Validate(addAbility.Ability, ownerName, owner);
                         }
                         else
                         {

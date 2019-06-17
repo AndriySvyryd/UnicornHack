@@ -86,21 +86,21 @@ namespace UnicornHack.Systems.Beings
                     epEffect.Amount = message.NewValue * 10;
 
                     break;
-                case nameof(BeingComponent.Speed):
-                {
-                    var effectiveSpeed = message.NewValue - being.Hindrance;
-                    CalculateMovementDelay(effectiveSpeed, message.Entity, manager);
-                    CalculateTurningDelay(effectiveSpeed, message.Entity, manager);
-                    CalculateEvasion(effectiveSpeed, message.Entity, manager);
-
-                    break;
-                }
                 case nameof(BeingComponent.Perception):
                 {
                     var accuracyEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
                         message.Entity, nameof(BeingComponent.Accuracy), AttributedAbilityName);
 
                     accuracyEffect.Amount = message.NewValue * 10;
+
+                    break;
+                }
+                case nameof(BeingComponent.Speed):
+                {
+                    var effectiveSpeed = message.NewValue - being.Hindrance;
+                    CalculateMovementDelay(effectiveSpeed, message.Entity, manager);
+                    CalculateTurningDelay(effectiveSpeed, message.Entity, manager);
+                    CalculateEvasion(effectiveSpeed, message.Entity, manager);
 
                     break;
                 }

@@ -121,6 +121,7 @@ export class ActorAttributes {
     @observable energyRegeneration: number = 0;
     @observable armor: number = 0;
     @observable deflection: number = 0;
+    @observable accuracy: number = 0;
     @observable evasion: number = 0;
     @observable hindrance: number = 0;
     @observable physicalResistance: number = 0;
@@ -172,6 +173,7 @@ export class ActorAttributes {
         attributes.energyRegeneration = compactAttributes[i++];
         attributes.armor = compactAttributes[i++];
         attributes.deflection = compactAttributes[i++];
+        attributes.accuracy = compactAttributes[i++];
         attributes.evasion = compactAttributes[i++];
         attributes.hindrance = compactAttributes[i++];
         attributes.physicalResistance = compactAttributes[i++];
@@ -294,7 +296,6 @@ export class ItemAttributes {
     @observable description: string = '';
     @observable type: ItemType = ItemType.None;
     @observable material: Material = Material.Default;
-    @observable size: number = 0;
     @observable weight: number = 0;
     @observable complexity: ItemComplexity = 0;
     @observable requiredMight: number = 0;
@@ -312,7 +313,6 @@ export class ItemAttributes {
         attributes.description = compactAttributes[i++];
         attributes.type = compactAttributes[i++];
         attributes.material = compactAttributes[i++];
-        attributes.size = compactAttributes[i++];
         attributes.weight = compactAttributes[i++];
         attributes.complexity = compactAttributes[i++];
         attributes.requiredMight = compactAttributes[i++];
@@ -343,17 +343,16 @@ export class AbilityAttributes {
     @observable range: number = 0;
     @observable headingDeviation: number = 0;
     @observable energyCost: number = 0;
-    @observable delay: number = 0;
     @observable cooldown: number = 0;
     @observable cooldownTicksLeft: number = 0;
     @observable xpCooldown: number = 0;
     @observable xpCooldownLeft: number = 0;
-    @observable successCondition: AbilitySuccessCondition = AbilitySuccessCondition.Default;
-    @observable effects: Map<string, EffectAttributes> = new Map<string, EffectAttributes>();
-    @observable description: string | null = null;
+    @observable delay: number = 0;
+    @observable selfEffects: Map<number, EffectAttributes> = new Map<number, EffectAttributes>();
+    @observable subAbilities: Array<SubAbilityAttributes> = new Array<SubAbilityAttributes>();
+    @observable description: string | null = null;    
     //@observable type: AbilityType = AbilityType.Default;
     //@observable cost: number = 0;
-    //@observable accuracy: number = 0;
 
     @action
     static expand(compactAttributes: any[]): AbilityAttributes {
@@ -374,14 +373,13 @@ export class AbilityAttributes {
         attributes.cooldownTicksLeft = compactAttributes[i++];
         attributes.xpCooldown = compactAttributes[i++];
         attributes.xpCooldownLeft = compactAttributes[i++];
-        attributes.successCondition = compactAttributes[i++];
-        (<any[]>compactAttributes[i++]).forEach((a: any[]) => EffectAttributes.expand(a).addTo(attributes.effects));
+        (<any[]>compactAttributes[i++]).forEach((a: any[]) => EffectAttributes.expand(a).addTo(attributes.selfEffects));
+        attributes.subAbilities = (<any[]>compactAttributes[i++]).map((a: any[]) => SubAbilityAttributes.expand(a));
 
         if (compactAttributes.length > i) {
             attributes.description = compactAttributes[i++];
             //attributes.type = compactAttributes[i++];
             //attributes.cost = compactAttributes[i++];
-            //attributes.accuracy = compactAttributes[i++];
         }
 
         return attributes;
@@ -399,6 +397,23 @@ export class AbilityAttributes {
 
         return capitalize(this.name) + (this.level == 0 ? '' : ' ' + this.level.toString());
     } 
+}
+
+export class SubAbilityAttributes {
+    @observable successCondition: AbilitySuccessCondition = AbilitySuccessCondition.Always;
+    @observable accuracy: number = 0;
+    @observable effects: Map<number, EffectAttributes> = new Map<number, EffectAttributes>();
+
+    @action
+    static expand(compactAttributes: any[]): SubAbilityAttributes {
+        var i = 0;
+        const attributes = new SubAbilityAttributes();
+        attributes.successCondition = compactAttributes[i++];
+        attributes.accuracy = compactAttributes[i++];
+        (<any[]>compactAttributes[i++]).forEach((a: any[]) => EffectAttributes.expand(a).addTo(attributes.effects));
+
+        return attributes;
+    }
 }
 
 export class EffectAttributes {
@@ -430,7 +445,7 @@ export class EffectAttributes {
     }
 
     @action.bound
-    addTo(map: Map<string, EffectAttributes>) {
-        map.set(this.id.toString(), this);
+    addTo(map: Map<number, EffectAttributes>) {
+        map.set(this.id, this);
     }
 }

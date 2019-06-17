@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
@@ -63,7 +62,8 @@ namespace UnicornHack.Systems.Knowledge
             var stats = manager.AbilityActivationSystem.GetAttackStats(activateMessage);
             manager.ReturnMessage(activateMessage);
 
-            Assert.Equal(46, stats.Damages.Aggregate(0, (s, d) => s + d));
+            Assert.Equal(46, stats.SubAttacks
+                .Aggregate(0, (sum, a) => sum + manager.EffectApplicationSystem.GetExpectedDamage(a.Effects, demogorgon, nymph)));
 
             Verify(demogorgon, nymph, playerEntity, player2Entity,
                 demogorgonSting, success: true,

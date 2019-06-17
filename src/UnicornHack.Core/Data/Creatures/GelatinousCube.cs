@@ -16,9 +16,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Trigger = ActivationType.OnMeleeAttack,
                     Range = 1,
                     Action = AbilityAction.Touch,
-                    SuccessCondition = AbilitySuccessCondition.Attack,
+                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                    Accuracy = "5+attackScaling",
                     Cooldown = 100,
                     Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
@@ -27,9 +29,11 @@ namespace UnicornHack.Data.Creatures
                 new Ability
                 {
                     Activation = ActivationType.Targeted,
+                    Trigger = ActivationType.OnMeleeAttack,
                     Range = 1,
                     Action = AbilityAction.Touch,
-                    SuccessCondition = AbilitySuccessCondition.Attack,
+                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                    Accuracy = "5+attackScaling",
                     Cooldown = 350,
                     Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
@@ -40,20 +44,17 @@ namespace UnicornHack.Data.Creatures
                     Activation = ActivationType.OnDigestion,
                     Action = AbilityAction.Digestion,
                     Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Blight {Damage = "10"}}
-                },
-                new Ability
-                {
-                    Activation = ActivationType.OnDigestion,
-                    Action = AbilityAction.Digestion,
-                    Cooldown = 100,
-                    Effects = new HashSet<Effect> {new Corrode {Damage = "10"}}
+                    Effects = new HashSet<Effect>
+                        {new Blight {Damage = "10*physicalScaling"}, new Corrode {Damage = "10*physicalScaling"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnMeleeHit,
+                    Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.UnblockableAttack,
+                    Accuracy = "10+attackScaling",
                     Effects = new HashSet<Effect>
-                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = "4"}}
+                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = "200"}}
                 }
             },
             InitialLevel = 6,

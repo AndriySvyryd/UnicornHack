@@ -14,7 +14,8 @@ namespace UnicornHack.Data.Abilities
             Trigger = ActivationType.OnRangedAttack,
             Range = 10,
             Action = AbilityAction.Shoot,
-            SuccessCondition = AbilitySuccessCondition.Attack,
+            SuccessCondition = AbilitySuccessCondition.NormalAttack,
+            Accuracy = "5+attackScaling",
             Cooldown = 1000,
             Delay = "100",
             Effects = new HashSet<Effect> {new Freeze {Damage = "40"}}

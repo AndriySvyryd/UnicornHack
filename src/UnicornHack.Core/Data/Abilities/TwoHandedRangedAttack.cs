@@ -9,7 +9,7 @@ namespace UnicornHack.Data.Abilities
     {
         public static readonly WieldingAbility TwoHandedRangedAttack = new WieldingAbility
         {
-            Name = "two handed ranged attack",
+            Name = "two-handed ranged attack",
             Type = AbilityType.DefaultAttack,
             Effects = new HashSet<Effect>
             {

@@ -17,6 +17,9 @@ namespace UnicornHack.Data.Items
                     Activation = ActivationType.OnRangedAttack,
                     Range = 10,
                     Action = AbilityAction.Shoot,
+                    Trigger = ActivationType.OnRangedAttack,
+                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                    Accuracy = "5+weaponScaling",
                     Delay = "100*weaponScaling",
                     Effects = new HashSet<Effect>
                         {new Burn {Damage = "30*weaponScaling"}, new Activate {Projectile = "fire bolt"}}

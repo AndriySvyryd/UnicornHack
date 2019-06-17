@@ -112,11 +112,15 @@ namespace UnicornHack.Systems.Abilities
 
             nymph.Being.HitPoints = nymph.Being.HitPointMaximum;
             var iceShardAbility = manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)];
-            Assert.Equal(39,
-                manager.AbilityActivationSystem.GetEvasionProbability(iceShardAbility, playerEntity, nymph, null));
+
+            var accuracy = manager.AbilityActivationSystem.GetAccuracy(iceShardAbility.Ability, playerEntity);
+            Assert.Equal(105, accuracy);
+
+            Assert.Equal(34,
+                manager.AbilityActivationSystem.GetEvasionProbability(iceShardAbility, playerEntity, nymph, null, accuracy));
 
             Assert.Equal(100,
-                manager.AbilityActivationSystem.GetEvasionProbability(iceShardAbility, playerEntity, elemental, null));
+                manager.AbilityActivationSystem.GetEvasionProbability(iceShardAbility, playerEntity, elemental, null, accuracy));
 
             var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = iceShardAbility;

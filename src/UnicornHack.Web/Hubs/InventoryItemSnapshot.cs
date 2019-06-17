@@ -128,25 +128,26 @@ namespace UnicornHack.Hubs
                 .GetNonRedundantFlags(removeComposites: true)
                 .Select(s => Serialize(s, context))
                 .ToList();
-            return new List<object>(13)
+            return new List<object>(12)
             {
                 context.Services.Language.GetString(item, item.GetQuantity(manager), sense),
                 context.Services.Language.GetDescription(item.TemplateName, DescriptionCategory.Item),
                 item.Type,
                 (int)physical.Material,
-                physical.Size,
                 physical.Weight,
-                template.Complexity,
-                template.RequiredMight,
-                template.RequiredSpeed,
-                template.RequiredFocus,
-                template.RequiredPerception,
+                template.Complexity ?? ItemComplexity.Normal,
+                template.RequiredMight ?? 0,
+                template.RequiredSpeed ?? 0,
+                template.RequiredFocus ?? 0,
+                template.RequiredPerception ?? 0,
                 equipableSlots,
                 manager.AbilitiesToAffectableRelationship[itemEntity.Id]
                     .Where(a => a.Ability.IsUsable
                                 && a.Ability.Activation != ActivationType.Default
                                 && a.Ability.Activation != ActivationType.Always
-                                && a.Ability.Activation != ActivationType.WhilePossessed)
+                                && (a.Ability.Name == null
+                                    || !a.Ability.Name.StartsWith("Add")
+                                    || !a.Ability.Name.EndsWith("ability")))
                     .Select(a => AbilitySnapshot.SerializeAttributes(a, context.Observer, context)).ToList()
             };
         }

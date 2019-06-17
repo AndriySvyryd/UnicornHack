@@ -2,9 +2,8 @@
 {
     public enum AbilitySuccessCondition
     {
-        Default,
         Always,
-        Attack,
+        NormalAttack,
         UnblockableAttack,
         UnavoidableAttack
     }

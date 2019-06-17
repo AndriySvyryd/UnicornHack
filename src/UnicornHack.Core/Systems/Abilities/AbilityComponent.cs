@@ -19,6 +19,7 @@ namespace UnicornHack.Systems.Abilities
         private TargetingType _targetingType;
         private AbilityAction _action;
         private AbilitySuccessCondition _successCondition;
+        private string _accuracy;
         private int _cooldown;
         private int _xpCooldown;
         private int? _cooldownTick;
@@ -113,6 +114,12 @@ namespace UnicornHack.Systems.Abilities
             set => SetWithNotify(value, ref _successCondition);
         }
 
+        public string Accuracy
+        {
+            get => _accuracy;
+            set => SetWithNotify(value, ref _accuracy);
+        }
+
         public int Cooldown
         {
             get => _cooldown;
@@ -167,10 +174,6 @@ namespace UnicornHack.Systems.Abilities
             set => SetWithNotify(value, ref _slot);
         }
 
-        // TODO: Whether it can be interrupted
-        // TODO: Activation condition
-        // TODO: Success condition
-
         // Unmapped properties
         public GameEntity OwnerEntity
         {
@@ -220,6 +223,7 @@ namespace UnicornHack.Systems.Abilities
             ability.Action = Action;
             ability.SuccessCondition = SuccessCondition;
             ability.Cooldown = Cooldown;
+            ability.Accuracy = Accuracy;
             ability.XPCooldown = XPCooldown;
             ability.Delay = Delay;
             ability.EnergyCost = EnergyCost;
@@ -252,6 +256,7 @@ namespace UnicornHack.Systems.Abilities
             _targetingType = default;
             _action = default;
             _successCondition = default;
+            _accuracy = default;
             _cooldown = default;
             _xpCooldown = default;
             _cooldownTick = default;

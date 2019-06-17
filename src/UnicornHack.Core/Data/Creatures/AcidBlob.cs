@@ -15,8 +15,12 @@ namespace UnicornHack.Data.Creatures
             {
                 new Ability
                 {
-                    Name = "splashback", Activation = ActivationType.OnMeleeHit,
-                    Effects = new HashSet<Effect> {new Corrode {Damage = "40"}}
+                    Name = "splashback",
+                    Activation = ActivationType.OnMeleeHit,
+                    Action = AbilityAction.Touch,
+                    SuccessCondition = AbilitySuccessCondition.UnblockableAttack,
+                    Accuracy = "10+attackScaling",
+                    Effects = new HashSet<Effect> {new Corrode {Damage = "40*mentalScaling"}}
                 }
             },
             InitialLevel = 1,

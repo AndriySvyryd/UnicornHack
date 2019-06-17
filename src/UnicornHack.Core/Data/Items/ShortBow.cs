@@ -17,6 +17,9 @@ namespace UnicornHack.Data.Items
                     Activation = ActivationType.OnRangedAttack,
                     Range = 20,
                     Action = AbilityAction.Shoot,
+                    Trigger = ActivationType.OnRangedAttack,
+                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                    Accuracy = "10+weaponScaling",
                     Delay = "100*weaponScaling",
                     Effects = new HashSet<Effect>
                         {new PhysicalDamage {Damage = "30*weaponScaling"}, new Activate {Projectile = "arrow"}}
@@ -28,6 +31,7 @@ namespace UnicornHack.Data.Items
             EquipableSizes = SizeCategory.Small | SizeCategory.Medium,
             EquipableSlots = EquipmentSlot.GraspRanged,
             RequiredMight = 5,
+            RequiredPerception = 5,
             RequiredSpeed = 10
         };
     }

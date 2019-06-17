@@ -113,10 +113,18 @@ namespace UnicornHack.Hubs
         public static List<object> SerializeAttributes(
             GameEntity abilityEntity, GameEntity activator, SerializationContext context)
         {
+            var manager = context.Manager;
             var ability = abilityEntity.Ability;
-            var effects = context.Manager.EffectsToContainingAbilityRelationship[abilityEntity.Id]
-                .SelectMany(e => GetActivatedEffects(e, ability, context.Manager));
-            var result = new List<object>(17)
+
+            var activateMessage = ActivateAbilityMessage.Create(manager);
+            activateMessage.AbilityEntity = abilityEntity;
+            activateMessage.ActivatorEntity = activator;
+            activateMessage.TargetEntity = activator;
+
+            var stats = manager.AbilityActivationSystem.GetAttackStats(activateMessage);
+            manager.ReturnMessage(activateMessage);
+
+            var result = new List<object>(ability.Template == null ? 20 : 21)
             {
                 ability.EntityId,
                 context.Services.Language.GetString(ability),
@@ -128,13 +136,13 @@ namespace UnicornHack.Hubs
                 ability.Range,
                 ability.HeadingDeviation,
                 ability.EnergyCost,
-                context.Manager.AbilityActivationSystem.GetActualDelay(ability, activator),
+                stats.Delay,
                 ability.Cooldown,
-                ability.CooldownTick == null ? 0 : ability.CooldownTick.Value - context.Manager.Game.CurrentTick,
+                ability.CooldownTick == null ? 0 : ability.CooldownTick.Value - manager.Game.CurrentTick,
                 ability.XPCooldown,
                 ability.CooldownXpLeft ?? 0,
-                ability.SuccessCondition,
-                effects.Select(e => SerializeAttributes(e, context)).ToList()
+                stats.SelfEffects.Select(e => SerializeEffectAttributes(e, activator, context)).ToList(),
+                stats.SubAttacks.Select(s => Serialize(s, activator, context)).ToList()
             };
 
             if (ability.Template != null)
@@ -142,45 +150,13 @@ namespace UnicornHack.Hubs
                 result.Add(context.Services.Language.GetDescription(ability.Name, DescriptionCategory.Ability));
                 //result.Add(ability.Template.Type);
                 //result.Add(ability.Template.Cost);
-                //result.Add(ability.Template.Accuracy);
             }
 
             return result;
         }
 
-        private static IEnumerable<GameEntity> GetActivatedEffects(
-            GameEntity effectEntity, AbilityComponent ability, GameManager manager)
-        {
-            var effect = effectEntity.Effect;
-            if (effect.EffectType != EffectType.Activate)
-            {
-                return new[] {effectEntity};
-            }
-
-            var activatableEntity = manager.FindEntity(effect.TargetEntityId);
-            if (activatableEntity.HasComponent(EntityComponent.Ability))
-            {
-                return manager.EffectsToContainingAbilityRelationship[activatableEntity.Id]
-                    .SelectMany(e => GetActivatedEffects(e, ability, manager));
-            }
-
-            var trigger = ability.Trigger == ActivationType.Default
-                ? AbilityActivationSystem.GetTrigger(ability)
-                : ability.Trigger;
-            var triggeredAbility = AbilityActivationSystem
-                .GetTriggeredAbilities(activatableEntity.Id, trigger, manager)
-                .FirstOrDefault();
-
-            if (triggeredAbility == null)
-            {
-                return Enumerable.Empty<GameEntity>();
-            }
-
-            return manager.EffectsToContainingAbilityRelationship[triggeredAbility.Id]
-                .SelectMany(e => GetActivatedEffects(e, ability, manager));
-        }
-
-        public static List<object> SerializeAttributes(GameEntity effectEntity, SerializationContext context)
+        private static List<object> SerializeEffectAttributes(
+            GameEntity effectEntity, GameEntity activator, SerializationContext context)
         {
             var effect = effectEntity.Effect;
             return new List<object>(9)
@@ -188,7 +164,11 @@ namespace UnicornHack.Hubs
                 effect.EntityId,
                 effect.EffectType,
                 effect.ShouldTargetActivator,
-                effect.Amount?.ToString() ?? effect.AmountExpression,
+                effect.Amount != null
+                    ? effect.Amount.ToString()
+                    : effect.AmountExpression == null
+                        ? null
+                        : context.Manager.EffectApplicationSystem.GetActualAmount(effect, activator).ToString(),
                 effect.Function,
                 effect.TargetName,
                 effect.SecondaryAmount,
@@ -196,5 +176,14 @@ namespace UnicornHack.Hubs
                 effect.DurationAmount
             };
         }
+
+        private static List<object> Serialize(SubAttackStats stats, GameEntity activator, SerializationContext context)
+            => new List<object>(3)
+            {
+                stats.SuccessCondition,
+                stats.Accuracy,
+                stats.Effects.Where(e => e.Effect.EffectType != EffectType.Activate)
+                    .Select(e => SerializeEffectAttributes(e, activator, context)).ToList()
+            };
     }
 }
