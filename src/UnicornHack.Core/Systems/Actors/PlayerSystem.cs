@@ -284,16 +284,18 @@ namespace UnicornHack.Systems.Actors
                 abilityEntity = manager.AbilitySlottingSystem.GetAbility(playerEntity.Id, slot.Value, manager);
                 if (abilityEntity == null)
                 {
-                    throw new InvalidOperationException("No ability in slot" + target);
+                    throw new InvalidOperationException("No ability in slot " + target);
                 }
             }
             else
             {
                 var vectorToTarget = playerEntity.Position.LevelCell.DifferenceTo(targetCell);
-                abilityEntity = GetDefaultAttack(playerEntity, vectorToTarget.Length() <= 1, manager);
+                var isMelee = vectorToTarget.Length() <= 1;
+                abilityEntity = GetDefaultAttack(playerEntity, isMelee, manager);
                 if (abilityEntity == null)
                 {
-                    // TODO: Log a message
+                    manager.LoggingSystem.WriteLog(
+                        manager.Game.Services.Language.NoDefaultAttack(isMelee), playerEntity, manager);
                     return false;
                 }
             }

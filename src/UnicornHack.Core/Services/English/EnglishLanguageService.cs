@@ -552,6 +552,12 @@ namespace UnicornHack.Services.English
                        $"{@event.SkillPointsGained} SP {@event.TraitPointsGained} TP {@event.MutationPointsGained} MP");
         }
 
+        public string NoDefaultAttack(bool melee)
+        {
+            var weaponType = melee ? "melee" : "ranged";
+            return $"Can't attack. You don't have a {weaponType} weapon equipped.";
+        }
+
         public string NoPath() => "No path to target!";
 
         #endregion

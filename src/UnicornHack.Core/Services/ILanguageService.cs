@@ -22,6 +22,7 @@ namespace UnicornHack.Services
         string GetString(in AttackEvent @event);
         string GetString(in DeathEvent @event);
         string GetString(in LeveledUpEvent @event);
+        string NoDefaultAttack(bool melee);
         string Welcome(GameEntity playerEntity);
         string UnableToMove(Direction direction);
         string NoPath();
