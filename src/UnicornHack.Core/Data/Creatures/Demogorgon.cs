@@ -81,7 +81,7 @@ namespace UnicornHack.Data.Creatures
             Might = 6,
             Speed = 6,
             Focus = 6,
-            Armor = 9,
+            Armor = 10,
             MagicResistance = 47,
             FireResistance = 75,
             TorsoType = TorsoType.Humanoid,

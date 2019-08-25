@@ -97,7 +97,7 @@ namespace UnicornHack.Systems.Beings
                 }
                 case nameof(BeingComponent.Speed):
                 {
-                    var effectiveSpeed = message.NewValue - being.Hindrance;
+                    var effectiveSpeed = message.NewValue - being.Hindrance / 10;
                     CalculateMovementDelay(effectiveSpeed, message.Entity, manager);
                     CalculateTurningDelay(effectiveSpeed, message.Entity, manager);
                     CalculateEvasion(effectiveSpeed, message.Entity, manager);
@@ -106,7 +106,7 @@ namespace UnicornHack.Systems.Beings
                 }
                 case nameof(BeingComponent.Hindrance):
                 {
-                    var effectiveSpeed = being.Speed - message.NewValue;
+                    var effectiveSpeed = being.Speed - message.NewValue / 10;
                     CalculateMovementDelay(effectiveSpeed, message.Entity, manager);
                     CalculateTurningDelay(effectiveSpeed, message.Entity, manager);
                     CalculateEvasion(effectiveSpeed, message.Entity, manager);

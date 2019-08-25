@@ -503,9 +503,10 @@ namespace UnicornHack.Systems.Effects
             }
 
             var damage = amountOverride ?? GetActualAmount(effect, activatorEntity);
-            if (absorption > 0)
+            if (absorption > 0
+                && damage > 0)
             {
-                damage -= absorption;
+                damage = Math.Max(1, damage - absorption * damage / (absorption + damage));
             }
 
             if (damage < 0)

@@ -145,7 +145,7 @@ namespace UnicornHack.Systems.Items
                 .Single(a => (a.Activation & ActivationType.Slottable) != 0
                              && a.Template?.Type != AbilityType.DefaultAttack);
 
-            Assert.Equal(50, player.NextActionTick);
+            Assert.Equal(5, player.NextActionTick);
 
             var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = shieldAbility.Entity;
@@ -155,7 +155,7 @@ namespace UnicornHack.Systems.Items
 
             Assert.True(shieldAbility.IsActive);
             Assert.Equal(30, playerEntity.Being.FireResistance);
-            Assert.Equal(100, player.NextActionTick);
+            Assert.Equal(55, player.NextActionTick);
 
             equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
@@ -173,7 +173,7 @@ namespace UnicornHack.Systems.Items
                 .Single(a => (a.Activation & ActivationType.Slottable) != 0
                              && a.Template?.Type != AbilityType.DefaultAttack);
             Assert.Equal(200, activateAbility.CooldownTick);
-            Assert.Equal(150, player.NextActionTick);
+            Assert.Equal(60, player.NextActionTick);
 
             equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
@@ -290,9 +290,9 @@ namespace UnicornHack.Systems.Items
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(1, playerEntity.Being.Hindrance);
-            Assert.Equal(95, playerEntity.Being.Evasion);
-            Assert.Equal(111, playerEntity.Position.MovementDelay);
-            Assert.Equal(111, playerEntity.Position.TurningDelay);
+            Assert.Equal(100, playerEntity.Being.Evasion);
+            Assert.Equal(100, playerEntity.Position.MovementDelay);
+            Assert.Equal(100, playerEntity.Position.TurningDelay);
 
             equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
@@ -311,10 +311,10 @@ namespace UnicornHack.Systems.Items
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(EquipmentSlot.GraspSecondaryMelee, swordEntity.Item.EquippedSlot);
-            Assert.Equal(4, playerEntity.Being.Hindrance);
-            Assert.Equal(80, playerEntity.Being.Evasion);
-            Assert.Equal(166, playerEntity.Position.MovementDelay);
-            Assert.Equal(166, playerEntity.Position.TurningDelay);
+            Assert.Equal(31, playerEntity.Being.Hindrance);
+            Assert.Equal(85, playerEntity.Being.Evasion);
+            Assert.Equal(142, playerEntity.Position.MovementDelay);
+            Assert.Equal(142, playerEntity.Position.TurningDelay);
         }
     }
 }

@@ -526,10 +526,10 @@ namespace UnicornHack.Systems.Faculties
                 var focusDifference = requiredFocus * baseMultiplier - being.Focus * handnessMultiplier -
                                       skillBonus;
                 var requiredSpeed = template?.RequiredSpeed ?? 0;
-                var speedDifference = requiredSpeed * baseMultiplier - being.Speed * handnessMultiplier -
+                var speedDifference = requiredSpeed * baseMultiplier - being.Speed * baseMultiplier -
                                       skillBonus;
                 var requiredPerception = template?.RequiredPerception ?? 0;
-                var perceptionDifference = requiredPerception * baseMultiplier - being.Perception * handnessMultiplier -
+                var perceptionDifference = requiredPerception * baseMultiplier - being.Perception * baseMultiplier -
                                            skillBonus;
                 var addedHindrance =
                     Math.Max(
@@ -546,7 +546,7 @@ namespace UnicornHack.Systems.Faculties
             var hindranceEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
                 actorEntity, nameof(BeingComponent.Hindrance), EquippedAbilityName);
 
-            hindranceEffect.Amount = hindrance;
+            hindranceEffect.Amount = hindrance * 10;
         }
 
         public int GetItemSkillBonus(Item template, PlayerComponent player)

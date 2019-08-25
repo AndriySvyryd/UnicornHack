@@ -244,12 +244,11 @@ namespace UnicornHack.Systems.Abilities
                             subStats.Accuracy = accuracy;
 
                             var melee = activation.ActivationMessage.AbilityEntity.Ability.Range == 1;
-                            var hitProbability = DetermineOutcome(
+                            subStats.HitProbability = DetermineOutcome(
                                 targetMessage,
                                 melee ? BeveledVisibilityCalculator.MaxVisibility : exposure,
                                 pretend: true,
                                 accuracy);
-                            subStats.HitProbability = hitProbability;
 
                             subStats.Effects = targetMessage.EffectsToApply;
 
@@ -970,7 +969,7 @@ namespace UnicornHack.Systems.Abilities
                     var template = Item.Loader.Get(item.TemplateName);
                     var skillBonus =
                         activatorEntity.Manager.SkillAbilitiesSystem.GetItemSkillBonus(template, activatorEntity.Player);
-                    var requiredPerception = template?.RequiredPerception?? 0;
+                    var requiredPerception = template?.RequiredPerception ?? 0;
                     var difference = activatorEntity.Being.Perception - requiredPerception + skillBonus;
                     var accuracyModifier = requiredPerception * (difference + Math.Min(0, difference));
 

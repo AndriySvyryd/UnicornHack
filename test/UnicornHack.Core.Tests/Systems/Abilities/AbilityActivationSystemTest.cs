@@ -82,11 +82,11 @@ namespace UnicornHack.Systems.Abilities
                 Assert.Equal(new Point(2, 2), m.TargetCell);
             };
 
-            Assert.Equal(50, playerEntity.Player.NextActionTick);
+            Assert.Equal(5, playerEntity.Player.NextActionTick);
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(1, messageCount);
-            Assert.Equal(150, playerEntity.Player.NextActionTick);
+            Assert.Equal(105, playerEntity.Player.NextActionTick);
 
             activateAbilityMessage = ActivateAbilityMessage.Create(manager);
             activateAbilityMessage.ActivatorEntity = playerEntity;

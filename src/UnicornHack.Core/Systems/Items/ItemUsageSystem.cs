@@ -144,11 +144,10 @@ namespace UnicornHack.Systems.Items
                 {
                     return equippedMessage;
                 }
-                
+
                 item.EquippedSlot = message.Slot;
 
-                // TODO: Calculate delay
-                DelayMessage.Enqueue(message.ActorEntity, TimeSystem.DefaultActionDelay / 2, manager);
+                DelayMessage.Enqueue(message.ActorEntity, TimeSystem.DefaultActionDelay / 20, manager);
             }
             else
             {
@@ -157,7 +156,7 @@ namespace UnicornHack.Systems.Items
                         && manager.AbilitiesToAffectableRelationship[item.EntityId].Select(a => a.Ability)
                             .Any(a => a.CooldownTick != null
                                       || a.CooldownXpLeft != null
-                                      || ((a.Activation & ActivationType.Slottable) != 0 && a.IsActive))))
+                                      || (a.Activation & ActivationType.Slottable) != 0 && a.IsActive)))
                 {
                     return equippedMessage;
                 }
@@ -170,8 +169,7 @@ namespace UnicornHack.Systems.Items
 
                 item.EquippedSlot = EquipmentSlot.None;
 
-                // TODO: Calculate delay
-                DelayMessage.Enqueue(message.ActorEntity, TimeSystem.DefaultActionDelay / 2, manager);
+                DelayMessage.Enqueue(message.ActorEntity, TimeSystem.DefaultActionDelay / 20, manager);
             }
 
             return equippedMessage;
