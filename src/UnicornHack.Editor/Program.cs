@@ -95,6 +95,7 @@ namespace UnicornHack.Editor
         private static void Verify(string script, ItemGroup item)
             => Verify(script, item, i => i.Name);
 
+        // TODO: verify Name not null
         private static void Verify(string script, Ability ability)
             => Verify(script, ability, i => i.Name, a =>
             {

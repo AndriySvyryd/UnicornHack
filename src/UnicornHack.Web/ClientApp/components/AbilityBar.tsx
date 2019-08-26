@@ -46,6 +46,13 @@ class AbilityLine extends React.Component<IAbilityProps, {}> {
     }
 
     @action.bound
+    useTargetedAbility(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
+        if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
+            this.props.context.startTargeting(this.props.slot);
+        }
+    }
+
+    @action.bound
     showAttributes(event: React.MouseEvent<HTMLAnchorElement>) {
         if (this.props.ability !== null) {
             this.props.context.showDialog(GameQueryType.AbilityAttributes, this.props.ability.id);
@@ -58,15 +65,16 @@ class AbilityLine extends React.Component<IAbilityProps, {}> {
             <span className="abilityBar__slot">{this.props.slot === -1 ? 'D' : this.props.slot + 1}:</span>
         </a>;
 
-        // TODO: Activate targeting mode for targetted abilities        
-
         var ability = <span>{this.props.ability === null ? "" : this.props.ability.name}</span>;
         if (this.props.ability !== null
-            && (this.props.ability.activation & ActivationType.Manual) !== 0) {
+            && (this.props.ability.activation & ActivationType.WhileToggled) == 0) {
             if (this.props.ability.cooldownTick == null
                 && this.props.ability.cooldownXpLeft == null) {
+                const action = (this.props.ability.activation & ActivationType.Targeted) !== 0
+                    ? this.useTargetedAbility
+                    : this.useAbilitySlot;
                 ability = <a tabIndex={(this.props.slot + 1) * 2 + 1} role="button"
-                    onClick={this.useAbilitySlot} onKeyPress={this.useAbilitySlot} onContextMenu={this.showAttributes}
+                    onClick={action} onKeyPress={action} onContextMenu={this.showAttributes}
                 >
                     {ability}
                 </a>;

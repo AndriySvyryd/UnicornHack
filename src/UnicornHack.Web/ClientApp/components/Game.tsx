@@ -1,7 +1,7 @@
 ﻿import * as React from 'react';
 import * as signalR from '@aspnet/signalr';
 import { MessagePackHubProtocol } from '@aspnet/signalr-protocol-msgpack';
-import { action, observable } from 'mobx';
+import { action, observable, IObservableValue } from 'mobx';
 import { observer } from 'mobx-react';
 import { HotKeys, IgnoreKeys } from 'react-hotkeys';
 import { Player, PlayerRace } from '../transport/Model';
@@ -21,6 +21,7 @@ import { StatusBar } from './StatusBar';
 import { ItemPropertiesDialog } from './ItemProperties';
 import { AbilityPropertiesDialog } from './AbilityProperties';
 import { PostGameStatisticsDialog } from './PostGameStatistics';
+import { Banner } from './Banner';
 
 @observer
 export class Game extends React.Component<IGameProps, {}> {
@@ -29,6 +30,8 @@ export class Game extends React.Component<IGameProps, {}> {
     @observable private _dialogData: DialogData = new DialogData();
     @observable private _waiting: boolean = true;
     @observable private _firstTimeLoading: boolean = true;
+    private _bannerMessage: IObservableValue<string | null> = observable.box(null);
+    private _targetingSlot: number | null = null;
     private _actionQueue: IAction[] = [];
     private _keyMap: any;
     private _keyHandlers: any;
@@ -166,7 +169,8 @@ export class Game extends React.Component<IGameProps, {}> {
         this._dialogData = this._dialogData.update(compactRequest);
     }
 
-    showDialog = (queryType: GameQueryType, ...args: Array<number>) => {
+    @action.bound
+    showDialog(queryType: GameQueryType, ...args: Array<number>) {
         if (queryType == GameQueryType.Back) {
             var lastQuery = this._dialogData.dialogHistory.pop();
             if (lastQuery != undefined) {
@@ -179,6 +183,8 @@ export class Game extends React.Component<IGameProps, {}> {
         } else if (queryType == GameQueryType.Clear) {
             this._dialogData.dialogHistory = [];
             this._dialogData.currentDialog = undefined;
+            this._targetingSlot = null;
+            this._bannerMessage.set(null);
         } else {
             if (this._dialogData.currentDialog != undefined) {
                 this._dialogData.dialogHistory.push(this._dialogData.currentDialog);
@@ -199,7 +205,28 @@ export class Game extends React.Component<IGameProps, {}> {
             .catch(e => this.addError((e || '').toString()));
     };
 
-    performAction = (action: PlayerAction, target: (number | null) = null, target2: (number | null) = null) => {
+    @action.bound
+    performAction(action: PlayerAction, target: (number | null) = null, target2: (number | null) = null) {
+        if (this._targetingSlot != null) {
+            if (action == PlayerAction.MoveToCell
+                || action == PlayerAction.Wait) {
+                // TODO: also handle MoveOneCell
+                target2 = target;
+                action = PlayerAction.UseAbilitySlot
+            }
+
+            if (action == PlayerAction.UseAbilitySlot) {
+                target = this._targetingSlot;
+            }
+
+            this._targetingSlot = null;
+            this._bannerMessage.set(null);
+        }
+
+        if (action == PlayerAction.Wait) {
+            target = null;
+        }
+
         if (this._waiting) {
             this._actionQueue.push({ action: action, target: target, target2: target2 });
         } else {
@@ -211,6 +238,11 @@ export class Game extends React.Component<IGameProps, {}> {
         if (this._hotKeyContainer.current !== null) {
             this._hotKeyContainer.current.focus();
         }
+    };
+
+    startTargeting = (slot: (number | null)) => {
+        this._targetingSlot = slot;
+        this._bannerMessage.set("Choose ability target...");
     };
 
     private performQueuedActions() {
@@ -282,6 +314,7 @@ export class Game extends React.Component<IGameProps, {}> {
                     <CreaturePropertiesDialog context={this} data={this._dialogData} />
                     <ItemPropertiesDialog context={this} data={this._dialogData} />
                     <AbilityPropertiesDialog context={this} data={this._dialogData} />
+                    <Banner message={this._bannerMessage} />
                 </IgnoreKeys>
             </div>
         </HotKeys>;
@@ -302,6 +335,7 @@ interface IAction {
 export interface IGameContext {
     player: Player;
     performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
+    startTargeting: (slot: (number | null)) => void;
     showDialog: (intQueryType: GameQueryType, ...args: Array<number>) => void;
     queryGame: (intQueryType: GameQueryType, ...args: Array<number>) => void;
 }

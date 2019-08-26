@@ -47,7 +47,12 @@ namespace UnicornHack.Systems.Abilities
         {
             var stats = new AttackStats();
             var activated = Activate(activateAbilityMessage, pretend: true, stats);
-            return string.IsNullOrEmpty(activated?.ActivationError) ? stats : null;
+            if (!string.IsNullOrEmpty(activated?.ActivationError))
+            {
+                throw new InvalidOperationException(activated.ActivationError);
+            }
+
+            return stats;
         }
 
         MessageProcessingResult IMessageConsumer<ActivateAbilityMessage, GameManager>.Process(
@@ -56,7 +61,7 @@ namespace UnicornHack.Systems.Abilities
             var abilityActivatedMessage = Activate(message, pretend: false, stats: null);
             if (abilityActivatedMessage != null)
             {
-                if (!String.IsNullOrEmpty(abilityActivatedMessage.ActivationError))
+                if (!string.IsNullOrEmpty(abilityActivatedMessage.ActivationError))
                 {
                     throw new InvalidOperationException(abilityActivatedMessage.ActivationError);
                 }
@@ -80,31 +85,35 @@ namespace UnicornHack.Systems.Abilities
             targetEffectsMessage.TargetEntity = activateMessage.TargetEntity;
 
             var ability = activateMessage.AbilityEntity.Ability;
-            if (!ability.IsUsable)
+            if (stats == null)
             {
-                targetEffectsMessage.ActivationError = $"Ability {ability.EntityId} is not usable or is not slotted.";
-                return targetEffectsMessage;
-            }
+                if (!ability.IsUsable)
+                {
+                    targetEffectsMessage.ActivationError =
+                        $"Ability {ability.EntityId} is not usable or is not slotted.";
+                    return targetEffectsMessage;
+                }
 
-            if (ability.Slot == null
-                && (ability.Activation & ActivationType.Slottable) != 0
-                && (ability.OwnerEntity.Being?.AbilitySlotCount ?? 0) != 0)
-            {
-                targetEffectsMessage.ActivationError = $"Ability {ability.EntityId} is not slotted.";
-                return targetEffectsMessage;
-            }
+                if (ability.Slot == null
+                    && (ability.Activation & ActivationType.Slottable) != 0
+                    && (ability.OwnerEntity.Being?.AbilitySlotCount ?? 0) != 0)
+                {
+                    targetEffectsMessage.ActivationError = $"Ability {ability.EntityId} is not slotted.";
+                    return targetEffectsMessage;
+                }
 
-            if (ability.IsActive)
-            {
-                targetEffectsMessage.ActivationError = $"Ability {ability.EntityId} is already active.";
-                return targetEffectsMessage;
-            }
+                if (ability.IsActive)
+                {
+                    targetEffectsMessage.ActivationError = $"Ability {ability.EntityId} is already active.";
+                    return targetEffectsMessage;
+                }
 
-            if (ability.CooldownTick != null
-                || ability.CooldownXpLeft != null)
-            {
-                targetEffectsMessage.ActivationError = $"Ability {ability.EntityId} is on cooldown.";
-                return targetEffectsMessage;
+                if (ability.CooldownTick != null
+                    || ability.CooldownXpLeft != null)
+                {
+                    targetEffectsMessage.ActivationError = $"Ability {ability.EntityId} is on cooldown.";
+                    return targetEffectsMessage;
+                }
             }
 
             if (manager.EffectsToContainingAbilityRelationship[ability.EntityId].Count == 0)
@@ -117,7 +126,8 @@ namespace UnicornHack.Systems.Abilities
             if (ability.EnergyCost > 0
                 && being != null)
             {
-                if (being.EnergyPoints < ability.EnergyCost)
+                if (being.EnergyPoints < ability.EnergyCost
+                    && stats == null)
                 {
                     targetEffectsMessage.ActivationError = $"Not enough EP to activate ability {ability.EntityId}.";
                     return targetEffectsMessage;
@@ -140,7 +150,8 @@ namespace UnicornHack.Systems.Abilities
             if ((ability.Activation & ActivationType.Slottable) != 0)
             {
                 delay = GetActualDelay(ability, activateMessage.ActivatorEntity);
-                if (delay == -1)
+                if (delay == -1
+                    && stats == null)
                 {
                     targetEffectsMessage.ActivationError = $"Speed too low to activate ability {ability.EntityId}.";
                     return targetEffectsMessage;
@@ -152,10 +163,17 @@ namespace UnicornHack.Systems.Abilities
                 }
 
                 var activatorPosition = activateMessage.ActivatorEntity.Position;
-                if (activatorPosition != null)
+                if (activatorPosition != null
+                    && stats == null)
                 {
-                    var requiredHeading = GetRequiredHeading(ability, activatorPosition,
-                        activateMessage.TargetCell ?? activateMessage.TargetEntity.Position.LevelCell);
+                    var targetCell = activateMessage.TargetCell ?? activateMessage.TargetEntity?.Position.LevelCell;
+                    if (targetCell == null)
+                    {
+                        targetEffectsMessage.ActivationError = $"Speed too low to activate ability {ability.EntityId}.";
+                        return targetEffectsMessage;
+                    }
+
+                    var requiredHeading = GetRequiredHeading(ability, activatorPosition, targetCell.Value);
                     if (requiredHeading != activatorPosition.Heading)
                     {
                         var travelMessage = TravelMessage.Create(manager);

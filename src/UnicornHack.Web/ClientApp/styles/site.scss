@@ -298,6 +298,21 @@ input::placeholder {
     @extend .col;
 }
 
+.banner__overlay {
+    @include make-row();
+    position: fixed;
+    bottom: $grid-gutter-width/2;
+    left: 0;
+    width: 100%;
+}
+
+.banner__overlayContent {
+    @extend .frame;
+    background-color: $body-bg;
+    margin: auto;
+    max-height: 100%;
+}
+
 .dialog__overlay {
     @include make-row();
     position: fixed;

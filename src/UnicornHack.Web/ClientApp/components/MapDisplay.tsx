@@ -75,7 +75,7 @@ class MapTile extends React.Component<ITileProps, {}> {
     handleEvent(action: TileAction) {
         switch (action) {
             case TileAction.Wait:
-                this.props.context.performAction(PlayerAction.Wait, null, null);
+                this.props.context.performAction(PlayerAction.Wait, Level.pack(this.props.x, this.props.y), null);
                 break;
             case TileAction.Move:
                 this.props.context.performAction(PlayerAction.MoveToCell, Level.pack(this.props.x, this.props.y), null);

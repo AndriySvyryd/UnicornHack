@@ -55,7 +55,7 @@ export class Dialog extends React.Component<IDialogProps, {}> {
     }
 }
 
-interface IDialogProps {
+export interface IDialogProps {
     context: IGameContext;
     show: IComputedValue<boolean>;
     className?: string;

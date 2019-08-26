@@ -348,6 +348,7 @@ namespace UnicornHack.Systems.Actors
             activationMessage.AbilityEntity = abilityEntity;
             activationMessage.ActivatorEntity = playerEntity;
             activationMessage.TargetEntity = targetEntity;
+            activationMessage.TargetCell = targetCell;
 
             if (!manager.AbilityActivationSystem.CanActivateAbility(activationMessage, shouldThrow: true))
             {
