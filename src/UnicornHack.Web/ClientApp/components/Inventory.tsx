@@ -2,19 +2,20 @@ import * as React from 'React';
 import { action } from 'mobx';
 import { observer } from 'mobx-react';
 import { GameQueryType } from '../transport/GameQueryType';
-import { Item, EquipableSlot } from '../transport/Model';
+import { Item, EquipableSlot, PlayerInventory } from '../transport/DialogData';
 import { PlayerAction } from "../transport/PlayerAction";
 import { IGameContext } from './Game';
 import { TooltipTrigger } from './TooltipTrigger';
 
-export const Inventory = observer((props: IInventoryProps) => {
-    const items = Array.from(props.context.player.inventory.values(), i =>
+export const InventoryScreen = observer((props: IInventoryProps) => {
+    const items = Array.from(props.playerInventory.items.values(), i =>
         <InventoryLine item={i} key={i.id} context={props.context} />);
     return <div className="inventory">{items}</div>;
 });
 
 interface IInventoryProps {
     context: IGameContext;
+    playerInventory: PlayerInventory;
 }
 
 @observer

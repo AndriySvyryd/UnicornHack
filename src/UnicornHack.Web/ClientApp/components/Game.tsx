@@ -14,7 +14,6 @@ import { AbilitySelectionDialog } from './AbilitySelection';
 import { Chat, IMessage, MessageType } from './Chat';
 import { CharacterScreenDialog } from './CharacterScreen';
 import { CreaturePropertiesDialog } from './CreatureProperties';
-import { Inventory } from './Inventory';
 import { GameLog } from './GameLog';
 import { MapDisplay } from './MapDisplay';
 import { StatusBar } from './StatusBar';
@@ -160,8 +159,15 @@ export class Game extends React.Component<IGameProps, {}> {
         this.player = newPlayer;
         this._firstTimeLoading = false;
 
+        if (this._dialogData.currentDialog != undefined) {
+            let queryType = this._dialogData.currentDialog[0];
+            let args = this._dialogData.currentDialog[1];
+            this._dialogData.currentDialog = undefined;
+
+            this.showDialog(queryType, ...args);
+        }
+
         this.performQueuedActions();
-        // TODO: Get additional static data
     }
 
     @action.bound
@@ -298,9 +304,6 @@ export class Game extends React.Component<IGameProps, {}> {
                     </div>
                     <div className="sidepanel">
                         <AbilityBar context={this} />
-                    </div>
-                    <div className="sidepanel">
-                        <Inventory context={this} />
                     </div>
                     <div className="sidepanel">
                         <Chat sendMessage={this.sendMessage} messages={this._messages} />

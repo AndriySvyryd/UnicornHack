@@ -9,6 +9,7 @@ import { IGameContext } from './Game';
 
 export const AbilityBar = observer((props: IAbilityBarProps) => {
     const slots = new Array(9);
+    slots[0] = <h5 className="abilityBar__title" key="0">Ability hotbar</h5>
     for (var i = 1; i < slots.length; i++) {
         const slot = i - 1;
         var slottedAbility = null;

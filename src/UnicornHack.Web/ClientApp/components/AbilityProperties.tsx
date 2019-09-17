@@ -83,7 +83,7 @@ function RenderSubAbilities(abilityAttributes: AbilityAttributes) {
         </>;
     } else {
         var subAbilities = abilityAttributes.subAbilities.map((s, i) => {
-            return <div className="property__row_multi-line">
+            return <div className="property__row_multi-line" key={i}>
                 <br />
                 <h5 className="property__row_multi-line">Attack {i+1}:</h5>
                 <PropertyRow label="Attack type" value={AbilitySuccessCondition[s.successCondition]}

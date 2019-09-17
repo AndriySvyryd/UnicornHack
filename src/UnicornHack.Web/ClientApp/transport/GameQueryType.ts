@@ -4,6 +4,7 @@
     PostGameStatistics,
     SlottableAbilities,
     PlayerAttributes,
+    PlayerInventory,
     PlayerAdaptations,
     PlayerSkills,
     ActorAttributes,

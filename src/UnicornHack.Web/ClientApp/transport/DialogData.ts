@@ -2,7 +2,7 @@
 import { capitalize } from '../Util';
 import { EntityState } from './EntityState';
 import { GameQueryType } from './GameQueryType';
-import { Ability, EquipableSlot } from './Model';
+import { Ability } from './Model';
 import { ItemType } from './ItemType';
 import { Material } from './Material';
 import { ItemComplexity } from './ItemComplexity';
@@ -19,6 +19,7 @@ export class DialogData {
     @observable postGameStatistics: PostGameStatistics | null = null;
     @observable slottableAbilities: Map<number, Ability> = new Map<number, Ability>();
     @observable playerAttributes: ActorAttributes | null = null;
+    @observable playerInventory: PlayerInventory | null = null;
     @observable playerAdaptations: PlayerAdaptations | null = null;
     @observable playerSkills: PlayerSkills | null = null;
     @observable actorAttributes: ActorAttributes | null = null;
@@ -47,6 +48,9 @@ export class DialogData {
                 break;
             case GameQueryType.PlayerAttributes:
                 this.playerAttributes = ActorAttributes.expand(compactData[i++]);
+                break;
+            case GameQueryType.PlayerInventory:
+                this.playerInventory = PlayerInventory.expand(compactData[i++]);
                 break;
             case GameQueryType.PlayerAdaptations:
                 this.playerAdaptations = PlayerAdaptations.expand(compactData[i++]);
@@ -78,6 +82,7 @@ export class DialogData {
         this.abilitySlot = null;
         this.slottableAbilities.clear();
         this.playerAttributes = null;
+        this.playerInventory = null;
         this.playerAdaptations = null;
         this.playerSkills = null;
         this.actorAttributes = null;
@@ -196,6 +201,85 @@ export class ActorAttributes {
         }
 
         return attributes;
+    }
+}
+
+export class PlayerInventory {
+    @observable items: Map<number, Item> = new Map<number, Item>();
+
+    @action
+    static expand(compactInventory: any[]): PlayerInventory {
+        var i = 0;
+        const inventory = new PlayerInventory();
+        compactInventory[i++].forEach((a: any[]) => Item.expandToCollection(a, inventory.items));
+
+        return inventory;
+    }
+}
+
+export class Item {
+    id: number = -1;
+    @observable type: ItemType = ItemType.None;
+    @observable baseName: string | null = null;
+    @observable name: string | null = null;
+    @observable equippableSlots: Map<number, EquipableSlot> = new Map<number, EquipableSlot>();
+    @observable equippedSlot: EquipableSlot | null = null;
+
+    @action
+    static expandToCollection(compactItem: any[], collection: Map<number, Item>) {
+        this.expand(compactItem, 0).addTo(collection);
+    }
+
+    @action
+    static expand(compactItem: any[], i: number): Item {
+        const item = new Item();
+
+        item.id = compactItem[i++];
+        item.type = compactItem[i++];
+        item.baseName = compactItem[i++];
+        item.name = compactItem[i++];
+
+        const equippableSlots = compactItem[i++];
+        if (equippableSlots != null) {
+            equippableSlots.forEach((s: any[]) => EquipableSlot.expandToCollection(s, item.equippableSlots));
+        }
+
+        const equippedSlot = compactItem[i++];
+        if (equippedSlot != null) {
+            item.equippedSlot = EquipableSlot.expand(equippedSlot, 0);
+        }
+        return item;
+    }
+
+    addTo(map: Map<number, Item>): Item {
+        map.set(this.id, this);
+        return this;
+    }
+}
+
+export class EquipableSlot {
+    id: number = -1;
+    @observable shortName: string = '';
+    @observable name: string = '';
+
+    @action
+    static expandToCollection(compactSlot: any[], collection: Map<number, EquipableSlot>) {
+        this.expand(compactSlot, 0).addTo(collection);
+    }
+
+    @action
+    static expand(compactSlot: any[], i: number): EquipableSlot {
+        const slot = new EquipableSlot();
+        slot.id = compactSlot[i++];
+        slot.shortName = compactSlot[i++];
+        slot.name = compactSlot[i++];
+
+        return slot;
+    }
+
+    @action.bound
+    addTo(map: Map<number, EquipableSlot>) {
+        map.set(this.id, this);
     }
 }
 

@@ -116,6 +116,9 @@ namespace UnicornHack.Hubs
                 case GameQueryType.PlayerAttributes:
                     result.Add(LevelActorSnapshot.SerializeAttributes(player.Entity, SenseType.Sight, context));
                     break;
+                case GameQueryType.PlayerInventory:
+                    result.Add(PlayerSnapshot.SerializeItems(player.Entity, context));
+                    break;
                 case GameQueryType.PlayerAdaptations:
                     result.Add(PlayerSnapshot.SerializeAdaptations(player.Entity, context));
                     break;

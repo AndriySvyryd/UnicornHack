@@ -21,7 +21,6 @@ export class Player {
     @observable level: Level = new Level();
     @observable xP: number = 0;
     @observable nextLevelXP: number = 0;
-    @observable inventory: Map<number, Item> = new Map<number, Item>();
     @observable abilities: Map<number, Ability> = new Map<number, Ability>();
     @observable log: Map<number, LogEntry> = new Map<number, LogEntry>();
     @observable races: Map<number, PlayerRace> = new Map<number, PlayerRace>();
@@ -83,8 +82,6 @@ export class Player {
         currentPlayer.level = Level.expand(compactPlayer[i++], currentPlayer.level, EntityState.Added);
         currentPlayer.races.clear();
         compactPlayer[i++].forEach((a: any[]) => PlayerRace.expandToCollection(a, currentPlayer.races, EntityState.Added));
-        currentPlayer.inventory.clear();
-        compactPlayer[i++].forEach((a: any[]) => Item.expandToCollection(a, currentPlayer.inventory, EntityState.Added));
         currentPlayer.abilities.clear();
         compactPlayer[i++].forEach((a: any[]) => Ability.expandToCollection(a, currentPlayer.abilities, EntityState.Added));
         currentPlayer.log.clear();
@@ -111,37 +108,34 @@ export class Player {
                     compactPlayer[i++].forEach((a: any[]) => PlayerRace.expandToCollection(a, this.races, EntityState.Modified));
                     break;
                 case 4:
-                    compactPlayer[i++].forEach((a: any[]) => Item.expandToCollection(a, this.inventory, EntityState.Modified));
-                    break;
-                case 5:
                     compactPlayer[i++].forEach(
                         (a: any[]) => Ability.expandToCollection(a, this.abilities, EntityState.Modified));
                     break;
-                case 6:
+                case 5:
                     compactPlayer[i++].forEach((a: any[]) => LogEntry.expandToCollection(a, this.log, EntityState.Modified));
                     break;
-                case 7:
+                case 6:
                     this.nextActionTick = compactPlayer[i++];
                     break;
-                case 8:
+                case 7:
                     this.nextLevelXP = compactPlayer[i++];
                     break;
-                case 9:
+                case 8:
                     this.xP = compactPlayer[i++];
                     break;
-                case 10:
+                case 9:
                     this.hp = compactPlayer[i++];
                     break;
-                case 11:
+                case 10:
                     this.maxHp = compactPlayer[i++];
                     break;
-                case 12:
+                case 11:
                     this.ep = compactPlayer[i++];
                     break;
-                case 13:
+                case 12:
                     this.maxEp = compactPlayer[i++];
                     break;
-                case 14:
+                case 13:
                     this.reservedEp = compactPlayer[i++];
                     break;
                 default:
@@ -684,141 +678,6 @@ export class MapItem {
             tile.item = null;
         }
         return this;
-    }
-}
-
-export class Item {
-    id: number = -1;
-    @observable type: ItemType = ItemType.None;
-    @observable baseName: string | null = null;
-    @observable name: string | null = null;
-    @observable equippableSlots: Map<number, EquipableSlot> = new Map<number, EquipableSlot>();
-    @observable equippedSlot: EquipableSlot | null = null;
-
-    @action
-    static expandToCollection(compactItem: any[], collection: Map<number, Item>, parentState: EntityState) {
-        let i = 0;
-        if (parentState === EntityState.Added) {
-            this.expand(compactItem, i).addTo(collection);
-            return;
-        }
-
-        const state = compactItem[i++];
-        switch (state) {
-            case EntityState.Added: {
-                this.expand(compactItem, i).addTo(collection);
-                break;
-            }
-            case EntityState.Deleted: {
-                const id = compactItem[i++];
-                const existingItem = collection.get(id);
-                if (existingItem == undefined) {
-                    throw 'Item ' + id + ' not deleted';
-                }
-
-                collection.delete(id);
-                break;
-            }
-            case EntityState.Modified: {
-                const id = compactItem[i++];
-                const existingItem = collection.get(id);
-                if (existingItem == undefined) {
-                    throw 'Item ' + id + ' not found';
-                }
-                existingItem.update(compactItem);
-                break;
-            }
-        }
-    }
-
-    @action
-    static expand(compactItem: any[], i: number): Item {
-        const item = new Item();
-
-        item.id = compactItem[i++];
-        item.type = compactItem[i++];
-        item.baseName = compactItem[i++];
-        item.name = compactItem[i++];
-
-        const equippableSlots = compactItem[i++];
-        if (equippableSlots != null) {
-            equippableSlots.forEach((s: any[]) => EquipableSlot.expandToCollection(s, item.equippableSlots));
-        }
-
-        const equippedSlot = compactItem[i++];
-        if (equippedSlot != null) {
-            item.equippedSlot = EquipableSlot.expand(equippedSlot, 0);
-        }
-        return item;
-    }
-
-    updateImplementation(compactItem: any[]): number {
-        let i = 2;
-
-        for (; i < compactItem.length;) {
-            switch (compactItem[i++]) {
-                case 1:
-                    this.type = compactItem[i++];
-                    break;
-                case 2:
-                    this.baseName = compactItem[i++];
-                    break;
-                case 3:
-                    this.name = compactItem[i++];
-                    break;
-                case 4:
-                    this.equippableSlots.clear();
-                    compactItem[i++].forEach(
-                        (s: any[]) => EquipableSlot.expandToCollection(s, this.equippableSlots));
-                    break;
-                case 5:
-                    const equippedSlot = compactItem[i++];
-                    this.equippedSlot = equippedSlot == null
-                        ? null
-                        : EquipableSlot.expand(equippedSlot, 0);
-                    break;
-                default:
-                    return i - 1;
-            }
-        }
-
-        return i;
-    }
-
-    @action.bound
-    update(compactItem: any[]): number {
-        return this.updateImplementation(compactItem);
-    }
-
-    addTo(map: Map<number, Item>): Item {
-        map.set(this.id, this);
-        return this;
-    }
-}
-
-export class EquipableSlot {
-    id: number = -1;
-    @observable shortName: string = '';
-    @observable name: string = '';
-
-    @action
-    static expandToCollection(compactSlot: any[], collection: Map<number, EquipableSlot>) {
-        this.expand(compactSlot, 0).addTo(collection);
-    }
-
-    @action
-    static expand(compactSlot: any[], i: number): EquipableSlot {
-        const slot = new EquipableSlot();
-        slot.id = compactSlot[i++];
-        slot.shortName = compactSlot[i++];
-        slot.name = compactSlot[i++];
-
-        return slot;
-    }
-
-    @action.bound
-    addTo(map: Map<number, EquipableSlot>) {
-        map.set(this.id, this);
     }
 }
 

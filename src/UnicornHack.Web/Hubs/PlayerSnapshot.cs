@@ -21,9 +21,6 @@ namespace UnicornHack.Hubs
         private HashSet<GameEntity> RacesSnapshot { get; } =
             new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
 
-        private Dictionary<GameEntity, InventoryItemSnapshot> ItemsSnapshot { get; } =
-            new Dictionary<GameEntity, InventoryItemSnapshot>(EntityEqualityComparer<GameEntity>.Instance);
-
         private HashSet<GameEntity> AbilitiesSnapshot { get; } =
             new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
 
@@ -35,10 +32,6 @@ namespace UnicornHack.Hubs
             var races = manager.RacesToBeingRelationship[playerEntity.Id].Values;
             RacesSnapshot.Clear();
             RacesSnapshot.AddRange(races);
-
-            var items = manager.EntityItemsToContainerRelationship[playerEntity.Id];
-            ItemsSnapshot.Clear();
-            ItemsSnapshot.AddRange(items, i => new InventoryItemSnapshot().Snapshot(i, context));
 
             var abilities = GetSlottedAbilities(playerEntity, manager);
             AbilitiesSnapshot.Clear();
@@ -63,7 +56,7 @@ namespace UnicornHack.Hubs
             List<object> properties;
             if (state == EntityState.Added)
             {
-                properties = new List<object>(14) {(int)state};
+                properties = new List<object>(13) {(int)state};
 
                 properties.Add(player.EntityId);
                 properties.Add(player.ProperName);
@@ -71,8 +64,6 @@ namespace UnicornHack.Hubs
                 properties.Add(serializedLevel);
                 properties.Add(manager.RacesToBeingRelationship[playerEntity.Id].Values
                     .Select(r => RaceSnapshot.Serialize(r, null, context)).ToList());
-                properties.Add(manager.EntityItemsToContainerRelationship[playerEntity.Id]
-                    .Select(t => InventoryItemSnapshot.Serialize(t, null, null, context)).ToList());
                 properties.Add(GetSlottedAbilities(playerEntity, manager)
                     .Select(a => AbilitySnapshot.Serialize(a, null, context)).ToList());
                 // TODO: Group log entries for the same tick
@@ -115,18 +106,6 @@ namespace UnicornHack.Hubs
             {
                 properties.Add(i);
                 properties.Add(serializedRaces);
-            }
-
-            i++;
-            var serializedItems = GameTransmissionProtocol.Serialize(
-                manager.EntityItemsToContainerRelationship[playerEntity.Id],
-                snapshot.ItemsSnapshot,
-                InventoryItemSnapshot.Serialize,
-                context);
-            if (serializedItems.Count > 0)
-            {
-                properties.Add(i);
-                properties.Add(serializedItems);
             }
 
             i++;
@@ -222,6 +201,16 @@ namespace UnicornHack.Hubs
             }
 
             return properties;
+        }
+
+        public static List<object> SerializeItems(GameEntity playerEntity, SerializationContext context)
+        {
+            var manager = context.Manager;
+            return new List<object>(1)
+            {
+                manager.EntityItemsToContainerRelationship[playerEntity.Id]
+                    .Select(t => InventoryItemSnapshot.Serialize(t, null, null, context)).ToList()
+            };
         }
 
         public static List<object> SerializeAdaptations(GameEntity playerEntity, SerializationContext context)
