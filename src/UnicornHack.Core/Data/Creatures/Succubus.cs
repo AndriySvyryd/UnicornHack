@@ -54,6 +54,7 @@ namespace UnicornHack.Data.Creatures
             },
             InitialLevel = 6,
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+            GenerationWeight = new BranchWeight { Matched = new DefaultWeight { Multiplier = 2F }, Name = "hell" },
             Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Seduction,
             Weight = 1400,

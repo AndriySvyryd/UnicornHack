@@ -58,7 +58,7 @@ namespace UnicornHack.Data.Creatures
                 }
             },
             InitialLevel = 7,
-            GenerationWeight = new DefaultWeight {Multiplier = 2F},
+            GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.NonPolymorphable | GenerationFlags.SmallGroup,
             Behavior = AIBehavior.AlignmentAware | AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Speach,

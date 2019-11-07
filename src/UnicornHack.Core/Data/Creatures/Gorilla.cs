@@ -60,7 +60,7 @@ namespace UnicornHack.Data.Creatures
             Focus = -6,
             Armor = 2,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremities = ExtremityType.GraspingFingers,
+            UpperExtremities = ExtremityType.Fingers,
             LowerExtremities = ExtremityType.Fingers,
             Infravisible = true
         };

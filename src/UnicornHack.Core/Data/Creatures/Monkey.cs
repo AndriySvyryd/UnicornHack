@@ -37,7 +37,7 @@ namespace UnicornHack.Data.Creatures
                     Delay = "100*attackScaling",
                     Effects = new HashSet<Effect>
                     {
-                        new StealItem()
+                        new PhysicalDamage {Damage = "25*physicalScaling"}
                     }
                 }
             },

@@ -367,8 +367,7 @@ namespace UnicornHack.Systems.Effects
                 case EffectType.Sedate:
                 case EffectType.Slime:
                 case EffectType.Slow:
-                case EffectType.StealGold:
-                case EffectType.StealItem:
+                case EffectType.DisableItem:
                 case EffectType.Stick:
                 case EffectType.Stone:
                 case EffectType.Stun:
@@ -860,8 +859,7 @@ namespace UnicornHack.Systems.Effects
                 case EffectType.Sedate:
                 case EffectType.Slime:
                 case EffectType.Slow:
-                case EffectType.StealGold:
-                case EffectType.StealItem:
+                case EffectType.DisableItem:
                 case EffectType.Stick:
                 case EffectType.Stone:
                 case EffectType.Stun:

@@ -39,8 +39,8 @@ namespace UnicornHack.Data.Creatures
                         {new Deafen {Duration = EffectDuration.UntilTimeout, DurationAmount = "27"}}
                 }
             },
-            InitialLevel = 1,
-            GenerationWeight = new DefaultWeight {Multiplier = 4F},
+            InitialLevel = 3,
+            GenerationWeight = new DefaultWeight {Multiplier = 2F},
             Sex = Sex.None,
             Size = 2,
             Weight = 10,

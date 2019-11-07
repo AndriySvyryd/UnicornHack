@@ -10,8 +10,8 @@ namespace UnicornHack.Data.Creatures
         public static readonly Creature Geryon = new Creature
         {
             Name = "Geryon",
-            Species = Species.DemonMajor,
-            SpeciesClass = SpeciesClass.Demon,
+            Species = Species.Giant,
+            SpeciesClass = SpeciesClass.Aberration,
             Abilities = new HashSet<Ability>
             {
                 new Ability

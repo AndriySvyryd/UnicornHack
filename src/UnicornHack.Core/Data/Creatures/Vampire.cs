@@ -18,7 +18,7 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.OnMeleeAttack,
                     Action = AbilityAction.Modifier,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "30"}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "40"}}
                 },
                 new Ability
                 {
@@ -30,7 +30,7 @@ namespace UnicornHack.Data.Creatures
                     Accuracy = "5+attackScaling",
                     Cooldown = 100,
                     Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "15*physicalScaling"}}
                 },
                 new Ability
                 {
@@ -42,27 +42,41 @@ namespace UnicornHack.Data.Creatures
                     Accuracy = "5+attackScaling",
                     Cooldown = 100,
                     Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new DrainLife {Amount = "5*physicalScaling"}}
+                    Effects = new HashSet<Effect> {new DrainLife {Amount = "8*physicalScaling"}}
+                },
+                new Ability
+                {
+                    Activation = ActivationType.Targeted,
+                    Trigger = ActivationType.OnRangedAttack,
+                    Range = 20,
+                    Action = AbilityAction.Spell,
+                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                    Accuracy = "5+attackScaling",
+                    Cooldown = 100,
+                    Delay = "100*attackScaling",
+                    Effects = new HashSet<Effect> {new Wither {Damage = "40*mentalScaling"}}
                 }
             },
-            InitialLevel = 10,
-            NextStageName = "vampire lord",
-            GenerationFlags = GenerationFlags.NonPolymorphable,
-            Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector,
-            Noise = ActorNoiseType.Speach,
+            InitialLevel = 20,
+            Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector | AIBehavior.MagicUser,
+            Noise = ActorNoiseType.Hiss,
             Weight = 1000,
-            Perception = -4,
-            Might = -4,
-            Speed = -4,
+            MovementDelay = -15,
+            TurningDelay = -15,
+            Perception = 1,
+            Speed = 1,
+            Focus = 6,
             Regeneration = 3,
-            Armor = 4,
-            MagicResistance = 12,
+            Armor = 7,
+            MagicResistance = 30,
             TorsoType = TorsoType.Humanoid,
             UpperExtremities = ExtremityType.GraspingFingers,
             LowerExtremities = ExtremityType.Fingers,
             RespirationType = RespirationType.None,
             LocomotionType = LocomotionType.Flying,
-            Infravision = true
+            VisibilityLevel = 0,
+            Infravision = true,
+            InvisibilityDetection = true
         };
     }
 }

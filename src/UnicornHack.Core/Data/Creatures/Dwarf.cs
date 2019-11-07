@@ -33,8 +33,7 @@ namespace UnicornHack.Data.Creatures
                 }
             },
             InitialLevel = 2,
-            GenerationWeight = new DefaultWeight {Multiplier = 4F},
-            NextStageName = "dwarf lord",
+            GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.NonPolymorphable,
             Behavior = AIBehavior.AlignmentAware | AIBehavior.GoldCollector | AIBehavior.GemCollector |
                        AIBehavior.WeaponCollector,

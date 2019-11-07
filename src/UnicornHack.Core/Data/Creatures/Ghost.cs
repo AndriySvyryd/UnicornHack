@@ -29,7 +29,6 @@ namespace UnicornHack.Data.Creatures
             },
             InitialLevel = 10,
             GenerationWeight = new DefaultWeight {Multiplier = 0F},
-            NextStageName = "shade",
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
             Behavior = AIBehavior.Wandering | AIBehavior.Stalking,
             Weight = 0,

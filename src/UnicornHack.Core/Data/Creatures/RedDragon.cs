@@ -65,7 +65,6 @@ namespace UnicornHack.Data.Creatures
             },
             InitialLevel = 15,
             GenerationWeight = new DefaultWeight {Multiplier = 2F},
-            PreviousStageName = "baby red dragon",
             Behavior = AIBehavior.Mountable | AIBehavior.GoldCollector | AIBehavior.GemCollector,
             Noise = ActorNoiseType.Roar,
             Size = 32,

@@ -263,6 +263,9 @@ namespace UnicornHack.Services.English
                 case AbilityAction.Scream:
                     verb = "scream at";
                     break;
+                case AbilityAction.Screech:
+                    verb = "screech at";
+                    break;
                 case AbilityAction.Explosion:
                     verb = "explode";
                     break;
@@ -348,7 +351,10 @@ namespace UnicornHack.Services.English
                         && (@event.VictimSensed & SenseType.Sound) == 0
                             ? "distant"
                             : null,
-                        @event.AbilityAction == AbilityAction.Scream ? "scream" : "noise");
+                        @event.AbilityAction == AbilityAction.Scream
+                        || @event.AbilityAction == AbilityAction.Screech
+                            ? "scream"
+                            : "noise");
                 }
             }
 

@@ -51,9 +51,8 @@ namespace UnicornHack.Data.Creatures
                     }
                 }
             },
-            InitialLevel = 9,
-            GenerationWeight = new DefaultWeight {Multiplier = 5F},
-            NextStageName = "master abollar",
+            InitialLevel = 21,
+            GenerationWeight = new DefaultWeight {Multiplier = 4F},
             Behavior = AIBehavior.GoldCollector | AIBehavior.GemCollector | AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Gurgle,
             Size = 8,

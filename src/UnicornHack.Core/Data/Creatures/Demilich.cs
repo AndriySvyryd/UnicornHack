@@ -41,7 +41,6 @@ namespace UnicornHack.Data.Creatures
             },
             InitialLevel = 14,
             PreviousStageName = "lich",
-            NextStageName = "master lich",
             Behavior = AIBehavior.MagicUser,
             Noise = ActorNoiseType.Mumble,
             Weight = 600,

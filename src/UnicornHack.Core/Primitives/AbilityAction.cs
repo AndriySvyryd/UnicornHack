@@ -28,6 +28,7 @@ namespace UnicornHack.Primitives
         Breath,
         Gaze,
         Scream,
+        Screech,
         Spell,
         Explosion,
         Drink

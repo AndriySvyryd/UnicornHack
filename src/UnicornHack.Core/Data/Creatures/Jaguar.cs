@@ -52,7 +52,7 @@ namespace UnicornHack.Data.Creatures
                 }
             },
             InitialLevel = 4,
-            GenerationWeight = new DefaultWeight {Multiplier = 5F},
+            GenerationWeight = new DefaultWeight {Multiplier = 0F},
             Noise = ActorNoiseType.Growl,
             Size = 8,
             Weight = 600,

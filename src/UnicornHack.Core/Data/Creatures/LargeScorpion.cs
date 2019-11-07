@@ -52,7 +52,7 @@ namespace UnicornHack.Data.Creatures
                 }
             },
             InitialLevel = 5,
-            GenerationWeight = new DefaultWeight {Multiplier = 5F},
+            GenerationWeight = new DefaultWeight {Multiplier = 0F},
             Size = 2,
             Weight = 150,
             MovementDelay = -20,

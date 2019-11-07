@@ -10,7 +10,7 @@ namespace UnicornHack.Data.Creatures
             Name = "halfling",
             Species = Species.Halfling,
             InitialLevel = 1,
-            GenerationWeight = new DefaultWeight {Multiplier = 5F},
+            GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.NonPolymorphable,
             Behavior = AIBehavior.AlignmentAware | AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Speach,

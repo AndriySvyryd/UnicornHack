@@ -11,7 +11,6 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "bugbear",
             Species = Species.Bugbear,
-            SpeciesClass = SpeciesClass.MagicalBeast,
             Abilities = new HashSet<Ability>
             {
                 new Ability
@@ -33,7 +32,7 @@ namespace UnicornHack.Data.Creatures
                     Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
                 }
             },
-            InitialLevel = 3,
+            InitialLevel = 5,
             GenerationWeight = new DefaultWeight {Multiplier = 5F},
             Behavior = AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Growl,

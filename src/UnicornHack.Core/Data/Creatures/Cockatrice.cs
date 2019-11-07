@@ -54,8 +54,7 @@ namespace UnicornHack.Data.Creatures
                 }
             },
             InitialLevel = 5,
-            GenerationWeight = new DefaultWeight {Multiplier = 3F},
-            PreviousStageName = "chickatrice",
+            GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.SmallGroup,
             Noise = ActorNoiseType.Hiss,
             Size = 2,

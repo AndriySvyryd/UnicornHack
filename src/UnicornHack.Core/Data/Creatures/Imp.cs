@@ -28,7 +28,7 @@ namespace UnicornHack.Data.Creatures
                 }
             },
             InitialLevel = 3,
-            GenerationWeight = new DefaultWeight {Multiplier = 7F},
+            GenerationWeight = new DefaultWeight {Multiplier = 6F},
             Behavior = AIBehavior.Wandering | AIBehavior.Stalking,
             Noise = ActorNoiseType.Cuss,
             Size = 1,

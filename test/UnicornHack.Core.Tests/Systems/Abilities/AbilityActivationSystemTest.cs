@@ -36,7 +36,7 @@ namespace UnicornHack.Systems.Abilities
             manager.SkillAbilitiesSystem.BuyAbilityLevel(AbilityData.Conjuration, playerEntity);
             ItemData.Shortbow.Instantiate(playerEntity);
             var nymph = CreatureData.WaterNymph.Instantiate(level, new Point(2, 2));
-            var elemental = CreatureData.AirElemental.Instantiate(level, new Point(0, 0));
+            var elemental = CreatureData.Sylph.Instantiate(level, new Point(0, 0));
 
             manager.Queue.ProcessQueue(manager);
 

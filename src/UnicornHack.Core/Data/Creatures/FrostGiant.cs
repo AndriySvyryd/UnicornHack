@@ -33,7 +33,7 @@ namespace UnicornHack.Data.Creatures
                 }
             },
             InitialLevel = 10,
-            GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight {Multiplier = 2F}, Name = "hell"},
+            GenerationWeight = new BranchWeight {NotMatched = new DefaultWeight {Multiplier = 0F}, Name = "hell"},
             GenerationFlags = GenerationFlags.SmallGroup,
             Behavior = AIBehavior.GemCollector | AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Boast,

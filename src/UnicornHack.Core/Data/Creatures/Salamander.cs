@@ -10,7 +10,7 @@ namespace UnicornHack.Data.Creatures
         public static readonly Creature Salamander = new Creature
         {
             Name = "salamander",
-            Species = Species.Salamander,
+            Species = Species.Elemental,
             SpeciesClass = SpeciesClass.Extraplanar,
             Abilities = new HashSet<Ability>
             {

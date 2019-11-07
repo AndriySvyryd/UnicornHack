@@ -33,7 +33,7 @@ namespace UnicornHack.Data.Creatures
                 }
             },
             InitialLevel = 1,
-            NextStageName = "gnome lord",
+            GenerationWeight = new DefaultWeight { Multiplier = 0F },
             GenerationFlags = GenerationFlags.NonPolymorphable | GenerationFlags.SmallGroup,
             Behavior = AIBehavior.GoldCollector | AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Speach,

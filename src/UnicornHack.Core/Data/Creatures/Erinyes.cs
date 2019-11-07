@@ -35,7 +35,6 @@ namespace UnicornHack.Data.Creatures
             },
             InitialLevel = 7,
             GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 2F}, Name = "hell"},
-            NextStageName = "vrock",
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable |
                               GenerationFlags.SmallGroup,
             Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector,

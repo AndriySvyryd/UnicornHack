@@ -28,7 +28,7 @@ namespace UnicornHack.Data.Creatures
                 }
             },
             InitialLevel = 6,
-            GenerationWeight = new DefaultWeight {Multiplier = 4F},
+            GenerationWeight = new DefaultWeight {Multiplier = 0F},
             Sex = Sex.None,
             Size = 2,
             Weight = 10,

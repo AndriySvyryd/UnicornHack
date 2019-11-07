@@ -41,8 +41,7 @@ namespace UnicornHack.Data.Creatures
                 }
             },
             InitialLevel = 12,
-            GenerationWeight = new DefaultWeight {Multiplier = 3F},
-            NextStageName = "ghast",
+            GenerationWeight = new DefaultWeight {Multiplier = 0F},
             Noise = ActorNoiseType.Growl,
             Weight = 400,
             MovementDelay = 50,
