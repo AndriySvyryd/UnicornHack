@@ -65,12 +65,16 @@ namespace UnicornHack.Systems.Beings
 
                     break;
                 case nameof(BeingComponent.EnergyPointMaximum):
-                    if (being.EnergyPoints > message.NewValue)
+                    if (message.OldValue == 0)
                     {
                         being.EnergyPoints = message.NewValue;
                     }
+                    else if (message.OldValue != message.NewValue)
+                    {
+                        being.EnergyPoints = (being.EnergyPoints * message.NewValue) / message.OldValue;
+                    }
 
-                    if (message.OldValue == 0)
+                    if (being.EnergyPoints > message.NewValue)
                     {
                         being.EnergyPoints = message.NewValue;
                     }

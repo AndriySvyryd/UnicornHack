@@ -37,7 +37,7 @@ namespace UnicornHack.Systems.Beings
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(90, being.EnergyPointMaximum);
-            Assert.Equal(60, being.EnergyPoints);
+            Assert.Equal(54, being.EnergyPoints);
             Assert.Equal(120, being.HitPointMaximum);
             Assert.Equal(72, being.HitPoints);
         }
@@ -78,17 +78,19 @@ namespace UnicornHack.Systems.Beings
             Assert.Equal(40, being.EnergyPoints);
 
             being.ReservedEnergyPoints = 150;
-
-            Assert.Equal(100, being.ReservedEnergyPoints);
-            Assert.Equal(0, being.EnergyPoints);
-
-            being.ReservedEnergyPoints = 0;
-            being.EnergyPoints = 50;
             being.EnergyPointMaximum = 200;
 
             manager.Queue.ProcessQueue(manager);
 
+            Assert.Equal(100, being.ReservedEnergyPoints);
+            Assert.Equal(0, being.EnergyPoints);
             Assert.Equal(200, being.EnergyPointMaximum);
+
+            being.ReservedEnergyPoints = 0;
+            being.EnergyPoints = 50;
+
+            manager.Queue.ProcessQueue(manager);
+
             Assert.Equal(0, being.ReservedEnergyPoints);
             Assert.Equal(50, being.EnergyPoints);
         }
