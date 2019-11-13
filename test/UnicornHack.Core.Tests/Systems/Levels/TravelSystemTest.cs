@@ -15,14 +15,14 @@ namespace UnicornHack.Systems.Levels
 .#.
 .>.
 ...");
-            var nymph = CreatureData.WaterNymph.Instantiate(level, new Point(0, 1));
-            var manager = nymph.Manager;
+            var undine = CreatureData.Undine.Instantiate(level, new Point(0, 1));
+            var manager = undine.Manager;
             var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
 
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(new[] { Direction.North, Direction.Southeast },
-                manager.TravelSystem.GetPossibleMovementDirections(nymph.Position, safe: true, manager));
+                manager.TravelSystem.GetPossibleMovementDirections(undine.Position, safe: true, manager));
         }
     }
 }

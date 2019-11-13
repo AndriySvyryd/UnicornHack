@@ -25,9 +25,9 @@ namespace UnicornHack.Systems.Knowledge
 ...
 ...
 ...");
-            var demogorgon = CreatureData.Demogorgon.Instantiate(level, new Point(0, 0));
+            var wizard = CreatureData.WizardOfYendor.Instantiate(level, new Point(0, 0));
 
-            var nymph = CreatureData.WaterNymph.Instantiate(level, new Point(0, 1));
+            var undine = CreatureData.Undine.Instantiate(level, new Point(0, 1));
 
             var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(1, 1));
             playerEntity.Position.Heading = Direction.West;
@@ -52,101 +52,104 @@ namespace UnicornHack.Systems.Knowledge
             playerEntity.Player.LogEntries.Clear();
             player2Entity.Player.LogEntries.Clear();
 
-            var demogorgonSting = manager.AbilitiesToAffectableRelationship[demogorgon.Id].ElementAt(3);
+            var wizardPunch = manager.AbilitiesToAffectableRelationship[wizard.Id]
+                .Single(a => a.Ability.Action == AbilityAction.Punch);
 
             var activateMessage = ActivateAbilityMessage.Create(manager);
-            activateMessage.AbilityEntity = demogorgonSting;
-            activateMessage.ActivatorEntity = demogorgon;
-            activateMessage.TargetEntity = nymph;
+            activateMessage.AbilityEntity = wizardPunch;
+            activateMessage.ActivatorEntity = wizard;
+            activateMessage.TargetEntity = undine;
 
             var stats = manager.AbilityActivationSystem.GetAttackStats(activateMessage);
             manager.ReturnMessage(activateMessage);
 
-            Assert.Equal(46, stats.SubAttacks
-                .Aggregate(0, (sum, a) => sum + manager.EffectApplicationSystem.GetExpectedDamage(a.Effects, demogorgon, nymph)));
+            Assert.Equal(97, stats.SubAttacks
+                .Aggregate(0, (sum, a) => sum + manager.EffectApplicationSystem.GetExpectedDamage(a.Effects, wizard, undine)));
 
-            Verify(demogorgon, nymph, playerEntity, player2Entity,
-                demogorgonSting, success: true,
-                "The Demogorgon stings the water nymph. (<damage drain='46'>46</damage> pts.)",
-                "The Demogorgon stings something.",
+            Verify(wizard, undine, playerEntity, player2Entity,
+                wizardPunch, success: true,
+                "The Wizard of Yendor punches the undine. (<damage physical='97'>97</damage> pts.)",
+                "The Wizard of Yendor punches something.",
                 manager);
 
-            Verify(demogorgon, nymph, playerEntity, player2Entity,
-                demogorgonSting, success: false,
-                "The Demogorgon tries to sting the water nymph, but misses.",
-                "The Demogorgon tries to sting something, but misses.",
+            Verify(wizard, undine, playerEntity, player2Entity,
+                wizardPunch, success: false,
+                "The Wizard of Yendor tries to punch the undine, but misses.",
+                "The Wizard of Yendor tries to punch something, but misses.",
                 manager);
 
-            Verify(playerEntity, demogorgon, playerEntity, player2Entity,
+            Verify(playerEntity, wizard, playerEntity, player2Entity,
                 manager.AbilitiesToAffectableRelationship[playerEntity.Id]
                     .Single(a => a.Ability.Slot == AbilitySlottingSystem.DefaultMeleeAttackSlot), success: true,
-                "You slash the Demogorgon. (<damage physical='89'>89</damage> pts.)",
-                "Dudley slashes the Demogorgon. (<damage physical='89'>89</damage> pts.)",
+                "You slash the Wizard of Yendor. (<damage physical='90'>90</damage> pts.)",
+                "Dudley slashes the Wizard of Yendor. (<damage physical='90'>90</damage> pts.)",
                 manager);
 
-            Verify(playerEntity, demogorgon, playerEntity, player2Entity,
+            Verify(playerEntity, wizard, playerEntity, player2Entity,
                 manager.AbilitiesToAffectableRelationship[playerEntity.Id]
                     .Single(a => a.Ability.Slot == AbilitySlottingSystem.DefaultMeleeAttackSlot), success: false,
-                "You try to slash the Demogorgon, but miss.",
-                "Dudley tries to slash the Demogorgon, but misses.",
+                "You try to slash the Wizard of Yendor, but miss.",
+                "Dudley tries to slash the Wizard of Yendor, but misses.",
                 manager);
 
-            Verify(demogorgon, playerEntity, playerEntity, player2Entity,
-                manager.AbilitiesToAffectableRelationship[demogorgon.Id].ElementAt(2), success: true,
-                "The Demogorgon casts a spell at you! You are unaffected.",
-                "The Demogorgon casts a spell at Dudley. He is unaffected.",
+            var wizardSpell = manager.AbilitiesToAffectableRelationship[wizard.Id]
+                .Single(a => a.Ability.Action == AbilityAction.Spell);
+            Verify(wizard, playerEntity, playerEntity, player2Entity,
+                wizardSpell, success: true,
+                "The Wizard of Yendor casts a spell at you! You are unaffected.",
+                "The Wizard of Yendor casts a spell at Dudley. He is unaffected.",
                 manager);
 
-            Verify(demogorgon, playerEntity, playerEntity, player2Entity,
-                manager.AbilitiesToAffectableRelationship[demogorgon.Id].ElementAt(2), success: false,
-                "The Demogorgon tries to cast a spell at you, but misses.",
-                "The Demogorgon tries to cast a spell at Dudley, but misses.",
+            Verify(wizard, playerEntity, playerEntity, player2Entity,
+                wizardSpell, success: false,
+                "The Wizard of Yendor tries to cast a spell at you, but misses.",
+                "The Wizard of Yendor tries to cast a spell at Dudley, but misses.",
                 manager);
 
-            Verify(demogorgon, playerEntity, player2Entity, SenseType.Sight, SenseType.Sight, AbilityAction.Spell,
+            Verify(wizard, playerEntity, player2Entity, SenseType.Sight, SenseType.Sight, AbilityAction.Spell,
                 manager, null,
-                expectedMessage: "The Demogorgon tries to cast a spell at Dudley, but misses.");
+                expectedMessage: "The Wizard of Yendor tries to cast a spell at Dudley, but misses.");
 
-            Verify(demogorgon, nymph, playerEntity, SenseType.Sound, SenseType.Sight, AbilityAction.Sting, manager, 11,
+            Verify(wizard, undine, playerEntity, SenseType.Sound, SenseType.Sight, AbilityAction.Sting, manager, 11,
                 expectedMessage: "You hear a noise.");
 
-            Verify(nymph, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch,
+            Verify(undine, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch,
                 SenseType.Sight | SenseType.Touch,
                 AbilityAction.Punch, manager, 11,
-                expectedMessage: "The water nymph punches you! [<damage physical='11'>11</damage> pts.]");
+                expectedMessage: "The undine punches you! [<damage physical='11'>11</damage> pts.]");
 
-            Verify(nymph, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch,
+            Verify(undine, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch,
                 SenseType.Sight | SenseType.Touch,
                 AbilityAction.Spit, manager, null,
-                expectedMessage: "The water nymph tries to spit at you, but misses.");
+                expectedMessage: "The undine tries to spit at you, but misses.");
 
-            Verify(playerEntity, demogorgon, playerEntity, SenseType.Sight | SenseType.Touch, SenseType.Sight,
+            Verify(playerEntity, wizard, playerEntity, SenseType.Sight | SenseType.Touch, SenseType.Sight,
                 AbilityAction.Hug, manager, 11,
-                expectedMessage: "You squeeze the Demogorgon. (<damage physical='11'>11</damage> pts.)");
+                expectedMessage: "You squeeze the Wizard of Yendor. (<damage physical='11'>11</damage> pts.)");
 
-            Verify(playerEntity, demogorgon, playerEntity, SenseType.Sight | SenseType.Touch,
+            Verify(playerEntity, wizard, playerEntity, SenseType.Sight | SenseType.Touch,
                 SenseType.Telepathy | SenseType.Touch,
                 AbilityAction.Trample, manager, null,
-                expectedMessage: "You try to trample the Demogorgon, but miss.");
+                expectedMessage: "You try to trample the Wizard of Yendor, but miss.");
 
-            Verify(demogorgon, demogorgon, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Claw, manager,
+            Verify(wizard, wizard, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Claw, manager,
                 11,
-                expectedMessage: "The Demogorgon claws himself. (<damage physical='11'>11</damage> pts.)");
+                expectedMessage: "The Wizard of Yendor claws himself. (<damage physical='11'>11</damage> pts.)");
 
             Verify(playerEntity, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch,
                 SenseType.Sight | SenseType.Touch,
                 AbilityAction.Kick, manager, 12,
                 expectedMessage: "You kick yourself! [<damage physical='12'>12</damage> pts.]");
 
-            Verify(nymph, playerEntity, playerEntity, SenseType.Sight | SenseType.Sound,
+            Verify(undine, playerEntity, playerEntity, SenseType.Sight | SenseType.Sound,
                 SenseType.Sight | SenseType.Touch,
                 AbilityAction.Scream, manager, 0,
-                expectedMessage: "The water nymph screams at you! You are unaffected.");
+                expectedMessage: "The undine screams at you! You are unaffected.");
 
-            Verify(nymph, nymph, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Scream, manager, 0,
-                expectedMessage: "The water nymph screams at herself. She is unaffected.");
+            Verify(undine, undine, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Scream, manager, 0,
+                expectedMessage: "The undine screams at herself. She is unaffected.");
 
-            Verify(nymph, nymph, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Scream, manager, null,
+            Verify(undine, undine, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Scream, manager, null,
                 expectedMessage: "You hear a scream.");
 
             var dagger = ItemData.Dagger.Instantiate(playerEntity.Manager).Referenced;
@@ -159,48 +162,48 @@ namespace UnicornHack.Systems.Knowledge
             var bow = ItemData.Shortbow.Instantiate(playerEntity.Manager).Referenced;
             var arrow = ItemData.Arrow.Instantiate(playerEntity.Manager).Referenced;
 
-            Verify(nymph, playerEntity, playerEntity, SenseType.Sight, SenseType.None, AbilityAction.Shoot, manager,
+            Verify(undine, playerEntity, playerEntity, SenseType.Sight, SenseType.None, AbilityAction.Shoot, manager,
                 null, weapon: bow,
                 expectedMessage: null);
 
-            Verify(nymph, playerEntity, playerEntity, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11,
+            Verify(undine, playerEntity, playerEntity, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11,
                 weapon: arrow,
                 expectedMessage: "Something hits you! [<damage physical='11'>11</damage> pts.]");
 
-            Verify(nymph, playerEntity, playerEntity, SenseType.SoundDistant, SenseType.None, AbilityAction.Shoot,
+            Verify(undine, playerEntity, playerEntity, SenseType.SoundDistant, SenseType.None, AbilityAction.Shoot,
                 manager, null,
                 weapon: bow,
                 expectedMessage: null);
 
-            Verify(nymph, playerEntity, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager,
+            Verify(undine, playerEntity, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager,
                 null, weapon: arrow,
                 expectedMessage: "An arrow misses you.");
 
-            Verify(playerEntity, demogorgon, playerEntity, SenseType.Sight, SenseType.None, AbilityAction.Shoot,
+            Verify(playerEntity, wizard, playerEntity, SenseType.Sight, SenseType.None, AbilityAction.Shoot,
                 manager, null, weapon: bow,
                 expectedMessage: null);
 
-            Verify(playerEntity, demogorgon, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager,
+            Verify(playerEntity, wizard, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager,
                 11, weapon: arrow,
-                expectedMessage: "An arrow hits the Demogorgon. (<damage physical='11'>11</damage> pts.)");
+                expectedMessage: "An arrow hits the Wizard of Yendor. (<damage physical='11'>11</damage> pts.)");
 
-            Verify(nymph, demogorgon, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Shoot, manager, null,
+            Verify(undine, wizard, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Shoot, manager, null,
                 weapon: bow,
                 expectedMessage: "You hear a noise.");
 
-            Verify(nymph, demogorgon, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager, 2,
+            Verify(undine, wizard, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager, 2,
                 weapon: arrow,
-                expectedMessage: "An arrow hits the Demogorgon. (<damage physical='2'>2</damage> pts.)");
+                expectedMessage: "An arrow hits the Wizard of Yendor. (<damage physical='2'>2</damage> pts.)");
 
             var throwingKnife = ItemData.ThrowingKnife.Instantiate(playerEntity.Manager).Referenced;
 
-            Verify(nymph, playerEntity, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Throw,
+            Verify(undine, playerEntity, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Throw,
                 manager,
                 null,
                 weapon: throwingKnife,
                 expectedMessage: null);
 
-            Verify(nymph, playerEntity, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager,
+            Verify(undine, playerEntity, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager,
                 11,
                 weapon: throwingKnife,
                 expectedMessage: "A throwing knife hits you! [<damage physical='11'>11</damage> pts.]");
@@ -209,11 +212,11 @@ namespace UnicornHack.Systems.Knowledge
                 weapon: throwingKnife,
                 expectedMessage: null);
 
-            Verify(nymph, demogorgon, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Throw, manager, null,
+            Verify(undine, wizard, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Throw, manager, null,
                 weapon: throwingKnife,
                 expectedMessage: "You hear a noise.");
 
-            Verify(nymph, demogorgon, playerEntity, SenseType.None, SenseType.SoundDistant, AbilityAction.Hit, manager,
+            Verify(undine, wizard, playerEntity, SenseType.None, SenseType.SoundDistant, AbilityAction.Hit, manager,
                 2,
                 weapon: throwingKnife,
                 expectedMessage: "You hear a distant noise.");
@@ -327,12 +330,12 @@ namespace UnicornHack.Systems.Knowledge
         {
             var level = TestHelper.BuildLevel();
             var armor = ItemData.MailArmor.Instantiate(level.Entity.Manager).Referenced;
-            var nymph = CreatureData.WaterNymph.Instantiate(level, new Point(0, 1));
+            var nymph = CreatureData.Undine.Instantiate(level, new Point(0, 1));
             var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
             var manager = level.Entity.Manager;
             var languageService = manager.Game.Services.Language;
 
-            Assert.Equal("The water nymph equips something on the torso.",
+            Assert.Equal("The undine equips something on the torso.",
                 languageService.GetString(new ItemEquipmentEvent(
                     player, nymph, armor, SenseType.Sight, SenseType.Sound, EquipmentSlot.Torso)));
 
@@ -354,12 +357,12 @@ namespace UnicornHack.Systems.Knowledge
         {
             var level = TestHelper.BuildLevel();
             var armor = ItemData.MailArmor.Instantiate(level.Entity.Manager).Referenced;
-            var nymph = CreatureData.WaterNymph.Instantiate(level, new Point(0, 1));
+            var nymph = CreatureData.Undine.Instantiate(level, new Point(0, 1));
             var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
             var manager = level.Entity.Manager;
             var languageService = manager.Game.Services.Language;
 
-            Assert.Equal("The water nymph unequips something.", languageService.GetString(new ItemEquipmentEvent(
+            Assert.Equal("The undine unequips something.", languageService.GetString(new ItemEquipmentEvent(
                 player, nymph, armor, SenseType.Sight, SenseType.Sound, EquipmentSlot.None)));
 
             Assert.Equal("Something unequips a mail armor.", languageService.GetString(new ItemEquipmentEvent(

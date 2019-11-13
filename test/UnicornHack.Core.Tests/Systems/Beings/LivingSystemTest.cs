@@ -39,7 +39,7 @@ namespace UnicornHack.Systems.Beings
             Assert.Equal(90, being.EnergyPointMaximum);
             Assert.Equal(60, being.EnergyPoints);
             Assert.Equal(120, being.HitPointMaximum);
-            Assert.Equal(60, being.HitPoints);
+            Assert.Equal(72, being.HitPoints);
         }
 
         [Fact]

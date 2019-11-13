@@ -35,15 +35,15 @@ namespace UnicornHack.Systems.Abilities
             playerEntity.Player.SkillPoints = 5;
             manager.SkillAbilitiesSystem.BuyAbilityLevel(AbilityData.Conjuration, playerEntity);
             ItemData.Shortbow.Instantiate(playerEntity);
-            var nymph = CreatureData.WaterNymph.Instantiate(level, new Point(2, 2));
-            var elemental = CreatureData.Sylph.Instantiate(level, new Point(0, 0));
+            var undine = CreatureData.Undine.Instantiate(level, new Point(2, 2));
+            var sylph = CreatureData.Sylph.Instantiate(level, new Point(0, 0));
 
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(100, playerEntity.Being.Accuracy);
             Assert.Equal(100, playerEntity.Being.Evasion);
-            Assert.Equal(50, elemental.Being.Accuracy);
-            Assert.Equal(75, elemental.Being.Evasion);
+            Assert.Equal(50, sylph.Being.Accuracy);
+            Assert.Equal(75, sylph.Being.Evasion);
 
             var bow = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single();
             var equipMessage = EquipItemMessage.Create(manager);
@@ -54,7 +54,7 @@ namespace UnicornHack.Systems.Abilities
             manager.Enqueue(equipMessage);
             manager.Queue.ProcessQueue(manager);
 
-            var nymphAbility = manager.AbilitiesToAffectableRelationship[nymph.Id]
+            var nymphAbility = manager.AbilitiesToAffectableRelationship[undine.Id]
                 .First(a => (a.Ability.Activation & ActivationType.Slottable) != 0
                     && a.Ability.Template?.Type != AbilityType.DefaultAttack);
             Assert.Equal(0, nymphAbility.Ability.Slot);
@@ -63,7 +63,7 @@ namespace UnicornHack.Systems.Abilities
 
             var activateAbilityMessage = ActivateAbilityMessage.Create(manager);
             activateAbilityMessage.ActivatorEntity = playerEntity;
-            activateAbilityMessage.TargetCell = nymph.Position.LevelCell;
+            activateAbilityMessage.TargetCell = undine.Position.LevelCell;
             activateAbilityMessage.AbilityEntity = attackAbility;
 
             manager.Enqueue(activateAbilityMessage);
@@ -78,7 +78,7 @@ namespace UnicornHack.Systems.Abilities
 
                 messageCount++;
                 Assert.Same(playerEntity, m.ActivatorEntity);
-                Assert.Same(nymph, m.TargetEntity);
+                Assert.Same(undine, m.TargetEntity);
                 Assert.Equal(new Point(2, 2), m.TargetCell);
             };
 
@@ -90,7 +90,7 @@ namespace UnicornHack.Systems.Abilities
 
             activateAbilityMessage = ActivateAbilityMessage.Create(manager);
             activateAbilityMessage.ActivatorEntity = playerEntity;
-            activateAbilityMessage.TargetCell = elemental.Position.LevelCell;
+            activateAbilityMessage.TargetCell = sylph.Position.LevelCell;
             activateAbilityMessage.AbilityEntity = attackAbility;
 
             manager.Enqueue(activateAbilityMessage);
@@ -110,17 +110,17 @@ namespace UnicornHack.Systems.Abilities
 
             Assert.Equal(0, messageCount);
 
-            nymph.Being.HitPoints = nymph.Being.HitPointMaximum;
+            undine.Being.HitPoints = undine.Being.HitPointMaximum;
             var iceShardAbility = manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)];
 
             var accuracy = manager.AbilityActivationSystem.GetAccuracy(iceShardAbility.Ability, playerEntity);
             Assert.Equal(105, accuracy);
 
-            Assert.Equal(34,
-                manager.AbilityActivationSystem.GetEvasionProbability(iceShardAbility, playerEntity, nymph, null, accuracy));
+            Assert.Equal(21,
+                manager.AbilityActivationSystem.GetEvasionProbability(iceShardAbility, playerEntity, undine, null, accuracy));
 
             Assert.Equal(100,
-                manager.AbilityActivationSystem.GetEvasionProbability(iceShardAbility, playerEntity, elemental, null, accuracy));
+                manager.AbilityActivationSystem.GetEvasionProbability(iceShardAbility, playerEntity, sylph, null, accuracy));
 
             var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = iceShardAbility;
@@ -129,7 +129,7 @@ namespace UnicornHack.Systems.Abilities
 
             activateAbilityMessage = ActivateAbilityMessage.Create(manager);
             activateAbilityMessage.ActivatorEntity = playerEntity;
-            activateAbilityMessage.TargetCell = nymph.Position.LevelCell;
+            activateAbilityMessage.TargetCell = undine.Position.LevelCell;
             activateAbilityMessage.AbilityEntity = iceShardAbility;
             manager.Enqueue(activateAbilityMessage);
 
@@ -140,7 +140,7 @@ namespace UnicornHack.Systems.Abilities
 
             activateAbilityMessage = ActivateAbilityMessage.Create(manager);
             activateAbilityMessage.ActivatorEntity = playerEntity;
-            activateAbilityMessage.TargetCell = nymph.Position.LevelCell;
+            activateAbilityMessage.TargetCell = undine.Position.LevelCell;
             activateAbilityMessage.AbilityEntity = iceShardAbility;
             manager.Enqueue(activateAbilityMessage);
 

@@ -47,7 +47,7 @@ namespace UnicornHack.Systems.Knowledge
         public void Xp_gained_on_enemy_death()
         {
             var level = TestHelper.BuildLevel("..");
-            var nymph = CreatureData.WaterNymph.Instantiate(level, new Point(0, 0));
+            var undine = CreatureData.Undine.Instantiate(level, new Point(0, 0));
             var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(1, 0));
             player.Position.Heading = Direction.West;
             var manager = player.Manager;
@@ -56,10 +56,10 @@ namespace UnicornHack.Systems.Knowledge
 
             Assert.Equal(2, player.Being.ExperiencePoints);
 
-            nymph.Being.HitPoints = 0;
+            undine.Being.HitPoints = 0;
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Equal(302, player.Being.ExperiencePoints);
+            Assert.Equal(802, player.Being.ExperiencePoints);
         }
 
         [Fact]

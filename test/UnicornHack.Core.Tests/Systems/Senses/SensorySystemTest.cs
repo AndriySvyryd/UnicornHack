@@ -20,22 +20,22 @@ namespace UnicornHack.Systems.Senses
         public void Visibility_updated_on_travel()
         {
             var level = TestHelper.BuildLevel(TestMap);
-            var nymph = CreatureData.WaterNymph.Instantiate(level, new Point(0, 1));
+            var undine = CreatureData.Undine.Instantiate(level, new Point(0, 1));
             var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
             player.Position.Heading = Direction.West;
             var manager = player.Manager;
-            ItemData.Dagger.Instantiate(nymph);
+            ItemData.Dagger.Instantiate(undine);
 
             manager.Queue.ProcessQueue(manager);
 
-            var dagger = manager.EntityItemsToContainerRelationship[nymph.Id].Single();
-            Assert.Equal(SenseType.Sight, manager.SensorySystem.CanSense(player, nymph));
-            Assert.Equal(SenseType.Sight, manager.SensorySystem.SensedByPlayer(nymph, nymph.Position.LevelCell));
+            var dagger = manager.EntityItemsToContainerRelationship[undine.Id].Single();
+            Assert.Equal(SenseType.Sight, manager.SensorySystem.CanSense(player, undine));
+            Assert.Equal(SenseType.Sight, manager.SensorySystem.SensedByPlayer(undine, undine.Position.LevelCell));
             Assert.Equal(SenseType.Sight | SenseType.Touch | SenseType.Telepathy, manager.SensorySystem.CanSense(player, player));
             Assert.Equal(SenseType.Sight | SenseType.Touch | SenseType.Telepathy,
                 manager.SensorySystem.SensedByPlayer(player, player.Position.LevelCell));
             Assert.Equal(SenseType.Sight, manager.SensorySystem.CanSense(player, dagger));
-            Assert.Equal(SenseType.Sight, manager.SensorySystem.SensedByPlayer(dagger, nymph.Position.LevelCell));
+            Assert.Equal(SenseType.Sight, manager.SensorySystem.SensedByPlayer(dagger, undine.Position.LevelCell));
             var expectedVisibleMap = @"
 .
 .
@@ -55,10 +55,10 @@ namespace UnicornHack.Systems.Senses
 
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Equal(SenseType.None, manager.SensorySystem.CanSense(player, nymph));
-            Assert.Equal(SenseType.None, manager.SensorySystem.SensedByPlayer(nymph, nymph.Position.LevelCell));
+            Assert.Equal(SenseType.None, manager.SensorySystem.CanSense(player, undine));
+            Assert.Equal(SenseType.None, manager.SensorySystem.SensedByPlayer(undine, undine.Position.LevelCell));
             Assert.Equal(SenseType.None, manager.SensorySystem.CanSense(player, dagger));
-            Assert.Equal(SenseType.None, manager.SensorySystem.SensedByPlayer(dagger, nymph.Position.LevelCell));
+            Assert.Equal(SenseType.None, manager.SensorySystem.SensedByPlayer(dagger, undine.Position.LevelCell));
             expectedVisibleMap = @"
  
  

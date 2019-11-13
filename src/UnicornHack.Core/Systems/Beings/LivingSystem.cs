@@ -8,7 +8,8 @@ namespace UnicornHack.Systems.Beings
 {
     public class LivingSystem :
         IGameSystem<XPGainedMessage>,
-        IGameSystem<PropertyValueChangedMessage<GameEntity, int>>
+        IGameSystem<PropertyValueChangedMessage<GameEntity, int>>,
+        IGameSystem<EntityAddedMessage<GameEntity>>
     {
         public const string AttributedAbilityName = "attributed";
 
@@ -48,14 +49,17 @@ namespace UnicornHack.Systems.Beings
 
                     break;
                 case nameof(BeingComponent.HitPointMaximum):
-                    if (being.HitPoints > message.NewValue)
+                    if (message.OldValue == 0)
                     {
                         being.HitPoints = message.NewValue;
                     }
-
-                    if (message.OldValue == 1)
+                    else if (message.OldValue != message.NewValue)
                     {
-                        // Being just created
+                        being.HitPoints = (being.HitPoints * message.NewValue) / message.OldValue;
+                    }
+
+                    if (being.HitPoints > message.NewValue)
+                    {
                         being.HitPoints = message.NewValue;
                     }
 
@@ -73,28 +77,17 @@ namespace UnicornHack.Systems.Beings
 
                     break;
                 case nameof(BeingComponent.Might):
-                    var hpEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
-                        message.Entity, nameof(BeingComponent.HitPointMaximum), AttributedAbilityName);
-
-                    hpEffect.Amount = message.NewValue * 10;
+                    CalculateHp(message.NewValue, message.Entity, manager);
 
                     break;
                 case nameof(BeingComponent.Focus):
-                    var epEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
-                        message.Entity, nameof(BeingComponent.EnergyPointMaximum), AttributedAbilityName);
-
-                    epEffect.Amount = message.NewValue * 10;
+                    CalculateEp(message.NewValue, message.Entity, manager);
 
                     break;
                 case nameof(BeingComponent.Perception):
-                {
-                    var accuracyEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
-                        message.Entity, nameof(BeingComponent.Accuracy), AttributedAbilityName);
-
-                    accuracyEffect.Amount = message.NewValue * 10;
+                    CalculateAccuracy(message.NewValue, message.Entity, manager);
 
                     break;
-                }
                 case nameof(BeingComponent.Speed):
                 {
                     var effectiveSpeed = message.NewValue - being.Hindrance / 10;
@@ -116,6 +109,48 @@ namespace UnicornHack.Systems.Beings
             }
 
             return MessageProcessingResult.ContinueProcessing;
+        }
+
+        public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager manager)
+        {
+            var being = message.Entity.Being;
+
+            being.HitPointMaximum = 1;
+            being.HitPoints = 1;
+
+            CalculateHp(being.Might, message.Entity, manager);
+            CalculateEp(being.Focus, message.Entity, manager);
+            CalculateAccuracy(being.Perception, message.Entity, manager);
+
+            var effectiveSpeed = being.Speed - being.Hindrance / 10;
+            CalculateMovementDelay(effectiveSpeed, message.Entity, manager);
+            CalculateTurningDelay(effectiveSpeed, message.Entity, manager);
+            CalculateEvasion(effectiveSpeed, message.Entity, manager);
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        private void CalculateHp(int might, GameEntity beingEntity, GameManager manager)
+        {
+            var hpEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
+                beingEntity, nameof(BeingComponent.HitPointMaximum), AttributedAbilityName);
+
+            hpEffect.Amount = might * 10;
+        }
+
+        private void CalculateEp(int focus, GameEntity beingEntity, GameManager manager)
+        {
+            var epEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
+                beingEntity, nameof(BeingComponent.EnergyPointMaximum), AttributedAbilityName);
+
+            epEffect.Amount = focus * 10;
+        }
+
+        private void CalculateAccuracy(int accuracy, GameEntity beingEntity, GameManager manager)
+        {
+            var accuracyEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
+                beingEntity, nameof(BeingComponent.Accuracy), AttributedAbilityName);
+
+            accuracyEffect.Amount = accuracy * 10;
         }
 
         private void CalculateEvasion(int effectiveSpeed, GameEntity beingEntity, GameManager manager)

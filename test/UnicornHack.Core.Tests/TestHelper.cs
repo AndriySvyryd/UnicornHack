@@ -347,7 +347,11 @@ Seed: " + level.Game.InitialSeed);
 
         public static GameEntity ActivateAbility(
             string abilityName, GameEntity playerEntity, GameManager manager, int slot = 0)
-            => ActivateAbility(manager.AffectableAbilitiesIndex[(playerEntity.Id, abilityName)], playerEntity, manager, slot);
+        {
+            var ability = manager.AffectableAbilitiesIndex[(playerEntity.Id, abilityName)];
+            Assert.NotNull(ability);
+            return ActivateAbility(ability, playerEntity, manager, slot);
+        }
 
         public static GameEntity ActivateAbility(
             GameEntity abilityEntity, GameEntity playerEntity, GameManager manager, int slot = 0)

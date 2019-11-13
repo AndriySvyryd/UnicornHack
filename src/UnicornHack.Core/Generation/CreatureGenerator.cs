@@ -17,6 +17,7 @@ namespace UnicornHack.Generation
             var creaturesToPlace = level.GenerationRandom.NextBinomial(0.5f, (ExpectedInitialCount - actorsCount) * 2);
             var roomsToFill = rooms.Count;
             var difficultyFraction = (float)(level.Difficulty - 1) / LevelGenerator.MaxDifficulty;
+
             foreach (var room in level.GenerationRandom.WeightedOrder(rooms, r => r.InsidePoints.Count))
             {
                 var creaturesPerRoom = (int)Math.Ceiling((float)creaturesToPlace / roomsToFill);

@@ -1046,7 +1046,7 @@ namespace UnicornHack.Systems.Effects
             return manager.EffectsToContainingAbilityRelationship[abilityEntity.Id].Select(e => e.Effect)
                        .FirstOrDefault(e => e.EffectType == EffectType.ChangeProperty
                                             && e.TargetName == propertyName)
-                   ?? AddPropertyEffect(abilityEntity.Id, propertyName, function ?? ValueCombinationFunction.MeanRoundDown, manager);
+                   ?? AddPropertyEffect(abilityEntity.Id, propertyName, function, manager);
         }
 
         /// <summary>
@@ -1086,7 +1086,7 @@ namespace UnicornHack.Systems.Effects
             return propertyAbility;
         }
 
-        private EffectComponent AddPropertyEffect(int abilityId, string propertyName, ValueCombinationFunction function, GameManager manager)
+        private EffectComponent AddPropertyEffect(int abilityId, string propertyName, ValueCombinationFunction? function, GameManager manager)
         {
             using (var effectReference = manager.CreateEntity())
             {
@@ -1095,7 +1095,7 @@ namespace UnicornHack.Systems.Effects
                 effect.ContainingAbilityId = abilityId;
                 effect.EffectType = EffectType.ChangeProperty;
                 effect.Duration = EffectDuration.Infinite;
-                effect.Function = function;
+                effect.Function = function ?? ValueCombinationFunction.Sum;
                 effect.TargetName = propertyName;
                 effect.Amount = 0;
 

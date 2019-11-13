@@ -23,7 +23,7 @@ namespace UnicornHack.Data.Creatures
                     Accuracy = "5+attackScaling",
                     Cooldown = 100,
                     Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "130*physicalScaling"}}
+                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50*physicalScaling"}}
                 },
                 new Ability
                 {
@@ -46,8 +46,6 @@ namespace UnicornHack.Data.Creatures
             Sex = Sex.Male,
             Weight = 1000,
             Perception = 6,
-            Might = 6,
-            Speed = 6,
             Focus = 6,
             EnergyRegeneration = 3,
             Regeneration = 3,
@@ -55,7 +53,7 @@ namespace UnicornHack.Data.Creatures
             MagicResistance = 50,
             FireResistance = 75,
             TorsoType = TorsoType.Humanoid,
-            UpperExtremities = ExtremityType.GraspingFingers,
+            UpperExtremities = ExtremityType.Fingers,
             LowerExtremities = ExtremityType.Fingers,
             RespirationType = RespirationType.None,
             LocomotionType = LocomotionType.Walking | LocomotionType.Teleportation,

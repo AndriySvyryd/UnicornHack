@@ -51,6 +51,7 @@ namespace UnicornHack
 
             LivingSystem = new LivingSystem();
             queue.Add<XPGainedMessage>(LivingSystem, XPGainedMessage.Name, 0);
+            queue.Add<EntityAddedMessage<GameEntity>>(LivingSystem, Beings.GetEntityAddedMessageName(), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,
                 Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.HitPoints)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,

@@ -16,7 +16,6 @@ namespace UnicornHack.Systems.Actors
         IGameSystem<PropertyValueChangedMessage<GameEntity, bool>>,
         IGameSystem<DelayMessage>
     {
-
         public MessageProcessingResult Process(PerformActionMessage message, GameManager manager)
         {
             var actor = message.Actor;

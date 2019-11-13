@@ -34,6 +34,8 @@ namespace UnicornHack.Generation
         private int? _focus;
         private int? _energyRegeneration;
         private int? _regeneration;
+        private int? _bonusHitPoints;
+        private int? _bonusEnergyPoints;
         private int? _accuracy;
         private int? _evasion;
         private int? _magicResistance;
@@ -186,6 +188,18 @@ namespace UnicornHack.Generation
         {
             get => _regeneration ?? BaseCreature?.Regeneration;
             set => _regeneration = value;
+        }
+
+        public int? BonusHitPoints
+        {
+            get => _bonusHitPoints ?? BaseCreature?.BonusHitPoints;
+            set => _bonusHitPoints = value;
+        }
+
+        public int? BonusEnergyPoints
+        {
+            get => _bonusEnergyPoints ?? BaseCreature?.BonusEnergyPoints;
+            set => _bonusEnergyPoints = value;
         }
 
         public int? Accuracy
@@ -479,8 +493,6 @@ namespace UnicornHack.Generation
                 being.Sex = Sex ?? (level.GenerationRandom.Roll(1, 2) > 1
                                 ? Primitives.Sex.Female
                                 : Primitives.Sex.Male);
-                being.HitPointMaximum = 1;
-                being.HitPoints = 1;
 
                 if (XP == 0)
                 {
@@ -555,6 +567,10 @@ namespace UnicornHack.Generation
                         CreatePropertyEffect(nameof(BeingComponent.EnergyRegeneration), EnergyRegeneration,
                             abilityEntity.Id, manager);
                         CreatePropertyEffect(nameof(BeingComponent.Regeneration), Regeneration, abilityEntity.Id,
+                            manager);
+                        CreatePropertyEffect(nameof(BeingComponent.HitPointMaximum), BonusHitPoints, abilityEntity.Id,
+                            manager);
+                        CreatePropertyEffect(nameof(BeingComponent.EnergyPointMaximum), BonusEnergyPoints, abilityEntity.Id,
                             manager);
                         CreatePropertyEffect(nameof(BeingComponent.Accuracy), Accuracy, abilityEntity.Id, manager);
                         CreatePropertyEffect(nameof(BeingComponent.Evasion), Evasion, abilityEntity.Id, manager);
@@ -669,6 +685,8 @@ namespace UnicornHack.Generation
                 {nameof(Focus), (o, v) => (int?)v != o.BaseCreature?.Focus},
                 {nameof(EnergyRegeneration), (o, v) => (int?)v != o.BaseCreature?.EnergyRegeneration},
                 {nameof(Regeneration), (o, v) => (int?)v != o.BaseCreature?.Regeneration},
+                {nameof(BonusHitPoints), (o, v) => (int?)v != o.BaseCreature?.BonusHitPoints},
+                {nameof(BonusEnergyPoints), (o, v) => (int?)v != o.BaseCreature?.BonusEnergyPoints},
                 {nameof(Accuracy), (o, v) => (int?)v != o.BaseCreature?.Accuracy},
                 {nameof(Evasion), (o, v) => (int?)v != o.BaseCreature?.Evasion},
                 {nameof(Deflection), (o, v) => (int?)v != o.BaseCreature?.Deflection},

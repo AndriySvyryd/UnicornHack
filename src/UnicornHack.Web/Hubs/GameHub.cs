@@ -279,6 +279,7 @@ namespace UnicornHack.Hubs
             }
 
             currentPlayer.Game.ActingPlayer = null;
+
             manager.TimeSystem.AdvanceToNextPlayerTurn(manager);
 
             //TODO: If all players are dead end the game
@@ -403,6 +404,7 @@ namespace UnicornHack.Hubs
 
             manager.LoggingSystem.WriteLog(game.Services.Language.Welcome(playerEntity), playerEntity, manager);
 
+            manager.Queue.ProcessQueue(manager);
             Turn(playerEntity.Player);
             _dbContext.ChangeTracker.AcceptAllChanges();
 

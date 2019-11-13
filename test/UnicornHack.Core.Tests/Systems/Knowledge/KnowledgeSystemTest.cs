@@ -22,14 +22,14 @@ namespace UnicornHack.Systems.Knowledge
         {
             var level = TestHelper.BuildLevel(TestMap);
             ItemData.Dagger.Instantiate(level, new Point(0, 0));
-            var nymph = CreatureData.WaterNymph.Instantiate(level, new Point(0, 0));
+            var undine = CreatureData.Undine.Instantiate(level, new Point(0, 0));
             var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
             player.Position.Heading = Direction.West;
             var manager = player.Manager;
 
             manager.Queue.ProcessQueue(manager);
 
-            var nymphKnowledge = manager.LevelKnowledgeToLevelEntityRelationship[nymph.Id];
+            var nymphKnowledge = manager.LevelKnowledgeToLevelEntityRelationship[undine.Id];
             var playerKnowledge = manager.LevelKnowledgeToLevelEntityRelationship[player.Id];
             var dagger = manager.LevelItemsToLevelCellIndex[(level.EntityId, 0, 0)];
             var daggerKnowledge = manager.LevelKnowledgeToLevelEntityRelationship[dagger.Id];
@@ -39,9 +39,9 @@ namespace UnicornHack.Systems.Knowledge
             Assert.Equal(4, manager.LevelKnowledges.Count);
             Assert.Equal(4, manager.LevelKnowledgesToLevelRelationship[level.EntityId].Count);
 
-            Assert.Equal(nymph.Position.LevelCell, nymphKnowledge.Position.LevelCell);
-            Assert.Equal(nymph.Position.Heading, nymphKnowledge.Position.Heading);
-            Assert.Same(nymph, nymphKnowledge.Knowledge.KnownEntity);
+            Assert.Equal(undine.Position.LevelCell, nymphKnowledge.Position.LevelCell);
+            Assert.Equal(undine.Position.Heading, nymphKnowledge.Position.Heading);
+            Assert.Same(undine, nymphKnowledge.Knowledge.KnownEntity);
             Assert.Equal(SenseType.Sight, nymphKnowledge.Knowledge.SensedType);
             Assert.Same(manager.LevelKnowledgeToLevelCellIndex[(level.EntityId, 0, 0)].Last(), nymphKnowledge);
 
@@ -64,7 +64,7 @@ namespace UnicornHack.Systems.Knowledge
             Assert.Same(manager.LevelKnowledgeToLevelCellIndex[(level.EntityId, 0, 1)].Single(), connectionKnowledge);
 
             var travelMessage = TravelMessage.Create(manager);
-            travelMessage.Entity = nymph;
+            travelMessage.Entity = undine;
             travelMessage.TargetHeading = Direction.East;
             travelMessage.TargetCell = new Point(1, 1);
             manager.Enqueue(travelMessage);
@@ -79,12 +79,12 @@ namespace UnicornHack.Systems.Knowledge
 
             Assert.Equal(4, manager.LevelKnowledges.Count);
             Assert.Equal(4, manager.LevelKnowledgesToLevelRelationship[level.EntityId].Count);
-            Assert.Same(nymphKnowledge, manager.LevelKnowledgeToLevelEntityRelationship[nymph.Id]);
+            Assert.Same(nymphKnowledge, manager.LevelKnowledgeToLevelEntityRelationship[undine.Id]);
             Assert.Same(daggerKnowledge, manager.LevelKnowledgeToLevelEntityRelationship[dagger.Id]);
 
-            Assert.Equal(nymph.Position.LevelCell, nymphKnowledge.Position.LevelCell);
-            Assert.Equal(nymph.Position.Heading, nymphKnowledge.Position.Heading);
-            Assert.Same(nymph, nymphKnowledge.Knowledge.KnownEntity);
+            Assert.Equal(undine.Position.LevelCell, nymphKnowledge.Position.LevelCell);
+            Assert.Equal(undine.Position.Heading, nymphKnowledge.Position.Heading);
+            Assert.Same(undine, nymphKnowledge.Knowledge.KnownEntity);
             Assert.Equal(SenseType.Sight, nymphKnowledge.Knowledge.SensedType);
             Assert.Same(manager.LevelKnowledgeToLevelCellIndex[(level.EntityId, 1, 1)].Last(), nymphKnowledge);
 

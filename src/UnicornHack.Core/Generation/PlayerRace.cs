@@ -44,8 +44,6 @@ namespace UnicornHack.Generation
 
                 var being = manager.CreateComponent<BeingComponent>(EntityComponent.Being);
                 being.Sex = sex;
-                being.HitPointMaximum = 1;
-                being.HitPoints = 1;
 
                 playerEntity.Being = being;
 
@@ -79,9 +77,6 @@ namespace UnicornHack.Generation
 
                     raceEffectEntity.Ability.OwnerEntity = playerEntity;
                     raceEffect.AffectedEntityId = playerEntity.Id;
-
-                    // TODO: handle in XP system
-                    manager.XPSystem.UpdateNextLevelXP(playerEntity);
                 }
 
                 return playerEntity;
