@@ -1,4 +1,4 @@
-﻿import * as React from 'React';
+﻿import React from 'react';
 import { action } from 'mobx';
 import { observer } from 'mobx-react';
 import { Player, PlayerRace } from '../transport/Model';
@@ -9,7 +9,7 @@ import { MeterBar } from './MeterBar';
 import { TooltipTrigger } from './TooltipTrigger';
 
 @observer
-export class StatusBar extends React.Component<IStatusBarProps, {}> {
+export class StatusBar extends React.PureComponent<IStatusBarProps, {}> {
     @action.bound
     showCharacterScreen(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {

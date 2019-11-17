@@ -1,4 +1,4 @@
-import * as React from 'React';
+import React from 'react';
 import { IObservableValue } from 'mobx';
 import { observer } from 'mobx-react';
 

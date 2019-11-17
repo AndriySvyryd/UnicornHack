@@ -9,8 +9,7 @@ import { TargetingShape } from "./TargetingShape";
 import { TargetingType } from "./TargetingType";
 
 export class Player {
-    id: number = 0;
-    name: string = '';
+    readonly name: string = '';
     @observable currentTick: number = -1;
     @observable nextActionTick: number = 0;
     @observable hp: number = 0;
@@ -24,6 +23,10 @@ export class Player {
     @observable abilities: Map<number, Ability> = new Map<number, Ability>();
     @observable log: Map<number, LogEntry> = new Map<number, LogEntry>();
     @observable races: Map<number, PlayerRace> = new Map<number, PlayerRace>();
+
+    constructor(name: string) {
+        this.name = name;
+    }
 
     @computed get learningRace(): PlayerRace {
         let learningRace: PlayerRace | null = null;
@@ -53,7 +56,7 @@ export class Player {
     }
 
     @action
-    static expand(compactPlayer: any[], currentPlayer: Player): (Player | null) {
+    static expand(compactPlayer: readonly any[], currentPlayer: Player): (Player | null) {
         let i = 0;
 
         const state = compactPlayer[i++];
@@ -75,9 +78,15 @@ export class Player {
     }
 
     @action
-    private static expandImplementation(compactPlayer: any[], currentPlayer: Player, i: number): Player {
-        currentPlayer.id = compactPlayer[i++];
-        currentPlayer.name = compactPlayer[i++];
+    private static expandImplementation(compactPlayer: readonly any[], currentPlayer: Player, i: number): Player {
+        const name = compactPlayer[i++];
+        if (currentPlayer.name.localeCompare(name, undefined, { sensitivity: 'base' })) {
+            throw `Expected ${currentPlayer.name}, but got ${name}`;
+        }
+
+        if (currentPlayer.name != name) {
+            currentPlayer = new Player(name);
+        }
         currentPlayer.currentTick = compactPlayer[i++];
         currentPlayer.level = Level.expand(compactPlayer[i++], currentPlayer.level, EntityState.Added);
         currentPlayer.races.clear();
@@ -98,44 +107,44 @@ export class Player {
     }
 
     @action.bound
-    update(compactPlayer: any[], i: number): number {
+    update(compactPlayer: readonly any[], i: number): number {
         for (; i < compactPlayer.length;) {
             switch (compactPlayer[i++]) {
-                case 2:
+                case 1:
                     this.level = Level.expand(compactPlayer[i++], this.level, EntityState.Modified);
                     break;
-                case 3:
+                case 2:
                     compactPlayer[i++].forEach((a: any[]) => PlayerRace.expandToCollection(a, this.races, EntityState.Modified));
                     break;
-                case 4:
+                case 3:
                     compactPlayer[i++].forEach(
                         (a: any[]) => Ability.expandToCollection(a, this.abilities, EntityState.Modified));
                     break;
-                case 5:
+                case 4:
                     compactPlayer[i++].forEach((a: any[]) => LogEntry.expandToCollection(a, this.log, EntityState.Modified));
                     break;
-                case 6:
+                case 5:
                     this.nextActionTick = compactPlayer[i++];
                     break;
-                case 7:
+                case 6:
                     this.nextLevelXP = compactPlayer[i++];
                     break;
-                case 8:
+                case 7:
                     this.xP = compactPlayer[i++];
                     break;
-                case 9:
+                case 8:
                     this.hp = compactPlayer[i++];
                     break;
-                case 10:
+                case 9:
                     this.maxHp = compactPlayer[i++];
                     break;
-                case 11:
+                case 10:
                     this.ep = compactPlayer[i++];
                     break;
-                case 12:
+                case 11:
                     this.maxEp = compactPlayer[i++];
                     break;
-                case 13:
+                case 12:
                     this.reservedEp = compactPlayer[i++];
                     break;
                 default:
@@ -160,7 +169,7 @@ export class Level {
     indexToPoint: number[][] = [[0]];
 
     @action
-    static expand(compactLevel: any[], currentLevel: Level, parentState: EntityState): Level {
+    static expand(compactLevel: readonly any[], currentLevel: Level, parentState: EntityState): Level {
         let i = 0;
 
         if (parentState === EntityState.Added) {
@@ -177,7 +186,7 @@ export class Level {
     }
 
     @action
-    private static expandImplementation(compactLevel: any[], currentLevel: Level, i: number): Level {
+    private static expandImplementation(compactLevel: readonly any[], currentLevel: Level, i: number): Level {
         const actors = compactLevel[i++];
         const items = compactLevel[i++];
         const connections = compactLevel[i++];
@@ -273,7 +282,7 @@ export class Level {
     }
 
     @action.bound
-    update(compactLevel: any[], i: number): number {
+    update(compactLevel: readonly any[], i: number): number {
         for (; i < compactLevel.length;) {
             switch (compactLevel[i++]) {
                 case 2:
@@ -332,7 +341,7 @@ export class Tile {
 
 export class MapActor {
     protected static actorPropertyCount: number = 6;
-    id: number = 0;
+    readonly id: number = 0;
     @observable baseName: string = '';
     @observable name: string = '';
     @observable levelX: number = 0;
@@ -342,6 +351,10 @@ export class MapActor {
     @observable rangeAttack: AttackSummary | null = null;
     @observable meleeDefense: AttackSummary | null = null;
     @observable rangeDefense: AttackSummary | null = null;
+
+    constructor(id: number) {
+        this.id = id;
+    }
 
     @action
     static expandToCollection(compactActor: any[], collection: Map<number, MapActor>, tiles: Tile[][], parentState: EntityState) {
@@ -381,12 +394,11 @@ export class MapActor {
 
     @action
     static expand(compactActor: any[], i: number, tiles: Tile[][]): MapActor {
-        const actor = new MapActor();
-        actor.id = compactActor[i++];
+        const actor = new MapActor(compactActor[i++]);
         let baseName = compactActor[i++];
-        actor.baseName = baseName === null ? '' : baseName;
+        actor.baseName = baseName ?? '';
         let name = compactActor[i++];
-        actor.name = name === null ? '' : name;
+        actor.name = name ?? '';
         actor.levelX = compactActor[i++];
         actor.levelY = compactActor[i++];
         actor.heading = compactActor[i++];
@@ -414,11 +426,11 @@ export class MapActor {
             switch (index) {
                 case 1:
                     let baseName = compactActor[i++];
-                    this.baseName = baseName === null ? '' : baseName;
+                    this.baseName = baseName ?? '';
                     break;
                 case 2:
                     let name = compactActor[i++];
-                    this.name = name === null ? '' : name;
+                    this.name = name ?? '';
                     break;
                 case 3:
                     this.unset(tiles, this.levelX, this.levelY);
@@ -522,7 +534,7 @@ export class AttackSummary {
     @observable ticksToKill: number = 0;
 
     @action
-    static expand(compactAttack: any[], i: number): AttackSummary | null {
+    static expand(compactAttack: readonly any[], i: number): AttackSummary | null {
         const attack = new AttackSummary();
         var delay = compactAttack[i++];
         if (delay == null) {
@@ -536,7 +548,7 @@ export class AttackSummary {
     }
 
     @action.bound
-    update(compactAttack: any[], i: number, offset: number) : boolean {
+    update(compactAttack: readonly any[], i: number, offset: number) : boolean {
         switch (offset) {
             case 0:
                 var delay = compactAttack[i++];
@@ -605,7 +617,7 @@ export class MapItem {
     }
 
     @action
-    static expand(compactItem: any[], i: number): MapItem {
+    static expand(compactItem: readonly any[], i: number): MapItem {
         const item = new MapItem();
 
         item.id = compactItem[i++];
@@ -618,7 +630,7 @@ export class MapItem {
     }
 
     @action.bound
-    update(compactItem: any[], tiles: Tile[][] | null): number {
+    update(compactItem: readonly any[], tiles: Tile[][] | null): number {
         let i = 2;
 
         let unset = false;
@@ -692,7 +704,7 @@ export class Ability {
     @observable targetingShape: TargetingShape = TargetingShape.Line;
 
     @action
-    static expandToCollection(compactAbility: any[], collection: Map<number, Ability>, parentState: EntityState) {
+    static expandToCollection(compactAbility: readonly any[], collection: Map<number, Ability>, parentState: EntityState) {
         let i = 0;
         if (parentState === EntityState.Added) {
             this.expand(compactAbility, i).addTo(collection);
@@ -724,7 +736,7 @@ export class Ability {
     }
 
     @action
-    static expand(compactAbility: any[], i: number): Ability {
+    static expand(compactAbility: readonly any[], i: number): Ability {
         const ability = new Ability();
         ability.id = compactAbility[i++];
         ability.name = compactAbility[i++];
@@ -739,7 +751,7 @@ export class Ability {
     }
 
     @action.bound
-    update(compactAbility: any[]): number {
+    update(compactAbility: readonly any[]): number {
         let i = 2;
 
         for (; i < compactAbility.length;) {
@@ -815,7 +827,7 @@ export class LogEntry {
     }
 
     @action
-    static expand(compactLogEntry: any[], i: number): LogEntry {
+    static expand(compactLogEntry: readonly any[], i: number): LogEntry {
         const logEntry = new LogEntry();
         logEntry.id = compactLogEntry[i++];
         logEntry.message = compactLogEntry[i++];
@@ -825,7 +837,7 @@ export class LogEntry {
     }
 
     @action.bound
-    update(compactLogEntry: any[]): number {
+    update(compactLogEntry: readonly any[]): number {
         let i = 2;
 
         for (; i < compactLogEntry.length;) {
@@ -889,7 +901,7 @@ export class PlayerRace {
     }
 
     @action
-    static expand(compactPlayerRace: any[], i: number): PlayerRace {
+    static expand(compactPlayerRace: readonly any[], i: number): PlayerRace {
         const playerRace = new PlayerRace();
         playerRace.id = compactPlayerRace[i++];
         playerRace.name = compactPlayerRace[i++];
@@ -900,7 +912,7 @@ export class PlayerRace {
     }
 
     @action.bound
-    update(compactPlayerRace: any[]): number {
+    update(compactPlayerRace: readonly any[]): number {
         let i = 2;
 
         for (; i < compactPlayerRace.length;) {
@@ -970,7 +982,7 @@ export class Connection {
     }
 
     @action
-    static expand(compactConnection: any[], i: number): Connection {
+    static expand(compactConnection: readonly any[], i: number): Connection {
         const connection = new Connection();
         connection.id = compactConnection[i++];
         connection.levelX = compactConnection[i++];
@@ -981,7 +993,7 @@ export class Connection {
     }
 
     @action.bound
-    update(compactConnection: any[], tiles: Tile[][]): number {
+    update(compactConnection: readonly any[], tiles: Tile[][]): number {
         let i = 2;
 
         let unset = false;

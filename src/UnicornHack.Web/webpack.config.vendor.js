@@ -74,9 +74,7 @@ function getClientConfig(env) {
                     new TerserPlugin({
                         terserOptions: {
                             ecma: 6
-                        },
-                        cache: true,
-                        parallel: true
+                        }
                     }),
                     new OptimizeCSSAssetsPlugin({})
                 ]

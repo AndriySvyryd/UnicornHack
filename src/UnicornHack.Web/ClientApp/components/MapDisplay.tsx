@@ -1,5 +1,5 @@
-﻿import * as React from 'React';
-import * as scss from '../styles/site.scss'
+﻿import React from 'react';
+import scss from '../styles/site.scss'
 import { action } from 'mobx';
 import { observer } from 'mobx-react';
 import { MapStyles, ITileStyle } from '../styles/MapStyles';
@@ -56,7 +56,7 @@ interface IRowProps {
 }
 
 @observer
-class MapTile extends React.Component<ITileProps, {}> {
+class MapTile extends React.PureComponent<ITileProps, {}> {
     private _clickAction: TileAction = TileAction.None;
     private _contextMenuAction: TileAction = TileAction.None;
 

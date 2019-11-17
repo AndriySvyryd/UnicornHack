@@ -464,7 +464,7 @@ namespace UnicornHack.Hubs
                 return null;
             }
 
-            return _dbContext.PlayerComponents.Local.First(p => p.ProperName == name);
+            return _dbContext.PlayerComponents.Local.First(p => p.ProperName.Equals(name, StringComparison.OrdinalIgnoreCase));
         }
 
         private void Initialize(Game game)

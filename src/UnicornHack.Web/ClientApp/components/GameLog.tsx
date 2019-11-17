@@ -1,4 +1,4 @@
-﻿import * as React from 'React';
+﻿import React from 'react';
 import { observer } from 'mobx-react';
 import { LogEntry } from '../transport/Model';
 import { unshift } from '../Util';

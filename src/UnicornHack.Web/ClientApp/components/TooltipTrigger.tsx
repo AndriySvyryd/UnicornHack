@@ -1,12 +1,12 @@
-import * as React from 'React';
+import React from 'react';
 import { observable, action, IObservableValue } from 'mobx';
 import { observer } from 'mobx-react';
-import * as PopperJS from 'popper.js';
-import * as contains from 'dom-helpers/query/contains';
-import * as Overlays from 'react-overlays';
+import PopperJS from 'popper.js';
+import contains from 'dom-helpers/contains';
+import { Overlay } from 'react-overlays';
 
 @observer
-export class TooltipTrigger extends React.Component<ITooltipTriggerProps> {
+export class TooltipTrigger extends React.PureComponent<ITooltipTriggerProps> {
     _trigger: React.RefObject<any>;
     _show: IObservableValue<boolean> = observable.box(false);
     _timeout: any;
@@ -119,7 +119,7 @@ export class TooltipTrigger extends React.Component<ITooltipTriggerProps> {
         const target = e.currentTarget as EventTarget;
         const related = e.relatedTarget;
 
-        if ((!related || related !== target) && !contains(target as Node, related as Node)) {
+        if ((!related || related !== target) && !contains(target as Element, related as Element)) {
             handler(e);
         }
     }
@@ -221,7 +221,7 @@ interface ITooltipWrapperProps extends React.ComponentPropsWithoutRef<any> {
 }
 
 const OverlayWrapper = observer(({ id, placement, observableShow, children, ...outerProps }: IOverlayWrapperProps) =>
-    <Overlays.Overlay placement={placement as any} show={observableShow.get()} {...outerProps}>
+    <Overlay placement={placement as any} show={observableShow.get()} {...outerProps}>
         {({ props: overlayProps, arrowProps, show, ...props }: IOverlayChildProps) =>
             <Tooltip
                 {...props}
@@ -233,7 +233,7 @@ const OverlayWrapper = observer(({ id, placement, observableShow, children, ...o
                 {children}
             </Tooltip>
         }
-    </Overlays.Overlay>
+    </Overlay>
 );
 
 interface IOverlayWrapperProps extends React.ComponentPropsWithoutRef<any> {

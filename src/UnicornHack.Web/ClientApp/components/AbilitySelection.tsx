@@ -1,4 +1,4 @@
-﻿import * as React from 'React';
+﻿import React from 'react';
 import { action, computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { Ability } from '../transport/Model';
@@ -37,13 +37,13 @@ interface IAbilitySelectionProps {
 }
 
 @observer
-class AbilitySelectionLine extends React.Component<IAbilityLineProps, {}> {
+class AbilitySelectionLine extends React.PureComponent<IAbilityLineProps, {}> {
     @action.bound
     setAbilitySlot(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
             this.props.context.showDialog(GameQueryType.Clear);
             this.props.context.performAction(
-                PlayerAction.SetAbilitySlot, this.props.ability === null ? 0 : this.props.ability.id, this.props.slot);
+                PlayerAction.SetAbilitySlot, this.props.ability?.id ?? 0, this.props.slot);
         }
     }
 
@@ -70,7 +70,7 @@ class AbilitySelectionLine extends React.Component<IAbilityLineProps, {}> {
             }
         }
 
-        return <li><a className="contextLink" tabIndex={(this.props.ability === null ? 0 : 100 + this.props.ability.id)} role="button" 
+        return <li><a className="contextLink" tabIndex={(100 + (this.props.ability?.id ?? 0))} role="button" 
             onClick={this.setAbilitySlot} onKeyPress={this.setAbilitySlot} onContextMenu={this.showAttributes}
         >
             {name}

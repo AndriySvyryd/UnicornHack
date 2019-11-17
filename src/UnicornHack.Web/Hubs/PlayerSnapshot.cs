@@ -56,9 +56,8 @@ namespace UnicornHack.Hubs
             List<object> properties;
             if (state == EntityState.Added)
             {
-                properties = new List<object>(13) {(int)state};
+                properties = new List<object>(12) {(int)state};
 
-                properties.Add(player.EntityId);
                 properties.Add(player.ProperName);
                 properties.Add(player.Game.CurrentTick);
                 properties.Add(serializedLevel);
@@ -89,7 +88,7 @@ namespace UnicornHack.Hubs
             };
             var playerEntry = context.DbContext.Entry(player);
 
-            var i = 2;
+            var i = 1;
             if (serializedLevel != null)
             {
                 properties.Add(i);

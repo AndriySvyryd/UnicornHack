@@ -23,8 +23,8 @@ class MapActorStyles {
     'player': ITileStyle = { char: '@', style: { color: 'black', backgroundColor: 'lightgrey' } };
     'human': ITileStyle = { char: 'H', style: { color: 'lightgray' } };
     'unicorn': ITileStyle = { char: 'U', style: { color: 'white' } };
-    'firefly': ITileStyle = { char: 'F', style: { color: 'darkorange' } };
-    'giant ant': ITileStyle = { char: 'a', style: { color: 'gray' } };
+    'firefly': ITileStyle = { char: 'f', style: { color: 'darkorange' } };
+    'giant spider': ITileStyle = { char: 's', style: { color: 'gray' } };
     'default': ITileStyle = { style: { color: 'red' } };
 }
 

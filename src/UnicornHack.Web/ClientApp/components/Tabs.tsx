@@ -1,10 +1,10 @@
-import * as React from 'React';
+import React from 'react';
 import { observer, Provider } from 'mobx-react';
 import { action } from 'mobx';
 import { IKeyContext } from './KeyContext';
 
 @observer
-export class Tabs extends React.Component<ITabsProps, {}> {
+export class Tabs extends React.PureComponent<ITabsProps, {}> {
     @action.bound
     renderTab(child: any, index: number) {
         if (!React.isValidElement(child)) {
@@ -48,7 +48,7 @@ interface ITabsProps {
     baseTabIndex?: number;
 }
 
-export class Tab extends React.Component<ITabProps, {}> {
+export class Tab extends React.PureComponent<ITabProps, {}> {
     render(): React.ReactNode {
         throw new Error(
             "The `Tab` component is not meant to be rendered! " +
@@ -64,7 +64,7 @@ interface ITabProps {
 }
 
 @observer
-class NavTab extends React.Component<INavTab, {}> {
+class NavTab extends React.PureComponent<INavTab, {}> {
     @action.bound
     setAbilitySlot(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {

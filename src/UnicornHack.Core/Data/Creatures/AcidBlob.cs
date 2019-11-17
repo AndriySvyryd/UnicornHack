@@ -23,14 +23,14 @@ namespace UnicornHack.Data.Creatures
                     Effects = new HashSet<Effect> {new Corrode {Damage = "40*mentalScaling"}}
                 }
             },
-            InitialLevel = 1,
-            GenerationWeight = new DefaultWeight {Multiplier = 6F},
+            InitialLevel = 5,
+            GenerationWeight = new DefaultWeight {Multiplier = 2F},
             Behavior = AIBehavior.Wandering,
             Sex = Sex.None,
             Size = 1,
             Weight = 30,
             MovementDelay = 300,
-            TurningDelay = 300,
+            TurningDelay = 50,
             Perception = -9,
             Might = -5,
             Speed = -9,

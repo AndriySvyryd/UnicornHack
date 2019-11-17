@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React from 'react';
 import { action, observable } from 'mobx';
 import { observer } from 'mobx-react';
 
@@ -66,7 +66,7 @@ export enum MessageType {
 }
 
 @observer
-class InputForm extends React.Component<IInputFormProps, {}> {
+class InputForm extends React.PureComponent<IInputFormProps, {}> {
     @observable outgoingMessage: string = '';
 
     @action.bound

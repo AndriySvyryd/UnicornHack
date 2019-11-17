@@ -1,4 +1,4 @@
-﻿import * as React from 'React';
+﻿import React from 'react';
 import { action } from 'mobx';
 import { observer } from 'mobx-react';
 import { Ability } from '../transport/Model';
@@ -31,7 +31,7 @@ interface IAbilityBarProps {
 }
 
 @observer
-class AbilityLine extends React.Component<IAbilityProps, {}> {
+class AbilityLine extends React.PureComponent<IAbilityProps, {}> {
     @action.bound
     showAbilities(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
@@ -66,7 +66,7 @@ class AbilityLine extends React.Component<IAbilityProps, {}> {
             <span className="abilityBar__slot">{this.props.slot === -1 ? 'D' : this.props.slot + 1}:</span>
         </a>;
 
-        var ability = <span>{this.props.ability === null ? "" : this.props.ability.name}</span>;
+        var ability = <span>{this.props.ability ?? ''}</span>;
         if (this.props.ability !== null
             && (this.props.ability.activation & ActivationType.WhileToggled) == 0) {
             if (this.props.ability.cooldownTick == null

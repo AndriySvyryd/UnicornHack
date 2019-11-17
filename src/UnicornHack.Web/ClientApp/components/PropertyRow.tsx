@@ -1,4 +1,4 @@
-import * as React from 'React';
+import React from 'react';
 
 export const PropertyRow = ({ label, value, show, classname }: IPropertyRowProps) => {
     if (show === false) {

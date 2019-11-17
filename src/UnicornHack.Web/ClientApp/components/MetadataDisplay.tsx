@@ -1,25 +1,26 @@
-import * as React from 'React';
-import * as htmlparser2 from 'htmlparser2';
+import React from 'react';
+import { Parser } from 'htmlparser2';
+import { DomHandler, Node, Element, DataNode } from 'domhandler';
 import { TooltipTrigger } from './TooltipTrigger';
 
 export function parseMetadata(input: string): React.ReactNode[] {
-    const handler = new htmlparser2.DomHandler(null as any);
-    new htmlparser2.Parser(handler).end(input);
+    const handler = new DomHandler(null as any);
+    new Parser(handler).end(input);
 
     return processNodes((handler as any).dom);
 }
 
-function processNodes(nodes: htmlparser2.DomElement[] | undefined): React.ReactNode[] {
+function processNodes(nodes: Node[] | undefined): React.ReactNode[] {
     if (nodes == undefined) {
         return [<></>];
     }
 
     return nodes
-        .filter(node => node.type !== 'text' || node.data.trim() !== '')
+        .filter(node => node.type !== 'text' || (node as DataNode).data.trim() !== '')
         .map(nodeToComponent);
 }
 
-function nodeToComponent(node: htmlparser2.DomElement, index: number) {
+function nodeToComponent(node: Node, index: number) {
     if (node.type == undefined) {
         throw "No type for node: " + node;
     }
@@ -32,21 +33,22 @@ function nodeToComponent(node: htmlparser2.DomElement, index: number) {
     return handler(node, index);
 }
 
-function handleTag(node: htmlparser2.DomElement, index: number) {
-    switch (node.name) {
+function handleTag(node: Node, index: number) {
+    const element = node as Element
+    switch (element.name) {
         case "damage":
-            return <DamageTooltip key={index} index={index} {...node.attribs}>
-                {processNodes(node.children)}
+            return <DamageTooltip key={index} index={index} {...element.attribs}>
+                {processNodes(element.children)}
             </DamageTooltip>;
         default:
-            throw "Unhandled tag type: " + node.name;
+            throw "Unhandled tag type: " + element.name;
     }
 }
 
-const ElementHandlers: Map<string, (node: htmlparser2.DomElement, index: number) => React.ReactElement> =
-    new Map<string, (node: htmlparser2.DomElement, index: number) => React.ReactElement>(
+const ElementHandlers: Map<string, (node: Node, index: number) => React.ReactNode> =
+    new Map<string, (node: Node, index: number) => React.ReactNode>(
         [
-            ["text", node => node.data],
+            ["text", node => (node as DataNode).data],
             ["tag", handleTag],
             ["style", () => null],
             ["directive", () => null],

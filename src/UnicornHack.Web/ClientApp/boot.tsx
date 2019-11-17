@@ -1,5 +1,5 @@
 import './styles/site.scss';
-import * as React from 'react';
+import React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as mobx from 'mobx';
 import { Game } from './components/Game';

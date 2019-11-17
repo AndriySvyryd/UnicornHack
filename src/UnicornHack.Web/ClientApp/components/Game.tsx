@@ -1,4 +1,4 @@
-﻿import * as React from 'react';
+﻿import React from 'react';
 import * as signalR from '@aspnet/signalr';
 import { MessagePackHubProtocol } from '@aspnet/signalr-protocol-msgpack';
 import { action, observable, IObservableValue } from 'mobx';
@@ -23,8 +23,8 @@ import { PostGameStatisticsDialog } from './PostGameStatistics';
 import { Banner } from './Banner';
 
 @observer
-export class Game extends React.Component<IGameProps, {}> {
-    @observable player: Player = new Player();
+export class Game extends React.PureComponent<IGameProps, {}> {
+    @observable player: Player;
     @observable private _messages: IMessage[] = [];
     @observable private _dialogData: DialogData = new DialogData();
     @observable private _waiting: boolean = true;
@@ -62,7 +62,7 @@ export class Game extends React.Component<IGameProps, {}> {
 
         this._connection = connection;
 
-        this.player.name = props.playerName;
+        this.player = new Player(props.playerName);
         new PlayerRace().addTo(this.player.races);
 
         // https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values
@@ -148,7 +148,7 @@ export class Game extends React.Component<IGameProps, {}> {
     }
 
     @action.bound
-    processServerState(compactPlayer: any[]) {
+    processServerState(compactPlayer: readonly any[]) {
         const newPlayer = Player.expand(compactPlayer, this.player);
         if (newPlayer == null) {
             console.log('Desync, reloading.');

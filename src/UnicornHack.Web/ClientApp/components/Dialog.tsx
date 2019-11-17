@@ -1,11 +1,11 @@
-﻿import * as React from 'React';
+﻿import React from 'react';
 import { action, IComputedValue } from 'mobx';
 import { observer } from 'mobx-react';
 import { GameQueryType } from '../transport/GameQueryType';
 import { IGameContext } from './Game';
 
 @observer
-export class Dialog extends React.Component<IDialogProps, {}> {
+export class Dialog extends React.PureComponent<IDialogProps, {}> {
     private _container: React.RefObject<HTMLDivElement>;
 
     constructor(props: IDialogProps) {

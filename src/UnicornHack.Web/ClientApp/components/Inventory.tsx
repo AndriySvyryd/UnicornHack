@@ -1,4 +1,4 @@
-import * as React from 'React';
+import React from 'react';
 import { action } from 'mobx';
 import { observer } from 'mobx-react';
 import { GameQueryType } from '../transport/GameQueryType';
@@ -19,7 +19,7 @@ interface IInventoryProps {
 }
 
 @observer
-class InventoryLine extends React.Component<IItemProps, {}> {
+class InventoryLine extends React.PureComponent<IItemProps, {}> {
     @action.bound
     unequip(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
@@ -83,7 +83,7 @@ interface IItemProps {
 }
 
 @observer
-class Equip extends React.Component<IEquipProps, {}> {
+class Equip extends React.PureComponent<IEquipProps, {}> {
     @action.bound
     equip(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {

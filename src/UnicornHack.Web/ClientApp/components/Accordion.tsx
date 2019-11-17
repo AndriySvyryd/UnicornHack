@@ -1,8 +1,8 @@
-import * as React from 'React';
+import React from 'react';
 import { action } from 'mobx';
 import { Provider, observer, inject } from 'mobx-react';
-import * as css from 'dom-helpers/style';
-import * as onEnd from 'dom-helpers/transition/end';
+import css from 'dom-helpers/css';
+import onEnd from 'dom-helpers/transitionEnd';
 import Transition, {
     EXITED,
     ENTERED,
@@ -26,7 +26,7 @@ export interface IAccordionProps extends React.ComponentPropsWithRef<any> {
 
 @inject("keyContext")
 @observer
-export class AccordionToggle extends React.Component<IAccordionToggleProps, {}> {
+export class AccordionToggle extends React.PureComponent<IAccordionToggleProps, {}> {
     @action.bound
     onSelect(event: React.KeyboardEvent<HTMLButtonElement> | React.MouseEvent<HTMLButtonElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLButtonElement>).key == 'Enter') {
@@ -78,12 +78,13 @@ export interface ICollapseProps extends React.ComponentPropsWithRef<any> {
     role?: string
 }
 
-class Collapse extends React.Component<ICollapseProps> {
+class Collapse extends React.PureComponent<ICollapseProps> {
     getDimensionValue(elem: HTMLElement) {
-        return (
-            elem.offsetHeight +
-            parseInt(css(elem, 'marginTop'), 10) +
-            parseInt(css(elem, 'marginBottom'), 10)
+        const top = css(elem, 'marginTop') ?? 0;
+        const bottom = css(elem, 'marginBottom') ?? 0;
+        return (elem.offsetHeight +
+            (top == 0 ? 0 : parseInt(top, 10)) +
+            (bottom == 0 ? 0 : parseInt(bottom, 10))
         );
     }
 
@@ -96,7 +97,7 @@ class Collapse extends React.Component<ICollapseProps> {
     };
 
     handleEntered = (elem: HTMLElement) => {
-        elem.style['height'] = null;
+        elem.style['height'] = '';
     };
 
     handleExit = (elem: HTMLElement) => {
@@ -105,7 +106,7 @@ class Collapse extends React.Component<ICollapseProps> {
     };
 
     handleExiting = (elem: HTMLElement) => {
-        elem.style['height'] = null;
+        elem.style['height'] = '';
     };
 
     render() {

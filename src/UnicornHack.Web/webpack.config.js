@@ -1,6 +1,5 @@
 const path = require('path');
 const webpack = require('webpack');
-const CheckerPlugin = require('awesome-typescript-loader').CheckerPlugin;
 const TerserPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
@@ -22,7 +21,7 @@ function getClientConfig(env) {
         },
         module: {
             rules: [
-                { test: /\.tsx?$/, include: /ClientApp/, use: 'awesome-typescript-loader?silent=true' },
+                { test: /\.tsx?$/, include: /ClientApp/, use: 'ts-loader?silent=true' },
                 { test: /\.(woff|woff2|eot|ttf)(\?v=\d+\.\d+\.\d+)?$/, use: 'url-loader?limit=25000' },
                 { test: /\.(png|jpg|jpeg|gif|svg)$/, use: 'url-loader?limit=25000' },
                 {
@@ -55,7 +54,7 @@ function getClientConfig(env) {
                             'css-modules-typescript-loader',
                             {
                                 loader: 'css-loader',
-                                options: { sourceMap: true, camelCase: 'dashesOnly', importLoaders: 3 }
+                                options: { sourceMap: true, localsConvention: 'dashesOnly', importLoaders: 3 }
                             },
                             { loader: 'postcss-loader', options: { sourceMap: true } },
                             { loader: 'resolve-url-loader', options: { sourceMap: true } },
@@ -64,7 +63,7 @@ function getClientConfig(env) {
                         : [
                             MiniCssExtractPlugin.loader,
                             'css-modules-typescript-loader',
-                            { loader: 'css-loader', options: { camelCase: 'dashesOnly', importLoaders: 3 } },
+                            { loader: 'css-loader', options: { localsConvention: 'dashesOnly', importLoaders: 3 } },
                             { loader: 'postcss-loader' },
                             { loader: 'resolve-url-loader' },
                             { loader: 'sass-loader' }
@@ -77,7 +76,10 @@ function getClientConfig(env) {
                 context: __dirname,
                 manifest: require('./wwwroot/dist/vendor-manifest.json')
             }),
-            new CheckerPlugin(),
+            new webpack.WatchIgnorePlugin([
+                /\.js$/,
+                /\.d\.ts$/
+            ]),
             require('autoprefixer')
         ].concat(isDevBuild
             ? [
@@ -107,9 +109,7 @@ function getClientConfig(env) {
                     new TerserPlugin({
                         terserOptions: {
                             ecma: 6
-                        },
-                        cache: true,
-                        parallel: true
+                        }
                     }),
                     new OptimizeCSSAssetsPlugin({})
                 ]
