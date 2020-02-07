@@ -13,7 +13,10 @@ trim_trailing_whitespace = true
 [*.{cs,csx,vb,vbx}]
 indent_size = 4
 insert_final_newline = true
-#charset = utf-8-bom
+
+# Javascript files
+[*.{js,jsx,mjs,ts,tsx}]
+indent_size = 2
 
 # Xml project files
 [*.{csproj,vbproj,vcxproj,vcxproj.filters,proj,projitems,shproj}]

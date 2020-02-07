@@ -18,7 +18,7 @@ namespace UnicornHack.Data
 {
     public class GameDbContext : DbContext, IRepository
     {
-        private Func<GameDbContext, int, IEnumerable<int>> _getLevels;
+        private Func<GameDbContext, int, IEnumerable<int[]>> _getLevels;
 
         // ReSharper disable once SuggestBaseTypeForParameter
         public GameDbContext(DbContextOptions<GameDbContext> options)
@@ -473,11 +473,10 @@ namespace UnicornHack.Data
                                 connectionComponent.EntityId
                             },
                             (positionComponent, connectionComponent)
-                                => new[] { positionComponent.LevelId, connectionComponent.TargetLevelId })
-                        .SelectMany(l => l).Distinct());
+                                => new[] { positionComponent.LevelId, connectionComponent.TargetLevelId }));
             }
 
-            LoadLevels(_getLevels(this, gameId).ToList());
+            LoadLevels(_getLevels(this, gameId).SelectMany(l => l).Distinct().ToList());
 
             foreach (var player in PlayerComponents.Local.ToList())
             {

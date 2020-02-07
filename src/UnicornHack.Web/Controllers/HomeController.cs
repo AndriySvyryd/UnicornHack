@@ -6,11 +6,12 @@ namespace UnicornHack.Controllers
 {
     public class HomeController : Controller
     {
+        [Route("")]
         public IActionResult Index() => View(new CharacterModel());
 
         //
         // GET: /Game?Name
-        [HttpGet]
+        [HttpGet("Game")]
         public IActionResult Game(CharacterModel model)
         {
             if (model.Name == null)
@@ -22,6 +23,7 @@ namespace UnicornHack.Controllers
             return View(nameof(Game), model.Name);
         }
 
+        [Route("Error")]
         public IActionResult Error()
         {
             ViewData["RequestId"] = Activity.Current?.Id ?? HttpContext.TraceIdentifier;

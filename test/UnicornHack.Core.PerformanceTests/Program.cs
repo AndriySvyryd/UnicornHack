@@ -26,17 +26,20 @@ namespace UnicornHack.PerformanceTests
                     new CsvExporter(
                         CsvSeparator.Comma,
                         new SummaryStyle
-                        {
-                            PrintUnitsInHeader = true,
-                            PrintUnitsInContent = false,
-                            TimeUnit = TimeUnit.Microsecond,
-                            SizeUnit = SizeUnit.KB
-                        }));
+                        (
+                            printUnitsInHeader: true,
+                            printUnitsInContent: false,
+                            timeUnit: TimeUnit.Microsecond,
+                            sizeUnit: SizeUnit.KB
+                        )));
 
-            var summary = BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args, config).First();
+            var benchmarkSwitcher = BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly);
+            var resultsDirectoryPath = args.Length > 0
+                ? benchmarkSwitcher.Run(args, config).First().ResultsDirectoryPath
+                : benchmarkSwitcher.RunAll(config).First().ResultsDirectoryPath;
 
             Console.WriteLine();
-            Console.WriteLine("See all results in " + summary.ResultsDirectoryPath);
+            Console.WriteLine("See all results in " + resultsDirectoryPath);
         }
     }
 }

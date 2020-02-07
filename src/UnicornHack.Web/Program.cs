@@ -1,55 +1,18 @@
-using System.IO;
-using System.Reflection;
+using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 
-namespace UnicornHack
+namespace UnicornHack.Web
 {
-    public static class Program
+    public class Program
     {
         public static void Main(string[] args)
         {
-            BuildWebHost(args).Run();
+            CreateWebHostBuilder(args).Build().Run();
         }
 
-        public static IWebHost BuildWebHost(string[] args)
-            => new WebHostBuilder()
-                .UseApplicationInsights()
-                .UseKestrel()
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .ConfigureAppConfiguration(
-                    (hostingContext, config) =>
-                    {
-                        var hostingEnvironment = hostingContext.HostingEnvironment;
-                        config
-                            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                            .AddJsonFile($"appsettings.{hostingEnvironment.EnvironmentName}.json", optional: true,
-                                reloadOnChange: true);
-                        if (hostingEnvironment.IsDevelopment())
-                        {
-                            var assembly = Assembly.Load(new AssemblyName(hostingEnvironment.ApplicationName));
-                            if (assembly != null)
-                            {
-                                config.AddUserSecrets(assembly, true);
-                            }
-                        }
-                        config.AddEnvironmentVariables();
-                        if (args == null)
-                        {
-                            return;
-                        }
-                        config.AddCommandLine(args);
-                    })
-                .ConfigureLogging((hostingContext, logging) =>
-                {
-                    logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
-                    logging.AddConsole();
-                    logging.AddDebug();
-                })
-                .UseIISIntegration().UseDefaultServiceProvider((context, options)
-                    => options.ValidateScopes = context.HostingEnvironment.IsDevelopment())
-                .UseStartup<Startup>()
-                .Build();
+        public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
+            WebHost.CreateDefaultBuilder(args)
+                .UseStartup<Startup>();
     }
 }

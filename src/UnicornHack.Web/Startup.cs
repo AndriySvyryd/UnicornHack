@@ -1,59 +1,83 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.SpaServices.Webpack;
+using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using UnicornHack.Data;
 using UnicornHack.Hubs;
 using UnicornHack.Services;
 using UnicornHack.Services.English;
 
-namespace UnicornHack
+namespace UnicornHack.Web
 {
-    // TODO: Separate into UnicornHack.Storage and UnicornHack.Web
     public class Startup
     {
-        public Startup(IConfiguration configuration) => Configuration = configuration;
+        private readonly IConfiguration _configuration;
+        private readonly IWebHostEnvironment _env;
 
-        public IConfiguration Configuration { get; }
+        public Startup(IConfiguration configuration, IWebHostEnvironment env)
+        {
+            _configuration = configuration;
+            _env = env;
+        }
 
+        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<ILanguageService, EnglishLanguageService>();
             services.AddSingleton<GameServices>();
             services.AddSingleton<GameTransmissionProtocol>();
 
-            services.AddEntityFrameworkSqlServer();
-            // Workaround for #13087
-            // TODO: AddDbContextPool
-            services.AddDbContext<GameDbContext>((p, options) =>
-                options.UseSqlServer(Configuration.GetConnectionString(name: "DefaultConnection"))
-                    .UseInternalServiceProvider(p)
-                    .EnableSensitiveDataLogging()
+            services.AddDbContextPool<GameDbContext>((p, options) =>
+            {
+                options.UseSqlServer(_configuration.GetConnectionString(name: "DefaultConnection"))
                     .ConfigureWarnings(w => w.Default(WarningBehavior.Throw)
-                        .Log(CoreEventId.SensitiveDataLoggingEnabledWarning)
-                        .Log(RelationalEventId.QueryClientEvaluationWarning)));
+                        .Log(CoreEventId.SensitiveDataLoggingEnabledWarning));
 
-            services.AddMvc();
+                if (_env.IsDevelopment())
+                {
+                    options.EnableSensitiveDataLogging();
+                }
+            });
+
+            services.AddControllersWithViews();
+            //services.AddRazorPages();
+
+            // TODO: Add a sensible policy for production
+            //services.AddCors(options =>
+            //{
+            //    options.AddDefaultPolicy(
+            //        builder =>
+            //        {
+            //            builder
+            //                .AllowAnyOrigin()
+            //                .AllowAnyHeader()
+            //                .AllowAnyMethod(); 
+            //        });
+            //});
 
             services.AddSignalR(o => o.EnableDetailedErrors = true).AddMessagePackProtocol();
+            
+            services.AddApplicationInsightsTelemetry();
+
+            // In production, the React files will be served from this directory
+            services.AddSpaStaticFiles(configuration =>
+            {
+                configuration.RootPath = "wwwroot";
+            });
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
 
                 app.UseDatabaseErrorPage();
-
-                app.UseWebpackDevMiddleware(new WebpackDevMiddlewareOptions
-                {
-                    HotModuleReplacement = false,
-                    ReactHotModuleReplacement = false
-                });
 
                 using (var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>()
                     .CreateScope())
@@ -66,44 +90,36 @@ namespace UnicornHack
             }
             else
             {
-                app.UseExceptionHandler("/Home/Error");
-
-                try
-                {
-                    using (var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>()
-                        .CreateScope())
-                    {
-                        serviceScope.ServiceProvider.GetService<GameDbContext>()
-                            .Database.Migrate();
-                    }
-                }
-                catch
-                {
-                }
+                app.UseExceptionHandler("/Error");
+        
+                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+                //app.UseHsts();
             }
 
+            //app.UseHttpsRedirection();
             app.UseStaticFiles();
+            app.UseSpaStaticFiles();
 
-            app.UseSignalR(routes =>
+            app.UseRouting();
+
+            //app.UseCors();
+            //app.UseAuthorization();
+
+            app.UseEndpoints(endpoints =>
             {
-                routes.MapHub<GameHub>("/gameHub");
+                endpoints.MapHub<GameHub>("/gameHub");
+
+                endpoints.MapControllers();
             });
 
-            app.UseMvc(routes =>
+            app.UseSpa(spa =>
             {
-                routes.MapRoute(
-                    name: "game",
-                    template: "Game",
-                    defaults: new { controller = "Home", action = "Game" });
-
-                routes.MapRoute(
-                    name: "getState",
-                    template: "GetState",
-                    defaults: new { controller = "Home", action = "GetState" });
-
-                routes.MapRoute(
-                    name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
+                spa.Options.DefaultPage = "/";
+                if (env.IsDevelopment())
+                {
+                    spa.Options.SourcePath = "ClientApp";
+                    spa.UseReactDevelopmentServer(npmScript: "start");
+                }
             });
         }
     }

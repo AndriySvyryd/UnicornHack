@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
@@ -8,6 +10,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Microsoft.EntityFrameworkCore.Scaffolding;
 using Microsoft.EntityFrameworkCore.Scaffolding.Metadata;
+using Microsoft.EntityFrameworkCore.SqlServer.Diagnostics.Internal;
 using Microsoft.EntityFrameworkCore.SqlServer.Scaffolding.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
@@ -32,8 +35,7 @@ namespace UnicornHack.Data
             else
             {
                 var databaseModelFactory = CreateDatabaseModelFactory(loggerFactory);
-                var databaseModel = databaseModelFactory.Create(connection.DbConnection, Enumerable.Empty<string>(),
-                    Enumerable.Empty<string>());
+                var databaseModel = databaseModelFactory.Create(connection.DbConnection, new DatabaseModelFactoryOptions());
 
                 var operations = new List<MigrationOperation>();
 
@@ -60,7 +62,7 @@ namespace UnicornHack.Data
                     var customSql = BuildCustomSql();
                     if (!string.IsNullOrWhiteSpace(customSql))
                     {
-                        sqlBuilder.Build(customSql).ExecuteNonQuery(connection);
+                        ExecuteScript(connection, sqlBuilder, customSql);
                     }
 
                     if (operations.Any())
@@ -72,7 +74,7 @@ namespace UnicornHack.Data
                     customSql = BuildCustomEndingSql();
                     if (!string.IsNullOrWhiteSpace(customSql))
                     {
-                        sqlBuilder.Build(customSql).ExecuteNonQuery(connection);
+                        ExecuteScript(connection, sqlBuilder, customSql);
                     }
                 }
                 finally
@@ -82,6 +84,31 @@ namespace UnicornHack.Data
             }
 
             creator.CreateTables();
+        }
+
+        private static void ExecuteScript(IRelationalConnection connection, IRawSqlCommandBuilder sqlBuilder, string customSql)
+        {
+            var batches = Regex.Split(
+                Regex.Replace(
+                    customSql,
+                    @"\\\r?\n",
+                    string.Empty,
+                    default,
+                    TimeSpan.FromMilliseconds(1000.0)),
+                @"^\s*(GO[ \t]+[0-9]+|GO)(?:\s+|$)",
+                RegexOptions.IgnoreCase | RegexOptions.Multiline,
+                TimeSpan.FromMilliseconds(1000.0));
+            for (var i = 0; i < batches.Length; i++)
+            {
+                if (batches[i].StartsWith("GO", StringComparison.OrdinalIgnoreCase)
+                    || string.IsNullOrWhiteSpace(batches[i]))
+                {
+                    continue;
+                }
+
+                sqlBuilder.Build(batches[i])
+                    .ExecuteNonQuery(new RelationalCommandParameterObject(connection, null, null, null, null));
+            }
         }
 
         protected virtual DropSequenceOperation Drop(DatabaseSequence sequence)
@@ -114,12 +141,15 @@ namespace UnicornHack.Data
                 Schema = index.Table.Schema
             };
 
+#pragma warning disable EF1001 // Internal EF Core API usage.
         protected IDatabaseModelFactory CreateDatabaseModelFactory(ILoggerFactory loggerFactory)
             => new SqlServerDatabaseModelFactory(
                 new DiagnosticsLogger<DbLoggerCategory.Scaffolding>(
                     loggerFactory,
                     new LoggingOptions(),
-                    new DiagnosticListener("Fake")));
+                    new DiagnosticListener("Fake"),
+                    new SqlServerLoggingDefinitions()));
+#pragma warning restore EF1001 // Internal EF Core API usage.
 
         protected string BuildCustomSql()
             => @"

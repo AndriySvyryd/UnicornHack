@@ -1,6 +1,6 @@
 ﻿import React from 'react';
-import * as signalR from '@aspnet/signalr';
-import { MessagePackHubProtocol } from '@aspnet/signalr-protocol-msgpack';
+import * as signalR from '@microsoft/signalr';
+import { MessagePackHubProtocol } from '@microsoft/signalr-protocol-msgpack';
 import { action, observable, IObservableValue } from 'mobx';
 import { observer } from 'mobx-react';
 import { HotKeys, IgnoreKeys } from 'react-hotkeys';
@@ -40,20 +40,30 @@ export class Game extends React.PureComponent<IGameProps, {}> {
     constructor(props: IGameProps) {
         super(props);
 
+        const location = document.location || new Location();
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl(`http://${(document.location || new Location()).host}/gameHub`,
+            .withUrl(`${location.origin}/gameHub`,
                 { transport: signalR.HttpTransportType.WebSockets, skipNegotiation: true })
             .configureLogging(signalR.LogLevel.Information)
+            .withAutomaticReconnect()
             .withHubProtocol(new MessagePackHubProtocol())
             .build();
 
         connection.onclose = e => {
             if (e) {
-                this.addError('Connection closed with error: ' + (e || '').toString());
+              this.addError(`Connection closed with error: "${(e || '')}"`);
             } else {
                 this.addMessage(MessageType.Info, 'Disconnected');
             }
         };
+
+        connection.onreconnecting((e) => {
+          this.addMessage(MessageType.Info, `Connection lost due to error "${e}". Reconnecting.`);
+        });
+
+        connection.onreconnected(() => {
+          this.addMessage(MessageType.Info, 'Connection reestablished.');
+        });
 
         connection.on('ReceiveMessage',
             (userName: string, message: string) => this.addMessage(MessageType.Client, message, userName));
