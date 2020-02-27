@@ -16,6 +16,7 @@ namespace UnicornHack.Data.Creatures
             {
                 new Ability
                 {
+                    Name = "fire sting",
                     Activation = ActivationType.Targeted,
                     Trigger = ActivationType.OnMeleeAttack,
                     Range = 1,

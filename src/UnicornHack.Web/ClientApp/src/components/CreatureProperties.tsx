@@ -42,6 +42,7 @@ export const ActorAttributesScreen = observer((props: IActorPropertiesData) => {
     }
 
     return <div className="characterScreen__content">
+        <PropertyRow label="Level" value={actorAttributes.level} />
         <PropertyRow label="Hit points" value={actorAttributes.hitPoints + '/' + actorAttributes.hitPointMaximum} />
         <PropertyRow label="Energy points" value={actorAttributes.energyPoints + '/' + actorAttributes.energyPointMaximum} />
         <PropertyRow label="Regeneration" value={actorAttributes.regeneration} />

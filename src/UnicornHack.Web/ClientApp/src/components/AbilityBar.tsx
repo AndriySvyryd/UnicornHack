@@ -8,19 +8,17 @@ import { ActivationType } from '../transport/ActivationType';
 import { IGameContext } from './Game';
 
 export const AbilityBar = observer((props: IAbilityBarProps) => {
-    const slots = new Array(9);
-    slots[0] = <h5 className="abilityBar__title" key="0">Ability hotbar</h5>
-    for (var i = 1; i < slots.length; i++) {
-        const slot = i - 1;
+    const slots = new Array(8);
+    for (var i = 0; i < slots.length; i++) {
         var slottedAbility = null;
         for (var ability of props.context.player.abilities.values()) {
-            if (ability.slot === slot) {
+            if (ability.slot === i) {
                 slottedAbility = ability;
                 break;
             }
         }
 
-        slots[i] = <AbilityLine ability={slottedAbility} context={props.context} slot={slot} key={i} />
+        slots[i] = <AbilityLine ability={slottedAbility} context={props.context} slot={i} key={i} />
     }
 
     return <div className="abilityBar">{slots}</div>;
@@ -36,6 +34,7 @@ class AbilityLine extends React.PureComponent<IAbilityProps, {}> {
     showAbilities(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
             this.props.context.showDialog(GameQueryType.SlottableAbilities, this.props.slot);
+            event.preventDefault();
         }
     }
 
@@ -43,6 +42,7 @@ class AbilityLine extends React.PureComponent<IAbilityProps, {}> {
     useAbilitySlot(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
             this.props.context.performAction(PlayerAction.UseAbilitySlot, this.props.slot, null);
+            event.preventDefault();
         }
     }
 
@@ -50,6 +50,7 @@ class AbilityLine extends React.PureComponent<IAbilityProps, {}> {
     useTargetedAbility(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
             this.props.context.startTargeting(this.props.slot);
+            event.preventDefault();
         }
     }
 
@@ -66,7 +67,7 @@ class AbilityLine extends React.PureComponent<IAbilityProps, {}> {
             <span className="abilityBar__slot">{this.props.slot === -1 ? 'D' : this.props.slot + 1}:</span>
         </a>;
 
-        var ability = <span>{this.props.ability ?? ''}</span>;
+        var ability = <span>{this.props.ability?.name ?? ''}</span>;
         if (this.props.ability !== null
             && (this.props.ability.activation & ActivationType.WhileToggled) == 0) {
             if (this.props.ability.cooldownTick == null

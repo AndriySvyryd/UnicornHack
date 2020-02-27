@@ -315,7 +315,7 @@ export class Game extends React.PureComponent<IGameProps, {}> {
                     <div className="sidepanel">
                         <AbilityBar context={this} />
                     </div>
-                    <div className="sidepanel">
+                    <div className="sidepanel sidepanel_chat">
                         <Chat sendMessage={this.sendMessage} messages={this._messages} />
                     </div>
                 </div>

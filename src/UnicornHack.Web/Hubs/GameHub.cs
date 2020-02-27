@@ -203,7 +203,7 @@ namespace UnicornHack.Hubs
                     _dbContext.Snapshot = new GameSnapshot();
                 }
 
-                _dbContext.Snapshot.Snapshot(_dbContext, _gameServices);
+                _dbContext.Snapshot.CaptureState(_dbContext, _gameServices);
             }
 
             currentPlayer.NextAction = action;

@@ -31,7 +31,13 @@ namespace UnicornHack.Systems.Knowledge
         {
             if (!message.BeingEntity.HasComponent(EntityComponent.Player))
             {
-                AddPlayerXP(message.BeingEntity.Being.ExperiencePoints, manager);
+                var xp = message.BeingEntity.Being.ExperiencePoints;
+                if (xp == 0)
+                {
+                    var level = GetXPLevel(message.BeingEntity, manager);
+                    xp = 100 + level * 10;
+                }
+                AddPlayerXP(xp, manager);
             }
 
             return MessageProcessingResult.ContinueProcessing;
@@ -161,7 +167,7 @@ namespace UnicornHack.Systems.Knowledge
             }
 
             var effectiveLevel = player.MaxLevel > playerLevel ? player.MaxLevel - playerLevel : playerLevel;
-            player.NextLevelXP = (int)((1 + Math.Ceiling(Math.Pow(effectiveLevel, 1.5))) * 500);
+            player.NextLevelXP = (int)((2 + Math.Round(Math.Pow(effectiveLevel, 1.5) * 2)) * 250);
         }
     }
 }

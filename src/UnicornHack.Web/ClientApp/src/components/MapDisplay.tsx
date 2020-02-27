@@ -14,7 +14,7 @@ import { TooltipTrigger } from './TooltipTrigger';
 
 export const MapDisplay = observer((props: IMapProps) => {
     const level = props.context.player.level;
-    const styles = new MapStyles();
+    const styles = MapStyles.Instance;
     const map = new Array<React.ReactElement<any>>(level.height);
     for (let y = 0; y < level.height; y++) {
         map[y] = <MapRow

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Systems.Knowledge
@@ -6,6 +7,7 @@ namespace UnicornHack.Systems.Knowledge
     public class LogEntry : NotificationEntity
     {
         public static readonly IComparer<LogEntry> Comparer = LogComparer.Instance;
+        public static readonly IEqualityComparer<LogEntry> EqualityComparer = LogComparer.Instance;
 
         private int _gameId;
         private int _id;
@@ -50,7 +52,7 @@ namespace UnicornHack.Systems.Knowledge
             set => SetWithNotify(value, ref _importance);
         }
 
-        private class LogComparer : IComparer<LogEntry>
+        private class LogComparer : IComparer<LogEntry>, IEqualityComparer<LogEntry>
         {
             public static readonly LogComparer Instance = new LogComparer();
 
@@ -68,6 +70,10 @@ namespace UnicornHack.Systems.Knowledge
 
                 return x.Id - y.Id;
             }
+
+            public bool Equals([AllowNull] LogEntry x, [AllowNull] LogEntry y) => x.Id == y.Id;
+
+            public int GetHashCode([DisallowNull] LogEntry obj) => obj.Id;
         }
     }
 }

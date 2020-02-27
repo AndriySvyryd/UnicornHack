@@ -16,7 +16,7 @@ namespace UnicornHack.Hubs
     public class PlayerSnapshot
     {
         public int SnapshotTick { get; set; }
-        private HashSet<LogEntry> LogEntriesSnapshot { get; } = new HashSet<LogEntry>(10);
+        private HashSet<LogEntry> LogEntriesSnapshot { get; } = new HashSet<LogEntry>(10, LogEntry.EqualityComparer);
 
         private HashSet<GameEntity> RacesSnapshot { get; } =
             new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
@@ -24,7 +24,10 @@ namespace UnicornHack.Hubs
         private HashSet<GameEntity> AbilitiesSnapshot { get; } =
             new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
 
-        public PlayerSnapshot Snapshot(GameEntity playerEntity, SerializationContext context)
+        private readonly HashSet<LogEntry> _tempLogEntries = new HashSet<LogEntry>(10, LogEntry.EqualityComparer);
+        private readonly HashSet<GameEntity> _tempHashSet = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
+
+        public PlayerSnapshot CaptureState(GameEntity playerEntity, SerializationContext context)
         {
             SnapshotTick = playerEntity.Game.CurrentTick;
 
@@ -61,14 +64,36 @@ namespace UnicornHack.Hubs
                 properties.Add(player.ProperName);
                 properties.Add(player.Game.CurrentTick);
                 properties.Add(serializedLevel);
-                properties.Add(manager.RacesToBeingRelationship[playerEntity.Id].Values
-                    .Select(r => RaceSnapshot.Serialize(r, null, context)).ToList());
-                properties.Add(GetSlottedAbilities(playerEntity, manager)
-                    .Select(a => AbilitySnapshot.Serialize(a, null, context)).ToList());
+
+                var races = new List<object>();
+                foreach (var race in manager.RacesToBeingRelationship[playerEntity.Id].Values)
+                {
+                    snapshot?.RacesSnapshot.Add(race);
+
+                    races.Add(RaceSnapshot.Serialize(race, null, context));
+                }
+                properties.Add(races);
+
+                var abilities = new List<object>();
+                foreach (var ability in GetSlottedAbilities(playerEntity, manager))
+                {
+                    snapshot?.AbilitiesSnapshot.Add(ability);
+
+                    abilities.Add(AbilitySnapshot.Serialize(ability, null, context));
+                }
+                properties.Add(abilities);
+
                 // TODO: Group log entries for the same tick
                 // TODO: Only send entries since last player turn
-                properties.Add(GetLogEntries(player)
-                    .Select(e => LogEntrySnapshot.Serialize(e, null, context)).ToList());
+                var logEntries = new List<object>();
+                foreach (var logEntry in GetLogEntries(player))
+                {
+                    snapshot?.LogEntriesSnapshot.Add(logEntry);
+
+                    logEntries.Add(LogEntrySnapshot.Serialize(logEntry, null, context));
+                }
+                properties.Add(logEntries);
+
                 properties.Add(player.NextActionTick);
                 properties.Add(player.NextLevelXP);
                 properties.Add(being.ExperiencePoints);
@@ -77,6 +102,11 @@ namespace UnicornHack.Hubs
                 properties.Add(being.EnergyPoints);
                 properties.Add(being.EnergyPointMaximum);
                 properties.Add(being.ReservedEnergyPoints);
+
+                if (snapshot != null)
+                {
+                    snapshot.SnapshotTick = player.Game.CurrentTick;
+                }
                 return properties;
             }
 
@@ -86,8 +116,8 @@ namespace UnicornHack.Hubs
                 snapshot.SnapshotTick,
                 player.Game.CurrentTick
             };
-            var playerEntry = context.DbContext.Entry(player);
 
+            var playerEntry = context.DbContext.Entry(player);
             var i = 1;
             if (serializedLevel != null)
             {
@@ -100,6 +130,7 @@ namespace UnicornHack.Hubs
                 manager.RacesToBeingRelationship[playerEntity.Id].Values,
                 snapshot.RacesSnapshot,
                 RaceSnapshot.Serialize,
+                snapshot._tempHashSet,
                 context);
             if (serializedRaces.Count > 0)
             {
@@ -112,6 +143,7 @@ namespace UnicornHack.Hubs
                 GetSlottedAbilities(playerEntity, manager),
                 snapshot.AbilitiesSnapshot,
                 AbilitySnapshot.Serialize,
+                snapshot._tempHashSet,
                 context);
             if (serializedAbilities.Count > 0)
             {
@@ -124,6 +156,7 @@ namespace UnicornHack.Hubs
                 GetLogEntries(player),
                 snapshot.LogEntriesSnapshot,
                 LogEntrySnapshot.Serialize,
+                snapshot._tempLogEntries,
                 context);
             if (serializedLog.Count > 0)
             {
@@ -199,6 +232,10 @@ namespace UnicornHack.Hubs
                 }
             }
 
+            if (snapshot != null)
+            {
+                snapshot.SnapshotTick = player.Game.CurrentTick;
+            }
             return properties;
         }
 

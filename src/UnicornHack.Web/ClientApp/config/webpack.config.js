@@ -205,7 +205,7 @@ module.exports = function(webpackEnv) {
         name(module, chunks, cacheGroupKey) {
           const allChunksNames = chunks.map((item) => item.name).join('~');
           return `${cacheGroupKey}-${allChunksNames}`;
-        },
+        }
       },
       // Keep the runtime chunk separated to enable long term caching by avoiding changes in the vendor chunk
       runtimeChunk: true

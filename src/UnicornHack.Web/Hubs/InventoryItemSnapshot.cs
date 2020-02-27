@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using UnicornHack.Generation;
@@ -146,8 +147,8 @@ namespace UnicornHack.Hubs
                                 && a.Ability.Activation != ActivationType.Default
                                 && a.Ability.Activation != ActivationType.Always
                                 && (a.Ability.Name == null
-                                    || !a.Ability.Name.StartsWith("Add")
-                                    || !a.Ability.Name.EndsWith("ability")))
+                                    || !a.Ability.Name.StartsWith("Add", StringComparison.Ordinal)
+                                    || !a.Ability.Name.EndsWith("ability", StringComparison.Ordinal)))
                     .Select(a => AbilitySnapshot.SerializeAttributes(a, context.Observer, context)).ToList()
             };
         }

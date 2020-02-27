@@ -142,7 +142,7 @@ namespace UnicornHack.Data
             };
 
 #pragma warning disable EF1001 // Internal EF Core API usage.
-        protected IDatabaseModelFactory CreateDatabaseModelFactory(ILoggerFactory loggerFactory)
+        protected static IDatabaseModelFactory CreateDatabaseModelFactory(ILoggerFactory loggerFactory)
             => new SqlServerDatabaseModelFactory(
                 new DiagnosticsLogger<DbLoggerCategory.Scaffolding>(
                     loggerFactory,
@@ -151,7 +151,7 @@ namespace UnicornHack.Data
                     new SqlServerLoggingDefinitions()));
 #pragma warning restore EF1001 // Internal EF Core API usage.
 
-        protected string BuildCustomSql()
+        protected static string BuildCustomSql()
             => @"
 DECLARE @name VARCHAR(MAX) = '__dummy__', @SQL VARCHAR(MAX);
 
@@ -174,7 +174,7 @@ BEGIN
     EXEC (@SQL)
 END";
 
-        protected string BuildCustomEndingSql()
+        protected static string BuildCustomEndingSql()
             => @"
 DECLARE @SQL VARCHAR(MAX) = '';
 SELECT @SQL = @SQL + 'DROP FUNCTION ' + QUOTENAME(ROUTINE_SCHEMA) + '.' + QUOTENAME(ROUTINE_NAME) + ';'

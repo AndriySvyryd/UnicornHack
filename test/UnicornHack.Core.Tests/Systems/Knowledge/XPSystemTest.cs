@@ -59,7 +59,7 @@ namespace UnicornHack.Systems.Knowledge
             undine.Being.HitPoints = 0;
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Equal(802, player.Being.ExperiencePoints);
+            Assert.Equal(182, player.Being.ExperiencePoints);
         }
 
         [Fact]
@@ -108,7 +108,7 @@ namespace UnicornHack.Systems.Knowledge
             Assert.Equal(3, player.SkillPoints);
             Assert.Equal(3, player.TraitPoints);
             Assert.Equal(0, player.MutationPoints);
-            Assert.Equal(3500, player.NextLevelXP);
+            Assert.Equal(3000, player.NextLevelXP);
 
             ItemData.PotionOfInhumanity.Instantiate(playerEntity);
             for (var i = 0; i < 4; i++)
@@ -146,7 +146,7 @@ namespace UnicornHack.Systems.Knowledge
             Assert.Equal(2, player.SkillPoints);
             Assert.Equal(3, player.TraitPoints);
             Assert.Equal(1, player.MutationPoints);
-            Assert.Equal(3500, player.NextLevelXP);
+            Assert.Equal(3000, player.NextLevelXP);
 
             for (var i = 0; i < 4; i++)
             {

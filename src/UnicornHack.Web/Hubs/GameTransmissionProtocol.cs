@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using UnicornHack.Utils.DataStructures;
+using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Hubs
 {
@@ -11,26 +12,40 @@ namespace UnicornHack.Hubs
             GameEntity playerEntity, EntityState state, GameSnapshot snapshot, SerializationContext context)
             => GameSnapshot.Serialize(playerEntity, state, snapshot, context);
 
-        public static List<List<object>> Serialize<T>(
-            ISnapshotableCollection<T> collection,
-            Func<T, EntityState?, SerializationContext, List<object>> serializeElement,
+        public static List<List<object>> Serialize<TEntity>(
+            ISnapshotableCollection<TEntity> collection,
+            Func<TEntity, EntityState?, SerializationContext, List<object>> serializeElement,
             SerializationContext context)
-            where T : class
-            => Serialize(collection, collection.Snapshot, serializeElement, context);
+            where TEntity : Entity
+            => Serialize(
+                collection,
+                collection.Snapshot,
+                serializeElement,
+                new HashSet<TEntity>(EntityEqualityComparer<TEntity>.Instance),
+                context);
 
-        // This is a destructive operation on the snapshot
         public static List<List<object>> Serialize<T>(
             IEnumerable<T> collection,
-            HashSet<T> snapshot,
+            HashSet<T> snapshots,
             Func<T, EntityState?, SerializationContext, List<object>> serializeElement,
+            HashSet<T> removed,
             SerializationContext context)
             where T : class
         {
-            var removed = snapshot ?? new HashSet<T>();
+            removed.Clear();
+            removed.EnsureCapacity(snapshots.Count);
+            foreach (var snapshot in snapshots)
+            {
+                removed.Add(snapshot);
+            }
+
+            snapshots.Clear();
+
             var serializedElements = new List<List<object>>();
 
             foreach (var element in collection)
             {
+                snapshots.Add(element);
                 if (!removed.Remove(element))
                 {
                     serializedElements.Add(serializeElement(element, EntityState.Added, context));
@@ -53,27 +68,38 @@ namespace UnicornHack.Hubs
             return serializedElements;
         }
 
-        // This is a destructive operation on the snapshot
-        public static List<List<object>> Serialize<TElement, TSnapshot>(
-            IEnumerable<TElement> collection,
-            Dictionary<TElement, TSnapshot> snapshots,
-            Func<TElement, EntityState?, TSnapshot, SerializationContext, List<object>> serializeElement,
+        public static List<List<object>> Serialize<TEntity, TSnapshot>(
+            IEnumerable<TEntity> collection,
+            Dictionary<TEntity, TSnapshot> snapshots,
+            Func<TEntity, EntityState?, TSnapshot, SerializationContext, List<object>> serializeElement,
+            Dictionary<TEntity, TSnapshot> removed,
             SerializationContext context)
-            where TElement : GameEntity
-            where TSnapshot : class
+            where TEntity : GameEntity
+            where TSnapshot : class, new()
         {
-            var removed = snapshots ?? new Dictionary<TElement, TSnapshot>();
+            removed.Clear();
+            removed.EnsureCapacity(snapshots.Count);
+            foreach (var snapshot in snapshots)
+            {
+                removed.Add(snapshot.Key, snapshot.Value);
+            }
+
+            snapshots.Clear();
+
             var serializedElements = new List<List<object>>();
 
             foreach (var element in collection)
             {
                 if (!removed.TryGetValue(element, out var snapshot))
                 {
-                    serializedElements.Add(serializeElement(element, EntityState.Added, null, context));
+                    snapshot = new TSnapshot();
+                    snapshots.Add(element, snapshot);
+                    serializedElements.Add(serializeElement(element, EntityState.Added, snapshot, context));
 
                     continue;
                 }
 
+                snapshots.Add(element, snapshot);
                 removed.Remove(element);
                 var serialized = serializeElement(element, EntityState.Modified, snapshot, context);
                 if (serialized != null)

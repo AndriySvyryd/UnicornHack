@@ -68,7 +68,9 @@ export class Player {
         const currentTick = compactPlayer[i++];
         if (currentPlayer.currentTick < previousTick) {
             return null;
-        } else if (currentPlayer.currentTick > currentTick) {
+        }
+
+        if (currentPlayer.currentTick > currentTick) {
             return currentPlayer;
         }
 
@@ -162,10 +164,10 @@ export class Level {
     @observable height: number = 1;
     @observable width: number = 1;
     @observable tiles: Array<Array<Tile>> = [[new Tile()]];
+    @observable actors: Map<number, MapActor> = new Map<number, MapActor>();
+    @observable items: Map<number, MapItem> = new Map<number, MapItem>();
+    @observable connections: Map<number, Connection> = new Map<number, Connection>();
 
-    actors: Map<number, MapActor> = new Map<number, MapActor>();
-    items: Map<number, MapItem> = new Map<number, MapItem>();
-    connections: Map<number, Connection> = new Map<number, Connection>();
     indexToPoint: number[][] = [[0]];
 
     @action
@@ -347,6 +349,12 @@ export class MapActor {
     @observable levelX: number = 0;
     @observable levelY: number = 0;
     @observable heading: Direction = 0;
+    @observable isCurrentlyPerceived: boolean = false;
+    @observable hp: number = 0;
+    @observable maxHp: number = 0;
+    @observable ep: number = 0;
+    @observable maxEp: number = 0;
+    @observable nextActionTick: number = 0;
     @observable meleeAttack: AttackSummary | null = null;
     @observable rangeAttack: AttackSummary | null = null;
     @observable meleeDefense: AttackSummary | null = null;
@@ -404,6 +412,12 @@ export class MapActor {
         actor.heading = compactActor[i++];
 
         if (compactActor.length > i) {
+            actor.isCurrentlyPerceived = compactActor[i++];
+            actor.hp = compactActor[i++];
+            actor.maxHp = compactActor[i++];
+            actor.ep = compactActor[i++];
+            actor.maxEp = compactActor[i++];
+            actor.nextActionTick = compactActor[i++];
             actor.meleeAttack = AttackSummary.expand(compactActor, i);
             i += 4;
             actor.rangeAttack = AttackSummary.expand(compactActor, i);
@@ -447,8 +461,26 @@ export class MapActor {
                 case 5:
                     this.heading = compactActor[i++];
                     break;
+                case 6:
+                    this.isCurrentlyPerceived = compactActor[i++];
+                    break;
+                case 7:
+                    this.hp = compactActor[i++];
+                    break;
+                case 8:
+                    this.maxHp = compactActor[i++];
+                    break;
+                case 9:
+                    this.ep = compactActor[i++];
+                    break;
+                case 10:
+                    this.maxEp = compactActor[i++];
+                    break;
+                case 11:
+                    this.nextActionTick = compactActor[i++];
+                    break;
                 default:
-                    if (index > 21) {
+                    if (index > 27) {
                         if (unset) {
                             this.set(tiles);
                         }
@@ -456,7 +488,7 @@ export class MapActor {
                         return i - 1;
                     }
 
-                    let offset = index - 6;
+                    let offset = index - 12;
                     switch (Math.floor(offset / 4)) {
                         case 0:
                             if (this.meleeAttack == null) {

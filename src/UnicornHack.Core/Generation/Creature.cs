@@ -494,14 +494,7 @@ namespace UnicornHack.Generation
                                 ? Primitives.Sex.Female
                                 : Primitives.Sex.Male);
 
-                if (XP == 0)
-                {
-                    being.ExperiencePoints = InitialLevel * 100;
-                }
-                else
-                {
-                    being.ExperiencePoints = XP;
-                }
+                being.ExperiencePoints = XP;
 
                 creatureEntity.Being = being;
 

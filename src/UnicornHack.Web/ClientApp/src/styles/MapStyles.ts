@@ -9,6 +9,16 @@ export class MapStyles {
     walls = new WallStyles();
     connections = new ConnectionsStyles();
     items = new ItemStyles();
+
+    private static _instance: MapStyles;
+
+    private constructor() {
+        Object.freeze(this);
+    }
+
+    public static get Instance() {
+        return this._instance || (this._instance = new this());
+    }
 }
 
 export interface ITileStyle {

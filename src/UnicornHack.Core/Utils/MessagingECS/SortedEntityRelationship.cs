@@ -134,7 +134,7 @@ namespace UnicornHack.Utils.MessagingECS
                     out var sortKey))
                 {
                     sortKey = referencingEntities.Where(p => p.Value == entity).Select(p => p.Key).FirstOrDefault();
-                }                
+                }
 
                 if (!Equals(sortKey, default)
                     && referencingEntities.Remove(sortKey))

@@ -103,6 +103,7 @@ export class PostGameStatistics {
 export class ActorAttributes {
     @observable name: string | null = null;
     @observable description: string = '';
+    @observable level: number = 0;
     @observable movementDelay: number = 0;
     @observable size: number = 0;
     @observable weight: number = 0;
@@ -155,6 +156,7 @@ export class ActorAttributes {
 
         attributes.name = compactAttributes[i++];
         attributes.description = compactAttributes[i++];
+        attributes.level = compactAttributes[i++];
         attributes.movementDelay = compactAttributes[i++];
         attributes.size = compactAttributes[i++];
         attributes.weight = compactAttributes[i++];

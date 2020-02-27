@@ -16,7 +16,7 @@ insert_final_newline = true
 
 # Javascript files
 [*.{js,jsx,mjs,ts,tsx}]
-indent_size = 2
+indent_size = 4
 
 # Xml project files
 [*.{csproj,vbproj,vcxproj,vcxproj.filters,proj,projitems,shproj}]
@@ -115,9 +115,9 @@ csharp_new_line_before_open_brace = all
 csharp_new_line_between_query_expression_clauses = true
 
 # Identation options
-csharp_indent_case_contents = true
+csharp_indent_case_contents = no_change
 csharp_indent_labels = no_change
-csharp_indent_switch_labels = true
+csharp_indent_switch_labels = no_change
 
 # Spacing options
 csharp_space_after_cast = false
@@ -132,6 +132,7 @@ csharp_preserve_single_line_blocks = true
 csharp_preserve_single_line_statements = false
 
 ## Naming conventions
+
 [*.{cs,vb}]
 
 ## Naming styles

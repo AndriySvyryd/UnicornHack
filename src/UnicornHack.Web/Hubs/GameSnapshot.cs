@@ -8,31 +8,38 @@ namespace UnicornHack.Hubs
 {
     public class GameSnapshot
     {
-        public Dictionary<int, PlayerSnapshot> PlayerSnapshots { get; set; } = new Dictionary<int, PlayerSnapshot>();
+        public int SnapshotTick { get; set; } = -1;
+        public Dictionary<int, PlayerSnapshot> PlayerSnapshots { get; } = new Dictionary<int, PlayerSnapshot>();
         public Dictionary<int, LevelSnapshot> LevelSnapshots { get; } = new Dictionary<int, LevelSnapshot>();
         private Dictionary<int, List<object>> SerializedLevels { get; } = new Dictionary<int, List<object>>();
 
         // TODO: Perf: Use change notifications instead
-        public void Snapshot(GameDbContext dbContext, GameServices services)
+        public void CaptureState(GameDbContext dbContext, GameServices services)
         {
             SerializedLevels.Clear();
-            var snapshotedLevels = new List<int>();
 
             var manager = dbContext.Manager;
+
+            if (SnapshotTick == manager.Game.CurrentTick)
+            {
+                return;
+            }
+
+            SnapshotTick = manager.Game.CurrentTick;
+            var snapshotedLevels = new List<int>();
             foreach (var playerEntity in manager.Players)
             {
                 var context = new SerializationContext(dbContext, playerEntity, services);
                 var levelEntity = playerEntity.Position.LevelEntity;
-                LevelSnapshot levelSnapshot = null;
                 if (!snapshotedLevels.Contains(levelEntity.Id))
                 {
-                    if (!LevelSnapshots.TryGetValue(levelEntity.Id, out levelSnapshot))
+                    if (!LevelSnapshots.TryGetValue(levelEntity.Id, out var levelSnapshot))
                     {
                         levelSnapshot = new LevelSnapshot();
                         LevelSnapshots[levelEntity.Id] = levelSnapshot;
                     }
 
-                    levelSnapshot.Snapshot(levelEntity, context);
+                    levelSnapshot.CaptureState(levelEntity, context);
                     snapshotedLevels.Add(levelEntity.Id);
                 }
 
@@ -42,7 +49,7 @@ namespace UnicornHack.Hubs
                     PlayerSnapshots[playerEntity.Id] = playerSnapshot;
                 }
 
-                playerSnapshot.Snapshot(playerEntity, context);
+                playerSnapshot.CaptureState(playerEntity, context);
             }
 
             if (snapshotedLevels.Count != LevelSnapshots.Count)
@@ -72,14 +79,29 @@ namespace UnicornHack.Hubs
             GameEntity playerEntity, EntityState state, GameSnapshot snapshot, SerializationContext context)
         {
             var levelEntity = playerEntity.Position.LevelEntity;
+            LevelSnapshot levelSnapshot = null;
+            if (snapshot != null
+                && !snapshot.LevelSnapshots.TryGetValue(levelEntity.Id, out levelSnapshot))
+            {
+                levelSnapshot = new LevelSnapshot();
+                snapshot.LevelSnapshots[levelEntity.Id] = levelSnapshot;
+            }
 
             if (state == EntityState.Added)
             {
-                var serializedLevel = LevelSnapshot.Serialize(levelEntity, null, null, context);
-                return PlayerSnapshot.Serialize(playerEntity, state, null, serializedLevel, context);
+                PlayerSnapshot playerSnapshot = null;
+                if (snapshot != null)
+                {
+                    snapshot.SnapshotTick = context.Manager.Game.CurrentTick;
+                    playerSnapshot = new PlayerSnapshot();
+                    snapshot.PlayerSnapshots[playerEntity.Id] = playerSnapshot;
+                }
+                var serializedLevel = LevelSnapshot.Serialize(levelEntity, null, levelSnapshot, context);
+                return PlayerSnapshot.Serialize(playerEntity, state, playerSnapshot, serializedLevel, context);
             }
             else
             {
+                snapshot.SnapshotTick = context.Manager.Game.CurrentTick;
                 if (!snapshot.SerializedLevels.TryGetValue(levelEntity.Id, out var serializedLevel))
                 {
                     var position = playerEntity.Position;
@@ -88,7 +110,7 @@ namespace UnicornHack.Hubs
                     (position.LevelEntity, level.IsModified
                             ? EntityState.Added
                             : state,
-                        snapshot.LevelSnapshots.GetValueOrDefault(levelEntity.Id), context);
+                        levelSnapshot, context);
                     snapshot.SerializedLevels[levelEntity.Id] = serializedLevel;
                 }
 

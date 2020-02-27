@@ -16,6 +16,7 @@ namespace UnicornHack.Data.Creatures
             {
                 new Ability
                 {
+                    Name = "posion bite",
                     Activation = ActivationType.Targeted,
                     Trigger = ActivationType.OnMeleeAttack,
                     Range = 1,
@@ -28,6 +29,7 @@ namespace UnicornHack.Data.Creatures
                 },
                 new Ability
                 {
+                    Name = "weakening bite",
                     Activation = ActivationType.Targeted,
                     Trigger = ActivationType.OnMeleeAttack,
                     Range = 1,

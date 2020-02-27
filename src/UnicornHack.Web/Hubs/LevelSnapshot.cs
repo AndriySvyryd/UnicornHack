@@ -9,8 +9,8 @@ namespace UnicornHack.Hubs
 {
     public class LevelSnapshot
     {
-        private HashSet<GameEntity> ActorsSnapshot { get; } =
-            new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
+        private Dictionary<GameEntity, LevelActorSnapshot> ActorsSnapshot { get; } =
+            new Dictionary<GameEntity, LevelActorSnapshot>(EntityEqualityComparer<GameEntity>.Instance);
 
         private Dictionary<GameEntity, LevelItemSnapshot> ItemsSnapshot { get; } =
             new Dictionary<GameEntity, LevelItemSnapshot>(EntityEqualityComparer<GameEntity>.Instance);
@@ -18,7 +18,35 @@ namespace UnicornHack.Hubs
         private HashSet<GameEntity> ConnectionsSnapshot { get; } =
             new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
 
-        public LevelSnapshot Snapshot(GameEntity levelEntity, SerializationContext context)
+        private readonly HashSet<GameEntity> _tempHashSet = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
+
+        private readonly Dictionary<GameEntity, LevelActorSnapshot> _tempActors =
+            new Dictionary<GameEntity, LevelActorSnapshot>(EntityEqualityComparer<GameEntity>.Instance);
+
+        private readonly Dictionary<GameEntity, LevelItemSnapshot> _tempItems =
+            new Dictionary<GameEntity, LevelItemSnapshot>(EntityEqualityComparer<GameEntity>.Instance);
+
+        public LevelSnapshot CaptureState(GameEntity levelEntity, SerializationContext context)
+        {
+            CaptureVisibleTerrain(levelEntity);
+
+            var manager = levelEntity.Manager;
+            var actors = GetActors(levelEntity, manager);
+            ActorsSnapshot.Clear();
+            ActorsSnapshot.AddRange(actors, i => new LevelActorSnapshot().CaptureState(i, context));
+
+            var items = GetItems(levelEntity, manager);
+            ItemsSnapshot.Clear();
+            ItemsSnapshot.AddRange(items, i => new LevelItemSnapshot().CaptureState(i, context));
+
+            var connections = GetConnections(levelEntity, manager);
+            ConnectionsSnapshot.Clear();
+            ConnectionsSnapshot.AddRange(connections);
+
+            return this;
+        }
+
+        private static void CaptureVisibleTerrain(GameEntity levelEntity)
         {
             var level = levelEntity.Level;
             if (level.VisibleTerrainSnapshot == null)
@@ -29,21 +57,6 @@ namespace UnicornHack.Hubs
             {
                 level.VisibleTerrain.CopyTo(level.VisibleTerrainSnapshot, 0);
             }
-
-            var manager = levelEntity.Manager;
-            var actors = GetActors(levelEntity, manager);
-            ActorsSnapshot.Clear();
-            ActorsSnapshot.AddRange(actors);
-
-            var items = GetItems(levelEntity, manager);
-            ItemsSnapshot.Clear();
-            ItemsSnapshot.AddRange(items, i => new LevelItemSnapshot().Snapshot(i, context));
-
-            var connections = GetConnections(levelEntity, manager);
-            ConnectionsSnapshot.Clear();
-            ConnectionsSnapshot.AddRange(connections);
-
-            return this;
         }
 
         public static List<object> Serialize(
@@ -94,19 +107,58 @@ namespace UnicornHack.Hubs
                         }
                     }
 
+                    if (snapshot != null)
+                    {
+                        CaptureVisibleTerrain(levelEntity);
+                    }
+
                     properties = state == null
                         ? new List<object>(10)
                         : new List<object>(11) {(int)state};
 
-                    properties.Add(GetActors(levelEntity, manager)
-                        .Select(a => LevelActorSnapshot.Serialize(a, null, context)).ToList());
-                    properties.Add(GetItems(levelEntity, manager)
-                        .Select(t => LevelItemSnapshot.Serialize(t, null, null, context)).ToList());
-                    properties.Add(GetConnections(levelEntity, manager)
-                        .Select(c => ConnectionSnapshot.Serialize(c, null, context)).ToList());
+                    var actors = new List<object>();
+                    foreach (var actor in GetActors(levelEntity, manager))
+                    {
+                        LevelActorSnapshot actorSnapshot = null;
+                        if (snapshot != null
+                            && !snapshot.ActorsSnapshot.TryGetValue(actor, out actorSnapshot))
+                        {
+                            actorSnapshot = new LevelActorSnapshot();
+                            snapshot.ActorsSnapshot[actor] = actorSnapshot;
+                        }
+
+                        actors.Add(LevelActorSnapshot.Serialize(actor, null, actorSnapshot, context));
+                    }
+                    properties.Add(actors);
+
+                    var items = new List<object>();
+                    foreach (var item in GetItems(levelEntity, manager))
+                    {
+                        LevelItemSnapshot itemSnapshot = null;
+                        if (snapshot != null
+                            && !snapshot.ItemsSnapshot.TryGetValue(item, out itemSnapshot))
+                        {
+                            itemSnapshot = new LevelItemSnapshot();
+                            snapshot.ItemsSnapshot[item] = itemSnapshot;
+                        }
+
+                        items.Add(LevelItemSnapshot.Serialize(item, null, itemSnapshot, context));
+                    }
+                    properties.Add(items);
+
+                    var connections = new List<object>();
+                    foreach (var connection in GetConnections(levelEntity, manager))
+                    {
+                        snapshot?.ConnectionsSnapshot.Add(connection);
+
+                        connections.Add(ConnectionSnapshot.Serialize(connection, null, context));
+                    }
+                    properties.Add(connections);
+
                     properties.Add(knownTerrain);
                     properties.Add(wallNeighbors);
                     properties.Add(visibleTerrain);
+
                     properties.Add(level.BranchName);
                     properties.Add(level.Depth);
                     properties.Add(level.Width);
@@ -121,6 +173,7 @@ namespace UnicornHack.Hubs
                         GetActors(levelEntity, manager),
                         snapshot.ActorsSnapshot,
                         LevelActorSnapshot.Serialize,
+                        snapshot._tempActors,
                         context);
                     if (serializedActors.Count > 0)
                     {
@@ -133,6 +186,7 @@ namespace UnicornHack.Hubs
                         GetItems(levelEntity, manager),
                         snapshot.ItemsSnapshot,
                         LevelItemSnapshot.Serialize,
+                        snapshot._tempItems,
                         context);
                     if (serializedItems.Count > 0)
                     {
@@ -145,6 +199,7 @@ namespace UnicornHack.Hubs
                         GetConnections(levelEntity, manager),
                         snapshot.ConnectionsSnapshot,
                         ConnectionSnapshot.Serialize,
+                        snapshot._tempHashSet,
                         context);
                     if (serializedConnections.Count > 0)
                     {
@@ -225,6 +280,8 @@ namespace UnicornHack.Hubs
 
                             properties.Add(changes);
                         }
+
+                        CaptureVisibleTerrain(levelEntity);
                     }
 
                     return properties.Count > 1 ? properties : null;

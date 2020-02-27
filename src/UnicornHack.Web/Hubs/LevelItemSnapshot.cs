@@ -10,11 +10,14 @@ namespace UnicornHack.Hubs
     {
         private string NameSnapshot { get; set; }
 
-        public LevelItemSnapshot Snapshot(GameEntity itemKnowledgeEntity, SerializationContext context)
+        public LevelItemSnapshot CaptureState(GameEntity knowledgeEntity, SerializationContext context)
         {
-            var item = itemKnowledgeEntity.Knowledge.KnownEntity.Item;
+            var itemKnowledge = knowledgeEntity.Knowledge;
+            var item = itemKnowledge.KnownEntity.Item;
             var manager = context.Manager;
-            NameSnapshot = context.Services.Language.GetString(item, item.GetQuantity(manager), SenseType.Sight);
+            NameSnapshot = itemKnowledge.SensedType.CanIdentify()
+                ? context.Services.Language.GetString(item, item.GetQuantity(manager), itemKnowledge.SensedType)
+                : null;
 
             return this;
         }
@@ -23,38 +26,41 @@ namespace UnicornHack.Hubs
             GameEntity knowledgeEntity, EntityState? state, LevelItemSnapshot snapshot, SerializationContext context)
         {
             List<object> properties;
+            var manager = context.Manager;
+            var itemKnowledge = knowledgeEntity.Knowledge;
+            var item = itemKnowledge?.KnownEntity.Item;
+            var position = knowledgeEntity.Position;
             switch (state)
             {
                 case null:
                 case EntityState.Added:
-                {
-                    var manager = context.Manager;
-                    var itemKnowledge = knowledgeEntity.Knowledge;
-                    var item = itemKnowledge.KnownEntity.Item;
-                    var position = knowledgeEntity.Position;
                     properties = state == null
                         ? new List<object>(6)
-                        : new List<object>(7) {(int)state};
+                        : new List<object>(7) { (int)state };
                     properties.Add(knowledgeEntity.Id);
 
+                    string name = null;
                     if (itemKnowledge.SensedType.CanIdentify())
                     {
                         properties.Add((int)item.Type);
                         properties.Add(item.TemplateName);
-                        properties.Add(
-                            context.Services.Language.GetString(item, item.GetQuantity(manager), itemKnowledge.SensedType));
+                        name = context.Services.Language.GetString(item, item.GetQuantity(manager), itemKnowledge.SensedType);
                     }
                     else
                     {
                         properties.Add((int)ItemType.None);
                         properties.Add(null);
-                        properties.Add(null);
                     }
+
+                    if (snapshot != null)
+                    {
+                        snapshot.NameSnapshot = name;
+                    }
+                    properties.Add(name);
 
                     properties.Add(position.LevelX);
                     properties.Add(position.LevelY);
                     return properties;
-                }
                 case EntityState.Deleted:
                     return new List<object>
                     {
@@ -62,11 +68,6 @@ namespace UnicornHack.Hubs
                         knowledgeEntity.Id
                     };
                 default:
-                {
-                    var manager = context.Manager;
-                    var itemKnowledge = knowledgeEntity.Knowledge;
-                    var item = itemKnowledge.KnownEntity.Item;
-                    var position = knowledgeEntity.Position;
                     properties = new List<object>(2)
                     {
                         (int)state,
@@ -104,6 +105,7 @@ namespace UnicornHack.Hubs
                     {
                         properties.Add(i);
                         properties.Add(newName);
+                        snapshot.NameSnapshot = newName;
                     }
 
                     var positionEntry = context.DbContext.Entry(position);
@@ -127,7 +129,6 @@ namespace UnicornHack.Hubs
                     }
 
                     return properties.Count > 2 ? properties : null;
-                }
             }
         }
     }

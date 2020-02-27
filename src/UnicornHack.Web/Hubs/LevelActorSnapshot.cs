@@ -5,30 +5,45 @@ using Microsoft.EntityFrameworkCore;
 using UnicornHack.Primitives;
 using UnicornHack.Services;
 using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 
 namespace UnicornHack.Hubs
 {
-    public static class LevelActorSnapshot
+    public class LevelActorSnapshot
     {
+        private bool CurrentlyPerceived { get; set; }
+
+        public LevelActorSnapshot CaptureState(GameEntity knowledgeEntity, SerializationContext context)
+        {
+            var actorKnowledge = knowledgeEntity.Knowledge;
+            var knownEntity = actorKnowledge.KnownEntity;
+            var position = knowledgeEntity.Position;
+            var manager = context.Manager;
+            CurrentlyPerceived = manager.SensorySystem.SensedByPlayer(knownEntity, position.LevelCell).CanIdentify();
+
+            return this;
+        }
+
         public static List<object> Serialize(
-            GameEntity knowledgeEntity, EntityState? state, SerializationContext context)
+            GameEntity knowledgeEntity, EntityState? state, LevelActorSnapshot snapshot, SerializationContext context)
         {
             List<object> properties;
+            var actorKnowledge = knowledgeEntity.Knowledge;
+            var knownEntity = actorKnowledge?.KnownEntity;
+            var ai = knownEntity?.AI;
+            var position = knowledgeEntity.Position;
+            var being = knownEntity?.Being;
+            var manager = context.Manager;
             switch (state)
             {
                 case null:
                 case EntityState.Added:
-                {
-                    var actorKnowledge = knowledgeEntity.Knowledge;
-                    var knownEntity = actorKnowledge.KnownEntity;
-                    var ai = knownEntity.AI;
-                    var position = knowledgeEntity.Position;
-                    var manager = context.Manager;
                     properties = state == null
                         ? new List<object>(6)
-                        : new List<object>(7) {(int)state};
+                        : new List<object>(7) { (int)state };
                     properties.Add(actorKnowledge.EntityId);
 
                     if (actorKnowledge.SensedType.CanIdentify())
@@ -52,6 +67,18 @@ namespace UnicornHack.Hubs
                     if (actorKnowledge.SensedType.CanIdentify()
                         && ai != null)
                     {
+                        var currentlyPerceived = manager.SensorySystem.SensedByPlayer(knownEntity, position.LevelCell).CanIdentify();
+                        if (snapshot != null)
+                        {
+                            snapshot.CurrentlyPerceived = currentlyPerceived;
+                        }
+                        properties.Add(currentlyPerceived);
+                        properties.Add(being.HitPoints);
+                        properties.Add(being.HitPointMaximum);
+                        properties.Add(being.EnergyPoints);
+                        properties.Add(being.EnergyPointMaximum);
+                        properties.Add(ai.NextActionTick);
+
                         int? _ = null;
                         var meleeAttack =
                             manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: true, manager);
@@ -93,7 +120,6 @@ namespace UnicornHack.Hubs
                     }
 
                     return properties;
-                }
                 case EntityState.Deleted:
                     return new List<object>
                     {
@@ -101,12 +127,6 @@ namespace UnicornHack.Hubs
                         knowledgeEntity.Id
                     };
                 default:
-                {
-                    var actorKnowledge = knowledgeEntity.Knowledge;
-                    var knownEntity = actorKnowledge.KnownEntity;
-                    var ai = knownEntity.AI;
-                    var position = knowledgeEntity.Position;
-                    var manager = context.Manager;
                     properties = new List<object>(2)
                     {
                         (int)state,
@@ -172,53 +192,121 @@ namespace UnicornHack.Hubs
 
                     if (ai != null)
                     {
-                        var canIdentify = actorKnowledge.SensedType.CanIdentify();
-                        var meleeAttack = canIdentify
-                            ? manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: true, manager)
-                            : null;
-                        SerializeAttackSummary(
-                            meleeAttack,
-                            knownEntity,
-                            context.Observer,
-                            properties,
-                            index: ref i, manager: manager);
+                        i++;
+                        var currentlyPerceived = manager.SensorySystem.SensedByPlayer(knownEntity, position.LevelCell).CanIdentify();
+                        if (snapshot.CurrentlyPerceived != currentlyPerceived)
+                        {
+                            properties.Add(i);
+                            properties.Add(currentlyPerceived);
+                            snapshot.CurrentlyPerceived = currentlyPerceived;
+                        }
 
-                        var rangedAttack = canIdentify
-                            ? manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: false, manager)
-                            : null;
-                        SerializeAttackSummary(
-                            rangedAttack,
-                            knownEntity,
-                            context.Observer,
-                            properties,
-                            index: ref i,
-                            manager: manager);
+                        if (currentlyPerceived)
+                        {
+                            var beingEntry = context.DbContext.Entry(being);
+                            if (beingEntry.State != EntityState.Unchanged)
+                            {
+                                i++;
+                                var hitPoints = beingEntry.Property(nameof(BeingComponent.HitPoints));
+                                if (hitPoints.IsModified)
+                                {
+                                    properties.Add(i);
+                                    properties.Add(being.HitPoints);
+                                }
 
-                        meleeAttack = canIdentify
-                            ? manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: true, manager)
-                            : null;
-                        SerializeAttackSummary(
-                            meleeAttack,
-                            context.Observer,
-                            knownEntity, properties,
-                            index: ref i,
-                            manager: manager);
+                                i++;
+                                var hitPointMaximum = beingEntry.Property(nameof(BeingComponent.HitPointMaximum));
+                                if (hitPointMaximum.IsModified)
+                                {
+                                    properties.Add(i);
+                                    properties.Add(being.HitPointMaximum);
+                                }
 
-                        rangedAttack = canIdentify
-                            ? manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: false, manager)
-                            : null;
-                        SerializeAttackSummary(
-                            rangedAttack,
-                            context.Observer,
-                            knownEntity,
-                            properties,
-                            index: ref i,
-                            manager: manager);
+                                i++;
+                                var energyPoints = beingEntry.Property(nameof(BeingComponent.EnergyPoints));
+                                if (energyPoints.IsModified)
+                                {
+                                    properties.Add(i);
+                                    properties.Add(being.EnergyPoints);
+                                }
 
+                                i++;
+                                var energyPointMaximum = beingEntry.Property(nameof(BeingComponent.EnergyPointMaximum));
+                                if (energyPointMaximum.IsModified)
+                                {
+                                    properties.Add(i);
+                                    properties.Add(being.EnergyPointMaximum);
+                                }
+
+                            }
+                            else
+                            {
+                                i += 4;
+                            }
+
+                            i++;
+                            var aiEntry = context.DbContext.Entry(ai);
+                            if (aiEntry.State != EntityState.Unchanged)
+                            {
+                                var nextActionTick = aiEntry.Property(nameof(AIComponent.NextActionTick));
+                                if (nextActionTick.IsModified)
+                                {
+                                    properties.Add(i);
+                                    properties.Add(ai.NextActionTick);
+                                }
+                            }
+                        }
+
+                        if (sensedType.IsModified)
+                        {
+                            var canIdentify = actorKnowledge.SensedType.CanIdentify();
+
+                            // TODO: Snapshot the attacks and update them while the actor is perceived
+                            var meleeAttack = canIdentify
+                                ? manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: true, manager)
+                                : null;
+                            SerializeAttackSummary(
+                                meleeAttack,
+                                knownEntity,
+                                context.Observer,
+                                properties,
+                                index: ref i, manager: manager);
+
+                            var rangedAttack = canIdentify
+                                ? manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: false, manager)
+                                : null;
+                            SerializeAttackSummary(
+                                rangedAttack,
+                                knownEntity,
+                                context.Observer,
+                                properties,
+                                index: ref i,
+                                manager: manager);
+
+                            meleeAttack = canIdentify
+                                ? manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: true, manager)
+                                : null;
+                            SerializeAttackSummary(
+                                meleeAttack,
+                                context.Observer,
+                                knownEntity, properties,
+                                index: ref i,
+                                manager: manager);
+
+                            rangedAttack = canIdentify
+                                ? manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: false, manager)
+                                : null;
+                            SerializeAttackSummary(
+                                rangedAttack,
+                                context.Observer,
+                                knownEntity,
+                                properties,
+                                index: ref i,
+                                manager: manager);
+                        }
                     }
 
                     return properties.Count > 2 ? properties : null;
-                }
             }
         }
 
@@ -328,6 +416,7 @@ namespace UnicornHack.Hubs
             {
                 context.Services.Language.GetActorName(actorEntity, sense),
                 description,
+                actorEntity.Manager.XPSystem.GetXPLevel(actorEntity, actorEntity.Manager),
                 actorEntity.Position.MovementDelay,
                 physical.Size,
                 physical.Weight,
