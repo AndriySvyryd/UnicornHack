@@ -181,7 +181,7 @@ namespace UnicornHack.Hubs
 
         public async Task PerformAction(string playerName, int intAction, int? target, int? target2)
         {
-            var action = (PlayerAction?)intAction;
+            var action = (ActorAction?)intAction;
             var currentPlayer = FindPlayer(playerName);
             if (currentPlayer == null)
             {

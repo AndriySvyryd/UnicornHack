@@ -12,10 +12,10 @@ namespace UnicornHack.Systems.Levels
     {
         public bool CanTravel(TravelMessage message, GameManager manager)
         {
-            using (var traveled = TryTravel(message, manager, pretend: true))
-            {
-                return traveled.Successful;
-            }
+            var traveled = TryTravel(message, manager, pretend: true);
+            var successful = traveled.Successful;
+            message.ActorEntity.Manager.ReturnMessage(traveled);
+            return successful;
         }
 
         public MessageProcessingResult Process(TravelMessage message, GameManager manager)
@@ -27,10 +27,10 @@ namespace UnicornHack.Systems.Levels
 
         private TraveledMessage TryTravel(TravelMessage message, GameManager manager, bool pretend = false)
         {
-            var position = message.Entity.Position;
+            var position = message.ActorEntity.Position;
             var heading = position.Heading.Value;
             var traveledMessage = TraveledMessage.Create(manager);
-            traveledMessage.Entity = message.Entity;
+            traveledMessage.Entity = message.ActorEntity;
             traveledMessage.InitialLevel = position.LevelEntity;
             traveledMessage.InitialHeading = position.Heading.Value;
             traveledMessage.InitialLevelCell = position.LevelCell;
@@ -57,6 +57,11 @@ namespace UnicornHack.Systems.Levels
             if (position.LevelCell == message.TargetCell)
             {
                 traveledMessage.Successful = true;
+                if (delay != 0)
+                {
+                    DelayMessage.Enqueue(message.ActorEntity, delay, manager);
+                }
+
                 return traveledMessage;
             }
 
@@ -113,7 +118,7 @@ namespace UnicornHack.Systems.Levels
 
             // TODO: take terrain into account
             delay += position.MovementDelay;
-            DelayMessage.Enqueue(message.Entity, delay, manager);
+            DelayMessage.Enqueue(message.ActorEntity, delay, manager);
 
             return traveledMessage;
         }
@@ -142,20 +147,24 @@ namespace UnicornHack.Systems.Levels
 
             position.LevelCell = position.LevelCell.Translate(possibleDirectionsToMove[directionIndex].AsVector());
 
-            using (var travelMessage = TravelMessage.Create(manager))
+            var travelMessage = TravelMessage.Create(manager);
+            travelMessage.ActorEntity = entity;
+            travelMessage.TargetHeading = position.Heading.Value;
+            travelMessage.TargetCell = position.LevelCell;
+
+            var traveledMessage = TryTravel(travelMessage, manager, pretend);
+            var successful = traveledMessage.Successful;
+            if (!pretend)
             {
-                travelMessage.Entity = entity;
-                travelMessage.TargetHeading = position.Heading.Value;
-                travelMessage.TargetCell = position.LevelCell;
-
-                var traveledMessage = TryTravel(travelMessage, manager, pretend);
-                if (!pretend)
-                {
-                    manager.Enqueue(traveledMessage);
-                }
-
-                return traveledMessage.Successful;
+                manager.Enqueue(traveledMessage);
             }
+            else
+            {
+                manager.ReturnMessage(traveledMessage);
+            }
+
+            manager.ReturnMessage(travelMessage);
+            return successful;
         }
 
         public Direction? GetFirstStepFromShortestPath(

@@ -2,7 +2,7 @@
 import { action } from 'mobx';
 import { observer } from 'mobx-react';
 import { Ability } from '../transport/Model';
-import { PlayerAction } from '../transport/PlayerAction';
+import { ActorAction } from '../transport/ActorAction';
 import { GameQueryType } from '../transport/GameQueryType';
 import { ActivationType } from '../transport/ActivationType';
 import { IGameContext } from './Game';
@@ -41,7 +41,7 @@ class AbilityLine extends React.PureComponent<IAbilityProps, {}> {
     @action.bound
     useAbilitySlot(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
-            this.props.context.performAction(PlayerAction.UseAbilitySlot, this.props.slot, null);
+            this.props.context.performAction(ActorAction.UseAbilitySlot, this.props.slot, null);
             event.preventDefault();
         }
     }

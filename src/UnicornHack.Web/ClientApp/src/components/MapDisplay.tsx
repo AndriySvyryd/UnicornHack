@@ -4,7 +4,7 @@ import { action } from 'mobx';
 import { observer } from 'mobx-react';
 import { MapStyles, ITileStyle } from '../styles/MapStyles';
 import { Level, Tile, AttackSummary } from '../transport/Model';
-import { PlayerAction } from '../transport/PlayerAction';
+import { ActorAction } from '../transport/ActorAction';
 import { Direction } from '../transport/Direction';
 import { GameQueryType } from '../transport/GameQueryType';
 import { MapFeature } from '../transport/MapFeature';
@@ -75,13 +75,13 @@ class MapTile extends React.PureComponent<ITileProps, {}> {
     handleEvent(action: TileAction) {
         switch (action) {
             case TileAction.Wait:
-                this.props.context.performAction(PlayerAction.Wait, Level.pack(this.props.x, this.props.y), null);
+                this.props.context.performAction(ActorAction.Wait, Level.pack(this.props.x, this.props.y), null);
                 break;
             case TileAction.Move:
-                this.props.context.performAction(PlayerAction.MoveToCell, Level.pack(this.props.x, this.props.y), null);
+                this.props.context.performAction(ActorAction.MoveToCell, Level.pack(this.props.x, this.props.y), null);
                 break;
             case TileAction.Attack:
-                this.props.context.performAction(PlayerAction.UseAbilitySlot, null, Level.pack(this.props.x, this.props.y));
+                this.props.context.performAction(ActorAction.UseAbilitySlot, null, Level.pack(this.props.x, this.props.y));
                 break;
             case TileAction.PlayerAttributes:
                 this.props.context.showDialog(GameQueryType.PlayerAttributes);

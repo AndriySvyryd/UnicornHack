@@ -14,6 +14,7 @@ namespace UnicornHack.Services
         string GetString(ItemComponent item, int quantity, SenseType sense);
         string GetString(RaceComponent race, bool abbreviate);
         string GetString(AbilityComponent ability);
+        string GetString(Direction direction, bool abbreviate);
         string GetString(EquipmentSlot slot, GameEntity actorEntity, bool abbreviate);
         string GetString(in ItemPickUpEvent @event);
         string GetString(in ItemDropEvent @event);

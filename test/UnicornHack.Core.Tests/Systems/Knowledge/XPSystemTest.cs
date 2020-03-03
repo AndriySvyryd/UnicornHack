@@ -33,7 +33,7 @@ namespace UnicornHack.Systems.Knowledge
             Assert.Equal(9, player.Being.ExperiencePoints);
 
             var travelMessage = TravelMessage.Create(manager);
-            travelMessage.Entity = player;
+            travelMessage.ActorEntity = player;
             travelMessage.TargetHeading = Direction.East;
             travelMessage.TargetCell = new Point(0, 0);
             manager.Enqueue(travelMessage);

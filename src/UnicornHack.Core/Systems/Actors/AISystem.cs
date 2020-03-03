@@ -1,8 +1,10 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
+using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
 using UnicornHack.Utils.MessagingECS;
@@ -10,7 +12,9 @@ using UnicornHack.Utils.MessagingECS;
 namespace UnicornHack.Systems.Actors
 {
     public class AISystem :
+        ActorSystemBase,
         IGameSystem<PerformActionMessage>,
+        IGameSystem<DecideNextActionMessage>,
         IGameSystem<DiedMessage>,
         IGameSystem<EntityAddedMessage<GameEntity>>,
         IGameSystem<PropertyValueChangedMessage<GameEntity, bool>>,
@@ -18,81 +22,131 @@ namespace UnicornHack.Systems.Actors
     {
         public MessageProcessingResult Process(PerformActionMessage message, GameManager manager)
         {
-            var actor = message.Actor;
-            var ai = actor.AI;
+            var actorEntity = message.Actor;
+            var ai = actorEntity.AI;
 
-            Debug.Assert(actor.Being.IsAlive);
+            Debug.Assert(actorEntity.Being.IsAlive);
+
+            var action = ai.NextAction;
+            var target = ai.NextActionTarget;
+            var target2 = ai.NextActionTarget2;
+            if (action == null)
+            {
+                ai.NextActionTick += TimeSystem.DefaultActionDelay / 2;
+                DecideNextAction(actorEntity, manager);
+                return MessageProcessingResult.ContinueProcessing;
+            }
+
+            ResetNextAction(ai);
 
             // TODO: If can't act - wait till player turn
-            switch (TryAttackPlayerCharacter(actor, manager))
+
+            var position = actorEntity.Position;
+            switch (action)
             {
-                case true:
-                    return MessageProcessingResult.ContinueProcessing;
-                case false:
-                    ai.NextActionTick += TimeSystem.DefaultActionDelay / 2;
-                    return MessageProcessingResult.ContinueProcessing;
+                case ActorAction.Wait:
+                    ai.NextActionTick += TimeSystem.DefaultActionDelay;
+                    break;
+                case ActorAction.ChangeHeading:
+                case ActorAction.MoveOneCell:
+                    var moveDirection = (Direction)target.Value;
+                    Move(moveDirection, actorEntity, manager,
+                        onlyChangeHeading: action == ActorAction.ChangeHeading);
+
+                    break;
+                case ActorAction.DropItem:
+                    var itemToDrop = GetItem(target.Value, actorEntity, manager);
+                    if (itemToDrop == null)
+                    {
+                        return MessageProcessingResult.ContinueProcessing;
+                    }
+
+                    var dropMessage = MoveItemMessage.Create(manager);
+                    dropMessage.ItemEntity = itemToDrop;
+                    dropMessage.TargetLevelEntity = position.LevelEntity;
+                    dropMessage.TargetCell = position.LevelCell;
+
+                    manager.Enqueue(dropMessage);
+                    break;
+                case ActorAction.EquipItem:
+                    var itemToEquip = GetItem(target.Value, actorEntity, manager);
+                    var slot = (EquipmentSlot)target2.Value;
+                    if (itemToEquip == null)
+                    {
+                        return MessageProcessingResult.ContinueProcessing;
+                    }
+
+                    var equipMessage = EquipItemMessage.Create(manager);
+                    equipMessage.ActorEntity = actorEntity;
+                    equipMessage.ItemEntity = itemToEquip;
+                    equipMessage.Slot = slot;
+
+                    manager.Enqueue(equipMessage);
+                    break;
+                case ActorAction.UnequipItem:
+                    var itemToUnequip = GetItem(target.Value, actorEntity, manager);
+                    if (itemToUnequip == null)
+                    {
+                        return MessageProcessingResult.ContinueProcessing;
+                    }
+
+                    var unequipMessage = EquipItemMessage.Create(manager);
+                    unequipMessage.ActorEntity = actorEntity;
+                    unequipMessage.ItemEntity = itemToUnequip;
+                    unequipMessage.Slot = EquipmentSlot.None;
+
+                    manager.Enqueue(unequipMessage);
+                    break;
+                case ActorAction.UseAbilitySlot:
+                    ActivateAbility(actorEntity, target, target2, manager);
+                    break;
+                case ActorAction.MoveToCell:
+                case ActorAction.SetAbilitySlot:
+                default:
+                    throw new InvalidOperationException(
+                        $"Action {action} on actor {actorEntity.Id} is invalid.");
             }
 
-            var position = actor.Position;
-            if (position.MovementDelay == 0)
-            {
-                ai.NextActionTick += TimeSystem.DefaultActionDelay / 2;
-                return MessageProcessingResult.ContinueProcessing;
-            }
-
-            var travelMessage = TravelMessage.Create(manager);
-            travelMessage.Entity = actor;
-
-            var directionToMove = TryGetDirectionToPlayer(actor, manager);
-            if (directionToMove != null)
-            {
-                travelMessage.TargetCell = position.Heading != directionToMove
-                    ? position.LevelCell
-                    : position.LevelCell.Translate(directionToMove.Value.AsVector());
-                travelMessage.TargetHeading = directionToMove.Value;
-
-                if (manager.TravelSystem.CanTravel(travelMessage, manager))
-                {
-                    manager.Enqueue(travelMessage);
-                    return MessageProcessingResult.ContinueProcessing;
-                }
-            }
-
-            var possibleDirectionsToMove =
-                manager.TravelSystem.GetPossibleMovementDirections(position, safe: true, manager);
-            if (possibleDirectionsToMove.Count == 0)
-            {
-                ai.NextActionTick += TimeSystem.DefaultActionDelay / 2;
-                return MessageProcessingResult.ContinueProcessing;
-            }
-
-            if (possibleDirectionsToMove.Contains(position.Heading.Value)
-                && manager.Game.Random.NextBool())
-            {
-                directionToMove = position.Heading.Value;
-            }
-            else
-            {
-                var directionIndex = manager.Game.Random.Next(0, possibleDirectionsToMove.Count);
-                directionToMove = possibleDirectionsToMove[directionIndex];
-            }
-
-            travelMessage.TargetCell = position.Heading != directionToMove
-                ? position.LevelCell
-                : position.LevelCell.Translate(directionToMove.Value.AsVector());
-            travelMessage.TargetHeading = directionToMove.Value;
-
-            travelMessage.TargetCell = position.LevelCell.Translate(travelMessage.TargetHeading.AsVector());
-
-            Debug.Assert(manager.TravelSystem.CanTravel(travelMessage, manager));
-
-            manager.Enqueue(travelMessage);
+            DecideNextActionMessage.Enqueue(actorEntity, manager);
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        private bool? TryAttackPlayerCharacter(GameEntity aiEntity, GameManager manager)
+        public MessageProcessingResult Process(DecideNextActionMessage message, GameManager manager)
         {
-            bool? ableToAttack = null;
+            DecideNextAction(message.Actor, manager);
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        private void DecideNextAction(GameEntity actorEntity, GameManager manager)
+        {
+            if (TryAttackPlayerCharacter(actorEntity, manager))
+            {
+                return;
+            }
+
+            var position = actorEntity.Position;
+            if (position.MovementDelay == 0)
+            {
+                return;
+            }
+
+            if (TryMoveToPlayer(actorEntity, position, manager))
+            {
+                return;
+            }
+
+            Wander(actorEntity, position, manager);
+        }
+
+        private static void ResetNextAction(AIComponent ai)
+        {
+            ai.NextAction = null;
+            ai.NextActionTarget = null;
+            ai.NextActionTarget2 = null;
+        }
+
+        private bool TryAttackPlayerCharacter(GameEntity aiEntity, GameManager manager)
+        {
             var aiPosition = aiEntity.Position;
             foreach (var playerEntity in manager.Players)
             {
@@ -104,17 +158,16 @@ namespace UnicornHack.Systems.Actors
                     continue;
                 }
 
-                ableToAttack = false;
-                if (Attack(aiEntity, playerEntity, manager))
+                if (TryAttack(aiEntity, playerEntity, manager))
                 {
                     return true;
                 }
             }
 
-            return ableToAttack;
+            return false;
         }
 
-        private bool Attack(GameEntity aiEntity, GameEntity targetEntity, GameManager manager)
+        private bool TryAttack(GameEntity aiEntity, GameEntity targetEntity, GameManager manager)
         {
             var abilityEntity = GetDefaultAttack(aiEntity, targetEntity, null, manager);
             if (abilityEntity == null)
@@ -122,11 +175,10 @@ namespace UnicornHack.Systems.Actors
                 return false;
             }
 
-            var activationMessage = ActivateAbilityMessage.Create(manager);
-            activationMessage.AbilityEntity = abilityEntity;
-            activationMessage.ActivatorEntity = aiEntity;
-            activationMessage.TargetEntity = targetEntity;
-            manager.Enqueue(activationMessage);
+            var ai = aiEntity.AI;
+            ai.NextAction = ActorAction.UseAbilitySlot;
+            ai.NextActionTarget = abilityEntity.Ability.Slot;
+            ai.NextActionTarget2 = targetEntity.Position.LevelCell.ToInt32();
 
             return true;
         }
@@ -160,9 +212,9 @@ namespace UnicornHack.Systems.Actors
             return null;
         }
 
-        private Direction? TryGetDirectionToPlayer(GameEntity aiEntity, GameManager manager)
+        private bool TryMoveToPlayer(GameEntity actorEntity, PositionComponent position, GameManager manager)
         {
-            var aiPosition = aiEntity.Position;
+            var aiPosition = actorEntity.Position;
             foreach (var playerEntity in manager.Players)
             {
                 var playerPosition = playerEntity.Position;
@@ -182,11 +234,68 @@ namespace UnicornHack.Systems.Actors
                 //}
 
                 // TODO: Avoid connections and creatures
-                return manager.TravelSystem.GetFirstStepFromShortestPath(
+                var directionToMove = manager.TravelSystem.GetFirstStepFromShortestPath(
                     level, aiPosition.LevelCell, playerPosition.LevelCell, aiPosition.Heading.Value);
+
+                if (directionToMove != null)
+                {
+                    var changeHeading = position.Heading != directionToMove;
+                    var targetCell = changeHeading
+                        ? position.LevelCell
+                        : position.LevelCell.Translate(directionToMove.Value.AsVector());
+                    if (!changeHeading
+                        && targetCell == playerPosition.LevelCell)
+                    {
+                        // No need to move
+                        return true;
+                    }
+
+                    var travelMessage = TravelMessage.Create(manager);
+                    travelMessage.ActorEntity = actorEntity;
+                    travelMessage.TargetCell = targetCell;
+                    travelMessage.TargetHeading = directionToMove.Value;
+
+                    if (manager.TravelSystem.CanTravel(travelMessage, manager))
+                    {
+                        var ai = actorEntity.AI;
+                        ai.NextAction = changeHeading ? ActorAction.ChangeHeading : ActorAction.MoveOneCell;
+                        ai.NextActionTarget = (int)directionToMove.Value;
+                        manager.Queue.ReturnMessage(travelMessage);
+                        return true;
+                    }
+
+                    manager.Queue.ReturnMessage(travelMessage);
+                }
             }
 
-            return null;
+            return false;
+        }
+
+        private void Wander(GameEntity actorEntity, PositionComponent position, GameManager manager)
+        {
+            var possibleDirectionsToMove =
+                manager.TravelSystem.GetPossibleMovementDirections(position, safe: true, manager);
+            if (possibleDirectionsToMove.Count == 0)
+            {
+                return;
+            }
+
+            Direction? directionToMove;
+            if (possibleDirectionsToMove.Contains(position.Heading.Value)
+                && manager.Game.Random.NextBool())
+            {
+                directionToMove = position.Heading.Value;
+            }
+            else
+            {
+                var directionIndex = manager.Game.Random.Next(0, possibleDirectionsToMove.Count);
+                directionToMove = possibleDirectionsToMove[directionIndex];
+            }
+
+            var changeHeading = position.Heading != directionToMove;
+            var ai = actorEntity.AI;
+            ai.NextAction = changeHeading ? ActorAction.ChangeHeading : ActorAction.MoveOneCell;
+            ai.NextActionTarget = (int)directionToMove.Value;
         }
 
         public MessageProcessingResult Process(DelayMessage message, GameManager state)

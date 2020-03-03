@@ -11,10 +11,11 @@ namespace UnicornHack.Systems.Items
     {
         public bool CanEquipItem(EquipItemMessage message, GameManager manager)
         {
-            using (var equipped = TryEquip(message, manager, pretend: true))
-            {
-                return equipped.Successful;
-            }
+            var equipped = TryEquip(message, manager, pretend: true);
+            var successful = equipped.Successful;
+
+            message.ActorEntity.Manager.ReturnMessage(equipped);
+            return successful;
         }
 
         public MessageProcessingResult Process(EquipItemMessage message, GameManager manager)

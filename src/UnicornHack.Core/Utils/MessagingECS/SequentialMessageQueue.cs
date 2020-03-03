@@ -18,7 +18,7 @@ namespace UnicornHack.Utils.MessagingECS
         public int QueuedCount => _mainQueue.Count;
 
         public void Add<TMessage>(IMessageConsumer<TMessage, TState> consumer, string name, int order)
-            where TMessage : class, IDisposable, new()
+            where TMessage : class, IMessage, new()
         {
             if (!_namedQueues.TryGetValue(name, out var specificQueue))
             {
@@ -49,7 +49,7 @@ namespace UnicornHack.Utils.MessagingECS
             }
             else
             {
-                message.Dispose();
+                message.Clean();
             }
         }
 
@@ -59,7 +59,7 @@ namespace UnicornHack.Utils.MessagingECS
             if (_suspended
                 || !_namedQueues.TryGetValue(message.MessageName, out var specificQueue))
             {
-                message.Dispose();
+                message.Clean();
 
                 return;
             }

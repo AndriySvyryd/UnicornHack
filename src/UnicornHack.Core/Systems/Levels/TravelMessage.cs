@@ -13,7 +13,7 @@ namespace UnicornHack.Systems.Levels
 
         private GameEntity _entity;
 
-        public GameEntity Entity
+        public GameEntity ActorEntity
         {
             get => _entity;
             set
@@ -30,9 +30,9 @@ namespace UnicornHack.Systems.Levels
 
         string IMessage.MessageName { get; set; }
 
-        public void Dispose()
+        public void Clean()
         {
-            Entity = default;
+            ActorEntity = default;
             TargetHeading = default;
             TargetCell = default;
             MoveOffConflicting = default;

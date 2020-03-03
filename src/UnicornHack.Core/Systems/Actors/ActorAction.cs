@@ -1,6 +1,6 @@
 ﻿namespace UnicornHack.Systems.Actors
 {
-    public enum PlayerAction
+    public enum ActorAction
     {
         Wait = 0,
         ChangeHeading,

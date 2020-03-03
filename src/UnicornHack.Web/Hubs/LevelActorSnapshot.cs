@@ -9,6 +9,7 @@ using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
+using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Hubs
 {
@@ -79,42 +80,37 @@ namespace UnicornHack.Hubs
                         properties.Add(being.EnergyPointMaximum);
                         properties.Add(ai.NextActionTick);
 
-                        int? _ = null;
+                        properties.Add(SerializeNextAction(ai, context));
+
                         var meleeAttack =
                             manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: true, manager);
-                        SerializeAttackSummary(
+                        properties.Add(SerializeAttackSummary(
                             meleeAttack,
                             knownEntity,
-                            context.Observer, properties,
-                            index: ref _,
-                            manager: manager);
+                            context.Observer,
+                            manager));
 
                         var rangedAttack =
                             manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: false, manager);
-                        SerializeAttackSummary(
+                        properties.Add(SerializeAttackSummary(
                             rangedAttack,
                             knownEntity,
-                            context.Observer, properties,
-                            index: ref _,
-                            manager: manager);
+                            context.Observer,
+                            manager));
 
                         meleeAttack = manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: true, manager);
-                        SerializeAttackSummary(
+                        properties.Add(SerializeAttackSummary(
                             meleeAttack,
                             context.Observer,
                             knownEntity,
-                            properties,
-                            index: ref _,
-                            manager: manager);
+                            manager));
 
                         rangedAttack = manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: false, manager);
-                        SerializeAttackSummary(
+                        properties.Add(SerializeAttackSummary(
                             rangedAttack,
                             context.Observer,
                             knownEntity,
-                            properties,
-                            index: ref _,
-                            manager: manager);
+                            manager));
 
                         return properties;
                     }
@@ -194,7 +190,8 @@ namespace UnicornHack.Hubs
                     {
                         i++;
                         var currentlyPerceived = manager.SensorySystem.SensedByPlayer(knownEntity, position.LevelCell).CanIdentify();
-                        if (snapshot.CurrentlyPerceived != currentlyPerceived)
+                        var currentPerceptionChanged = snapshot.CurrentlyPerceived != currentlyPerceived;
+                        if (currentPerceptionChanged)
                         {
                             properties.Add(i);
                             properties.Add(currentlyPerceived);
@@ -204,11 +201,13 @@ namespace UnicornHack.Hubs
                         if (currentlyPerceived)
                         {
                             var beingEntry = context.DbContext.Entry(being);
-                            if (beingEntry.State != EntityState.Unchanged)
+                            if (beingEntry.State != EntityState.Unchanged
+                                || currentPerceptionChanged)
                             {
                                 i++;
                                 var hitPoints = beingEntry.Property(nameof(BeingComponent.HitPoints));
-                                if (hitPoints.IsModified)
+                                if (hitPoints.IsModified
+                                    || currentPerceptionChanged)
                                 {
                                     properties.Add(i);
                                     properties.Add(being.HitPoints);
@@ -216,7 +215,8 @@ namespace UnicornHack.Hubs
 
                                 i++;
                                 var hitPointMaximum = beingEntry.Property(nameof(BeingComponent.HitPointMaximum));
-                                if (hitPointMaximum.IsModified)
+                                if (hitPointMaximum.IsModified
+                                    || currentPerceptionChanged)
                                 {
                                     properties.Add(i);
                                     properties.Add(being.HitPointMaximum);
@@ -224,7 +224,8 @@ namespace UnicornHack.Hubs
 
                                 i++;
                                 var energyPoints = beingEntry.Property(nameof(BeingComponent.EnergyPoints));
-                                if (energyPoints.IsModified)
+                                if (energyPoints.IsModified
+                                    || currentPerceptionChanged)
                                 {
                                     properties.Add(i);
                                     properties.Add(being.EnergyPoints);
@@ -232,7 +233,8 @@ namespace UnicornHack.Hubs
 
                                 i++;
                                 var energyPointMaximum = beingEntry.Property(nameof(BeingComponent.EnergyPointMaximum));
-                                if (energyPointMaximum.IsModified)
+                                if (energyPointMaximum.IsModified
+                                    || currentPerceptionChanged)
                                 {
                                     properties.Add(i);
                                     properties.Add(being.EnergyPointMaximum);
@@ -244,17 +246,28 @@ namespace UnicornHack.Hubs
                                 i += 4;
                             }
 
-                            i++;
                             var aiEntry = context.DbContext.Entry(ai);
-                            if (aiEntry.State != EntityState.Unchanged)
+                            if (currentPerceptionChanged
+                                || (aiEntry.State != EntityState.Unchanged
+                                    && aiEntry.Property(nameof(AIComponent.NextActionTick)).IsModified))
                             {
-                                var nextActionTick = aiEntry.Property(nameof(AIComponent.NextActionTick));
-                                if (nextActionTick.IsModified)
-                                {
-                                    properties.Add(i);
-                                    properties.Add(ai.NextActionTick);
-                                }
+                                i++;
+                                properties.Add(i);
+                                properties.Add(ai.NextActionTick);
+
+                                i++;
+                                properties.Add(i);
+                                properties.Add(SerializeNextAction(ai, context));
                             }
+                            else
+                            {
+                                i += 2;
+                            }
+
+                        }
+                        else
+                        {
+                            i += 6;
                         }
 
                         if (sensedType.IsModified)
@@ -262,47 +275,49 @@ namespace UnicornHack.Hubs
                             var canIdentify = actorKnowledge.SensedType.CanIdentify();
 
                             // TODO: Snapshot the attacks and update them while the actor is perceived
+                            i++;
+                            properties.Add(i);
                             var meleeAttack = canIdentify
                                 ? manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: true, manager)
                                 : null;
-                            SerializeAttackSummary(
+                            properties.Add(SerializeAttackSummary(
                                 meleeAttack,
                                 knownEntity,
                                 context.Observer,
-                                properties,
-                                index: ref i, manager: manager);
+                                manager));
 
+                            i++;
+                            properties.Add(i);
                             var rangedAttack = canIdentify
                                 ? manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: false, manager)
                                 : null;
-                            SerializeAttackSummary(
+                            properties.Add(SerializeAttackSummary(
                                 rangedAttack,
                                 knownEntity,
                                 context.Observer,
-                                properties,
-                                index: ref i,
-                                manager: manager);
+                                manager));
 
+                            i++;
+                            properties.Add(i);
                             meleeAttack = canIdentify
                                 ? manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: true, manager)
                                 : null;
-                            SerializeAttackSummary(
+                            properties.Add(SerializeAttackSummary(
                                 meleeAttack,
                                 context.Observer,
-                                knownEntity, properties,
-                                index: ref i,
-                                manager: manager);
+                                knownEntity,
+                                manager));
 
+                            i++;
+                            properties.Add(i);
                             rangedAttack = canIdentify
                                 ? manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: false, manager)
                                 : null;
-                            SerializeAttackSummary(
+                            properties.Add(SerializeAttackSummary(
                                 rangedAttack,
                                 context.Observer,
                                 knownEntity,
-                                properties,
-                                index: ref i,
-                                manager: manager);
+                                manager));
                         }
                     }
 
@@ -310,14 +325,64 @@ namespace UnicornHack.Hubs
             }
         }
 
-        private static void SerializeAttackSummary(
+        private static List<object> SerializeNextAction(AIComponent ai, SerializationContext context)
+        {
+            var result = new List<object>(2);
+            if (result == null)
+            {
+                return result;
+            }
+
+            var manager = context.Manager;
+            result.Add(ai.NextAction);
+            switch (ai.NextAction)
+            {
+                case ActorAction.UseAbilitySlot:
+                    var slot = ai.NextActionTarget;
+                    if (!slot.HasValue)
+                    {
+                        // TODO: Log
+                        result.Add(null);
+                        result.Add(null);
+                        return result;
+                    }
+
+                    var abilityEntity = manager.AbilitySlottingSystem.GetAbility(ai.EntityId, slot.Value, manager);
+                    if (abilityEntity == null)
+                    {
+                        // TODO: Log
+                        result.Add(null);
+                        result.Add(null);
+                        return result;
+                    }
+
+                    result.Add(context.Services.Language.GetString(abilityEntity.Ability));
+                    result.Add(ai.NextActionTarget2);
+
+                    return result;
+                case ActorAction.MoveOneCell:
+                case ActorAction.ChangeHeading:
+                    var direction = (Direction)ai.NextActionTarget;                    
+                    var action = ai.NextAction == ActorAction.MoveOneCell ? "Move " : "Turn ";
+                    result.Add(action + context.Services.Language.GetString(direction, abbreviate: true));
+                    result.Add(ai.Entity.Position.LevelCell.Translate(direction.AsVector()).ToInt32());
+
+                    return result;
+                default:
+                    result.Add(ai.NextAction.ToString());
+                    result.Add(ai.NextActionTarget);
+
+                    return result;
+            }
+        }
+
+        private static List<object> SerializeAttackSummary(
             GameEntity attackEntity,
             GameEntity attackerEntity,
             GameEntity victimEntity,
-            List<object> result,
-            ref int? index,
             GameManager manager)
         {
+            var result = new List<object>(4);
             AttackStats stats = null;
             if (attackEntity != null)
             {
@@ -332,55 +397,16 @@ namespace UnicornHack.Hubs
 
             if (stats == null)
             {
-                if (!index.HasValue)
-                {
-                    result.Add(null);
-                    result.Add(null);
-                    result.Add(null);
-                    result.Add(null);
-                }
-                else
-                {
-                    index = index.Value + 1;
-                    result.Add(index.Value);
-                    result.Add(null);
-                    index = index.Value + 3;
-                }
-
-                return;
-            }
-
-            if (index.HasValue)
-            {
-                index = index.Value + 1;
-                result.Add(index.Value);
+                return null;
             }
 
             result.Add(stats.Delay);
 
-            if (index.HasValue)
-            {
-                index = index.Value + 1;
-                result.Add(index.Value);
-            }
-
             result.Add(string.Join(", ", stats.SubAttacks.Select(s => s.HitProbability).Select(p => p + "%")));
-
-            if (index.HasValue)
-            {
-                index = index.Value + 1;
-                result.Add(index.Value);
-            }
 
             var damages = stats.SubAttacks.Select(s
                 => manager.EffectApplicationSystem.GetExpectedDamage(s.Effects, attackerEntity, victimEntity)).ToList();
             result.Add(string.Join(", ", damages));
-
-            if (index.HasValue)
-            {
-                index = index.Value + 1;
-                result.Add(index.Value);
-            }
 
             var expectedDamage = 0;
             // ReSharper disable once LoopCanBeConvertedToQuery
@@ -393,6 +419,8 @@ namespace UnicornHack.Hubs
                 ? 0
                 : Math.Ceiling(victimEntity.Being.HitPoints * 100f / expectedDamage) * stats.Delay;
             result.Add(ticksToKill);
+
+            return result;
         }
 
         public static List<object> SerializeAttributes(

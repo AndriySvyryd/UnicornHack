@@ -34,7 +34,7 @@
 
         string IMessage.MessageName { get; set; }
 
-        public void Dispose()
+        public void Clean()
         {
             ChangedPropertyName = default;
             OldValue = default;

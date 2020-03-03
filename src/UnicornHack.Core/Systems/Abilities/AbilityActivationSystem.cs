@@ -32,15 +32,16 @@ namespace UnicornHack.Systems.Abilities
 
         public bool CanActivateAbility(ActivateAbilityMessage activateAbilityMessage, bool shouldThrow)
         {
-            using (var message = Activate(activateAbilityMessage, pretend: true, stats: null))
-            {
-                if (!string.IsNullOrEmpty(message.ActivationError) && shouldThrow)
-                {
-                    throw new InvalidOperationException(message.ActivationError);
-                }
+            var message = Activate(activateAbilityMessage, pretend: true, stats: null);
 
-                return string.IsNullOrEmpty(message.ActivationError);
+            var hasError = !string.IsNullOrEmpty(message.ActivationError);
+            if (hasError && shouldThrow)
+            {
+                throw new InvalidOperationException(message.ActivationError);
             }
+
+            activateAbilityMessage.AbilityEntity.Manager.ReturnMessage(message);
+            return !hasError;
         }
 
         public AttackStats GetAttackStats(ActivateAbilityMessage activateAbilityMessage)
@@ -177,7 +178,7 @@ namespace UnicornHack.Systems.Abilities
                     if (requiredHeading != activatorPosition.Heading)
                     {
                         var travelMessage = TravelMessage.Create(manager);
-                        travelMessage.Entity = activateMessage.ActivatorEntity;
+                        travelMessage.ActorEntity = activateMessage.ActivatorEntity;
                         travelMessage.TargetHeading = requiredHeading;
                         travelMessage.TargetCell = activatorPosition.LevelCell;
 
@@ -191,6 +192,10 @@ namespace UnicornHack.Systems.Abilities
                         if (!pretend)
                         {
                             manager.Process(travelMessage);
+                        }
+                        else
+                        {
+                            manager.ReturnMessage(travelMessage);
                         }
                     }
                 }

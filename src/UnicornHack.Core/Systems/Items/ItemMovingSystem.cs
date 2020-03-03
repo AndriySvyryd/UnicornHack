@@ -16,10 +16,10 @@ namespace UnicornHack.Systems.Items
 
         public bool CanMoveItem(MoveItemMessage message, GameManager manager)
         {
-            using (var moved = TryMove(message, manager, pretend: true))
-            {
-                return moved.Successful;
-            }
+            var moved = TryMove(message, manager, pretend: true);
+            var successful = moved.Successful;
+            message.ItemEntity.Manager.ReturnMessage(moved);
+            return successful;
         }
 
         public MessageProcessingResult Process(MoveItemMessage message, GameManager manager)

@@ -3,7 +3,7 @@ import { action } from 'mobx';
 import { observer } from 'mobx-react';
 import { GameQueryType } from '../transport/GameQueryType';
 import { Item, EquipableSlot, PlayerInventory } from '../transport/DialogData';
-import { PlayerAction } from "../transport/PlayerAction";
+import { ActorAction } from "../transport/ActorAction";
 import { IGameContext } from './Game';
 import { TooltipTrigger } from './TooltipTrigger';
 
@@ -23,14 +23,14 @@ class InventoryLine extends React.PureComponent<IItemProps, {}> {
     @action.bound
     unequip(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
-            this.props.context.performAction(PlayerAction.UnequipItem, this.props.item.id, null);
+            this.props.context.performAction(ActorAction.UnequipItem, this.props.item.id, null);
         }
     }
 
     @action.bound
     drop(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
-            this.props.context.performAction(PlayerAction.DropItem, this.props.item.id, null);
+            this.props.context.performAction(ActorAction.DropItem, this.props.item.id, null);
         }
     }
 
@@ -87,7 +87,7 @@ class Equip extends React.PureComponent<IEquipProps, {}> {
     @action.bound
     equip(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
-            this.props.context.performAction(PlayerAction.EquipItem, this.props.item.id, this.props.slot.id);
+            this.props.context.performAction(ActorAction.EquipItem, this.props.item.id, this.props.slot.id);
         }
     }
 

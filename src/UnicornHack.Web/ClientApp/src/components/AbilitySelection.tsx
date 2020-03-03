@@ -3,7 +3,7 @@ import { action, computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { Ability } from '../transport/Model';
 import { GameQueryType } from '../transport/GameQueryType';
-import { PlayerAction } from "../transport/PlayerAction";
+import { ActorAction } from "../transport/ActorAction";
 import { DialogData } from '../transport/DialogData';
 import { Dialog } from './Dialog';
 import { IGameContext } from './Game';
@@ -43,7 +43,7 @@ class AbilitySelectionLine extends React.PureComponent<IAbilityLineProps, {}> {
         if (event.type == 'click' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
             this.props.context.showDialog(GameQueryType.Clear);
             this.props.context.performAction(
-                PlayerAction.SetAbilitySlot, this.props.ability?.id ?? 0, this.props.slot);
+                ActorAction.SetAbilitySlot, this.props.ability?.id ?? 0, this.props.slot);
         }
     }
 

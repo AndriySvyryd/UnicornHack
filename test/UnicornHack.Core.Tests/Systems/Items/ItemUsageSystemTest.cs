@@ -18,7 +18,7 @@ namespace UnicornHack.Systems.Items
             var level = TestHelper.BuildLevel(".");
             var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
             var player = playerEntity.Player;
-            player.NextAction = PlayerAction.Wait;
+            player.NextAction = ActorAction.Wait;
             var manager = playerEntity.Manager;
             ItemData.FieryAegis.Instantiate(playerEntity);
 
@@ -96,7 +96,7 @@ namespace UnicornHack.Systems.Items
             AdvanceTurnMessage.Enqueue(manager);
             manager.Queue.ProcessQueue(manager);
 
-            player.NextAction = PlayerAction.Wait;
+            player.NextAction = ActorAction.Wait;
             AdvanceTurnMessage.Enqueue(manager);
             manager.Queue.ProcessQueue(manager);
             AdvanceTurnMessage.Enqueue(manager);
@@ -124,7 +124,7 @@ namespace UnicornHack.Systems.Items
             var level = TestHelper.BuildLevel(".");
             var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
             var player = playerEntity.Player;
-            player.NextAction = PlayerAction.Wait;
+            player.NextAction = ActorAction.Wait;
             var manager = playerEntity.Manager;
             ItemData.FieryAegis.Instantiate(playerEntity);
 
@@ -212,7 +212,7 @@ namespace UnicornHack.Systems.Items
             var level = TestHelper.BuildLevel(".");
             var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
             var player = playerEntity.Player;
-            player.NextAction = PlayerAction.Wait;
+            player.NextAction = ActorAction.Wait;
             var manager = playerEntity.Manager;
             ItemData.CloakOfInvisibility.Instantiate(playerEntity);
 
@@ -268,7 +268,7 @@ namespace UnicornHack.Systems.Items
             var level = TestHelper.BuildLevel(".");
             var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
             var player = playerEntity.Player;
-            player.NextAction = PlayerAction.Wait;
+            player.NextAction = ActorAction.Wait;
             var manager = playerEntity.Manager;
             ItemData.LongSword.Instantiate(playerEntity);
 

@@ -8,7 +8,7 @@ namespace UnicornHack.Systems.Actors
         private int _id;
         private int _playerId;
         private int _tick;
-        private PlayerAction _action;
+        private ActorAction _action;
         private int? _target;
         private int? _target2;
 
@@ -36,7 +36,7 @@ namespace UnicornHack.Systems.Actors
             set => SetWithNotify(value, ref _tick);
         }
 
-        public PlayerAction Action
+        public ActorAction Action
         {
             get => _action;
             set => SetWithNotify(value, ref _action);

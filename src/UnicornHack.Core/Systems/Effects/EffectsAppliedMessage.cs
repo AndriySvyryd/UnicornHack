@@ -64,7 +64,7 @@ namespace UnicornHack.Systems.Effects
 
         string IMessage.MessageName { get; set; }
 
-        public void Dispose()
+        public void Clean()
         {
             ActivatorEntity = default;
             AbilityEntity = default;

@@ -12,6 +12,7 @@ using UnicornHack.Utils.MessagingECS;
 namespace UnicornHack.Systems.Actors
 {
     public class PlayerSystem :
+        ActorSystemBase,
         IGameSystem<PerformActionMessage>,
         IGameSystem<DiedMessage>,
         IGameSystem<DelayMessage>,
@@ -58,16 +59,16 @@ namespace UnicornHack.Systems.Actors
                 });
             }
 
-            ResetAction(player);
+            ResetNextAction(player);
 
             var position = playerEntity.Position;
             switch (action)
             {
-                case PlayerAction.Wait:
+                case ActorAction.Wait:
                     player.NextActionTick += TimeSystem.DefaultActionDelay;
                     break;
-                case PlayerAction.ChangeHeading:
-                case PlayerAction.MoveOneCell:
+                case ActorAction.ChangeHeading:
+                case ActorAction.MoveOneCell:
                     var moveDirection = (Direction)target.Value;
                     switch (moveDirection)
                     {
@@ -78,18 +79,17 @@ namespace UnicornHack.Systems.Actors
                             break;
                         default:
                             Move(moveDirection, playerEntity, manager,
-                                onlyChangeHeading: action == PlayerAction.ChangeHeading);
+                                onlyChangeHeading: action == ActorAction.ChangeHeading);
                             break;
                     }
 
                     break;
-                case PlayerAction.MoveToCell:
+                case ActorAction.MoveToCell:
                     var targetCell = Point.Unpack(target).Value;
 
                     if (position.LevelCell.DistanceTo(targetCell) == 1)
                     {
-                        return Move(position.LevelCell.DifferenceTo(targetCell).AsDirection(),
-                            playerEntity, manager);
+                        return Move(position.LevelCell.DifferenceTo(targetCell).AsDirection(), playerEntity, manager);
                     }
                     else
                     {
@@ -100,14 +100,14 @@ namespace UnicornHack.Systems.Actors
 
                         if (position.LevelCell != targetCell)
                         {
-                            player.NextAction = PlayerAction.MoveToCell;
+                            player.NextAction = ActorAction.MoveToCell;
                             player.NextActionTarget = target;
                             player.QueuedAction = true;
                         }
                     }
 
                     break;
-                case PlayerAction.DropItem:
+                case ActorAction.DropItem:
                     var itemToDrop = GetItem(target.Value, playerEntity, manager);
                     if (itemToDrop == null)
                     {
@@ -121,7 +121,7 @@ namespace UnicornHack.Systems.Actors
 
                     manager.Enqueue(dropMessage);
                     break;
-                case PlayerAction.EquipItem:
+                case ActorAction.EquipItem:
                     var itemToEquip = GetItem(target.Value, playerEntity, manager);
                     var slot = (EquipmentSlot)target2.Value;
                     if (itemToEquip == null)
@@ -136,7 +136,7 @@ namespace UnicornHack.Systems.Actors
 
                     manager.Enqueue(equipMessage);
                     break;
-                case PlayerAction.UnequipItem:
+                case ActorAction.UnequipItem:
                     var itemToUnequip = GetItem(target.Value, playerEntity, manager);
                     if (itemToUnequip == null)
                     {
@@ -150,7 +150,7 @@ namespace UnicornHack.Systems.Actors
 
                     manager.Enqueue(unequipMessage);
                     break;
-                case PlayerAction.SetAbilitySlot:
+                case ActorAction.SetAbilitySlot:
                     var setSlotMessage = SetAbilitySlotMessage.Create(manager);
                     setSlotMessage.AbilityEntity = manager.FindEntity(target);
                     setSlotMessage.OwnerEntity = playerEntity;
@@ -158,7 +158,7 @@ namespace UnicornHack.Systems.Actors
 
                     manager.Enqueue(setSlotMessage);
                     break;
-                case PlayerAction.UseAbilitySlot:
+                case ActorAction.UseAbilitySlot:
                     ActivateAbility(playerEntity, target, target2, manager);
                     break;
                 default:
@@ -169,12 +169,40 @@ namespace UnicornHack.Systems.Actors
             return true;
         }
 
-        private static void ResetAction(PlayerComponent player)
+        private static void ResetNextAction(PlayerComponent player)
         {
             player.NextAction = null;
             player.NextActionTarget = null;
             player.NextActionTarget2 = null;
             player.QueuedAction = false;
+        }
+
+        protected override bool ActivateAbility(
+            GameEntity abilityEntity, GameEntity actorEntity, Point targetCell, GameEntity targetEntity, GameManager manager)
+        {
+            var ability = abilityEntity.Ability;
+            var position = actorEntity.Position;
+            if ((ability.Activation & ActivationType.Manual) == 0)
+            {
+                // TODO: Also check LOS and move closer if none
+                if (position.LevelCell.DistanceTo(targetCell) > ability.Range)
+                {
+                    if (!Move(targetCell, actorEntity, manager))
+                    {
+                        return false;
+                    }
+
+                    var player = actorEntity.Player;
+                    player.NextAction = ActorAction.UseAbilitySlot;
+                    player.NextActionTarget = ability.Slot;
+                    player.NextActionTarget2 = (-targetEntity?.Id) ?? targetCell.ToInt32();
+                    player.QueuedAction = true;
+
+                    return true;
+                }
+            }
+
+            return base.ActivateAbility(abilityEntity, actorEntity, targetCell, targetEntity, manager);
         }
 
         private bool Move(Point targetCell, GameEntity playerEntity, GameManager manager)
@@ -192,33 +220,6 @@ namespace UnicornHack.Systems.Actors
             return Move(direction.Value, playerEntity, manager);
         }
 
-        private bool Move(Direction direction, GameEntity playerEntity, GameManager manager,
-            bool onlyChangeHeading = false)
-        {
-            // TODO: only attack on move if hostile
-            var position = playerEntity.Position;
-            var targetCell = position.LevelCell.Translate(direction.AsVector());
-            var conflictingActor = manager.LevelActorToLevelCellIndex[(position.LevelId, targetCell.X, targetCell.Y)];
-            if (conflictingActor != null)
-            {
-                var abilityEntity = manager.AbilitySlottingSystem.GetAbility(
-                    playerEntity.Id, AbilitySlottingSystem.DefaultMeleeAttackSlot, manager);
-                return abilityEntity != null
-                       && ActivateAbility(abilityEntity, playerEntity, targetCell, conflictingActor, manager);
-            }
-
-            var travelMessage = TravelMessage.Create(manager);
-            travelMessage.Entity = playerEntity;
-            travelMessage.TargetHeading = direction;
-            travelMessage.TargetCell = onlyChangeHeading
-                ? position.LevelCell
-                : position.LevelCell.Translate(travelMessage.TargetHeading.AsVector());
-            travelMessage.MoveOffConflicting = true;
-
-            manager.Enqueue(travelMessage);
-            return true;
-        }
-
         public MessageProcessingResult Process(TraveledMessage message, GameManager state)
         {
             var player = message.Entity.Player;
@@ -228,7 +229,7 @@ namespace UnicornHack.Systems.Actors
                 var manager = message.Entity.Manager;
                 manager.LoggingSystem.WriteLog(
                     manager.Game.Services.Language.UnableToMove(message.TargetHeading), message.Entity, manager);
-                ResetAction(player);
+                ResetNextAction(player);
 
                 if (manager.Game.ActingPlayer == null)
                 {
@@ -237,127 +238,6 @@ namespace UnicornHack.Systems.Actors
             }
 
             return MessageProcessingResult.ContinueProcessing;
-        }
-
-        private GameEntity GetItem(int itemId, GameEntity playerEntity, GameManager manager)
-        {
-            var itemEntity = manager.FindEntity(itemId);
-            if (itemEntity == null
-                || itemEntity.Item.ContainerId != playerEntity.Id)
-            {
-                throw new InvalidOperationException("Invalid item " + itemId);
-            }
-
-            return itemEntity;
-        }
-
-        private bool ActivateAbility(GameEntity playerEntity, int? slot, int? target, GameManager manager)
-        {
-            Point targetCell;
-            GameEntity targetActor;
-            if (target == null)
-            {
-                targetCell = playerEntity.Position.LevelCell;
-                targetActor = playerEntity;
-            }
-            else if (target.Value < 0)
-            {
-                targetActor = manager.FindEntity(-target.Value);
-                if (targetActor == null
-                    || !targetActor.Being.IsAlive)
-                {
-                    return false;
-                }
-
-                targetCell = targetActor.Position.LevelCell;
-            }
-            else
-            {
-                targetCell = Point.Unpack(target).Value;
-                targetActor =
-                    manager.LevelActorToLevelCellIndex[(playerEntity.Position.LevelId, targetCell.X, targetCell.Y)];
-            }
-
-            GameEntity abilityEntity;
-            if (slot.HasValue)
-            {
-                abilityEntity = manager.AbilitySlottingSystem.GetAbility(playerEntity.Id, slot.Value, manager);
-                if (abilityEntity == null)
-                {
-                    throw new InvalidOperationException("No ability in slot " + target);
-                }
-            }
-            else
-            {
-                var vectorToTarget = playerEntity.Position.LevelCell.DifferenceTo(targetCell);
-                var isMelee = vectorToTarget.Length() <= 1;
-                abilityEntity = GetDefaultAttack(playerEntity, isMelee, manager);
-                if (abilityEntity == null)
-                {
-                    manager.LoggingSystem.WriteLog(
-                        manager.Game.Services.Language.NoDefaultAttack(isMelee), playerEntity, manager);
-                    return false;
-                }
-            }
-
-            return ActivateAbility(abilityEntity, playerEntity, targetCell, targetActor, manager);
-        }
-
-        public GameEntity GetDefaultAttack(GameEntity playerEntity, bool melee, GameManager manager)
-            => manager.AbilitySlottingSystem.GetAbility(
-                playerEntity.Id,
-                melee
-                    ? AbilitySlottingSystem.DefaultMeleeAttackSlot
-                    : AbilitySlottingSystem.DefaultRangedAttackSlot,
-                manager);
-
-        private bool ActivateAbility(GameEntity abilityEntity, GameEntity playerEntity,
-            Point targetCell, GameEntity targetEntity, GameManager manager)
-        {
-            var ability = abilityEntity.Ability;
-            if ((ability.Activation & ActivationType.Slottable) == 0)
-            {
-                throw new InvalidOperationException("Ability " + abilityEntity.Id + " cannot be activated directly.");
-            }
-
-            var position = playerEntity.Position;
-            var shouldMoveCloser = false;
-            if ((ability.Activation & ActivationType.Manual) == 0)
-            {
-                shouldMoveCloser = position.LevelCell.DistanceTo(targetCell) > ability.Range;
-                // TODO: Check LOS and move closer if none
-            }
-
-            if (shouldMoveCloser)
-            {
-                if (!Move(targetCell, playerEntity, manager))
-                {
-                    return false;
-                }
-
-                var player = playerEntity.Player;
-                player.NextAction = PlayerAction.UseAbilitySlot;
-                player.NextActionTarget = ability.Slot;
-                player.NextActionTarget2 = (-targetEntity?.Id) ?? targetCell.ToInt32();
-                player.QueuedAction = true;
-
-                return true;
-            }
-
-            var activationMessage = ActivateAbilityMessage.Create(manager);
-            activationMessage.AbilityEntity = abilityEntity;
-            activationMessage.ActivatorEntity = playerEntity;
-            activationMessage.TargetEntity = targetEntity;
-            activationMessage.TargetCell = targetCell;
-
-            if (!manager.AbilityActivationSystem.CanActivateAbility(activationMessage, shouldThrow: true))
-            {
-                manager.Queue.ReturnMessage(activationMessage);
-                return false;
-            }
-
-            manager.Enqueue(activationMessage);
-            return true;
         }
 
         public MessageProcessingResult Process(DelayMessage message, GameManager state)

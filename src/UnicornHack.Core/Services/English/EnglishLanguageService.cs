@@ -133,7 +133,22 @@ namespace UnicornHack.Services.English
         }
 
         public virtual string GetString(AbilityComponent ability)
-            => Capitalize(new StringBuilder(ability.Name)).ToString();
+        {
+            var name = ability.Name;
+            if (name == null
+                && ability.Action != AbilityAction.Default
+                && ability.Action != AbilityAction.Modifier)
+            {
+                name = GetString(ability.Action);
+            }
+
+            if (name == null)
+            {
+                name = "attack";
+            }
+
+            return Capitalize(new StringBuilder(name)).ToString();
+        }
 
         public virtual string GetString(EquipmentSlot slot, GameEntity actorEntity, bool abbreviate)
         {
@@ -204,7 +219,7 @@ namespace UnicornHack.Services.English
             }
         }
 
-        protected virtual string ToVerb(AbilityAction abilityAction)
+        protected virtual string GetString(AbilityAction abilityAction)
         {
             string verb;
             switch (abilityAction)
@@ -294,8 +309,35 @@ namespace UnicornHack.Services.English
             return verb;
         }
 
-        protected virtual string GetString(Direction direction)
+        public virtual string GetString(Direction direction, bool abbreviate)
         {
+            if (abbreviate)
+            {
+                switch (direction)
+                {
+                    case Direction.North:
+                        return "N";
+                    case Direction.South:
+                        return "S";
+                    case Direction.West:
+                        return "W";
+                    case Direction.East:
+                        return "E";
+                    case Direction.Northwest:
+                        return "NW";
+                    case Direction.Northeast:
+                        return "NE";
+                    case Direction.Southwest:
+                        return "SW";
+                    case Direction.Southeast:
+                        return "SE";
+                    case Direction.Up:
+                        return "U";
+                    case Direction.Down:
+                        return "D";
+                }
+            }
+
             switch (direction)
             {
                 case Direction.North:
@@ -367,7 +409,7 @@ namespace UnicornHack.Services.English
             var victimPerson = @event.SensorEntity == @event.VictimEntity ? EnglishPerson.Second : EnglishPerson.Third;
             var victim = GetString(@event.VictimEntity, victimPerson, @event.VictimSensed);
 
-            var attackVerb = ToVerb(@event.AbilityAction);
+            var attackVerb = GetString(@event.AbilityAction);
             var mainVerbForm = attackerPerson == EnglishPerson.Third
                 ? EnglishVerbForm.ThirdPersonSingularPresent
                 : EnglishVerbForm.BareInfinitive;
@@ -579,7 +621,7 @@ namespace UnicornHack.Services.English
                 GetString(playerEntity, EnglishPerson.Third, SenseType.Sight));
         }
 
-        public virtual string UnableToMove(Direction direction) => Format("Can't move {0}.", GetString(direction));
+        public virtual string UnableToMove(Direction direction) => Format("Can't move {0}.", GetString(direction, abbreviate: false));
 
         #endregion
 

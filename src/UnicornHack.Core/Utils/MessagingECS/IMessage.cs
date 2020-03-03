@@ -1,9 +1,9 @@
-﻿using System;
-
+﻿
 namespace UnicornHack.Utils.MessagingECS
 {
-    public interface IMessage : IDisposable
+    public interface IMessage
     {
         string MessageName { get; set; }
+        void Clean();
     }
 }

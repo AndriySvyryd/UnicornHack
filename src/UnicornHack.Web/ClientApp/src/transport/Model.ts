@@ -7,6 +7,7 @@ import { MapFeature } from "./MapFeature";
 import { DirectionFlags } from "./DirectionFlags";
 import { TargetingShape } from "./TargetingShape";
 import { TargetingType } from "./TargetingType";
+import { ActorAction } from "./ActorAction";
 
 export class Player {
     readonly name: string = '';
@@ -355,6 +356,9 @@ export class MapActor {
     @observable ep: number = 0;
     @observable maxEp: number = 0;
     @observable nextActionTick: number = 0;
+    @observable nextAction: ActorAction | null = null;
+    @observable nextActionName: string | null = null;
+    @observable nextActionTarget: number = 0;
     @observable meleeAttack: AttackSummary | null = null;
     @observable rangeAttack: AttackSummary | null = null;
     @observable meleeDefense: AttackSummary | null = null;
@@ -365,7 +369,7 @@ export class MapActor {
     }
 
     @action
-    static expandToCollection(compactActor: any[], collection: Map<number, MapActor>, tiles: Tile[][], parentState: EntityState) {
+    static expandToCollection(compactActor: readonly any[], collection: Map<number, MapActor>, tiles: Tile[][], parentState: EntityState) {
         let i = 0;
         if (parentState === EntityState.Added) {
             this.expand(compactActor, i, tiles).addTo(collection).set(tiles);
@@ -401,7 +405,7 @@ export class MapActor {
     }
 
     @action
-    static expand(compactActor: any[], i: number, tiles: Tile[][]): MapActor {
+    static expand(compactActor: readonly any[], i: number, tiles: Tile[][]): MapActor {
         const actor = new MapActor(compactActor[i++]);
         let baseName = compactActor[i++];
         actor.baseName = baseName ?? '';
@@ -418,20 +422,18 @@ export class MapActor {
             actor.ep = compactActor[i++];
             actor.maxEp = compactActor[i++];
             actor.nextActionTick = compactActor[i++];
-            actor.meleeAttack = AttackSummary.expand(compactActor, i);
-            i += 4;
-            actor.rangeAttack = AttackSummary.expand(compactActor, i);
-            i += 4;
-            actor.meleeDefense = AttackSummary.expand(compactActor, i);
-            i += 4;
-            actor.rangeDefense = AttackSummary.expand(compactActor, i);
+            MapActor.expandAction(compactActor[i++], actor);
+            actor.meleeAttack = new AttackSummary().update(compactActor[i++]);
+            actor.rangeAttack = new AttackSummary().update(compactActor[i++]);
+            actor.meleeDefense = new AttackSummary().update(compactActor[i++]);
+            actor.rangeDefense = new AttackSummary().update(compactActor[i++]);
         }
 
         return actor;
     }
 
     @action.bound
-    update(compactActor: any[], tiles: Tile[][]): number {
+    update(compactActor: readonly any[], tiles: Tile[][]): number {
         let i = 2;
 
         let unset = false;
@@ -479,56 +481,43 @@ export class MapActor {
                 case 11:
                     this.nextActionTick = compactActor[i++];
                     break;
+                case 12:
+                    MapActor.expandAction(compactActor[i++], this);
+                    break;
+                case 13:
+                    if (this.meleeAttack == null) {
+                        this.meleeAttack = new AttackSummary();
+                    }
+
+                    this.meleeAttack = this.meleeAttack.update(compactActor[i++]);
+                    break;
+                case 14:
+                    if (this.rangeAttack == null) {
+                        this.rangeAttack = new AttackSummary();
+                    }
+
+                    this.rangeAttack = this.rangeAttack.update(compactActor[i++]);
+                    break;
+                case 15:
+                    if (this.meleeDefense == null) {
+                        this.meleeDefense = new AttackSummary();
+                    }
+
+                    this.meleeDefense = this.meleeDefense.update(compactActor[i++]);
+                    break;
+                case 16:
+                    if (this.rangeDefense == null) {
+                        this.rangeDefense = new AttackSummary();
+                    }
+
+                    this.rangeDefense = this.rangeDefense.update(compactActor[i++]);
+                    break;
                 default:
-                    if (index > 27) {
-                        if (unset) {
-                            this.set(tiles);
-                        }
-
-                        return i - 1;
+                    if (unset) {
+                        this.set(tiles);
                     }
 
-                    let offset = index - 12;
-                    switch (Math.floor(offset / 4)) {
-                        case 0:
-                            if (this.meleeAttack == null) {
-                                this.meleeAttack = new AttackSummary();
-                            }
-
-                            if (!this.meleeAttack.update(compactActor, i++, offset % 4)) {
-                                this.meleeAttack = null;
-                            }
-                            break;
-                        case 1:
-                            if (this.rangeAttack == null) {
-                                this.rangeAttack = new AttackSummary();
-                            }
-
-                            if (!this.rangeAttack.update(compactActor, i++, offset % 4)) {
-                                this.rangeAttack = null;
-                            }
-                            break;
-                        case 2:
-                            if (this.meleeDefense == null) {
-                                this.meleeDefense = new AttackSummary();
-                            }
-
-                            if (!this.meleeDefense.update(compactActor, i++, offset % 4)) {
-                                this.meleeDefense = null;
-                            }
-                            break;
-                        case 3:
-                            if (this.rangeDefense == null) {
-                                this.rangeDefense = new AttackSummary();
-                            }
-
-                            if (!this.rangeDefense.update(compactActor, i++, offset % 4)) {
-                                this.rangeDefense = null;
-                            }
-                            break;
-                        default:
-                            throw "Unexpected index " + Math.floor(offset / 4);
-                    }
+                    return i - 1;
             }
         }
 
@@ -537,6 +526,29 @@ export class MapActor {
         }
 
         return i;
+    }
+
+    @action
+    static expandAction(compactAction: any[] | null, actor: MapActor) {
+        var i = 0;
+        const nextAction = compactAction == null
+            ? null
+            : compactAction[i++];
+        if (nextAction == null
+            || compactAction == null) {
+            actor.nextAction = null;
+            actor.nextActionName = null;
+            actor.nextActionTarget = 0;
+            return;
+        }
+
+        actor.nextAction = nextAction;
+        switch (nextAction) {
+            default:
+                actor.nextActionName = compactAction[i++];
+                actor.nextActionTarget = compactAction[i++];
+                break;
+        }
     }
 
     addTo(map: Map<number, MapActor>): MapActor {
@@ -565,42 +577,21 @@ export class AttackSummary {
     @observable damage: string = '';
     @observable ticksToKill: number = 0;
 
-    @action
-    static expand(compactAttack: readonly any[], i: number): AttackSummary | null {
-        const attack = new AttackSummary();
-        var delay = compactAttack[i++];
+    @action.bound
+    update(compactAttack: readonly any[]): AttackSummary | null {
+        var i = 0;
+        const delay = compactAttack == null
+            ? null
+            : compactAttack[i++];
         if (delay == null) {
             return null;
         }
-        attack.delay = delay;
-        attack.hitProbability = compactAttack[i++];
-        attack.damage = compactAttack[i++];
-        attack.ticksToKill = compactAttack[i++];
-        return attack;
-    }
 
-    @action.bound
-    update(compactAttack: readonly any[], i: number, offset: number) : boolean {
-        switch (offset) {
-            case 0:
-                var delay = compactAttack[i++];
-                if (delay == null) {
-                    return false;
-                }
-                this.delay = delay;
-                break;
-            case 1:
-                this.hitProbability = compactAttack[i++];
-                break;
-            case 2:
-                this.damage = compactAttack[i++];
-                break;
-            case 3:
-                this.ticksToKill = compactAttack[i++];
-                break;
-        }
-
-        return true;
+        this.delay = delay;
+        this.hitProbability = compactAttack[i++];
+        this.damage = compactAttack[i++];
+        this.ticksToKill = compactAttack[i++];
+        return this;
     }
 }
 
@@ -613,7 +604,7 @@ export class MapItem {
     @observable levelY: number = -1;
 
     @action
-    static expandToCollection(compactItem: any[], collection: Map<number, MapItem>, tiles: Tile[][] | null, parentState: EntityState) {
+    static expandToCollection(compactItem: readonly any[], collection: Map<number, MapItem>, tiles: Tile[][] | null, parentState: EntityState) {
         let i = 0;
         if (parentState === EntityState.Added) {
             this.expand(compactItem, i).addTo(collection).set(tiles);
@@ -901,7 +892,7 @@ export class PlayerRace {
     @observable xpLevel: number = 0;
 
     @action
-    static expandToCollection(compactPlayerRace: any[], collection: Map<number, PlayerRace>, parentState: EntityState) {
+    static expandToCollection(compactPlayerRace: readonly any[], collection: Map<number, PlayerRace>, parentState: EntityState) {
         let i = 0;
         if (parentState === EntityState.Added) {
             this.expand(compactPlayerRace, i).addTo(collection);
@@ -979,7 +970,7 @@ export class Connection {
     @observable isDown: boolean = true;
 
     @action
-    static expandToCollection(compactConnection: any[], collection: Map<number, Connection>, tiles: Tile[][], parentState: EntityState) {
+    static expandToCollection(compactConnection: readonly any[], collection: Map<number, Connection>, tiles: Tile[][], parentState: EntityState) {
         let i = 0;
         if (parentState === EntityState.Added) {
             this.expand(compactConnection, i).addTo(collection).set(tiles);

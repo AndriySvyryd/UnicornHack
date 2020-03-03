@@ -31,7 +31,7 @@ namespace UnicornHack.Systems.Beings
 
         string IMessage.MessageName { get; set; }
 
-        public void Dispose()
+        public void Clean()
         {
             ActorEntity = default;
             Delay = default;

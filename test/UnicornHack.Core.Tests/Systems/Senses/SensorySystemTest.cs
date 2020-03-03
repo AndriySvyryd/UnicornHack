@@ -48,7 +48,7 @@ namespace UnicornHack.Systems.Senses
             TestHelper.AssertTerrain(level, expectedKnownMap, level.KnownTerrain);
 
             var travelMessage = TravelMessage.Create(manager);
-            travelMessage.Entity = player;
+            travelMessage.ActorEntity = player;
             travelMessage.TargetHeading = Direction.South;
             travelMessage.TargetCell = player.Position.LevelCell;
             manager.Enqueue(travelMessage);

@@ -40,7 +40,7 @@ namespace UnicornHack.Systems.Abilities
 
         string IMessage.MessageName { get; set; }
 
-        public void Dispose()
+        public void Clean()
         {
             AbilityEntity = default;
             AbilityName = default;

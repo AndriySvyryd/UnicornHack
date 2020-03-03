@@ -86,7 +86,7 @@ namespace UnicornHack.Systems.Abilities
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(1, messageCount);
-            Assert.Equal(105, playerEntity.Player.NextActionTick);
+            Assert.Equal(155, playerEntity.Player.NextActionTick);
 
             activateAbilityMessage = ActivateAbilityMessage.Create(manager);
             activateAbilityMessage.ActivatorEntity = playerEntity;
@@ -189,15 +189,15 @@ namespace UnicornHack.Systems.Abilities
             Assert.Equal(200, toggledAbility.Ability.CooldownTick);
             Assert.Equal(0, playerEntity.Being.ReservedEnergyPoints);
 
-            player.NextAction = PlayerAction.Wait;
+            player.NextAction = Actors.ActorAction.Wait;
             AdvanceTurnMessage.Enqueue(manager);
             manager.Queue.ProcessQueue(manager);
 
-            player.NextAction = PlayerAction.Wait;
+            player.NextAction = Actors.ActorAction.Wait;
             AdvanceTurnMessage.Enqueue(manager);
             manager.Queue.ProcessQueue(manager);
 
-            player.NextAction = PlayerAction.Wait;
+            player.NextAction = Actors.ActorAction.Wait;
             AdvanceTurnMessage.Enqueue(manager);
             manager.Queue.ProcessQueue(manager);
 

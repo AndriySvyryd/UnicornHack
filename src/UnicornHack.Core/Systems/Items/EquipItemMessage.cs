@@ -41,7 +41,7 @@ namespace UnicornHack.Systems.Items
 
         string IMessage.MessageName { get; set; }
 
-        public void Dispose()
+        public void Clean()
         {
             ItemEntity = default;
             ActorEntity = default;

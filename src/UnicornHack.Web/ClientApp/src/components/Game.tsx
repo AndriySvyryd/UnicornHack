@@ -5,7 +5,7 @@ import { action, observable, IObservableValue } from 'mobx';
 import { observer } from 'mobx-react';
 import { HotKeys, IgnoreKeys } from 'react-hotkeys';
 import { Player, PlayerRace } from '../transport/Model';
-import { PlayerAction } from "../transport/PlayerAction";
+import { ActorAction } from "../transport/ActorAction";
 import { Direction } from "../transport/Direction";
 import { DialogData } from '../transport/DialogData';
 import { GameQueryType } from '../transport/GameQueryType';
@@ -92,39 +92,39 @@ export class Game extends React.PureComponent<IGameProps, {}> {
 
         this._keyHandlers = {
             'moveNorth': (event: KeyboardEvent) => {
-                this.performAction(PlayerAction.MoveOneCell, Direction.North);
+                this.performAction(ActorAction.MoveOneCell, Direction.North);
                 event.preventDefault();
             },
             'moveEast': (event: KeyboardEvent) => {
-                this.performAction(PlayerAction.MoveOneCell, Direction.East);
+                this.performAction(ActorAction.MoveOneCell, Direction.East);
                 event.preventDefault();
             },
             'moveSouth': (event: KeyboardEvent) => {
-                this.performAction(PlayerAction.MoveOneCell, Direction.South);
+                this.performAction(ActorAction.MoveOneCell, Direction.South);
                 event.preventDefault();
             },
             'moveWest': (event: KeyboardEvent) => {
-                this.performAction(PlayerAction.MoveOneCell, Direction.West);
+                this.performAction(ActorAction.MoveOneCell, Direction.West);
                 event.preventDefault();
             },
             'moveNorthEast': (event: KeyboardEvent) => {
-                this.performAction(PlayerAction.MoveOneCell, Direction.Northeast);
+                this.performAction(ActorAction.MoveOneCell, Direction.Northeast);
                 event.preventDefault();
             },
             'moveSouthEast': (event: KeyboardEvent) => {
-                this.performAction(PlayerAction.MoveOneCell, Direction.Southeast);
+                this.performAction(ActorAction.MoveOneCell, Direction.Southeast);
                 event.preventDefault();
             },
             'moveSouthWest': (event: KeyboardEvent) => {
-                this.performAction(PlayerAction.MoveOneCell, Direction.Southwest);
+                this.performAction(ActorAction.MoveOneCell, Direction.Southwest);
                 event.preventDefault();
             },
             'moveNorthWest': (event: KeyboardEvent) => {
-                this.performAction(PlayerAction.MoveOneCell, Direction.Northwest);
+                this.performAction(ActorAction.MoveOneCell, Direction.Northwest);
                 event.preventDefault();
             },
             'wait': (event: KeyboardEvent) => {
-                this.performAction(PlayerAction.Wait);
+                this.performAction(ActorAction.Wait);
                 event.preventDefault();
             },
             'clear': (event: KeyboardEvent) => {
@@ -222,16 +222,16 @@ export class Game extends React.PureComponent<IGameProps, {}> {
     };
 
     @action.bound
-    performAction(action: PlayerAction, target: (number | null) = null, target2: (number | null) = null) {
+    performAction(action: ActorAction, target: (number | null) = null, target2: (number | null) = null) {
         if (this._targetingSlot != null) {
-            if (action == PlayerAction.MoveToCell
-                || action == PlayerAction.Wait) {
+            if (action == ActorAction.MoveToCell
+                || action == ActorAction.Wait) {
                 // TODO: also handle MoveOneCell
                 target2 = target;
-                action = PlayerAction.UseAbilitySlot
+                action = ActorAction.UseAbilitySlot
             }
 
-            if (action == PlayerAction.UseAbilitySlot) {
+            if (action == ActorAction.UseAbilitySlot) {
                 target = this._targetingSlot;
             }
 
@@ -239,7 +239,7 @@ export class Game extends React.PureComponent<IGameProps, {}> {
             this._bannerMessage.set(null);
         }
 
-        if (action == PlayerAction.Wait) {
+        if (action == ActorAction.Wait) {
             target = null;
         }
 
@@ -340,14 +340,14 @@ interface IGameProps {
 }
 
 interface IAction {
-    action: PlayerAction;
+    action: ActorAction;
     target: (number | null);
     target2: (number | null);
 }
 
 export interface IGameContext {
     player: Player;
-    performAction: (action: PlayerAction, target: (number | null), target2: (number | null)) => void;
+    performAction: (action: ActorAction, target: (number | null), target2: (number | null)) => void;
     startTargeting: (slot: (number | null)) => void;
     showDialog: (intQueryType: GameQueryType, ...args: Array<number>) => void;
     queryGame: (intQueryType: GameQueryType, ...args: Array<number>) => void;

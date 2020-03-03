@@ -1,21 +1,21 @@
-﻿import React from 'react';
-import { action } from 'mobx';
+﻿import { action } from 'mobx';
 import { observer } from 'mobx-react';
+import React from 'react';
 import { MapStyles } from '../styles/MapStyles';
-import { Player, PlayerRace, MapActor, Level } from '../transport/Model';
+import { ActorAction } from '../transport/ActorAction';
 import { GameQueryType } from '../transport/GameQueryType';
+import { Level, MapActor, Player, PlayerRace } from '../transport/Model';
 import { capitalize } from '../Util';
 import { IGameContext } from './Game';
 import { MeterBar } from './MeterBar';
 import { TooltipTrigger } from './TooltipTrigger';
-import { PlayerAction } from '../transport/PlayerAction';
 
 export const StatusBar = observer((props: IStatusBarProps) => {
     const player = props.context.player;
     const actors = player.level.actors;
     const actorPanels = new Array<[number, JSX.Element]>();
 
-    actorPanels.push([player.nextActionTick, <CharacterPanel {...props} key={-1} />]);
+    actorPanels.push([-player.nextActionTick, <CharacterPanel {...props} key={-1} />]);
 
     actors.forEach((actor: MapActor, id: number) => {
         if (actor.isCurrentlyPerceived) {
@@ -78,7 +78,7 @@ export class ActorPanel extends React.PureComponent<IActorPanelProps, {}> {
     @action.bound
     attack(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || event.type == 'contextmenu' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
-            this.props.context.performAction(PlayerAction.UseAbilitySlot, null, Level.pack(this.props.actor.levelX, this.props.actor.levelY));
+            this.props.context.performAction(ActorAction.UseAbilitySlot, null, Level.pack(this.props.actor.levelX, this.props.actor.levelY));
             event.preventDefault();
         }
     }
@@ -99,14 +99,12 @@ export class ActorPanel extends React.PureComponent<IActorPanelProps, {}> {
             glyph = Object.assign({ char: actor.baseName[0] }, styles.actors['default']);
         }
 
+        const action = actor.nextAction == null ? "Do nothing" : actor.nextActionName;
         return <div className="statusBar__panel">
-            <div className="statusBar__smallElement">
+            <div className="statusBar__element">
                 {glyph.char}: <ActorName actor={actor} attack={this.attack} showActorAttributes={this.showActorAttributes} />
+                {' +'}{actor.nextActionTick - this.props.context.player.nextActionTick} AUT: {action}
             </div>
-            <div className="statusBar__smallElement">
-                +{actor.nextActionTick - this.props.context.player.nextActionTick} AUT
-            </div>
-            {/*TODO: Show next action*/}
             <div className="statusBar__smallElement">
                 <ActorHpBar actor={actor} />
             </div>

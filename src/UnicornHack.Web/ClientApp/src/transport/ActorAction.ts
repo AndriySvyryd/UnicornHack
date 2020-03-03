@@ -1,4 +1,4 @@
-﻿export const enum PlayerAction {
+﻿export const enum ActorAction {
     Wait = 0,
     ChangeHeading,
     MoveOneCell,

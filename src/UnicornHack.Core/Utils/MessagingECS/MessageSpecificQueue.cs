@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 
 namespace UnicornHack.Utils.MessagingECS
@@ -7,10 +6,10 @@ namespace UnicornHack.Utils.MessagingECS
     /// <summary>
     ///     Implementation detail of <see cref="SequentialMessageQueue{TState}" />
     /// </summary>
-    /// <typeparam name="TMessage">The message type</typeparam>
-    /// <typeparam name="TState">The state type</typeparam>
+    /// <typeparam name="TMessage"> The message type </typeparam>
+    /// <typeparam name="TState"> The state type </typeparam>
     public class MessageSpecificQueue<TMessage, TState> : IMessageSpecificQueue<TState>
-        where TMessage : class, IDisposable, new()
+        where TMessage : class, IMessage, new()
     {
         private readonly SortedList<int, IMessageConsumer<TMessage, TState>> _consumers =
             new SortedList<int, IMessageConsumer<TMessage, TState>>();
@@ -27,7 +26,7 @@ namespace UnicornHack.Utils.MessagingECS
 
         public void ReturnMessage(TMessage message)
         {
-            message.Dispose();
+            message.Clean();
             Interlocked.CompareExchange(ref _pooledMessage, message, null);
         }
 
@@ -47,7 +46,7 @@ namespace UnicornHack.Utils.MessagingECS
                 }
             }
 
-            message.Dispose();
+            ReturnMessage(message);
         }
     }
 }

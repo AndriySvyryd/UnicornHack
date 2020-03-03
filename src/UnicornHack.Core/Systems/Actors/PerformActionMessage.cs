@@ -7,10 +7,10 @@ namespace UnicornHack.Systems.Actors
         public const string AIName = "PerformAIAction";
         public const string PlayerName = "PerformPlayerAction";
 
-        public static void EnqueueAI(GameEntity aIEntity, GameManager manager)
+        public static void EnqueueAI(GameEntity aiEntity, GameManager manager)
         {
             var message = manager.Queue.CreateMessage<PerformActionMessage>(AIName);
-            message.Actor = aIEntity;
+            message.Actor = aiEntity;
             manager.Enqueue(message);
         }
 
@@ -36,6 +36,6 @@ namespace UnicornHack.Systems.Actors
 
         string IMessage.MessageName { get; set; }
 
-        public void Dispose() => Actor = null;
+        public void Clean() => Actor = null;
     }
 }

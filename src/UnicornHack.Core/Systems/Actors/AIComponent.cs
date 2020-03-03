@@ -7,6 +7,9 @@ namespace UnicornHack.Systems.Actors
     public class AIComponent : GameComponent
     {
         private string _properName;
+        private ActorAction? _nextAction;
+        private int? _nextActionTarget;
+        private int? _nextActionTarget2;
         private int? _nextActionTick;
         private AIBehavior _behavior;
         private ActorNoiseType _noise;
@@ -18,6 +21,24 @@ namespace UnicornHack.Systems.Actors
         {
             get => _properName;
             set => SetWithNotify(value, ref _properName);
+        }
+
+        public ActorAction? NextAction
+        {
+            get => _nextAction;
+            set => SetWithNotify(value, ref _nextAction);
+        }
+
+        public int? NextActionTarget
+        {
+            get => _nextActionTarget;
+            set => SetWithNotify(value, ref _nextActionTarget);
+        }
+
+        public int? NextActionTarget2
+        {
+            get => _nextActionTarget2;
+            set => SetWithNotify(value, ref _nextActionTarget2);
         }
 
         public int? NextActionTick
@@ -41,6 +62,9 @@ namespace UnicornHack.Systems.Actors
         protected override void Clean()
         {
             _properName = default;
+            _nextAction = default;
+            _nextActionTarget = default;
+            _nextActionTarget2 = default;
             _nextActionTick = default;
             _behavior = default;
             _noise = default;

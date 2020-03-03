@@ -32,7 +32,7 @@ namespace UnicornHack.Systems.Senses
 
         string IMessage.MessageName { get; set; }
 
-        public void Dispose()
+        public void Clean()
         {
             LevelEntity = default;
         }

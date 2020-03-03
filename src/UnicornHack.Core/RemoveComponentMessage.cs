@@ -32,7 +32,7 @@ namespace UnicornHack
 
         string IMessage.MessageName { get; set; }
 
-        public void Dispose()
+        public void Clean()
         {
             Entity = default;
             Component = default;

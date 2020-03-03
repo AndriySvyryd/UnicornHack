@@ -64,7 +64,7 @@ namespace UnicornHack.Systems.Knowledge
             Assert.Same(manager.LevelKnowledgeToLevelCellIndex[(level.EntityId, 0, 1)].Single(), connectionKnowledge);
 
             var travelMessage = TravelMessage.Create(manager);
-            travelMessage.Entity = undine;
+            travelMessage.ActorEntity = undine;
             travelMessage.TargetHeading = Direction.East;
             travelMessage.TargetCell = new Point(1, 1);
             manager.Enqueue(travelMessage);

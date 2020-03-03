@@ -66,6 +66,7 @@ namespace UnicornHack
 
             AISystem = new AISystem();
             queue.Add<PerformActionMessage>(AISystem, PerformActionMessage.AIName, 0);
+            queue.Add<DecideNextActionMessage>(AISystem, DecideNextActionMessage.Name, 0);
             queue.Add<DelayMessage>(AISystem, DelayMessage.Name, 0);
             queue.Add<DiedMessage>(AISystem, DiedMessage.Name, 4);
             queue.Add<EntityAddedMessage<GameEntity>>(AISystem,
