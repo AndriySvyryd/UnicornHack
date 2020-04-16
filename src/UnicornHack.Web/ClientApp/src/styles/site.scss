@@ -142,6 +142,21 @@ input::placeholder {
     opacity: 1 !important;
 }
 
+.map__tile_highlight {
+    box-shadow: 0 0 0 0.5rem rgba(255,255,255,0.5) inset;
+    opacity: 1 !important;
+}
+
+.map__tile_danger {
+    box-shadow: 0 0 0 0.5rem rgba($red,0.5) inset;
+    opacity: 1 !important;
+}
+
+.map__tile_obstruction {
+    box-shadow: 0 0 0 0.5rem rgba($teal,0.5) inset;
+    opacity: 1 !important;
+}
+
 .map__tile_fullwidth {
     float: left;
     width: 1rem;

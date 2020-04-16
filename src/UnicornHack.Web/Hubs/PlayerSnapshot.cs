@@ -59,9 +59,10 @@ namespace UnicornHack.Hubs
             List<object> properties;
             if (state == EntityState.Added)
             {
-                properties = new List<object>(12) {(int)state};
+                properties = new List<object>(13) {(int)state};
 
                 properties.Add(player.ProperName);
+                properties.Add(context.Manager.LevelKnowledges.Single(k => k.Knowledge.KnownEntityId == player.EntityId).Id);
                 properties.Add(player.Game.CurrentTick);
                 properties.Add(serializedLevel);
 

@@ -9,7 +9,6 @@ using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Hubs
 {
@@ -74,13 +73,13 @@ namespace UnicornHack.Hubs
                             snapshot.CurrentlyPerceived = currentlyPerceived;
                         }
                         properties.Add(currentlyPerceived);
-                        properties.Add(being.HitPoints);
-                        properties.Add(being.HitPointMaximum);
-                        properties.Add(being.EnergyPoints);
-                        properties.Add(being.EnergyPointMaximum);
-                        properties.Add(ai.NextActionTick);
+                        properties.Add(currentlyPerceived ? being.HitPoints : 0);
+                        properties.Add(currentlyPerceived ? being.HitPointMaximum : 0);
+                        properties.Add(currentlyPerceived ? being.EnergyPoints : 0);
+                        properties.Add(currentlyPerceived ? being.EnergyPointMaximum : 0);
+                        properties.Add(currentlyPerceived ? ai.NextActionTick : 0);
 
-                        properties.Add(SerializeNextAction(ai, context));
+                        properties.Add(currentlyPerceived ? SerializeNextAction(ai, context) : null);
 
                         var meleeAttack =
                             manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: true, manager);
@@ -198,76 +197,68 @@ namespace UnicornHack.Hubs
                             snapshot.CurrentlyPerceived = currentlyPerceived;
                         }
 
-                        if (currentlyPerceived)
+                        var beingEntry = context.DbContext.Entry(being);
+                        if (beingEntry.State != EntityState.Unchanged
+                            || currentPerceptionChanged)
                         {
-                            var beingEntry = context.DbContext.Entry(being);
-                            if (beingEntry.State != EntityState.Unchanged
+                            i++;
+                            var hitPoints = beingEntry.Property(nameof(BeingComponent.HitPoints));
+                            if (hitPoints.IsModified
                                 || currentPerceptionChanged)
                             {
-                                i++;
-                                var hitPoints = beingEntry.Property(nameof(BeingComponent.HitPoints));
-                                if (hitPoints.IsModified
-                                    || currentPerceptionChanged)
-                                {
-                                    properties.Add(i);
-                                    properties.Add(being.HitPoints);
-                                }
-
-                                i++;
-                                var hitPointMaximum = beingEntry.Property(nameof(BeingComponent.HitPointMaximum));
-                                if (hitPointMaximum.IsModified
-                                    || currentPerceptionChanged)
-                                {
-                                    properties.Add(i);
-                                    properties.Add(being.HitPointMaximum);
-                                }
-
-                                i++;
-                                var energyPoints = beingEntry.Property(nameof(BeingComponent.EnergyPoints));
-                                if (energyPoints.IsModified
-                                    || currentPerceptionChanged)
-                                {
-                                    properties.Add(i);
-                                    properties.Add(being.EnergyPoints);
-                                }
-
-                                i++;
-                                var energyPointMaximum = beingEntry.Property(nameof(BeingComponent.EnergyPointMaximum));
-                                if (energyPointMaximum.IsModified
-                                    || currentPerceptionChanged)
-                                {
-                                    properties.Add(i);
-                                    properties.Add(being.EnergyPointMaximum);
-                                }
-
-                            }
-                            else
-                            {
-                                i += 4;
-                            }
-
-                            var aiEntry = context.DbContext.Entry(ai);
-                            if (currentPerceptionChanged
-                                || (aiEntry.State != EntityState.Unchanged
-                                    && aiEntry.Property(nameof(AIComponent.NextActionTick)).IsModified))
-                            {
-                                i++;
                                 properties.Add(i);
-                                properties.Add(ai.NextActionTick);
-
-                                i++;
-                                properties.Add(i);
-                                properties.Add(SerializeNextAction(ai, context));
+                                properties.Add(currentlyPerceived ? being.HitPoints : 0);
                             }
-                            else
+
+                            i++;
+                            var hitPointMaximum = beingEntry.Property(nameof(BeingComponent.HitPointMaximum));
+                            if (hitPointMaximum.IsModified
+                                || currentPerceptionChanged)
                             {
-                                i += 2;
+                                properties.Add(i);
+                                properties.Add(currentlyPerceived ? being.HitPointMaximum : 0);
                             }
 
+                            i++;
+                            var energyPoints = beingEntry.Property(nameof(BeingComponent.EnergyPoints));
+                            if (energyPoints.IsModified
+                                || currentPerceptionChanged)
+                            {
+                                properties.Add(i);
+                                properties.Add(currentlyPerceived ? being.EnergyPoints : 0);
+                            }
+
+                            i++;
+                            var energyPointMaximum = beingEntry.Property(nameof(BeingComponent.EnergyPointMaximum));
+                            if (energyPointMaximum.IsModified
+                                || currentPerceptionChanged)
+                            {
+                                properties.Add(i);
+                                properties.Add(currentlyPerceived ? being.EnergyPointMaximum : 0);
+                            }
                         }
                         else
                         {
-                            i += 6;
+                            i += 4;
+                        }
+
+                        var aiEntry = context.DbContext.Entry(ai);
+                        if (currentPerceptionChanged
+                            || (currentlyPerceived
+                                && aiEntry.State != EntityState.Unchanged
+                                && aiEntry.Property(nameof(AIComponent.NextActionTick)).IsModified))
+                        {
+                            i++;
+                            properties.Add(i);
+                            properties.Add(currentlyPerceived ? ai.NextActionTick : 0);
+
+                            i++;
+                            properties.Add(i);
+                            properties.Add(currentlyPerceived ? SerializeNextAction(ai, context) : null);
+                        }
+                        else
+                        {
+                            i += 2;
                         }
 
                         if (sensedType.IsModified)
@@ -328,10 +319,6 @@ namespace UnicornHack.Hubs
         private static List<object> SerializeNextAction(AIComponent ai, SerializationContext context)
         {
             var result = new List<object>(2);
-            if (result == null)
-            {
-                return result;
-            }
 
             var manager = context.Manager;
             result.Add(ai.NextAction);
@@ -342,22 +329,21 @@ namespace UnicornHack.Hubs
                     if (!slot.HasValue)
                     {
                         // TODO: Log
-                        result.Add(null);
-                        result.Add(null);
-                        return result;
+                        return null;
                     }
 
                     var abilityEntity = manager.AbilitySlottingSystem.GetAbility(ai.EntityId, slot.Value, manager);
                     if (abilityEntity == null)
                     {
                         // TODO: Log
-                        result.Add(null);
-                        result.Add(null);
-                        return result;
+                        return null;
                     }
 
-                    result.Add(context.Services.Language.GetString(abilityEntity.Ability));
+                    var ability = abilityEntity.Ability;
+                    result.Add(context.Services.Language.GetString(ability));
                     result.Add(ai.NextActionTarget2);
+                    result.Add(ability.TargetingType);
+                    result.Add(ability.TargetingShape);
 
                     return result;
                 case ActorAction.MoveOneCell:

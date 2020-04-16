@@ -58,7 +58,7 @@ export class Game extends React.PureComponent<IGameProps, {}> {
         };
 
         connection.onreconnecting((e) => {
-          this.addMessage(MessageType.Info, `Connection lost due to error "${e}". Reconnecting.`);
+          this.addMessage(MessageType.Info, `Connection lost ("${e}"). Reconnecting.`);
         });
 
         connection.onreconnected(() => {

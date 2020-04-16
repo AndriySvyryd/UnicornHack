@@ -15,8 +15,6 @@ export const StatusBar = observer((props: IStatusBarProps) => {
     const actors = player.level.actors;
     const actorPanels = new Array<[number, JSX.Element]>();
 
-    actorPanels.push([-player.nextActionTick, <CharacterPanel {...props} key={-1} />]);
-
     actors.forEach((actor: MapActor, id: number) => {
         if (actor.isCurrentlyPerceived) {
             actorPanels.push([actor.nextActionTick, <ActorPanel
@@ -27,6 +25,8 @@ export const StatusBar = observer((props: IStatusBarProps) => {
     });
 
     const sortedActors = actorPanels.sort((a, b) => a[0] - b[0]).map(a => a[1]);
+
+    sortedActors.unshift(<CharacterPanel {...props} key={-1} />);
 
     return <div className="statusBar__wrapper">
         {sortedActors}
@@ -47,13 +47,35 @@ export class CharacterPanel extends React.PureComponent<IStatusBarProps, {}> {
         }
     }
 
+    @action.bound
+    highlight(event: React.MouseEvent<HTMLDivElement>) {
+        const player = this.props.context.player;
+        const mapPlayer = player.level.actors.get(player.id);
+        if (mapPlayer != undefined) {
+            player.level.tileClasses[mapPlayer.levelY][mapPlayer.levelX].push('map__tile_highlight');
+        }
+    }
+
+    @action.bound
+    clear(event: React.MouseEvent<HTMLDivElement>) {
+        const player = this.props.context.player;
+        const mapPlayer = player.level.actors.get(player.id);
+        if (mapPlayer != undefined) {
+            const classes = player.level.tileClasses[mapPlayer.levelY][mapPlayer.levelX]
+            classes.splice(classes.indexOf('map__tile_highlight'), 1);
+        }
+    }
+
+    componentDidUpdate(prevProps: any) {
+    }
+
     render() {
         const player = this.props.context.player;
         const styles = MapStyles.Instance;
         const playerGlyph = styles.actors['player'];
 
         //TODO: Add status effects
-        return <div className="statusBar__panel" role="status">
+        return <div className="statusBar__panel" role="status" onMouseEnter={this.highlight} onMouseLeave={this.clear}>
             <div className="statusBar__element">
                 <PlayerLocation player={player} />
             </div>
@@ -91,6 +113,19 @@ export class ActorPanel extends React.PureComponent<IActorPanelProps, {}> {
         }
     }
 
+    @action.bound
+    highlight(event: React.MouseEvent<HTMLDivElement>) {
+        const actor = this.props.actor;
+        this.props.context.player.level.tileClasses[actor.levelY][actor.levelX].push('map__tile_highlight');
+    }
+
+    @action.bound
+    clear(event: React.MouseEvent<HTMLDivElement>) {
+        const actor = this.props.actor;
+        const classes = this.props.context.player.level.tileClasses[actor.levelY][actor.levelX];
+        classes.splice(classes.indexOf('map__tile_highlight'), 1);
+    }
+
     render() {
         const actor = this.props.actor;
         const styles = MapStyles.Instance;
@@ -99,11 +134,11 @@ export class ActorPanel extends React.PureComponent<IActorPanelProps, {}> {
             glyph = Object.assign({ char: actor.baseName[0] }, styles.actors['default']);
         }
 
-        const action = actor.nextAction == null ? "Do nothing" : actor.nextActionName;
-        return <div className="statusBar__panel">
+        const action = actor.nextAction.type == null ? "Do nothing" : actor.nextAction.name;
+        return <div className="statusBar__panel" onMouseEnter={this.highlight} onMouseLeave={this.clear}>
             <div className="statusBar__element">
                 {glyph.char}: <ActorName actor={actor} attack={this.attack} showActorAttributes={this.showActorAttributes} />
-                {' +'}{actor.nextActionTick - this.props.context.player.nextActionTick} AUT: {action}
+                {' +'}{actor.nextActionTick - this.props.context.player.nextActionTick} AUT [{action}]
             </div>
             <div className="statusBar__smallElement">
                 <ActorHpBar actor={actor} />
@@ -225,7 +260,7 @@ const ActorName = observer((props: IActorNameProps) => {
     return <a tabIndex={1} role="button" onClick={props.attack} onContextMenu={props.showActorAttributes} onKeyPress={props.showActorAttributes}>
         <TooltipTrigger
             id={`tooltip-actor-status-${actor.id}`}
-            tooltip={<p>{'Attack ' + actor.name}</p>}
+            tooltip={<span>{'Attack ' + actor.name}</span>}
         >
             <span>{actor.name}</span>
         </TooltipTrigger>

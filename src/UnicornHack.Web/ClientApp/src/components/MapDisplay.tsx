@@ -168,7 +168,7 @@ class MapTile extends React.PureComponent<ITileProps, {}> {
                 this._clickAction = TileAction.Attack;
                 this._contextMenuAction = TileAction.ActorAttributes;
                 tooltip = <div>
-                    <p>{'Attack ' + tile.actor.name}</p>
+                    <span>{'Attack ' + tile.actor.name}</span>
                     {tile.actor.meleeAttack == null
                         ? <></>
                         : this.getAttackSummary(tile.actor.meleeAttack, `${capitalize(tile.actor.name)}'s melee attack`, 'you')}
@@ -193,7 +193,7 @@ class MapTile extends React.PureComponent<ITileProps, {}> {
             }
 
             this._contextMenuAction = TileAction.ItemAttributes;
-            tooltip = capitalize(tile.item.baseName || "Unknown item");
+            tooltip = capitalize(tile.item.baseName || 'Unknown item');
         } else if (tile.connection != null) {
             glyph = styles.connections[tile.connection.isDown ? 1 : 0];
             if (glyph == undefined) {
@@ -215,9 +215,10 @@ class MapTile extends React.PureComponent<ITileProps, {}> {
         }
 
         // TODO: Change pointer depending on the action
-        const className = "map__tile" + (this._contextMenuAction == TileAction.None ? "" : " contextLink");
+        const className = 'map__tile' + (this._contextMenuAction == TileAction.None ? '' : ' contextLink')
+            + ' ' + context.player.level.tileClasses[y][x].join(' ');
         const opacity = 0.3 + ((tile.visibility / 255) * 0.7);
-        const content = <div className={className} role="button" style={Object.assign({ opacity: opacity }, glyph.style, inlineStyle)}
+        const content = <div className={className} style={Object.assign({ opacity: opacity }, glyph.style, inlineStyle)}
             onClick={this.handleClick} onContextMenu={this.handleContextMenu}
         >
             {glyph.char}
