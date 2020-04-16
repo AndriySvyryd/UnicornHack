@@ -62,7 +62,10 @@ export class CharacterPanel extends React.PureComponent<IStatusBarProps, {}> {
         const mapPlayer = player.level.actors.get(player.id);
         if (mapPlayer != undefined) {
             const classes = player.level.tileClasses[mapPlayer.levelY][mapPlayer.levelX]
-            classes.splice(classes.indexOf('map__tile_highlight'), 1);
+            var index = classes.indexOf('map__tile_highlight');
+            if (index != -1) {
+                classes.splice(index, 1);
+            }
         }
     }
 
@@ -123,7 +126,10 @@ export class ActorPanel extends React.PureComponent<IActorPanelProps, {}> {
     clear(event: React.MouseEvent<HTMLDivElement>) {
         const actor = this.props.actor;
         const classes = this.props.context.player.level.tileClasses[actor.levelY][actor.levelX];
-        classes.splice(classes.indexOf('map__tile_highlight'), 1);
+        var index = classes.indexOf('map__tile_highlight');
+        if (index != -1) {
+            classes.splice(index, 1);
+        }
     }
 
     render() {

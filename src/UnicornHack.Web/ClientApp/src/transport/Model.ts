@@ -396,7 +396,7 @@ export class MapActor {
                 }
 
                 existingActor.nextAction.update(null, level);
-                existingActor.unset(tiles, existingActor.levelX, existingActor.levelY);
+                existingActor.unset(level);
                 collection.delete(id);
                 break;
             case EntityState.Modified:
@@ -442,7 +442,6 @@ export class MapActor {
 
     @action.bound
     update(compactActor: readonly any[], level: Level): number {
-        const tiles = level.tiles;
         let i = 2;
 
         let unset = false;
@@ -458,13 +457,13 @@ export class MapActor {
                     this.name = name ?? '';
                     break;
                 case 3:
-                    this.unset(tiles, this.levelX, this.levelY);
+                    this.unset(level);
                     unset = true;
                     this.levelX = compactActor[i++];
                     break;
                 case 4:
                     if (!unset) {
-                        this.unset(tiles, this.levelX, this.levelY);
+                        this.unset(level);
                         unset = true;
                     }
                     this.levelY = compactActor[i++];
@@ -474,6 +473,9 @@ export class MapActor {
                     break;
                 case 6:
                     this.isCurrentlyPerceived = compactActor[i++];
+                    if (!unset) {
+                        this.clearHighlight(level.tileClasses);
+                    }
                     break;
                 case 7:
                     this.hp = compactActor[i++];
@@ -507,7 +509,7 @@ export class MapActor {
                     break;
                 default:
                     if (unset) {
-                        this.set(tiles);
+                        this.set(level.tiles);
                     }
 
                     return i - 1;
@@ -515,10 +517,19 @@ export class MapActor {
         }
 
         if (unset) {
-            this.set(tiles);
+            this.set(level.tiles);
         }
 
         return i;
+    }
+
+    @action
+    clearHighlight(classes: string[][][]) {
+        var tileClasses = classes[this.levelY][this.levelX];
+        var index = tileClasses.indexOf('map__tile_highlight');
+        if (index != -1) {
+            tileClasses.splice(index, 1);
+        }
     }
 
     addTo(map: Map<number, MapActor>): MapActor {
@@ -526,16 +537,18 @@ export class MapActor {
         return this;
     }
 
-    @action.bound
+    @action
     set(tiles: Tile[][]): MapActor {
         return tiles[this.levelY][this.levelX].actor = this;
     }
 
-    @action.bound
-    unset(tiles: Tile[][], x: number, y: number): MapActor {
-        const tile = tiles[y][x];
+    @action
+    unset(level: Level): MapActor {
+        const tiles = level.tiles;
+        const tile = tiles[this.levelY][this.levelX];
         if (tile.actor === this) {
             tile.actor = null;
+            this.clearHighlight(level.tileClasses);
         }
         return this;
     }
@@ -593,7 +606,10 @@ export class MapActorAction {
                 if (add) {
                     tileClasses.push(className);
                 } else {
-                    tileClasses.splice(tileClasses.indexOf(className), 1);
+                    var index = tileClasses.indexOf(className);
+                    if (index != -1) {
+                        tileClasses.splice(index, 1);
+                    }
                 }
             }
         }
