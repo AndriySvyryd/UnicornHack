@@ -8,13 +8,17 @@ namespace UnicornHack.Hubs
 {
     public class LevelItemSnapshot
     {
+        private bool CurrentlyPerceived { get; set; }
         private string NameSnapshot { get; set; }
 
         public LevelItemSnapshot CaptureState(GameEntity knowledgeEntity, SerializationContext context)
         {
             var itemKnowledge = knowledgeEntity.Knowledge;
-            var item = itemKnowledge.KnownEntity.Item;
+            var knownEntity = itemKnowledge.KnownEntity;
+            var position = knowledgeEntity.Position;
+            var item = knownEntity.Item;
             var manager = context.Manager;
+            CurrentlyPerceived = manager.SensorySystem.SensedByPlayer(knownEntity, position.LevelCell).CanIdentify();
             NameSnapshot = itemKnowledge.SensedType.CanIdentify()
                 ? context.Services.Language.GetString(item, item.GetQuantity(manager), itemKnowledge.SensedType)
                 : null;
@@ -28,15 +32,16 @@ namespace UnicornHack.Hubs
             List<object> properties;
             var manager = context.Manager;
             var itemKnowledge = knowledgeEntity.Knowledge;
-            var item = itemKnowledge?.KnownEntity.Item;
+            var knownEntity = itemKnowledge?.KnownEntity;
+            var item = knownEntity?.Item;
             var position = knowledgeEntity.Position;
             switch (state)
             {
                 case null:
                 case EntityState.Added:
                     properties = state == null
-                        ? new List<object>(6)
-                        : new List<object>(7) { (int)state };
+                        ? new List<object>(7)
+                        : new List<object>(8) { (int)state };
                     properties.Add(knowledgeEntity.Id);
 
                     string name = null;
@@ -60,6 +65,17 @@ namespace UnicornHack.Hubs
 
                     properties.Add(position.LevelX);
                     properties.Add(position.LevelY);
+
+                    if (itemKnowledge.SensedType.CanIdentify())
+                    {
+                        var currentlyPerceived = manager.SensorySystem.SensedByPlayer(knownEntity, position.LevelCell).CanIdentify();
+                        if (snapshot != null)
+                        {
+                            snapshot.CurrentlyPerceived = currentlyPerceived;
+                        }
+                        properties.Add(currentlyPerceived);
+                    }
+
                     return properties;
                 case EntityState.Deleted:
                     return new List<object>
@@ -125,6 +141,22 @@ namespace UnicornHack.Hubs
                         {
                             properties.Add(i);
                             properties.Add(position.LevelY);
+                        }
+                    }
+                    else
+                    {
+                        i += 2;
+                    }
+
+                    {
+                        i++;
+                        var currentlyPerceived = manager.SensorySystem.SensedByPlayer(knownEntity, position.LevelCell).CanIdentify();
+                        var currentPerceptionChanged = snapshot.CurrentlyPerceived != currentlyPerceived;
+                        if (currentPerceptionChanged)
+                        {
+                            properties.Add(i);
+                            properties.Add(currentlyPerceived);
+                            snapshot.CurrentlyPerceived = currentlyPerceived;
                         }
                     }
 

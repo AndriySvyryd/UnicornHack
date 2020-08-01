@@ -2,9 +2,8 @@
 import { observer } from 'mobx-react';
 import React from 'react';
 import { MapStyles } from '../styles/MapStyles';
-import { ActorAction } from '../transport/ActorAction';
 import { GameQueryType } from '../transport/GameQueryType';
-import { Level, MapActor, Player, PlayerRace } from '../transport/Model';
+import { MapActor, Player, PlayerRace, MapItem } from '../transport/Model';
 import { capitalize } from '../Util';
 import { IGameContext } from './Game';
 import { MeterBar } from './MeterBar';
@@ -12,10 +11,9 @@ import { TooltipTrigger } from './TooltipTrigger';
 
 export const StatusBar = observer((props: IStatusBarProps) => {
     const player = props.context.player;
-    const actors = player.level.actors;
     const actorPanels = new Array<[number, JSX.Element]>();
 
-    actors.forEach((actor: MapActor, id: number) => {
+    player.level.actors.forEach((actor: MapActor, id: number) => {
         if (actor.isCurrentlyPerceived) {
             actorPanels.push([actor.nextActionTick, <ActorPanel
                 actor={actor}
@@ -28,8 +26,20 @@ export const StatusBar = observer((props: IStatusBarProps) => {
 
     sortedActors.unshift(<CharacterPanel {...props} key={-1} />);
 
+    const itemPanels = new Array<JSX.Element>();
+
+    player.level.items.forEach((item: MapItem, id: number) => {
+        if (item.isCurrentlyPerceived) {
+            itemPanels.push(<ItemPanel
+                item={item}
+                context={props.context}
+                key={id} />);
+        }
+    });
+
     return <div className="statusBar__wrapper">
         {sortedActors}
+        {itemPanels}
     </div>;
 });
 
@@ -38,7 +48,7 @@ interface IStatusBarProps {
 }
 
 @observer
-export class CharacterPanel extends React.PureComponent<IStatusBarProps, {}> {
+class CharacterPanel extends React.PureComponent<IStatusBarProps, {}> {
     @action.bound
     showCharacterScreen(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
         if (event.type == 'click' || event.type == 'contextmenu' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
@@ -60,10 +70,15 @@ export class CharacterPanel extends React.PureComponent<IStatusBarProps, {}> {
     clear(event: React.MouseEvent<HTMLDivElement>) {
         const player = this.props.context.player;
         const mapPlayer = player.level.actors.get(player.id);
-        if (mapPlayer != undefined) {
+        if (mapPlayer !== undefined) {
             const classes = player.level.tileClasses[mapPlayer.levelY][mapPlayer.levelX]
-            var index = classes.indexOf('map__tile_highlight');
-            if (index != -1) {
+            let index = classes.indexOf('map__tile_highlight');
+            if (index !== -1) {
+                classes.splice(index, 1);
+            }
+            // Clear any lingering highlights
+            index = classes.indexOf('map__tile_highlight');
+            if (index !== -1) {
                 classes.splice(index, 1);
             }
         }
@@ -99,18 +114,10 @@ export class CharacterPanel extends React.PureComponent<IStatusBarProps, {}> {
 }
 
 @observer
-export class ActorPanel extends React.PureComponent<IActorPanelProps, {}> {
-    @action.bound
-    attack(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
-        if (event.type == 'click' || event.type == 'contextmenu' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
-            this.props.context.performAction(ActorAction.UseAbilitySlot, null, Level.pack(this.props.actor.levelX, this.props.actor.levelY));
-            event.preventDefault();
-        }
-    }
-
+class ActorPanel extends React.PureComponent<IActorPanelProps, {}> {
     @action.bound
     showActorAttributes(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
-        if (event.type == 'click' || event.type == 'contextmenu' || (event as React.KeyboardEvent<HTMLAnchorElement>).key == 'Enter') {
+        if (event.type === 'click' || event.type === 'contextmenu' || (event as React.KeyboardEvent<HTMLAnchorElement>).key === 'Enter') {
             this.props.context.showDialog(GameQueryType.ActorAttributes, this.props.actor.id);
             event.preventDefault();
         }
@@ -126,8 +133,14 @@ export class ActorPanel extends React.PureComponent<IActorPanelProps, {}> {
     clear(event: React.MouseEvent<HTMLDivElement>) {
         const actor = this.props.actor;
         const classes = this.props.context.player.level.tileClasses[actor.levelY][actor.levelX];
-        var index = classes.indexOf('map__tile_highlight');
-        if (index != -1) {
+        let index = classes.indexOf('map__tile_highlight');
+        if (index !== -1) {
+            classes.splice(index, 1);
+        }
+
+        // Clear any lingering highlights
+        index = classes.indexOf('map__tile_highlight');
+        if (index !== -1) {
             classes.splice(index, 1);
         }
     }
@@ -135,15 +148,15 @@ export class ActorPanel extends React.PureComponent<IActorPanelProps, {}> {
     render() {
         const actor = this.props.actor;
         const styles = MapStyles.Instance;
-        var glyph = styles.actors[actor.baseName];
-        if (glyph == undefined) {
+        let glyph = styles.actors[actor.baseName];
+        if (glyph === undefined) {
             glyph = Object.assign({ char: actor.baseName[0] }, styles.actors['default']);
         }
 
-        const action = actor.nextAction.type == null ? "Do nothing" : actor.nextAction.name;
+        const action = actor.nextAction.type === null ? "Do nothing" : actor.nextAction.name;
         return <div className="statusBar__panel" onMouseEnter={this.highlight} onMouseLeave={this.clear}>
             <div className="statusBar__element">
-                {glyph.char}: <ActorName actor={actor} attack={this.attack} showActorAttributes={this.showActorAttributes} />
+                <span style={glyph.style}>{glyph.char}</span>: <ActorName actor={actor} showActorAttributes={this.showActorAttributes} />
                 {' +'}{actor.nextActionTick - this.props.context.player.nextActionTick} AUT [{action}]
             </div>
             <div className="statusBar__smallElement">
@@ -165,7 +178,7 @@ interface IActorPanelProps {
 const HpBar = observer((props: IPlayerStatusProps) => {
     const player = props.player;
 
-    var hpClass = 'bg-success';
+    let hpClass = 'bg-success';
     if (player.hp * 5 <= player.maxHp) {
         hpClass = 'bg-danger';
     } else if (player.hp * 3 <= player.maxHp) {
@@ -182,8 +195,8 @@ const HpBar = observer((props: IPlayerStatusProps) => {
 const EpBar = observer((props: IPlayerStatusProps) => {
     const player = props.player;
 
-    var ep = `EP: ${player.ep}/${player.maxEp - player.reservedEp}`;
-    if (player.reservedEp != 0) {
+    let ep = `EP: ${player.ep}/${player.maxEp - player.reservedEp}`;
+    if (player.reservedEp !== 0) {
         ep += `(${player.maxEp})`;
     }
 
@@ -244,7 +257,7 @@ interface IPlayerRacesProps extends IPlayerStatusProps {
 
 const RaceStatus = observer(({ race, player }: IRaceStatusProps) => {
     const raceString = `${race.shortName}(${race.xpLevel}) `;
-    var className = '';
+    let className = '';
     if (race.id === player.learningRace.id) {
         className = 'font-weight-bold';
     }
@@ -263,25 +276,19 @@ interface IRaceStatusProps extends IPlayerStatusProps {
 
 const ActorName = observer((props: IActorNameProps) => {
     const actor = props.actor;
-    return <a tabIndex={1} role="button" onClick={props.attack} onContextMenu={props.showActorAttributes} onKeyPress={props.showActorAttributes}>
-        <TooltipTrigger
-            id={`tooltip-actor-status-${actor.id}`}
-            tooltip={<span>{'Attack ' + actor.name}</span>}
-        >
-            <span>{actor.name}</span>
-        </TooltipTrigger>
+    return <a tabIndex={1} role="button" onClick={props.showActorAttributes} onContextMenu={props.showActorAttributes} onKeyPress={props.showActorAttributes}>
+        <span>{actor.name}</span>
     </a>;
 });
 
 interface IActorNameProps extends IActorStatusProps {
-    showActorAttributes: ((event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) => void)
-    attack: ((event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) => void)
+    showActorAttributes: ((event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) => void);
 };
 
 const PlayerLocation = observer((props: IPlayerStatusProps) => {
     const player = props.player;
     const level = player.level;
-    var currentTime = <></>;
+    let currentTime = <></>;
     if (player.nextActionTick < 1000) {
         currentTime = <span>{player.nextActionTick} AUT</span>;
     } else if (player.nextActionTick < 1000000) {
@@ -296,3 +303,67 @@ const PlayerLocation = observer((props: IPlayerStatusProps) => {
     
     return <span>{level.branchName}({level.depth}) {currentTime}</span>;
 });
+
+@observer
+class ItemPanel extends React.PureComponent<IItemPanelProps, {}> {
+    @action.bound
+    showItemAttributes(event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) {
+        if (event.type === 'click' || event.type === 'contextmenu' || (event as React.KeyboardEvent<HTMLAnchorElement>).key === 'Enter') {
+            this.props.context.showDialog(GameQueryType.ItemAttributes, this.props.item.id);
+            event.preventDefault();
+        }
+    }
+
+    @action.bound
+    highlight(event: React.MouseEvent<HTMLDivElement>) {
+        const item = this.props.item;
+        this.props.context.player.level.tileClasses[item.levelY][item.levelX].push('map__tile_highlight');
+    }
+
+    @action.bound
+    clear(event: React.MouseEvent<HTMLDivElement>) {
+        const item = this.props.item;
+        const classes = this.props.context.player.level.tileClasses[item.levelY][item.levelX];
+        let index = classes.indexOf('map__tile_highlight');
+        if (index !== -1) {
+            classes.splice(index, 1);
+        }
+
+        // Clear any lingering highlights
+        index = classes.indexOf('map__tile_highlight');
+        if (index !== -1) {
+            classes.splice(index, 1);
+        }
+    }
+
+    render() {
+        const item = this.props.item;
+        const styles = MapStyles.Instance;
+        const glyph = styles.items[item.type];
+        if (glyph === undefined) {
+            throw `Item type ${item.type} not supported.`;
+        }
+
+        return <div className="statusBar__panel" onMouseEnter={this.highlight} onMouseLeave={this.clear}>
+            <div className="statusBar__element">
+                <span style={glyph.style}>{glyph.char}</span>: <ItemName item={item} showItemAttributes={this.showItemAttributes} />
+            </div>
+        </div>;
+    }
+}
+
+interface IItemPanelProps {
+    context: IGameContext;
+    item: MapItem;
+}
+
+const ItemName = observer((props: IItemNameProps) => {
+    return <a tabIndex={1} role="button" onClick={props.showItemAttributes} onContextMenu={props.showItemAttributes} onKeyPress={props.showItemAttributes}>
+        <span>{props.item.name}</span>
+    </a>;
+});
+
+interface IItemNameProps {
+    item: MapItem;
+    showItemAttributes: ((event: React.KeyboardEvent<HTMLAnchorElement> | React.MouseEvent<HTMLAnchorElement>) => void);
+};

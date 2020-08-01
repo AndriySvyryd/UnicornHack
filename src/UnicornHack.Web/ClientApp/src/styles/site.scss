@@ -188,6 +188,9 @@ input::placeholder {
     @include make-row();
     margin-top: -$grid-gutter-width/2;
     padding-right: 0;
+    justify-content: flex-end;
+    align-items: flex-start;
+    align-content: flex-start;
 }
 
 .sidepanel {
@@ -289,7 +292,7 @@ input::placeholder {
 }
 
 .sidepanel_chat {
-    height: fit-content();
+    height: min-content;
 }
 
 .chat {

@@ -47,6 +47,16 @@ const MapRow = observer((props: IRowProps) => {
     return <div className="map__row">{row}</div>;
 });
 
+enum TileAction {
+    None,
+    Wait,
+    Move,
+    Attack,
+    PlayerAttributes,
+    ActorAttributes,
+    ItemAttributes
+}
+
 interface IRowProps {
     y: number;
     row: Tile[];
@@ -148,19 +158,16 @@ class MapTile extends React.PureComponent<ITileProps, {}> {
         this._clickAction = TileAction.Move;
         this._contextMenuAction = TileAction.None;
 
-        if (tile.actor != null) {
+        if (tile.actor !== null) {
             glyph = styles.actors[tile.actor.baseName];
-            if (glyph == undefined) {
+            if (glyph === undefined) {
                 glyph = Object.assign({ char: tile.actor.baseName[0] }, styles.actors['default']);
-            }
-
-            // TODO: Add more creatures
-            if (glyph == undefined) {
+                // TODO: Add more creatures
                 throw `Actor type ${tile.actor.baseName} not supported.`;
             }
 
-            if (tile.actor.baseName == 'player'
-                && tile.actor.name == context.player.name) {
+            if (tile.actor.baseName === 'player'
+                && tile.actor.name === context.player.name) {
                 this._clickAction = TileAction.Wait;
                 this._contextMenuAction = TileAction.PlayerAttributes;
                 tooltip = capitalize(tile.actor.name);
@@ -169,40 +176,40 @@ class MapTile extends React.PureComponent<ITileProps, {}> {
                 this._contextMenuAction = TileAction.ActorAttributes;
                 tooltip = <div>
                     <span>{'Attack ' + tile.actor.name}</span>
-                    {tile.actor.meleeAttack == null
+                    {tile.actor.meleeAttack === null
                         ? <></>
                         : this.getAttackSummary(tile.actor.meleeAttack, `${capitalize(tile.actor.name)}'s melee attack`, 'you')}
-                    {tile.actor.rangeAttack == null
+                    {tile.actor.rangeAttack === null
                         ? <></>
                         : this.getAttackSummary(tile.actor.rangeAttack, `${capitalize(tile.actor.name)}'s range attack`, 'you')}
-                    {tile.actor.meleeDefense == null
+                    {tile.actor.meleeDefense === null
                         ? <></>
                         : this.getAttackSummary(tile.actor.meleeDefense, 'Your melee attack', tile.actor.name)}
-                    {tile.actor.rangeDefense == null
+                    {tile.actor.rangeDefense === null
                         ? <></>
                         : this.getAttackSummary(tile.actor.rangeDefense, 'Your range attack', tile.actor.name)}
                 </div>;
             }
 
             inlineStyle = { backgroundImage: this.getBackground(tile.actor.heading, glyph) };
-        } else if (tile.item != null) {
+        } else if (tile.item !== null) {
             const type = tile.item.type;
             glyph = styles.items[type];
-            if (glyph == undefined) {
+            if (glyph === undefined) {
                 throw `Item type ${type} not supported.`;
             }
 
             this._contextMenuAction = TileAction.ItemAttributes;
             tooltip = capitalize(tile.item.baseName || 'Unknown item');
-        } else if (tile.connection != null) {
+        } else if (tile.connection !== null) {
             glyph = styles.connections[tile.connection.isDown ? 1 : 0];
-            if (glyph == undefined) {
+            if (glyph === undefined) {
                 throw `Connection type ${tile.connection.isDown} not supported.`;
             }
         } else {
             const feature = tile.feature;
             glyph = styles.features[feature];
-            if (glyph == undefined) {
+            if (glyph === undefined) {
                 if (feature === MapFeature.StoneWall) {
                     glyph = styles.walls[tile.wallNeighbours];
                     if (glyph == undefined) {
@@ -215,7 +222,7 @@ class MapTile extends React.PureComponent<ITileProps, {}> {
         }
 
         // TODO: Change pointer depending on the action
-        const className = 'map__tile' + (this._contextMenuAction == TileAction.None ? '' : ' contextLink')
+        const className = 'map__tile' + (this._contextMenuAction === TileAction.None ? '' : ' contextLink')
             + ' ' + context.player.level.tileClasses[y][x].join(' ');
         const opacity = 0.3 + ((tile.visibility / 255) * 0.7);
         const content = <div className={className} style={Object.assign({ opacity: opacity }, glyph.style, inlineStyle)}
@@ -243,14 +250,4 @@ interface ITileProps {
     tile: Tile;
     styles: MapStyles;
     context: IGameContext;
-}
-
-enum TileAction {
-    None,
-    Wait,
-    Move,
-    Attack,
-    PlayerAttributes,
-    ActorAttributes,
-    ItemAttributes
 }

@@ -351,20 +351,20 @@ export class Tile {
 }
 
 export class MapActor {
-    protected static actorPropertyCount: number = 6;
+    protected static actorPropertyCount = 6;
     readonly id: number = 0;
-    @observable baseName: string = '';
-    @observable name: string = '';
-    @observable levelX: number = 0;
-    @observable levelY: number = 0;
+    @observable baseName = '';
+    @observable name = '';
+    @observable levelX = 0;
+    @observable levelY = 0;
     @observable heading: Direction = 0;
-    @observable isCurrentlyPerceived: boolean = false;
-    @observable hp: number = 0;
-    @observable maxHp: number = 0;
-    @observable ep: number = 0;
-    @observable maxEp: number = 0;
-    @observable nextActionTick: number = 0;
-    @observable nextAction: MapActorAction = new MapActorAction();
+    @observable isCurrentlyPerceived = false;
+    @observable hp = 0;
+    @observable maxHp = 0;
+    @observable ep = 0;
+    @observable maxEp = 0;
+    @observable nextActionTick = 0;
+    @observable nextAction = new MapActorAction();
     @observable meleeAttack: AttackSummary | null = null;
     @observable rangeAttack: AttackSummary | null = null;
     @observable meleeDefense: AttackSummary | null = null;
@@ -446,15 +446,13 @@ export class MapActor {
 
         let unset = false;
         for (; i < compactActor.length;) {
-            var index = compactActor[i++];
+            const index = compactActor[i++];
             switch (index) {
                 case 1:
-                    let baseName = compactActor[i++];
-                    this.baseName = baseName ?? '';
+                    this.baseName = compactActor[i++] ?? '';
                     break;
                 case 2:
-                    let name = compactActor[i++];
-                    this.name = name ?? '';
+                    this.name = compactActor[i++] ?? '';
                     break;
                 case 3:
                     this.unset(level);
@@ -657,12 +655,13 @@ export class AttackSummary {
 }
 
 export class MapItem {
-    id: number = -1;
+    id = -1;
     @observable type: ItemType = ItemType.None;
-    @observable baseName: string = '';
-    @observable name: string = '';
-    @observable levelX: number = -1;
-    @observable levelY: number = -1;
+    @observable baseName = '';
+    @observable name = '';
+    @observable isCurrentlyPerceived = false;
+    @observable levelX = -1;
+    @observable levelY = -1;
 
     @action
     static expandToCollection(compactItem: readonly any[], collection: Map<number, MapItem>, level: Level, parentState: EntityState) {
@@ -678,26 +677,26 @@ export class MapItem {
             case EntityState.Added:
                 this.expand(compactItem, i).addTo(collection).set(tiles);
                 break;
-            case EntityState.Deleted:
+            case EntityState.Deleted: {
                 const id = compactItem[i++];
                 const existingItem = collection.get(id);
-                if (existingItem == undefined) {
+                if (existingItem === undefined) {
                     throw 'Item ' + id + ' not deleted';
                 }
 
                 existingItem.unset(tiles, existingItem.levelX, existingItem.levelY);
                 collection.delete(id);
                 break;
-            case EntityState.Modified:
-                {
-                    const id = compactItem[i++];
-                    const existingItem = collection.get(id);
-                    if (existingItem == undefined) {
-                        throw 'Item ' + id + ' not found';
-                    }
-                    existingItem.update(compactItem, level);
-                    break;
+            }
+            case EntityState.Modified: {
+                const id = compactItem[i++];
+                const existingItem = collection.get(id);
+                if (existingItem === undefined) {
+                    throw 'Item ' + id + ' not found';
                 }
+                existingItem.update(compactItem, level);
+                break;
+            }
         }
     }
 
@@ -711,6 +710,7 @@ export class MapItem {
         item.name = compactItem[i++];
         item.levelX = compactItem[i++];
         item.levelY = compactItem[i++];
+        item.isCurrentlyPerceived = compactItem[i++];
         return item;
     }
 
@@ -736,6 +736,9 @@ export class MapItem {
                         unset = true;
                     }
                     this.levelY = compactItem[i++];
+                    break;
+                case 6:
+                    this.isCurrentlyPerceived = compactItem[i++];
                     break;
                 default:
                     if (unset) {
