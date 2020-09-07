@@ -1,12 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
-using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Items;
+using UnicornHack.Systems.Levels;
+using UnicornHack.Systems.Senses;
 using UnicornHack.Systems.Time;
 using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
@@ -225,6 +227,177 @@ namespace UnicornHack.Systems.Abilities
             Assert.Equal(1, toggledAbility.Ability.Slot);
             Assert.Null(toggledAbility.Ability.CooldownTick);
             Assert.Equal(50, playerEntity.Being.ReservedEnergyPoints);
+        }
+
+        [Fact]
+        public void Targeting_line_pattern1_diagonal() => TestTargeting(@"
+O#.......#
+#.#......#
+.#.#.....#
+....#....#
+.........#
+....#....#
+.....#T..#", new byte[] {
+               0, 254,   0,   0,   0,   0,   0,   0,   0,   0,
+             254,  76, 254,   0,   0,   0,   0,   0,   0,   0,
+               0, 254, 140, 254,   0,   0,   0,   0,   0,   0,
+               0,   0,  22, 190, 254,   0,   0,   0,   0,   0,
+               0,   0,   0,  43, 183,  45,   0,   0,   0,   0,
+               0,   0,   0,   0, 254, 181,  68,   0,   0,   0,
+               0,   0,   0,   0,   0, 254, 189,   0,   0,   0,
+        },
+            6,
+            TargetingShape.Line,
+            1,
+            Direction.West);
+
+        [Fact]
+        public void Targeting_line_pattern1_diagonal_near() => TestTargeting(@"
+O#.......#
+#T#......#
+.#.#.....#
+....#....#
+.........#
+....#....#
+.....#...#", new byte[] {
+               0, 254,   0,   0,   0,   0,   0,   0,   0,   0,
+             254, 190, 254,   0,   0,   0,   0,   0,   0,   0,
+               0, 254, 158, 254,   0,   0,   0,   0,   0,   0,
+               0,   0,  66, 198, 254,   0,   0,   0,   0,   0,
+               0,   0,   0, 127, 198,  45,   0,   0,   0,   0,
+               0,   0,   0,   2, 254, 181,  68,   0,   0,   0,
+               0,   0,   0,   0,   0, 254, 189,   0,   0,   0,
+        },
+            6,
+            TargetingShape.Line,
+            1,
+            Direction.West);
+
+        [Fact]
+        public void Targeting_line_pattern1_diagonal_self() => TestTargeting(@"
+O#.......#
+#.#......#
+.#.#.....#
+....#....#
+.........#
+....#....#
+.....#...#", new byte[] {
+               0, 254,   0,   0,   0,   0,   0,   0,   0,   0,
+             254, 190, 254,   0,   0,   0,   0,   0,   0,   0,
+               0, 254, 158, 254,   0,   0,   0,   0,   0,   0,
+               0,   0,  66, 198, 254,   0,   0,   0,   0,   0,
+               0,   0,   0, 127, 198,  45,   0,   0,   0,   0,
+               0,   0,   0,   2, 254, 181,  68,   0,   0,   0,
+               0,   0,   0,   0,   0, 254, 189,   0,   0,   0,
+        },
+            6,
+            TargetingShape.Line,
+            1,
+            Direction.Southeast);
+
+        [Fact]
+        public void Targeting_line_pattern2_diagonal_near() => TestTargeting(@"
+O........#
+.T.......#
+..#......#
+....#....#
+.........#
+....#....#
+.....#...#", new byte[] {
+               0,  42,   0,   0,   0,   0,   0,   0,   0,   0,
+              42, 254, 211, 127,  42,   0,   0,   0,   0,   0,
+               0, 211, 254, 187, 254, 211, 126,   0,   0,   0,
+               0, 127, 187,   4, 254, 158, 253,   0,   0,   0,
+               0,  42, 254, 127,   0,   0,  64,   0,   0,   0,
+               0,   0, 211, 251, 254,   0,   0,   0,   0,   0,
+               0,   0, 126, 254, 177, 254,   0,   0,   0,   0,
+        },
+            6,
+            TargetingShape.Line,
+            1,
+            Direction.West);
+
+
+        [Fact]
+        public void Targeting_line_pattern2_vertical_self() => TestTargeting(@"
+...O.....#
+.........#
+..#......#
+....#....#
+.........#
+....#....#
+.....#...#", new byte[] {
+               0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+               0,   0, 127, 254, 127,   0,   0,   0,   0,   0,
+               0,  79, 254, 254, 254, 127,   0,   0,   0,   0,
+             124,  66,  63, 254, 254, 222, 127,   0,   0,   0,
+             127,   0, 127, 254,  42, 127, 254, 127,   0,   0,
+               2,   0, 190, 254, 254,  15, 238, 254, 127,   0,
+               0,   7, 246, 254,  25,   0, 127, 254, 254, 254,
+        },
+            6,
+            TargetingShape.Line,
+            1,
+            Direction.South);
+
+        [Fact]
+        public void Targeting_line_pattern2_vertical_near() => TestTargeting(@"
+..O......#
+..T......#
+..#......#
+....#....#
+.........#
+....#....#
+.....#...#", new byte[] {
+               0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+               0, 127, 254, 127,   0,   0,   0,   0,   0,   0,
+             127, 238, 254, 238, 127,   0,   0,   0,   0,   0,
+             254, 190,   0, 190, 254,  74,   0,   0,   0,   0,
+             254, 127,   0, 127, 127,  51, 117,   0,   0,   0,
+             254,  63,   0,  63, 254,   0,  85, 125,   0,   0,
+             246,   7,   0,   7,  68,   0,   0, 127, 127,   0,
+        },
+            6,
+            TargetingShape.Line,
+            1,
+            Direction.North);
+
+        private static void TestTargeting(
+            string map,
+            byte[] expectedExposure,
+            int range,
+            TargetingShape targetingShape,
+            int targetShapeSize,
+            Direction heading)
+        {
+            var (level, rooms) = TestHelper.BuildLevelWithRooms(map);
+            var room = rooms.Single();
+            var origin = room.PredefinedPoints.Single(p => p.Item2 == 'O').Item1;
+            var (target, targetChar) = room.PredefinedPoints.SingleOrDefault(p => p.Item2 == 'T');
+            if (targetChar != 'T')
+            {
+                target = origin;
+            }
+
+            var manager = level.Entity.Manager;
+            var abilityActivationSystem = manager.AbilityActivationSystem;
+            var targetedCells = abilityActivationSystem.GetTargetedCells(
+                origin, target, heading, range, targetingShape, targetShapeSize, level);
+
+            var visibleTerrain = new byte[level.TileCount];
+            var originDistance = 0;
+            foreach (var (point, exposure) in targetedCells)
+            {
+                visibleTerrain[level.PointToIndex[point.X, point.Y]] += exposure;
+                var distance = origin.DistanceTo(point);
+                Assert.False(distance < originDistance, $"Point {point} is out of sequence");
+
+                originDistance = distance;
+            }
+
+            ((List<(Point, byte)>)targetedCells).Clear();
+            manager.PointByteListArrayPool.Return((List<(Point, byte)>)targetedCells);
+            TestHelper.AssertVisibility(level, expectedExposure, visibleTerrain);
         }
 
         private class AbilityActivatedListener : IGameSystem<AbilityActivatedMessage>

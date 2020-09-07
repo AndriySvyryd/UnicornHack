@@ -7,7 +7,6 @@ import { ItemType } from './ItemType';
 import { Material } from './Material';
 import { ItemComplexity } from './ItemComplexity';
 import { ActivationType } from './ActivationType';
-import { TargetingType } from './TargetingType';
 import { TargetingShape } from './TargetingShape';
 import { AbilitySuccessCondition } from './AbilitySuccessCondition';
 import { EffectType } from './EffectType';
@@ -424,10 +423,11 @@ export class AbilityAttributes {
     @observable level: number = 0;
     @observable activation: ActivationType = ActivationType.Default;
     @observable activationCondition: number | null = null;
-    @observable targetingType: TargetingType = TargetingType.Single;
     @observable targetingShape: TargetingShape = TargetingShape.Line;
+    @observable targetingShapeSize: number = 0;
     @observable range: number = 0;
-    @observable headingDeviation: number = 0;
+    @observable minHeadingDeviation: number = 0;
+    @observable maxHeadingDeviation: number = 0;
     @observable energyCost: number = 0;
     @observable cooldown: number = 0;
     @observable cooldownTicksLeft: number = 0;
@@ -436,9 +436,7 @@ export class AbilityAttributes {
     @observable delay: number = 0;
     @observable selfEffects: Map<number, EffectAttributes> = new Map<number, EffectAttributes>();
     @observable subAbilities: Array<SubAbilityAttributes> = new Array<SubAbilityAttributes>();
-    @observable description: string | null = null;    
-    //@observable type: AbilityType = AbilityType.Default;
-    //@observable cost: number = 0;
+    @observable description: string | null = null;
 
     @action
     static expand(compactAttributes: any[]): AbilityAttributes {
@@ -449,10 +447,11 @@ export class AbilityAttributes {
         attributes.level = compactAttributes[i++];
         attributes.activation = compactAttributes[i++];
         attributes.activationCondition = compactAttributes[i++];
-        attributes.targetingType = compactAttributes[i++];
         attributes.targetingShape = compactAttributes[i++];
+        attributes.targetingShapeSize = compactAttributes[i++];
         attributes.range = compactAttributes[i++];
-        attributes.headingDeviation = compactAttributes[i++];
+        attributes.minHeadingDeviation = compactAttributes[i++];
+        attributes.maxHeadingDeviation = compactAttributes[i++];
         attributes.energyCost = compactAttributes[i++];
         attributes.delay = compactAttributes[i++];
         attributes.cooldown = compactAttributes[i++];
@@ -464,8 +463,6 @@ export class AbilityAttributes {
 
         if (compactAttributes.length > i) {
             attributes.description = compactAttributes[i++];
-            //attributes.type = compactAttributes[i++];
-            //attributes.cost = compactAttributes[i++];
         }
 
         return attributes;
@@ -482,7 +479,7 @@ export class AbilityAttributes {
         }
 
         return capitalize(this.name) + (this.level == 0 ? '' : ' ' + this.level.toString());
-    } 
+    }
 }
 
 export class SubAbilityAttributes {

@@ -15,7 +15,7 @@ namespace UnicornHack.Hubs
                     {
                         entry.Id,
                         entry.Message,
-                        FormatTicks(entry)
+                        entry.Tick
                     };
                 case EntityState.Added:
                     return new List<object>
@@ -23,7 +23,7 @@ namespace UnicornHack.Hubs
                         (int)state,
                         entry.Id,
                         entry.Message,
-                        FormatTicks(entry)
+                        entry.Tick
                     };
                 case EntityState.Deleted:
                     return new List<object>
@@ -52,13 +52,11 @@ namespace UnicornHack.Hubs
                     if (tick.IsModified)
                     {
                         properties.Add(i);
-                        properties.Add(FormatTicks(entry));
+                        properties.Add(entry.Tick);
                     }
 
                     return properties.Count > 2 ? properties : null;
             }
         }
-
-        private static string FormatTicks(LogEntry entry) => $"{entry.Tick / 100f:0000.00}";
     }
 }

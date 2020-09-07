@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using CSharpScriptSerialization;
 using UnicornHack.Data.Fragments;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.DataLoading;
 using UnicornHack.Utils.DataStructures;
@@ -60,32 +59,7 @@ namespace UnicornHack.Generation.Map
             return room;
         }
 
-        protected override void Write(char c, Point point, LevelComponent level,
-            (List<Point> doorwayPoints, List<Point> perimeterPoints, List<Point> insidePoints, List<Point> points)
-                state)
-        {
-            MapFeature feature;
-            switch (c)
-            {
-                case '<':
-                case '{':
-                case '[':
-                case '>':
-                case '}':
-                case ']':
-                    feature = MapFeature.StoneFloor;
-                    state.points.Add(point);
-                    CreateConnection(level, point, c);
-                    break;
-                default:
-                    base.Write(c, point, level, state);
-                    return;
-            }
-
-            level.Terrain[level.PointToIndex[point.X, point.Y]] = (byte)feature;
-        }
-
-        protected virtual void CreateConnection(LevelComponent level, Point point, char? glyph)
+        protected override void CreateConnection(LevelComponent level, Point point, char? glyph)
             => CreateConnection(level, point, Connections.FirstOrDefault(c => c.Glyph == glyph));
 
         protected virtual void CreateConnection(

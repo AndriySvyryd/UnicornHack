@@ -35,6 +35,7 @@ class MapActorStyles {
     'unicorn': ITileStyle = { char: 'U', style: { color: 'white' } };
     'firefly': ITileStyle = { char: 'f', style: { color: 'darkorange' } };
     'giant spider': ITileStyle = { char: 's', style: { color: 'gray' } };
+    'quasit': ITileStyle = { char: 'q', style: { color: 'green' } };
     'default': ITileStyle = { style: { color: 'red' } };
 }
 

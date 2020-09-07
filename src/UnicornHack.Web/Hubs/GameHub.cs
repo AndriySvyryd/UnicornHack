@@ -326,7 +326,8 @@ namespace UnicornHack.Hubs
 
                 if (level.VisibleTerrainSnapshot != null)
                 {
-                    for (var i = 0; i < level.VisibleTerrain.Length; i++)
+                    var tileCount = level.TileCount;
+                    for (var i = 0; i < tileCount; i++)
                     {
                         var newValue = level.VisibleTerrain[i];
                         if (newValue != level.VisibleTerrainSnapshot[i])

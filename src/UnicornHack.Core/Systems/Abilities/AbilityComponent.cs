@@ -13,10 +13,11 @@ namespace UnicornHack.Systems.Abilities
         private ActivationType _activation;
         private int? _activationCondition;
         private ActivationType _trigger;
-        private int _headingDeviation;
+        private int _minHeadingDeviation;
+        private int _maxHeadingDeviation;
         private int _range;
+        private int _targetingShapeSize = 1;
         private TargetingShape _targetingShape;
-        private TargetingType _targetingType;
         private AbilityAction _action;
         private AbilitySuccessCondition _successCondition;
         private string _accuracy;
@@ -82,12 +83,21 @@ namespace UnicornHack.Systems.Abilities
         }
 
         /// <summary>
+        ///     Min number of octants between heading and direction to target
+        /// </summary>
+        public int MinHeadingDeviation
+        {
+            get => _minHeadingDeviation;
+            set => SetWithNotify(value, ref _minHeadingDeviation);
+        }
+
+        /// <summary>
         ///     Max number of octants between heading and direction to target
         /// </summary>
-        public int HeadingDeviation
+        public int MaxHeadingDeviation
         {
-            get => _headingDeviation;
-            set => SetWithNotify(value, ref _headingDeviation);
+            get => _maxHeadingDeviation;
+            set => SetWithNotify(value, ref _maxHeadingDeviation);
         }
 
         public int Range
@@ -96,16 +106,16 @@ namespace UnicornHack.Systems.Abilities
             set => SetWithNotify(value, ref _range);
         }
 
+        public int TargetingShapeSize
+        {
+            get => _targetingShapeSize;
+            set => SetWithNotify(value, ref _targetingShapeSize);
+        }
+
         public TargetingShape TargetingShape
         {
             get => _targetingShape;
             set => SetWithNotify(value, ref _targetingShape);
-        }
-
-        public TargetingType TargetingType
-        {
-            get => _targetingType;
-            set => SetWithNotify(value, ref _targetingType);
         }
 
         public AbilitySuccessCondition SuccessCondition
@@ -177,7 +187,7 @@ namespace UnicornHack.Systems.Abilities
         // Unmapped properties
         public GameEntity OwnerEntity
         {
-            get => _ownerEntity ?? (_ownerEntity = Entity.Manager.FindEntity(_ownerId));
+            get => _ownerEntity ??= Entity.Manager.FindEntity(_ownerId);
             set
             {
                 OwnerId = value?.Id;
@@ -216,10 +226,11 @@ namespace UnicornHack.Systems.Abilities
             ability.Activation = Activation;
             ability.ActivationCondition = ActivationCondition;
             ability.Trigger = Trigger;
-            ability.HeadingDeviation = HeadingDeviation;
+            ability.MinHeadingDeviation = MinHeadingDeviation;
+            ability.MaxHeadingDeviation = MaxHeadingDeviation;
             ability.Range = Range;
+            ability.TargetingShapeSize = TargetingShapeSize;
             ability.TargetingShape = TargetingShape;
-            ability.TargetingType = TargetingType;
             ability.Action = Action;
             ability.SuccessCondition = SuccessCondition;
             ability.Cooldown = Cooldown;
@@ -250,10 +261,11 @@ namespace UnicornHack.Systems.Abilities
             _activation = default;
             _activationCondition = default;
             _trigger = default;
-            _headingDeviation = default;
+            _minHeadingDeviation = default;
+            _maxHeadingDeviation = default;
             _range = default;
+            _targetingShapeSize = default;
             _targetingShape = default;
-            _targetingType = default;
             _action = default;
             _successCondition = default;
             _accuracy = default;

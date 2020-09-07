@@ -50,7 +50,7 @@ namespace UnicornHack.Utils
 
             var expectedFragment = new NormalMapFragment {Map = expectedPathMap};
             expectedFragment.EnsureInitialized(level.Game);
-            var expectedPathArray = new byte[level.Height * level.Width];
+            var expectedPathArray = new byte[level.TileCount];
             expectedFragment.WriteMap(
                 new Point(0, 0),
                 level,
@@ -63,7 +63,7 @@ namespace UnicornHack.Utils
                 level, new Point(0, 0), expectedPath.Last(), initialDirection);
             actualPath.Reverse();
 
-            var actualPathArray = new byte[level.Height * level.Width];
+            var actualPathArray = new byte[level.TileCount];
             actualPathArray[0] = 1;
             var pathMatches = true;
             for (var i = 0; i < actualPath.Count; i++)

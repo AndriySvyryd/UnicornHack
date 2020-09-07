@@ -2,36 +2,42 @@ namespace UnicornHack.Primitives
 {
     public enum TargetingShape
     {
-        // 1 cell at any range
+        // Ends on target, width size*2 - 1.
         Line,
 
-        // 3 cell at any range
-        ThreeLine,
+        // Goes through the target, length is determined by size.
+        Beam,
 
-        // Starts at 1 cell and increases by 2 each cell away
-        OneOctant,
+        // Orientation is determined by the closest cardinal direction.
 
-        // Starts at 3 cells and increases by 2 each cell away
-        ThreeOctants,
+        // 2 1-width lines with lengths determined by size.
+        DoubleBeam,
 
-        // Starts at 5 cells and increases by 4 each cell away
-        FiveOctants,
+        // Size between 1-4 determines the number of quadrants covered.
+        Cone,
 
-        // Starts at 8 cells and increases by 8 each cell away
-        Omnidirectional,
+        // 2 1-width lines with lengths determined by size. Excludes center cell.
+        PerpendicularBeamNoCenter,
 
-        // The shapes below can be applied in any direction
+        // 2 1-width lines with lengths determined by size.
+        PerpendicularBeam,
 
-        // A single cell
-        OneSquare,
+        // 3 1-width lines with lengths determined by size. Excludes center cell.
+        TeeNoCenter,
 
-        // A square with side of 3 cells centered on the target cell
-        ThreeSquare,
+        // 3 1-width lines with lengths determined by size.
+        Tee,
 
-        // A square with side of 5 cells centered on the target cell
-        FiveSquare,
+        // 4 1-width lines with lengths determined by size. Excludes center cell.
+        PlusNoCenter,
 
-        // A square with side of 7 cells centered on the target cell
-        SevenSquare
+        // 4 1-width lines with lengths determined by size.
+        Plus,
+
+        // A square with side of size*2 - 1, centered on the target cell. Excludes center cell.
+        SquareNoCenter,
+
+        // A square with side of size*2 - 1, centered on the target cell.
+        Square
     }
 }

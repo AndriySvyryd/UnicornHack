@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using UnicornHack.Generation.Map;
@@ -78,12 +79,18 @@ namespace UnicornHack.Generation
             levelComponent.Height = fragment.LevelHeight;
             levelComponent.Width = fragment.LevelWidth;
 
-            levelComponent.Terrain = new byte[levelComponent.Height * levelComponent.Width];
-            levelComponent.WallNeighbors = new byte[levelComponent.Height * levelComponent.Width];
-            levelComponent.VisibleNeighbours = new byte[levelComponent.Height * levelComponent.Width];
-            levelComponent.VisibleTerrain = new byte[levelComponent.Height * levelComponent.Width];
-            levelComponent.KnownTerrain = new byte[levelComponent.Height * levelComponent.Width];
-            for (var i = 0; i < levelComponent.KnownTerrain.Length; i++)
+            var length = levelComponent.TileCount;
+            levelComponent.Terrain = ArrayPool<byte>.Shared.Rent(length);
+            levelComponent.WallNeighbors = ArrayPool<byte>.Shared.Rent(length);
+            levelComponent.VisibleNeighbours = ArrayPool<byte>.Shared.Rent(length);
+            levelComponent.VisibleTerrain = ArrayPool<byte>.Shared.Rent(length);
+            levelComponent.KnownTerrain = ArrayPool<byte>.Shared.Rent(length);
+
+            Array.Clear(levelComponent.Terrain, 0, length);
+            Array.Clear(levelComponent.WallNeighbors, 0, length);
+            Array.Clear(levelComponent.VisibleNeighbours, 0, length);
+            Array.Clear(levelComponent.VisibleTerrain, 0, length);
+            for (var i = 0; i < length; i++)
             {
                 levelComponent.KnownTerrain[i] = (byte)MapFeature.Unexplored;
             }

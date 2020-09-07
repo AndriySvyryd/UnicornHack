@@ -7,6 +7,28 @@ namespace UnicornHack.Generation.Map
 {
     public class Room
     {
+        private byte _x1;
+        private byte _x2;
+        private byte _y1;
+        private byte _y2;
+
+        public Room(
+            LevelComponent level,
+            Rectangle boundingRectangle,
+            IReadOnlyList<Point> doorwayPoints,
+            IReadOnlyList<Point> insidePoints,
+            IReadOnlyList<(Point, char)> predefinedPoints,
+            MapFragment fragment)
+        {
+            Level = level;
+
+            BoundingRectangle = boundingRectangle;
+            DoorwayPoints = doorwayPoints ?? new Point[0];
+            InsidePoints = insidePoints ?? new Point[0];
+            PredefinedPoints = predefinedPoints;
+            Fragment = fragment;
+        }
+
         public LevelComponent Level { get; set; }
 
         public Rectangle BoundingRectangle
@@ -21,29 +43,10 @@ namespace UnicornHack.Generation.Map
             }
         }
 
-        private byte _x1;
-        private byte _x2;
-        private byte _y1;
-        private byte _y2;
-
         public IReadOnlyList<Point> DoorwayPoints { get; }
         public IReadOnlyList<Point> InsidePoints { get; }
         public MapFragment Fragment { get; }
-
-        public Room(
-            LevelComponent level,
-            Rectangle boundingRectangle,
-            IReadOnlyList<Point> doorwayPoints,
-            IReadOnlyList<Point> insidePoints,
-            MapFragment fragment)
-        {
-            Level = level;
-
-            BoundingRectangle = boundingRectangle;
-            DoorwayPoints = doorwayPoints ?? new Point[0];
-            InsidePoints = insidePoints ?? new Point[0];
-            Fragment = fragment;
-        }
+        public IReadOnlyList<(Point, char)> PredefinedPoints { get; }
 
         public Room GetClosest(IEnumerable<Room> rooms)
         {

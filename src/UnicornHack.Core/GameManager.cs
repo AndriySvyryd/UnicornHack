@@ -1,4 +1,7 @@
-﻿using UnicornHack.Utils.MessagingECS;
+﻿using System.Collections.Generic;
+using UnicornHack.Utils.Caching;
+using UnicornHack.Utils.DataStructures;
+using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack
 {
@@ -16,6 +19,13 @@ namespace UnicornHack
 
         public Game Game { get; set; }
         public new SequentialMessageQueue<GameManager> Queue => (SequentialMessageQueue<GameManager>)base.Queue;
+
+        public ListObjectPool<List<(Point, byte)>> PointByteListArrayPool { get; }
+            = new ListObjectPool<List<(Point, byte)>>(() => new List<(Point, byte)>(), 4, 16, 0);
+        public ListObjectPool<List<(int, byte)>> IntByteListArrayPool { get; }
+            = new ListObjectPool<List<(int, byte)>>(() => new List<(int, byte)>(), 4, 16, 0);
+        public ListObjectPool<List<(GameEntity, byte)>> GameEntityByteListArrayPool { get; }
+            = new ListObjectPool<List<(GameEntity, byte)>>(() => new List<(GameEntity, byte)>(), 4, 16, 0);
 
         protected override void InitializeSystems(IMessageQueue queue)
         {

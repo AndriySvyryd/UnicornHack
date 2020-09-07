@@ -19,10 +19,11 @@ namespace UnicornHack.Generation
         public int? ActivationCondition { get; set; }
         public ActivationType ItemCondition { get; set; }
         public ActivationType Trigger { get; set; }
-        public int HeadingDeviation { get; set; }
+        public int MinHeadingDeviation { get; set; }
+        public int MaxHeadingDeviation { get; set; }
         public int Range { get; set; }
+        public int TargetingShapeSize { get; set; } = 1;
         public TargetingShape TargetingShape { get; set; }
-        public TargetingType TargetingType { get; set; }
         public AbilityAction Action { get; set; }
         public AbilitySuccessCondition SuccessCondition { get; set; }
         public string Accuracy { get; set; }
@@ -50,10 +51,11 @@ namespace UnicornHack.Generation
             ability.Activation = Activation;
             ability.ActivationCondition = ActivationCondition;
             ability.Trigger = Trigger;
-            ability.HeadingDeviation = HeadingDeviation;
+            ability.MinHeadingDeviation = MinHeadingDeviation;
+            ability.MaxHeadingDeviation = MaxHeadingDeviation;
             ability.Range = Range;
+            ability.TargetingShapeSize = TargetingShapeSize;
             ability.TargetingShape = TargetingShape;
-            ability.TargetingType = TargetingType;
             ability.Action = Action;
             ability.SuccessCondition = SuccessCondition;
             ability.Accuracy = Accuracy;
@@ -111,10 +113,11 @@ namespace UnicornHack.Generation
             {nameof(ActivationCondition), (o, v) => v != default},
             {nameof(ItemCondition), (o, v) => (ActivationType)v != default},
             {nameof(Trigger), (o, v) => (ActivationType)v != default},
-            {nameof(HeadingDeviation), (o, v) => (int)v != default},
+            {nameof(MinHeadingDeviation), (o, v) => (int)v != default},
+            {nameof(MaxHeadingDeviation), (o, v) => (int)v != default},
             {nameof(Range), (o, v) => (int)v != default},
+            {nameof(TargetingShapeSize), (o, v) => (int)v != default},
             {nameof(TargetingShape), (o, v) => (TargetingShape)v != default},
-            {nameof(TargetingType), (o, v) => (TargetingType)v != default},
             {nameof(Action), (o, v) => (AbilityAction)v != default},
             {nameof(SuccessCondition), (o, v) => (AbilitySuccessCondition)v != default},
             {nameof(Accuracy), (o, v) => v != default},

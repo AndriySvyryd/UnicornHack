@@ -1,4 +1,5 @@
-﻿using UnicornHack.Generation;
+﻿using System.Buffers;
+using UnicornHack.Generation;
 
 namespace UnicornHack.Systems.Senses
 {
@@ -63,6 +64,11 @@ namespace UnicornHack.Systems.Senses
 
         protected override void Clean()
         {
+            if (VisibleTerrain != null)
+            {
+                ArrayPool<byte>.Shared.Return(VisibleTerrain);
+            }
+
             _primaryFOVQuadrants = default;
             _totalFOVQuadrants = default;
             _primaryVisionRange = default;

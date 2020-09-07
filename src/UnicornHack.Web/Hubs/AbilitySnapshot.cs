@@ -29,8 +29,8 @@ namespace UnicornHack.Hubs
                     properties.Add(abilityEntity.Ability.Slot);
                     properties.Add(abilityEntity.Ability.CooldownTick);
                     properties.Add(abilityEntity.Ability.CooldownXpLeft);
-                    properties.Add(abilityEntity.Ability.TargetingType);
                     properties.Add(abilityEntity.Ability.TargetingShape);
+                    properties.Add(abilityEntity.Ability.TargetingShapeSize);
 
                     return properties;
                 }
@@ -90,19 +90,19 @@ namespace UnicornHack.Hubs
                     }
 
                     i++;
-                    var targetingType = abilityEntry.Property(nameof(AbilityComponent.TargetingType));
-                    if (targetingType.IsModified)
-                    {
-                        properties.Add(i);
-                        properties.Add(abilityEntity.Ability.TargetingType);
-                    }
-
-                    i++;
                     var targetingShape = abilityEntry.Property(nameof(AbilityComponent.TargetingShape));
                     if (targetingShape.IsModified)
                     {
                         properties.Add(i);
                         properties.Add(abilityEntity.Ability.TargetingShape);
+                    }
+
+                    i++;
+                    var targetingType = abilityEntry.Property(nameof(AbilityComponent.TargetingShapeSize));
+                    if (targetingType.IsModified)
+                    {
+                        properties.Add(i);
+                        properties.Add(abilityEntity.Ability.TargetingShapeSize);
                     }
 
                     return properties.Count > 2 ? properties : null;
@@ -124,17 +124,18 @@ namespace UnicornHack.Hubs
             var stats = manager.AbilityActivationSystem.GetAttackStats(activateMessage);
             manager.ReturnMessage(activateMessage);
 
-            var result = new List<object>(ability.Template == null ? 20 : 21)
+            var result = new List<object>(ability.Template == null ? 21 : 22)
             {
                 ability.EntityId,
                 context.Services.Language.GetString(ability),
                 ability.Level,
                 ability.Activation,
                 ability.ActivationCondition,
-                ability.TargetingType,
                 ability.TargetingShape,
+                ability.TargetingShapeSize,
                 ability.Range,
-                ability.HeadingDeviation,
+                ability.MinHeadingDeviation,
+                ability.MaxHeadingDeviation,
                 ability.EnergyCost,
                 stats.Delay,
                 ability.Cooldown,

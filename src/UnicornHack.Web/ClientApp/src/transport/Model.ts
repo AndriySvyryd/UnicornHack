@@ -6,8 +6,8 @@ import { ItemType } from "./ItemType";
 import { MapFeature } from "./MapFeature";
 import { DirectionFlags } from "./DirectionFlags";
 import { TargetingShape } from "./TargetingShape";
-import { TargetingType } from "./TargetingType";
 import { ActorAction } from "./ActorAction";
+import { formatTime } from "../Util";
 
 export class Player {
     readonly name: string = '';
@@ -556,8 +556,8 @@ export class MapActorAction {
     @observable type: ActorAction | null = null;
     @observable name: string | null = null;
     @observable target: number = 0;
-    @observable targetingType: TargetingType = TargetingType.Single;
     @observable targetingShape: TargetingShape = TargetingShape.Line;
+    @observable targetingShapeSize: number = 0;
 
     @action
     update(compactAction: readonly any[] | null, level: Level): MapActorAction {
@@ -573,8 +573,8 @@ export class MapActorAction {
             this.type = null;
             this.name = null;
             this.target = -1;
-            this.targetingType = TargetingType.Single;
             this.targetingShape = TargetingShape.Line;
+            this.targetingShapeSize = 0;
             return this;
         }
 
@@ -583,8 +583,8 @@ export class MapActorAction {
         this.target = compactAction[i++];
         switch (actionType) {
             case ActorAction.UseAbilitySlot:
-                this.targetingType = compactAction[i++];
                 this.targetingShape = compactAction[i++];
+                this.targetingShapeSize = compactAction[i++];
                 break;
         }
 
@@ -789,8 +789,8 @@ export class Ability {
     @observable slot: number | null = null;
     @observable cooldownTick: number | null = null;
     @observable cooldownXpLeft: number | null = null;
-    @observable targetingType: TargetingType = TargetingType.Single;
     @observable targetingShape: TargetingShape = TargetingShape.Line;
+    @observable targetingShapeSize: number = 0;
 
     @action
     static expandToCollection(compactAbility: readonly any[], collection: Map<number, Ability>, parentState: EntityState) {
@@ -833,8 +833,8 @@ export class Ability {
         ability.slot = compactAbility[i++];
         ability.cooldownTick = compactAbility[i++];
         ability.cooldownXpLeft = compactAbility[i++];
-        ability.targetingType = compactAbility[i++];
         ability.targetingShape = compactAbility[i++];
+        ability.targetingShapeSize = compactAbility[i++];
 
         return ability;
     }
@@ -861,10 +861,10 @@ export class Ability {
                     this.cooldownXpLeft = compactAbility[i++];
                     break;
                 case 6:
-                    this.targetingType = compactAbility[i++];
+                    this.targetingShape = compactAbility[i++];
                     break;
                 case 7:
-                    this.targetingShape = compactAbility[i++];
+                    this.targetingShapeSize = compactAbility[i++];
                     break;
             }
         }
@@ -920,7 +920,7 @@ export class LogEntry {
         const logEntry = new LogEntry();
         logEntry.id = compactLogEntry[i++];
         logEntry.message = compactLogEntry[i++];
-        logEntry.ticks = compactLogEntry[i++];
+        logEntry.ticks = formatTime(compactLogEntry[i++], true);
 
         return logEntry;
     }

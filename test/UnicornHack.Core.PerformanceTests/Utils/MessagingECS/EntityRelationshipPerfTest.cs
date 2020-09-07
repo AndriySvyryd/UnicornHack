@@ -42,7 +42,7 @@ namespace UnicornHack.PerformanceTests.Utils.MessagingECS
             }
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void UpdateRelationship()
         {
             for (var i = 0; i < EntityCount; i++)

@@ -342,8 +342,8 @@ namespace UnicornHack.Hubs
                     var ability = abilityEntity.Ability;
                     result.Add(context.Services.Language.GetString(ability));
                     result.Add(ai.NextActionTarget2);
-                    result.Add(ability.TargetingType);
                     result.Add(ability.TargetingShape);
+                    result.Add(ability.TargetingShapeSize);
 
                     return result;
                 case ActorAction.MoveOneCell:

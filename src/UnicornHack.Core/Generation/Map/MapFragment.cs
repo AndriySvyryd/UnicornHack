@@ -202,7 +202,8 @@ namespace UnicornHack.Generation.Map
             var perimeterPoints = new List<Point>();
             var insidePoints = new List<Point>();
             var points = new List<Point>();
-            WriteMap(target.Value, level, Write, (doorwayPoints, perimeterPoints, insidePoints, points));
+            var predefinedPoints = new List<(Point, char)>();
+            WriteMap(target.Value, level, Write, (doorwayPoints, perimeterPoints, insidePoints, points, predefinedPoints));
 
             if (!NoRandomDoorways && doorwayPoints.Count == 0)
             {
@@ -213,14 +214,21 @@ namespace UnicornHack.Generation.Map
                 new Rectangle(target.Value, PayloadArea.Width, PayloadArea.Height),
                 doorwayPoints,
                 insidePoints,
+                predefinedPoints,
                 this);
         }
 
-        protected virtual void Write(char c, Point point, LevelComponent level,
-            (List<Point> doorwayPoints, List<Point> perimeterPoints, List<Point> insidePoints, List<Point> points)
-                state)
+        protected void Write(
+            char c,
+            Point point,
+            LevelComponent level,
+            (List<Point> doorwayPoints,
+                List<Point> perimeterPoints,
+                List<Point> insidePoints,
+                List<Point> points,
+                List<(Point, char)> predefinedPoints) state)
         {
-            var (doorwayPoints, perimeterPoints, insidePoints, points) = state;
+            var (doorwayPoints, _, insidePoints, points, predefinedPoints) = state;
             var feature = MapFeature.Default;
             switch (c)
             {
@@ -248,13 +256,30 @@ namespace UnicornHack.Generation.Map
                 case '\u0001':
                     points.Add(point);
                     break;
+                case '<':
+                case '{':
+                case '[':
+                case '>':
+                case '}':
+                case ']':
+                    feature = MapFeature.StoneFloor;
+                    points.Add(point);
+                    CreateConnection(level, point, c);
+                    break;
                 case ' ':
                     break;
                 default:
-                    throw new InvalidOperationException($"Unsupported map character '{c}' at {point.X},{point.Y}");
+                    feature = MapFeature.StoneFloor;
+                    insidePoints.Add(point);
+                    predefinedPoints.Add((point, c));
+                    break;
             }
 
             TerrainSystem.SetTerrain(feature, point, level);
+        }
+
+        protected virtual void CreateConnection(LevelComponent level, Point point, char? glyph)
+        {
         }
 
         protected Room TryPlace(LevelComponent level, Rectangle boundingRectangle, DynamicMap map)
@@ -297,15 +322,15 @@ namespace UnicornHack.Generation.Map
         public virtual Room BuildRoom(LevelComponent level, IEnumerable<Point> points, Action<Point> insideAction,
             Action<Point> perimeterAction, Action<Point> outsideAction)
         {
-            void Noop(Point _)
+            static void Noop(Point _)
             {
             }
 
             var insidePoints = new List<Point>();
-            insideAction = insideAction ?? Noop;
-            perimeterAction = perimeterAction ?? Noop;
-            outsideAction = outsideAction ?? Noop;
-            var neighbours = new byte[level.Width * level.Height];
+            insideAction ??= Noop;
+            perimeterAction ??= Noop;
+            outsideAction ??= Noop;
+            var neighbours = new byte[level.TileCount];
             var firstPoint = new Point();
             var lastPoint = new Point();
             var left = byte.MaxValue;
@@ -368,6 +393,7 @@ namespace UnicornHack.Generation.Map
                 new Rectangle(new Point(left, firstPoint.Y), new Point(right, lastPoint.Y)),
                 doorwayPoints,
                 insidePoints,
+                new List<(Point, char)>(),
                 this);
         }
 

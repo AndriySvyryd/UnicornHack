@@ -251,7 +251,8 @@ namespace UnicornHack.Systems.Abilities
                     manager.Enqueue(activation.ActivationMessage);
                 }
 
-                foreach (var (target, exposure) in GetTargets(activation.ActivationMessage))
+                var targets = GetTargets(activation.ActivationMessage);
+                foreach (var (target, exposure) in targets)
                 {
                     var targetMessage = (activation.TargetMessage ?? activation.ActivationMessage).Clone(manager);
                     targetMessage.TargetEntity = target;
@@ -293,6 +294,9 @@ namespace UnicornHack.Systems.Abilities
                     }
                 }
 
+                ((List<(GameEntity, byte)>)targets).Clear();
+                manager.GameEntityByteListArrayPool.Return((List<(GameEntity, byte)>)targets);
+
                 if (activation.ActivationMessage.TargetEntity != null)
                 {
                     manager.ReturnMessage(activation.ActivationMessage);
@@ -331,7 +335,7 @@ namespace UnicornHack.Systems.Abilities
 
                     var octantsToTurn = 0;
                     var targetOctantDifference = targetDirection.OctantsTo(activatorPosition.Heading.Value);
-                    var maxOctantDifference = ability.HeadingDeviation;
+                    var maxOctantDifference = ability.MaxHeadingDeviation;
                     if (targetOctantDifference > maxOctantDifference)
                     {
                         octantsToTurn = targetOctantDifference - maxOctantDifference;
@@ -787,109 +791,135 @@ namespace UnicornHack.Systems.Abilities
 
         private IReadOnlyCollection<(GameEntity, byte)> GetTargets(in AbilityActivatedMessage activationMessage)
         {
-            if (activationMessage.TargetEntity != null)
-            {
-                return new[] {(activationMessage.TargetEntity, BeveledVisibilityCalculator.MaxVisibility)};
-            }
-
             var activator = activationMessage.ActivatorEntity;
-            var targetCell = activationMessage.TargetCell.Value;
-            var vectorToTarget = activator.Position.LevelCell.DifferenceTo(targetCell);
-            var targetDistance = vectorToTarget.Length();
-            if (targetDistance == 0)
-            {
-                return new[] {(activator, BeveledVisibilityCalculator.MaxVisibility)};
-            }
-
             var manager = activator.Manager;
-            var levelId = activator.Position.LevelId;
+            var targets = manager.GameEntityByteListArrayPool.Rent();
             var ability = activationMessage.AbilityEntity.Ability;
-
-            switch (ability.TargetingShape)
+            if (activationMessage.TargetEntity != null
+                && ability.Activation != ActivationType.Targeted)
             {
-                // TODO: Handle other shapes
-                case TargetingShape.ThreeOctants:
-                    // TODO: Handle different ranges
-                    if (targetDistance > 1)
-                    {
-                        return new (GameEntity, byte)[0];
-                    }
-
-                    var direction = vectorToTarget.AsDirection();
-                    var firstNeighbor = targetCell.Translate(direction.Rotate(1).AsVector());
-                    var secondNeighbor = targetCell.Translate(direction.Rotate(-1).AsVector());
-
-                    var targets = new List<(GameEntity, byte)>();
-                    var arcTarget = manager.LevelActorToLevelCellIndex[(levelId, targetCell.X, targetCell.Y)];
-                    if (arcTarget != null)
-                    {
-                        targets.Add((arcTarget, BeveledVisibilityCalculator.MaxVisibility));
-                    }
-
-                    arcTarget = manager.LevelActorToLevelCellIndex[(levelId, firstNeighbor.X, firstNeighbor.Y)];
-                    if (arcTarget != null)
-                    {
-                        targets.Add((arcTarget, BeveledVisibilityCalculator.MaxVisibility));
-                    }
-
-                    arcTarget = manager.LevelActorToLevelCellIndex[(levelId, secondNeighbor.X, secondNeighbor.Y)];
-                    if (arcTarget != null)
-                    {
-                        targets.Add((arcTarget, BeveledVisibilityCalculator.MaxVisibility));
-                    }
-
-                    return targets;
-                case TargetingShape.Line:
-                    return GetLOSTargets(
-                        activator,
-                        targetCell,
-                        activator.Position.LevelEntity,
-                        ability.TargetingType,
-                        ability.Range);
-                default:
-                    throw new NotSupportedException("TargetingShape " + ability.TargetingShape + " not supported");
+                targets.Add((activationMessage.TargetEntity, BeveledVisibilityCalculator.MaxVisibility));
+                return targets;
             }
+
+            var level = activator.Position.LevelEntity.Level;
+            var targetCell = activationMessage.TargetCell ?? activationMessage.TargetEntity.Position.LevelCell;            
+            var cells = GetTargetedCells(
+                activator.Position.LevelCell,
+                targetCell,
+                activator.Position.Heading.Value,
+                ability.Range,
+                ability.TargetingShape,
+                ability.TargetingShapeSize,
+                level);
+
+            foreach (var (visibleTargetCell, exposure) in cells)
+            {
+                var target = manager.LevelActorToLevelCellIndex[(level.EntityId, visibleTargetCell.X, visibleTargetCell.Y)];
+                if (target != null)
+                {
+                    targets.Add((target, exposure));
+
+                    if (ability.TargetingShape == TargetingShape.Line)
+                    {
+                        return targets;
+                    }
+                }
+            }
+
+            ((List<(Point, byte)>)cells).Clear();
+            manager.PointByteListArrayPool.Return((List<(Point, byte)>)cells);
+
+            return targets;
         }
 
-        private static IReadOnlyCollection<(GameEntity, byte)> GetLOSTargets(
-            GameEntity sensor, Point targetCell, GameEntity levelEntity, TargetingType targetingType, int range)
+        public IReadOnlyCollection<(Point, byte)> GetTargetedCells(
+            Point originCell,
+            Point targetCell,
+            Direction heading,
+            int range,
+            TargetingShape targetingShape,
+            int targetShapeSize,
+            LevelComponent level)
         {
-            var manager = levelEntity.Manager;
-            var los = manager.SensorySystem.GetLOS(sensor, targetCell);
-            var level = levelEntity.Level;
-            switch (targetingType)
+            var manager = level.Entity.Manager;
+            var targetVector = originCell.DifferenceTo(targetCell);
+            var targetDistance = targetVector.Length();
+            if (targetDistance == 0)
             {
-                case TargetingType.Area:
-                    var targets = new List<(GameEntity, byte)>();
-                    foreach (var (targetIndex, beamExposure) in los)
+                targetVector = heading.AsVector();
+            }
+
+            switch (targetingShape)
+            {
+                case TargetingShape.Line:
+                case TargetingShape.Beam:
                     {
-                        var beamTargetCell = level.IndexToPoint[targetIndex];
-                        var beamTarget =
-                            manager.LevelActorToLevelCellIndex[(levelEntity.Id, beamTargetCell.X, beamTargetCell.Y)];
-                        if (beamTarget != null
-                            && sensor.Position.LevelCell.DifferenceTo(beamTargetCell).Length() <= range)
+                        if (targetShapeSize != 1)
                         {
-                            targets.Add((beamTarget, beamExposure));
+                            throw new NotSupportedException($"TargetingShape {targetingShape} with size {targetShapeSize} not supported");
                         }
+
+                        return manager.SensorySystem.GetLOS(originCell, targetVector, range, level);
                     }
-
-                    return targets;
-                case TargetingType.Edge:
-                case TargetingType.Single:
-                    // TODO: Target for Single should be the first entity
-
-                    var (lastIndex, exposure) = los.Last();
-                    var target = manager.LevelActorToLevelCellIndex[(levelEntity.Id, targetCell.X, targetCell.Y)];
-                    if (level.IndexToPoint[lastIndex] != targetCell
-                        || target == null
-                        || sensor.Position.LevelCell.DifferenceTo(targetCell).Length() > range)
+                case TargetingShape.Cone:
                     {
-                        return new (GameEntity, byte)[0];
-                    }
+                        var targets = manager.PointByteListArrayPool.Rent();
+                        if (targetShapeSize != 1)
+                        {
+                            throw new NotSupportedException($"TargetingShape {targetingShape} with size {targetShapeSize} not supported");
+                        }
 
-                    return new[] {(target, exposure)};
+                        if (range != 1)
+                        {
+                            throw new NotSupportedException($"TargetingShape {targetingShape} with range {range} not supported");
+                        }
+
+                        var direction = targetVector.AsDirection();
+                        var firstNeighbor = targetCell.Translate(direction.Rotate(1).AsVector());
+                        var secondNeighbor = targetCell.Translate(direction.Rotate(-1).AsVector());
+
+                        if (range == 1 && targetShapeSize == 1)
+                        {
+                            targets.Add((targetCell, BeveledVisibilityCalculator.MaxVisibility));
+                            targets.Add((firstNeighbor, BeveledVisibilityCalculator.MaxVisibility));
+                            targets.Add((secondNeighbor, BeveledVisibilityCalculator.MaxVisibility));
+                        }
+
+                        return targets;
+                    }
+                case TargetingShape.Square:
+                    {
+                        var targets = manager.PointByteListArrayPool.Rent();
+                        if (targetShapeSize == 1)
+                        {
+                            if (targetDistance > range)
+                            {
+                                return targets;
+                            }
+
+                            if (targetDistance == 0)
+                            {
+                                targets.Add((originCell, BeveledVisibilityCalculator.MaxVisibility));
+                                return targets;
+                            }
+
+                            var losCells = manager.SensorySystem.GetLOS(originCell, targetCell, level);
+                            var last = losCells.LastOrDefault(c => c.Item1 == targetCell);
+                            if (last.Item2 != 0)
+                            {
+                                targets.Add(last);
+                            }
+
+                            ((List<(Point, byte)>)losCells).Clear();
+                            manager.PointByteListArrayPool.Return((List<(Point, byte)>)losCells);
+                        }
+
+                        return targets;
+                    }
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    // TODO: Handle other shapes
+                    throw new NotSupportedException("TargetingShape " + targetingShape + " not supported");
             }
         }
 
@@ -932,19 +962,23 @@ namespace UnicornHack.Systems.Abilities
 
             if (exposure == null)
             {
-                var position = targetEntity.Position;
-                var los = GetLOSTargets(
-                    activatorEntity, position.LevelCell, position.LevelEntity, ability.TargetingType, ability.Range);
+                var originPosition = activatorEntity.Position;
+                var targetPosition = targetEntity.Position;
+                var targetCell = targetPosition.LevelCell;
+                var level = originPosition.LevelEntity.Level;
+                var cells = GetTargetedCells(
+                    originPosition.LevelCell,
+                    targetCell,
+                    originPosition.Heading.Value,
+                    ability.Range,
+                    TargetingShape.Square,
+                    1,
+                    level);
 
-                if (los.Count == 0
-                    || los.Last().Item1 != targetEntity)
-                {
-                    exposure = 0;
-                }
-                else
-                {
-                    exposure = los.Last().Item2;
-                }
+                exposure = cells.LastOrDefault().Item2;
+
+                ((List<(Point, byte)>)cells).Clear();
+                abilityEntity.Manager.PointByteListArrayPool.Return((List<(Point, byte)>)cells);
             }
 
             if (exposure.Value < BeveledVisibilityCalculator.MaxVisibility)

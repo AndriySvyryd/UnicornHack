@@ -29,13 +29,13 @@ namespace UnicornHack.Systems.Knowledge
 
             var undine = CreatureData.Undine.Instantiate(level, new Point(0, 1));
 
-            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(1, 1));
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(1, 0));
             playerEntity.Position.Heading = Direction.West;
             var manager = playerEntity.Manager;
 
             ItemData.LongSword.Instantiate(playerEntity);
 
-            var player2Entity = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, level.Entity, new Point(1, 0));
+            var player2Entity = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, level.Entity, new Point(2, 0));
             player2Entity.Position.Heading = Direction.North;
 
             manager.Queue.ProcessQueue(manager);

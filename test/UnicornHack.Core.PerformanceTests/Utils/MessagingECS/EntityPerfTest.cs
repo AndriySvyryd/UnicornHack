@@ -41,7 +41,7 @@ namespace UnicornHack.PerformanceTests.Utils.MessagingECS
             }
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void AddComponent()
         {
             for (var i = 0; i < EntityCount; i++)
@@ -51,7 +51,7 @@ namespace UnicornHack.PerformanceTests.Utils.MessagingECS
             }
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void FindComponent()
         {
             for (var i = 0; i < EntityCount; i++)
@@ -60,7 +60,7 @@ namespace UnicornHack.PerformanceTests.Utils.MessagingECS
             }
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void HasComponent()
         {
             for (var i = 0; i < EntityCount; i++)

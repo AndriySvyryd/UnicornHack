@@ -96,7 +96,7 @@ namespace UnicornHack
                 };
             expectedFragment.EnsureInitialized(level.Game);
 
-            var expectedVisibility = new byte[level.Height * level.Width];
+            var expectedVisibility = new byte[level.TileCount];
 
             Point? mismatchedPoint = null;
             expectedFragment.WriteMap(
@@ -155,7 +155,7 @@ Seed: " + level.Game.InitialSeed);
             };
             expectedFragment.EnsureInitialized(level.Game);
 
-            var expected = new byte[level.Height * level.Width];
+            var expected = new byte[level.TileCount];
             var matched = true;
 
             expectedFragment.WriteMap(

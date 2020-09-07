@@ -8,7 +8,7 @@ import { ActorAction } from '../transport/ActorAction';
 import { Direction } from '../transport/Direction';
 import { GameQueryType } from '../transport/GameQueryType';
 import { MapFeature } from '../transport/MapFeature';
-import { capitalize } from '../Util';
+import { capitalize, formatTime } from '../Util';
 import { IGameContext } from './Game';
 import { TooltipTrigger } from './TooltipTrigger';
 
@@ -146,7 +146,7 @@ class MapTile extends React.PureComponent<ITileProps, {}> {
     private getAttackSummary(attack: AttackSummary, attackName: string, victim: string): React.ReactElement {
         return <div>
             {`${attackName} - toHit: ${attack.hitProbability}, dmg: ${attack.damage}, delay: ${
-                attack.delay / 100} AUT, expected time to defeat: `}<b>{attack.ticksToKill / 100} AUT</b>
+                formatTime(attack.delay / 100)}, expected time to defeat: `}<b>{formatTime(attack.ticksToKill / 100)}</b>
             </div>;
     }
 
@@ -163,7 +163,7 @@ class MapTile extends React.PureComponent<ITileProps, {}> {
             if (glyph === undefined) {
                 glyph = Object.assign({ char: tile.actor.baseName[0] }, styles.actors['default']);
                 // TODO: Add more creatures
-                throw `Actor type ${tile.actor.baseName} not supported.`;
+                console.log(`Actor type ${tile.actor.baseName} not supported.`);
             }
 
             if (tile.actor.baseName === 'player'

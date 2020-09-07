@@ -2,7 +2,7 @@
 {
     public interface IObjectPool
     {
-        object Get();
+        object Rent();
         void Return(object obj);
     }
 }

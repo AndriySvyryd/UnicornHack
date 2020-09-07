@@ -337,8 +337,8 @@ namespace UnicornHack.Systems.Faculties
                     {
                         // TODO: Calculate range
                         weaponAttack.Range = abilityToActivate.Range;
-                        weaponAttack.TargetingType = abilityToActivate.TargetingType;
                         weaponAttack.TargetingShape = abilityToActivate.TargetingShape;
+                        weaponAttack.TargetingShapeSize = abilityToActivate.TargetingShapeSize;
                         weaponAttack.Delay = manager.AbilityActivationSystem.GetActualDelay(abilityToActivate, ownerEntity).ToString();
                     }
 
@@ -391,9 +391,10 @@ namespace UnicornHack.Systems.Faculties
 
             // TODO: Only use weapon values when not specified by the ability
             ability.Range = firstWeaponAbility.Range;
-            ability.HeadingDeviation = firstWeaponAbility.HeadingDeviation;
+            ability.MinHeadingDeviation = firstWeaponAbility.MinHeadingDeviation;
+            ability.MaxHeadingDeviation = firstWeaponAbility.MaxHeadingDeviation;
+            ability.TargetingShapeSize = firstWeaponAbility.TargetingShapeSize;
             ability.TargetingShape = firstWeaponAbility.TargetingShape;
-            ability.TargetingType = firstWeaponAbility.TargetingType;
             var delay = manager.AbilityActivationSystem.GetActualDelay(firstWeaponAbility, ownerEntity);
 
             if (secondWeaponAbility != null)
@@ -403,19 +404,25 @@ namespace UnicornHack.Systems.Faculties
                     ability.Range = secondWeaponAbility.Range;
                 }
 
-                if (secondWeaponAbility.HeadingDeviation < ability.HeadingDeviation)
+                if (secondWeaponAbility.MinHeadingDeviation > ability.MinHeadingDeviation)
                 {
-                    ability.HeadingDeviation = secondWeaponAbility.HeadingDeviation;
+                    ability.MinHeadingDeviation = secondWeaponAbility.MinHeadingDeviation;
                 }
 
+                if (secondWeaponAbility.MaxHeadingDeviation < ability.MaxHeadingDeviation)
+                {
+                    ability.MaxHeadingDeviation = secondWeaponAbility.MaxHeadingDeviation;
+                }
+
+                if (secondWeaponAbility.TargetingShapeSize < ability.TargetingShapeSize)
+                {
+                    ability.TargetingShapeSize = secondWeaponAbility.TargetingShapeSize;
+                }
+
+                // TODO: Calculate common shape more accurately
                 if (secondWeaponAbility.TargetingShape < ability.TargetingShape)
                 {
                     ability.TargetingShape = secondWeaponAbility.TargetingShape;
-                }
-
-                if (secondWeaponAbility.TargetingType < ability.TargetingType)
-                {
-                    ability.TargetingType = secondWeaponAbility.TargetingType;
                 }
 
                 var secondDelay = manager.AbilityActivationSystem.GetActualDelay(secondWeaponAbility, ownerEntity);

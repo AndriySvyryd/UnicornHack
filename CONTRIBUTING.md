@@ -3,7 +3,7 @@
 ## Prerequisites
 You need to have these or higher versions installed and added to the PATH:
 * .NET Core SDK 3.1
-* Node.js 10.15.0
+* Node.js 10.15.0 (v13 and above are not supported yet)
 * Typescript SDK 3.7
 * SQL Server 2016 Express LocalDB
 * (Recommended) Visual Studio 2019 16.4 with 'ASP.NET and web development' workload, the installer allows you to select all of the dependencies above

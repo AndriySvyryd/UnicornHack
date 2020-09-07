@@ -6,7 +6,6 @@ import { AbilitySuccessCondition } from '../transport/AbilitySuccessCondition';
 import { EffectDuration } from '../transport/EffectDuration';
 import { EffectType } from '../transport/EffectType';
 import { AbilityAttributes, EffectAttributes } from '../transport/DialogData';
-import { TargetingType } from '../transport/TargetingType';
 import { TargetingShape } from '../transport/TargetingShape';
 import { ValueCombinationFunction } from '../transport/ValueCombinationFunction';
 import { Accordion, AccordionToggle, AccordionCollapse } from './Accordion';
@@ -14,6 +13,7 @@ import { IGameContext } from './Game';
 import { Dialog } from './Dialog';
 import { KeyContext } from './KeyContext';
 import { PropertyRow } from './PropertyRow';
+import { formatTime } from '../Util';
 
 export const AbilityPropertiesDialog = observer((props: IAbilityPropertiesProps) => {
     const { data, context } = props;
@@ -51,17 +51,17 @@ export const AbilityAttributesScreen = observer((props: IAbilityPropertiesData) 
             : <></>}
         <PropertyRow label="Activation" value={ActivationType[abilityAttributes.activation]} />
         <PropertyRow label="Activation condition" value={abilityAttributes.activationCondition} show={abilityAttributes.activationCondition != null} />
-        <PropertyRow label="Targeting type" value={TargetingType[abilityAttributes.targetingType]}
-            show={abilityAttributes.activation == ActivationType.Targeted} />
         <PropertyRow label="Targeting shape" value={TargetingShape[abilityAttributes.targetingShape]}
             show={abilityAttributes.activation == ActivationType.Targeted} />
+        <PropertyRow label="Targeting size" value={abilityAttributes.targetingShapeSize}
+            show={abilityAttributes.activation == ActivationType.Targeted} />
         <PropertyRow label="Range" value={abilityAttributes.range} show={abilityAttributes.activation == ActivationType.Targeted} />
-        <PropertyRow label="Heading deviation" value={abilityAttributes.headingDeviation}
+        <PropertyRow label="Heading deviation" value={abilityAttributes.minHeadingDeviation + '-' + abilityAttributes.maxHeadingDeviation}
             show={abilityAttributes.activation == ActivationType.Targeted} />
         <PropertyRow label="Energy cost" value={abilityAttributes.energyCost} show={abilityAttributes.energyCost != 0} />
-        <PropertyRow label="Delay" value={abilityAttributes.delay} show={abilityAttributes.delay != 0} />
-        <PropertyRow label="Cooldown" value={abilityAttributes.cooldown} show={abilityAttributes.cooldown != 0} />
-        <PropertyRow label="Cooldown ticks left" value={abilityAttributes.cooldownTicksLeft} show={abilityAttributes.cooldownTicksLeft != 0} />
+        <PropertyRow label="Delay" value={formatTime(abilityAttributes.delay)} show={abilityAttributes.delay != 0} />
+        <PropertyRow label="Cooldown" value={formatTime(abilityAttributes.cooldown)} show={abilityAttributes.cooldown != 0} />
+        <PropertyRow label="Cooldown left" value={formatTime(abilityAttributes.cooldownTicksLeft)} show={abilityAttributes.cooldownTicksLeft != 0} />
         <PropertyRow label="XP cooldown" value={abilityAttributes.xpCooldown} show={abilityAttributes.xpCooldown != 0} />
         <PropertyRow label="XP cooldown left" value={abilityAttributes.xpCooldownLeft} show={abilityAttributes.xpCooldownLeft != 0} />
         {RenderSubAbilities(abilityAttributes)}

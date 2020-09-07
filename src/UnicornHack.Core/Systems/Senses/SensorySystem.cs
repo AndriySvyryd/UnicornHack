@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Levels;
@@ -53,13 +54,17 @@ namespace UnicornHack.Systems.Senses
             var sensor = sensorEntity.Sensor;
             var level = position.LevelEntity.Level;
 
-            var tileCount = level.Height * level.Width;
+            var tileCount = level.TileCount;
             if (sensor.VisibleTerrain == null
-                || sensor.VisibleTerrain.Length != tileCount)
+                || sensor.VisibleTerrain.Length < tileCount)
             {
-                // TODO: Perf: Use pooling
+                if (sensor.VisibleTerrain != null)
+                {
+                    ArrayPool<byte>.Shared.Return(sensor.VisibleTerrain);
+                }
+
                 // TODO: Perf: Use a smaller array
-                sensor.VisibleTerrain = new byte[tileCount];
+                sensor.VisibleTerrain = ArrayPool<byte>.Shared.Rent(tileCount);
             }
             else
             {
@@ -67,9 +72,9 @@ namespace UnicornHack.Systems.Senses
                 {
                     return sensor.VisibleTerrain;
                 }
-
-                Array.Clear(sensor.VisibleTerrain, 0, sensor.VisibleTerrain.Length);
             }
+
+            Array.Clear(sensor.VisibleTerrain, 0, tileCount);
 
             level.VisibilityCalculator.ComputeDirected(
                 position.LevelCell,
@@ -87,22 +92,24 @@ namespace UnicornHack.Systems.Senses
             return sensor.VisibleTerrain;
         }
 
-        public IReadOnlyList<(int, byte)> GetLOS(GameEntity sensorEntity, Point target)
-        {
-            var position = sensorEntity.Position;
-            var level = position.LevelEntity.Level;
-
-            // TODO: Perf: Use pooling
-            var losTiles = new List<(int, byte)>();
-
-            level.VisibilityCalculator.ComputeLOS(
-                position.LevelCell,
+        public IReadOnlyList<(Point, byte)> GetLOS(Point origin, Point target, LevelComponent level)
+            => level.VisibilityCalculator.ComputeLOS(
+                origin,
                 target,
                 TileBlocksVisibility,
-                losTiles);
+                level.Entity.Manager);
 
-            return losTiles;
-        }
+        public IReadOnlyList<(Point, byte)> GetLOS(
+            Point origin,
+            Vector targetVector,
+            int range,
+            LevelComponent level)
+            => level.VisibilityCalculator.ComputeLOS(
+                origin,
+                targetVector,
+                range,
+                TileBlocksVisibility,
+                level.Entity.Manager);
 
         public static (bool, int) TileBlocksVisibility(byte x, byte y, LevelComponent level)
         {
@@ -128,7 +135,8 @@ namespace UnicornHack.Systems.Senses
 
         private void UpdateVisibleTerrain(LevelComponent level, GameManager manager)
         {
-            Array.Clear(level.VisibleTerrain, 0, level.VisibleTerrain.Length);
+            var tileCount = level.TileCount;
+            Array.Clear(level.VisibleTerrain, 0, tileCount);
 
             var tilesExplored = 0;
             foreach (var playerEntity in manager.Players)
@@ -141,7 +149,7 @@ namespace UnicornHack.Systems.Senses
                 var visibleTiles = GetVisibleTiles(playerEntity);
 
                 // TODO: Only check in the max visibility range
-                for (var i = 0; i < visibleTiles.Length; i++)
+                for (var i = 0; i < tileCount; i++)
                 {
                     var visibility = visibleTiles[i];
                     if (visibility == 0)

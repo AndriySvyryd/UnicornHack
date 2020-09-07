@@ -51,8 +51,8 @@ namespace UnicornHack.Utils.MessagingECS
             => Queue.Enqueue(message, lowPriority);
 
         protected virtual void Add<TComponent>(int componentId, int poolSize)
-            where TComponent : Component, new() => _componentPools[componentId] =
-            new ListObjectPool<TComponent>(() => new TComponent(), poolSize, poolSize, poolSize);
+            where TComponent : Component, new()
+            => _componentPools[componentId] = new ListObjectPool<TComponent>(() => new TComponent(), poolSize, poolSize, poolSize);
 
         protected EntityGroup<TEntity> CreateGroup(string name, EntityMatcher<TEntity> matcher)
         {
@@ -76,7 +76,7 @@ namespace UnicornHack.Utils.MessagingECS
 
         protected virtual TEntity CreateEntityNoReference()
         {
-            var entity = _entityPool.Get();
+            var entity = _entityPool.Rent();
             entity.Initialize(GetNextEntityId(), ComponentCount, this);
             _entities[entity.Id] = entity;
             return entity;
@@ -112,7 +112,7 @@ namespace UnicornHack.Utils.MessagingECS
         Entity IEntityManager.FindEntity(int id) => FindEntity(id);
 
         public TComponent CreateComponent<TComponent>(int componentId)
-            where TComponent : Component, new() => ((ListObjectPool<TComponent>)_componentPools[componentId]).Get();
+            where TComponent : Component, new() => ((ListObjectPool<TComponent>)_componentPools[componentId]).Rent();
 
         public void HandleComponentAdded(Component component)
             => HandleComponentAddedOrRemoved(component.Entity, component);

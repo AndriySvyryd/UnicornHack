@@ -24,9 +24,9 @@ namespace UnicornHack.Utils.Caching
             _preallocatedCount = preallocatedCount - 1;
         }
 
-        object IObjectPool.Get() => Get();
+        object IObjectPool.Rent() => Rent();
 
-        public T Get()
+        public T Rent()
         {
             var items = _items;
             if (items.Count > 0)

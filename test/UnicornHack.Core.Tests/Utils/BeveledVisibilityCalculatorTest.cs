@@ -284,6 +284,24 @@ A###
         });
 
         [Fact]
+        public void FOV_Pattern20() => TestFOV(@"
+.......#...
+.....#.#...
+...........
+.#.#.......
+#........#.
+..#..#.....
+#..........", new byte[] {
+             254, 254, 254, 254, 254, 254, 254, 254,   0,   0,   0,
+             254, 254, 254, 254, 254, 254,  25, 254,   0,   0,   0,
+             254, 254, 254, 254, 254, 234, 177, 101,  26,   0,   0,
+             254, 254, 222, 254, 202, 254, 254, 254, 252, 203, 127,
+             254,  34, 127, 202,  18, 168, 254, 254, 254, 254,  98,
+               0,  52, 254, 238, 168, 254, 127, 252, 254, 222, 127,
+               0,  63,   0, 127, 254, 127,   0,  85, 244, 254, 254,
+        });
+
+        [Fact]
         public void FOV_Falloff() => TestFOV(@"
 .......#
 .......#
@@ -307,7 +325,7 @@ A###
 ..#
 ###", new byte[]{
              0, 168, 254,
-             0,   0,   0,
+             0,   0, 254,
              0,   0,   0,
         });
 
@@ -318,7 +336,7 @@ A###
 ?##", new byte[]{
                0,   0,   0,
              168,   0,   0,
-             254,   0,   0,
+             254, 254,   0,
         });
 
         [Fact]
@@ -349,7 +367,7 @@ A###
 ..#....", new byte[]{
                0, 254,   0,   0,   0,   0,   0,
                0,   1,  50,  15,   0,   0,   0,
-               0,   0,   0,   0,   0,   0,   0,
+               0,   0,   0, 254,   0,   0,   0,
                0,   0,   0,   0,   0,   0,   0,
         });
 
@@ -384,7 +402,7 @@ A###
 #....#...#
 .........#", new byte[] {
              254, 236, 202, 168, 134, 100,  66,  32,   0,   0,
-               0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+               8,   0,   0,   0,   0,   0,   0,   0,   0,   0,
                0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
                0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
         },
@@ -424,7 +442,7 @@ A###
 .#......#
 ........#", new byte[] {
                0,   0,   0,   0,   0,   0,   0,   0,   0,
-             254,   0,   0,   0,   0,   0,   0,   0,   0,
+             254, 254,   0,   0,   0,   0,   0,   0,   0,
              202,   0,   0,   0,   0,   0,   0,   0,   0,
              100,   0,   0,   0,   0,   0,   0,   0,   0,
                0,   0,   0,   0,   0,   0,   0,   0,   0,
@@ -432,7 +450,7 @@ A###
             new Point(0, 4));
 
         [Fact]
-        public void LOS_Pattern6_top_right_diagonal() => TestLOS(@"
+        public void LOS_Pattern6_top_right() => TestLOS(@"
 ........#
 .#.?....#
 ......#.#
@@ -486,7 +504,7 @@ A###
         {
             var level = TestHelper.BuildLevel(map);
             var visibleTerrain = GetVisibleTerrain(
-                level, origin: new Point(0, 0), heading: Direction.Southeast, new byte[level.Height * level.Width], noFalloff);
+                level, origin: new Point(0, 0), heading: Direction.Southeast, new byte[level.TileCount], noFalloff);
 
             TestHelper.AssertVisibility(level, expectedVisibility, visibleTerrain);
         }
@@ -512,20 +530,14 @@ A###
         {
             var (level, rooms) = TestHelper.BuildLevelWithRooms(map);
             var target = rooms.Single().DoorwayPoints.Single();
-            TestLOS(level, expectedVisibility, target, origin);
-        }
-
-        private static void TestLOS(LevelComponent level, byte[] expectedVisibility, Point target, Point? origin)
-        {
-            origin = origin ?? new Point(0, 0);
+            origin ??= new Point(0, 0);
             var visibleTerrainList = GetLOS(level, target, origin.Value);
 
-            var visibleTerrain = new byte[level.Height * level.Width];
+            var visibleTerrain = new byte[level.TileCount];
             var originDistance = 0;
-            foreach (var (index, visibility) in visibleTerrainList)
+            foreach (var (point, visibility) in visibleTerrainList)
             {
-                visibleTerrain[index] += visibility;
-                var point = level.IndexToPoint[index];
+                visibleTerrain[level.PointToIndex[point.X, point.Y]] += visibility;
                 var distance = origin.Value.DistanceTo(point);
                 Assert.False(distance < originDistance, $"Point {point} is out of sequence");
 
@@ -535,14 +547,7 @@ A###
             TestHelper.AssertVisibility(level, expectedVisibility, visibleTerrain);
         }
 
-        private static List<(int, byte)> GetLOS(LevelComponent level, Point target, Point origin)
-            => GetLOS(level, target, origin, new List<(int, byte)>());
-
-        public static List<(int, byte)> GetLOS(LevelComponent level, Point target, Point origin, List<(int, byte)> visibleTerrainList)
-        {
-            level.VisibilityCalculator.ComputeLOS(
-                origin, target, SensorySystem.TileBlocksVisibility, visibleTerrainList);
-            return visibleTerrainList;
-        }
+        public static List<(Point, byte)> GetLOS(LevelComponent level, Point target, Point origin)
+            => level.VisibilityCalculator.ComputeLOS(origin, target, SensorySystem.TileBlocksVisibility, level.Entity.Manager);
     }
 }

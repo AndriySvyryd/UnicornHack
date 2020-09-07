@@ -65,12 +65,13 @@ namespace UnicornHack.Hubs
             var manager = context.Manager;
             var level = levelEntity.Level;
             List<object> properties;
+            var tileCount = level.TileCount;
             switch (state)
             {
                 case null:
                 case EntityState.Added:
                     var knownTerrain = new List<short>();
-                    for (short j = 0; j < level.KnownTerrain.Length; j++)
+                    for (short j = 0; j < tileCount; j++)
                     {
                         var feature = level.KnownTerrain[j];
                         if (feature != (byte)MapFeature.Unexplored)
@@ -81,7 +82,7 @@ namespace UnicornHack.Hubs
                     }
 
                     var wallNeighbors = new List<short>();
-                    for (short j = 0; j < level.WallNeighbors.Length; j++)
+                    for (short j = 0; j < tileCount; j++)
                     {
                         if (level.KnownTerrain[j] == (byte)MapFeature.Unexplored)
                         {
@@ -97,7 +98,7 @@ namespace UnicornHack.Hubs
                     }
 
                     var visibleTerrain = new List<short>();
-                    for (short j = 0; j < level.VisibleTerrain.Length; j++)
+                    for (short j = 0; j < tileCount; j++)
                     {
                         var visibility = level.VisibleTerrain[j];
                         if (visibility != 0)

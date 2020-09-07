@@ -24,8 +24,6 @@ namespace UnicornHack.Utils.DataStructures
 
         public static readonly byte[] OppositeDirectionIndexes = {4, 5, 6, 7, 0, 1, 2, 3};
 
-        public override string ToString() => $"{{{X}, {Y}}}";
-
         public bool IsCardinalAligned() => X == 0 || Y == 0;
 
         public bool IsIntercardinalAligned() => X == Y || X == -Y;
@@ -319,5 +317,31 @@ namespace UnicornHack.Utils.DataStructures
                     throw new InvalidOperationException();
             }
         }
+
+        public override string ToString() => $"<{X}, {Y}>";
+
+        public override bool Equals(object obj)
+        {
+            if (obj is Vector otherVector)
+            {
+                return Equals(otherVector);
+            }
+
+            return false;
+        }
+
+        public bool Equals(Vector other) => X == other.X && Y == other.Y;
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (X.GetHashCode() * 397) ^ Y.GetHashCode();
+            }
+        }
+
+        public static bool operator ==(Vector left, Vector right) => left.Equals(right);
+
+        public static bool operator !=(Vector left, Vector right) => !(left == right);
     }
 }

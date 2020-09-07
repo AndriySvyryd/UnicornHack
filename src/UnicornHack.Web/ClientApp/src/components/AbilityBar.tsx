@@ -6,6 +6,7 @@ import { ActorAction } from '../transport/ActorAction';
 import { GameQueryType } from '../transport/GameQueryType';
 import { ActivationType } from '../transport/ActivationType';
 import { IGameContext } from './Game';
+import { formatTime } from '../Util';
 
 export const AbilityBar = observer((props: IAbilityBarProps) => {
     const slots = new Array(8);
@@ -83,7 +84,7 @@ class AbilityLine extends React.PureComponent<IAbilityProps, {}> {
             } else {
                 var timeout = '[';
                 if (this.props.ability.cooldownTick != null) {
-                    timeout += (this.props.ability.cooldownTick - this.props.context.player.currentTick) / 100.0 + ' AUT';
+                    timeout += formatTime(this.props.ability.cooldownTick - this.props.context.player.currentTick);
                 }
 
                 if (this.props.ability.cooldownXpLeft != null) {

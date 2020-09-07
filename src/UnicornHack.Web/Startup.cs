@@ -47,20 +47,20 @@ namespace UnicornHack.Web
             //services.AddRazorPages();
 
             // TODO: Add a sensible policy for production
-            //services.AddCors(options =>
-            //{
-            //    options.AddDefaultPolicy(
-            //        builder =>
-            //        {
-            //            builder
-            //                .AllowAnyOrigin()
-            //                .AllowAnyHeader()
-            //                .AllowAnyMethod(); 
-            //        });
-            //});
+            services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(
+                    builder =>
+                    {
+                        builder
+                            .AllowAnyOrigin()
+                            .AllowAnyHeader()
+                            .AllowAnyMethod();
+                    });
+            });
 
             services.AddSignalR(o => o.EnableDetailedErrors = true).AddMessagePackProtocol();
-            
+
             services.AddApplicationInsightsTelemetry();
 
             // In production, the React files will be served from this directory
@@ -91,7 +91,7 @@ namespace UnicornHack.Web
             else
             {
                 app.UseExceptionHandler("/Error");
-        
+
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 //app.UseHsts();
             }
@@ -102,7 +102,7 @@ namespace UnicornHack.Web
 
             app.UseRouting();
 
-            //app.UseCors();
+            app.UseCors();
             //app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>

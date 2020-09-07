@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Buffers;
+using System.Collections.Generic;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Utils;
@@ -61,6 +62,8 @@ namespace UnicornHack.Systems.Levels
             get => _width;
             set => SetWithNotify(value, ref _width);
         }
+
+        public int TileCount => Height * Width;
 
         public SimpleRandom GenerationRandom
         {
@@ -133,6 +136,27 @@ namespace UnicornHack.Systems.Levels
 
         protected override void Clean()
         {
+            if (_visibleTerrain != null)
+            {
+                ArrayPool<byte>.Shared.Return(_visibleTerrain);
+            }
+            if (_visibleNeighbours != null)
+            {
+                ArrayPool<byte>.Shared.Return(_visibleNeighbours);
+            }
+            if (_terrain != null)
+            {
+                ArrayPool<byte>.Shared.Return(_terrain);
+            }
+            if (_knownTerrain != null)
+            {
+                ArrayPool<byte>.Shared.Return(_knownTerrain);
+            }
+            if (_wallNeighbors != null)
+            {
+                ArrayPool<byte>.Shared.Return(_wallNeighbors);
+            }
+
             _branchName = default;
             _branch = default;
             _difficulty = default;

@@ -41,7 +41,7 @@ namespace UnicornHack.PerformanceTests.Utils
 
             var level = TestHelper.BuildLevel(map);
 
-            var visibleTerrain = new byte[level.Height * level.Width];
+            var visibleTerrain = new byte[level.TileCount];
             for (var i = 0; i < Iterations; i++)
             {
                 Array.Clear(visibleTerrain, 0, visibleTerrain.Length);
@@ -88,7 +88,7 @@ namespace UnicornHack.PerformanceTests.Utils
 
             var level = TestHelper.BuildLevel(map);
 
-            var visibleTerrain = new byte[level.Height * level.Width];
+            var visibleTerrain = new byte[level.TileCount];
             for (var i = 0; i < Iterations * 2; i++)
             {
                 Array.Clear(visibleTerrain, 0, visibleTerrain.Length);
@@ -134,21 +134,25 @@ namespace UnicornHack.PerformanceTests.Utils
 ..#####................";
 
             var level = TestHelper.BuildLevel(map);
+            var pool = level.Entity.Manager.PointByteListArrayPool;
 
-            var visibleTerrain = new List<(int, byte)>();
             for (var i = 0; i < Iterations << 3; i++)
             {
+                var visibleTerrain = BeveledVisibilityCalculatorTest.GetLOS(level, new Point(19, 19), new Point(11, 11));
                 visibleTerrain.Clear();
-                BeveledVisibilityCalculatorTest.GetLOS(level, new Point(19, 19), new Point(11, 11), visibleTerrain);
+                pool.Return(visibleTerrain);
 
+                visibleTerrain = BeveledVisibilityCalculatorTest.GetLOS(level, new Point(11, 19), new Point(11, 11));
                 visibleTerrain.Clear();
-                BeveledVisibilityCalculatorTest.GetLOS(level, new Point(11, 19), new Point(11, 11), visibleTerrain);
+                pool.Return(visibleTerrain);
 
+                visibleTerrain = BeveledVisibilityCalculatorTest.GetLOS(level, new Point(3, 14), new Point(11, 11));
                 visibleTerrain.Clear();
-                BeveledVisibilityCalculatorTest.GetLOS(level, new Point(3, 14), new Point(11, 11), visibleTerrain);
+                pool.Return(visibleTerrain);
 
+                visibleTerrain = BeveledVisibilityCalculatorTest.GetLOS(level, new Point(10, 8), new Point(11, 11));
                 visibleTerrain.Clear();
-                BeveledVisibilityCalculatorTest.GetLOS(level, new Point(10, 8), new Point(11, 11), visibleTerrain);
+                pool.Return(visibleTerrain);
             }
         }
     }

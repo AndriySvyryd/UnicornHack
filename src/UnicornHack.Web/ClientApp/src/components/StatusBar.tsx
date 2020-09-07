@@ -4,7 +4,7 @@ import React from 'react';
 import { MapStyles } from '../styles/MapStyles';
 import { GameQueryType } from '../transport/GameQueryType';
 import { MapActor, Player, PlayerRace, MapItem } from '../transport/Model';
-import { capitalize } from '../Util';
+import { capitalize, formatTime } from '../Util';
 import { IGameContext } from './Game';
 import { MeterBar } from './MeterBar';
 import { TooltipTrigger } from './TooltipTrigger';
@@ -157,7 +157,7 @@ class ActorPanel extends React.PureComponent<IActorPanelProps, {}> {
         return <div className="statusBar__panel" onMouseEnter={this.highlight} onMouseLeave={this.clear}>
             <div className="statusBar__element">
                 <span style={glyph.style}>{glyph.char}</span>: <ActorName actor={actor} showActorAttributes={this.showActorAttributes} />
-                {' +'}{actor.nextActionTick - this.props.context.player.nextActionTick} AUT [{action}]
+                {' +'}{formatTime(actor.nextActionTick - this.props.context.player.nextActionTick)} [{action}]
             </div>
             <div className="statusBar__smallElement">
                 <ActorHpBar actor={actor} />
@@ -288,19 +288,8 @@ interface IActorNameProps extends IActorStatusProps {
 const PlayerLocation = observer((props: IPlayerStatusProps) => {
     const player = props.player;
     const level = player.level;
-    let currentTime = <></>;
-    if (player.nextActionTick < 1000) {
-        currentTime = <span>{player.nextActionTick} AUT</span>;
-    } else if (player.nextActionTick < 1000000) {
-        currentTime = <TooltipTrigger id='tooltip-current-time' tooltip={`${player.nextActionTick.toLocaleString('en')} AUT`}>
-            <span className="annotatedText">{(player.nextActionTick / 1000).toPrecision(3)} kAUT</span>
-        </TooltipTrigger>
-    } else {
-        currentTime = <TooltipTrigger id='tooltip-current-time' tooltip={`${player.nextActionTick.toLocaleString('en')} AUT`}>
-            <span className="annotatedText">{(player.nextActionTick / 1000000).toPrecision(3)} mAUT</span>
-        </TooltipTrigger>
-    }
-    
+    let currentTime = <span>{formatTime(player.nextActionTick, true)}</span>;
+
     return <span>{level.branchName}({level.depth}) {currentTime}</span>;
 });
 

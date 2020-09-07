@@ -2,7 +2,7 @@ import React from 'react';
 import { computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { ActorAttributes } from '../transport/DialogData';
-import { capitalize } from '../Util';
+import { capitalize, formatTime } from '../Util';
 import { AbilitiesList } from './AbilityProperties';
 import { Dialog } from './Dialog';
 import { IGameContext } from './Game';
@@ -59,7 +59,7 @@ export const ActorAttributesScreen = observer((props: IActorPropertiesData) => {
         <PropertyRow label="Invisibility detection" value={actorAttributes.invisibilityDetection} />
         <PropertyRow label="Infravisible" value={actorAttributes.infravisible} />
         <PropertyRow label="Visibility" value={actorAttributes.visibility} />
-        <PropertyRow label="Movement delay" value={actorAttributes.movementDelay} />
+        <PropertyRow label="Movement delay" value={formatTime(actorAttributes.movementDelay)} />
         <PropertyRow label="Size" value={actorAttributes.size} />
         <PropertyRow label="Weight" value={actorAttributes.weight} />
         <PropertyRow label="Armor" value={actorAttributes.armor} />
