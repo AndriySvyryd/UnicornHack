@@ -12,38 +12,35 @@ namespace UnicornHack.Data.Creatures
             Name = "mimic",
             Species = Species.Mimic,
             SpeciesClass = SpeciesClass.ShapeChanger,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Bite,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "90*physicalScaling"}}
-                },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Touch,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
+                    new Ability
                     {
-                        new Stick()
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Bite,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new PhysicalDamage {Damage = "90*MightModifier()"}}
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Touch,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new Stick()}
                     }
-                }
-            },
+                },
             InitialLevel = 8,
-            GenerationWeight = new DefaultWeight {Multiplier = 3F},
             Weight = 600,
             MovementDelay = 300,
             TurningDelay = 300,

@@ -224,7 +224,7 @@ namespace UnicornHack.Systems.Knowledge
                     var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                     effect.EffectType = EffectType.ChangeProperty;
                     effect.TargetName = nameof(BeingComponent.Might);
-                    effect.Amount = -1;
+                    effect.AppliedAmount = -1;
                     effect.Duration = EffectDuration.UntilXPGained;
                     effect.DurationAmount = "200";
                     effect.ContainingAbilityId = ability.EntityId;

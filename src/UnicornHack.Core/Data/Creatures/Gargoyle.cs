@@ -20,10 +20,10 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Claw,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "70*MightModifier()"}}
                 },
                 new Ability
                 {
@@ -32,10 +32,10 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Claw,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "70*MightModifier()"}}
                 },
                 new Ability
                 {
@@ -44,14 +44,14 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "50*MightModifier()"}}
                 }
             },
             InitialLevel = 6,
-            GenerationWeight = new DefaultWeight {Multiplier = 5F},
+            GenerationWeight = "5",
             NextStageName = "winged gargoyle",
             Noise = ActorNoiseType.Grunt,
             Weight = 1000,

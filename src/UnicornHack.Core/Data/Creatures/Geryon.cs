@@ -12,47 +12,48 @@ namespace UnicornHack.Data.Creatures
             Name = "Geryon",
             Species = Species.Giant,
             SpeciesClass = SpeciesClass.Aberration,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Claw,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100*physicalScaling"}}
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Claw,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new PhysicalDamage {Damage = "100*MightModifier()"}}
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Claw,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new PhysicalDamage {Damage = "100*MightModifier()"}}
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Sting,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new Blight {Damage = "50*MightModifier()"}}
+                    }
                 },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Claw,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100*physicalScaling"}}
-                },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Sting,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new Blight {Damage = "50*physicalScaling"}}
-                }
-            },
             InitialLevel = 30,
-            GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 0F}, Name = "hell"},
+            GenerationWeight = "$branch == 'hell' ? 0 : 1",
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
             Behavior = AIBehavior.Stalking,
             Noise = ActorNoiseType.Cuss,

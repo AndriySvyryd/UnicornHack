@@ -18,9 +18,9 @@ namespace UnicornHack.Data.Items
                     Range = 1,
                     Action = AbilityAction.Slash,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+weaponScaling",
-                    Delay = "100*weaponScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "40*weaponScaling"}}
+                    Accuracy = "5+RequirementsModifier()",
+                    Delay = "100*RequirementsModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "40*RequirementsModifier()"}}
                 }
             },
             Type = ItemType.WeaponMeleeShort,

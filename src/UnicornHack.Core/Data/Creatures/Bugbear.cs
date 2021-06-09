@@ -17,7 +17,7 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.OnMeleeAttack,
                     Action = AbilityAction.Modifier,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50"}}
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "50"}}
                 },
                 new Ability
                 {
@@ -26,14 +26,14 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Punch,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "10*MightModifier()"}}
                 }
             },
             InitialLevel = 5,
-            GenerationWeight = new DefaultWeight {Multiplier = 5F},
+            GenerationWeight = "4",
             Behavior = AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Growl,
             Size = 8,

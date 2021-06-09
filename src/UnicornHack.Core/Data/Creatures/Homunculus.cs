@@ -20,10 +20,10 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "10*MightModifier()"}}
                 },
                 new Ability
                 {
@@ -32,15 +32,17 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
-                        {new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = "2"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect>
+                    {
+                        new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = "2"}
+                    }
                 }
             },
             InitialLevel = 2,
-            GenerationWeight = new DefaultWeight {Multiplier = 4F},
+            GenerationWeight = "4",
             Behavior = AIBehavior.Stalking,
             Sex = Sex.None,
             Size = 2,

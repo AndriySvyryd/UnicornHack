@@ -11,23 +11,24 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "quivering blob",
             Species = Species.Blob,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Touch,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "40*physicalScaling"}}
-                }
-            },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Touch,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new PhysicalDamage {Damage = "40*MightModifier()"}}
+                    }
+                },
             InitialLevel = 5,
-            GenerationWeight = new DefaultWeight {Multiplier = 6F},
+            GenerationWeight = "5",
             Behavior = AIBehavior.Wandering,
             Sex = Sex.None,
             Size = 2,

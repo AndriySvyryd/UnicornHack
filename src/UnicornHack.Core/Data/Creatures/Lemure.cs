@@ -12,37 +12,41 @@ namespace UnicornHack.Data.Creatures
             Name = "lemure",
             Species = Species.Ghost,
             SpeciesClass = SpeciesClass.Undead,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Touch,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
-                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = "7"}}
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Touch,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect>
+                        {
+                            new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = "7"}
+                        }
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Touch,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect>
+                        {
+                            new Slow {Duration = EffectDuration.UntilTimeout, DurationAmount = "3"}
+                        }
+                    }
                 },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Touch,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
-                        {new Slow {Duration = EffectDuration.UntilTimeout, DurationAmount = "3"}}
-                }
-            },
             InitialLevel = 12,
-            GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
             Behavior = AIBehavior.Wandering | AIBehavior.Stalking,
             Noise = ActorNoiseType.Howl,

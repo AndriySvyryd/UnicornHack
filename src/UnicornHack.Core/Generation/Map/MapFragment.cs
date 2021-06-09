@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using CSharpScriptSerialization;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Levels;
@@ -10,6 +11,8 @@ namespace UnicornHack.Generation.Map
 {
     public abstract class MapFragment : ICSScriptSerializable, ILoadable
     {
+        private string _generationWeight;
+
         public string Name { get; set; }
         public string Map { get; set; } = "";
         public DynamicMap DynamicMap { get; set; }
@@ -17,7 +20,17 @@ namespace UnicornHack.Generation.Map
         public byte Width { get; set; }
         public byte Height { get; set; }
         public Rectangle PayloadArea { get; set; }
-        public Weight GenerationWeight { get; set; }
+
+        public string GenerationWeight
+        {
+            get => _generationWeight;
+            set
+            {
+                ResetWeightFunction();
+                _generationWeight = value;
+            }
+        }
+
         public ICollection<string> Tags { get; set; }
         public bool NoRandomDoorways { get; set; }
 
@@ -31,6 +44,25 @@ namespace UnicornHack.Generation.Map
         public bool ConditionalLastColumn { get; set; }
         public int[,] PointToIndex { get; private set; }
         public Point[] IndexToPoint { get; private set; }
+
+        protected static readonly string DefaultWeight = "1";
+
+        protected static readonly ParameterExpression BranchParameter =
+            Expression.Parameter(typeof(string), name: "branch");
+
+        protected static readonly ParameterExpression DepthParameter =
+            Expression.Parameter(typeof(int), name: "depth");
+
+        protected static readonly ParameterExpression InstancesParameter =
+            Expression.Parameter(typeof(int), name: "instances");
+
+        protected static readonly ParameterExpression TagInstancesParameter =
+            Expression.Parameter(typeof(int), name: "tagInstances");
+
+        protected static readonly ParameterExpression ConnectionParameter =
+            Expression.Parameter(typeof(ConnectionComponent), name: "connection");
+
+        protected abstract void ResetWeightFunction();
 
         // Characters that can be used as conditions for neighbors:
         // ~ - marks the edge row and/or column as conditional
@@ -556,7 +588,7 @@ namespace UnicornHack.Generation.Map
             // ReSharper disable once CompareOfFloatsByEqualityOperator
             {
                 nameof(GenerationWeight),
-                (o, v) => (Weight)v != null && (!(v is DefaultWeight def) || def.Multiplier != 1)
+                (o, v) => v != null && (string)v != DefaultWeight
             },
             {nameof(Map), (o, v) => !string.IsNullOrEmpty((string)v)},
             {nameof(ByteMap), (o, v) => false},

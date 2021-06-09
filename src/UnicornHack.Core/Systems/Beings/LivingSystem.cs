@@ -138,7 +138,7 @@ namespace UnicornHack.Systems.Beings
             var hpEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
                 beingEntity, nameof(BeingComponent.HitPointMaximum), AttributedAbilityName);
 
-            hpEffect.Amount = might * 10;
+            hpEffect.AppliedAmount = might * 10;
         }
 
         private void CalculateEp(int focus, GameEntity beingEntity, GameManager manager)
@@ -146,15 +146,15 @@ namespace UnicornHack.Systems.Beings
             var epEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
                 beingEntity, nameof(BeingComponent.EnergyPointMaximum), AttributedAbilityName);
 
-            epEffect.Amount = focus * 10;
+            epEffect.AppliedAmount = focus * 10;
         }
 
-        private void CalculateAccuracy(int accuracy, GameEntity beingEntity, GameManager manager)
+        private void CalculateAccuracy(int perception, GameEntity beingEntity, GameManager manager)
         {
             var accuracyEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
                 beingEntity, nameof(BeingComponent.Accuracy), AttributedAbilityName);
 
-            accuracyEffect.Amount = accuracy * 10;
+            accuracyEffect.AppliedAmount = perception * 10;
         }
 
         private void CalculateEvasion(int effectiveSpeed, GameEntity beingEntity, GameManager manager)
@@ -162,7 +162,7 @@ namespace UnicornHack.Systems.Beings
             var evasionEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
                 beingEntity, nameof(BeingComponent.Evasion), AttributedAbilityName);
 
-            evasionEffect.Amount = 50 + effectiveSpeed * 5;
+            evasionEffect.AppliedAmount = 50 + effectiveSpeed * 5;
         }
 
         private void CalculateMovementDelay(int effectiveSpeed, GameEntity beingEntity, GameManager manager)
@@ -170,7 +170,7 @@ namespace UnicornHack.Systems.Beings
             var movementEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
                 beingEntity, nameof(PositionComponent.MovementDelay), AttributedAbilityName);
 
-            movementEffect.Amount = effectiveSpeed == 0
+            movementEffect.AppliedAmount = effectiveSpeed == 0
                 ? 0
                 : TimeSystem.DefaultActionDelay * 10 / effectiveSpeed;
         }
@@ -180,7 +180,7 @@ namespace UnicornHack.Systems.Beings
             var turningEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
                 beingEntity, nameof(PositionComponent.TurningDelay), AttributedAbilityName);
 
-            turningEffect.Amount = effectiveSpeed == 0
+            turningEffect.AppliedAmount = effectiveSpeed == 0
                 ? 0
                 : TimeSystem.DefaultActionDelay * 10 / effectiveSpeed;
         }

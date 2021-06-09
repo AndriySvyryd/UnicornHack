@@ -21,14 +21,14 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "100*MightModifier()"}}
                 }
             },
             InitialLevel = 8,
-            GenerationWeight = new DefaultWeight {Multiplier = 2F},
+            GenerationWeight = "2",
             PreviousStageName = "baby crocodile",
             Size = 8,
             Weight = 1500,

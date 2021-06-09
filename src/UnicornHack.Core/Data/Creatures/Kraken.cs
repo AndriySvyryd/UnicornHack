@@ -9,7 +9,7 @@ namespace UnicornHack.Data.Creatures
     {
         public static readonly Creature Kraken = new Creature
         {
-            Name = "kraken",
+            Name = "Kraken",
             Species = Species.Squid,
             Abilities = new HashSet<Ability>
             {
@@ -20,10 +20,10 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Claw,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "50*MightModifier()"}}
                 },
                 new Ability
                 {
@@ -32,10 +32,10 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Claw,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "50*MightModifier()"}}
                 },
                 new Ability
                 {
@@ -44,10 +44,10 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "120*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "120*MightModifier()"}}
                 },
                 new Ability
                 {
@@ -56,15 +56,17 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Hug,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
-                        {new Bind {Duration = EffectDuration.UntilTimeout, DurationAmount = "7"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect>
+                    {
+                        new Bind {Duration = EffectDuration.UntilTimeout, DurationAmount = "7"}
+                    }
                 }
             },
             InitialLevel = 20,
-            GenerationWeight = new DefaultWeight {Multiplier = 0F},
+            GenerationWeight = "0",
             GenerationFlags = GenerationFlags.NonPolymorphable,
             Size = 16,
             Weight = 2000,

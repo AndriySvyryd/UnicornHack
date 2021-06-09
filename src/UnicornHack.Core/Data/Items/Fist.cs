@@ -18,13 +18,13 @@ namespace UnicornHack.Data.Items
                     Range = 1,
                     Action = AbilityAction.Punch,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "10+weaponScaling",
-                    Delay = "100*weaponScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*weaponScaling"}}
+                    Accuracy = "10+RequirementsModifier()",
+                    Delay = "100*RequirementsModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "20*RequirementsModifier()"}}
                 }
             },
             Type = ItemType.WeaponMeleeHand,
-            GenerationWeight = new DefaultWeight {Multiplier = 0F},
+            GenerationWeight = "0",
             Material = Material.Flesh,
             Weight = 4,
             RequiredMight = 2,

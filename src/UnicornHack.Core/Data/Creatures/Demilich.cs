@@ -12,33 +12,34 @@ namespace UnicornHack.Data.Creatures
             Name = "demilich",
             Species = Species.Lich,
             SpeciesClass = SpeciesClass.Undead,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Touch,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new Freeze {Damage = "70*physicalScaling"}}
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Touch,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new Freeze {Damage = "70*MightModifier()"}}
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnRangedAttack,
+                        Range = 20,
+                        Action = AbilityAction.Spell,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
+                    }
                 },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnRangedAttack,
-                    Range = 20,
-                    Action = AbilityAction.Spell,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new ScriptedEffect {Script = "ArcaneSpell"}}
-                }
-            },
             InitialLevel = 14,
             PreviousStageName = "lich",
             Behavior = AIBehavior.MagicUser,

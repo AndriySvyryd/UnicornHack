@@ -12,49 +12,52 @@ namespace UnicornHack.Data.Creatures
             Name = "succubus",
             Species = Species.Succubus,
             SpeciesClass = SpeciesClass.Demon,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Touch,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
-                        {new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = "5"}}
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Touch,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect>
+                        {
+                            new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = "5"}
+                        }
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Punch,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new PhysicalDamage {Damage = "20*MightModifier()"}}
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Punch,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new PhysicalDamage {Damage = "20*MightModifier()"}}
+                    }
                 },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Punch,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*physicalScaling"}}
-                },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Punch,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*physicalScaling"}}
-                }
-            },
             InitialLevel = 6,
+            GenerationWeight = "$branch == 'hell' ? 2 : 0",
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
-            GenerationWeight = new BranchWeight { Matched = new DefaultWeight { Multiplier = 2F }, Name = "hell" },
             Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Seduction,
             Weight = 1400,

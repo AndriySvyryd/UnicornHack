@@ -12,35 +12,36 @@ namespace UnicornHack.Data.Creatures
             Name = "hyenawere",
             Species = Species.Hyena,
             SpeciesClass = SpeciesClass.Canine | SpeciesClass.ShapeChanger,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Bite,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50*physicalScaling"}}
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Bite,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new PhysicalDamage {Damage = "50*MightModifier()"}}
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Bite,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 250,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new ConferLycanthropy {VariantName = "hyenawere"}}
+                    }
                 },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Bite,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 250,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new ConferLycanthropy {VariantName = "hyenawere" } }
-                }
-            },
             InitialLevel = 3,
-            GenerationWeight = new DefaultWeight {Multiplier = 0F},
+            GenerationWeight = "0",
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
             Noise = ActorNoiseType.Laugh,
             Size = 2,

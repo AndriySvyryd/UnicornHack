@@ -11,29 +11,30 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "gnome",
             Species = Species.Gnome,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Activation = ActivationType.OnMeleeAttack,
-                    Action = AbilityAction.Modifier,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "30"}}
+                    new Ability
+                    {
+                        Activation = ActivationType.OnMeleeAttack,
+                        Action = AbilityAction.Modifier,
+                        Effects = new List<Effect> {new PhysicalDamage {Damage = "30"}}
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Punch,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new PhysicalDamage {Damage = "10*MightModifier()"}}
+                    }
                 },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Punch,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
-                }
-            },
             InitialLevel = 1,
-            GenerationWeight = new DefaultWeight { Multiplier = 0F },
+            GenerationWeight = "0",
             GenerationFlags = GenerationFlags.NonPolymorphable | GenerationFlags.SmallGroup,
             Behavior = AIBehavior.GoldCollector | AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Speach,

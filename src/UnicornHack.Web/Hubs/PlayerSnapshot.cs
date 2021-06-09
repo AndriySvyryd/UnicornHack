@@ -267,10 +267,10 @@ namespace UnicornHack.Hubs
                 switch (template.Type)
                 {
                     case AbilityType.Trait:
-                        traits.Add((template.Name, effect.Amount.Value));
+                        traits.Add((template.Name, effect.AppliedAmount.Value));
                         break;
                     case AbilityType.Mutation:
-                        mutations.Add((template.Name, effect.Amount.Value));
+                        mutations.Add((template.Name, effect.AppliedAmount.Value));
                         break;
                     default:
                         continue;
@@ -294,36 +294,36 @@ namespace UnicornHack.Hubs
             return new List<object>(31)
             {
                 playerEntity.Player.SkillPoints,
-                GetAbilityLevel(nameof(AbilityData.HandWeapons), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.ShortWeapons), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.MediumWeapons), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.LongWeapons), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.CloseRangeWeapons), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.ShortRangeWeapons), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.MediumRangeWeapons), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.LongRangeWeapons), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.OneHanded), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.TwoHanded), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.DualWielding), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.Acrobatics), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.LightArmor), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.HeavyArmor), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.AirSourcery), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.BloodSourcery), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.EarthSourcery), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.FireSourcery), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.SpiritSourcery), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.WaterSourcery), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.Conjuration), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.Enchantment), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.Evocation), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.Malediction), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.Illusion), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.Transmutation), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.Assassination), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.Stealth), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.Artifice), playerId, manager),
-                GetAbilityLevel(nameof(AbilityData.Leadership), playerId, manager)
+                GetAbilityLevel(AbilityData.HandWeapons.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.ShortWeapons.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.MediumWeapons.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.LongWeapons.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.CloseRangeWeapons.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.ShortRangeWeapons.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.MediumRangeWeapons.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.LongRangeWeapons.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.OneHanded.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.TwoHanded.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.DualWielding.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.Acrobatics.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.LightArmor.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.HeavyArmor.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.AirSourcery.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.BloodSourcery.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.EarthSourcery.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.FireSourcery.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.SpiritSourcery.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.WaterSourcery.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.Conjuration.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.Enchantment.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.Evocation.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.Malediction.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.Illusion.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.Transmutation.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.Assassination.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.Stealth.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.Artifice.Name, playerId, manager),
+                GetAbilityLevel(AbilityData.Leadership.Name, playerId, manager)
             };
         }
 

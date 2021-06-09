@@ -11,36 +11,39 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "gas spore",
             Species = Species.FloatingSphere,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnRangedAttack,
-                    Range = 20,
-                    Action = AbilityAction.Explosion,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "140*mentalScaling"}}
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnRangedAttack,
+                        Range = 20,
+                        Action = AbilityAction.Explosion,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new PhysicalDamage {Damage = "140*FocusModifier()"}}
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnRangedAttack,
+                        Range = 20,
+                        Action = AbilityAction.Explosion,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect>
+                        {
+                            new Deafen {Duration = EffectDuration.UntilTimeout, DurationAmount = "27"}
+                        }
+                    }
                 },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnRangedAttack,
-                    Range = 20,
-                    Action = AbilityAction.Explosion,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
-                        {new Deafen {Duration = EffectDuration.UntilTimeout, DurationAmount = "27"}}
-                }
-            },
             InitialLevel = 3,
-            GenerationWeight = new DefaultWeight {Multiplier = 2F},
+            GenerationWeight = "2",
             Sex = Sex.None,
             Size = 2,
             Weight = 10,

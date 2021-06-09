@@ -20,10 +20,10 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new Shock {Damage = "140*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new Shock {Damage = "140*MightModifier()"}}
                 },
                 new Ability
                 {
@@ -32,15 +32,16 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Hug,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
-                        {new Bind {Duration = EffectDuration.UntilTimeout, DurationAmount = "10"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect>
+                    {
+                        new Bind {Duration = EffectDuration.UntilTimeout, DurationAmount = "10"}
+                    }
                 }
             },
             InitialLevel = 7,
-            GenerationWeight = new DefaultWeight {Multiplier = 0F},
             PreviousStageName = "giant eel",
             Size = 8,
             Weight = 600,

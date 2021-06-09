@@ -21,11 +21,13 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Touch,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
-                        {new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = "2"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect>
+                    {
+                        new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = "2"}
+                    }
                 },
                 new Ability
                 {
@@ -34,17 +36,13 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Touch,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
-                    {
-                        new Stun()
-                    }
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new Stun()}
                 }
             },
             InitialLevel = 6,
-            GenerationWeight = new DefaultWeight {Multiplier = 0F},
             Behavior = AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Seduction,
             Sex = Sex.Female,

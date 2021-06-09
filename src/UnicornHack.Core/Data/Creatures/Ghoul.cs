@@ -21,10 +21,10 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Claw,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "70*MightModifier()"}}
                 },
                 new Ability
                 {
@@ -33,15 +33,16 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Claw,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
-                        {new Slow {Duration = EffectDuration.UntilTimeout, DurationAmount = "3"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect>
+                    {
+                        new Slow {Duration = EffectDuration.UntilTimeout, DurationAmount = "3"}
+                    }
                 }
             },
             InitialLevel = 12,
-            GenerationWeight = new DefaultWeight {Multiplier = 0F},
             Noise = ActorNoiseType.Growl,
             Weight = 400,
             MovementDelay = 50,

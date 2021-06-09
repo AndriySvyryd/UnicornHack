@@ -21,10 +21,10 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "20*MightModifier()"}}
                 },
                 new Ability
                 {
@@ -33,28 +33,21 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Touch,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
-                    {
-                        new Stone()
-                    }
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new Stone()}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnMeleeHit,
                     Action = AbilityAction.Touch,
                     SuccessCondition = AbilitySuccessCondition.UnblockableAttack,
-                    Accuracy = "10+attackScaling",
-                    Effects = new HashSet<Effect>
-                    {
-                        new Stone()
-                    }
+                    Accuracy = "10+PerceptionModifier()",
+                    Effects = new List<Effect> {new Stone()}
                 }
             },
             InitialLevel = 5,
-            GenerationWeight = new DefaultWeight {Multiplier = 0F},
             GenerationFlags = GenerationFlags.SmallGroup,
             Noise = ActorNoiseType.Hiss,
             Size = 2,

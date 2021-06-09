@@ -22,8 +22,8 @@ namespace UnicornHack.Utils.DataLoading
         {
             typeof(object).GetTypeInfo().Namespace,
             typeof(List<>).GetTypeInfo().Namespace,
-            typeof(Weight).GetTypeInfo().Namespace,
             typeof(Effect).GetTypeInfo().Namespace,
+            typeof(Creature).GetTypeInfo().Namespace,
             typeof(MapFragment).GetTypeInfo().Namespace,
             typeof(Direction).GetTypeInfo().Namespace,
             typeof(Dimensions).GetTypeInfo().Namespace

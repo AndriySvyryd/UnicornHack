@@ -56,8 +56,9 @@ namespace UnicornHack.Generation
 
             try
             {
+                // TODO: pass correct instance counts
                 var fragment = levelComponent.GenerationRandom.Pick(DefiningMapFragment.Loader.GetAsList(),
-                    f => f.GetWeight(levelComponent.BranchName, levelComponent.Depth));
+                    f => f.GetWeight(levelComponent.BranchName, levelComponent.Depth, 0, 0));
 
                 return Generate(levelComponent, fragment) != null;
             }

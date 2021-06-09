@@ -21,10 +21,10 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "70*MightModifier()"}}
                 },
                 new Ability
                 {
@@ -33,14 +33,13 @@ namespace UnicornHack.Data.Creatures
                     Range = 20,
                     Action = AbilityAction.Spit,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new Corrode {Damage = "70*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new Corrode {Damage = "70*MightModifier()"}}
                 }
             },
             InitialLevel = 8,
-            GenerationWeight = new DefaultWeight {Multiplier = 0F},
             NextStageName = "greater naga",
             Noise = ActorNoiseType.Hiss,
             Size = 16,

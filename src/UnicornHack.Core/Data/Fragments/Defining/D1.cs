@@ -1,4 +1,3 @@
-using UnicornHack.Generation;
 using UnicornHack.Generation.Map;
 
 namespace UnicornHack.Data.Fragments
@@ -8,8 +7,7 @@ namespace UnicornHack.Data.Fragments
         public static readonly DefiningMapFragment D1 = new DefiningMapFragment
         {
             Name = "d1",
-            GenerationWeight = new BranchWeight
-                {Matched = new DefaultWeight {Multiplier = 0F}, Name = "dungeon", MinDepth = 1, MaxDepth = 1},
+            GenerationWeight = "0",
             NoRandomDoorways = true,
             Map = @"
                      ###########                 #######

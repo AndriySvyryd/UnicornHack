@@ -17,8 +17,13 @@ namespace UnicornHack.Data.Items
                     Name = "Consult",
                     Activation = ActivationType.WhileToggled,
                     Delay = "100",
-                    Effects = new HashSet<Effect>
-                        {new AddAbility {AbilityName = "short weapons", Level = 1, Duration = EffectDuration.Infinite}}
+                    Effects = new List<Effect>
+                    {
+                        new AddAbility
+                        {
+                            Duration = EffectDuration.Infinite, Name = "short weapons", Level = 1
+                        }
+                    }
                 }
             },
             Type = ItemType.SkillBook,

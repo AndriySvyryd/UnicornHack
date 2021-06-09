@@ -19,74 +19,74 @@ namespace UnicornHack.Services
                 {
                     case EffectType.PhysicalDamage:
                         builder.Append(" physical='");
-                        builder.Append(effect.Amount);
+                        builder.Append(effect.AppliedAmount);
                         builder.Append("'");
                         break;
                     case EffectType.Burn:
                         builder.Append(" fire='");
-                        builder.Append(effect.Amount);
+                        builder.Append(effect.AppliedAmount);
                         builder.Append("'");
                         break;
                     case EffectType.Bleed:
                         builder.Append(" bleeding='");
-                        builder.Append(effect.Amount);
+                        builder.Append(effect.AppliedAmount);
                         builder.Append("'");
                         break;
                     case EffectType.Blight:
                         builder.Append(" toxin='");
-                        builder.Append(effect.Amount);
+                        builder.Append(effect.AppliedAmount);
                         builder.Append("'");
                         break;
                     case EffectType.Corrode:
                         builder.Append(" acid='");
-                        builder.Append(effect.Amount);
+                        builder.Append(effect.AppliedAmount);
                         builder.Append("'");
                         break;
                     case EffectType.Freeze:
                         builder.Append(" cold='");
-                        builder.Append(effect.Amount);
+                        builder.Append(effect.AppliedAmount);
                         builder.Append("'");
                         break;
                     case EffectType.LightDamage:
                         builder.Append(" light='");
-                        builder.Append(effect.Amount);
+                        builder.Append(effect.AppliedAmount);
                         builder.Append("'");
                         break;
                     case EffectType.PsychicDamage:
                         builder.Append(" psychic='");
-                        builder.Append(effect.Amount);
+                        builder.Append(effect.AppliedAmount);
                         builder.Append("'");
                         break;
                     case EffectType.Shock:
                         builder.Append(" electricity='");
-                        builder.Append(effect.Amount);
+                        builder.Append(effect.AppliedAmount);
                         builder.Append("'");
                         break;
                     case EffectType.Soak:
                         builder.Append(" water='");
-                        builder.Append(effect.Amount);
+                        builder.Append(effect.AppliedAmount);
                         builder.Append("'");
                         break;
                     case EffectType.SonicDamage:
                         builder.Append(" sonic='");
-                        builder.Append(effect.Amount);
+                        builder.Append(effect.AppliedAmount);
                         builder.Append("'");
                         break;
                     case EffectType.Wither:
                         builder.Append(" void='");
-                        builder.Append(effect.Amount);
+                        builder.Append(effect.AppliedAmount);
                         builder.Append("'");
                         break;
                     case EffectType.DrainLife:
                         builder.Append(" drain='");
-                        builder.Append(effect.Amount);
+                        builder.Append(effect.AppliedAmount);
                         builder.Append("'");
                         break;
                     default:
                         continue;
                 }
 
-                totalDamage += effect.Amount.Value;
+                totalDamage += effect.AppliedAmount.Value;
                 if (totalDamage != 0)
                 {
                     damageTaken = true;

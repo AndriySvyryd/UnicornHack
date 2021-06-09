@@ -21,14 +21,14 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "20*MightModifier()"}}
                 }
             },
             InitialLevel = 10,
-            GenerationWeight = new DefaultWeight {Multiplier = 7F},
+            GenerationWeight = "3",
             Noise = ActorNoiseType.Bark,
             Size = 8,
             Weight = 300,

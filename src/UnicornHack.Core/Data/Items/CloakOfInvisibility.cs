@@ -16,10 +16,13 @@ namespace UnicornHack.Data.Items
                 {
                     Activation = ActivationType.WhileEquipped,
                     EnergyPointCost = 50,
-                    Effects = new HashSet<Effect>
+                    Effects = new List<Effect>
                     {
                         new ChangeProperty<int>
-                            {PropertyName = "Visibility", Function = ValueCombinationFunction.Override}
+                        {
+                            PropertyName = "Visibility",
+                            Function = ValueCombinationFunction.Override
+                        }
                     }
                 }
             },

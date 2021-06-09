@@ -11,32 +11,34 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "dwarf",
             Species = Species.Dwarf,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Activation = ActivationType.OnMeleeAttack,
-                    Action = AbilityAction.Modifier,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "30"}}
+                    new Ability
+                    {
+                        Activation = ActivationType.OnMeleeAttack,
+                        Action = AbilityAction.Modifier,
+                        Effects = new List<Effect> {new PhysicalDamage {Damage = "30"}}
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Punch,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new PhysicalDamage {Damage = "10*MightModifier()"}}
+                    }
                 },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Punch,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
-                }
-            },
             InitialLevel = 2,
-            GenerationWeight = new DefaultWeight {Multiplier = 0F},
+            GenerationWeight = "0",
             GenerationFlags = GenerationFlags.NonPolymorphable,
-            Behavior = AIBehavior.AlignmentAware | AIBehavior.GoldCollector | AIBehavior.GemCollector |
-                       AIBehavior.WeaponCollector,
+            Behavior =
+                AIBehavior.AlignmentAware | AIBehavior.GoldCollector | AIBehavior.GemCollector |
+                AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Speach,
             Weight = 900,
             MovementDelay = 100,

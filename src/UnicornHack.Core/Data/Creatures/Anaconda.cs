@@ -21,10 +21,10 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "20*MightModifier()"}}
                 },
                 new Ability
                 {
@@ -33,10 +33,10 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Hug,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "50*MightModifier()"}}
                 },
                 new Ability
                 {
@@ -45,15 +45,17 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Hug,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
-                        {new Bind {Duration = EffectDuration.UntilTimeout, DurationAmount = "2"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect>
+                    {
+                        new Bind {Duration = EffectDuration.UntilTimeout, DurationAmount = "2"}
+                    }
                 }
             },
             InitialLevel = 6,
-            GenerationWeight = new DefaultWeight {Multiplier = 2F},
+            GenerationWeight = "2",
             Noise = ActorNoiseType.Hiss,
             Weight = 250,
             MovementDelay = 300,

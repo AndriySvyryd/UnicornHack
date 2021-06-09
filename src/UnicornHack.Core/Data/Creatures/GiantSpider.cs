@@ -22,10 +22,10 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new Blight {Damage = "50*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new Blight {Damage = "50*MightModifier()"}}
                 },
                 new Ability
                 {
@@ -35,21 +35,23 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect>
                     {
                         new ChangeProperty<int>
                         {
-                            PropertyName = "Might", Value = -1, Duration = EffectDuration.UntilTimeout,
-                            DurationAmount = "5"
+                            Duration = EffectDuration.UntilTimeout,
+                            DurationAmount = "5",
+                            PropertyName = "Might",
+                            Value = -1
                         }
                     }
                 }
             },
             InitialLevel = 1,
-            GenerationWeight = new DefaultWeight {Multiplier = 2F},
+            GenerationWeight = "2",
             Weight = 150,
             MovementDelay = -20,
             TurningDelay = -20,

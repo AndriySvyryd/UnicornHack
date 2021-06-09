@@ -17,11 +17,11 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.OnMeleeAttack,
                     Action = AbilityAction.Modifier,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20"}}
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "20"}}
                 }
             },
             InitialLevel = 1,
-            GenerationWeight = new DefaultWeight {Multiplier = 0F},
+            GenerationWeight = "0",
             GenerationFlags = GenerationFlags.NonPolymorphable,
             Behavior = AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Speach,

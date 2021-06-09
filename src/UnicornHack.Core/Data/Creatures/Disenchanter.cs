@@ -20,22 +20,22 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Touch,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new DrainEnergy {Amount = "10*mentalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new DrainEnergy {Amount = "10*FocusModifier()"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.OnMeleeHit,
                     Action = AbilityAction.Touch,
                     SuccessCondition = AbilitySuccessCondition.UnblockableAttack,
-                    Accuracy = "10+attackScaling",
-                    Effects = new HashSet<Effect> {new DrainEnergy {Amount = "5*mentalScaling"}}
+                    Accuracy = "10+PerceptionModifier()",
+                    Effects = new List<Effect> {new DrainEnergy {Amount = "5*FocusModifier()"}}
                 }
             },
             InitialLevel = 12,
-            GenerationWeight = new DefaultWeight {Multiplier = 3F},
+            GenerationWeight = "2",
             Noise = ActorNoiseType.Growl,
             Weight = 750,
             Perception = -3,

@@ -15,14 +15,17 @@ namespace UnicornHack.Data.Items
                 new Ability
                 {
                     Activation = ActivationType.OnRangedAttack,
+                    Trigger = ActivationType.OnRangedAttack,
                     Range = 15,
                     Action = AbilityAction.Throw,
-                    Trigger = ActivationType.OnRangedAttack,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+weaponScaling",
-                    Delay = "100*weaponScaling",
-                    Effects = new HashSet<Effect>
-                        {new PhysicalDamage {Damage = "30*weaponScaling"}, new Activate {Projectile = "throwing knife"}}
+                    Accuracy = "5+RequirementsModifier()",
+                    Delay = "100*RequirementsModifier()",
+                    Effects = new List<Effect>
+                    {
+                        new PhysicalDamage {Damage = "30*RequirementsModifier()"},
+                        new Activate {Projectile = "throwing knife"}
+                    }
                 }
             },
             Type = ItemType.WeaponRangedClose,

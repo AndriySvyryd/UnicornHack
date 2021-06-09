@@ -41,7 +41,7 @@ namespace UnicornHack.Systems.Abilities
                 effect.Duration = EffectDuration.Infinite;
                 effect.EffectType = EffectType.ChangeProperty;
                 effect.TargetName = nameof(BeingComponent.BleedingResistance);
-                effect.Amount = 10;
+                effect.AppliedAmount = 10;
                 effect.ContainingAbilityId = toggledAbility.Id;
 
                 bleedingEffectEntity.Effect = effect;
@@ -77,7 +77,7 @@ namespace UnicornHack.Systems.Abilities
                 var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                 effect.Duration = EffectDuration.Infinite;
                 effect.EffectType = EffectType.Bleed;
-                effect.Amount = 10;
+                effect.AppliedAmount = 10;
                 effect.ContainingAbilityId = targetedAbility.Id;
 
                 bleedingEffectEntity.Effect = effect;

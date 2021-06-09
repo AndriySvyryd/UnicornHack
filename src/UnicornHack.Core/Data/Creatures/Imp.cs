@@ -21,14 +21,14 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Claw,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "20*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "20*MightModifier()"}}
                 }
             },
             InitialLevel = 3,
-            GenerationWeight = new DefaultWeight {Multiplier = 6F},
+            GenerationWeight = "5",
             Behavior = AIBehavior.Wandering | AIBehavior.Stalking,
             Noise = ActorNoiseType.Cuss,
             Size = 1,

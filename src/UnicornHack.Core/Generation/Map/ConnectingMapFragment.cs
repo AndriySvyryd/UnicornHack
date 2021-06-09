@@ -13,7 +13,15 @@ namespace UnicornHack.Generation.Map
     {
         public ICollection<LevelConnection> Connections { get; set; } = new HashSet<LevelConnection>();
 
-        private Func<string, byte, int, int, ConnectionComponent, float> _weightFunction;
+        private Func<string, int, int, int, ConnectionComponent, float> _weightFunction;
+
+        private static readonly UnicornExpressionVisitor _translator =
+            new(new[] { BranchParameter, DepthParameter, InstancesParameter, TagInstancesParameter, ConnectionParameter });
+
+        protected override void ResetWeightFunction() => _weightFunction = null;
+
+        public static Func<string, int, int, int, ConnectionComponent, float> CreateWeightFunction(string expression)
+            => _translator.Translate<Func<string, int, int, int, ConnectionComponent, float>, float>(expression);
 
         public float GetWeight(LevelComponent level, Rectangle boundingRectangle, ConnectionComponent target)
         {
@@ -25,10 +33,24 @@ namespace UnicornHack.Generation.Map
 
             if (_weightFunction == null)
             {
-                _weightFunction = (GenerationWeight ?? new DefaultWeight()).CreateConnectingFragmentWeightFunction();
+                try
+                {
+                    _weightFunction = CreateWeightFunction(GenerationWeight ?? DefaultWeight);
+                }
+                catch (Exception e)
+                {
+                    throw new InvalidOperationException("Error while parsing the GenerationWeight for " + Name, e);
+                }
             }
 
-            return _weightFunction(level.Branch.Name, level.Depth, 0, 0, target);
+            try
+            {
+                return _weightFunction(level.Branch.Name, level.Depth, 0, 0, target);
+            }
+            catch (Exception e)
+            {
+                throw new InvalidOperationException("Error while evaluating the Weight for " + Name, e);
+            }
         }
 
         public override Room BuildRoom(LevelComponent level, IEnumerable<Point> points, Action<Point> insideAction,

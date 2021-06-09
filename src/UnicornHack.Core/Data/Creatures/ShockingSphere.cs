@@ -12,23 +12,23 @@ namespace UnicornHack.Data.Creatures
             Name = "shocking sphere",
             Species = Species.FloatingSphere,
             SpeciesClass = SpeciesClass.Extraplanar,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnRangedAttack,
-                    Range = 20,
-                    Action = AbilityAction.Explosion,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new Shock {Damage = "140*mentalScaling"}}
-                }
-            },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnRangedAttack,
+                        Range = 20,
+                        Action = AbilityAction.Explosion,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new Shock {Damage = "140*FocusModifier()"}}
+                    }
+                },
             InitialLevel = 6,
-            GenerationWeight = new DefaultWeight {Multiplier = 0F},
             Sex = Sex.None,
             Size = 2,
             Weight = 10,

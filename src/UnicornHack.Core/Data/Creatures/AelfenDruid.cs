@@ -17,7 +17,7 @@ namespace UnicornHack.Data.Creatures
                 {
                     Activation = ActivationType.OnMeleeAttack,
                     Action = AbilityAction.Modifier,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50"}}
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "50"}}
                 },
                 new Ability
                 {
@@ -26,10 +26,10 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Punch,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "10*MightModifier()"}}
                 },
                 new Ability
                 {
@@ -38,14 +38,14 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Punch,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "10*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "10*MightModifier()"}}
                 }
             },
             InitialLevel = 8,
-            GenerationWeight = new DefaultWeight {Multiplier = 3F},
+            GenerationWeight = "3",
             Behavior = AIBehavior.AlignmentAware | AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Speach,
             Sex = Sex.Male,

@@ -18,14 +18,11 @@ namespace UnicornHack.Data.Items
                     Activation = ActivationType.Manual,
                     Action = AbilityAction.Drink,
                     Delay = "100",
-                    Effects = new HashSet<Effect>
-                    {
-                        new GainXP {Amount = 1000}, new RemoveItem()
-                    }
+                    Effects = new List<Effect> {new GainXP {Amount = "1000"}, new RemoveItem()}
                 }
             },
             Type = ItemType.Potion,
-            GenerationWeight = new DefaultWeight {Multiplier = 0F},
+            GenerationWeight = "0",
             Material = Material.Glass,
             Weight = 1,
             StackSize = 20

@@ -15,9 +15,9 @@ namespace UnicornHack.Systems.Effects
         private int? _expirationTick;
         private int? _expirationXp;
         private bool _shouldTargetActivator;
-        private int? _amount;
-        private string _amountExpression;
-        private int? _secondaryAmount;
+        private int? _appliedAmount;
+        private string _amount;
+        private string _secondaryAmount;
         private EffectType _effectType;
         private ValueCombinationFunction _function;
         private string _targetName;
@@ -57,10 +57,16 @@ namespace UnicornHack.Systems.Effects
             set => SetWithNotify(value, ref _duration);
         }
 
+        public Func<GameEntity, GameEntity, float> DurationAmountFunction { get; set; }
+
         public string DurationAmount
         {
             get => _durationAmount;
-            set => SetWithNotify(value, ref _durationAmount);
+            set
+            {
+                SetWithNotify(value, ref _durationAmount);
+                DurationAmountFunction = null;
+            }
         }
 
         public int? ExpirationTick
@@ -81,22 +87,33 @@ namespace UnicornHack.Systems.Effects
             set => SetWithNotify(value, ref _shouldTargetActivator);
         }
 
-        public int? Amount
+        public int? AppliedAmount
+        {
+            get => _appliedAmount;
+            set => SetWithNotify(value, ref _appliedAmount);
+        }
+
+        public Func<GameEntity, GameEntity, float> AmountFunction { get; set; }
+        public Func<GameEntity, GameEntity, float> SecondaryAmountFunction { get; set; }
+
+        public string Amount
         {
             get => _amount;
-            set => SetWithNotify(value, ref _amount);
+            set
+            {
+                SetWithNotify(value, ref _amount);
+                AmountFunction = null;
+            }
         }
 
-        public string AmountExpression
-        {
-            get => _amountExpression;
-            set => SetWithNotify(value, ref _amountExpression);
-        }
-
-        public int? SecondaryAmount
+        public string SecondaryAmount
         {
             get => _secondaryAmount;
-            set => SetWithNotify(value, ref _secondaryAmount);
+            set
+            {
+                SetWithNotify(value, ref _secondaryAmount);
+                SecondaryAmountFunction = null;
+            }
         }
 
         public EffectType EffectType
@@ -105,7 +122,7 @@ namespace UnicornHack.Systems.Effects
             set => SetWithNotify(value, ref _effectType);
         }
 
-        public ValueCombinationFunction Function
+        public ValueCombinationFunction CombinationFunction
         {
             get => _function;
             set => SetWithNotify(value, ref _function);
@@ -123,21 +140,6 @@ namespace UnicornHack.Systems.Effects
             set => SetWithNotify(value, ref _targetEntityId);
         }
 
-        public int GetActualDurationAmount()
-        {
-            if (DurationAmount == null)
-            {
-                return 0;
-            }
-
-            if (int.TryParse(DurationAmount, out var intDuration))
-            {
-                return intDuration;
-            }
-
-            throw new InvalidOperationException("Can't parse duration " + DurationAmount);
-        }
-
         public EffectComponent AddToAbility(GameEntity abilityEntity)
         {
             var manager = abilityEntity.Manager;
@@ -147,10 +149,10 @@ namespace UnicornHack.Systems.Effects
                 clone.ShouldTargetActivator = ShouldTargetActivator;
                 clone.Duration = Duration;
                 clone.DurationAmount = DurationAmount;
+                clone.AppliedAmount = AppliedAmount;
                 clone.Amount = Amount;
-                clone.AmountExpression = AmountExpression;
                 clone.EffectType = EffectType;
-                clone.Function = Function;
+                clone.CombinationFunction = CombinationFunction;
                 clone.TargetName = TargetName;
                 clone.TargetEntityId = TargetEntityId;
 
@@ -173,12 +175,16 @@ namespace UnicornHack.Systems.Effects
             _sourceAbilityId = default;
             _containingAbilityId = default;
             _duration = default;
+            DurationAmountFunction = default;
             _durationAmount = default;
             _expirationTick = default;
             _expirationXp = default;
             _shouldTargetActivator = default;
+            _appliedAmount = default;
+            AmountFunction = default;
             _amount = default;
-            _amountExpression = default;
+            SecondaryAmountFunction = default;
+            _secondaryAmount = default;
             _effectType = default;
             _function = default;
             _targetName = default;

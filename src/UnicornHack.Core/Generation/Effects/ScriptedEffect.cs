@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using CSharpScriptSerialization;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Effects;
 
@@ -9,8 +12,23 @@ namespace UnicornHack.Generation.Effects
 
         protected override void ConfigureEffect(EffectComponent effect)
         {
+            // TODO: Add a specific effect type
             effect.EffectType = EffectType.Heal;
-            effect.Amount = 0;
+            effect.Amount = "0";
         }
+
+        private static readonly CSScriptSerializer Serializer =
+            new PropertyCSScriptSerializer<ScriptedEffect>(GetPropertyConditions<ScriptedEffect>());
+
+        protected static new Dictionary<string, Func<TEffect, object, bool>>
+            GetPropertyConditions<TEffect>() where TEffect : Effect
+        {
+            var propertyConditions = Effect.GetPropertyConditions<TEffect>();
+
+            propertyConditions.Add(nameof(Script), (o, v) => v != default);
+            return propertyConditions;
+        }
+
+        public override ICSScriptSerializer GetSerializer() => Serializer;
     }
 }

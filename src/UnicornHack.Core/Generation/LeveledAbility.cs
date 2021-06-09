@@ -10,7 +10,7 @@ namespace UnicornHack.Generation
     public class LeveledAbility : Ability
     {
         public bool Cumulative { get; set; }
-        public IDictionary<int, HashSet<Effect>> LeveledEffects { get; set; }
+        public IReadOnlyDictionary<int, IReadOnlyList<Effect>> LeveledEffects { get; set; }
 
         public override AbilityComponent AddToEffect(GameEntity effectEntity, int level = 0)
         {
@@ -52,7 +52,8 @@ namespace UnicornHack.Generation
             var propertyConditions = Ability.GetPropertyConditions<TAbility>();
 
             propertyConditions.Add(nameof(Cumulative), (o, v) => (bool)v != default);
-            propertyConditions.Add(nameof(LeveledEffects), (o, v) => v != null && ((IDictionary<int, HashSet<Effect>>)v).Count != 0);
+            propertyConditions.Add(nameof(LeveledEffects),
+                (o, v) => v != null && ((IReadOnlyDictionary<int, IReadOnlyList<Effect>>)v).Count != 0);
             return propertyConditions;
         }
 

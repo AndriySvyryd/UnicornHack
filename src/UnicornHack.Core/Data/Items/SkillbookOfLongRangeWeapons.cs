@@ -17,10 +17,14 @@ namespace UnicornHack.Data.Items
                     Name = "Consult",
                     Activation = ActivationType.WhileToggled,
                     Delay = "100",
-                    Effects = new HashSet<Effect>
+                    Effects = new List<Effect>
                     {
                         new AddAbility
-                            {AbilityName = "long range weapons", Level = 1, Duration = EffectDuration.Infinite}
+                        {
+                            Duration = EffectDuration.Infinite,
+                            Name = "long range weapons",
+                            Level = 1
+                        }
                     }
                 }
             },

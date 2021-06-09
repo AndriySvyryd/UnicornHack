@@ -283,6 +283,8 @@ namespace UnicornHack.Data
             {
                 eb.Ignore(c => c.OwnerEntity);
                 eb.Ignore(c => c.Template);
+                eb.Ignore(c => c.AccuracyFunction);
+                eb.Ignore(c => c.DelayFunction);
                 eb.Property("_tracked");
                 eb.HasKey(c => new
                 {
@@ -343,6 +345,9 @@ namespace UnicornHack.Data
 
             modelBuilder.Entity<EffectComponent>(eb =>
             {
+                eb.Ignore(c => c.AmountFunction);
+                eb.Ignore(c => c.SecondaryAmountFunction);
+                eb.Ignore(c => c.DurationAmountFunction);
                 eb.Property("_tracked");
                 eb.HasKey(c => new
                 {

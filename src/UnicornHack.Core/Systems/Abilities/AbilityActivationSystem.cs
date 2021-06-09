@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Beings;
@@ -25,10 +27,29 @@ namespace UnicornHack.Systems.Abilities
         IGameSystem<EntityAddedMessage<GameEntity>>,
         IGameSystem<EntityRemovedMessage<GameEntity>>
     {
-        public const string WeaponDelayScaling = "weaponScaling";
-        public const string AttackDelayScaling = "attackScaling";
-        public const string WeaponAccuracyScaling = "weaponScaling";
-        public const string AttackAccuracyScaling = "attackScaling";
+        private static readonly ParameterExpression AbilityParameter =
+            Expression.Parameter(typeof(GameEntity), name: "ability");
+
+        private static readonly ParameterExpression ActivatorParameter =
+            Expression.Parameter(typeof(GameEntity), name: "activator");
+
+        private static readonly ParameterExpression TargetParameter =
+            Expression.Parameter(typeof(GameEntity), name: "target");
+
+        private static readonly AccuracyExpressionVisitor _accuracyTranslator =
+            new(new[] { AbilityParameter, ActivatorParameter });
+
+        private static readonly DelayExpressionVisitor _delayTranslator =
+            new(new[] { AbilityParameter, ActivatorParameter });
+
+        private static readonly MethodInfo _accuracyRequirementsModifierMethod = typeof(AbilityActivationSystem)
+            .GetMethod(nameof(GetAccuracyRequirementsModifierMethod), BindingFlags.NonPublic | BindingFlags.Static);
+        private static readonly MethodInfo _accuracyModifierMethod = typeof(AbilityActivationSystem)
+            .GetMethod(nameof(GetAccuracyModifierMethod), BindingFlags.NonPublic | BindingFlags.Static);
+        private static readonly MethodInfo _delayRequirementModifierMethod = typeof(AbilityActivationSystem)
+            .GetMethod(nameof(GetDelayRequirementModifierMethod), BindingFlags.NonPublic | BindingFlags.Static);
+        private static readonly MethodInfo _speedModifierMethod = typeof(AbilityActivationSystem)
+            .GetMethod(nameof(GetSpeedModifierMethod), BindingFlags.NonPublic | BindingFlags.Static);
 
         public bool CanActivateAbility(ActivateAbilityMessage activateAbilityMessage, bool shouldThrow)
         {
@@ -150,8 +171,8 @@ namespace UnicornHack.Systems.Abilities
             var delay = 0;
             if ((ability.Activation & ActivationType.Slottable) != 0)
             {
-                delay = GetActualDelay(ability, activateMessage.ActivatorEntity);
-                if (delay == -1
+                delay = GetDelay(ability, activateMessage.ActivatorEntity);
+                if (delay < 0
                     && stats == null)
                 {
                     targetEffectsMessage.ActivationError = $"Speed too low to activate ability {ability.EntityId}.";
@@ -225,7 +246,7 @@ namespace UnicornHack.Systems.Abilities
             {
                 foreach (var activatedAbility in activatedAbilities)
                 {
-                    ChangeState(active: true, activatedAbility, activateMessage.ActivatorEntity, manager);
+                    ChangeState(active: true, activatedAbility, activateMessage.ActivatorEntity);
                 }
 
                 if (!selfEffectsMessage.EffectsToApply.IsEmpty)
@@ -264,7 +285,8 @@ namespace UnicornHack.Systems.Abilities
                             var subStats = new SubAttackStats();
                             subStats.SuccessCondition = targetMessage.AbilityEntity.Ability.SuccessCondition;
 
-                            var accuracy = manager.AbilityActivationSystem.GetAccuracy(ability, targetMessage.ActivatorEntity);
+                            var accuracy = manager.AbilityActivationSystem.GetAccuracy(
+                                ability, targetMessage.ActivatorEntity);
                             subStats.Accuracy = accuracy;
 
                             var melee = activation.ActivationMessage.AbilityEntity.Ability.Range == 1;
@@ -803,7 +825,7 @@ namespace UnicornHack.Systems.Abilities
             }
 
             var level = activator.Position.LevelEntity.Level;
-            var targetCell = activationMessage.TargetCell ?? activationMessage.TargetEntity.Position.LevelCell;            
+            var targetCell = activationMessage.TargetCell ?? activationMessage.TargetEntity.Position.LevelCell;
             var cells = GetTargetedCells(
                 activator.Position.LevelCell,
                 targetCell,
@@ -990,53 +1012,6 @@ namespace UnicornHack.Systems.Abilities
             return attackRating;
         }
 
-        public int GetAccuracy(AbilityComponent ability, GameEntity activatorEntity)
-        {
-            var accuracy = activatorEntity.Being.Accuracy;
-            if (ability.Accuracy == null)
-            {
-                return accuracy;
-            }
-
-            if (int.TryParse(ability.Accuracy, out var intAccuracy))
-            {
-                return intAccuracy;
-            }
-
-            var parts = ability.Accuracy.Split('+');
-            if (parts.Length != 2)
-            {
-                throw new InvalidOperationException(ability.Accuracy + " unsupported operation");
-            }
-
-            if (!int.TryParse(parts[0], out var baseAccuracy))
-            {
-                throw new InvalidOperationException(ability.Accuracy + " unsupported summand");
-            }
-
-            switch (parts[1])
-            {
-                case AttackAccuracyScaling:
-                {
-                    return baseAccuracy + accuracy;
-                }
-                case WeaponAccuracyScaling:
-                {
-                    var item = ability.OwnerEntity.Item;
-                    var template = Item.Loader.Get(item.TemplateName);
-                    var skillBonus =
-                        activatorEntity.Manager.SkillAbilitiesSystem.GetItemSkillBonus(template, activatorEntity.Player);
-                    var requiredPerception = template?.RequiredPerception ?? 0;
-                    var difference = activatorEntity.Being.Perception - requiredPerception + skillBonus;
-                    var accuracyModifier = requiredPerception * (difference + Math.Min(0, difference));
-
-                    return baseAccuracy + accuracy + accuracyModifier;
-                }
-                default:
-                    throw new InvalidOperationException(ability.Accuracy + " unsupported scaling " + parts[1]);
-            }
-        }
-
         public int GetDeflectionProbability(
             GameEntity abilityEntity, GameEntity activatorEntity, GameEntity targetEntity, byte? exposure, int? accuracy)
         {
@@ -1119,7 +1094,7 @@ namespace UnicornHack.Systems.Abilities
 
         private void Deactivate(AbilityComponent ability, GameEntity activatorEntity, GameManager manager)
         {
-            ChangeState(active: false, ability, activatorEntity, manager);
+            ChangeState(active: false, ability, activatorEntity);
 
             if (ability.EnergyCost > 0
                 && (ability.Activation & ActivationType.Continuous) != 0)
@@ -1143,7 +1118,7 @@ namespace UnicornHack.Systems.Abilities
             }
         }
 
-        private void ChangeState(bool active, AbilityComponent ability, GameEntity activatorEntity, GameManager manager)
+        private void ChangeState(bool active, AbilityComponent ability, GameEntity activatorEntity)
         {
             if (active)
             {
@@ -1151,10 +1126,11 @@ namespace UnicornHack.Systems.Abilities
                 {
                     if (ability.Cooldown > 0)
                     {
-                        var delay = GetActualDelay(ability, activatorEntity);
-                        Debug.Assert(delay != -1);
+                        var delay = GetDelay(ability, activatorEntity);
+                        Debug.Assert(delay >= 0);
 
-                        ability.CooldownTick = manager.Game.CurrentTick + ability.Cooldown + delay;
+                        var game = activatorEntity.Manager.Game;
+                        ability.CooldownTick = game.CurrentTick + ability.Cooldown + delay;
                     }
 
                     if (ability.XPCooldown > 0)
@@ -1175,7 +1151,8 @@ namespace UnicornHack.Systems.Abilities
                 ability.IsActive = false;
                 if (ability.Cooldown > 0)
                 {
-                    ability.CooldownTick = manager.Game.CurrentTick + ability.Cooldown;
+                    var game = activatorEntity.Manager.Game;
+                    ability.CooldownTick = game.CurrentTick + ability.Cooldown;
                 }
 
                 if (ability.XPCooldown > 0)
@@ -1185,55 +1162,175 @@ namespace UnicornHack.Systems.Abilities
             }
         }
 
-        public int GetActualDelay(AbilityComponent ability, GameEntity activator)
+        public int GetAccuracy(AbilityComponent ability, GameEntity activatorEntity)
+        {
+            if (ability.Accuracy == null)
+            {
+                return activatorEntity.Being.Accuracy;
+            }
+
+            if (ability.AccuracyFunction == null)
+            {
+                ability.AccuracyFunction = CreateAccuracyFunction(ability.Accuracy, ability.Name);
+            }
+
+            try
+            {
+                return (int)ability.AccuracyFunction(ability.Entity, activatorEntity);
+            }
+            catch (Exception e)
+            {
+                throw new InvalidOperationException("Error while evaluating the Accuracy for " + ability.Name, e);
+            }
+        }
+
+        public static Func<GameEntity, GameEntity, float> CreateAccuracyFunction(string expression, string name)
+        {
+            try
+            {
+                return _accuracyTranslator.Translate<Func<GameEntity, GameEntity, float>, float>(expression);
+            }
+            catch (Exception e)
+            {
+                throw new InvalidOperationException("Error while parsing the Accuracy for " + name, e);
+            }
+        }
+
+        private static float GetAccuracyRequirementsModifierMethod(GameEntity abilityEntity, GameEntity activatorEntity)
+        {
+            var item = abilityEntity.Ability.OwnerEntity.Item;
+            var template = Item.Loader.Get(item.TemplateName);
+            var skillBonus =
+                activatorEntity.Manager.SkillAbilitiesSystem.GetItemSkillBonus(template, activatorEntity.Player);
+            var requiredPerception = template?.RequiredPerception ?? 0;
+            var difference = activatorEntity.Being.Perception + skillBonus - requiredPerception;
+            var accuracyModifier = requiredPerception * (difference + Math.Min(0, difference));
+
+            return activatorEntity.Being.Accuracy + accuracyModifier;
+        }
+
+        private static float GetAccuracyModifierMethod(GameEntity abilityEntity, GameEntity activatorEntity)
+        {
+            return activatorEntity.Being.Accuracy;
+        }
+
+        public int GetDelay(AbilityComponent ability, GameEntity activatorEntity)
         {
             if (ability.Delay == null)
             {
                 return 0;
             }
 
-            if (int.TryParse(ability.Delay, out var intDelay))
+            if (ability.DelayFunction == null)
             {
-                return intDelay;
+                ability.DelayFunction = CreateDelayFunction(ability.Delay, ability.Name);
             }
 
-            var parts = ability.Delay.Split('*');
-            if (parts.Length != 2)
+            try
             {
-                throw new InvalidOperationException(ability.Delay + " unsupported operation");
+                return (int)ability.DelayFunction(ability.Entity, activatorEntity);
+            }
+            catch (Exception e)
+            {
+                throw new InvalidOperationException("Error while evaluating the Delay for " + ability.Name, e);
+            }
+        }
+
+        public static Func<GameEntity, GameEntity, float> CreateDelayFunction(string expression, string name)
+        {
+            try
+            {
+                return _delayTranslator.Translate<Func<GameEntity, GameEntity, float>, float>(expression);
+            }
+            catch (Exception e)
+            {
+                throw new InvalidOperationException("Error while parsing the Delay for " + name, e);
+            }
+        }
+
+        private static float GetDelayRequirementModifierMethod(GameEntity abilityEntity, GameEntity activatorEntity)
+        {
+            var item = abilityEntity.Ability.OwnerEntity.Item;
+            var template = Item.Loader.Get(item.TemplateName);
+            var skillBonus = activatorEntity.Manager.SkillAbilitiesSystem.GetItemSkillBonus(template, activatorEntity.Player);
+            var requiredSpeed = template?.RequiredSpeed ?? 0;
+            var difference = activatorEntity.Being.Speed + skillBonus - requiredSpeed;
+            var divisor = 100 + requiredSpeed * (difference + Math.Min(0, difference));
+
+            if (divisor <= 0)
+            {
+                return -1;
             }
 
-            if (!int.TryParse(parts[0], out var baseDelay))
+            return 100f / divisor;
+        }
+
+        private static float GetSpeedModifierMethod(GameEntity abilityEntity, GameEntity activatorEntity)
+        {
+            var divisor = 100 + 10 * activatorEntity.Being.Speed;
+
+            return 100f / divisor;
+        }
+
+        private class AccuracyExpressionVisitor : UnicornExpressionVisitor
+        {
+            public AccuracyExpressionVisitor(IEnumerable<ParameterExpression> parameters)
+                : base(parameters)
             {
-                throw new InvalidOperationException(ability.Delay + " unsupported factor");
             }
 
-            switch (parts[1])
+            protected override Expression CreateInvocation(string function, IEnumerable<Expression> children, Type childrenCommonType)
             {
-                case AttackDelayScaling:
+                MethodInfo method;
+                switch (function)
                 {
-                    var divisor = 100 + 10 * activator.Being.Speed;
-
-                    return 100 * baseDelay / divisor;
+                    case "RequirementsModifier":
+                        method = _accuracyRequirementsModifierMethod;
+                        break;
+                    case "PerceptionModifier":
+                        method = _accuracyModifierMethod;
+                        break;
+                    default:
+                        return base.CreateInvocation(function, children, childrenCommonType);
                 }
-                case WeaponDelayScaling:
+
+                if (children.Any())
                 {
-                    var item = ability.OwnerEntity.Item;
-                    var template = Item.Loader.Get(item.TemplateName);
-                    var skillBonus = activator.Manager.SkillAbilitiesSystem.GetItemSkillBonus(template, activator.Player);
-                    var requiredSpeed = template?.RequiredSpeed ?? 0;
-                    var difference = activator.Being.Speed - requiredSpeed + skillBonus;
-                    var divisor = 100 + requiredSpeed * (difference + Math.Min(0, difference));
-
-                    if (divisor <= 0)
-                    {
-                        return -1;
-                    }
-
-                    return 100 * baseDelay / divisor;
+                    throw new InvalidOperationException($"Expected 0 parameters for function {function}");
                 }
-                default:
-                    throw new InvalidOperationException(ability.Delay + " unsupported scaling " + parts[1]);
+
+                return Expression.Call(null, method, AbilityParameter, ActivatorParameter);
+            }
+        }
+
+        private class DelayExpressionVisitor : UnicornExpressionVisitor
+        {
+            public DelayExpressionVisitor(IEnumerable<ParameterExpression> parameters)
+                : base(parameters)
+            {
+            }
+
+            protected override Expression CreateInvocation(string function, IEnumerable<Expression> children, Type childrenCommonType)
+            {
+                MethodInfo method;
+                switch (function)
+                {
+                    case "RequirementsModifier":
+                        method = _delayRequirementModifierMethod;
+                        break;
+                    case "SpeedModifier":
+                        method = _speedModifierMethod;
+                        break;
+                    default:
+                        return base.CreateInvocation(function, children, childrenCommonType);
+                }
+
+                if (children.Any())
+                {
+                    throw new InvalidOperationException($"Expected 0 parameters for function {function}");
+                }
+
+                return Expression.Call(null, method, AbilityParameter, ActivatorParameter);
             }
         }
 

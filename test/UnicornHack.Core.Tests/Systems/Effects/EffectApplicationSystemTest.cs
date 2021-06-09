@@ -45,7 +45,7 @@ namespace UnicornHack.Systems.Effects
                 effect.Duration = EffectDuration.Infinite;
                 effect.EffectType = EffectType.ChangeProperty;
                 effect.TargetName = nameof(BeingComponent.AcidResistance);
-                effect.Amount = 10;
+                effect.AppliedAmount = 10;
                 effect.ContainingAbilityId = toggledAbility.Id;
 
                 acidEffectEntity.Effect = effect;
@@ -72,13 +72,13 @@ namespace UnicornHack.Systems.Effects
                 effect.Duration = EffectDuration.Infinite;
                 effect.EffectType = EffectType.ChangeProperty;
                 effect.TargetName = nameof(BeingComponent.ColdResistance);
-                effect.Amount = 10;
+                effect.AppliedAmount = 10;
                 effect.ContainingAbilityId = toggledAbility.Id;
 
                 coldEffectEntity.Effect = effect;
             }
 
-            acidEffectEntity.Effect.Amount = 20;
+            acidEffectEntity.Effect.AppliedAmount = 20;
 
             manager.Queue.ProcessQueue(manager);
 

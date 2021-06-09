@@ -8,7 +8,6 @@ using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
-using UnicornHack.Systems.Time;
 using UnicornHack.Utils;
 using UnicornHack.Utils.MessagingECS;
 
@@ -27,9 +26,6 @@ namespace UnicornHack.Systems.Faculties
         public const string TwoHandedRangedWeaponAttackName = "two handed ranged weapon attack";
 
         public const string EquippedAbilityName = "equipped";
-
-        public readonly string DefaultWeaponDelay =
-            TimeSystem.DefaultActionDelay + "*" + AbilityActivationSystem.WeaponDelayScaling;
 
         public MessageProcessingResult Process(ItemEquippedMessage message, GameManager manager)
         {
@@ -339,7 +335,7 @@ namespace UnicornHack.Systems.Faculties
                         weaponAttack.Range = abilityToActivate.Range;
                         weaponAttack.TargetingShape = abilityToActivate.TargetingShape;
                         weaponAttack.TargetingShapeSize = abilityToActivate.TargetingShapeSize;
-                        weaponAttack.Delay = manager.AbilityActivationSystem.GetActualDelay(abilityToActivate, ownerEntity).ToString();
+                        weaponAttack.Delay = manager.AbilityActivationSystem.GetDelay(abilityToActivate, ownerEntity).ToString();
                     }
 
                     foreach (var effectEntity in manager.EffectsToContainingAbilityRelationship[weaponAttack.EntityId])
@@ -395,7 +391,7 @@ namespace UnicornHack.Systems.Faculties
             ability.MaxHeadingDeviation = firstWeaponAbility.MaxHeadingDeviation;
             ability.TargetingShapeSize = firstWeaponAbility.TargetingShapeSize;
             ability.TargetingShape = firstWeaponAbility.TargetingShape;
-            var delay = manager.AbilityActivationSystem.GetActualDelay(firstWeaponAbility, ownerEntity);
+            var delay = manager.AbilityActivationSystem.GetDelay(firstWeaponAbility, ownerEntity);
 
             if (secondWeaponAbility != null)
             {
@@ -425,10 +421,10 @@ namespace UnicornHack.Systems.Faculties
                     ability.TargetingShape = secondWeaponAbility.TargetingShape;
                 }
 
-                var secondDelay = manager.AbilityActivationSystem.GetActualDelay(secondWeaponAbility, ownerEntity);
+                var secondDelay = manager.AbilityActivationSystem.GetDelay(secondWeaponAbility, ownerEntity);
                 if ((secondDelay > delay
-                     || secondDelay == -1)
-                    && delay != -1)
+                     || secondDelay < 0)
+                    && delay >= 0)
                 {
                     delay = secondDelay;
                 }
@@ -553,7 +549,7 @@ namespace UnicornHack.Systems.Faculties
             var hindranceEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
                 actorEntity, nameof(BeingComponent.Hindrance), EquippedAbilityName);
 
-            hindranceEffect.Amount = hindrance * 10;
+            hindranceEffect.AppliedAmount = hindrance * 10;
         }
 
         public int GetItemSkillBonus(Item template, PlayerComponent player)
@@ -714,7 +710,7 @@ namespace UnicornHack.Systems.Faculties
 
             var effect = manager.EffectApplicationSystem.GetAbilityEffect(
                 playerEntity, ability.Name, EffectApplicationSystem.InnateAbilityName);
-            effect.Amount++;
+            effect.AppliedAmount++;
         }
     }
 }

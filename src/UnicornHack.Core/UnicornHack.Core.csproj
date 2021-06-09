@@ -11,16 +11,26 @@
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <RootNamespace>UnicornHack</RootNamespace>
     <CodeAnalysisRuleSet>..\..\UnicornHack.ruleset</CodeAnalysisRuleSet>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>9.0</LangVersion>
+    <NoWarn>3021;1701;1702</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CSharpScriptSerializer" Version="2.0.0" />
-    <PackageReference Include="JetBrains.Annotations" Version="2019.1.3" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="2.9.8">
+    <Antlr4 Include="Generation\UnicornExpression.g">
+      <Error>true</Error>
+      <Package>UnicornHack.Generation</Package>
+      <GAtn>true</GAtn>
+      <Listener>false</Listener>
+    </Antlr4>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.9.2" />
+    <PackageReference Include="Antlr4BuildTasks" Version="8.14.0">
       <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="CSharpScriptSerializer" Version="2.0.0" />
+    <PackageReference Include="JetBrains.Annotations" Version="2021.1.0" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="3.1.1" />
   </ItemGroup>

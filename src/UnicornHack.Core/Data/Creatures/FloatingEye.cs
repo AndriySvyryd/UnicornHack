@@ -12,20 +12,26 @@ namespace UnicornHack.Data.Creatures
             Name = "floating eye",
             Species = Species.FloatingSphere,
             SpeciesClass = SpeciesClass.Aberration,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Activation = ActivationType.OnMeleeHit,
-                    Action = AbilityAction.Gaze,
-                    SuccessCondition = AbilitySuccessCondition.UnblockableAttack,
-                    Accuracy = "10+attackScaling",
-                    Effects = new HashSet<Effect>
-                        {new Paralyze {Duration = EffectDuration.UntilTimeout, DurationAmount = "200"}}
-                }
-            },
+                    new Ability
+                    {
+                        Activation = ActivationType.OnMeleeHit,
+                        Action = AbilityAction.Gaze,
+                        SuccessCondition = AbilitySuccessCondition.UnblockableAttack,
+                        Accuracy = "10+PerceptionModifier()",
+                        Effects = new List<Effect>
+                        {
+                            new Paralyze
+                            {
+                                Duration = EffectDuration.UntilTimeout, DurationAmount = "200"
+                            }
+                        }
+                    }
+                },
             InitialLevel = 2,
-            GenerationWeight = new DefaultWeight {Multiplier = 3F},
+            GenerationWeight = "3",
             Behavior = AIBehavior.Wandering,
             Sex = Sex.None,
             Size = 2,

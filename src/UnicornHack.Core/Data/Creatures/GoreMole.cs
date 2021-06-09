@@ -12,23 +12,24 @@ namespace UnicornHack.Data.Creatures
             Name = "gore mole",
             Species = Species.Mole,
             SpeciesClass = SpeciesClass.Rodent,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Bite,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "30*physicalScaling"}}
-                }
-            },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Bite,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new PhysicalDamage {Damage = "30*MightModifier()"}}
+                    }
+                },
             InitialLevel = 3,
-            GenerationWeight = new DefaultWeight {Multiplier = 4F},
+            GenerationWeight = "3",
             Behavior = AIBehavior.GoldCollector | AIBehavior.GemCollector,
             Size = 2,
             Weight = 100,

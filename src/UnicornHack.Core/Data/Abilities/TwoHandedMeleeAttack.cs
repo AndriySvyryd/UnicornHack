@@ -11,10 +11,7 @@ namespace UnicornHack.Data.Abilities
         {
             Name = "two-handed melee attack",
             Type = AbilityType.DefaultAttack,
-            Effects = new HashSet<Effect>
-            {
-                new Activate()
-            },
+            Effects = new List<Effect> {new Activate()},
             WieldingStyle = WieldingStyle.TwoHanded,
             ItemType = ItemType.WeaponMelee
         };

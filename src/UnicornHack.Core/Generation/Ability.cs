@@ -11,6 +11,10 @@ namespace UnicornHack.Generation
 {
     public class Ability : ILoadable, ICSScriptSerializable
     {
+        private Func<GameEntity, GameEntity, float> _accuracyFunction;
+        private Func<GameEntity, GameEntity, float> _delayFunction;
+        private IReadOnlyList<Effect> _effects;
+
         public string Name { get; set; }
         public string EnglishDescription { get; set; }
         public AbilityType Type { get; set; }
@@ -41,7 +45,19 @@ namespace UnicornHack.Generation
 
         public string Delay { get; set; }
         public int EnergyPointCost { get; set; }
-        public ISet<Effect> Effects { get; set; }
+
+        public IReadOnlyList<Effect> Effects
+        {
+            get => _effects;
+            set
+            {
+                _effects = value;
+                foreach (var effect in value)
+                {
+                    effect.ContainingAbility = this;
+                }
+            }
+        }
 
         public virtual AbilityComponent AddToEffect(GameEntity effectEntity, int level = 0)
         {
@@ -66,13 +82,31 @@ namespace UnicornHack.Generation
             ability.Template = this;
             ability.Level = level;
 
+            if (Accuracy != null)
+            {
+                if (_accuracyFunction == null)
+                {
+                    _accuracyFunction = AbilityActivationSystem.CreateAccuracyFunction(Accuracy, Name);
+                }
+                ability.AccuracyFunction = _accuracyFunction;
+            }
+
+            if (Delay != null)
+            {
+                if (_delayFunction == null)
+                {
+                    _delayFunction = AbilityActivationSystem.CreateDelayFunction(Delay, Name);
+                }
+                ability.DelayFunction = _delayFunction;
+            }
+
             effectEntity.Ability = ability;
             AddEffects(Effects, ability, manager);
 
             return ability;
         }
 
-        protected void AddEffects(ISet<Effect> effects, AbilityComponent ability, GameManager manager)
+        protected void AddEffects(IReadOnlyList<Effect> effects, AbilityComponent ability, GameManager manager)
         {
             if (effects != null)
             {
@@ -116,7 +150,7 @@ namespace UnicornHack.Generation
             {nameof(MinHeadingDeviation), (o, v) => (int)v != default},
             {nameof(MaxHeadingDeviation), (o, v) => (int)v != default},
             {nameof(Range), (o, v) => (int)v != default},
-            {nameof(TargetingShapeSize), (o, v) => (int)v != default},
+            {nameof(TargetingShapeSize), (o, v) => (int)v != 1},
             {nameof(TargetingShape), (o, v) => (TargetingShape)v != default},
             {nameof(Action), (o, v) => (AbilityAction)v != default},
             {nameof(SuccessCondition), (o, v) => (AbilitySuccessCondition)v != default},
@@ -125,7 +159,7 @@ namespace UnicornHack.Generation
             {nameof(XPCooldown), (o, v) => (int)v != default},
             {nameof(Delay), (o, v) => (string)v != default},
             {nameof(EnergyPointCost), (o, v) => (int)v != default},
-            {nameof(Effects), (o, v) => (((ISet<Effect>)v)?.Count ?? 0) != 0}
+            {nameof(Effects), (o, v) => (((IReadOnlyList<Effect>)v)?.Count ?? 0) != 0}
         };
 
         public virtual ICSScriptSerializer GetSerializer() => Serializer;

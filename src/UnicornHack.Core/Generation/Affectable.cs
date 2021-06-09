@@ -19,8 +19,8 @@ namespace UnicornHack.Generation
                 effect.EffectType = EffectType.ChangeProperty;
                 effect.Duration = EffectDuration.Infinite;
                 effect.TargetName = propertyName;
-                effect.Amount = value;
-                effect.Function = function ?? ValueCombinationFunction.Sum;
+                effect.AppliedAmount = value;
+                effect.CombinationFunction = function ?? ValueCombinationFunction.Sum;
                 effect.ContainingAbilityId = abilityId;
 
                 effectEntityReference.Referenced.Effect = effect;

@@ -9,9 +9,8 @@ namespace UnicornHack.Generation
         public string Name { get; set; }
         public byte Length { get; set; }
         public int Difficulty { get; set; }
-        public Weight GenerationWeight { get; set; }
+        public string GenerationWeight { get; set; }
 
-        // TODO: Fragment, item and creature generation weight and distribution modifiers
         // TODO: default terrain type for floor/wall/empty space
 
         public GameBranch Instantiate(Game game)

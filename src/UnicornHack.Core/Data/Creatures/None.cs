@@ -8,7 +8,7 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "NONE",
             InitialLevel = 1,
-            GenerationWeight = new DefaultWeight {Multiplier = 0F},
+            GenerationWeight = "0",
             GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
             Weight = 0,
             Perception = -9,

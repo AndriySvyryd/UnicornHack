@@ -17,9 +17,12 @@ namespace UnicornHack.Data.Items
                     Name = "Consult",
                     Activation = ActivationType.WhileToggled,
                     Delay = "100",
-                    Effects = new HashSet<Effect>
+                    Effects = new List<Effect>
                     {
-                        new AddAbility {AbilityName = "spirit sourcery", Level = 1, Duration = EffectDuration.Infinite}
+                        new AddAbility
+                        {
+                            Duration = EffectDuration.Infinite, Name = "spirit sourcery", Level = 1
+                        }
                     }
                 }
             },

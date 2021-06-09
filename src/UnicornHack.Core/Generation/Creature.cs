@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using CSharpScriptSerialization;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Primitives;
@@ -90,7 +91,18 @@ namespace UnicornHack.Generation
 
         public byte InitialLevel { get; set; }
         public int XP { get; set; }
-        public Weight GenerationWeight { get; set; }
+
+        private string _generationWeight;
+        public string GenerationWeight
+        {
+            get => _generationWeight;
+            set
+            {
+                _generationWeight = value;
+                _weightFunction = null;
+            }
+        }
+
         public GenerationFlags GenerationFlags { get; set; }
         public AIBehavior Behavior { get; set; }
 
@@ -611,16 +623,47 @@ namespace UnicornHack.Generation
             }
         }
 
-        private Func<string, byte, int, float> _weightFunction;
+        private Func<string, int, int, float> _weightFunction;
+
+        protected static readonly string DefaultWeight = "1.0";
+
+        protected static readonly ParameterExpression BranchParameter =
+            Expression.Parameter(typeof(string), name: "branch");
+
+        protected static readonly ParameterExpression DepthParameter =
+            Expression.Parameter(typeof(int), name: "depth");
+
+        protected static readonly ParameterExpression InstancesParameter =
+            Expression.Parameter(typeof(int), name: "instances");
+
+        private static readonly UnicornExpressionVisitor _translator =
+            new(new[] { BranchParameter, DepthParameter, InstancesParameter });
+
+        public static Func<string, int, int, float> CreateWeightFunction(string expression)
+            => _translator.Translate<Func<string, int, int, float>, float>(expression);
 
         public float GetWeight(LevelComponent level)
         {
             if (_weightFunction == null)
             {
-                _weightFunction = (GenerationWeight ?? new DefaultWeight()).CreateCreatureWeightFunction();
+                try
+                {
+                    _weightFunction = CreateWeightFunction(GenerationWeight ?? DefaultWeight);
+                }
+                catch (Exception e)
+                {
+                    throw new InvalidOperationException("Error while parsing the GenerationWeight for " + Name, e);
+                }
             }
 
-            return _weightFunction(level.Branch.Name, level.Depth, 0);
+            try
+            {
+                return _weightFunction(level.Branch.Name, level.Depth, 0);
+            }
+            catch (Exception e)
+            {
+                throw new InvalidOperationException("Error while evaluating the Weight for " + Name, e);
+            }
         }
 
         public static readonly GroupedCSScriptLoader<byte, Creature> Loader =
@@ -659,7 +702,7 @@ namespace UnicornHack.Generation
                 // ReSharper disable once CompareOfFloatsByEqualityOperator
                 {
                     nameof(GenerationWeight),
-                    (o, v) => (Weight)v != null && (!(v is DefaultWeight def) || def.Multiplier != 1)
+                    (o, v) => v != null && (string)v != DefaultWeight
                 },
                 {nameof(PreviousStageName), (o, v) => v != null},
                 {nameof(NextStageName), (o, v) => v != null},

@@ -22,14 +22,14 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Sting,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new Burn {Damage = "10*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new Burn {Damage = "10*MightModifier()"}}
                 }
             },
             InitialLevel = 1,
-            GenerationWeight = new DefaultWeight {Multiplier = 4F},
+            GenerationWeight = "4",
             Noise = ActorNoiseType.Buzz,
             Size = 1,
             Weight = 10,

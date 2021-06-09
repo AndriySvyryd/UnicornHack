@@ -1,3 +1,4 @@
+using CSharpScriptSerialization;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Effects;
 
@@ -11,5 +12,10 @@ namespace UnicornHack.Generation.Effects
 
             effect.EffectType = EffectType.Cripple;
         }
+
+        private static readonly CSScriptSerializer Serializer =
+            new PropertyCSScriptSerializer<Cripple>(GetPropertyConditions<Cripple>());
+
+        public override ICSScriptSerializer GetSerializer() => Serializer;
     }
 }

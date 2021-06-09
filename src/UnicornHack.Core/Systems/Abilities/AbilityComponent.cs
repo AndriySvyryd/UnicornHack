@@ -1,4 +1,5 @@
-﻿using UnicornHack.Generation;
+﻿using System;
+using UnicornHack.Generation;
 using UnicornHack.Primitives;
 
 namespace UnicornHack.Systems.Abilities
@@ -124,10 +125,16 @@ namespace UnicornHack.Systems.Abilities
             set => SetWithNotify(value, ref _successCondition);
         }
 
+        public Func<GameEntity, GameEntity, float> AccuracyFunction { get; set; }
+
         public string Accuracy
         {
             get => _accuracy;
-            set => SetWithNotify(value, ref _accuracy);
+            set
+            {
+                SetWithNotify(value, ref _accuracy);
+                AccuracyFunction = null;
+            }
         }
 
         public int Cooldown
@@ -160,10 +167,16 @@ namespace UnicornHack.Systems.Abilities
             set => SetWithNotify(value, ref _energyCost);
         }
 
+        public Func<GameEntity, GameEntity, float> DelayFunction { get; set; }
+
         public string Delay
         {
             get => _delay;
-            set => SetWithNotify(value, ref _delay);
+            set
+            {
+                SetWithNotify(value, ref _delay);
+                DelayFunction = null;
+            }
         }
 
         public bool IsActive
@@ -269,11 +282,13 @@ namespace UnicornHack.Systems.Abilities
             _action = default;
             _successCondition = default;
             _accuracy = default;
+            AccuracyFunction = default;
             _cooldown = default;
             _xpCooldown = default;
             _cooldownTick = default;
             _cooldownXpLeft = default;
             _energyCost = default;
+            DelayFunction = default;
             _delay = default;
             _isActive = default;
             _isUsable = true;

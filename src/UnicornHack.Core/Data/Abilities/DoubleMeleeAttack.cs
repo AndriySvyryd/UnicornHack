@@ -11,10 +11,7 @@ namespace UnicornHack.Data.Abilities
         {
             Name = "double melee attack",
             Type = AbilityType.DefaultAttack,
-            Effects = new HashSet<Effect>
-            {
-                new Activate(), new Activate()
-            },
+            Effects = new List<Effect> {new Activate(), new Activate()},
             WieldingStyle = WieldingStyle.Dual,
             ItemType = ItemType.WeaponMelee
         };

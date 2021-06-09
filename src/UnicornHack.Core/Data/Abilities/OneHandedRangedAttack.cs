@@ -11,10 +11,7 @@ namespace UnicornHack.Data.Abilities
         {
             Name = "one handed ranged attack",
             Type = AbilityType.DefaultAttack,
-            Effects = new HashSet<Effect>
-            {
-                new Activate()
-            },
+            Effects = new List<Effect> {new Activate()},
             WieldingStyle = WieldingStyle.OneHanded,
             ItemType = ItemType.WeaponRanged
         };

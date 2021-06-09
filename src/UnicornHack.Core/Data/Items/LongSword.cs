@@ -18,14 +18,17 @@ namespace UnicornHack.Data.Items
                     Range = 1,
                     Action = AbilityAction.Slash,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "-5+weaponScaling",
-                    Delay = "100*weaponScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "70*weaponScaling"}}
+                    Accuracy = "-5+RequirementsModifier()",
+                    Delay = "100*RequirementsModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "70*RequirementsModifier()"}}
                 },
                 new Ability
                 {
                     Activation = ActivationType.WhileEquipped,
-                    Effects = new HashSet<Effect> {new ChangeProperty<int> {PropertyName = "Hindrance", Value = 1}}
+                    Effects = new List<Effect>
+                    {
+                        new ChangeProperty<int> {PropertyName = "Hindrance", Value = 1}
+                    }
                 }
             },
             Type = ItemType.WeaponMeleeMedium,

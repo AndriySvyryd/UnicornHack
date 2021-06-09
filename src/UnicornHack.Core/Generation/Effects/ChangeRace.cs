@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using CSharpScriptSerialization;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Effects;
 
@@ -15,7 +18,23 @@ namespace UnicornHack.Generation.Effects
 
             effect.EffectType = EffectType.ChangeRace;
             effect.TargetName = RaceName;
-            effect.Amount = Remove ? -1 : 1;
+            effect.AppliedAmount = Remove ? -1 : 1;
         }
+
+        private static readonly CSScriptSerializer Serializer =
+            new PropertyCSScriptSerializer<ChangeRace>(GetPropertyConditions<ChangeRace>());
+
+        protected static new Dictionary<string, Func<TEffect, object, bool>>
+            GetPropertyConditions<TEffect>() where TEffect : Effect
+        {
+            var propertyConditions = DurationEffect.GetPropertyConditions<TEffect>();
+
+            propertyConditions.Add(nameof(RaceName), (o, v) => v != default);
+            propertyConditions.Add(nameof(Remove), (o, v) => (bool)v != default);
+            propertyConditions.Add(nameof(Delay), (o, v) => (int)v != default);
+            return propertyConditions;
+        }
+
+        public override ICSScriptSerializer GetSerializer() => Serializer;
     }
 }

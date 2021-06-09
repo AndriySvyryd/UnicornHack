@@ -6,6 +6,8 @@ using UnicornHack.Generation;
 using UnicornHack.Generation.Effects;
 using UnicornHack.Generation.Map;
 using UnicornHack.Primitives;
+using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Effects;
 using UnicornHack.Utils.DataLoading;
 
 namespace UnicornHack.Editor
@@ -16,15 +18,63 @@ namespace UnicornHack.Editor
 
         public static void Main()
         {
-            Serialize(Creature.Loader);
-            Serialize(PlayerRace.Loader);
-            Serialize(Item.Loader);
+            Serialize(Creature.Loader, c =>
+            {
+                foreach (var ability in c.Abilities)
+                {
+                    Transform(ability);
+                }
+
+                return c;
+            });
+            Serialize(PlayerRace.Loader, r =>
+            {
+                foreach (var ability in r.Abilities)
+                {
+                    Transform(ability);
+                }
+
+                return r;
+            });
+            Serialize(Item.Loader, i =>
+            {
+                foreach (var ability in i.Abilities)
+                {
+                    Transform(ability);
+                }
+
+                return i;
+            });
             Serialize(ItemGroup.Loader);
-            Serialize(Ability.Loader);
+            Serialize(Ability.Loader, Transform);
             Serialize(Branch.Loader);
             Serialize(NormalMapFragment.Loader);
             Serialize(ConnectingMapFragment.Loader);
             Serialize(DefiningMapFragment.Loader);
+        }
+
+        private static Ability Transform(Ability ability)
+        {
+            if (ability.Effects == null)
+            {
+                return ability;
+            }
+
+            foreach (var effect in ability.Effects)
+            {
+            }
+
+            if (ability is LeveledAbility leveledAbility)
+            {
+                foreach (var effects in leveledAbility.LeveledEffects.Values)
+                {
+                    foreach (var effect in effects)
+                    {
+                    }
+                }
+            }
+
+            return ability;
         }
 
         private static void Serialize<T>(CSScriptLoaderBase<T> loader, Func<T, T> transform = null)
@@ -222,6 +272,16 @@ namespace UnicornHack.Editor
                     $"Ability {ability.Name} on {ownerName} has no effects");
             }
 
+            if (ability.Delay != null)
+            {
+                AbilityActivationSystem.CreateDelayFunction(ability.Delay, ability.Name);
+            }
+
+            if (ability.Accuracy != null)
+            {
+                AbilityActivationSystem.CreateAccuracyFunction(ability.Accuracy, ability.Name);
+            }
+
             if (ability.Effects == null)
             {
                 return;
@@ -238,7 +298,7 @@ namespace UnicornHack.Editor
                         }
                         else
                         {
-                            Ability.Loader.Get(addAbility.AbilityName);
+                            Ability.Loader.Get(addAbility.Name);
                         }
 
                         break;
@@ -250,6 +310,30 @@ namespace UnicornHack.Editor
                         break;
                     case ChangeProperty<byte> property:
                         Validate(property);
+                        break;
+                    case PhysicalDamage physicalDamage:
+                        if (physicalDamage.ArmorPenetration != null)
+                        {
+                            EffectApplicationSystem.CreateAmountFunction(physicalDamage.ArmorPenetration, ability.Name);
+                        }
+                        break;
+                    case DamageEffect damageEffect:
+                        if (damageEffect.Damage != null)
+                        {
+                            EffectApplicationSystem.CreateAmountFunction(damageEffect.Damage, ability.Name);
+                        }
+                        break;
+                    case DurationEffect durationEffect:
+                        if (durationEffect.DurationAmount != null)
+                        {
+                            EffectApplicationSystem.CreateAmountFunction(durationEffect.DurationAmount, ability.Name);
+                        }
+                        break;
+                    case AmountEffect amountEffect:
+                        if (amountEffect.Amount != null)
+                        {
+                            EffectApplicationSystem.CreateAmountFunction(amountEffect.Amount, ability.Name);
+                        }
                         break;
                 }
             }

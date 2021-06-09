@@ -11,37 +11,32 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "green slime",
             Species = Species.Ooze,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Touch,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
+                    new Ability
                     {
-                        new Slime()
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Touch,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new Slime()}
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.OnMeleeHit,
+                        Action = AbilityAction.Touch,
+                        SuccessCondition = AbilitySuccessCondition.UnblockableAttack,
+                        Accuracy = "10+PerceptionModifier()",
+                        Effects = new List<Effect> {new Slime()}
                     }
                 },
-                new Ability
-                {
-                    Activation = ActivationType.OnMeleeHit,
-                    Action = AbilityAction.Touch,
-                    SuccessCondition = AbilitySuccessCondition.UnblockableAttack,
-                    Accuracy = "10+attackScaling",
-                    Effects = new HashSet<Effect>
-                    {
-                        new Slime()
-                    }
-                }
-            },
             InitialLevel = 6,
-            GenerationWeight = new BranchWeight {Matched = new DefaultWeight(), Name = "hell"},
+            GenerationWeight = "$branch == 'hell' ? 1 : 0",
             Sex = Sex.None,
             Weight = 400,
             MovementDelay = 100,

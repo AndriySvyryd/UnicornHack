@@ -11,17 +11,18 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "elf",
             Species = Species.Elf,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Activation = ActivationType.OnMeleeAttack,
-                    Action = AbilityAction.Modifier,
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "50"}}
-                }
-            },
+                    new Ability
+                    {
+                        Activation = ActivationType.OnMeleeAttack,
+                        Action = AbilityAction.Modifier,
+                        Effects = new List<Effect> {new PhysicalDamage {Damage = "50"}}
+                    }
+                },
             InitialLevel = 4,
-            GenerationWeight = new DefaultWeight {Multiplier = 0F},
+            GenerationWeight = "0",
             GenerationFlags = GenerationFlags.NonPolymorphable,
             Behavior = AIBehavior.AlignmentAware | AIBehavior.WeaponCollector,
             Noise = ActorNoiseType.Speach,

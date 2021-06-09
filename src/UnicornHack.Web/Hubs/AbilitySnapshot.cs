@@ -165,12 +165,14 @@ namespace UnicornHack.Hubs
                 effect.EntityId,
                 effect.EffectType,
                 effect.ShouldTargetActivator,
-                effect.Amount != null
-                    ? effect.Amount.ToString()
-                    : effect.AmountExpression == null
+                effect.AppliedAmount != null
+                    ? effect.AppliedAmount.ToString()
+                    : effect.Amount == null
                         ? null
-                        : context.Manager.EffectApplicationSystem.GetActualAmount(effect, activator).ToString(),
-                effect.Function,
+                         // TODO: output a reader-friendly version of AmountExpression
+                        : context.Manager.EffectApplicationSystem.GetAmount(effect, activator).ToString()
+                            + $" ({effect.Amount})",
+                effect.CombinationFunction,
                 effect.TargetName,
                 effect.SecondaryAmount,
                 effect.Duration,

@@ -21,14 +21,13 @@ namespace UnicornHack.Data.Creatures
                     Range = 20,
                     Action = AbilityAction.Gaze,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new Burn {Damage = "70*mentalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new Burn {Damage = "70*FocusModifier()"}}
                 }
             },
             InitialLevel = 6,
-            GenerationWeight = new DefaultWeight {Multiplier = 0F},
             Noise = ActorNoiseType.Hiss,
             Size = 2,
             Weight = 30,

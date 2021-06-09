@@ -274,7 +274,7 @@ namespace UnicornHack.Systems.Knowledge
                     var entity = damageEffectEntity.Referenced;
 
                     var appliedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                    appliedEffect.Amount = damage.Value;
+                    appliedEffect.AppliedAmount = damage.Value;
                     appliedEffect.EffectType = EffectType.PhysicalDamage;
                     appliedEffect.AffectedEntityId = victim.Id;
 
@@ -290,7 +290,7 @@ namespace UnicornHack.Systems.Knowledge
                         var entity = weaponEffectEntity.Referenced;
 
                         var appliedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                        appliedEffect.Amount = damage.Value;
+                        appliedEffect.AppliedAmount = damage.Value;
                         appliedEffect.EffectType = EffectType.Activate;
                         appliedEffect.TargetEntityId = weapon.Id;
                         appliedEffect.AffectedEntityId = victim.Id;

@@ -1,16 +1,21 @@
+using CSharpScriptSerialization;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects
 {
-    public class GainXP : Effect
+    public class GainXP : AmountEffect
     {
-        public int Amount { get; set; }
-
         protected override void ConfigureEffect(EffectComponent effect)
         {
+            base.ConfigureEffect(effect);
+
             effect.EffectType = EffectType.GainXP;
-            effect.Amount = Amount;
         }
+
+        private static readonly CSScriptSerializer Serializer =
+            new PropertyCSScriptSerializer<GainXP>(GetPropertyConditions<GainXP>());
+
+        public override ICSScriptSerializer GetSerializer() => Serializer;
     }
 }

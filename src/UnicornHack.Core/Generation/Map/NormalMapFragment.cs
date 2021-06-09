@@ -9,7 +9,14 @@ namespace UnicornHack.Generation.Map
 {
     public class NormalMapFragment : MapFragment
     {
-        private Func<string, byte, int, int, float> _weightFunction;
+        private Func<string, int, int, int, float> _weightFunction;
+
+        private static readonly UnicornExpressionVisitor _translator =
+            new(new[] { BranchParameter, DepthParameter, InstancesParameter, TagInstancesParameter });
+        protected override void ResetWeightFunction() => _weightFunction = null;
+
+        public Func<string, int, int, int, float> CreateWeightFunction(string expression)
+            => _translator.Translate<Func<string, int, int, int, float>, float>(expression);
 
         public float GetWeight(LevelComponent level, Rectangle boundingRectangle)
         {
@@ -21,10 +28,24 @@ namespace UnicornHack.Generation.Map
 
             if (_weightFunction == null)
             {
-                _weightFunction = (GenerationWeight ?? new DefaultWeight()).CreateFragmentWeightFunction();
+                try
+                {
+                    _weightFunction = CreateWeightFunction(GenerationWeight ?? DefaultWeight);
+                }
+                catch (Exception e)
+                {
+                    throw new InvalidOperationException("Error while parsing the GenerationWeight for " + Name, e);
+                }
             }
 
-            return _weightFunction(level.Branch.Name, level.Depth, 0, 0);
+            try
+            {
+                return _weightFunction(level.Branch.Name, level.Depth, 0, 0);
+            }
+            catch (Exception e)
+            {
+                throw new InvalidOperationException("Error while evaluating the Weight for " + Name, e);
+            }
         }
 
         public static readonly CSScriptLoader<NormalMapFragment> Loader =

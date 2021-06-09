@@ -15,10 +15,10 @@ namespace UnicornHack.Data.Abilities
             Range = 10,
             Action = AbilityAction.Shoot,
             SuccessCondition = AbilitySuccessCondition.NormalAttack,
-            Accuracy = "5+attackScaling",
+            Accuracy = "5+PerceptionModifier()",
             Cooldown = 1000,
             Delay = "100",
-            Effects = new HashSet<Effect> {new Freeze {Damage = "40"}}
+            Effects = new List<Effect> {new Freeze {Damage = "40"}}
         };
     }
 }

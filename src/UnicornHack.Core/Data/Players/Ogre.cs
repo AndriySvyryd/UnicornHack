@@ -17,22 +17,25 @@ namespace UnicornHack.Data.Players
                 {
                     Name = "ogre innate",
                     Activation = ActivationType.Always,
-                    Effects = new HashSet<Effect>
+                    Effects = new List<Effect>
                     {
                         new ChangeProperty<bool> {PropertyName = "Infravisible", Value = true},
                         new ChangeProperty<TorsoType>
                         {
-                            PropertyName = "TorsoType", Value = TorsoType.Humanoid,
+                            PropertyName = "TorsoType",
+                            Value = TorsoType.Humanoid,
                             Function = ValueCombinationFunction.Override
                         },
                         new ChangeProperty<ExtremityType>
                         {
-                            PropertyName = "UpperExtremities", Value = ExtremityType.GraspingFingers,
+                            PropertyName = "UpperExtremities",
+                            Value = ExtremityType.GraspingFingers,
                             Function = ValueCombinationFunction.Override
                         },
                         new ChangeProperty<ExtremityType>
                         {
-                            PropertyName = "LowerExtremities", Value = ExtremityType.Fingers,
+                            PropertyName = "LowerExtremities",
+                            Value = ExtremityType.Fingers,
                             Function = ValueCombinationFunction.Override
                         },
                         new ChangeProperty<int> {PropertyName = "Might", Value = 2},
@@ -40,7 +43,11 @@ namespace UnicornHack.Data.Players
                         new ChangeProperty<int> {PropertyName = "Perception", Value = -1},
                         new ChangeProperty<int> {PropertyName = "Focus", Value = -1},
                         new ChangeProperty<int>
-                            {PropertyName = "Size", Value = 9, Function = ValueCombinationFunction.MeanRoundUp}
+                        {
+                            PropertyName = "Size",
+                            Value = 9,
+                            Function = ValueCombinationFunction.MeanRoundUp
+                        }
                     }
                 }
             },

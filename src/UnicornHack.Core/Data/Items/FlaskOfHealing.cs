@@ -19,7 +19,7 @@ namespace UnicornHack.Data.Items
                     Action = AbilityAction.Drink,
                     XPCooldown = 100,
                     Delay = "100",
-                    Effects = new HashSet<Effect> {new Heal {Amount = "50"}}
+                    Effects = new List<Effect> {new Heal {Amount = "50"}}
                 }
             },
             Type = ItemType.Potion,

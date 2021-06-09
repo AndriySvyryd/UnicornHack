@@ -15,7 +15,7 @@ namespace UnicornHack.Data.Items
                 new Ability
                 {
                     Activation = ActivationType.WhileEquipped,
-                    Effects = new HashSet<Effect>
+                    Effects = new List<Effect>
                     {
                         new ChangeProperty<int> {PropertyName = "Deflection", Value = 10},
                         new ChangeProperty<int> {PropertyName = "Armor", Value = 2}
@@ -29,10 +29,14 @@ namespace UnicornHack.Data.Items
                     Cooldown = 200,
                     Delay = "50",
                     EnergyPointCost = 20,
-                    Effects = new HashSet<Effect>
+                    Effects = new List<Effect>
                     {
                         new ChangeProperty<int>
-                            {PropertyName = "FireResistance", Value = 30, Duration = EffectDuration.Infinite}
+                        {
+                            Duration = EffectDuration.Infinite,
+                            PropertyName = "FireResistance",
+                            Value = 30
+                        }
                     }
                 }
             },

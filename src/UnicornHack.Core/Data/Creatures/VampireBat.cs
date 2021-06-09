@@ -12,42 +12,45 @@ namespace UnicornHack.Data.Creatures
             Name = "vampire bat",
             Species = Species.Bat,
             SpeciesClass = SpeciesClass.Bird,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Bite,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "30*physicalScaling"}}
-                },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Bite,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
+                    new Ability
                     {
-                        new ChangeProperty<int>
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Bite,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new PhysicalDamage {Damage = "30*MightModifier()"}}
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Bite,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect>
                         {
-                            PropertyName = "Might", Value = -1, Duration = EffectDuration.UntilTimeout,
-                            DurationAmount = "5"
+                            new ChangeProperty<int>
+                            {
+                                Duration = EffectDuration.UntilTimeout,
+                                DurationAmount = "5",
+                                PropertyName = "Might",
+                                Value = -1
+                            }
                         }
                     }
-                }
-            },
+                },
             InitialLevel = 5,
-            GenerationWeight = new DefaultWeight {Multiplier = 5F},
+            GenerationWeight = "5",
             PreviousStageName = "giant bat",
             Behavior = AIBehavior.Wandering,
             Noise = ActorNoiseType.Sqeek,

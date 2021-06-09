@@ -11,20 +11,21 @@ namespace UnicornHack.Data.Creatures
         {
             Name = "acid blob",
             Species = Species.Blob,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Name = "splashback",
-                    Activation = ActivationType.OnMeleeHit,
-                    Action = AbilityAction.Touch,
-                    SuccessCondition = AbilitySuccessCondition.UnblockableAttack,
-                    Accuracy = "10+attackScaling",
-                    Effects = new HashSet<Effect> {new Corrode {Damage = "40*mentalScaling"}}
-                }
-            },
+                    new Ability
+                    {
+                        Name = "splashback",
+                        Activation = ActivationType.OnMeleeHit,
+                        Action = AbilityAction.Touch,
+                        SuccessCondition = AbilitySuccessCondition.UnblockableAttack,
+                        Accuracy = "10+PerceptionModifier()",
+                        Effects = new List<Effect> {new Corrode {Damage = "40*FocusModifier()"}}
+                    }
+                },
             InitialLevel = 5,
-            GenerationWeight = new DefaultWeight {Multiplier = 2F},
+            GenerationWeight = "2",
             Behavior = AIBehavior.Wandering,
             Sex = Sex.None,
             Size = 1,

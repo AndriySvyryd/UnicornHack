@@ -12,101 +12,105 @@ namespace UnicornHack.Data.Creatures
             Name = "eyedra",
             Species = Species.FloatingSphere,
             SpeciesClass = SpeciesClass.Aberration,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Bite,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "30*physicalScaling"}}
-                },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnRangedAttack,
-                    Range = 20,
-                    Action = AbilityAction.Gaze,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 350,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new Wither {Damage = "50*mentalScaling"}}
-                },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnRangedAttack,
-                    Range = 20,
-                    Action = AbilityAction.Gaze,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 350,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
-                        {new Slow {Duration = EffectDuration.UntilTimeout, DurationAmount = "13"}}
-                },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnRangedAttack,
-                    Range = 20,
-                    Action = AbilityAction.Gaze,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 350,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
-                        {new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = "13"}}
-                },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnRangedAttack,
-                    Range = 20,
-                    Action = AbilityAction.Gaze,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 350,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
-                        {new Confuse {Duration = EffectDuration.UntilTimeout, DurationAmount = "13"}}
-                },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnRangedAttack,
-                    Range = 20,
-                    Action = AbilityAction.Gaze,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 350,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
+                    new Ability
                     {
-                        new Stone()
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Bite,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new PhysicalDamage {Damage = "30*MightModifier()"}}
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnRangedAttack,
+                        Range = 20,
+                        Action = AbilityAction.Gaze,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 350,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new Wither {Damage = "50*FocusModifier()"}}
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnRangedAttack,
+                        Range = 20,
+                        Action = AbilityAction.Gaze,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 350,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect>
+                        {
+                            new Slow {Duration = EffectDuration.UntilTimeout, DurationAmount = "13"}
+                        }
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnRangedAttack,
+                        Range = 20,
+                        Action = AbilityAction.Gaze,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 350,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect>
+                        {
+                            new Sedate {Duration = EffectDuration.UntilTimeout, DurationAmount = "13"}
+                        }
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnRangedAttack,
+                        Range = 20,
+                        Action = AbilityAction.Gaze,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 350,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect>
+                        {
+                            new Confuse {Duration = EffectDuration.UntilTimeout, DurationAmount = "13"}
+                        }
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnRangedAttack,
+                        Range = 20,
+                        Action = AbilityAction.Gaze,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 350,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new Stone()}
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnRangedAttack,
+                        Range = 20,
+                        Action = AbilityAction.Gaze,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 350,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect> {new DrainEnergy {Amount = "3*FocusModifier()"}}
                     }
                 },
-                new Ability
-                {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnRangedAttack,
-                    Range = 20,
-                    Action = AbilityAction.Gaze,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 350,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new DrainEnergy {Amount = "3*mentalScaling"}}
-                }
-            },
             InitialLevel = 8,
-            GenerationWeight = new DefaultWeight {Multiplier = 3F},
+            GenerationWeight = "3",
             GenerationFlags = GenerationFlags.NonPolymorphable,
             Behavior = AIBehavior.Wandering,
             Sex = Sex.None,

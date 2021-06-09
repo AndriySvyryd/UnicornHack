@@ -20,15 +20,17 @@ namespace UnicornHack.Data.Creatures
                     Range = 20,
                     Action = AbilityAction.Scream,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
-                        {new Deafen {Duration = EffectDuration.UntilTimeout, DurationAmount = "3"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect>
+                    {
+                        new Deafen {Duration = EffectDuration.UntilTimeout, DurationAmount = "3"}
+                    }
                 }
             },
             InitialLevel = 3,
-            GenerationWeight = new DefaultWeight {Multiplier = 2F},
+            GenerationWeight = "2",
             Sex = Sex.None,
             Size = 2,
             Weight = 100,

@@ -74,9 +74,9 @@ namespace UnicornHack
             queue.Add<EntityRemovedMessage<GameEntity>>(EffectApplicationSystem,
                 Effects.GetEntityRemovedMessageName(), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int?>>(EffectApplicationSystem,
-                Effects.GetPropertyValueChangedMessageName(nameof(EffectComponent.Amount)), 0);
+                Effects.GetPropertyValueChangedMessageName(nameof(EffectComponent.AppliedAmount)), 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, string>>(EffectApplicationSystem,
-                Effects.GetPropertyValueChangedMessageName(nameof(EffectComponent.AmountExpression)), 0);
+                Effects.GetPropertyValueChangedMessageName(nameof(EffectComponent.Amount)), 0);
 
             queue.Add<EntityAddedMessage<GameEntity>>(AbilityActivationSystem,
                 Effects.GetEntityAddedMessageName(), 1);

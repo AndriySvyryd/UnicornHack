@@ -12,32 +12,37 @@ namespace UnicornHack.Data.Creatures
             Name = "sylph",
             Species = Species.Elemental,
             SpeciesClass = SpeciesClass.Extraplanar,
-            Abilities = new HashSet<Ability>
-            {
-                new Ability
+            Abilities =
+                new HashSet<Ability>
                 {
-                    Activation = ActivationType.Targeted,
-                    Trigger = ActivationType.OnMeleeAttack,
-                    Range = 1,
-                    Action = AbilityAction.Touch,
-                    SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
-                    Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect>
-                        {new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = "5"}}
+                    new Ability
+                    {
+                        Activation = ActivationType.Targeted,
+                        Trigger = ActivationType.OnMeleeAttack,
+                        Range = 1,
+                        Action = AbilityAction.Touch,
+                        SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                        Accuracy = "5+PerceptionModifier()",
+                        Cooldown = 100,
+                        Delay = "100*SpeedModifier()",
+                        Effects = new List<Effect>
+                        {
+                            new Engulf {Duration = EffectDuration.UntilTimeout, DurationAmount = "5"}
+                        }
+                    },
+                    new Ability
+                    {
+                        Activation = ActivationType.OnDigestion,
+                        Action = AbilityAction.Digestion,
+                        Cooldown = 100,
+                        Effects = new List<Effect>
+                        {
+                            new Deafen {Duration = EffectDuration.UntilTimeout, DurationAmount = "2"}
+                        }
+                    }
                 },
-                new Ability
-                {
-                    Activation = ActivationType.OnDigestion,
-                    Action = AbilityAction.Digestion,
-                    Cooldown = 100,
-                    Effects = new HashSet<Effect>
-                        {new Deafen {Duration = EffectDuration.UntilTimeout, DurationAmount = "2"}}
-                }
-            },
             InitialLevel = 8,
-            GenerationWeight = new DefaultWeight {Multiplier = 2F},
+            GenerationWeight = "2",
             Sex = Sex.None,
             Size = 16,
             Weight = 0,

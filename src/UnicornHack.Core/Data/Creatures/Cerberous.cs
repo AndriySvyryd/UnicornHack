@@ -21,10 +21,10 @@ namespace UnicornHack.Data.Creatures
                     Range = 1,
                     Action = AbilityAction.Bite,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new PhysicalDamage {Damage = "100*physicalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new PhysicalDamage {Damage = "100*MightModifier()"}}
                 },
                 new Ability
                 {
@@ -33,14 +33,14 @@ namespace UnicornHack.Data.Creatures
                     Range = 20,
                     Action = AbilityAction.Breath,
                     SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                    Accuracy = "5+attackScaling",
+                    Accuracy = "5+PerceptionModifier()",
                     Cooldown = 100,
-                    Delay = "100*attackScaling",
-                    Effects = new HashSet<Effect> {new Burn {Damage = "100*mentalScaling"}}
+                    Delay = "100*SpeedModifier()",
+                    Effects = new List<Effect> {new Burn {Damage = "100*FocusModifier()"}}
                 }
             },
             InitialLevel = 12,
-            GenerationWeight = new BranchWeight {Matched = new DefaultWeight {Multiplier = 6F}, Name = "hell"},
+            GenerationWeight = "$branch == 'hell' ? 6 : 0",
             Noise = ActorNoiseType.Bark,
             Weight = 700,
             MovementDelay = -15,

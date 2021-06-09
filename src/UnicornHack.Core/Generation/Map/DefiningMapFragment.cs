@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CSharpScriptSerialization;
 using UnicornHack.Data.Fragments;
 using UnicornHack.Primitives;
+using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.DataLoading;
 
 namespace UnicornHack.Generation.Map
@@ -17,19 +18,38 @@ namespace UnicornHack.Generation.Map
         public MapFeature DefaultTerrain { get; set; }
         public MapFeature DefaultPathTerrain { get; set; }
 
-        // TODO: Subfragment, item and creature generation weight and distribution modifiers
+        private Func<string, int, int, int, ConnectionComponent, float> _weightFunction;
 
-        private Func<string, byte, int, int, float> _weightFunction;
+        private static readonly UnicornExpressionVisitor _translator =
+            new(new[] { BranchParameter, DepthParameter, InstancesParameter, TagInstancesParameter, ConnectionParameter });
 
-        public float GetWeight(string branchName, byte depth)
+        protected override void ResetWeightFunction() => _weightFunction = null;
+
+        public new static Func<string, int, int, int, ConnectionComponent, float> CreateWeightFunction(string expression)
+            => _translator.Translate<Func<string, int, int, int, ConnectionComponent, float>, float>(expression);
+
+        public float GetWeight(string branchName, byte depth, int instances, int tagInstances)
         {
             if (_weightFunction == null)
             {
-                _weightFunction = (GenerationWeight ?? new DefaultWeight()).CreateFragmentWeightFunction();
+                try
+                {
+                    _weightFunction = CreateWeightFunction(GenerationWeight ?? DefaultWeight);
+                }
+                catch (Exception e)
+                {
+                    throw new InvalidOperationException("Error while parsing the GenerationWeight for " + Name, e);
+                }
             }
 
-            // TODO: pass correct counts
-            return _weightFunction(branchName, depth, 0, 0);
+            try
+            {
+                return _weightFunction(branchName, depth, instances, tagInstances, null);
+            }
+            catch (Exception e)
+            {
+                throw new InvalidOperationException("Error while evaluating the Weight for " + Name, e);
+            }
         }
 
         public static new readonly CSScriptLoader<DefiningMapFragment> Loader =

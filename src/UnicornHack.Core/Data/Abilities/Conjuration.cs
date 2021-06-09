@@ -14,8 +14,11 @@ namespace UnicornHack.Data.Abilities
             Cost = 4,
             Activation = ActivationType.Always,
             Cumulative = true,
-            LeveledEffects = new Dictionary<int, HashSet<Effect>>
-                {{1, new HashSet<Effect> {new AddAbility {AbilityName = "ice shard"}}}}
+            LeveledEffects =
+                new Dictionary<int, IReadOnlyList<Effect>>
+                {
+                    {1, new List<Effect> {new AddAbility {Name = "ice shard"}}}
+                }
         };
     }
 }
