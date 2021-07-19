@@ -68,7 +68,7 @@ namespace UnicornHack.Data.Creatures
             UpperExtremities = ExtremityType.None,
             LowerExtremities = ExtremityType.Claws,
             LocomotionType = LocomotionType.Flying,
-            InventorySize = 1,
+            SlotCapacity = 1,
             NoiseLevel = 0,
             Infravisible = true
         };

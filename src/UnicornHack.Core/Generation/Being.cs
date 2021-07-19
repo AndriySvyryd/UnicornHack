@@ -13,7 +13,7 @@ namespace UnicornHack.Generation
         public virtual SpeciesClass? SpeciesClass { get; set; }
         public ISet<Ability> Abilities { get; set; } = new HashSet<Ability>();
 
-        protected RaceComponent AddRace(GameEntity appliedEffectEntity)
+        public RaceComponent AddToAppliedEffect(GameEntity appliedEffectEntity, GameEntity beingEntity)
         {
             var manager = appliedEffectEntity.Manager;
             var race = manager.CreateComponent<RaceComponent>(EntityComponent.Race);
@@ -32,18 +32,18 @@ namespace UnicornHack.Generation
 
             foreach (var abilityDefinition in Abilities)
             {
-                using (var effectEntityReference = manager.CreateEntity())
-                {
-                    var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                    effect.EffectType = EffectType.AddAbility;
-                    effect.Duration = EffectDuration.Infinite;
-                    effect.ContainingAbilityId = appliedEffectEntity.Id;
+                using var effectEntityReference = manager.CreateEntity();
+                var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+                effect.EffectType = EffectType.AddAbility;
+                effect.Duration = EffectDuration.Infinite;
+                effect.ContainingAbilityId = appliedEffectEntity.Id;
 
-                    effectEntityReference.Referenced.Effect = effect;
+                effectEntityReference.Referenced.Effect = effect;
 
-                    abilityDefinition.AddToEffect(effectEntityReference.Referenced);
-                }
+                abilityDefinition.AddToEffect(effectEntityReference.Referenced);
             }
+
+            appliedEffectEntity.Ability.OwnerEntity = beingEntity;
 
             return race;
         }

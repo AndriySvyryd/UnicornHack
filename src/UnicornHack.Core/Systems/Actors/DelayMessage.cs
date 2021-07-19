@@ -1,6 +1,6 @@
 ﻿using UnicornHack.Utils.MessagingECS;
 
-namespace UnicornHack.Systems.Beings
+namespace UnicornHack.Systems.Actors
 {
     public class DelayMessage : IMessage
     {
@@ -8,6 +8,11 @@ namespace UnicornHack.Systems.Beings
 
         public static void Enqueue(GameEntity actorEntity, int delay, GameManager manager)
         {
+            if (delay == 0)
+            {
+                return;
+            }
+
             var delayMessage = manager.Queue.CreateMessage<DelayMessage>(Name);
             delayMessage.ActorEntity = actorEntity;
             delayMessage.Delay = delay;

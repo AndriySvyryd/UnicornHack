@@ -33,6 +33,8 @@ namespace UnicornHack.Systems.Knowledge
             playerEntity.Position.Heading = Direction.West;
             var manager = playerEntity.Manager;
 
+            manager.Queue.ProcessQueue(manager);
+
             ItemData.LongSword.Instantiate(playerEntity);
 
             var player2Entity = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, level.Entity, new Point(2, 0));

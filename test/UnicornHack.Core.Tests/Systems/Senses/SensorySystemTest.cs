@@ -24,6 +24,9 @@ namespace UnicornHack.Systems.Senses
             var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
             player.Position.Heading = Direction.West;
             var manager = player.Manager;
+
+            manager.Queue.ProcessQueue(manager);
+
             ItemData.Dagger.Instantiate(undine);
 
             manager.Queue.ProcessQueue(manager);

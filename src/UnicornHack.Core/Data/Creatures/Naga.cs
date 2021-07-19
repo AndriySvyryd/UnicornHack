@@ -57,7 +57,7 @@ namespace UnicornHack.Data.Creatures
             TorsoType = TorsoType.Serpentine,
             UpperExtremities = ExtremityType.None,
             LowerExtremities = ExtremityType.None,
-            InventorySize = 1,
+            SlotCapacity = 1,
             Infravision = true
         };
     }

@@ -9,7 +9,7 @@ namespace UnicornHack
     public partial class GameManager
     {
         public EntityGroup<GameEntity> LevelItems { get; private set; }
-        public EntityGroup<GameEntity> EntityItems { get; private set; }
+        public EntityGroup<GameEntity> ContainedItems { get; private set; }
         public UniqueEntityIndex<GameEntity, (int, byte, byte)> LevelItemsToLevelCellIndex { get; private set; }
         public EntityRelationship<GameEntity> EntityItemsToContainerRelationship { get; private set; }
         public EntityRelationship<GameEntity> LevelItemsToLevelRelationship { get; private set; }
@@ -20,7 +20,7 @@ namespace UnicornHack
         {
             Add<ItemComponent>(EntityComponent.Item, poolSize: 32);
 
-            EntityItems = CreateGroup(nameof(EntityItems),
+            ContainedItems = CreateGroup(nameof(ContainedItems),
                 new EntityMatcher<GameEntity>()
                     .AllOf((int)EntityComponent.Item, (int)EntityComponent.Physical)
                     .NoneOf((int)EntityComponent.Position));
@@ -63,16 +63,16 @@ namespace UnicornHack
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((PositionComponent)component).LevelId,
                     (int)EntityComponent.Position),
-                (effectEntity, _, __) => effectEntity.RemoveComponent(EntityComponent.Position));
+                (effectEntity, _, _) => effectEntity.RemoveComponent(EntityComponent.Position));
 
             EntityItemsToContainerRelationship = new EntityRelationship<GameEntity>(
                 nameof(EntityItemsToContainerRelationship),
-                EntityItems,
+                ContainedItems,
                 AffectableEntities,
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((ItemComponent)component).ContainerId,
                     (int)EntityComponent.Item),
-                (effectEntity, _, __) => effectEntity.RemoveComponent((int)EntityComponent.Item),
+                (effectEntity, _, _) => effectEntity.RemoveComponent((int)EntityComponent.Item),
                 referencedKeepAlive: false,
                 referencingKeepAlive: true);
 

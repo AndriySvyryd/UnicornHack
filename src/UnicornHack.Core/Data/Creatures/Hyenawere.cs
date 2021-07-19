@@ -56,7 +56,7 @@ namespace UnicornHack.Data.Creatures
             TorsoType = TorsoType.Quadruped,
             UpperExtremities = ExtremityType.None,
             LowerExtremities = ExtremityType.Claws,
-            InventorySize = 1,
+            SlotCapacity = 1,
             Infravisible = true
         };
     }

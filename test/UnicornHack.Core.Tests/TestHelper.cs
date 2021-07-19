@@ -346,27 +346,42 @@ Seed: " + level.Game.InitialSeed);
         }
 
         public static GameEntity ActivateAbility(
-            string abilityName, GameEntity playerEntity, GameManager manager, int slot = 0)
+            string abilityName, GameEntity activatorEntity, GameManager manager, int? slot = null)
         {
-            var ability = manager.AffectableAbilitiesIndex[(playerEntity.Id, abilityName)];
+            var ability = manager.AffectableAbilitiesIndex[(activatorEntity.Id, abilityName)];
             Assert.NotNull(ability);
-            return ActivateAbility(ability, playerEntity, manager, slot);
+
+            return ActivateAbility(ability, activatorEntity, manager, slot);
         }
 
         public static GameEntity ActivateAbility(
-            GameEntity abilityEntity, GameEntity playerEntity, GameManager manager, int slot = 0)
+            GameEntity abilityEntity, GameEntity activatorEntity, GameManager manager, int? slot = null)
         {
+            slot ??= abilityEntity.Ability.Slot;
+
             var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = abilityEntity;
-            setSlotMessage.Slot = slot;
+            setSlotMessage.Slot = slot ?? 2;
             manager.Enqueue(setSlotMessage);
 
             var activateAbilityMessage = ActivateAbilityMessage.Create(manager);
-            activateAbilityMessage.ActivatorEntity = playerEntity;
-            activateAbilityMessage.TargetEntity = playerEntity;
+            activateAbilityMessage.ActivatorEntity = activatorEntity;
+            activateAbilityMessage.TargetEntity = activatorEntity;
             activateAbilityMessage.AbilityEntity = abilityEntity;
 
             manager.Enqueue(activateAbilityMessage);
+
+            return abilityEntity;
+        }
+
+        public static GameEntity DeactivateAbility(
+            GameEntity abilityEntity, GameEntity activatorEntity, GameManager manager)
+        {
+            var deactivateAbilityMessage = DeactivateAbilityMessage.Create(manager);
+            deactivateAbilityMessage.ActivatorEntity = activatorEntity;
+            deactivateAbilityMessage.AbilityEntity = abilityEntity;
+
+            manager.Enqueue(deactivateAbilityMessage);
 
             return abilityEntity;
         }

@@ -17,8 +17,11 @@ namespace UnicornHack.Systems.Faculties
         {
             var level = TestHelper.BuildLevel(".");
             var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
-            ItemData.SkillbookOfWaterSourcery.Instantiate(playerEntity);
             var manager = playerEntity.Manager;
+
+            manager.Queue.ProcessQueue(manager);
+
+            ItemData.SkillbookOfWaterSourcery.Instantiate(playerEntity);
 
             manager.Queue.ProcessQueue(manager);
 
@@ -30,7 +33,7 @@ namespace UnicornHack.Systems.Faculties
             var firstWaterBook = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single();
             ItemData.SkillbookOfWaterSourcery.Instantiate(playerEntity);
             ItemData.SkillbookOfConjuration.Instantiate(playerEntity);
-            ActivateAbility(firstWaterBookAbility, 0, manager);
+            TestHelper.ActivateAbility(firstWaterBookAbility, playerEntity, manager, 2);
 
             manager.Queue.ProcessQueue(manager);
 
@@ -39,7 +42,7 @@ namespace UnicornHack.Systems.Faculties
 
             var conjurationBookAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
                 .First(a => a.Ability.Name == ItemData.SkillbookOfConjuration.Name + ": Consult");
-            ActivateAbility(conjurationBookAbility, 2, manager);
+            TestHelper.ActivateAbility(conjurationBookAbility, playerEntity, manager, 3);
 
             manager.Queue.ProcessQueue(manager);
 
@@ -61,7 +64,7 @@ namespace UnicornHack.Systems.Faculties
             Assert.True(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)].Ability
                 .IsUsable);
 
-            DeactivateAbility(conjurationBookAbility, manager);
+            TestHelper.DeactivateAbility(conjurationBookAbility, playerEntity, manager);
 
             var moveItemMessage = MoveItemMessage.Create(manager);
             moveItemMessage.ItemEntity = firstWaterBook;
@@ -102,16 +105,19 @@ namespace UnicornHack.Systems.Faculties
             var level = TestHelper.BuildLevel(".");
             var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
             var manager = playerEntity.Manager;
+
+            manager.Queue.ProcessQueue(manager);
+
             ItemData.LongSword.Instantiate(playerEntity);
             ItemData.FireStaff.Instantiate(playerEntity);
 
             manager.Queue.ProcessQueue(manager);
 
             Assert.Same(AbilityData.DoubleMeleeAttack.Name,
-                manager.SlottedAbilitiesIndex[(playerEntity.Id, AbilitySlottingSystem.DefaultMeleeAttackSlot)].Ability.Name);
-            Assert.Null(
-                manager.SlottedAbilitiesIndex[(playerEntity.Id, AbilitySlottingSystem.DefaultRangedAttackSlot)]);
-            Assert.Equal(1, manager.AbilitiesToAffectableRelationship[playerEntity.Id].Select(a => a.Ability)
+                manager.SlottedAbilitiesIndex[playerEntity.Id][AbilitySlottingSystem.DefaultMeleeAttackSlot].Ability.Name);
+            Assert.False(
+                manager.SlottedAbilitiesIndex[playerEntity.Id].ContainsKey(AbilitySlottingSystem.DefaultRangedAttackSlot));
+            Assert.Equal(3, manager.AbilitiesToAffectableRelationship[playerEntity.Id].Select(a => a.Ability)
                 .Count(a => a.IsUsable && (a.Activation & ActivationType.Slottable) != 0));
 
             var swordEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id]
@@ -135,30 +141,11 @@ namespace UnicornHack.Systems.Faculties
             manager.Queue.ProcessQueue(manager);
 
             Assert.Same(AbilityData.TwoHandedMeleeAttack.Name,
-                manager.SlottedAbilitiesIndex[(playerEntity.Id, AbilitySlottingSystem.DefaultMeleeAttackSlot)].Ability.Name);
+                manager.SlottedAbilitiesIndex[playerEntity.Id][AbilitySlottingSystem.DefaultMeleeAttackSlot].Ability.Name);
             Assert.Same(AbilityData.TwoHandedRangedAttack.Name,
-                manager.SlottedAbilitiesIndex[(playerEntity.Id, AbilitySlottingSystem.DefaultRangedAttackSlot)].Ability.Name);
+                manager.SlottedAbilitiesIndex[playerEntity.Id][AbilitySlottingSystem.DefaultRangedAttackSlot].Ability.Name);
             Assert.Equal(2, manager.AbilitiesToAffectableRelationship[playerEntity.Id].Select(a => a.Ability)
                 .Count(a => a.IsUsable && (a.Activation & ActivationType.Slottable) != 0));
-        }
-
-        private static GameEntity ActivateAbility(GameEntity abilityEntity, int slot, GameManager manager)
-        {
-            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
-            setSlotMessage.AbilityEntity = abilityEntity;
-            setSlotMessage.Slot = slot;
-
-            manager.Enqueue(setSlotMessage);
-
-            return abilityEntity;
-        }
-
-        private static void DeactivateAbility(GameEntity abilityEntity, GameManager manager)
-        {
-            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
-            setSlotMessage.AbilityEntity = abilityEntity;
-
-            manager.Enqueue(setSlotMessage);
         }
     }
 }

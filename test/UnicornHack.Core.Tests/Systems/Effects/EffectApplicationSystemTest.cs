@@ -1,4 +1,6 @@
-﻿using UnicornHack.Generation;
+﻿using System.Linq;
+using UnicornHack.Data.Items;
+using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
@@ -32,7 +34,7 @@ namespace UnicornHack.Systems.Effects
 
             Assert.Null(toggledAbility.Ability.Slot);
             Assert.False(toggledAbility.Ability.IsActive);
-            Assert.Null(manager.SlottedAbilitiesIndex[(playerEntity.Id, 0)]);
+            Assert.False(manager.SlottedAbilitiesIndex[playerEntity.Id].ContainsKey(2));
             Assert.Equal(0, playerEntity.Being.AcidResistance);
             Assert.Equal(0, playerEntity.Being.ColdResistance);
 
@@ -51,16 +53,12 @@ namespace UnicornHack.Systems.Effects
                 acidEffectEntity.Effect = effect;
             }
 
-            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
-            setSlotMessage.AbilityEntity = toggledAbility;
-            setSlotMessage.Slot = 0;
-
-            manager.Enqueue(setSlotMessage);
+            TestHelper.ActivateAbility(toggledAbility, playerEntity, manager, 2);
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Equal(0, toggledAbility.Ability.Slot);
+            Assert.Equal(2, toggledAbility.Ability.Slot);
             Assert.True(toggledAbility.Ability.IsActive);
-            Assert.Same(toggledAbility, manager.SlottedAbilitiesIndex[(playerEntity.Id, 0)]);
+            Assert.Same(toggledAbility, manager.SlottedAbilitiesIndex[playerEntity.Id][2]);
             Assert.Equal(10, playerEntity.Being.AcidResistance);
             Assert.Equal(0, playerEntity.Being.ColdResistance);
 
@@ -92,7 +90,7 @@ namespace UnicornHack.Systems.Effects
             Assert.Equal(0, playerEntity.Being.AcidResistance);
             Assert.Equal(10, playerEntity.Being.ColdResistance);
 
-            setSlotMessage = SetAbilitySlotMessage.Create(manager);
+            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = toggledAbility;
 
             manager.Enqueue(setSlotMessage);
@@ -102,6 +100,49 @@ namespace UnicornHack.Systems.Effects
             Assert.False(toggledAbility.Ability.IsActive);
             Assert.Equal(0, playerEntity.Being.AcidResistance);
             Assert.Equal(0, playerEntity.Being.ColdResistance);
+        }
+
+        [Fact]
+        public void Properties_are_updated_when_races_change()
+        {
+            var level = TestHelper.BuildLevel(".");
+            var manager = level.Entity.Manager;
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+
+            manager.Queue.ProcessQueue(manager);
+
+            ItemData.PotionOfDwarfness.Instantiate(playerEntity);
+            ItemData.PotionOfElfness.Instantiate(playerEntity);
+            ItemData.PotionOfOgreness.Instantiate(playerEntity);
+            ItemData.PotionOfInhumanity.Instantiate(playerEntity);
+
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(6, playerEntity.Physical.Size);
+            //Assert.Equal(1000, playerEntity.Physical.Weight);
+            Assert.Equal(10, playerEntity.Being.Speed);
+            Assert.Equal(10, playerEntity.Being.Might);
+            Assert.Equal(10, playerEntity.Being.Perception);
+            Assert.Equal(10, playerEntity.Being.Focus);
+
+            TestHelper.ActivateAbility(ItemData.PotionOfElfness.Name + ": Drink", playerEntity, manager);
+            manager.Queue.ProcessQueue(manager);
+
+            TestHelper.ActivateAbility(ItemData.PotionOfDwarfness.Name + ": Drink", playerEntity, manager);
+            manager.Queue.ProcessQueue(manager);
+
+            TestHelper.ActivateAbility(ItemData.PotionOfOgreness.Name + ": Drink", playerEntity, manager);
+            manager.Queue.ProcessQueue(manager);
+
+            TestHelper.ActivateAbility(ItemData.PotionOfInhumanity.Name + ": Drink", playerEntity, manager);
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(7, playerEntity.Physical.Size);
+            //Assert.Equal(1000, playerEntity.Physical.Weight);
+            Assert.Equal(7, playerEntity.Being.Speed);
+            Assert.Equal(13, playerEntity.Being.Might);
+            Assert.Equal(8, playerEntity.Being.Perception);
+            Assert.Equal(9, playerEntity.Being.Focus);
         }
     }
 }

@@ -22,62 +22,68 @@ namespace UnicornHack.Systems.Knowledge
 
         public MessageProcessingResult Process(ItemMovedMessage message, GameManager manager)
         {
-            if (message.Successful)
+            if (!message.Successful)
             {
-                var itemEntity = message.ItemEntity;
-                var item = itemEntity.Item;
-                var position = itemEntity.Position;
-                foreach (var playerEntity in manager.Players)
+                return MessageProcessingResult.ContinueProcessing;
+            }
+
+            var itemEntity = message.ItemEntity;
+            var item = itemEntity.Item;
+            var position = itemEntity.Position;
+            foreach (var playerEntity in manager.Players)
+            {
+                var finalSensed = manager.SensorySystem.CanSense(playerEntity, itemEntity) ?? SenseType.None;
+
+                var initialTopContainer = message.InitialContainer != null
+                    ? manager.ItemMovingSystem.GetTopContainer(message.InitialContainer, manager)
+                    : itemEntity;
+                var initialPosition = message.InitialLevelCell ?? initialTopContainer.Position?.LevelCell;
+                var initialSensed = initialPosition != null
+                    ? manager.SensorySystem.CanSense(playerEntity, initialTopContainer, initialPosition.Value)
+                    : SenseType.None;
+
+                if (initialSensed == SenseType.None
+                    && finalSensed == SenseType.None)
                 {
-                    var finalSensed = manager.SensorySystem.CanSense(playerEntity, itemEntity) ?? SenseType.None;
-
-                    var initialTopContainer = message.InitialContainer != null
-                        ? manager.ItemMovingSystem.GetTopContainer(message.InitialContainer, manager)
-                        : itemEntity;
-                    var initialPosition = message.InitialLevelCell ?? initialTopContainer.Position?.LevelCell;
-                    var initialSensed = initialPosition != null
-                        ? manager.SensorySystem.CanSense(playerEntity, initialTopContainer, initialPosition.Value)
-                        : SenseType.None;
-
-                    if (initialSensed == SenseType.None
-                        && finalSensed == SenseType.None)
-                    {
-                        continue;
-                    }
-
-                    string logMessage = null;
-                    if (message.InitialContainer != null)
-                    {
-                        if (position != null)
-                        {
-                            if (!message.SuppressLog)
-                            {
-                                logMessage = manager.Game.Services.Language.GetString(new ItemDropEvent(
-                                    playerEntity, message.InitialContainer, message.ItemEntity,
-                                    message.InitialCount, initialSensed, finalSensed));
-                            }
-                        }
-                        else if (item.ContainerId != null)
-                        {
-                            // Changed container
-                        }
-                    }
-                    else if (message.InitialLevelCell != null)
-                    {
-                        if (item.ContainerId != null)
-                        {
-                            logMessage = manager.Game.Services.Language.GetString(new ItemPickUpEvent(
-                                playerEntity, manager.ItemMovingSystem.GetTopContainer(itemEntity, manager),
-                                message.ItemEntity, message.InitialCount, finalSensed, initialSensed));
-                        }
-                        else if (position != null)
-                        {
-                            // Moved across
-                        }
-                    }
-
-                    WriteLog(logMessage, playerEntity, manager);
+                    continue;
                 }
+
+                string logMessage = null;
+                if (message.InitialContainer != null)
+                {
+                    if (position != null)
+                    {
+                        if (!message.SuppressLog)
+                        {
+                            if (playerEntity == message.InitialContainer)
+                            {
+                                finalSensed |= SenseType.Telepathy;
+                            }
+                            logMessage = manager.Game.Services.Language.GetString(new ItemDropEvent(
+                                playerEntity, message.InitialContainer, message.ItemEntity,
+                                message.InitialCount, initialSensed, finalSensed));
+                        }
+                    }
+                    else if (item.ContainerId != null)
+                    {
+                        // Changed container
+                    }
+                }
+                else if (message.InitialLevelCell != null)
+                {
+                    if (item.ContainerId != null)
+                    {
+                        logMessage = manager.Game.Services.Language.GetString(new ItemPickUpEvent(
+                            playerEntity, manager.ItemMovingSystem.GetTopContainer(itemEntity, manager),
+                            message.ItemEntity, message.InitialCount, finalSensed, initialSensed));
+                    }
+                    else if (position != null)
+                    {
+                        // Moved across
+                    }
+                }
+
+                WriteLog(logMessage, playerEntity, manager);
             }
 
             return MessageProcessingResult.ContinueProcessing;

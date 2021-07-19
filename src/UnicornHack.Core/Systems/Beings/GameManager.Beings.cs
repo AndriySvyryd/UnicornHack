@@ -47,7 +47,7 @@ namespace UnicornHack
                     new PropertyMatcher()
                         .With(component => ((RaceComponent)component).Level, (int)EntityComponent.Race)
                 ),
-                (effectEntity, _, __) => effectEntity.RemoveComponent((int)EntityComponent.Race));
+                (effectEntity, _, _) => effectEntity.RemoveComponent((int)EntityComponent.Race));
 
             LivingSystem = new LivingSystem();
             queue.Add<XPGainedMessage>(LivingSystem, XPGainedMessage.Name, 0);

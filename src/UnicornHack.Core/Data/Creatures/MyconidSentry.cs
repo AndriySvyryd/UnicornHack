@@ -45,7 +45,7 @@ namespace UnicornHack.Data.Creatures
             UpperExtremities = ExtremityType.None,
             LowerExtremities = ExtremityType.None,
             RespirationType = RespirationType.None,
-            InventorySize = 0,
+            SlotCapacity = 0,
             EyeCount = 0,
             Mindless = true,
             NonAnimal = true

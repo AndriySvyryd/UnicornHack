@@ -9,7 +9,8 @@ import { IGameContext } from './Game';
 import { formatTime } from '../Util';
 
 export const AbilityBar = observer((props: IAbilityBarProps) => {
-    const slots = new Array(8);
+    // TODO: Read the number of ability slots
+    const slots = new Array(10);
     for (var i = 0; i < slots.length; i++) {
         var slottedAbility = null;
         for (var ability of props.context.player.abilities.values()) {
@@ -65,7 +66,7 @@ class AbilityLine extends React.PureComponent<IAbilityProps, {}> {
 
     render() {
         const slot = <a tabIndex={(this.props.slot + 1) * 2} role="button" onClick={this.showAbilities} onKeyPress={this.showAbilities}>
-            <span className="abilityBar__slot">{this.props.slot === -1 ? 'D' : this.props.slot + 1}:</span>
+            <span className="abilityBar__slot">{this.props.slot === 0 ? 'M' : this.props.slot === 1 ? 'R' : this.props.slot - 1}:</span>
         </a>;
 
         var ability = <span>{this.props.ability?.name ?? ''}</span>;

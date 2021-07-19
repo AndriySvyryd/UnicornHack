@@ -42,7 +42,7 @@ namespace UnicornHack.Data.Creatures
             UpperExtremities = ExtremityType.None,
             LowerExtremities = ExtremityType.None,
             LocomotionType = LocomotionType.Swimming,
-            InventorySize = 0,
+            SlotCapacity = 0,
             VisibilityLevel = 2,
             Infravision = true
         };

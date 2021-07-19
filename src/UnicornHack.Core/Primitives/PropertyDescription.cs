@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using UnicornHack.Generation;
+using UnicornHack.Utils;
 using UnicornHack.Utils.DataLoading;
 
 namespace UnicornHack.Primitives
@@ -25,8 +26,8 @@ namespace UnicornHack.Primitives
             ComponentAttribute componentAttribute)
             => (PropertyDescription)CreatePropertyDescriptionMethod
                 .MakeGenericMethod(property.PropertyType.IsEnum
-                    ? property.PropertyType.GetEnumUnderlyingType()
-                    : property.PropertyType)
+                    ? property.PropertyType.GetEnumUnderlyingType().UnwrapNullableType()
+                    : property.PropertyType.UnwrapNullableType())
                 .Invoke(null, new object[] {property, componentType, propertyAttribute, componentAttribute});
 
         private static readonly MethodInfo CreatePropertyDescriptionMethod = typeof(PropertyDescription).GetTypeInfo()

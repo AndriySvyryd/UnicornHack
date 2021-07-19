@@ -29,7 +29,7 @@ namespace UnicornHack.Data.Items
             GenerationWeight = "2",
             Material = Material.Glass,
             Weight = 1,
-            StackSize = 20
+            StackSize = 1
         };
     }
 }

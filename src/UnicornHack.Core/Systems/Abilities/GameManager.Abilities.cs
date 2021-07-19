@@ -11,7 +11,7 @@ namespace UnicornHack
     {
         public EntityGroup<GameEntity> Abilities { get; private set; }
         public EntityGroup<GameEntity> AffectableEntities { get; private set; }
-        public UniqueEntityIndex<GameEntity, (int, int)> SlottedAbilitiesIndex { get; private set; }
+        public SortedLookupEntityIndex<GameEntity, int, int> SlottedAbilitiesIndex { get; private set; }
         public UniqueEntityIndex<GameEntity, (int, string)> AffectableAbilitiesIndex { get; private set; }
         public EntityRelationship<GameEntity> AbilitiesToAffectableRelationship { get; private set; }
         public AbilityActivationSystem AbilityActivationSystem { get; private set; }
@@ -29,30 +29,15 @@ namespace UnicornHack
             Abilities = CreateGroup(nameof(Abilities),
                 new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Ability));
 
-            SlottedAbilitiesIndex = new UniqueEntityIndex<GameEntity, (int, int)>(
+            SlottedAbilitiesIndex = new SortedLookupEntityIndex<GameEntity, int, int>(
                 nameof(SlottedAbilitiesIndex),
                 Abilities,
-                new KeyValueGetter<GameEntity, (int, int)>(
-                    (entity, changes, getOldValue, matcher) =>
-                    {
-                        if (!matcher.TryGetValue<int?>(
-                                entity, (int)EntityComponent.Ability, nameof(AbilityComponent.OwnerId), changes,
-                                getOldValue, out var ownerId)
-                            || !ownerId.HasValue
-                            || !matcher.TryGetValue<int?>(
-                                entity, (int)EntityComponent.Ability, nameof(AbilityComponent.Slot), changes,
-                                getOldValue, out var slot)
-                            || !slot.HasValue)
-                        {
-                            return ((0, 0), false);
-                        }
-
-                        return ((ownerId.Value, slot.Value), true);
-                    },
-                    new PropertyMatcher()
-                        .With(component => ((AbilityComponent)component).OwnerId, (int)EntityComponent.Ability)
-                        .With(component => ((AbilityComponent)component).Slot, (int)EntityComponent.Ability)
-                ));
+                new SimpleKeyValueGetter<GameEntity, int>(
+                    component => ((AbilityComponent)component).OwnerId,
+                    (int)EntityComponent.Ability),
+                new SimpleKeyValueGetter<GameEntity, int>(
+                    component => ((AbilityComponent)component).Slot,
+                    (int)EntityComponent.Ability));
 
             AffectableAbilitiesIndex = new UniqueEntityIndex<GameEntity, (int, string)>(
                 nameof(AffectableAbilitiesIndex),
@@ -110,8 +95,10 @@ namespace UnicornHack
                 AbilitiesToAffectableRelationship.GetPropertyValueChangedMessageName(nameof(AbilityComponent.IsUsable)),
                 0);
             queue.Add<PropertyValueChangedMessage<GameEntity, int>>(AbilitySlottingSystem,
-                Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.AbilitySlotCount)),
+                Beings.GetPropertyValueChangedMessageName(nameof(PhysicalComponent.Capacity)),
                 0);
+            queue.Add<EntityAddedMessage<GameEntity>>(
+                AbilitySlottingSystem, AbilitiesToAffectableRelationship.GetEntityAddedMessageName(), 2);
         }
     }
 }

@@ -165,12 +165,10 @@ namespace UnicornHack.Utils.MessagingECS
             => _handleReferencedDeleted(referencingEntity, referencedEntity, removedComponent);
 
         public string GetEntityAddedMessageName()
-            => _entityAddedMessageName
-               ?? (_entityAddedMessageName = Name + EntityAddedMessageSuffix);
+            => _entityAddedMessageName ??= Name + EntityAddedMessageSuffix;
 
         public string GetEntityRemovedMessageName()
-            => _entityRemovedMessageName
-               ?? (_entityRemovedMessageName = Name + EntityRemovedMessageSuffix);
+            => _entityRemovedMessageName ??= Name + EntityRemovedMessageSuffix;
 
         public string GetPropertyValueChangedMessageName(string propertyName)
         {

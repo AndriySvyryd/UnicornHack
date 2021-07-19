@@ -275,7 +275,7 @@ namespace UnicornHack
             => HasComponent((int)componentId);
 
         public new OwnerTransientReference<GameEntity, TOwner> AddReference<TOwner>(TOwner owner)
-            => new OwnerTransientReference<GameEntity, TOwner>(this, owner);
+            => new(this, owner);
 
         private class RelationshipsView
         {

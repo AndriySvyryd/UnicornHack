@@ -43,7 +43,7 @@ namespace UnicornHack.Data.Creatures
             UpperExtremities = ExtremityType.None,
             RespirationType = RespirationType.Amphibious,
             LocomotionType = LocomotionType.Swimming,
-            InventorySize = 1
+            SlotCapacity = 1
         };
     }
 }

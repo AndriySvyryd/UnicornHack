@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using UnicornHack.Generation;
+﻿using UnicornHack.Generation;
 using UnicornHack.Primitives;
 
 namespace UnicornHack.Systems.Items
@@ -7,6 +6,7 @@ namespace UnicornHack.Systems.Items
     [Component(Id = (int)EntityComponent.Item)]
     public class ItemComponent : GameComponent
     {
+        private GameEntity _containerEntity;
         private int? _containerId;
         private ItemType _type;
         private string _templateName;
@@ -23,7 +23,11 @@ namespace UnicornHack.Systems.Items
         public int? ContainerId
         {
             get => _containerId;
-            set => SetWithNotify(value, ref _containerId);
+            set
+            {
+                _containerEntity = null;
+                SetWithNotify(value, ref _containerId);
+            }
         }
 
         public ItemType Type
@@ -74,10 +78,21 @@ namespace UnicornHack.Systems.Items
             set => SetWithNotify(value, ref _count);
         }
 
+        // Unmapped properties
+        public GameEntity ContainerEntity
+        {
+            get => _containerEntity ??= Entity.Manager.FindEntity(_containerId);
+            set
+            {
+                _containerEntity = value;
+                ContainerId = value?.Id;
+            }
+        }
+
         public int GetQuantity(GameManager manager)
-            => Count ?? (Entity.Physical.Capacity == null
+            => Count ?? (Entity.Physical.Capacity == 0
                    ? 1
-                   : manager.EntityItemsToContainerRelationship[EntityId].Count() + 1);
+                   : manager.EntityItemsToContainerRelationship[EntityId].Count + 1);
 
         protected override void Clean()
         {

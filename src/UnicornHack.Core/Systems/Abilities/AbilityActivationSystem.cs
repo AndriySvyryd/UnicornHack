@@ -7,6 +7,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
+using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
@@ -32,9 +33,6 @@ namespace UnicornHack.Systems.Abilities
 
         private static readonly ParameterExpression ActivatorParameter =
             Expression.Parameter(typeof(GameEntity), name: "activator");
-
-        private static readonly ParameterExpression TargetParameter =
-            Expression.Parameter(typeof(GameEntity), name: "target");
 
         private static readonly AccuracyExpressionVisitor _accuracyTranslator =
             new(new[] { AbilityParameter, ActivatorParameter });
@@ -118,7 +116,7 @@ namespace UnicornHack.Systems.Abilities
 
                 if (ability.Slot == null
                     && (ability.Activation & ActivationType.Slottable) != 0
-                    && (ability.OwnerEntity.Being?.AbilitySlotCount ?? 0) != 0)
+                    && ability.OwnerEntity.Physical?.Capacity != 0)
                 {
                     targetEffectsMessage.ActivationError = $"Ability {ability.EntityId} is not slotted.";
                     return targetEffectsMessage;
@@ -528,6 +526,9 @@ namespace UnicornHack.Systems.Abilities
 
             if (message.Slot != EquipmentSlot.None)
             {
+                DeactivateAbilities(
+                    message.ItemEntity.Id, ActivationType.WhilePossessed, message.ActorEntity, manager);
+
                 var activation = ActivateAbilityMessage.Create(manager);
                 activation.ActivatorEntity = message.ActorEntity;
                 activation.TargetEntity = message.ActorEntity;
@@ -536,7 +537,7 @@ namespace UnicornHack.Systems.Abilities
                     message.ItemEntity.Id, ActivationType.WhileEquipped, activation, manager, pretend: true))
                 {
                     ActivateAbilities(
-                        message.ItemEntity.Id, ActivationType.WhileEquipped, activation, manager, pretend: false);
+                        message.ItemEntity.Id, ActivationType.WhileEquipped, activation, manager);
                     manager.ReturnMessage(activation);
                 }
                 else
@@ -556,6 +557,16 @@ namespace UnicornHack.Systems.Abilities
             else
             {
                 DeactivateAbilities(message.ItemEntity.Id, ActivationType.WhileEquipped, message.ActorEntity, manager);
+
+                if (message.ItemEntity.Item.ContainerEntity == message.ActorEntity)
+                {
+                    var activationTemplate = ActivateAbilityMessage.Create(manager);
+                    activationTemplate.ActivatorEntity = message.ActorEntity;
+                    activationTemplate.TargetEntity = message.ActorEntity;
+
+                    ActivateAbilities(message.ItemEntity.Id, ActivationType.WhilePossessed, activationTemplate, manager);
+                    manager.ReturnMessage(activationTemplate);
+                }
             }
 
             return MessageProcessingResult.ContinueProcessing;
@@ -629,26 +640,23 @@ namespace UnicornHack.Systems.Abilities
             {
                 case nameof(GameManager.AbilitiesToAffectableRelationship):
                     var ability = message.Entity.Ability;
-                    if (ability != null
-                        && (ability.Activation & ActivationType.Always) != 0
-                        && !ability.IsActive
-                        && manager.EffectsToContainingAbilityRelationship[ability.EntityId].Count != 0)
+                    if ((ability.Activation & ActivationType.Always) != 0
+                        && !ability.IsActive)
                     {
-                        Debug.Assert(!ability.IsActive);
-
                         SelfActivate(ability, manager);
                     }
 
                     break;
                 case nameof(GameManager.EntityItemsToContainerRelationship):
                     if (message.ReferencedEntity != null
-                        && message.ReferencedEntity.HasComponent(EntityComponent.Being))
+                        && message.ReferencedEntity.HasComponent(EntityComponent.Being)
+                        && message.Entity.Item.EquippedSlot == EquipmentSlot.None)
                     {
                         var activationTemplate = ActivateAbilityMessage.Create(manager);
                         activationTemplate.ActivatorEntity = message.ReferencedEntity;
                         activationTemplate.TargetEntity = message.ReferencedEntity;
 
-                        ActivateAbilities(message.Entity.Id, ActivationType.WhilePossessed, activationTemplate, manager, pretend: false);
+                        ActivateAbilities(message.Entity.Id, ActivationType.WhilePossessed, activationTemplate, manager);
                         manager.ReturnMessage(activationTemplate);
                     }
 
@@ -723,16 +731,14 @@ namespace UnicornHack.Systems.Abilities
         }
 
         private void SelfActivate(AbilityComponent ability, GameManager manager)
-        {
-            manager.Process(ActivateAbilityMessage.Create(ability.Entity, ability.OwnerEntity, ability.OwnerEntity));
-        }
+            => manager.Process(ActivateAbilityMessage.Create(ability.Entity, ability.OwnerEntity, ability.OwnerEntity));
 
         public bool ActivateAbilities(
             int activatableId,
             ActivationType trigger,
             ActivateAbilityMessage activationMessage,
             GameManager manager,
-            bool pretend)
+            bool pretend = false)
         {
             foreach (var triggeredAbility in GetTriggeredAbilities(activatableId, trigger, manager))
             {
@@ -953,7 +959,15 @@ namespace UnicornHack.Systems.Abilities
                 return 0;
             }
 
-            accuracy = accuracy ?? GetAccuracy(message.AbilityEntity.Ability, message.ActivatorEntity);
+            if (message.AbilityEntity.Ability.SuccessCondition == AbilitySuccessCondition.Always
+                || !message.ActivatorEntity.HasComponent(EntityComponent.Being)
+                || !message.TargetEntity.HasComponent(EntityComponent.Being))
+            {
+                message.Outcome = ApplicationOutcome.Success;
+                return 100;
+            }
+
+            accuracy ??= GetAccuracy(message.AbilityEntity.Ability, message.ActivatorEntity);
             var deflectionProbability = GetDeflectionProbability(
                 message.AbilityEntity, message.ActivatorEntity, message.TargetEntity, exposure, accuracy);
             if (!pretend
@@ -1109,12 +1123,6 @@ namespace UnicornHack.Systems.Abilities
             foreach (var appliedEffect in manager.AppliedEffectsToSourceAbilityRelationship[ability.EntityId].ToList())
             {
                 RemoveComponentMessage.Enqueue(appliedEffect, EntityComponent.Effect, manager);
-            }
-
-            if (ability.Slot != null
-                && (ability.Activation & ActivationType.WhileToggled) != 0)
-            {
-                ability.Slot = null;
             }
         }
 

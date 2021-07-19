@@ -3,34 +3,44 @@ using System.Linq;
 
 namespace UnicornHack.Utils.MessagingECS
 {
-    public class EntityIndex<TEntity, TKey> : EntityIndexBase<TEntity, TKey>
+    public class SortedEntityIndex<TEntity, TKey> : EntityIndexBase<TEntity, TKey>
         where TEntity : Entity
     {
-        public EntityIndex(
+        private readonly IComparer<TEntity> _comparer;
+
+        public SortedEntityIndex(
             string name,
             IEntityGroup<TEntity> group,
-            IKeyValueGetter<TEntity, TKey> keyValueGetter)
+            KeyValueGetter<TEntity, TKey> keyValueGetter,
+            IComparer<TEntity> comparer)
             : base(name, group, keyValueGetter)
-            => Index = new Dictionary<TKey, HashSet<TEntity>>();
+        {
+            _comparer = comparer;
+            Index = new Dictionary<TKey, SortedSet<TEntity>>();
+        }
 
-        public EntityIndex(
+        public SortedEntityIndex(
             string name,
             IEntityGroup<TEntity> group,
-            IKeyValueGetter<TEntity, TKey> keyValueGetter,
-            IEqualityComparer<TKey> comparer)
+            KeyValueGetter<TEntity, TKey> keyValueGetter,
+            IEqualityComparer<TKey> equalityComparer,
+            IComparer<TEntity> comparer)
             : base(name, group, keyValueGetter)
-            => Index = new Dictionary<TKey, HashSet<TEntity>>(comparer);
+        {
+            _comparer = comparer;
+            Index = new Dictionary<TKey, SortedSet<TEntity>>(equalityComparer);
+        }
 
-        protected Dictionary<TKey, HashSet<TEntity>> Index { get; }
+        protected Dictionary<TKey, SortedSet<TEntity>> Index { get; }
 
         public IEnumerable<TEntity> this[TKey key]
             => Index.TryGetValue(key, out var entities) ? entities : Enumerable.Empty<TEntity>();
 
-        private HashSet<TEntity> GetOrAddEntities(TKey key)
+        private SortedSet<TEntity> GetOrAddEntities(TKey key)
         {
             if (!Index.TryGetValue(key, out var entities))
             {
-                entities = new HashSet<TEntity>(EntityEqualityComparer<TEntity>.Instance);
+                entities = new SortedSet<TEntity>(_comparer);
                 Index.Add(key, entities);
             }
 
@@ -43,7 +53,7 @@ namespace UnicornHack.Utils.MessagingECS
         protected override bool TryRemoveEntity(TKey key, TEntity entity, Component changedComponent)
             => GetOrAddEntities(key).Remove(entity);
 
-        public override string ToString() => "Index: " + Name;
+        public override string ToString() => "SortedIndex: " + Name;
 
         public override IEnumerator<TEntity> GetEnumerator()
             => Index.Values.SelectMany(v => v).GetEnumerator();

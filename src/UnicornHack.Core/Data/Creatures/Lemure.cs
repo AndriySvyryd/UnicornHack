@@ -69,7 +69,7 @@ namespace UnicornHack.Data.Creatures
             LowerExtremities = ExtremityType.Fingers,
             RespirationType = RespirationType.None,
             LocomotionType = LocomotionType.Walking | LocomotionType.Phasing,
-            InventorySize = 0,
+            SlotCapacity = 0,
             Infravision = true,
             InvisibilityDetection = true
         };

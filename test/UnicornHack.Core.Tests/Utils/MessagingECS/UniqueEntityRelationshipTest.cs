@@ -70,18 +70,18 @@ namespace UnicornHack.Utils.MessagingECS
                 }
 
                 Assert.Equal(1, manager.BeingToPrimaryNaturalWeaponRelationship.Count);
-                Assert.Equal(1, manager.EntityItems.Count);
+                Assert.Equal(1, manager.ContainedItems.Count);
             }
 
             Assert.Equal(1, manager.BeingToPrimaryNaturalWeaponRelationship.Count);
-            Assert.Equal(1, manager.EntityItems.Count);
+            Assert.Equal(1, manager.ContainedItems.Count);
             Assert.Equal(3, manager.Queue.QueuedCount);
 
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(0, manager.Beings.Count);
             Assert.Equal(0, manager.BeingToPrimaryNaturalWeaponRelationship.Count);
-            Assert.Equal(0, manager.EntityItems.Count);
+            Assert.Equal(0, manager.ContainedItems.Count);
             Assert.Equal(0, manager.Queue.QueuedCount);
         }
 
@@ -180,7 +180,7 @@ namespace UnicornHack.Utils.MessagingECS
                 being.PrimaryNaturalWeaponId = 1;
             }
 
-            Assert.Equal(0, manager.EntityItems.Count);
+            Assert.Equal(0, manager.ContainedItems.Count);
 
             manager.IsLoading = false;
 
@@ -258,12 +258,12 @@ namespace UnicornHack.Utils.MessagingECS
             }
 
             Assert.Equal(1, manager.Beings.Count);
-            Assert.Equal(1, manager.EntityItems.Count);
+            Assert.Equal(1, manager.ContainedItems.Count);
 
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(0, manager.Beings.Count);
-            Assert.Equal(0, manager.EntityItems.Count);
+            Assert.Equal(0, manager.ContainedItems.Count);
             Assert.Equal(0, manager.Queue.QueuedCount);
             Assert.Equal(3, testSystem.MessagesProcessed);
             Assert.Equal(3, testSystem.GroupChangesDetected);

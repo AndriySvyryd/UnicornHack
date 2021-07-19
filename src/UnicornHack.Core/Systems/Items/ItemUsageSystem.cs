@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnicornHack.Primitives;
-using UnicornHack.Systems.Beings;
+using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Time;
+using UnicornHack.Utils;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Items
@@ -26,6 +28,27 @@ namespace UnicornHack.Systems.Items
             manager.Enqueue(equipped);
 
             return MessageProcessingResult.ContinueProcessing;
+        }
+
+        public bool TryEquip(GameEntity itemEntity, EquipmentSlot slot, GameEntity targetEntity, bool force, bool suppressLog = false)
+        {
+            var manager = itemEntity.Manager;
+            var equipMessage = EquipItemMessage.Create(manager);
+            equipMessage.ActorEntity = targetEntity;
+            equipMessage.ItemEntity = itemEntity;
+            equipMessage.Slot = slot;
+            equipMessage.SuppressLog = suppressLog;
+            equipMessage.Force = force;
+
+            if (!manager.ItemUsageSystem.CanEquipItem(equipMessage, manager))
+            {
+                manager.Queue.ReturnMessage(equipMessage);
+                return true;
+            }
+
+            manager.ItemUsageSystem.Process(equipMessage, manager);
+            manager.Queue.ReturnMessage(equipMessage);
+            return false;
         }
 
         private ItemEquippedMessage TryEquip(EquipItemMessage message, GameManager manager, bool pretend = false)
@@ -75,12 +98,8 @@ namespace UnicornHack.Systems.Items
                         return equippedMessage;
                     }
 
-                    if ((equippedItem.Item.EquipableSlots & message.Slot) == 0)
-                    {
-                        return equippedMessage;
-                    }
-
-                    if (!Unequip(equippedItem, message.ActorEntity, manager, pretend))
+                    if (!message.Force
+                        || !Unequip(equippedItem, message.ActorEntity, manager, pretend))
                     {
                         return equippedMessage;
                     }
@@ -91,7 +110,8 @@ namespace UnicornHack.Systems.Items
                 {
                     equippedItem = GetEquippedItem(EquipmentSlot.GraspBothMelee, message.ActorEntity, manager);
                     if (equippedItem != null
-                        && !Unequip(equippedItem, message.ActorEntity, manager, pretend))
+                        && (!message.Force
+                            || !Unequip(equippedItem, message.ActorEntity, manager, pretend)))
                     {
                         return equippedMessage;
                     }
@@ -100,14 +120,16 @@ namespace UnicornHack.Systems.Items
                 {
                     equippedItem = GetEquippedItem(EquipmentSlot.GraspPrimaryMelee, message.ActorEntity, manager);
                     if (equippedItem != null
-                        && !Unequip(equippedItem, message.ActorEntity, manager, pretend))
+                        && (!message.Force
+                            || !Unequip(equippedItem, message.ActorEntity, manager, pretend)))
                     {
                         return equippedMessage;
                     }
 
                     equippedItem = GetEquippedItem(EquipmentSlot.GraspSecondaryMelee, message.ActorEntity, manager);
                     if (equippedItem != null
-                        && !Unequip(equippedItem, message.ActorEntity, manager, pretend))
+                        && (!message.Force
+                            || !Unequip(equippedItem, message.ActorEntity, manager, pretend)))
                     {
                         return equippedMessage;
                     }
@@ -118,7 +140,8 @@ namespace UnicornHack.Systems.Items
                 {
                     equippedItem = GetEquippedItem(EquipmentSlot.GraspBothRanged, message.ActorEntity, manager);
                     if (equippedItem != null
-                        && !Unequip(equippedItem, message.ActorEntity, manager, pretend))
+                        && (!message.Force
+                            || !Unequip(equippedItem, message.ActorEntity, manager, pretend)))
                     {
                         return equippedMessage;
                     }
@@ -127,14 +150,16 @@ namespace UnicornHack.Systems.Items
                 {
                     equippedItem = GetEquippedItem(EquipmentSlot.GraspPrimaryRanged, message.ActorEntity, manager);
                     if (equippedItem != null
-                        && !Unequip(equippedItem, message.ActorEntity, manager, pretend))
+                        && (!message.Force
+                            || !Unequip(equippedItem, message.ActorEntity, manager, pretend)))
                     {
                         return equippedMessage;
                     }
 
                     equippedItem = GetEquippedItem(EquipmentSlot.GraspSecondaryRanged, message.ActorEntity, manager);
                     if (equippedItem != null
-                        && !Unequip(equippedItem, message.ActorEntity, manager, pretend))
+                        && (!message.Force
+                            || !Unequip(equippedItem, message.ActorEntity, manager, pretend)))
                     {
                         return equippedMessage;
                     }
@@ -199,6 +224,10 @@ namespace UnicornHack.Systems.Items
 
             return success;
         }
+
+        // TODO: Sort by requirements
+        public IEnumerable<EquipmentSlot> GetEquipableSlots(ItemComponent item, GameEntity beingEntity)
+            => GetEquipableSlots(item, beingEntity.Physical.Size).GetNonRedundantFlags(removeComposites: true);
 
         public EquipmentSlot GetEquipableSlots(ItemComponent item, int size)
         {

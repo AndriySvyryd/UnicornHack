@@ -12,37 +12,15 @@ namespace UnicornHack.Utils.MessagingECS
         private readonly IComparer<TKey> _comparer;
         private static readonly IReadOnlyDictionary<TKey, TEntity> EmptyDictionary = new Dictionary<TKey, TEntity>();
 
-        public SortedEntityRelationship(
-            string name,
-            IEntityGroup<TEntity> referencingGroup,
-            IEntityGroup<TEntity> referencedGroup,
-            IKeyValueGetter<TEntity, int> keyValueGetter,
-            IKeyValueGetter<TEntity, TKey> sortValueGetter,
-            Action<TEntity, TEntity, Component> handleReferencedDeleted,
-            bool referencedKeepAlive = false,
-            bool referencingKeepAlive = false)
-            : this(
-                name,
-                referencingGroup,
-                referencedGroup,
-                keyValueGetter,
-                sortValueGetter,
-                handleReferencedDeleted,
-                referencedKeepAlive,
-                referencingKeepAlive,
-                comparer: null)
-        {
-        }
-
         public SortedEntityRelationship(string name,
             IEntityGroup<TEntity> referencingGroup,
             IEntityGroup<TEntity> referencedGroup,
             IKeyValueGetter<TEntity, int> keyValueGetter,
             IKeyValueGetter<TEntity, TKey> sortValueGetter,
             Action<TEntity, TEntity, Component> handleReferencedDeleted,
-            bool referencedKeepAlive,
-            bool referencingKeepAlive,
-            IComparer<TKey> comparer)
+            bool referencedKeepAlive = false,
+            bool referencingKeepAlive = false,
+            IComparer<TKey> comparer = null)
             : base(
                 name,
                 referencingGroup,
@@ -53,12 +31,11 @@ namespace UnicornHack.Utils.MessagingECS
                 referencingKeepAlive)
         {
             _sortValueGetter = sortValueGetter;
-            _comparer = comparer;
+            _comparer = comparer ?? Comparer<TKey>.Default;
             referencedGroup.AddListener(new ReferencedGroupListener(this));
         }
 
-        protected Dictionary<int, SortedDictionary<TKey, TEntity>> Index { get; }
-            = new Dictionary<int, SortedDictionary<TKey, TEntity>>();
+        protected Dictionary<int, SortedDictionary<TKey, TEntity>> Index { get; } = new();
 
         protected Dictionary<int, HashSet<TEntity>> OrphanedEntities { get; private set; }
 
@@ -73,9 +50,7 @@ namespace UnicornHack.Utils.MessagingECS
         {
             if (!Index.TryGetValue(key, out var entities))
             {
-                entities = _comparer == null
-                    ? new SortedDictionary<TKey, TEntity>()
-                    : new SortedDictionary<TKey, TEntity>(_comparer);
+                entities = new SortedDictionary<TKey, TEntity>(_comparer);
                 Index.Add(key, entities);
             }
 

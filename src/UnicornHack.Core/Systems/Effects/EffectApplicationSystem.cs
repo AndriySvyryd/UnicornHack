@@ -228,7 +228,7 @@ namespace UnicornHack.Systems.Effects
                                 effect, targetEntity, activatorEntity, amountOverride, appliedEffects, manager, pretend);
                             addedRaceEntity.Effect.AppliedAmount = null;
 
-                            raceDefinition.AddToAppliedEffect(addedRaceEntity, targetEntity.Id);
+                            raceDefinition.AddToAppliedEffect(addedRaceEntity, targetEntity);
                             return addedRaceEntity;
                         }
 
@@ -304,7 +304,7 @@ namespace UnicornHack.Systems.Effects
                     {
                         var moveItemMessage = MoveItemMessage.Create(manager);
                         moveItemMessage.ItemEntity = movee;
-                        moveItemMessage.SuppressLog = true;
+                        moveItemMessage.SuppressLog = targetEntity != activatorEntity;
                         moveItemMessage.Force = true;
 
                         if (targetEntity != null)
@@ -358,6 +358,31 @@ namespace UnicornHack.Systems.Effects
 
                         return appliedEffectEntity;
                     }
+                case EffectType.EquipItem:
+                    var itemEntity = manager.FindEntity(effect.TargetEntityId.Value);
+
+                    var equipped = false;
+                    foreach (var slot in manager.ItemUsageSystem.GetEquipableSlots(itemEntity.Item, targetEntity))
+                    {
+                        if (!manager.ItemUsageSystem.TryEquip(itemEntity, slot, targetEntity, force: false))
+                        {
+                            equipped = true;
+                            break;
+                        }
+                    }
+
+                    if (!equipped)
+                    {
+                        foreach (var slot in manager.ItemUsageSystem.GetEquipableSlots(itemEntity.Item, targetEntity))
+                        {
+                            if (!manager.ItemUsageSystem.TryEquip(itemEntity, slot, targetEntity, force: true))
+                            {
+                                break;
+                            }
+                        }
+                    }
+
+                    break;
                 case EffectType.Heal:
                 case EffectType.Recharge:
                 case EffectType.GainXP:
@@ -416,7 +441,7 @@ namespace UnicornHack.Systems.Effects
                 appliedEffect.AppliedAmount = amountOverride
                                        ?? (effect.AppliedAmount != null || effect.Amount != null
                                            ? GetAmount(effect, activatorEntity)
-                                           : (int?)null);
+                                           : null);
                 appliedEffect.Duration = effect.Duration;
                 appliedEffect.DurationAmount = effect.DurationAmount;
                 appliedEffect.EffectType = effect.EffectType;
@@ -602,6 +627,7 @@ namespace UnicornHack.Systems.Effects
         public MessageProcessingResult Process(
             PropertyValueChangedMessage<GameEntity, int?> message, GameManager manager)
         {
+            // EffectComponent.AppliedAmount
             var effect = (EffectComponent)message.ChangedComponent;
             if (effect.Duration != EffectDuration.Instant)
             {
@@ -614,6 +640,7 @@ namespace UnicornHack.Systems.Effects
         public MessageProcessingResult Process(
             PropertyValueChangedMessage<GameEntity, string> message, GameManager manager)
         {
+            // EffectComponent.Amount
             var effect = (EffectComponent)message.ChangedComponent;
             if (effect.Duration != EffectDuration.Instant)
             {
@@ -671,7 +698,6 @@ namespace UnicornHack.Systems.Effects
                     }
                     else
                     {
-                        var affectedEntity = manager.FindEntity(appliedEffect.AffectedEntityId);
                         appliedEffect.AppliedAmount = GetAmount(effect, activator);
                     }
                 }
@@ -885,6 +911,7 @@ namespace UnicornHack.Systems.Effects
                 case EffectType.Stun:
                 case EffectType.Suffocate:
                 case EffectType.RemoveItem:
+                case EffectType.EquipItem:
                 case EffectType.Teleport:
                 case EffectType.Move:
                     // TODO: Handle these effects

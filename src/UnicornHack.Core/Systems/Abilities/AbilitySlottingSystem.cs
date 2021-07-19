@@ -1,17 +1,21 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using UnicornHack.Primitives;
+using UnicornHack.Systems.Items;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Abilities
 {
     public class AbilitySlottingSystem :
         IGameSystem<SetAbilitySlotMessage>,
+        IGameSystem<EntityAddedMessage<GameEntity>>,
         IGameSystem<PropertyValueChangedMessage<GameEntity, bool>>,
         IGameSystem<PropertyValueChangedMessage<GameEntity, int>>
     {
-        public static int DefaultMeleeAttackSlot = -1;
-        public static int DefaultRangedAttackSlot = -2;
+        public static readonly int DefaultMeleeAttackSlot = 0;
+        public static readonly int DefaultRangedAttackSlot = 1;
+        public static readonly int DefaultSlotCapacity = 8;
 
         public MessageProcessingResult Process(SetAbilitySlotMessage message, GameManager manager)
         {
@@ -21,7 +25,7 @@ namespace UnicornHack.Systems.Abilities
             if (message.Slot != null)
             {
                 var conflictingAbility =
-                    manager.SlottedAbilitiesIndex[(ability?.OwnerId ?? message.OwnerEntity.Id, message.Slot.Value)];
+                    manager.SlottedAbilitiesIndex[ability?.OwnerId ?? message.OwnerEntity.Id].GetValueOrDefault(message.Slot.Value);
                 if (conflictingAbility != null)
                 {
                     if (conflictingAbility == message.AbilityEntity)
@@ -47,7 +51,7 @@ namespace UnicornHack.Systems.Abilities
                 if (message.Slot.Value != DefaultMeleeAttackSlot
                     && message.Slot.Value != DefaultRangedAttackSlot
                     && (message.Slot.Value < 0
-                        || message.Slot.Value >= ability.OwnerEntity.Being.AbilitySlotCount))
+                        || message.Slot.Value >= ability.OwnerEntity.Physical.Capacity))
                 {
                     throw new InvalidOperationException("Invalid slot " + message.Slot.Value);
                 }
@@ -64,7 +68,7 @@ namespace UnicornHack.Systems.Abilities
 
                 if ((message.Slot.Value == DefaultMeleeAttackSlot
                      || message.Slot.Value == DefaultRangedAttackSlot)
-                    && ability.Template?.Type != AbilityType.DefaultAttack)
+                    && ability.Type != AbilityType.DefaultAttack)
                 {
                     throw new InvalidOperationException(
                         "Ability " + ability.EntityId + " cannot be the default attack for " + ability.OwnerId);
@@ -72,29 +76,13 @@ namespace UnicornHack.Systems.Abilities
 
                 if (message.Slot.Value != DefaultMeleeAttackSlot
                     && message.Slot.Value != DefaultRangedAttackSlot
-                    && ability.Template?.Type == AbilityType.DefaultAttack)
+                    && ability.Type == AbilityType.DefaultAttack)
                 {
                     throw new InvalidOperationException(
                         "Ability " + ability.EntityId + " can only be the default attack for " + ability.OwnerId);
                 }
 
-                var oldSlot = ability.Slot;
                 ability.Slot = message.Slot;
-
-                if (oldSlot == null
-                    && (ability.Activation & ActivationType.WhileToggled) != 0)
-                {
-                    var activationMessage = ActivateAbilityMessage.Create(message.AbilityEntity, ability.OwnerEntity, ability.OwnerEntity);
-
-                    if (!manager.AbilityActivationSystem.CanActivateAbility(activationMessage, shouldThrow: false))
-                    {
-                        manager.Queue.ReturnMessage(activationMessage);
-                        ability.Slot = oldSlot;
-                        return MessageProcessingResult.ContinueProcessing;
-                    }
-
-                    manager.Enqueue(activationMessage);
-                }
             }
             else if (ability != null)
             {
@@ -109,14 +97,99 @@ namespace UnicornHack.Systems.Abilities
                     manager.Process(deactivateMessage);
                 }
 
-                if (ability.CooldownTick == null
-                    && ability.CooldownXpLeft == null)
+                if (ability.IsActive
+                    || ability.CooldownTick != null
+                    || ability.CooldownXpLeft != null)
                 {
-                    ability.Slot = null;
+                    return MessageProcessingResult.StopProcessing;
+                }
+
+                ability.Slot = null;
+
+                if (ability.Type == AbilityType.Item)
+                {
+                    var itemId = GetTargetItemId(ability.Entity, manager);
+
+                    if (manager.FindEntity(itemId).Item.EquippedSlot == EquipmentSlot.None)
+                    {
+                        var position = ability.OwnerEntity.Position;
+                        var dropMessage = MoveItemMessage.Create(manager);
+                        dropMessage.ItemEntity = manager.FindEntity(itemId);
+                        dropMessage.TargetLevelEntity = position.LevelEntity;
+                        dropMessage.TargetCell = position.LevelCell;
+
+                        manager.Enqueue(dropMessage);
+                    }
                 }
             }
 
             return MessageProcessingResult.ContinueProcessing;
+        }
+
+        public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager manager)
+        {
+            // AbilitiesToAffectableRelationship
+            if (message.ReferencedEntity == null
+                || !message.ReferencedEntity.HasComponent(EntityComponent.Being))
+            {
+                return MessageProcessingResult.ContinueProcessing;
+            }
+
+            var ability = message.Entity.Ability;
+            if ((ability.Activation & ActivationType.Slottable) != 0
+                && ability.Type == AbilityType.Item)
+            {
+                Debug.Assert(!ability.IsActive);
+
+                var slot = GetFirstFreeSlot(message.ReferencedEntity);
+                if (slot != null)
+                {
+                    var setSlotMessage = SetAbilitySlotMessage.Create(manager);
+                    setSlotMessage.AbilityEntity = message.Entity;
+                    setSlotMessage.Slot = slot;
+
+                    Process(setSlotMessage, manager);
+
+                    manager.Queue.ReturnMessage(setSlotMessage);
+                    return MessageProcessingResult.ContinueProcessing;
+                }
+
+                var itemId = GetTargetItemId(message.Entity, manager);
+
+                var position = message.ReferencedEntity.Position;
+                var dropMessage = MoveItemMessage.Create(manager);
+                dropMessage.ItemEntity = manager.FindEntity(itemId);
+                dropMessage.TargetLevelEntity = position.LevelEntity;
+                dropMessage.TargetCell = position.LevelCell;
+                dropMessage.SuppressLog = true;
+
+                manager.Enqueue(dropMessage);
+            }
+
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        private static int GetTargetItemId(GameEntity abilityEntity, GameManager manager)
+        {
+            var itemId = 0;
+            foreach (var effectEntity in manager.EffectsToContainingAbilityRelationship[abilityEntity.Id])
+            {
+                var effect = effectEntity.Effect;
+                switch (effect.EffectType)
+                {
+                    case EffectType.Activate:
+                        itemId = manager.FindEntity(effect.TargetEntityId).Ability.OwnerId!.Value;
+                        break;
+                    case EffectType.EquipItem:
+                    case EffectType.Move:
+                        itemId = effect.TargetEntityId!.Value;
+                        break;
+                    default:
+                        continue;
+                }
+            }
+
+            return itemId;
         }
 
         public MessageProcessingResult Process(
@@ -136,6 +209,7 @@ namespace UnicornHack.Systems.Abilities
         public MessageProcessingResult Process(
             PropertyValueChangedMessage<GameEntity, int> message, GameManager manager)
         {
+            // Physical.Capacity
             if (message.NewValue < message.OldValue)
             {
                 foreach (var abilityEntity in manager.AbilitiesToAffectableRelationship[message.Entity.Id])
@@ -165,16 +239,29 @@ namespace UnicornHack.Systems.Abilities
         }
 
         public GameEntity GetAbility(int ownerId, int slot, GameManager manager)
+            => manager.SlottedAbilitiesIndex[ownerId].GetValueOrDefault(slot);
+
+        public int? GetFirstFreeSlot(GameEntity owner)
         {
-            foreach (var abilityEntity in manager.AbilitiesToAffectableRelationship[ownerId])
+            var manager = owner.Manager;
+            var i = Math.Max(DefaultMeleeAttackSlot, DefaultRangedAttackSlot) + 1;
+            foreach (var slottedAbility in manager.SlottedAbilitiesIndex[owner.Id])
             {
-                if (abilityEntity.Ability.Slot == slot)
+                if (slottedAbility.Key < i)
                 {
-                    return abilityEntity;
+                    continue;
                 }
+
+                if (slottedAbility.Key == i)
+                {
+                    i++;
+                    continue;
+                }
+
+                break;
             }
 
-            return null;
+            return i < owner.Physical.Capacity ? i : null;
         }
     }
 }

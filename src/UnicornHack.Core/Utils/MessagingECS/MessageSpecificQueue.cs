@@ -11,10 +11,9 @@ namespace UnicornHack.Utils.MessagingECS
     public class MessageSpecificQueue<TMessage, TState> : IMessageSpecificQueue<TState>
         where TMessage : class, IMessage, new()
     {
-        private readonly SortedList<int, IMessageConsumer<TMessage, TState>> _consumers =
-            new SortedList<int, IMessageConsumer<TMessage, TState>>();
+        private readonly SortedList<int, IMessageConsumer<TMessage, TState>> _consumers = new();
 
-        private readonly Queue<TMessage> _queue = new Queue<TMessage>();
+        private readonly Queue<TMessage> _queue = new();
         private TMessage _pooledMessage;
 
         public void Add(IMessageConsumer<TMessage, TState> consumer, int order)

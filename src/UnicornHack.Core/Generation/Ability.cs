@@ -64,6 +64,7 @@ namespace UnicornHack.Generation
             var manager = effectEntity.Manager;
             var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
             ability.Name = Name;
+            ability.Type = Type;
             ability.Activation = Activation;
             ability.ActivationCondition = ActivationCondition;
             ability.Trigger = Trigger;

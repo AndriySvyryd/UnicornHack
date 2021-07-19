@@ -69,6 +69,7 @@ namespace UnicornHack
                 ApplyEffectMessage.Name, 0);
             queue.Add<EntityAddedMessage<GameEntity>>(EffectApplicationSystem,
                 AffectableEntities.GetEntityAddedMessageName(), 0);
+            // TODO: Only listen for EffectsToContainingAbilityRelationship.GetEntityAddedMessageName()
             queue.Add<EntityAddedMessage<GameEntity>>(EffectApplicationSystem,
                 Effects.GetEntityAddedMessageName(), 0);
             queue.Add<EntityRemovedMessage<GameEntity>>(EffectApplicationSystem,

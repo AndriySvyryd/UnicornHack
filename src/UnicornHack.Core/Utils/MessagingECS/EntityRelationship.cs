@@ -32,7 +32,7 @@ namespace UnicornHack.Utils.MessagingECS
         public IReadOnlyCollection<TEntity> this[int key]
             => Index.TryGetValue(key, out var entities)
                 ? entities
-                : (IReadOnlyCollection<TEntity>)Array.Empty<TEntity>();
+                : Array.Empty<TEntity>();
 
         public override int Count => Index.Values.Sum(v => v.Count);
 

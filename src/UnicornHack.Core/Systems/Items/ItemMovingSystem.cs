@@ -2,6 +2,7 @@
 using System.Linq;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
+using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
@@ -12,7 +13,7 @@ namespace UnicornHack.Systems.Items
 {
     public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<TraveledMessage>, IGameSystem<DiedMessage>
     {
-        public static readonly int DefaultInventorySize = 26;
+        public const int DefaultInventorySize = 10;
 
         public bool CanMoveItem(MoveItemMessage message, GameManager manager)
         {
@@ -35,7 +36,7 @@ namespace UnicornHack.Systems.Items
         public MessageProcessingResult Process(TraveledMessage message, GameManager manager)
         {
             var position = message.Entity.Position;
-            if (message.Entity.Physical.Capacity == null)
+            if (message.Entity.Physical.Capacity == 0)
             {
                 return MessageProcessingResult.ContinueProcessing;
             }
@@ -53,6 +54,8 @@ namespace UnicornHack.Systems.Items
 
             return MessageProcessingResult.ContinueProcessing;
         }
+
+        // TODO: Drop items when Physical.Capacity decreases
 
         public MessageProcessingResult Process(DiedMessage message, GameManager manager)
         {
@@ -112,6 +115,7 @@ namespace UnicornHack.Systems.Items
                     }
 
                     manager.ItemUsageSystem.Process(equipMessage, manager);
+                    manager.Queue.ReturnMessage(equipMessage);
                 }
 
                 GameEntity initialTopContainer = null;
@@ -154,7 +158,7 @@ namespace UnicornHack.Systems.Items
                         }
 
                         item.ContainerId = null;
-                        position = position ?? manager.CreateComponent<PositionComponent>(EntityComponent.Position);
+                        position ??= manager.CreateComponent<PositionComponent>(EntityComponent.Position);
 
                         position.SetLevelPosition(message.TargetLevelEntity.Id, targetPoint);
 
@@ -192,10 +196,12 @@ namespace UnicornHack.Systems.Items
             else
             {
                 var targetContainer = message.TargetContainerEntity.Physical;
-                if (targetContainer.Capacity == null)
+                if (targetContainer.Capacity == 0)
                 {
                     return itemMovedMessage;
                 }
+
+                // TODO: If picking up from floor try to equip it directly
 
                 var leftover = item;
                 if (leftover.MaxStackSize > 1
@@ -216,7 +222,9 @@ namespace UnicornHack.Systems.Items
                 if (leftover != null)
                 {
                     if (targetContainer.Capacity
-                        <= manager.EntityItemsToContainerRelationship[targetContainer.EntityId].Count)
+                        <= manager.EntityItemsToContainerRelationship[targetContainer.EntityId].Count
+                        || targetContainer.Capacity
+                            <= manager.SlottedAbilitiesIndex[targetContainer.EntityId].Count)
                     {
                         return itemMovedMessage;
                     }

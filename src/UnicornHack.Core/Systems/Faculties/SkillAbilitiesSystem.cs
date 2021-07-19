@@ -673,17 +673,18 @@ namespace UnicornHack.Systems.Faculties
             return null;
         }
 
-        public void BuyAbilityLevel(Ability ability, GameEntity playerEntity)
+        public bool BuyAbilityLevel(Ability ability, GameEntity playerEntity)
         {
             var manager = playerEntity.Manager;
             var player = playerEntity.Player;
-
+            var bought = true;
             switch (ability.Type)
             {
                 case AbilityType.Skill:
                     if (player.SkillPoints < ability.Cost)
                     {
-                        return;
+                        bought = false;
+                        break;
                     }
 
                     player.SkillPoints -= ability.Cost;
@@ -691,7 +692,8 @@ namespace UnicornHack.Systems.Faculties
                 case AbilityType.Trait:
                     if (player.TraitPoints < ability.Cost)
                     {
-                        return;
+                        bought = false;
+                        break;
                     }
 
                     player.TraitPoints -= ability.Cost;
@@ -699,18 +701,26 @@ namespace UnicornHack.Systems.Faculties
                 case AbilityType.Mutation:
                     if (player.MutationPoints < ability.Cost)
                     {
-                        return;
+                        bought = false;
+                        break;
                     }
 
                     player.MutationPoints -= ability.Cost;
                     break;
                 default:
-                    throw new InvalidOperationException($"Not enough points to buy ability {ability.Name}");
+                    throw new InvalidOperationException($"Ability {ability.Name} of type {ability.Type} cannot be bought");
+            }
+
+            if (!bought)
+            {
+                throw new InvalidOperationException($"Not enough points to buy ability {ability.Name}");
             }
 
             var effect = manager.EffectApplicationSystem.GetAbilityEffect(
                 playerEntity, ability.Name, EffectApplicationSystem.InnateAbilityName);
             effect.AppliedAmount++;
+
+            return bought;
         }
     }
 }

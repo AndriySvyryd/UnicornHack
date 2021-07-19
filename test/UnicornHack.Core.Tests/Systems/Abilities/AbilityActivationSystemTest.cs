@@ -7,8 +7,6 @@ using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Items;
-using UnicornHack.Systems.Levels;
-using UnicornHack.Systems.Senses;
 using UnicornHack.Systems.Time;
 using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
@@ -36,6 +34,9 @@ namespace UnicornHack.Systems.Abilities
             playerEntity.Position.Heading = Direction.West;
             playerEntity.Player.SkillPoints = 5;
             manager.SkillAbilitiesSystem.BuyAbilityLevel(AbilityData.Conjuration, playerEntity);
+
+            manager.Queue.ProcessQueue(manager);
+
             ItemData.Shortbow.Instantiate(playerEntity);
             var undine = CreatureData.Undine.Instantiate(level, new Point(2, 2));
             var sylph = CreatureData.Sylph.Instantiate(level, new Point(0, 0));
@@ -59,7 +60,7 @@ namespace UnicornHack.Systems.Abilities
             var nymphAbility = manager.AbilitiesToAffectableRelationship[undine.Id]
                 .First(a => (a.Ability.Activation & ActivationType.Slottable) != 0
                     && a.Ability.Template?.Type != AbilityType.DefaultAttack);
-            Assert.Equal(0, nymphAbility.Ability.Slot);
+            Assert.Equal(2, nymphAbility.Ability.Slot);
 
             var attackAbility = manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.TwoHandedRangedAttack.Name)];
 
@@ -126,7 +127,7 @@ namespace UnicornHack.Systems.Abilities
 
             var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = iceShardAbility;
-            setSlotMessage.Slot = 0;
+            setSlotMessage.Slot = 2;
             manager.Enqueue(setSlotMessage);
 
             activateAbilityMessage = ActivateAbilityMessage.Create(manager);
@@ -151,7 +152,7 @@ namespace UnicornHack.Systems.Abilities
             Assert.Equal(1, messageCount);
             Assert.Equal(1100, iceShardAbility.Ability.CooldownTick);
         }
-        
+
         [Fact]
         public void Can_use_toggleable_abilities()
         {
@@ -170,13 +171,17 @@ namespace UnicornHack.Systems.Abilities
                 .Single(a => (a.Ability.Activation & ActivationType.WhileToggled) != 0);
             var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = toggledAbility;
-            setSlotMessage.Slot = 1;
+            setSlotMessage.Slot = 2;
 
             manager.Enqueue(setSlotMessage);
             manager.Queue.ProcessQueue(manager);
 
+            Assert.False(toggledAbility.Ability.IsActive);
+            TestHelper.ActivateAbility(toggledAbility, playerEntity, manager, 2);
+            manager.Queue.ProcessQueue(manager);
+
             Assert.True(toggledAbility.Ability.IsActive);
-            Assert.Equal(1, toggledAbility.Ability.Slot);
+            Assert.Equal(2, toggledAbility.Ability.Slot);
             Assert.Null(toggledAbility.Ability.CooldownTick);
             Assert.Equal(50, playerEntity.Being.ReservedEnergyPoints);
 
@@ -187,7 +192,7 @@ namespace UnicornHack.Systems.Abilities
             manager.Queue.ProcessQueue(manager);
 
             Assert.False(toggledAbility.Ability.IsActive);
-            Assert.Null(toggledAbility.Ability.Slot);
+            Assert.Equal(2, toggledAbility.Ability.Slot);
             Assert.Equal(200, toggledAbility.Ability.CooldownTick);
             Assert.Equal(0, playerEntity.Being.ReservedEnergyPoints);
 
@@ -216,15 +221,11 @@ namespace UnicornHack.Systems.Abilities
 
             Assert.Null(toggledAbility.Ability.Slot);
 
-            setSlotMessage = SetAbilitySlotMessage.Create(manager);
-            setSlotMessage.AbilityEntity = toggledAbility;
-            setSlotMessage.Slot = 1;
-
-            manager.Enqueue(setSlotMessage);
+            TestHelper.ActivateAbility(toggledAbility, playerEntity, manager, 2);
             manager.Queue.ProcessQueue(manager);
 
             Assert.True(toggledAbility.Ability.IsActive);
-            Assert.Equal(1, toggledAbility.Ability.Slot);
+            Assert.Equal(2, toggledAbility.Ability.Slot);
             Assert.Null(toggledAbility.Ability.CooldownTick);
             Assert.Equal(50, playerEntity.Being.ReservedEnergyPoints);
         }

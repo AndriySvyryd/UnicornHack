@@ -344,27 +344,24 @@ namespace UnicornHack.Systems.Actors
                 || (ability.Activation & ActivationType.Slottable) == 0
                 || ability.Slot != null
                 || !ability.IsUsable
-                || ability.Template?.Type == AbilityType.DefaultAttack)
+                || ability.Type == AbilityType.DefaultAttack)
             {
                 return;
             }
 
-            for (var i = 0; i < owner.Being.AbilitySlotCount; i++)
+            var i = manager.AbilitySlottingSystem.GetFirstFreeSlot(owner);
+            if (i == null || !(i < owner.Physical.Capacity - 1))
             {
-                if (manager.SlottedAbilitiesIndex[(owner.Id, i)] != null)
-                {
-                    continue;
-                }
-
-                var setSlotMessage = SetAbilitySlotMessage.Create(manager);
-                setSlotMessage.Slot = i;
-                setSlotMessage.AbilityEntity = ability.Entity;
-
-                manager.AbilitySlottingSystem.Process(setSlotMessage, manager);
-                manager.Queue.ReturnMessage(setSlotMessage);
-
-                break;
+                // leave a slot for items
+                return;
             }
+
+            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
+            setSlotMessage.Slot = i;
+            setSlotMessage.AbilityEntity = ability.Entity;
+
+            manager.AbilitySlottingSystem.Process(setSlotMessage, manager);
+            manager.Queue.ReturnMessage(setSlotMessage);
         }
     }
 }

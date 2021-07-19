@@ -9,7 +9,6 @@ using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
-using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Senses;
 using UnicornHack.Utils.DataLoading;
@@ -65,7 +64,7 @@ namespace UnicornHack.Generation
         private ExtremityType? _backExtremities;
         private RespirationType? _respirationType;
         private LocomotionType? _locomotionType;
-        private int? _inventorySize;
+        private int? _slotCapacity;
         private int? _eyeCount;
         private int? _noiseLevel;
         private int? _visibilityLevel;
@@ -382,10 +381,10 @@ namespace UnicornHack.Generation
             set => _locomotionType = value;
         }
 
-        public int? InventorySize
+        public int? SlotCapacity
         {
-            get => _inventorySize ?? BaseCreature?.InventorySize;
-            set => _inventorySize = value;
+            get => _slotCapacity ?? BaseCreature?.SlotCapacity;
+            set => _slotCapacity = value;
         }
 
         public int? EyeCount
@@ -487,140 +486,121 @@ namespace UnicornHack.Generation
         public GameEntity Instantiate(LevelComponent level, Point cell)
         {
             var manager = level.Entity.Manager;
-            using (var creatureEntityReference = manager.CreateEntity())
+            using var creatureEntityReference = manager.CreateEntity();
+            var creatureEntity = creatureEntityReference.Referenced;
+
+            var ai = manager.CreateComponent<AIComponent>(EntityComponent.AI);
+            ai.NextActionTick = manager.Game.CurrentTick;
+            ai.Behavior = Behavior;
+            if (Noise != null)
             {
-                var creatureEntity = creatureEntityReference.Referenced;
-
-                var ai = manager.CreateComponent<AIComponent>(EntityComponent.AI);
-                ai.NextActionTick = manager.Game.CurrentTick;
-                ai.Behavior = Behavior;
-                if (Noise != null)
-                {
-                    ai.Noise = Noise.Value;
-                }
-
-                creatureEntity.AI = ai;
-
-                var being = manager.CreateComponent<BeingComponent>(EntityComponent.Being);
-                being.Sex = Sex ?? (level.GenerationRandom.Roll(1, 2) > 1
-                                ? Primitives.Sex.Female
-                                : Primitives.Sex.Male);
-
-                being.ExperiencePoints = XP;
-
-                creatureEntity.Being = being;
-
-                var sensor = manager.CreateComponent<SensorComponent>(EntityComponent.Sensor);
-
-                creatureEntity.Sensor = sensor;
-
-                var physical = manager.CreateComponent<PhysicalComponent>(EntityComponent.Physical);
-                physical.Material = Material ?? Primitives.Material.Flesh;
-                physical.Capacity = InventorySize ?? ItemMovingSystem.DefaultInventorySize;
-
-                creatureEntity.Physical = physical;
-
-                var position = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
-                position.LevelId = level.EntityId;
-                position.LevelCell = cell;
-                position.Heading = (Direction)level.GenerationRandom.Next(7);
-
-                creatureEntity.Position = position;
-
-                using (var appliedEffectEntityReference = manager.CreateEntity())
-                {
-                    var appliedEffectEntity = appliedEffectEntityReference.Referenced;
-                    var appliedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                    appliedEffect.Duration = EffectDuration.Infinite;
-                    appliedEffect.EffectType = EffectType.ChangeRace;
-
-                    appliedEffectEntity.Effect = appliedEffect;
-
-                    var race = AddRace(appliedEffectEntity);
-                    race.Level = InitialLevel;
-
-                    using (var abilityEntityReference = manager.CreateEntity())
-                    {
-                        var abilityEntity = abilityEntityReference.Referenced;
-
-                        var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                        effect.EffectType = EffectType.AddAbility;
-                        effect.Duration = EffectDuration.Infinite;
-                        effect.ContainingAbilityId = appliedEffectEntity.Id;
-
-                        abilityEntity.Effect = effect;
-
-                        var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
-                        ability.Name = EffectApplicationSystem.InnateAbilityName;
-                        ability.Activation = ActivationType.Always;
-                        ability.SuccessCondition = AbilitySuccessCondition.Always;
-
-                        abilityEntity.Ability = ability;
-
-                        CreatePropertyEffect(
-                            nameof(PositionComponent.MovementDelay), MovementDelay, abilityEntity.Id, manager);
-                        CreatePropertyEffect(
-                            nameof(PositionComponent.TurningDelay), TurningDelay, abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(PhysicalComponent.Size), Size, abilityEntity.Id, manager,
-                            ValueCombinationFunction.MeanRoundDown);
-                        CreatePropertyEffect(nameof(PhysicalComponent.Weight), Weight, abilityEntity.Id, manager,
-                            ValueCombinationFunction.MeanRoundDown);
-                        CreatePropertyEffect(nameof(BeingComponent.Perception), Perception, abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Might), Might, abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Speed), Speed, abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Focus), Focus, abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.EnergyRegeneration), EnergyRegeneration,
-                            abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Regeneration), Regeneration, abilityEntity.Id,
-                            manager);
-                        CreatePropertyEffect(nameof(BeingComponent.HitPointMaximum), BonusHitPoints, abilityEntity.Id,
-                            manager);
-                        CreatePropertyEffect(nameof(BeingComponent.EnergyPointMaximum), BonusEnergyPoints, abilityEntity.Id,
-                            manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Accuracy), Accuracy, abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Evasion), Evasion, abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Deflection), Deflection, abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.Armor), Armor, abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.PhysicalResistance), PhysicalResistance,
-                            abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.MagicResistance), MagicResistance, abilityEntity.Id,
-                            manager);
-                        CreatePropertyEffect(nameof(BeingComponent.AcidResistance), AcidResistance, abilityEntity.Id,
-                            manager);
-                        CreatePropertyEffect(nameof(BeingComponent.BleedingResistance), BleedingResistance,
-                            abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.ColdResistance), ColdResistance, abilityEntity.Id,
-                            manager);
-                        CreatePropertyEffect(nameof(BeingComponent.ElectricityResistance), ElectricityResistance,
-                            abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.FireResistance), FireResistance, abilityEntity.Id,
-                            manager);
-                        CreatePropertyEffect(nameof(BeingComponent.LightResistance), LightResistance,
-                            abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.PsychicResistance), PsychicResistance,
-                            abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.SonicResistance), SonicResistance,
-                            abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.StunResistance), StunResistance,
-                            abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.ToxinResistance), ToxinResistance,
-                            abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.VoidResistance), VoidResistance,
-                            abilityEntity.Id, manager);
-                        CreatePropertyEffect(nameof(BeingComponent.WaterResistance), WaterResistance, abilityEntity.Id,
-                            manager);
-                        CreatePropertyEffect(nameof(BeingComponent.UpperExtremities), (int?)UpperExtremities,
-                            abilityEntity.Id, manager);
-
-                        // TODO: Populate other properties
-                    }
-
-                    appliedEffectEntity.Ability.OwnerEntity = creatureEntity;
-                    appliedEffect.AffectedEntityId = creatureEntity.Id;
-                }
-
-                return creatureEntity;
+                ai.Noise = Noise.Value;
             }
+
+            creatureEntity.AI = ai;
+
+            var being = manager.CreateComponent<BeingComponent>(EntityComponent.Being);
+            being.Sex = Sex ?? (level.GenerationRandom.Roll(1, 2) > 1
+                ? Primitives.Sex.Female
+                : Primitives.Sex.Male);
+
+            being.ExperiencePoints = XP;
+            creatureEntity.Being = being;
+
+            var sensor = manager.CreateComponent<SensorComponent>(EntityComponent.Sensor);
+            creatureEntity.Sensor = sensor;
+
+            var physical = manager.CreateComponent<PhysicalComponent>(EntityComponent.Physical);
+            creatureEntity.Physical = physical;
+
+            var position = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
+            position.LevelId = level.EntityId;
+            position.LevelCell = cell;
+            position.Heading = (Direction)level.GenerationRandom.Next(7);
+            creatureEntity.Position = position;
+
+            using var innateAbilityReference = manager.CreateEntity();
+            var innateAbilityEntity = innateAbilityReference.Referenced;
+
+            var innateEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+            innateEffect.EffectType = EffectType.AddAbility;
+            innateEffect.Duration = EffectDuration.Infinite;
+
+            innateAbilityEntity.Effect = innateEffect;
+
+            var innateAbility = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+            innateAbility.Name = EffectApplicationSystem.InnateAbilityName;
+            innateAbility.Activation = ActivationType.Always;
+            innateAbility.SuccessCondition = AbilitySuccessCondition.Always;
+
+            innateAbilityEntity.Ability = innateAbility;
+
+            CreatePropertyEffect(
+                nameof(PositionComponent.MovementDelay), MovementDelay, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(
+                nameof(PositionComponent.TurningDelay), TurningDelay, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(PhysicalComponent.Size), Size, innateAbilityEntity.Id, manager,
+                ValueCombinationFunction.MeanRoundDown);
+            CreatePropertyEffect(nameof(PhysicalComponent.Weight), Weight, innateAbilityEntity.Id, manager,
+                ValueCombinationFunction.MeanRoundDown);
+            CreatePropertyEffect(nameof(PhysicalComponent.Material), (int?)(Material ?? Primitives.Material.Flesh),
+                innateAbilityEntity.Id, manager, ValueCombinationFunction.Override);
+            CreatePropertyEffect(nameof(PhysicalComponent.Capacity),
+                (SlotCapacity ?? AbilitySlottingSystem.DefaultSlotCapacity) + 2, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.Perception), Perception, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.Might), Might, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.Speed), Speed, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.Focus), Focus, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.EnergyRegeneration), EnergyRegeneration, innateAbilityEntity.Id,
+                manager);
+            CreatePropertyEffect(nameof(BeingComponent.Regeneration), Regeneration, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.HitPointMaximum), BonusHitPoints, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.EnergyPointMaximum), BonusEnergyPoints, innateAbilityEntity.Id,
+                manager);
+            CreatePropertyEffect(nameof(BeingComponent.Accuracy), Accuracy, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.Evasion), Evasion, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.Deflection), Deflection, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.Armor), Armor, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.PhysicalResistance), PhysicalResistance, innateAbilityEntity.Id,
+                manager);
+            CreatePropertyEffect(nameof(BeingComponent.MagicResistance), MagicResistance, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.AcidResistance), AcidResistance, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.BleedingResistance), BleedingResistance, innateAbilityEntity.Id,
+                manager);
+            CreatePropertyEffect(nameof(BeingComponent.ColdResistance), ColdResistance, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.ElectricityResistance), ElectricityResistance, innateAbilityEntity.Id,
+                manager);
+            CreatePropertyEffect(nameof(BeingComponent.FireResistance), FireResistance, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.LightResistance), LightResistance, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.PsychicResistance), PsychicResistance, innateAbilityEntity.Id,
+                manager);
+            CreatePropertyEffect(nameof(BeingComponent.SonicResistance), SonicResistance, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.StunResistance), StunResistance, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.ToxinResistance), ToxinResistance, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.VoidResistance), VoidResistance, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.WaterResistance), WaterResistance, innateAbilityEntity.Id, manager);
+            CreatePropertyEffect(nameof(BeingComponent.UpperExtremities), (int?)UpperExtremities, innateAbilityEntity.Id,
+                manager);
+
+            // TODO: Populate other properties
+
+            innateAbility.OwnerEntity = creatureEntity;
+            innateEffect.AffectedEntityId = creatureEntity.Id;
+
+            using var raceEffectEntityReference = manager.CreateEntity();
+            var raceEffectEntity = raceEffectEntityReference.Referenced;
+            var raceEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+            raceEffect.EffectType = EffectType.ChangeRace;
+            raceEffect.Duration = EffectDuration.Infinite;
+
+            raceEffectEntity.Effect = raceEffect;
+
+            var race = AddToAppliedEffect(raceEffectEntity, creatureEntity);
+            race.Level = InitialLevel;
+
+            raceEffect.AffectedEntityId = creatureEntity.Id;
+
+            return creatureEntity;
         }
 
         private Func<string, int, int, float> _weightFunction;
@@ -751,7 +731,7 @@ namespace UnicornHack.Generation
                 {nameof(BackExtremities), (o, v) => (ExtremityType?)v != o.BaseCreature?.BackExtremities},
                 {nameof(RespirationType), (o, v) => (RespirationType?)v != o.BaseCreature?.RespirationType},
                 {nameof(LocomotionType), (o, v) => (LocomotionType?)v != o.BaseCreature?.LocomotionType},
-                {nameof(InventorySize), (o, v) => (int?)v != o.BaseCreature?.InventorySize},
+                {nameof(SlotCapacity), (o, v) => (int?)v != o.BaseCreature?.SlotCapacity},
                 {nameof(EyeCount), (o, v) => (int?)v != o.BaseCreature?.EyeCount},
                 {nameof(NoiseLevel), (o, v) => (int?)v != o.BaseCreature?.NoiseLevel},
                 {nameof(VisibilityLevel), (o, v) => (int?)v != o.BaseCreature?.VisibilityLevel},

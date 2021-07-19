@@ -9,12 +9,13 @@ namespace UnicornHack.Systems.Beings
         private Material _material;
         private int _weight;
         private int _size;
-        private int? _capacity;
+        private int _capacity;
         private bool _infravisible;
 
         public PhysicalComponent()
             => ComponentId = (int)EntityComponent.Physical;
 
+        [Property]
         public Material Material
         {
             get => _material;
@@ -37,7 +38,8 @@ namespace UnicornHack.Systems.Beings
             set => SetWithNotify(value, ref _size);
         }
 
-        public int? Capacity
+        [Property(MinValue = 0)]
+        public int Capacity
         {
             get => _capacity;
             set => SetWithNotify(value, ref _capacity);

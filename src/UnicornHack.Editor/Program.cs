@@ -38,8 +38,17 @@ namespace UnicornHack.Editor
             });
             Serialize(Item.Loader, i =>
             {
+                var activatedAbilityFound = false;
                 foreach (var ability in i.Abilities)
                 {
+                    if ((ability.Activation & ActivationType.Slottable) != 0)
+                    {
+                        if (activatedAbilityFound)
+                        {
+                            throw new InvalidOperationException($"Item {i.Name} has more than 1 activated ability.");
+                        }
+                        activatedAbilityFound = true;
+                    }
                     Transform(ability);
                 }
 

@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using CSharpScriptSerialization;
 using UnicornHack.Data.Players;
 using UnicornHack.Primitives;
+using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
-using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Senses;
 using UnicornHack.Utils.DataLoading;
@@ -19,15 +19,6 @@ namespace UnicornHack.Generation
         public int SkillPointRate { get; set; }
         public int TraitPointRate { get; set; }
         public int MutationPointRate { get; set; }
-
-        public RaceComponent AddToAppliedEffect(GameEntity appliedEffectEntity, int beingId)
-        {
-            var race = AddRace(appliedEffectEntity);
-
-            appliedEffectEntity.Ability.OwnerId = beingId;
-
-            return race;
-        }
 
         public static GameEntity InstantiatePlayer(string name, Sex sex, GameEntity levelEntity, Point cell)
         {
@@ -48,13 +39,9 @@ namespace UnicornHack.Generation
                 playerEntity.Being = being;
 
                 var sensor = manager.CreateComponent<SensorComponent>(EntityComponent.Sensor);
-
                 playerEntity.Sensor = sensor;
 
                 var physical = manager.CreateComponent<PhysicalComponent>(EntityComponent.Physical);
-                physical.Material = Material.Flesh;
-                physical.Capacity = ItemMovingSystem.DefaultInventorySize;
-
                 playerEntity.Physical = physical;
 
                 var position = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
@@ -64,18 +51,44 @@ namespace UnicornHack.Generation
 
                 playerEntity.Position = position;
 
+                var defaultRace = PlayerRaceData.Human;
+
+                using (var innateAbilityReference = manager.CreateEntity())
+                {
+                    var innateAbilityEntity = innateAbilityReference.Referenced;
+                    var innateEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+                    innateEffect.EffectType = EffectType.AddAbility;
+                    innateEffect.Duration = EffectDuration.Infinite;
+
+                    innateAbilityEntity.Effect = innateEffect;
+
+                    var innateAbility = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+                    innateAbility.Name = EffectApplicationSystem.InnateAbilityName;
+                    innateAbility.Activation = ActivationType.Always;
+                    innateAbility.SuccessCondition = AbilitySuccessCondition.Always;
+
+                    innateAbilityEntity.Ability = innateAbility;
+
+                    defaultRace.CreatePropertyEffect(nameof(PhysicalComponent.Material), (int?)Material.Flesh,
+                        innateAbilityEntity.Id, manager, ValueCombinationFunction.Override);
+                    defaultRace.CreatePropertyEffect(nameof(PhysicalComponent.Capacity),
+                        AbilitySlottingSystem.DefaultSlotCapacity + 2, innateAbilityEntity.Id, manager);
+
+                    innateAbility.OwnerEntity = playerEntity;
+                    innateEffect.AffectedEntityId = playerEntity.Id;
+                }
+
                 using (var raceEntityReference = manager.CreateEntity())
                 {
                     var raceEffectEntity = raceEntityReference.Referenced;
                     var raceEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                    raceEffect.Duration = EffectDuration.Infinite;
                     raceEffect.EffectType = EffectType.ChangeRace;
+                    raceEffect.Duration = EffectDuration.Infinite;
 
                     raceEffectEntity.Effect = raceEffect;
 
-                    PlayerRaceData.Human.AddRace(raceEffectEntity);
+                    defaultRace.AddToAppliedEffect(raceEffectEntity, playerEntity);
 
-                    raceEffectEntity.Ability.OwnerEntity = playerEntity;
                     raceEffect.AffectedEntityId = playerEntity.Id;
                 }
 

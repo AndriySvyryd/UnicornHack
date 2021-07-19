@@ -19,7 +19,7 @@ namespace UnicornHack
             BeingToPrimaryNaturalWeaponRelationship = new UniqueEntityRelationship<GameEntity>(
                 nameof(BeingToPrimaryNaturalWeaponRelationship),
                 Beings,
-                EntityItems,
+                ContainedItems,
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((BeingComponent)component).PrimaryNaturalWeaponId,
                     (int)EntityComponent.Being),
@@ -30,7 +30,7 @@ namespace UnicornHack
             BeingToSecondaryNaturalWeaponRelationship = new UniqueEntityRelationship<GameEntity>(
                 nameof(BeingToSecondaryNaturalWeaponRelationship),
                 Beings,
-                EntityItems,
+                ContainedItems,
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((BeingComponent)component).SecondaryNaturalWeaponId,
                     (int)EntityComponent.Being),

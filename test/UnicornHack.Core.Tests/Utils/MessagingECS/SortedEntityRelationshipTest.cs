@@ -170,7 +170,7 @@ namespace UnicornHack.Utils.MessagingECS
             }
 
             Assert.Equal(1, manager.Beings.Count);
-            Assert.Equal(0, manager.EntityItems.Count);
+            Assert.Equal(0, manager.ContainedItems.Count);
 
             manager.Queue.ProcessQueue(manager);
 

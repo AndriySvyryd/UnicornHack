@@ -11,7 +11,12 @@ import { IGameContext } from './Game';
 export const AbilitySelectionDialog = observer((props: IAbilitySelectionProps) => {
     const { data, context } = props;
     return <Dialog context={context} show={computed(() => data.abilitySlot != null)} className="abilitySlotSelection"
-        title={computed(() => "Select ability for slot " + data.abilitySlot)}
+        title={computed(() => 'Select ability for ' +
+            (data.abilitySlot === 0
+                ? 'default melee attack'
+                : data.abilitySlot === 1
+                    ? 'default ranged attack'
+                    : "slot " + (data.abilitySlot ?? 0 - 1)))}
     >
         <AbilitySelection {...props} />
     </Dialog>;
@@ -62,7 +67,7 @@ class AbilitySelectionLine extends React.PureComponent<IAbilityLineProps, {}> {
             const abilitySlot = this.props.ability.slot;
 
             if (abilitySlot !== null) {
-                name = `[${(abilitySlot + 1)}] ` + name;
+                name = `[${(abilitySlot - 1)}] ` + name;
             }
 
             if (abilitySlot == this.props.slot) {
@@ -70,7 +75,7 @@ class AbilitySelectionLine extends React.PureComponent<IAbilityLineProps, {}> {
             }
         }
 
-        return <li><a className="contextLink" tabIndex={(100 + (this.props.ability?.id ?? 0))} role="button" 
+        return <li><a className="contextLink" tabIndex={(100 + (this.props.ability?.id ?? 0))} role="button"
             onClick={this.setAbilitySlot} onKeyPress={this.setAbilitySlot} onContextMenu={this.showAttributes}
         >
             {name}

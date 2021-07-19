@@ -356,13 +356,11 @@ namespace UnicornHack.Data
                 });
             });
 
-            modelBuilder.Entity<ItemComponent>(eb => {
+            modelBuilder.Entity<ItemComponent>(eb =>
+            {
+                eb.Ignore(c => c.ContainerEntity);
                 eb.Property("_tracked");
-                eb.HasKey(c => new
-                {
-                    c.GameId,
-                    c.EntityId
-                });
+                eb.HasKey(c => new {c.GameId, c.EntityId});
             });
 
             modelBuilder.Entity<KnowledgeComponent>(eb =>

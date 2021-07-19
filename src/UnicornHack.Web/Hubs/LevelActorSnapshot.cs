@@ -348,7 +348,7 @@ namespace UnicornHack.Hubs
                     return result;
                 case ActorAction.MoveOneCell:
                 case ActorAction.ChangeHeading:
-                    var direction = (Direction)ai.NextActionTarget;                    
+                    var direction = (Direction)ai.NextActionTarget;
                     var action = ai.NextAction == ActorAction.MoveOneCell ? "Move " : "Turn ";
                     result.Add(action + context.Services.Language.GetString(direction, abbreviate: true));
                     result.Add(ai.Entity.Position.LevelCell.Translate(direction.AsVector()).ToInt32());
@@ -483,7 +483,7 @@ namespace UnicornHack.Hubs
                                  && a.Ability.Activation != ActivationType.OnMeleeAttack
                                  && a.Ability.Activation != ActivationType.OnRangedAttack)
                                 || (isPlayer
-                                    && a.Ability.Template?.Type == AbilityType.DefaultAttack)))
+                                    && a.Ability.Type == AbilityType.DefaultAttack)))
                 .Select(a => AbilitySnapshot.SerializeAttributes(a, actorEntity, context)).ToList());
 
             return result;

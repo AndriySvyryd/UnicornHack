@@ -91,7 +91,7 @@ namespace UnicornHack.Hubs
 
                         if (slot == AbilitySlottingSystem.DefaultMeleeAttackSlot)
                         {
-                            if (ability.Template?.Type == AbilityType.DefaultAttack
+                            if (ability.Type == AbilityType.DefaultAttack
                                 && ((WieldingAbility)ability.Template).ItemType == ItemType.WeaponMelee)
                             {
                                 abilities.Add(AbilitySnapshot.Serialize(slottableAbilityEntity, null, context));
@@ -99,14 +99,14 @@ namespace UnicornHack.Hubs
                         }
                         else if (slot == AbilitySlottingSystem.DefaultRangedAttackSlot)
                         {
-                            if (ability.Template?.Type == AbilityType.DefaultAttack
+                            if (ability.Type == AbilityType.DefaultAttack
                                 && ((WieldingAbility)ability.Template).ItemType == ItemType.WeaponRanged)
                             {
                                 abilities.Add(AbilitySnapshot.Serialize(slottableAbilityEntity, null, context));
                             }
                         }
                         else if ((ability.Activation & ActivationType.Slottable) != 0
-                                 && ability.Template?.Type != AbilityType.DefaultAttack)
+                                 && ability.Type != AbilityType.DefaultAttack)
                         {
                             abilities.Add(AbilitySnapshot.Serialize(slottableAbilityEntity, null, context));
                         }
@@ -387,6 +387,8 @@ namespace UnicornHack.Hubs
             // TODO: Set correct sex
             var playerEntity = PlayerRace.InstantiatePlayer(
                 name, Sex.Male, initialLevelEntity, initialLevelConnection.TargetLevelCell.Value);
+
+            manager.Queue.ProcessQueue(manager);
 
             ItemData.FlaskOfHealing.Instantiate(playerEntity);
             ItemData.MailArmor.Instantiate(playerEntity);

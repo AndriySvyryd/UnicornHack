@@ -7,6 +7,7 @@ namespace UnicornHack.Primitives
     {
         Default = 0,
         DefaultAttack,
+        Item,
         Skill,
         Trait,
         Mutation

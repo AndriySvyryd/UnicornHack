@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnicornHack.Data.Abilities;
+using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Items;
+using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.DataStructures;
 using Xunit;
 
@@ -47,15 +51,12 @@ namespace UnicornHack.Systems.Abilities
                 bleedingEffectEntity.Effect = effect;
             }
 
-            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
-            setSlotMessage.AbilityEntity = toggledAbility;
-            setSlotMessage.Slot = 0;
-            manager.Enqueue(setSlotMessage);
+            TestHelper.ActivateAbility(toggledAbility, playerEntity, manager, 2);
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Equal(0, toggledAbility.Ability.Slot);
+            Assert.Equal(2, toggledAbility.Ability.Slot);
             Assert.True(toggledAbility.Ability.IsActive);
-            Assert.Same(toggledAbility, manager.SlottedAbilitiesIndex[(playerEntity.Id, 0)]);
+            Assert.Same(toggledAbility, manager.SlottedAbilitiesIndex[playerEntity.Id][2]);
             Assert.Equal(10, playerEntity.Being.BleedingResistance);
 
             GameEntity targetedAbility;
@@ -83,31 +84,31 @@ namespace UnicornHack.Systems.Abilities
                 bleedingEffectEntity.Effect = effect;
             }
 
-            setSlotMessage = SetAbilitySlotMessage.Create(manager);
+            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = targetedAbility;
-            setSlotMessage.Slot = 0;
+            setSlotMessage.Slot = 2;
             manager.Enqueue(setSlotMessage);
             manager.Queue.ProcessQueue(manager);
 
             Assert.Null(toggledAbility.Ability.Slot);
             Assert.False(toggledAbility.Ability.IsActive);
-            Assert.Equal(0, targetedAbility.Ability.Slot);
+            Assert.Equal(2, targetedAbility.Ability.Slot);
             Assert.Equal(0, playerEntity.Being.BleedingResistance);
 
             setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.OwnerEntity = playerEntity;
-            setSlotMessage.Slot = 0;
+            setSlotMessage.Slot = 2;
             manager.Enqueue(setSlotMessage);
             manager.Queue.ProcessQueue(manager);
             Assert.Null(targetedAbility.Ability.Slot);
-            Assert.Null(manager.SlottedAbilitiesIndex[(playerEntity.Id, 0)]);
+            Assert.False(manager.SlottedAbilitiesIndex[playerEntity.Id].ContainsKey(2));
 
             setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = targetedAbility;
-            setSlotMessage.Slot = 0;
+            setSlotMessage.Slot = 2;
             manager.Enqueue(setSlotMessage);
             manager.Queue.ProcessQueue(manager);
-            Assert.Equal(0, targetedAbility.Ability.Slot);
+            Assert.Equal(2, targetedAbility.Ability.Slot);
 
             targetedAbility.Ability.IsUsable = false;
             manager.Queue.ProcessQueue(manager);
@@ -115,7 +116,7 @@ namespace UnicornHack.Systems.Abilities
 
             setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = targetedAbility;
-            setSlotMessage.Slot = 0;
+            setSlotMessage.Slot = 2;
             Assert.Throws<InvalidOperationException>(() => manager.AbilitySlottingSystem.Process(setSlotMessage, manager));
             Assert.Null(targetedAbility.Ability.Slot);
 
@@ -127,7 +128,7 @@ namespace UnicornHack.Systems.Abilities
 
             var attackAbility = manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.DoubleMeleeAttack.Name)];
             setSlotMessage.AbilityEntity = attackAbility;
-            setSlotMessage.Slot = 0;
+            setSlotMessage.Slot = 2;
             Assert.Throws<InvalidOperationException>(() => manager.AbilitySlottingSystem.Process(setSlotMessage, manager));
 
             setSlotMessage.Slot = -3;
@@ -141,21 +142,90 @@ namespace UnicornHack.Systems.Abilities
                 .First(a => (a.Ability.Activation & ActivationType.Always) != 0);
             setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = alwaysAbility;
-            setSlotMessage.Slot = 0;
+            setSlotMessage.Slot = 2;
             Assert.Throws<InvalidOperationException>(() => manager.AbilitySlottingSystem.Process(setSlotMessage, manager));
             Assert.Null(alwaysAbility.Ability.Slot);
 
             setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = targetedAbility;
-            setSlotMessage.Slot = playerEntity.Being.AbilitySlotCount - 1;
+            setSlotMessage.Slot = playerEntity.Physical.Capacity - 1;
             manager.Enqueue(setSlotMessage);
             manager.Queue.ProcessQueue(manager);
-            Assert.True(playerEntity.Being.AbilitySlotCount > 1);
-            Assert.Equal(playerEntity.Being.AbilitySlotCount - 1, targetedAbility.Ability.Slot);
+            Assert.True(playerEntity.Physical.Capacity > 1);
+            Assert.Equal(playerEntity.Physical.Capacity - 1, targetedAbility.Ability.Slot);
 
-            playerEntity.Being.AbilitySlotCount = 1;
+            playerEntity.Physical.Capacity = 3;
             manager.Queue.ProcessQueue(manager);
             Assert.Null(targetedAbility.Ability.Slot);
+        }
+
+        [Fact]
+        public void Items_are_stored_in_slots()
+        {
+            var level = TestHelper.BuildLevel(@"
+...
+...
+..#");
+
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            ItemData.GoldCoin.Instantiate(level, new Point(1, 0));
+            var manager = playerEntity.Manager;
+
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Null(manager.SlottedAbilitiesIndex[playerEntity.Id].GetValueOrDefault(2));
+
+            var travelMessage = TravelMessage.Create(manager);
+            travelMessage.ActorEntity = playerEntity;
+            travelMessage.TargetHeading = Direction.East;
+            travelMessage.TargetCell = new Point(1, 0);
+            manager.Enqueue(travelMessage);
+
+            manager.Queue.ProcessQueue(manager);
+
+            var coinItem = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single().Item;
+            var dropCoinAbilityEntity = manager.SlottedAbilitiesIndex[playerEntity.Id].GetValueOrDefault(2);
+
+            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
+            setSlotMessage.AbilityEntity = dropCoinAbilityEntity;
+            manager.Enqueue(setSlotMessage);
+
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Null(coinItem.ContainerId);
+            Assert.Equal(new Point(1, 0), coinItem.Entity.Position.LevelCell);
+            Assert.Null(manager.SlottedAbilitiesIndex[playerEntity.Id].GetValueOrDefault(2));
+
+            var moveItemMessage = MoveItemMessage.Create(manager);
+            moveItemMessage.ItemEntity = coinItem.Entity;
+            moveItemMessage.TargetContainerEntity = playerEntity;
+            manager.Enqueue(moveItemMessage);
+
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(playerEntity.Id, coinItem.ContainerId);
+
+            dropCoinAbilityEntity = manager.SlottedAbilitiesIndex[playerEntity.Id].GetValueOrDefault(2);
+            TestHelper.ActivateAbility(dropCoinAbilityEntity, playerEntity, manager);
+
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Null(coinItem.ContainerId);
+            Assert.Equal(new Point(1, 0), coinItem.Entity.Position.LevelCell);
+
+            moveItemMessage = MoveItemMessage.Create(manager);
+            moveItemMessage.ItemEntity = coinItem.Entity;
+            moveItemMessage.TargetContainerEntity = playerEntity;
+            manager.Enqueue(moveItemMessage);
+
+            manager.Queue.ProcessQueue(manager);
+
+            playerEntity.Physical.Capacity = 2;
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Null(coinItem.ContainerId);
+            Assert.Equal(new Point(1, 0), coinItem.Entity.Position.LevelCell);
+            Assert.Null(manager.SlottedAbilitiesIndex[playerEntity.Id].GetValueOrDefault(2));
         }
     }
 }

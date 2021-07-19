@@ -133,6 +133,7 @@ namespace UnicornHack.Systems.Actors
                     equipMessage.ActorEntity = playerEntity;
                     equipMessage.ItemEntity = itemToEquip;
                     equipMessage.Slot = slot;
+                    equipMessage.Force = true;
 
                     manager.Enqueue(equipMessage);
                     break;

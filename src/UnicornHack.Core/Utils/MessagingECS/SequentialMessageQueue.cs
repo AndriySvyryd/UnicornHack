@@ -9,11 +9,10 @@ namespace UnicornHack.Utils.MessagingECS
     public class SequentialMessageQueue<TState> : IMessageQueue
     {
         private bool _suspended;
-        private readonly Queue<string> _mainQueue = new Queue<string>(512);
-        private readonly List<string> _secondaryQueue = new List<string>();
+        private readonly Queue<string> _mainQueue = new(512);
+        private readonly List<string> _secondaryQueue = new();
 
-        private readonly Dictionary<string, IMessageSpecificQueue<TState>> _namedQueues =
-            new Dictionary<string, IMessageSpecificQueue<TState>>();
+        private readonly Dictionary<string, IMessageSpecificQueue<TState>> _namedQueues = new();
 
         public int QueuedCount => _mainQueue.Count;
 

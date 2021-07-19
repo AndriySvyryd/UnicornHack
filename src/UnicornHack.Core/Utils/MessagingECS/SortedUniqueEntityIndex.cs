@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace UnicornHack.Utils.MessagingECS
 {
-    public class SortedUniqueEntityIndex<TEntity, TKey> : EntityIndexBase<TEntity, TKey>, IEnumerable<TEntity>
+    public class SortedUniqueEntityIndex<TEntity, TKey> : EntityIndexBase<TEntity, TKey>
         where TEntity : Entity
     {
         public SortedUniqueEntityIndex(

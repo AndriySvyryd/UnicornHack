@@ -153,8 +153,22 @@ namespace UnicornHack.Generation
 
                 if (!manager.ItemMovingSystem.CanMoveItem(moveMessage, manager))
                 {
-                    manager.ReturnMessage(moveMessage);
-                    return false;
+                    var position = container.Position;
+                    if (position != null)
+                    {
+                        moveMessage.TargetLevelEntity = position.LevelEntity;
+                        moveMessage.TargetCell = position.LevelCell;
+                        if (!manager.ItemMovingSystem.CanMoveItem(moveMessage, manager))
+                        {
+                            manager.ReturnMessage(moveMessage);
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        manager.ReturnMessage(moveMessage);
+                        return false;
+                    }
                 }
 
                 itemEntityReference.Dispose();
@@ -222,41 +236,46 @@ namespace UnicornHack.Generation
             itemEntity.Item = item;
 
             var physical = manager.CreateComponent<PhysicalComponent>(EntityComponent.Physical);
-            physical.Material = Material ?? Primitives.Material.Default;
-            physical.Weight = Weight ?? 0;
-            physical.Size = 0;
 
+            var capacity = 0;
             if ((item.Type & ItemType.Container) != 0)
             {
-                physical.Capacity = Capacity ?? 1;
+                capacity = Capacity ?? ItemMovingSystem.DefaultInventorySize;
             }
             else if (StackSize > 1)
             {
-                physical.Capacity = StackSize - 1;
+                capacity = StackSize.Value - 1;
             }
 
             itemEntity.Physical = physical;
 
-            using (var appliedEffectEntityReference = manager.CreateEntity())
+            using (var innateAbilityReference = manager.CreateEntity())
             {
-                var appliedEffectEntity = appliedEffectEntityReference.Referenced;
+                var innateAbilityEntity = innateAbilityReference.Referenced;
                 var appliedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                 appliedEffect.EffectType = EffectType.AddAbility;
                 appliedEffect.Duration = EffectDuration.Infinite;
 
-                appliedEffectEntity.Effect = appliedEffect;
+                innateAbilityEntity.Effect = appliedEffect;
 
                 var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
                 ability.Name = EffectApplicationSystem.InnateAbilityName;
                 ability.Activation = ActivationType.Always;
                 ability.SuccessCondition = AbilitySuccessCondition.Always;
 
-                appliedEffectEntity.Ability = ability;
+                innateAbilityEntity.Ability = ability;
 
-                ability.OwnerId = itemEntity.Id;
+                CreatePropertyEffect(nameof(PhysicalComponent.Weight), Weight ?? 0, innateAbilityEntity.Id, manager,
+                    ValueCombinationFunction.MeanRoundDown);
+                CreatePropertyEffect(nameof(PhysicalComponent.Material), (int?)(Material ?? Primitives.Material.Default),
+                    innateAbilityEntity.Id, manager, ValueCombinationFunction.Override);
+                CreatePropertyEffect(nameof(PhysicalComponent.Capacity), capacity, innateAbilityEntity.Id, manager);
+
+                ability.OwnerEntity = itemEntity;
                 appliedEffect.AffectedEntityId = itemEntity.Id;
             }
 
+            var activateAdded = false;
             foreach (var abilityDefinition in Abilities)
             {
                 using (var abilityEntityReference = manager.CreateEntity())
@@ -275,67 +294,106 @@ namespace UnicornHack.Generation
 
                     if ((abilityDefinition.Activation & ActivationType.Slottable) != 0)
                     {
+                        if (abilityDefinition.ItemCondition == ActivationType.Default
+                           || abilityDefinition.ItemCondition == ActivationType.WhilePossessed)
+                        {
+                            if (activateAdded)
+                            {
+                                throw new InvalidOperationException(
+                                    $"Item {Name} has more than 1 activated itemAbility.");
+                            }
+
+                            activateAdded = true;
+                        }
+
                         AddPossessedAbility(ability, abilityDefinition.ItemCondition, item, manager);
                     }
                 }
+            }
+
+            if (!activateAdded)
+            {
+                AddPossessedAbility(itemAbility: null, ActivationType.Default, item, manager);
             }
 
             return item;
         }
 
         private void AddPossessedAbility(
-            AbilityComponent ability, ActivationType itemCondition, ItemComponent item, GameManager manager)
+            AbilityComponent itemAbility, ActivationType itemCondition, ItemComponent item, GameManager manager)
         {
-            using (var abilityEntityReference = manager.CreateEntity())
+            using var abilityEntityReference = manager.CreateEntity();
+            var possessedAbilityEntity = abilityEntityReference.Referenced;
+
+            var possessedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+            possessedEffect.EffectType = EffectType.AddAbility;
+            possessedEffect.Duration = EffectDuration.Infinite;
+
+            possessedAbilityEntity.Effect = possessedEffect;
+
+            var possessedAbility = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+            possessedAbility.Name = "Add " + (itemAbility?.Name ?? item.TemplateName) + " ability";
+            possessedAbility.Activation = itemCondition == ActivationType.Default
+                ? ActivationType.WhilePossessed
+                : itemCondition;
+
+            possessedAbilityEntity.Ability = possessedAbility;
+
+            using (var addUseAbilityEntityReference = manager.CreateEntity())
             {
-                var abilityEntity = abilityEntityReference.Referenced;
+                var addUseAbilityEntity = addUseAbilityEntityReference.Referenced;
 
-                var abilityEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                abilityEffect.EffectType = EffectType.AddAbility;
-                abilityEffect.Duration = EffectDuration.Infinite;
+                var addUseAbilityEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+                addUseAbilityEffect.EffectType = EffectType.AddAbility;
+                addUseAbilityEffect.Duration = EffectDuration.Infinite;
 
-                abilityEntity.Effect = abilityEffect;
-
-                var possessedAbility = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
-                possessedAbility.Name = "Add " + ability.Name + " ability";
-                possessedAbility.Activation = itemCondition == ActivationType.Default
-                    ? ActivationType.WhilePossessed
-                    : itemCondition;
-
-                abilityEntity.Ability = possessedAbility;
-
-                using (var activateAbilityEntityReference = manager.CreateEntity())
+                addUseAbilityEntity.Effect = addUseAbilityEffect;
+                if (itemAbility != null)
                 {
-                    var activateAbilityEntity = activateAbilityEntityReference.Referenced;
-
-                    var activateAbilityEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                    activateAbilityEffect.EffectType = EffectType.AddAbility;
-                    activateAbilityEffect.Duration = EffectDuration.Infinite;
-
-                    activateAbilityEntity.Effect = activateAbilityEffect;
-
-                    var activateAbility = ability.AddToEffect(activateAbilityEntity, includeEffects: false);
-                    activateAbility.Name = item.TemplateName + ": " + ability.Name;
-
-                    activateAbilityEffect.ContainingAbilityId = abilityEntity.Id;
-
-                    using (var activateEffectEntityReference = manager.CreateEntity())
+                    var activateAbility = itemAbility.AddToEffect(addUseAbilityEntity, includeEffects: false);
+                    activateAbility.Name = item.TemplateName + ": " + itemAbility.Name;
+                    if (possessedAbility.Activation == ActivationType.WhilePossessed)
                     {
-                        var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                        effect.EffectType = EffectType.Activate;
-                        effect.TargetEntityId = ability.EntityId;
-                        effect.Duration = ((ability.Activation & ActivationType.Continuous) == 0
-                            ? EffectDuration.Instant
-                            : EffectDuration.Infinite);
-                        effect.ContainingAbilityId = activateAbilityEntity.Id;
-
-                        activateEffectEntityReference.Referenced.Effect = effect;
+                        activateAbility.Type = AbilityType.Item;
                     }
-                }
 
-                possessedAbility.OwnerId = item.EntityId;
-                abilityEffect.AffectedEntityId = item.EntityId;
+                    addUseAbilityEffect.ContainingAbilityId = possessedAbilityEntity.Id;
+
+                    using var activateEffectEntityReference = manager.CreateEntity();
+                    var activateEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+                    activateEffect.EffectType = EffectType.Activate;
+                    activateEffect.TargetEntityId = itemAbility.EntityId;
+                    activateEffect.Duration = (itemAbility.Activation & ActivationType.Continuous) == 0
+                        ? EffectDuration.Instant
+                        : EffectDuration.Infinite;
+                    activateEffect.ContainingAbilityId = addUseAbilityEntity.Id;
+
+                    activateEffectEntityReference.Referenced.Effect = activateEffect;
+                }
+                else
+                {
+                    var equip = item.EquipableSlots != EquipmentSlot.None;
+                    var useAbility = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+                    useAbility.Name = item.TemplateName + ": " + (equip ? "Equip" : "Drop");
+                    useAbility.Type = AbilityType.Item;
+                    useAbility.Activation = ActivationType.Manual;
+
+                    addUseAbilityEntity.Ability = useAbility;
+
+                    addUseAbilityEffect.ContainingAbilityId = possessedAbilityEntity.Id;
+
+                    using var useEffectEntityReference = manager.CreateEntity();
+                    var useEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+                    useEffect.EffectType = equip ? EffectType.EquipItem : EffectType.Move;
+                    useEffect.TargetEntityId = item.EntityId;
+                    useEffect.ContainingAbilityId = addUseAbilityEntity.Id;
+
+                    useEffectEntityReference.Referenced.Effect = useEffect;
+                }
             }
+
+            possessedAbility.OwnerId = item.EntityId;
+            possessedEffect.AffectedEntityId = item.EntityId;
         }
 
         private Func<string, int, int, float> _weightFunction;
@@ -389,21 +447,20 @@ namespace UnicornHack.Generation
             new PropertyCSScriptSerializer<Item>(GetPropertyConditions<Item>());
 
         protected static Dictionary<string, Func<TItemVariant, object, bool>> GetPropertyConditions<TItemVariant>()
-            where TItemVariant : Item => new Dictionary<string, Func<TItemVariant, object, bool>>
+            where TItemVariant : Item => new()
         {
             {nameof(Name), (o, v) => v != null},
             {nameof(BaseName), (o, v) => v != null},
             {nameof(Abilities), (o, v) => ((ICollection<Ability>)v).Count != 0},
             {nameof(Type), (o, v) => (ItemType?)v != o.BaseItem?.Type},
             {nameof(Complexity), (o, v) => (ItemComplexity?)v != o.BaseItem?.Complexity},
-            // ReSharper disable once CompareOfFloatsByEqualityOperator
             {
                 nameof(GenerationWeight),
                 (o, v) => v != null && (string)v != DefaultWeight
             },
-            {nameof(Material), (o, v) => (Material?)v != o.BaseItem?.Material},
-            {nameof(Weight), (o, v) => (int?)v != o.BaseItem?.Weight},
-            {nameof(StackSize), (o, v) => (int?)v != o.BaseItem?.StackSize},
+            {nameof(Material), (o, v) => (Material?)v != (o.BaseItem == null ? Primitives.Material.Default : o.BaseItem.Material)},
+            {nameof(Weight), (o, v) => (int?)v != (o.BaseItem == null ? 1 : o.BaseItem.Weight)},
+            {nameof(StackSize), (o, v) => (int?)v != (o.BaseItem == null ? 1 : o.BaseItem.StackSize)},
             {nameof(Countable), (o, v) => (bool?)v != o.BaseItem?.Countable},
             {nameof(Nameable), (o, v) => (bool?)v != o.BaseItem?.Nameable},
             {nameof(EquipableSizes), (o, v) => (SizeCategory?)v != o.BaseItem?.EquipableSizes},

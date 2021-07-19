@@ -48,7 +48,6 @@ namespace UnicornHack.Systems.Beings
         private float _leftoverEPRegenerationXP;
         private int? _primaryNaturalWeaponId;
         private int? _secondaryNaturalWeaponId;
-        private int _abilitySlotCount;
         private int _entropyState;
 
         public BeingComponent()
@@ -383,13 +382,6 @@ namespace UnicornHack.Systems.Beings
             set => SetWithNotify(value, ref _secondaryNaturalWeaponId);
         }
 
-        [Property(DefaultValue = 8)]
-        public int AbilitySlotCount
-        {
-            get => _abilitySlotCount;
-            set => SetWithNotify(value, ref _abilitySlotCount);
-        }
-
         public int EntropyState
         {
             get => _entropyState;
@@ -441,7 +433,6 @@ namespace UnicornHack.Systems.Beings
             _leftoverHPRegenerationXP = default;
             _primaryNaturalWeaponId = default;
             _secondaryNaturalWeaponId = default;
-            _abilitySlotCount = default;
             _entropyState = default;
 
             base.Clean();

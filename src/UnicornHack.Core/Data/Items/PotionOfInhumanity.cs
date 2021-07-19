@@ -27,7 +27,7 @@ namespace UnicornHack.Data.Items
             Type = ItemType.Potion,
             Material = Material.Glass,
             Weight = 1,
-            StackSize = 20
+            StackSize = 1
         };
     }
 }

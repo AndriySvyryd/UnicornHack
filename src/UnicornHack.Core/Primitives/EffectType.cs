@@ -24,6 +24,7 @@
         DrainEnergy,
         DrainLife,
         Engulf,
+        EquipItem,
         Freeze,
         GainXP,
         Heal,

@@ -8,6 +8,7 @@ namespace UnicornHack.Systems.Abilities
     public class AbilityComponent : GameComponent
     {
         private string _name;
+        private AbilityType _type;
         private int _level;
         private GameEntity _ownerEntity;
         private int? _ownerId;
@@ -41,6 +42,12 @@ namespace UnicornHack.Systems.Abilities
         {
             get => _name;
             set => SetWithNotify(value, ref _name);
+        }
+
+        public AbilityType Type
+        {
+            get => _type;
+            set => SetWithNotify(value, ref _type);
         }
 
         public int Level
@@ -235,6 +242,7 @@ namespace UnicornHack.Systems.Abilities
             var manager = abilityEffectEntity.Manager;
             var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
             ability.Name = Name;
+            ability.Type = Type;
             ability.Level = Level;
             ability.Activation = Activation;
             ability.ActivationCondition = ActivationCondition;
@@ -268,6 +276,7 @@ namespace UnicornHack.Systems.Abilities
         protected override void Clean()
         {
             _name = default;
+            _type = default;
             _level = default;
             _ownerId = default;
             _ownerEntity = default;

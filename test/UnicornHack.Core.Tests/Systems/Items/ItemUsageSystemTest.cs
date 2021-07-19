@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
@@ -20,11 +21,17 @@ namespace UnicornHack.Systems.Items
             var player = playerEntity.Player;
             player.NextAction = ActorAction.Wait;
             var manager = playerEntity.Manager;
+
+            manager.Queue.ProcessQueue(manager);
+
             ItemData.FieryAegis.Instantiate(playerEntity);
 
             manager.Queue.ProcessQueue(manager);
 
             var shieldEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single();
+
+            var shieldAbilityName = ItemData.FieryAegis.Name + ": Equip";
+            Assert.NotNull(manager.AffectableAbilitiesIndex[(playerEntity.Id, shieldAbilityName)]);
 
             var equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
@@ -39,10 +46,9 @@ namespace UnicornHack.Systems.Items
                 .Single(a => (a.Activation & ActivationType.Slottable) != 0
                              && a.Template?.Type != AbilityType.DefaultAttack);
 
-            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
-            setSlotMessage.AbilityEntity = shieldAbility.Entity;
-            setSlotMessage.Slot = 0;
-            manager.Enqueue(setSlotMessage);
+            Assert.Null(manager.AffectableAbilitiesIndex[(playerEntity.Id, shieldAbilityName)]);
+
+            TestHelper.ActivateAbility(shieldAbility.Entity, playerEntity, manager);
             manager.Queue.ProcessQueue(manager);
 
             Assert.True(shieldAbility.IsActive);
@@ -62,7 +68,7 @@ namespace UnicornHack.Systems.Items
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(EquipmentSlot.GraspBothMelee, shieldEntity.Item.EquippedSlot);
-            Assert.Equal(0, shieldAbility.Slot);
+            Assert.Equal(2, shieldAbility.Slot);
             Assert.True(shieldAbility.IsActive);
 
             var deactivateMessage =
@@ -72,7 +78,7 @@ namespace UnicornHack.Systems.Items
             manager.Enqueue(deactivateMessage);
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Null(shieldAbility.Slot);
+            Assert.Equal(2, shieldAbility.Slot);
             Assert.False(shieldAbility.IsActive);
             Assert.Equal(0, playerEntity.Being.FireResistance);
             Assert.Equal(200, shieldAbility.CooldownTick);
@@ -114,8 +120,30 @@ namespace UnicornHack.Systems.Items
             manager.Queue.ProcessQueue(manager);
 
             Assert.Null(shieldAbility.CooldownTick);
-            Assert.Equal(EquipmentSlot.None, shieldEntity.Item.EquippedSlot);
             Assert.Null(shieldAbility.Entity);
+            Assert.Equal(EquipmentSlot.None, shieldEntity.Item.EquippedSlot);
+            Assert.Equal(playerEntity.Id, shieldEntity.Item.ContainerId);
+            Assert.NotNull(manager.AffectableAbilitiesIndex[(playerEntity.Id, shieldAbilityName)]);
+
+            var equipShieldAbility = manager.SlottedAbilitiesIndex[playerEntity.Id].GetValueOrDefault(3).Ability;
+            Assert.Equal(shieldAbilityName, equipShieldAbility.Name);
+
+            TestHelper.ActivateAbility(equipShieldAbility.Entity, playerEntity, manager);
+            manager.Queue.ProcessQueue(manager);
+
+            playerEntity.Physical.Capacity = 2;
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(EquipmentSlot.GraspPrimaryMelee, shieldEntity.Item.EquippedSlot);
+            Assert.Equal(playerEntity.Id, shieldEntity.Item.ContainerId);
+
+            equipMessage = EquipItemMessage.Create(manager);
+            equipMessage.ActorEntity = playerEntity;
+            equipMessage.ItemEntity = shieldEntity;
+            manager.Enqueue(equipMessage);
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Null(shieldEntity.Item.ContainerId);
         }
 
         [Fact]
@@ -126,6 +154,9 @@ namespace UnicornHack.Systems.Items
             var player = playerEntity.Player;
             player.NextAction = ActorAction.Wait;
             var manager = playerEntity.Manager;
+
+            manager.Queue.ProcessQueue(manager);
+
             ItemData.FieryAegis.Instantiate(playerEntity);
 
             manager.Queue.ProcessQueue(manager);
@@ -147,10 +178,7 @@ namespace UnicornHack.Systems.Items
 
             Assert.Equal(5, player.NextActionTick);
 
-            var setSlotMessage = SetAbilitySlotMessage.Create(manager);
-            setSlotMessage.AbilityEntity = shieldAbility.Entity;
-            setSlotMessage.Slot = 0;
-            manager.Enqueue(setSlotMessage);
+            TestHelper.ActivateAbility(shieldAbility.Entity, playerEntity, manager);
             manager.Queue.ProcessQueue(manager);
 
             Assert.True(shieldAbility.IsActive);
@@ -214,6 +242,9 @@ namespace UnicornHack.Systems.Items
             var player = playerEntity.Player;
             player.NextAction = ActorAction.Wait;
             var manager = playerEntity.Manager;
+
+            manager.Queue.ProcessQueue(manager);
+
             ItemData.CloakOfInvisibility.Instantiate(playerEntity);
 
             manager.Queue.ProcessQueue(manager);
@@ -270,6 +301,9 @@ namespace UnicornHack.Systems.Items
             var player = playerEntity.Player;
             player.NextAction = ActorAction.Wait;
             var manager = playerEntity.Manager;
+
+            manager.Queue.ProcessQueue(manager);
+
             ItemData.LongSword.Instantiate(playerEntity);
 
             manager.Queue.ProcessQueue(manager);
@@ -280,6 +314,8 @@ namespace UnicornHack.Systems.Items
             Assert.Equal(100, playerEntity.Position.TurningDelay);
 
             var swordEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single();
+
+            Assert.Equal(10, swordEntity.Physical.Weight);
 
             var equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;

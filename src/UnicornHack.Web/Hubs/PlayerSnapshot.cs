@@ -75,6 +75,7 @@ namespace UnicornHack.Hubs
                 }
                 properties.Add(races);
 
+                // TODO: Send current slot capacity
                 var abilities = new List<object>();
                 foreach (var ability in GetSlottedAbilities(playerEntity, manager))
                 {

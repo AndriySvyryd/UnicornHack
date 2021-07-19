@@ -21,11 +21,11 @@ namespace UnicornHack
         public new SequentialMessageQueue<GameManager> Queue => (SequentialMessageQueue<GameManager>)base.Queue;
 
         public ListObjectPool<List<(Point, byte)>> PointByteListArrayPool { get; }
-            = new ListObjectPool<List<(Point, byte)>>(() => new List<(Point, byte)>(), 4, 16, 0);
+            = new(() => new List<(Point, byte)>(), 4, 16, 0);
         public ListObjectPool<List<(int, byte)>> IntByteListArrayPool { get; }
-            = new ListObjectPool<List<(int, byte)>>(() => new List<(int, byte)>(), 4, 16, 0);
+            = new(() => new List<(int, byte)>(), 4, 16, 0);
         public ListObjectPool<List<(GameEntity, byte)>> GameEntityByteListArrayPool { get; }
-            = new ListObjectPool<List<(GameEntity, byte)>>(() => new List<(GameEntity, byte)>(), 4, 16, 0);
+            = new(() => new List<(GameEntity, byte)>(), 4, 16, 0);
 
         protected override void InitializeSystems(IMessageQueue queue)
         {
