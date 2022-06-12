@@ -1,6 +1,8 @@
-﻿using UnicornHack.Systems.Beings;
+﻿using System.Collections.Generic;
+using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
+using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 // ReSharper disable once CheckNamespace
@@ -10,9 +12,8 @@ namespace UnicornHack
     {
         public EntityGroup<GameEntity> LevelItems { get; private set; }
         public EntityGroup<GameEntity> ContainedItems { get; private set; }
-        public UniqueEntityIndex<GameEntity, (int, byte, byte)> LevelItemsToLevelCellIndex { get; private set; }
-        public EntityRelationship<GameEntity> EntityItemsToContainerRelationship { get; private set; }
-        public EntityRelationship<GameEntity> LevelItemsToLevelRelationship { get; private set; }
+        public LookupEntityRelationship<GameEntity, Point, Dictionary<Point, GameEntity>> LevelItemsToLevelCellRelationship { get; private set; }
+        public CollectionEntityRelationship<GameEntity, HashSet<GameEntity>> EntityItemsToContainerRelationship { get; private set; }
         public ItemMovingSystem ItemMovingSystem { get; private set; }
         public ItemUsageSystem ItemUsageSystem { get; private set; }
 
@@ -29,65 +30,63 @@ namespace UnicornHack
                 new EntityMatcher<GameEntity>()
                     .AllOf((int)EntityComponent.Item, (int)EntityComponent.Physical, (int)EntityComponent.Position));
 
-            LevelItemsToLevelCellIndex = new UniqueEntityIndex<GameEntity, (int, byte, byte)>(
-                nameof(LevelItemsToLevelCellIndex),
-                LevelItems,
-                new KeyValueGetter<GameEntity, (int, byte, byte)>(
-                    (entity, changes, getOldValue, matcher) =>
-                    {
-                        if (!matcher.TryGetValue<int>(
-                                entity, (int)EntityComponent.Position, nameof(PositionComponent.LevelId), changes,
-                                getOldValue, out var levelId)
-                            || !matcher.TryGetValue<byte>(
-                                entity, (int)EntityComponent.Position, nameof(PositionComponent.LevelX), changes,
-                                getOldValue, out var levelX)
-                            || !matcher.TryGetValue<byte>(
-                                entity, (int)EntityComponent.Position, nameof(PositionComponent.LevelY), changes,
-                                getOldValue, out var levelY))
-                        {
-                            return ((0, 0, 0), false);
-                        }
-
-                        return ((levelId, levelX, levelY), true);
-                    },
-                    new PropertyMatcher()
-                        .With(component => ((PositionComponent)component).LevelId, (int)EntityComponent.Position)
-                        .With(component => ((PositionComponent)component).LevelX, (int)EntityComponent.Position)
-                        .With(component => ((PositionComponent)component).LevelY, (int)EntityComponent.Position)
-                ));
-
-            LevelItemsToLevelRelationship = new EntityRelationship<GameEntity>(
-                nameof(LevelItemsToLevelRelationship),
+            LevelItemsToLevelCellRelationship = new(
+                nameof(LevelItemsToLevelCellRelationship),
                 LevelItems,
                 Levels,
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((PositionComponent)component).LevelId,
                     (int)EntityComponent.Position),
-                (effectEntity, _, _) => effectEntity.RemoveComponent(EntityComponent.Position));
+                new KeyValueGetter<GameEntity, Point>(
+                    (change, matcher, valueType) =>
+                    {
+                        if (!matcher.TryGetValue<byte>(
+                                change, (int)EntityComponent.Position, nameof(PositionComponent.LevelX), valueType,
+                                out var levelX)
+                            || !matcher.TryGetValue<byte>(
+                                change, (int)EntityComponent.Position, nameof(PositionComponent.LevelY), valueType,
+                                out var levelY))
+                        {
+                            return (new Point(0, 0), false);
+                        }
 
-            EntityItemsToContainerRelationship = new EntityRelationship<GameEntity>(
+                        return (new Point(levelX, levelY), true);
+                    },
+                    new PropertyMatcher<GameEntity>()
+                        .With(component => ((PositionComponent)component).LevelX, (int)EntityComponent.Position)
+                        .With(component => ((PositionComponent)component).LevelY, (int)EntityComponent.Position)
+                ),
+                (itemEntity, _) => itemEntity.RemoveComponent(EntityComponent.Position),
+                levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level.Items);
+
+            EntityItemsToContainerRelationship = new(
                 nameof(EntityItemsToContainerRelationship),
                 ContainedItems,
                 AffectableEntities,
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((ItemComponent)component).ContainerId,
                     (int)EntityComponent.Item),
-                (effectEntity, _, _) => effectEntity.RemoveComponent((int)EntityComponent.Item),
-                referencedKeepAlive: false,
-                referencingKeepAlive: true);
+                (effectEntity, _) => effectEntity.RemoveComponent((int)EntityComponent.Item),
+                containerEntity => (HashSet<GameEntity>)(containerEntity.Being.Items
+                                                         ?? containerEntity.Item.Items
+                                                         ?? containerEntity.Physical.Items
+                                                         ?? containerEntity.Sensor.Items),
+                keepPrincipalAlive: false,
+                keepDependentAlive: true);
 
             ItemMovingSystem = new ItemMovingSystem();
-            queue.Add<MoveItemMessage>(ItemMovingSystem, MoveItemMessage.Name, 0);
-            queue.Add<TraveledMessage>(ItemMovingSystem, TraveledMessage.Name, 0);
-            queue.Add<DiedMessage>(ItemMovingSystem, DiedMessage.Name, 0);
+            queue.Register<MoveItemMessage>(ItemMovingSystem, MoveItemMessage.Name, 0);
+            queue.Register<TraveledMessage>(ItemMovingSystem, TraveledMessage.Name, 0);
+            queue.Register<DiedMessage>(ItemMovingSystem, DiedMessage.Name, 0);
 
             ItemUsageSystem = new ItemUsageSystem();
-            queue.Add(ItemUsageSystem, EquipItemMessage.Name, 0);
+            queue.Register(ItemUsageSystem, EquipItemMessage.Name, 0);
 
-            queue.Add<EntityAddedMessage<GameEntity>>(
-                AbilityActivationSystem, EntityItemsToContainerRelationship.GetEntityAddedMessageName(), 0);
-            queue.Add<EntityRemovedMessage<GameEntity>>(
-                AbilityActivationSystem, EntityItemsToContainerRelationship.GetEntityRemovedMessageName(), 0);
+            queue.Register<EntityAddedMessage<GameEntity>>(
+                AbilityActivationSystem, EntityItemsToContainerRelationship.Dependents.GetEntityAddedMessageName(), 0);
+            queue.Register<EntityRemovedMessage<GameEntity>>(
+                AbilityActivationSystem, EntityItemsToContainerRelationship.Dependents.GetEntityRemovedMessageName(),
+                0);
         }
     }
 }

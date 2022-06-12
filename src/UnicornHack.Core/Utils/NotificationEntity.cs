@@ -1,16 +1,13 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace UnicornHack.Utils
 {
     public abstract class NotificationEntity : INotifyPropertyChanged, INotifyPropertyChanging
     {
-        public static readonly PropertyChangedEventArgs CountPropertyChanged
-            = new PropertyChangedEventArgs("Count");
-
-        public static readonly PropertyChangingEventArgs CountPropertyChanging
-            = new PropertyChangingEventArgs("Count");
-
+        public static readonly PropertyChangedEventArgs CountPropertyChanged = new("Count");
+        public static readonly PropertyChangingEventArgs CountPropertyChanging = new("Count");
         public event PropertyChangedEventHandler PropertyChanged;
         public event PropertyChangingEventHandler PropertyChanging;
 
@@ -20,7 +17,7 @@ namespace UnicornHack.Utils
             ref T field,
             [CallerMemberName] string propertyName = "")
         {
-            if (Equals(field, value))
+            if (EqualityComparer<T>.Default.Equals(field, value))
             {
                 return;
             }

@@ -29,7 +29,7 @@ namespace UnicornHack.Systems.Knowledge
 
             var undine = CreatureData.Undine.Instantiate(level, new Point(0, 1));
 
-            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(1, 0));
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(1, 0));
             playerEntity.Position.Heading = Direction.West;
             var manager = playerEntity.Manager;
 
@@ -37,12 +37,12 @@ namespace UnicornHack.Systems.Knowledge
 
             ItemData.LongSword.Instantiate(playerEntity);
 
-            var player2Entity = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, level.Entity, new Point(2, 0));
+            var player2Entity = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, level, new Point(2, 0));
             player2Entity.Position.Heading = Direction.North;
 
             manager.Queue.ProcessQueue(manager);
 
-            var swordEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id]
+            var swordEntity = playerEntity.Being.Items
                 .Single(e => e.Item.TemplateName == ItemData.LongSword.Name);
             var equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
@@ -54,7 +54,7 @@ namespace UnicornHack.Systems.Knowledge
             playerEntity.Player.LogEntries.Clear();
             player2Entity.Player.LogEntries.Clear();
 
-            var wizardPunch = manager.AbilitiesToAffectableRelationship[wizard.Id]
+            var wizardPunch = wizard.Being.Abilities
                 .Single(a => a.Ability.Action == AbilityAction.Punch);
 
             var activateMessage = ActivateAbilityMessage.Create(manager);
@@ -81,20 +81,18 @@ namespace UnicornHack.Systems.Knowledge
                 manager);
 
             Verify(playerEntity, wizard, playerEntity, player2Entity,
-                manager.AbilitiesToAffectableRelationship[playerEntity.Id]
-                    .Single(a => a.Ability.Slot == AbilitySlottingSystem.DefaultMeleeAttackSlot), success: true,
+                playerEntity.Being.SlottedAbilities[AbilitySlottingSystem.DefaultMeleeAttackSlot], success: true,
                 "You slash the Wizard of Yendor. (<damage physical='90'>90</damage> pts.)",
                 "Dudley slashes the Wizard of Yendor. (<damage physical='90'>90</damage> pts.)",
                 manager);
 
             Verify(playerEntity, wizard, playerEntity, player2Entity,
-                manager.AbilitiesToAffectableRelationship[playerEntity.Id]
-                    .Single(a => a.Ability.Slot == AbilitySlottingSystem.DefaultMeleeAttackSlot), success: false,
+                playerEntity.Being.SlottedAbilities[AbilitySlottingSystem.DefaultMeleeAttackSlot], success: false,
                 "You try to slash the Wizard of Yendor, but miss.",
                 "Dudley tries to slash the Wizard of Yendor, but misses.",
                 manager);
 
-            var wizardSpell = manager.AbilitiesToAffectableRelationship[wizard.Id]
+            var wizardSpell = wizard.Being.Abilities
                 .Single(a => a.Ability.Action == AbilityAction.Spell);
             Verify(wizard, playerEntity, playerEntity, player2Entity,
                 wizardSpell, success: true,
@@ -316,7 +314,7 @@ namespace UnicornHack.Systems.Knowledge
         {
             var level = TestHelper.BuildLevel();
             var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
-            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
+            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
             var manager = level.Entity.Manager;
             var languageService = manager.Game.Services.Language;
 
@@ -333,7 +331,7 @@ namespace UnicornHack.Systems.Knowledge
             var level = TestHelper.BuildLevel();
             var armor = ItemData.MailArmor.Instantiate(level.Entity.Manager).Referenced;
             var nymph = CreatureData.Undine.Instantiate(level, new Point(0, 1));
-            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
+            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
             var manager = level.Entity.Manager;
             var languageService = manager.Game.Services.Language;
 
@@ -360,7 +358,7 @@ namespace UnicornHack.Systems.Knowledge
             var level = TestHelper.BuildLevel();
             var armor = ItemData.MailArmor.Instantiate(level.Entity.Manager).Referenced;
             var nymph = CreatureData.Undine.Instantiate(level, new Point(0, 1));
-            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
+            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
             var manager = level.Entity.Manager;
             var languageService = manager.Game.Services.Language;
 
@@ -387,7 +385,7 @@ namespace UnicornHack.Systems.Knowledge
             var flask = ItemData.FlaskOfHealing.Instantiate(level.Entity.Manager).Referenced;
             var potion = ItemData.PotionOfExperience.Instantiate(level.Entity.Manager).Referenced;
             var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
-            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
+            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
             var manager = level.Entity.Manager;
             var languageService = manager.Game.Services.Language;
 
@@ -413,7 +411,7 @@ namespace UnicornHack.Systems.Knowledge
             var level = TestHelper.BuildLevel();
             var coins = ItemData.GoldCoin.Instantiate(level.Entity.Manager).Referenced;
             var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
-            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
+            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
             var manager = level.Entity.Manager;
             var languageService = manager.Game.Services.Language;
 
@@ -430,7 +428,7 @@ namespace UnicornHack.Systems.Knowledge
             var level = TestHelper.BuildLevel();
             var coins = ItemData.GoldCoin.Instantiate(level.Entity.Manager).Referenced;
             var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
-            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
+            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
             var manager = level.Entity.Manager;
             var languageService = manager.Game.Services.Language;
 
@@ -445,25 +443,25 @@ namespace UnicornHack.Systems.Knowledge
         public void LeveledUpEvent()
         {
             var level = TestHelper.BuildLevel();
-            var player1 = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
-            var player2 = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, level.Entity, new Point(0, 1));
+            var player1 = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+            var player2 = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, level, new Point(0, 1));
             var manager = level.Entity.Manager;
             var languageService = manager.Game.Services.Language;
 
             Assert.Equal("You level up! You gain 2 SP 1 TP 0 MP.",
                 languageService.GetString(new LeveledUpEvent(
-                    player1, player1, manager.RacesToBeingRelationship[player1.Id].Single().Value.Race, 2, 1, 0)));
+                    player1, player1, player1.Being.Races.Single().Race, 2, 1, 0)));
 
             Assert.Equal("Cudley levels up! She gains 3 SP 2 TP 1 MP.",
                 languageService.GetString(new LeveledUpEvent(
-                    player1, player2, manager.RacesToBeingRelationship[player2.Id].Single().Value.Race, 3, 2, 1)));
+                    player1, player2, player2.Being.Races.Single().Race, 3, 2, 1)));
         }
 
         [Fact]
         public void Welcome()
         {
             var level = TestHelper.BuildLevel();
-            var player = PlayerRace.InstantiatePlayer("Conan the Barbarian", Sex.Male, level.Entity, new Point(0, 0));
+            var player = PlayerRace.InstantiatePlayer("Conan the Barbarian", Sex.Male, level, new Point(0, 0));
             var manager = level.Entity.Manager;
             var languageService = manager.Game.Services.Language;
 

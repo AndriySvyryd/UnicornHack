@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnicornHack.Generation.Map;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Levels;
+using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Generation
 {
@@ -12,9 +13,9 @@ namespace UnicornHack.Generation
 
         public virtual void Fill(LevelComponent level, IReadOnlyList<Room> rooms)
         {
-            var manager = level.Entity.Manager;
-            var itemsToPlace = level.GenerationRandom.NextBinomial(0.5f,
-                (ExpectedInitialCount - manager.LevelItemsToLevelRelationship[level.EntityId].Count) * 2);
+            var itemsToPlace = level.GenerationRandom.NextBinomial(
+                0.5f,
+                (ExpectedInitialCount - level.Items.Count) * 2);
             var roomsToFill = rooms.Count;
             var difficultyFraction = (float)(level.Difficulty - 1) / LevelGenerator.MaxDifficulty;
             foreach (var room in level.GenerationRandom.WeightedOrder(rooms, r => r.InsidePoints.Count))
@@ -24,7 +25,7 @@ namespace UnicornHack.Generation
                 {
                     if (!level.GenerationRandom.TryPick(
                         room.InsidePoints,
-                        p => manager.LevelItemsToLevelCellIndex[(level.EntityId, p.X, p.Y)] == null,
+                        p => level.Items.GetValueOrDefault(new Point(p.X, p.Y)) == null,
                         out var point))
                     {
                         goto NextRoom;

@@ -25,7 +25,7 @@ namespace UnicornHack.Generation.Map
         protected void InitializeTerrain(LevelComponent level, DefiningMapFragment fragment)
         {
             level.TerrainChanges = null;
-            level.WallNeighboursChanges = null;
+            level.WallNeighborsChanges = null;
             if (fragment.DefaultTerrain != MapFeature.Default)
             {
                 for (var index = 0; index < level.Terrain.Length; index++)
@@ -74,18 +74,18 @@ namespace UnicornHack.Generation.Map
                 // For every existing connection to this level that hasn't been connected yet generate a destination fragment.
                 // Then generate up to 3 source fragments, depending on the number of incoming connections
                 //     At least 2 to the next branch level if not final
-                var danglingConnection = manager.IncomingConnectionsToLevelRelationship[level.EntityId]
+                var danglingConnection = level.IncomingConnections
                     .Select(c => c.Connection).FirstOrDefault(c => c.TargetLevelX == null);
-                placingConnections = placingConnections &&
-                                     (danglingConnection != null
-                                      || manager.ConnectionsToLevelRelationship[level.EntityId]
-                                          .Count(c => c.Connection.TargetLevelX == null) < 3
-                                      || (level.Branch.Length > level.Depth &&
-                                          manager.ConnectionsToLevelRelationship[level.EntityId]
-                                              .Select(c => manager.FindEntity(c.Connection.TargetLevelId).Level)
-                                              .Count(l =>
-                                                  l.BranchName == level.BranchName
-                                                  && l.Depth == level.Depth + 1) < 2));
+                placingConnections = placingConnections
+                                     && (danglingConnection != null
+                                        || level.Connections.Values
+                                            .Count(c => c.Connection.TargetLevelX == null) < 3
+                                        || (level.Branch.Length > level.Depth
+                                            && level.Connections.Values
+                                                .Select(c => manager.FindEntity(c.Connection.TargetLevelId).Level)
+                                                .Count(l =>
+                                                    l.BranchName == level.BranchName
+                                                    && l.Depth == level.Depth + 1) < 2));
                 var sortedFragments = placingConnections
                     ? level.GenerationRandom.WeightedOrder(
                         ConnectingMapFragment.Loader.GetAsList(),

@@ -1,10 +1,12 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace UnicornHack.Utils.MessagingECS
 {
+    // TODO: Add tests
     public class SortedLookupEntityIndex<TEntity, TKey, TSortKey> : EntityIndexBase<TEntity, TKey>
-        where TEntity : Entity
+        where TEntity : Entity, new()
     {
         private readonly IKeyValueGetter<TEntity, TSortKey> _sortValueGetter;
         private readonly IComparer<TSortKey> _comparer;
@@ -25,7 +27,7 @@ namespace UnicornHack.Utils.MessagingECS
 
         public SortedLookupEntityIndex(
             string name,
-            IEntityGroup<TEntity> group,
+            EntityGroup<TEntity> group,
             IKeyValueGetter<TEntity, TKey> keyValueGetter,
             IKeyValueGetter<TEntity, TSortKey> sortValueGetter,
             IEqualityComparer<TKey> equalityComparer,
@@ -53,11 +55,11 @@ namespace UnicornHack.Utils.MessagingECS
             return entities;
         }
 
-        protected override bool TryAddEntity(TKey key, TEntity entity, Component changedComponent)
+        protected override bool TryAddEntity(TKey key, in EntityChange<TEntity> entityChange)
         {
-            if (_sortValueGetter.TryGetKey(entity, new IPropertyValueChange[0], getOldValue: false, out var sortKey))
+            if (_sortValueGetter.TryGetKey(entityChange, ValueType.Current, out var sortKey))
             {
-                GetOrAddEntities(key).Add(sortKey, entity);
+                GetOrAddEntities(key).Add(sortKey, entityChange.Entity);
 
                 return true;
             }
@@ -65,20 +67,22 @@ namespace UnicornHack.Utils.MessagingECS
             return false;
         }
 
-        protected override bool TryRemoveEntity(TKey key, TEntity entity, Component changedComponent)
+        protected override bool TryRemoveEntity(TKey key, in EntityChange<TEntity> entityChange)
         {
             if (!Index.TryGetValue(key, out var entities))
             {
                 return false;
             }
 
-            if (!_sortValueGetter.TryGetKey(entity, new IPropertyValueChange[0], getOldValue: false, out var sortKey))
+            if (!_sortValueGetter.TryGetKey(entityChange, ValueType.PreferOld, out var sortKey))
             {
-                sortKey = entities.Where(p => p.Value == entity).Select(p => p.Key).FirstOrDefault();
+                var entity = entityChange.Entity;
+                // This would only happen if the sort key is changed in the component after it has been removed
+                Debug.Assert(entities.All(p => p.Value != entity));
+                return false;
             }
 
-            if (!Equals(sortKey, default)
-                && entities.Remove(sortKey))
+            if (entities.Remove(sortKey))
             {
                 if (entities.Count == 0)
                 {
@@ -91,28 +95,30 @@ namespace UnicornHack.Utils.MessagingECS
             return false;
         }
 
-        public override bool HandlePropertyValuesChanged(
-            IReadOnlyList<IPropertyValueChange> changes, TEntity entity, IEntityGroup<TEntity> group)
+        protected override bool HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange)
         {
-            if (base.HandlePropertyValuesChanged(changes, entity, group))
+            Debug.Assert(entityChange.RemovedComponent == null);
+
+            if (!KeyValueGetter.TryGetKey(entityChange, ValueType.Current, out var key))
             {
-                return true;
+                return false;
             }
 
             Component componentUsed = null;
+            var changes = entityChange.PropertyChanges;
             for (var i = 0; i < changes.Count; i++)
             {
-                var change = changes[i];
-                if (_sortValueGetter.PropertyUsed(change.ChangedComponent.ComponentId, change.ChangedPropertyName))
+                var changedComponent = changes.GetChangedComponent(i);
+                if (_sortValueGetter.PropertyUsed(changedComponent.ComponentId, changes.GetChangedPropertyName(i)))
                 {
-                    componentUsed = change.ChangedComponent;
-                    break;
-                }
+                    // The component might have been removed by the previous change listener
+                    if (entityChange.Entity.FindComponent(changedComponent.ComponentId) != changedComponent)
+                    {
+                        return true;
+                    }
 
-                // The component might have been removed by the previous change listener
-                if (!entity.HasComponent(change.ChangedComponent.ComponentId))
-                {
-                    return true;
+                    componentUsed = changedComponent;
+                    break;
                 }
             }
 
@@ -121,21 +127,16 @@ namespace UnicornHack.Utils.MessagingECS
                 return false;
             }
 
-            if (!KeyValueGetter.TryGetKey(entity, changes, getOldValue: false, out var key))
-            {
-                return true;
-            }
-
             var entities = GetOrAddEntities(key);
 
-            if (_sortValueGetter.TryGetKey(entity, changes, getOldValue: true, out var oldSortKey))
+            if (_sortValueGetter.TryGetKey(entityChange, ValueType.PreferOld, out var oldSortKey))
             {
                 entities.Remove(oldSortKey);
             }
 
-            if (_sortValueGetter.TryGetKey(entity, changes, getOldValue: false, out var newSortKey))
+            if (_sortValueGetter.TryGetKey(entityChange, ValueType.Current, out var newSortKey))
             {
-                entities.Add(newSortKey, entity);
+                entities.Add(newSortKey, entityChange.Entity);
             }
 
             if (entities.Count == 0)
@@ -147,8 +148,5 @@ namespace UnicornHack.Utils.MessagingECS
         }
 
         public override string ToString() => "SortedLookupIndex: " + Name;
-
-        public override IEnumerator<TEntity> GetEnumerator()
-            => Index.Values.SelectMany(v => v.Values).GetEnumerator();
     }
 }

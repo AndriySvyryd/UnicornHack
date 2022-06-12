@@ -1,32 +1,26 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace UnicornHack.Utils.MessagingECS
 {
-    public class UniqueEntityIndex<TEntity, TKey> : EntityIndexBase<TEntity, TKey>
-        where TEntity : Entity
+    public class UniqueEntityIndex<TEntity, TKey> : EntityIndexBase<TEntity, TKey>, IEnumerable<TEntity>
+        where TEntity : Entity, new()
     {
         public UniqueEntityIndex(
             string name,
             IEntityGroup<TEntity> group,
-            KeyValueGetter<TEntity, TKey> keyValueGetter)
+            IKeyValueGetter<TEntity, TKey> keyValueGetter,
+            IEqualityComparer<TKey> comparer = null)
             : base(name, group, keyValueGetter)
-            => Index = new Dictionary<TKey, TEntity>();
-
-        public UniqueEntityIndex(
-            string name,
-            IEntityGroup<TEntity> group,
-            KeyValueGetter<TEntity, TKey> keyValueGetter,
-            IEqualityComparer<TKey> comparer)
-            : base(name, group, keyValueGetter)
-            => Index = new Dictionary<TKey, TEntity>(comparer);
+            => Index = new Dictionary<TKey, TEntity>(comparer ?? EqualityComparer<TKey>.Default);
 
         protected Dictionary<TKey, TEntity> Index { get; }
 
         public TEntity this[TKey key] => Index.TryGetValue(key, out var entity) ? entity : null;
 
-        protected override bool TryAddEntity(TKey key, TEntity entity, Component changedComponent)
+        protected override bool TryAddEntity(TKey key, in EntityChange<TEntity> entityChange)
         {
             if (Index.ContainsKey(key))
             {
@@ -34,22 +28,27 @@ namespace UnicornHack.Utils.MessagingECS
                     $"The key {key} already exists in the unique index for {Group.Name}");
             }
 
-            Index[key] = entity;
+            Index[key] = entityChange.Entity;
 
             return true;
         }
 
-        protected override bool TryRemoveEntity(TKey key, TEntity entity, Component changedComponent)
+        protected override bool TryRemoveEntity(TKey key, in EntityChange<TEntity> entityChange)
         {
             var removed = Index.Remove(key);
             Debug.Assert(removed);
 
-            return removed;
+            return true;
         }
+
+        protected override bool HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange)
+            => false;
 
         public override string ToString() => "UniqueIndex: " + Name;
 
-        public override IEnumerator<TEntity> GetEnumerator()
+        public IEnumerator<TEntity> GetEnumerator()
             => Index.Values.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

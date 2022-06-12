@@ -185,7 +185,7 @@ namespace UnicornHack.Systems.Actors
 
         public GameEntity GetDefaultAttack(GameEntity aiEntity, GameEntity targetEntity, bool? melee, GameManager manager)
         {
-            foreach (var abilityEntity in manager.AbilitiesToAffectableRelationship[aiEntity.Id])
+            foreach (var abilityEntity in aiEntity.Physical.Abilities)
             {
                 var ability = abilityEntity.Ability;
                 if (ability.Activation != ActivationType.Targeted
@@ -274,7 +274,7 @@ namespace UnicornHack.Systems.Actors
         private void Wander(GameEntity actorEntity, PositionComponent position, GameManager manager)
         {
             var possibleDirectionsToMove =
-                manager.TravelSystem.GetPossibleMovementDirections(position, safe: true, manager);
+                manager.TravelSystem.GetPossibleMovementDirections(position, safe: true);
             if (possibleDirectionsToMove.Count == 0)
             {
                 return;

@@ -21,7 +21,7 @@ namespace UnicornHack.Systems.Senses
         {
             var level = TestHelper.BuildLevel(TestMap);
             var undine = CreatureData.Undine.Instantiate(level, new Point(0, 1));
-            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 2));
+            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
             player.Position.Heading = Direction.West;
             var manager = player.Manager;
 
@@ -31,7 +31,7 @@ namespace UnicornHack.Systems.Senses
 
             manager.Queue.ProcessQueue(manager);
 
-            var dagger = manager.EntityItemsToContainerRelationship[undine.Id].Single();
+            var dagger = undine.Being.Items.Single();
             Assert.Equal(SenseType.Sight, manager.SensorySystem.CanSense(player, undine));
             Assert.Equal(SenseType.Sight, manager.SensorySystem.SensedByPlayer(undine, undine.Position.LevelCell));
             Assert.Equal(SenseType.Sight | SenseType.Touch | SenseType.Telepathy, manager.SensorySystem.CanSense(player, player));

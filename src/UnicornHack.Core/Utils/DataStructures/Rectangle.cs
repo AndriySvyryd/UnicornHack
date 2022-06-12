@@ -9,7 +9,7 @@ namespace UnicornHack.Utils.DataStructures
     /// <summary>
     ///     Represents an inclusive axis-aligned rectangle
     /// </summary>
-    public struct Rectangle : IEnumerable<Point>
+    public readonly struct Rectangle : IEnumerable<Point>, IEquatable<Rectangle>
     {
         public Rectangle(Point topLeft, Point bottomRight)
         {
@@ -45,13 +45,13 @@ namespace UnicornHack.Utils.DataStructures
 
         public readonly Point TopLeft;
         public readonly Point BottomRight;
-        public Point TopRight => new Point(BottomRight.X, TopLeft.Y);
-        public Point BottomLeft => new Point(TopLeft.X, BottomRight.Y);
+        public Point TopRight => new(BottomRight.X, TopLeft.Y);
+        public Point BottomLeft => new(TopLeft.X, BottomRight.Y);
         public byte Width => (byte)(BottomRight.X - TopLeft.X + 1);
         public byte Height => (byte)(BottomRight.Y - TopLeft.Y + 1);
-        public Dimensions Dimensions => new Dimensions(Width, Height);
-        public Segment XProjection => new Segment(TopLeft.X, BottomRight.X);
-        public Segment YProjection => new Segment(TopLeft.Y, BottomRight.Y);
+        public Dimensions Dimensions => new(Width, Height);
+        public Segment XProjection => new(TopLeft.X, BottomRight.X);
+        public Segment YProjection => new(TopLeft.Y, BottomRight.Y);
         public int Area => Width * Height;
 
         public Rectangle? Intersection(Rectangle r)
@@ -210,25 +210,23 @@ namespace UnicornHack.Utils.DataStructures
         public static (int[,], Point[]) GetPointIndex(IMemoryCache cache, byte width, byte height)
         {
             var key = nameof(GetPointIndex).GetHashCode() ^ (width << 8 + height);
-            if (!cache.TryGetValue(key, out object result))
+            if (!cache.TryGetValue(key, out var result))
             {
-                using (var entry = cache.CreateEntry(key))
+                using var entry = cache.CreateEntry(key);
+                var pointToIndex = new int[width, height];
+                var indexToPoint = new Point[width * height];
+                var i = 0;
+                for (byte y = 0; y < height; y++)
                 {
-                    var pointToIndex = new int[width, height];
-                    var indexToPoint = new Point[width * height];
-                    var i = 0;
-                    for (byte y = 0; y < height; y++)
+                    for (byte x = 0; x < width; x++)
                     {
-                        for (byte x = 0; x < width; x++)
-                        {
-                            pointToIndex[x, y] = i;
-                            indexToPoint[i++] = new Point(x, y);
-                        }
+                        pointToIndex[x, y] = i;
+                        indexToPoint[i++] = new Point(x, y);
                     }
-
-                    result = (pointToIndex, indexToPoint);
-                    entry.SetValue(result);
                 }
+
+                result = (pointToIndex, indexToPoint);
+                entry.SetValue(result);
             }
 
             return ((int[,], Point[]))result;
@@ -236,5 +234,20 @@ namespace UnicornHack.Utils.DataStructures
 
 
         public override string ToString() => $"({TopLeft}, {BottomRight})";
+
+        public bool Equals(Rectangle other)
+            => TopLeft.Equals(other.TopLeft) && BottomRight.Equals(other.BottomRight);
+
+        public override bool Equals(object obj)
+            => obj is Rectangle other && Equals(other);
+
+        public override int GetHashCode()
+            => HashCode.Combine(TopLeft, BottomRight);
+
+        public static bool operator ==(Rectangle left, Rectangle right)
+            => left.Equals(right);
+
+        public static bool operator !=(Rectangle left, Rectangle right)
+            => !left.Equals(right);
     }
 }

@@ -158,6 +158,7 @@ namespace UnicornHack.Generation
                     {
                         moveMessage.TargetLevelEntity = position.LevelEntity;
                         moveMessage.TargetCell = position.LevelCell;
+                        moveMessage.TargetContainerEntity = null;
                         if (!manager.ItemMovingSystem.CanMoveItem(moveMessage, manager))
                         {
                             manager.ReturnMessage(moveMessage);
@@ -265,14 +266,14 @@ namespace UnicornHack.Generation
 
                 innateAbilityEntity.Ability = ability;
 
-                CreatePropertyEffect(nameof(PhysicalComponent.Weight), Weight ?? 0, innateAbilityEntity.Id, manager,
+                AddPropertyEffect(nameof(PhysicalComponent.Weight), Weight ?? 0, innateAbilityEntity.Id, manager,
                     ValueCombinationFunction.MeanRoundDown);
-                CreatePropertyEffect(nameof(PhysicalComponent.Material), (int?)(Material ?? Primitives.Material.Default),
+                AddPropertyEffect(nameof(PhysicalComponent.Material), (int?)(Material ?? Primitives.Material.Default),
                     innateAbilityEntity.Id, manager, ValueCombinationFunction.Override);
-                CreatePropertyEffect(nameof(PhysicalComponent.Capacity), capacity, innateAbilityEntity.Id, manager);
+                AddPropertyEffect(nameof(PhysicalComponent.Capacity), capacity, innateAbilityEntity.Id, manager);
 
                 ability.OwnerEntity = itemEntity;
-                appliedEffect.AffectedEntityId = itemEntity.Id;
+                appliedEffect.AffectedEntity = itemEntity;
             }
 
             var activateAdded = false;
@@ -289,8 +290,8 @@ namespace UnicornHack.Generation
 
                     var ability = abilityDefinition.AddToEffect(abilityEntity);
 
-                    ability.OwnerId = itemEntity.Id;
-                    abilityEffect.AffectedEntityId = itemEntity.Id;
+                    ability.OwnerEntity = itemEntity;
+                    abilityEffect.AffectedEntity = itemEntity;
 
                     if ((abilityDefinition.Activation & ActivationType.Slottable) != 0)
                     {
@@ -392,8 +393,8 @@ namespace UnicornHack.Generation
                 }
             }
 
-            possessedAbility.OwnerId = item.EntityId;
-            possessedEffect.AffectedEntityId = item.EntityId;
+            possessedAbility.OwnerEntity = item.Entity;
+            possessedEffect.AffectedEntity = item.Entity;
         }
 
         private Func<string, int, int, float> _weightFunction;

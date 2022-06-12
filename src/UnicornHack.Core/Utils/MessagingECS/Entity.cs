@@ -15,11 +15,12 @@ namespace UnicornHack.Utils.MessagingECS
         private Component[] _components;
 
 #if DEBUG
-        private readonly List<object> _owners = new List<object>();
+        private readonly List<object> _owners = new();
 #endif
         private IObjectPool _pool;
         private int _referenceCount;
         private bool _tracked;
+        private bool _disposing;
         private int _id;
 
         public int Id
@@ -41,6 +42,17 @@ namespace UnicornHack.Utils.MessagingECS
             {
                 _components = new Component[componentCount];
             }
+            else
+            {
+                for (var i = 0; i < _components.Length; i++)
+                {
+                    var component = _components[i];
+                    if (component != null)
+                    {
+                        manager.OnComponentAdded(component);
+                    }
+                }
+            }
         }
 
         public TComponent AddComponent<TComponent>(int componentId)
@@ -60,6 +72,9 @@ namespace UnicornHack.Utils.MessagingECS
         public TComponent AddComponent<TComponent>(TComponent component)
             where TComponent : Component, new()
         {
+            Debug.Assert(!_disposing);
+            Debug.Assert(_id != 0);
+
             var componentId = component.ComponentId;
             var propertyName = GetComponentPropertyName(componentId);
 
@@ -82,7 +97,7 @@ namespace UnicornHack.Utils.MessagingECS
                 FirePropertyChanged(propertyName);
             }
 
-            Manager?.HandleComponentAdded(component);
+            Manager.OnComponentAdded(component);
             return component;
         }
 
@@ -135,7 +150,7 @@ namespace UnicornHack.Utils.MessagingECS
 
             _components[componentId] = null;
 
-            Manager?.HandleComponentRemoved(component);
+            Manager?.OnComponentRemoved(component);
 
             ((IOwnerReferenceable)component).RemoveReference(this);
 
@@ -155,8 +170,9 @@ namespace UnicornHack.Utils.MessagingECS
 
         public bool HasComponents(int[] ids)
         {
-            foreach (var id in ids)
+            for (var i = 0; i < ids.Length; i++)
             {
+                var id = ids[i];
                 if (_components[id] == null)
                 {
                     return false;
@@ -168,8 +184,9 @@ namespace UnicornHack.Utils.MessagingECS
 
         public bool HasAnyComponent(int[] ids)
         {
-            foreach (var id in ids)
+            for (var i = 0; i < ids.Length; i++)
             {
+                var id = ids[i];
                 if (_components[id] != null)
                 {
                     return true;
@@ -193,19 +210,20 @@ namespace UnicornHack.Utils.MessagingECS
 
         public void HandlePropertyValueChanged<T>(
             string propertyName, T oldValue, T newValue, int componentId, Component component)
-            => Manager.HandlePropertyValueChanged(propertyName, oldValue, newValue, componentId, component);
+            => Manager.OnPropertyValueChanged(propertyName, oldValue, newValue, componentId, component);
 
-        public void HandlePropertyValuesChanged(IReadOnlyList<IPropertyValueChange> changes)
-            => Manager.HandlePropertyValuesChanged(changes);
+        public void HandlePropertyValuesChanged(IPropertyValueChanges changes)
+            => Manager.OnPropertyValuesChanged(this, changes);
 
         protected virtual string GetComponentPropertyName(int componentId) => null;
 
         public OwnerTransientReference<Entity, TOwner> AddReference<TOwner>(TOwner owner)
-            => new OwnerTransientReference<Entity, TOwner>(this, owner);
+            => new(this, owner);
 
         void IOwnerReferenceable.AddReference(object owner)
         {
 #if DEBUG
+            Debug.Assert(_id != 0);
             _owners.Add(owner);
 #endif
             _referenceCount++;
@@ -223,24 +241,51 @@ namespace UnicornHack.Utils.MessagingECS
 
             if (_referenceCount == 0)
             {
-                ForEachComponent(this, (e, _, c) => e.RemoveComponent(c));
+                if (_disposing)
+                {
+                    return;
+                }
+
+                _disposing = true;
+                for (var i = 0; i < _components.Length; i++)
+                {
+                    var component = _components[i];
+                    if (component != null)
+                    {
+                        RemoveComponent(component);
+                    }
+                }
+
+                if (_referenceCount > 0)
+                {
+                    _disposing = false;
+                    return;
+                }
+
                 if (_tracked)
                 {
                     Manager.RemoveFromSecondaryTracker(this);
                 }
                 else
                 {
-                    Manager.RemoveEntity(this);
-
-                    _id = 0;
-                    Manager = null;
-                    _pool?.Return(this);
+                    Reset();
                 }
             }
             else
             {
                 throw new InvalidOperationException($"Entity {Id} is not referenced by object {owner}");
             }
+        }
+
+        private void Reset()
+        {
+            Manager.RemoveEntity(this);
+
+            _id = 0;
+            Manager = null;
+            _pool?.Return(this);
+
+            _disposing = false;
         }
 
         void IPoolable.SetPool(IObjectPool pool) => _pool = pool;
@@ -257,8 +302,10 @@ namespace UnicornHack.Utils.MessagingECS
             Debug.Assert(_tracked, $"Entity {Id} is not tracked by {tracker}");
 
             _tracked = false;
-            ((IOwnerReferenceable)this).AddReference(tracker);
-            RemoveReference(tracker);
+            if (_disposing)
+            {
+                Reset();
+            }
         }
 
         public override string ToString()

@@ -4,7 +4,7 @@ using System.Diagnostics;
 // ReSharper disable ImpureMethodCallOnReadonlyValueField
 namespace UnicornHack.Utils.DataStructures
 {
-    public struct Point
+    public readonly struct Point : IEquatable<Point>
     {
         public readonly byte X;
         public readonly byte Y;
@@ -17,13 +17,13 @@ namespace UnicornHack.Utils.DataStructures
         }
 
         public static Point? Unpack(int? bits)
-            => bits == null ? (Point?)null : Unpack(bits.Value);
+            => bits == null ? null : Unpack(bits.Value);
 
         public static Point Unpack(int bits)
-            => new Point((byte)((bits & 0xFF00) >> 8), (byte)(bits & 0xFF));
+            => new((byte)((bits & 0xFF00) >> 8), (byte)(bits & 0xFF));
 
         public static Point Unpack(ushort bits)
-            => new Point((byte)((bits & 0xFF00) >> 8), (byte)(bits & 0xFF));
+            => new((byte)((bits & 0xFF00) >> 8), (byte)(bits & 0xFF));
 
         public int ToInt32() => X << 8 | Y;
 
@@ -33,9 +33,9 @@ namespace UnicornHack.Utils.DataStructures
 
         public byte OrthogonalDistanceTo(Point target) => (byte)(Math.Abs(target.X - X) + Math.Abs(target.Y - Y));
 
-        public Vector DifferenceTo(Point target) => new Vector((sbyte)(target.X - X), (sbyte)(target.Y - Y));
+        public Vector DifferenceTo(Point target) => new((sbyte)(target.X - X), (sbyte)(target.Y - Y));
 
-        public Point Translate(Vector direction) => new Point((byte)(X + direction.X), (byte)(Y + direction.Y));
+        public Point Translate(Vector direction) => new((byte)(X + direction.X), (byte)(Y + direction.Y));
 
         public void Deconstruct(out byte x, out byte y)
         {
@@ -58,12 +58,7 @@ namespace UnicornHack.Utils.DataStructures
         public bool Equals(Point other) => X == other.X && Y == other.Y;
 
         public override int GetHashCode()
-        {
-            unchecked
-            {
-                return (X.GetHashCode() * 397) ^ Y.GetHashCode();
-            }
-        }
+            => HashCode.Combine(X, Y);
 
         public static bool operator ==(Point left, Point right) => left.Equals(right);
 

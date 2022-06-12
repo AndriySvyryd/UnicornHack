@@ -4,31 +4,19 @@ using System.Linq;
 namespace UnicornHack.Utils.MessagingECS
 {
     public class SortedEntityIndex<TEntity, TKey> : EntityIndexBase<TEntity, TKey>
-        where TEntity : Entity
+        where TEntity : Entity, new()
     {
         private readonly IComparer<TEntity> _comparer;
 
-        public SortedEntityIndex(
-            string name,
+        public SortedEntityIndex(string name,
             IEntityGroup<TEntity> group,
-            KeyValueGetter<TEntity, TKey> keyValueGetter,
-            IComparer<TEntity> comparer)
+            IKeyValueGetter<TEntity, TKey> keyValueGetter,
+            IComparer<TEntity> comparer,
+            IEqualityComparer<TKey> equalityComparer = null)
             : base(name, group, keyValueGetter)
         {
             _comparer = comparer;
-            Index = new Dictionary<TKey, SortedSet<TEntity>>();
-        }
-
-        public SortedEntityIndex(
-            string name,
-            IEntityGroup<TEntity> group,
-            KeyValueGetter<TEntity, TKey> keyValueGetter,
-            IEqualityComparer<TKey> equalityComparer,
-            IComparer<TEntity> comparer)
-            : base(name, group, keyValueGetter)
-        {
-            _comparer = comparer;
-            Index = new Dictionary<TKey, SortedSet<TEntity>>(equalityComparer);
+            Index = new Dictionary<TKey, SortedSet<TEntity>>(equalityComparer ?? EqualityComparer<TKey>.Default);
         }
 
         protected Dictionary<TKey, SortedSet<TEntity>> Index { get; }
@@ -47,15 +35,15 @@ namespace UnicornHack.Utils.MessagingECS
             return entities;
         }
 
-        protected override bool TryAddEntity(TKey key, TEntity entity, Component changedComponent)
-            => GetOrAddEntities(key).Add(entity);
+        protected override bool TryAddEntity(TKey key, in EntityChange<TEntity> entityChange)
+            => GetOrAddEntities(key).Add(entityChange.Entity);
 
-        protected override bool TryRemoveEntity(TKey key, TEntity entity, Component changedComponent)
-            => GetOrAddEntities(key).Remove(entity);
+        protected override bool TryRemoveEntity(TKey key, in EntityChange<TEntity> entityChange)
+            => GetOrAddEntities(key).Remove(entityChange.Entity);
+
+        protected override bool HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange)
+            => false;
 
         public override string ToString() => "SortedIndex: " + Name;
-
-        public override IEnumerator<TEntity> GetEnumerator()
-            => Index.Values.SelectMany(v => v).GetEnumerator();
     }
 }

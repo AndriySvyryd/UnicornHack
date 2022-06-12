@@ -535,57 +535,57 @@ namespace UnicornHack.Generation
 
             innateAbilityEntity.Ability = innateAbility;
 
-            CreatePropertyEffect(
+            AddPropertyEffect(
                 nameof(PositionComponent.MovementDelay), MovementDelay, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(
+            AddPropertyEffect(
                 nameof(PositionComponent.TurningDelay), TurningDelay, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(PhysicalComponent.Size), Size, innateAbilityEntity.Id, manager,
+            AddPropertyEffect(nameof(PhysicalComponent.Size), Size, innateAbilityEntity.Id, manager,
                 ValueCombinationFunction.MeanRoundDown);
-            CreatePropertyEffect(nameof(PhysicalComponent.Weight), Weight, innateAbilityEntity.Id, manager,
+            AddPropertyEffect(nameof(PhysicalComponent.Weight), Weight, innateAbilityEntity.Id, manager,
                 ValueCombinationFunction.MeanRoundDown);
-            CreatePropertyEffect(nameof(PhysicalComponent.Material), (int?)(Material ?? Primitives.Material.Flesh),
+            AddPropertyEffect(nameof(PhysicalComponent.Material), (int?)(Material ?? Primitives.Material.Flesh),
                 innateAbilityEntity.Id, manager, ValueCombinationFunction.Override);
-            CreatePropertyEffect(nameof(PhysicalComponent.Capacity),
+            AddPropertyEffect(nameof(PhysicalComponent.Capacity),
                 (SlotCapacity ?? AbilitySlottingSystem.DefaultSlotCapacity) + 2, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.Perception), Perception, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.Might), Might, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.Speed), Speed, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.Focus), Focus, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.EnergyRegeneration), EnergyRegeneration, innateAbilityEntity.Id,
+            AddPropertyEffect(nameof(BeingComponent.Perception), Perception, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.Might), Might, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.Speed), Speed, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.Focus), Focus, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.EnergyRegeneration), EnergyRegeneration, innateAbilityEntity.Id,
                 manager);
-            CreatePropertyEffect(nameof(BeingComponent.Regeneration), Regeneration, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.HitPointMaximum), BonusHitPoints, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.EnergyPointMaximum), BonusEnergyPoints, innateAbilityEntity.Id,
+            AddPropertyEffect(nameof(BeingComponent.Regeneration), Regeneration, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.HitPointMaximum), BonusHitPoints, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.EnergyPointMaximum), BonusEnergyPoints, innateAbilityEntity.Id,
                 manager);
-            CreatePropertyEffect(nameof(BeingComponent.Accuracy), Accuracy, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.Evasion), Evasion, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.Deflection), Deflection, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.Armor), Armor, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.PhysicalResistance), PhysicalResistance, innateAbilityEntity.Id,
+            AddPropertyEffect(nameof(BeingComponent.Accuracy), Accuracy, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.Evasion), Evasion, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.Deflection), Deflection, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.Armor), Armor, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.PhysicalResistance), PhysicalResistance, innateAbilityEntity.Id,
                 manager);
-            CreatePropertyEffect(nameof(BeingComponent.MagicResistance), MagicResistance, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.AcidResistance), AcidResistance, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.BleedingResistance), BleedingResistance, innateAbilityEntity.Id,
+            AddPropertyEffect(nameof(BeingComponent.MagicResistance), MagicResistance, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.AcidResistance), AcidResistance, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.BleedingResistance), BleedingResistance, innateAbilityEntity.Id,
                 manager);
-            CreatePropertyEffect(nameof(BeingComponent.ColdResistance), ColdResistance, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.ElectricityResistance), ElectricityResistance, innateAbilityEntity.Id,
+            AddPropertyEffect(nameof(BeingComponent.ColdResistance), ColdResistance, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.ElectricityResistance), ElectricityResistance, innateAbilityEntity.Id,
                 manager);
-            CreatePropertyEffect(nameof(BeingComponent.FireResistance), FireResistance, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.LightResistance), LightResistance, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.PsychicResistance), PsychicResistance, innateAbilityEntity.Id,
+            AddPropertyEffect(nameof(BeingComponent.FireResistance), FireResistance, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.LightResistance), LightResistance, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.PsychicResistance), PsychicResistance, innateAbilityEntity.Id,
                 manager);
-            CreatePropertyEffect(nameof(BeingComponent.SonicResistance), SonicResistance, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.StunResistance), StunResistance, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.ToxinResistance), ToxinResistance, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.VoidResistance), VoidResistance, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.WaterResistance), WaterResistance, innateAbilityEntity.Id, manager);
-            CreatePropertyEffect(nameof(BeingComponent.UpperExtremities), (int?)UpperExtremities, innateAbilityEntity.Id,
+            AddPropertyEffect(nameof(BeingComponent.SonicResistance), SonicResistance, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.StunResistance), StunResistance, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.ToxinResistance), ToxinResistance, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.VoidResistance), VoidResistance, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.WaterResistance), WaterResistance, innateAbilityEntity.Id, manager);
+            AddPropertyEffect(nameof(BeingComponent.UpperExtremities), (int?)UpperExtremities, innateAbilityEntity.Id,
                 manager);
 
             // TODO: Populate other properties
 
             innateAbility.OwnerEntity = creatureEntity;
-            innateEffect.AffectedEntityId = creatureEntity.Id;
+            innateEffect.AffectedEntity = creatureEntity;
 
             using var raceEffectEntityReference = manager.CreateEntity();
             var raceEffectEntity = raceEffectEntityReference.Referenced;
@@ -598,7 +598,7 @@ namespace UnicornHack.Generation
             var race = AddToAppliedEffect(raceEffectEntity, creatureEntity);
             race.Level = InitialLevel;
 
-            raceEffect.AffectedEntityId = creatureEntity.Id;
+            raceEffect.AffectedEntity = creatureEntity;
 
             return creatureEntity;
         }
@@ -670,7 +670,7 @@ namespace UnicornHack.Generation
 
         protected static Dictionary<string, Func<TCreatureVariant, object, bool>>
             GetPropertyConditions<TCreatureVariant>() where TCreatureVariant : Creature =>
-            new Dictionary<string, Func<TCreatureVariant, object, bool>>
+            new()
             {
                 {nameof(Name), (o, v) => v != null},
                 {nameof(BaseName), (o, v) => v != null},

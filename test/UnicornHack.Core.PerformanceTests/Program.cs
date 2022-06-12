@@ -1,13 +1,14 @@
 ﻿using System;
+using System.Globalization;
 using System.Linq;
 using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Exporters;
 using BenchmarkDotNet.Exporters.Csv;
-using BenchmarkDotNet.Horology;
 using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
+using Perfolizer.Horology;
 
 namespace UnicornHack.PerformanceTests
 {
@@ -16,17 +17,19 @@ namespace UnicornHack.PerformanceTests
         public static void Main(string[] args)
         {
             var config = DefaultConfig.Instance
-                .With(DefaultConfig.Instance.GetDiagnosers().Concat(new[] { MemoryDiagnoser.Default }).ToArray());
+                .WithOptions(ConfigOptions.JoinSummary)
+                .AddDiagnoser(DefaultConfig.Instance.GetDiagnosers().Concat(new[] { MemoryDiagnoser.Default }).ToArray());
 
             config = config
-                .With(StatisticColumn.Min)
-                .With(
+                .AddColumn(StatisticColumn.Min)
+                .AddExporter(
                     MarkdownExporter.GitHub,
                     HtmlExporter.Default,
                     new CsvExporter(
                         CsvSeparator.Comma,
                         new SummaryStyle
                         (
+                            CultureInfo.InvariantCulture,
                             printUnitsInHeader: true,
                             printUnitsInContent: false,
                             timeUnit: TimeUnit.Microsecond,
@@ -35,7 +38,7 @@ namespace UnicornHack.PerformanceTests
 
             var benchmarkSwitcher = BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly);
             var resultsDirectoryPath = args.Length > 0
-                ? benchmarkSwitcher.Run(args, config).First().ResultsDirectoryPath
+                ? benchmarkSwitcher.Run(args, config).First().ResultsDirectoryPath // new DebugInProcessConfig()
                 : benchmarkSwitcher.RunAll(config).First().ResultsDirectoryPath;
 
             Console.WriteLine();

@@ -29,7 +29,7 @@ namespace UnicornHack.Generation
                 level.KnownTerrain = new byte[0];
                 level.WallNeighbors = new byte[0];
                 level.VisibleTerrain = new byte[0];
-                level.VisibleNeighbours = new byte[0];
+                level.VisibleNeighbors = new byte[0];
                 level.VisibleTerrain = new byte[0];
                 level.Difficulty = branch.Difficulty + depth;
                 if (level.Difficulty > MaxDifficulty)
@@ -83,13 +83,13 @@ namespace UnicornHack.Generation
             var length = levelComponent.TileCount;
             levelComponent.Terrain = ArrayPool<byte>.Shared.Rent(length);
             levelComponent.WallNeighbors = ArrayPool<byte>.Shared.Rent(length);
-            levelComponent.VisibleNeighbours = ArrayPool<byte>.Shared.Rent(length);
+            levelComponent.VisibleNeighbors = ArrayPool<byte>.Shared.Rent(length);
             levelComponent.VisibleTerrain = ArrayPool<byte>.Shared.Rent(length);
             levelComponent.KnownTerrain = ArrayPool<byte>.Shared.Rent(length);
 
             Array.Clear(levelComponent.Terrain, 0, length);
             Array.Clear(levelComponent.WallNeighbors, 0, length);
-            Array.Clear(levelComponent.VisibleNeighbours, 0, length);
+            Array.Clear(levelComponent.VisibleNeighbors, 0, length);
             Array.Clear(levelComponent.VisibleTerrain, 0, length);
             for (var i = 0; i < length; i++)
             {

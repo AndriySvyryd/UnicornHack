@@ -1,11 +1,12 @@
 ﻿namespace UnicornHack.Utils.MessagingECS
 {
     public class EntityAddedMessage<TEntity> : IMessage
-        where TEntity : Entity
+        where TEntity : Entity, new()
     {
         private TEntity _entity;
-        private Component _changedComponent;
-        private TEntity _referencedEntity;
+        private Component _removedComponent;
+        private IPropertyValueChanges _propertyChanges;
+        private TEntity _principalEntity;
 
         public TEntity Entity
         {
@@ -18,25 +19,50 @@
             }
         }
 
-        public Component ChangedComponent
+        public Component RemovedComponent
         {
-            get => _changedComponent;
+            get => _removedComponent;
             set
             {
-                (_changedComponent as IOwnerReferenceable)?.RemoveReference(this);
-                _changedComponent = value;
-                (_changedComponent as IOwnerReferenceable)?.AddReference(this);
+                (_removedComponent as IOwnerReferenceable)?.RemoveReference(this);
+                _removedComponent = value;
+                (_removedComponent as IOwnerReferenceable)?.AddReference(this);
             }
         }
 
-        public TEntity ReferencedEntity
+        public IPropertyValueChanges PropertyChanges
         {
-            get => _referencedEntity;
+            get => _propertyChanges;
             set
             {
-                _referencedEntity?.RemoveReference(this);
-                _referencedEntity = value;
-                _referencedEntity?.AddReference(this);
+                if (_propertyChanges != null)
+                {
+                    for (var i = 0; i < _propertyChanges.Count; i++)
+                    {
+                        _propertyChanges.GetChange<IOwnerReferenceable>(i)?.RemoveReference(this);
+                    }
+                }
+
+                _propertyChanges = value;
+
+                if (_propertyChanges != null)
+                {
+                    for (var i = 0; i < _propertyChanges.Count; i++)
+                    {
+                        _propertyChanges.GetChange<IOwnerReferenceable>(i)?.AddReference(this);
+                    }
+                }
+            }
+        }
+
+        public TEntity PrincipalEntity
+        {
+            get => _principalEntity;
+            set
+            {
+                _principalEntity?.RemoveReference(this);
+                _principalEntity = value;
+                _principalEntity?.AddReference(this);
             }
         }
 
@@ -46,10 +72,11 @@
 
         public void Clean()
         {
-            ChangedComponent = default;
+            RemovedComponent = default;
+            PropertyChanges = default;
             Entity = default;
             Group = default;
-            ReferencedEntity = default;
+            PrincipalEntity = default;
         }
     }
 }

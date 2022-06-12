@@ -14,12 +14,11 @@ namespace UnicornHack.Services.English
 {
     public class EnglishLanguageService : ILanguageService
     {
-        protected virtual CultureInfo Culture { get; } = new CultureInfo(name: "en-US");
+        protected virtual CultureInfo Culture { get; } = new (name: "en-US");
 
-        private EnglishMorphologicalProcessor EnglishMorphologicalProcessor { get; } =
-            new EnglishMorphologicalProcessor();
+        private EnglishMorphologicalProcessor EnglishMorphologicalProcessor { get; } = new ();
 
-        private TaggingService TaggingService { get; } = new TaggingService();
+        private TaggingService TaggingService { get; } = new ();
 
         #region Game concepts
 
@@ -70,7 +69,7 @@ namespace UnicornHack.Services.English
             }
 
             var name = "";
-            foreach (var raceEntity in actorEntity.Manager.RacesToBeingRelationship[actorEntity.Id].Values)
+            foreach (var raceEntity in actorEntity.Being.Races)
             {
                 name += " " + raceEntity.Race.TemplateName;
             }

@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using UnicornHack.Systems.Effects;
+﻿using UnicornHack.Systems.Effects;
 using Xunit;
 
 namespace UnicornHack.Utils.MessagingECS
@@ -11,7 +10,7 @@ namespace UnicornHack.Utils.MessagingECS
         {
             var manager = TestHelper.CreateGameManager();
 
-            Assert.Empty(manager.TemporalEntitiesIndex);
+            Assert.Equal(0, manager.TemporalEntitiesIndex.Count);
 
             using (var firstEffectEntityReference = manager.CreateEntity())
             {
@@ -20,7 +19,7 @@ namespace UnicornHack.Utils.MessagingECS
 
                 firstEffect.ExpirationTick = 10;
 
-                Assert.Same(firstEffectEntity, manager.TemporalEntitiesIndex.Single());
+                Assert.Equal(1, manager.TemporalEntitiesIndex.Count);
                 Assert.Same(firstEffectEntity, manager.TemporalEntitiesIndex[(10, firstEffectEntity.Id)]);
 
                 using (var secondEffectEntityReference = manager.CreateEntity())
@@ -32,22 +31,23 @@ namespace UnicornHack.Utils.MessagingECS
 
                     Assert.Same(secondEffectEntity, manager.TemporalEntitiesIndex.First());
                     Assert.Same(firstEffectEntity, manager.TemporalEntitiesIndex.Last());
-                    Assert.Equal(2, manager.TemporalEntitiesIndex.Count());
+                    Assert.Equal(2, manager.TemporalEntitiesIndex.Count);
 
                     secondEffect.ExpirationTick = 11;
 
-                    Assert.Same(secondEffectEntity, manager.TemporalEntitiesIndex.Last());
                     Assert.Same(firstEffectEntity, manager.TemporalEntitiesIndex.First());
+                    Assert.Same(secondEffectEntity, manager.TemporalEntitiesIndex.Last());
 
                     secondEffect.ExpirationTick = null;
 
-                    Assert.Same(firstEffectEntity, manager.TemporalEntitiesIndex.Single());
+                    Assert.Same(firstEffectEntity, manager.TemporalEntitiesIndex.First());
+                    Assert.Same(firstEffectEntity, manager.TemporalEntitiesIndex.Last());
                 }
 
                 manager.Queue.ProcessQueue(manager);
             }
 
-            Assert.Empty(manager.TemporalEntitiesIndex);
+            Assert.Equal(0, manager.TemporalEntitiesIndex.Count);
         }
     }
 }

@@ -81,32 +81,32 @@ namespace UnicornHack.Systems.Beings
 
                     break;
                 case nameof(BeingComponent.Might):
-                    CalculateHp(message.NewValue, message.Entity, manager);
+                    UpdateMaxHp(message.NewValue, message.Entity, manager);
 
                     break;
                 case nameof(BeingComponent.Focus):
-                    CalculateEp(message.NewValue, message.Entity, manager);
+                    UpdateMaxEp(message.NewValue, message.Entity, manager);
 
                     break;
                 case nameof(BeingComponent.Perception):
-                    CalculateAccuracy(message.NewValue, message.Entity, manager);
+                    UpdateAccuracy(message.NewValue, message.Entity, manager);
 
                     break;
                 case nameof(BeingComponent.Speed):
                 {
                     var effectiveSpeed = message.NewValue - being.Hindrance / 10;
-                    CalculateMovementDelay(effectiveSpeed, message.Entity, manager);
-                    CalculateTurningDelay(effectiveSpeed, message.Entity, manager);
-                    CalculateEvasion(effectiveSpeed, message.Entity, manager);
+                    UpdateMovementDelay(effectiveSpeed, message.Entity, manager);
+                    UpdateTurningDelay(effectiveSpeed, message.Entity, manager);
+                    UpdateEvasion(effectiveSpeed, message.Entity, manager);
 
                     break;
                 }
                 case nameof(BeingComponent.Hindrance):
                 {
                     var effectiveSpeed = being.Speed - message.NewValue / 10;
-                    CalculateMovementDelay(effectiveSpeed, message.Entity, manager);
-                    CalculateTurningDelay(effectiveSpeed, message.Entity, manager);
-                    CalculateEvasion(effectiveSpeed, message.Entity, manager);
+                    UpdateMovementDelay(effectiveSpeed, message.Entity, manager);
+                    UpdateTurningDelay(effectiveSpeed, message.Entity, manager);
+                    UpdateEvasion(effectiveSpeed, message.Entity, manager);
 
                     break;
                 }
@@ -122,67 +122,43 @@ namespace UnicornHack.Systems.Beings
             being.HitPointMaximum = 1;
             being.HitPoints = 1;
 
-            CalculateHp(being.Might, message.Entity, manager);
-            CalculateEp(being.Focus, message.Entity, manager);
-            CalculateAccuracy(being.Perception, message.Entity, manager);
+            UpdateMaxHp(being.Might, message.Entity, manager);
+            UpdateMaxEp(being.Focus, message.Entity, manager);
+            UpdateAccuracy(being.Perception, message.Entity, manager);
 
             var effectiveSpeed = being.Speed - being.Hindrance / 10;
-            CalculateMovementDelay(effectiveSpeed, message.Entity, manager);
-            CalculateTurningDelay(effectiveSpeed, message.Entity, manager);
-            CalculateEvasion(effectiveSpeed, message.Entity, manager);
+            UpdateMovementDelay(effectiveSpeed, message.Entity, manager);
+            UpdateTurningDelay(effectiveSpeed, message.Entity, manager);
+            UpdateEvasion(effectiveSpeed, message.Entity, manager);
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        private void CalculateHp(int might, GameEntity beingEntity, GameManager manager)
-        {
-            var hpEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
-                beingEntity, nameof(BeingComponent.HitPointMaximum), AttributedAbilityName);
+        private void UpdateMaxHp(int might, GameEntity beingEntity, GameManager manager)
+            => manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(might * 10,
+                nameof(BeingComponent.HitPointMaximum), AttributedAbilityName, beingEntity);
 
-            hpEffect.AppliedAmount = might * 10;
-        }
+        private void UpdateMaxEp(int focus, GameEntity beingEntity, GameManager manager)
+            => manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(focus * 10,
+                nameof(BeingComponent.EnergyPointMaximum), AttributedAbilityName, beingEntity);
 
-        private void CalculateEp(int focus, GameEntity beingEntity, GameManager manager)
-        {
-            var epEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
-                beingEntity, nameof(BeingComponent.EnergyPointMaximum), AttributedAbilityName);
+        private void UpdateAccuracy(int perception, GameEntity beingEntity, GameManager manager)
+            => manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(perception * 10,
+                nameof(BeingComponent.Accuracy), AttributedAbilityName, beingEntity);
 
-            epEffect.AppliedAmount = focus * 10;
-        }
+        private void UpdateEvasion(int effectiveSpeed, GameEntity beingEntity, GameManager manager)
+            => manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(50 + effectiveSpeed * 5,
+                nameof(BeingComponent.Evasion), AttributedAbilityName, beingEntity);
 
-        private void CalculateAccuracy(int perception, GameEntity beingEntity, GameManager manager)
-        {
-            var accuracyEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
-                beingEntity, nameof(BeingComponent.Accuracy), AttributedAbilityName);
+        private void UpdateMovementDelay(int effectiveSpeed, GameEntity beingEntity, GameManager manager)
+            => manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(effectiveSpeed == 0
+            ? 0
+            : TimeSystem.DefaultActionDelay * 10 / effectiveSpeed,
+                nameof(PositionComponent.MovementDelay), AttributedAbilityName, beingEntity);
 
-            accuracyEffect.AppliedAmount = perception * 10;
-        }
-
-        private void CalculateEvasion(int effectiveSpeed, GameEntity beingEntity, GameManager manager)
-        {
-            var evasionEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
-                beingEntity, nameof(BeingComponent.Evasion), AttributedAbilityName);
-
-            evasionEffect.AppliedAmount = 50 + effectiveSpeed * 5;
-        }
-
-        private void CalculateMovementDelay(int effectiveSpeed, GameEntity beingEntity, GameManager manager)
-        {
-            var movementEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
-                beingEntity, nameof(PositionComponent.MovementDelay), AttributedAbilityName);
-
-            movementEffect.AppliedAmount = effectiveSpeed == 0
-                ? 0
-                : TimeSystem.DefaultActionDelay * 10 / effectiveSpeed;
-        }
-
-        private void CalculateTurningDelay(int effectiveSpeed, GameEntity beingEntity, GameManager manager)
-        {
-            var turningEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
-                beingEntity, nameof(PositionComponent.TurningDelay), AttributedAbilityName);
-
-            turningEffect.AppliedAmount = effectiveSpeed == 0
-                ? 0
-                : TimeSystem.DefaultActionDelay * 10 / effectiveSpeed;
-        }
+        private void UpdateTurningDelay(int effectiveSpeed, GameEntity beingEntity, GameManager manager)
+            => manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(effectiveSpeed == 0
+            ? 0
+            : TimeSystem.DefaultActionDelay * 10 / effectiveSpeed,
+                nameof(PositionComponent.TurningDelay), AttributedAbilityName, beingEntity);
     }
 }

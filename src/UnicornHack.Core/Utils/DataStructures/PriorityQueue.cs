@@ -3,9 +3,10 @@ using System.Collections.Generic;
 
 namespace UnicornHack.Utils.DataStructures
 {
+    // TODO: Use the class from .NET 6
     public class PriorityQueue<T> : ISnapshotableCollection<T>
     {
-        private readonly List<T> _list = new List<T>();
+        private readonly List<T> _list = new();
         private readonly IComparer<T> _comparer;
 
         public PriorityQueue() : this(Comparer<T>.Default, 0)
@@ -92,7 +93,7 @@ namespace UnicornHack.Utils.DataStructures
         private T RemoveAt(int position)
         {
             var result = _list[position];
-            _list[position] = _list[_list.Count - 1];
+            _list[position] = _list[^1];
             _list.RemoveAt(_list.Count - 1);
 
             if (position != _list.Count)

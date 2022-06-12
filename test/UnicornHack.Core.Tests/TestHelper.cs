@@ -39,12 +39,13 @@ namespace UnicornHack
             return manager;
         }
 
-        public static LevelComponent BuildLevel(string map = "", uint? seed = null)
-            => BuildLevelWithRooms(map, seed).Item1;
+        public static LevelComponent BuildLevel(string map = "", uint? seed = null, Game game = null)
+            => BuildLevelWithRooms(map, seed, game).Item1;
 
-        public static (LevelComponent, IReadOnlyList<Room>) BuildLevelWithRooms(string map = "", uint? seed = null)
+        public static (LevelComponent, IReadOnlyList<Room>) BuildLevelWithRooms(
+            string map = "", uint? seed = null, Game game = null)
         {
-            var game = CreateGame(seed);
+            game ??= CreateGame(seed);
 
             var fragment = new DefiningMapFragment
             {

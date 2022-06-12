@@ -91,7 +91,7 @@ namespace UnicornHack
             var levelEntity = Manager.FindEntity(levelId);
             if (!LevelGenerator.EnsureGenerated(levelEntity.Level))
             {
-                var levelsToLoad = Manager.ConnectionsToLevelRelationship[levelId]
+                var levelsToLoad = levelEntity.Level.Connections.Values
                     .Select(c => c.Connection.TargetLevelId)
                     .Where(id => Manager.FindEntity(id) == null)
                     .ToList();

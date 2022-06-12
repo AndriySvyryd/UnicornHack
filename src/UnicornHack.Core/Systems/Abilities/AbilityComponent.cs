@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
 
@@ -34,6 +35,8 @@ namespace UnicornHack.Systems.Abilities
         private int? _slot;
         private Ability _template;
         private bool _templateLoaded;
+        private Func<GameEntity, GameEntity, float> _accuracyFunction;
+        private Func<GameEntity, GameEntity, float> _delayFunction;
 
         public AbilityComponent()
             => ComponentId = (int)EntityComponent.Ability;
@@ -42,6 +45,28 @@ namespace UnicornHack.Systems.Abilities
         {
             get => _name;
             set => SetWithNotify(value, ref _name);
+        }
+
+        public Ability Template
+        {
+            get
+            {
+                if (_templateLoaded
+                    || _name == null)
+                {
+                    return _template;
+                }
+
+                _template = Ability.Loader.Find(_name);
+                _templateLoaded = true;
+                return _template;
+            }
+
+            set
+            {
+                _template = value;
+                _templateLoaded = true;
+            }
         }
 
         public AbilityType Type
@@ -54,6 +79,16 @@ namespace UnicornHack.Systems.Abilities
         {
             get => _level;
             set => SetWithNotify(value, ref _level);
+        }
+
+        public GameEntity OwnerEntity
+        {
+            get => _ownerEntity ??= Entity.Manager.FindEntity(_ownerId);
+            set
+            {
+                OwnerId = value?.Id;
+                _ownerEntity = value;
+            }
         }
 
         public int? OwnerId
@@ -132,7 +167,11 @@ namespace UnicornHack.Systems.Abilities
             set => SetWithNotify(value, ref _successCondition);
         }
 
-        public Func<GameEntity, GameEntity, float> AccuracyFunction { get; set; }
+        public Func<GameEntity, GameEntity, float> AccuracyFunction
+        {
+            get => _accuracyFunction;
+            set => _accuracyFunction = value;
+        }
 
         public string Accuracy
         {
@@ -174,7 +213,11 @@ namespace UnicornHack.Systems.Abilities
             set => SetWithNotify(value, ref _energyCost);
         }
 
-        public Func<GameEntity, GameEntity, float> DelayFunction { get; set; }
+        public Func<GameEntity, GameEntity, float> DelayFunction
+        {
+            get => _delayFunction;
+            set => _delayFunction = value;
+        }
 
         public string Delay
         {
@@ -204,38 +247,7 @@ namespace UnicornHack.Systems.Abilities
             set => SetWithNotify(value, ref _slot);
         }
 
-        // Unmapped properties
-        public GameEntity OwnerEntity
-        {
-            get => _ownerEntity ??= Entity.Manager.FindEntity(_ownerId);
-            set
-            {
-                OwnerId = value?.Id;
-                _ownerEntity = value;
-            }
-        }
-
-        public Ability Template
-        {
-            get
-            {
-                if (_templateLoaded
-                    || _name == null)
-                {
-                    return _template;
-                }
-
-                _template = Ability.Loader.Find(_name);
-                _templateLoaded = true;
-                return _template;
-            }
-
-            set
-            {
-                _template = value;
-                _templateLoaded = true;
-            }
-        }
+        public IReadOnlyCollection<GameEntity> Effects { get; private set; } = new HashSet<GameEntity>();
 
         public AbilityComponent AddToEffect(GameEntity abilityEffectEntity, bool includeEffects = true)
         {
@@ -264,7 +276,7 @@ namespace UnicornHack.Systems.Abilities
 
             if (includeEffects)
             {
-                foreach (var effectEntity in manager.EffectsToContainingAbilityRelationship[Entity.Id])
+                foreach (var effectEntity in Effects)
                 {
                     effectEntity.Effect.AddToAbility(abilityEffectEntity);
                 }
@@ -302,6 +314,7 @@ namespace UnicornHack.Systems.Abilities
             _isActive = default;
             _isUsable = true;
             _slot = default;
+            ((HashSet<GameEntity>)Effects).Clear();
 
             base.Clean();
         }

@@ -16,7 +16,7 @@ namespace UnicornHack.Utils.MessagingECS
 
         public int QueuedCount => _mainQueue.Count;
 
-        public void Add<TMessage>(IMessageConsumer<TMessage, TState> consumer, string name, int order)
+        public void Register<TMessage>(IMessageConsumer<TMessage, TState> consumer, string name, int order)
             where TMessage : class, IMessage, new()
         {
             if (!_namedQueues.TryGetValue(name, out var specificQueue))

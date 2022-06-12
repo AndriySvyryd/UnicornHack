@@ -137,7 +137,7 @@ namespace UnicornHack.Systems.Faculties
                     }
                 }
 
-                foreach (var itemEntity in manager.EntityItemsToContainerRelationship[actorEntity.Id])
+                foreach (var itemEntity in actorEntity.Being.Items)
                 {
                     var item = itemEntity.Item;
 
@@ -202,7 +202,7 @@ namespace UnicornHack.Systems.Faculties
 
             AbilityComponent defaultAttackAbility = null;
             var expectedItemType = melee ? ItemType.WeaponMelee : ItemType.WeaponRanged;
-            foreach (var abilityEntity in manager.AbilitiesToAffectableRelationship[actorEntity.Id])
+            foreach (var abilityEntity in being.Abilities)
             {
                 var ability = abilityEntity.Ability;
                 if (ability.Template == null
@@ -326,8 +326,8 @@ namespace UnicornHack.Systems.Faculties
             {
                 if (weapon != null)
                 {
-                    var abilityToActivate = manager.AbilitiesToAffectableRelationship[weapon.EntityId]
-                        .Select(a => a.Ability).FirstOrDefault(a => (a.Activation & activation) != 0);
+                    var abilityToActivate = weapon.Abilities.Select(a => a.Ability)
+                        .FirstOrDefault(a => (a.Activation & activation) != 0);
 
                     if (abilityToActivate != null)
                     {
@@ -338,7 +338,7 @@ namespace UnicornHack.Systems.Faculties
                         weaponAttack.Delay = manager.AbilityActivationSystem.GetDelay(abilityToActivate, ownerEntity).ToString();
                     }
 
-                    foreach (var effectEntity in manager.EffectsToContainingAbilityRelationship[weaponAttack.EntityId])
+                    foreach (var effectEntity in weaponAttack.Effects)
                     {
                         var effect = effectEntity.Effect;
                         if (effect.EffectType == EffectType.Activate)
@@ -434,7 +434,7 @@ namespace UnicornHack.Systems.Faculties
             ability.Delay = delay.ToString();
 
             GameEntity firstEffectEntity = null;
-            foreach (var effectEntity in manager.EffectsToContainingAbilityRelationship[ability.EntityId])
+            foreach (var effectEntity in ability.Effects)
             {
                 var effect = effectEntity.Effect;
                 if (effect.EffectType != EffectType.Activate)
@@ -460,7 +460,8 @@ namespace UnicornHack.Systems.Faculties
             }
         }
 
-        private bool IsCompatible(ItemComponent weapon, ActivationType activation, ItemType? itemType,
+        private bool IsCompatible(
+            ItemComponent weapon, ActivationType activation, ItemType? itemType,
             EffectType? damageType, GameManager manager)
         {
             if (weapon != null
@@ -471,14 +472,14 @@ namespace UnicornHack.Systems.Faculties
                     return true;
                 }
 
-                foreach (var abilityEntity in manager.AbilitiesToAffectableRelationship[weapon.EntityId])
+                foreach (var abilityEntity in weapon.Abilities)
                 {
                     if ((abilityEntity.Ability.Activation & activation) == 0)
                     {
                         continue;
                     }
 
-                    foreach (var effectEntity in manager.EffectsToContainingAbilityRelationship[abilityEntity.Id])
+                    foreach (var effectEntity in abilityEntity.Ability.Effects)
                     {
                         if (effectEntity.Effect.EffectType == damageType)
                         {
@@ -499,7 +500,7 @@ namespace UnicornHack.Systems.Faculties
             var being = actorEntity.Being;
             var hindrance = 0;
 
-            foreach (var itemEntity in manager.EntityItemsToContainerRelationship[actorEntity.Id])
+            foreach (var itemEntity in actorEntity.Being.Items)
             {
                 var item = itemEntity.Item;
                 if (item.EquippedSlot == EquipmentSlot.None)
@@ -546,10 +547,8 @@ namespace UnicornHack.Systems.Faculties
                 hindrance += addedHindrance;
             }
 
-            var hindranceEffect = manager.EffectApplicationSystem.GetOrAddPropertyEffect(
-                actorEntity, nameof(BeingComponent.Hindrance), EquippedAbilityName);
-
-            hindranceEffect.AppliedAmount = hindrance * 10;
+            manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(hindrance * 10,
+                nameof(BeingComponent.Hindrance), EquippedAbilityName, actorEntity);
         }
 
         public int GetItemSkillBonus(Item template, PlayerComponent player)
@@ -716,7 +715,7 @@ namespace UnicornHack.Systems.Faculties
                 throw new InvalidOperationException($"Not enough points to buy ability {ability.Name}");
             }
 
-            var effect = manager.EffectApplicationSystem.GetAbilityEffect(
+            var effect = manager.EffectApplicationSystem.GetOrAddAbilityEffect(
                 playerEntity, ability.Name, EffectApplicationSystem.InnateAbilityName);
             effect.AppliedAmount++;
 

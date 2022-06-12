@@ -4,7 +4,7 @@ using System.Linq;
 namespace UnicornHack.Utils.MessagingECS
 {
     public class EntityIndex<TEntity, TKey> : EntityIndexBase<TEntity, TKey>
-        where TEntity : Entity
+        where TEntity : Entity, new()
     {
         public EntityIndex(
             string name,
@@ -37,15 +37,15 @@ namespace UnicornHack.Utils.MessagingECS
             return entities;
         }
 
-        protected override bool TryAddEntity(TKey key, TEntity entity, Component changedComponent)
-            => GetOrAddEntities(key).Add(entity);
+        protected override bool TryAddEntity(TKey key, in EntityChange<TEntity> change)
+            => GetOrAddEntities(key).Add(change.Entity);
 
-        protected override bool TryRemoveEntity(TKey key, TEntity entity, Component changedComponent)
-            => GetOrAddEntities(key).Remove(entity);
+        protected override bool TryRemoveEntity(TKey key, in EntityChange<TEntity> change)
+            => GetOrAddEntities(key).Remove(change.Entity);
+
+        protected override bool HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange)
+            => false;
 
         public override string ToString() => "Index: " + Name;
-
-        public override IEnumerator<TEntity> GetEnumerator()
-            => Index.Values.SelectMany(v => v).GetEnumerator();
     }
 }

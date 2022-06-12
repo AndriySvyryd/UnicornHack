@@ -1,5 +1,7 @@
-﻿using UnicornHack.Generation;
+﻿using System.Collections.Generic;
+using UnicornHack.Generation;
 using UnicornHack.Primitives;
+using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Beings
 {
@@ -49,6 +51,9 @@ namespace UnicornHack.Systems.Beings
         private int? _primaryNaturalWeaponId;
         private int? _secondaryNaturalWeaponId;
         private int _entropyState;
+        private IReadOnlyCollection<GameEntity> _abilities;
+        private IReadOnlyCollection<GameEntity> _appliedEffects;
+        private IReadOnlyCollection<GameEntity> _items;
 
         public BeingComponent()
             => ComponentId = (int)EntityComponent.Being;
@@ -134,6 +139,8 @@ namespace UnicornHack.Systems.Beings
                 SetWithNotify(newHP, ref _hitPoints);
             }
         }
+
+        public bool IsAlive => HitPoints > 0;
 
         [Property(DefaultValue = 10, MinValue = 0)]
         public int Perception
@@ -388,8 +395,68 @@ namespace UnicornHack.Systems.Beings
             set => SetWithNotify(value, ref _entropyState);
         }
 
-        // Unmapped properties
-        public bool IsAlive => HitPoints > 0;
+        public IReadOnlyCollection<GameEntity> Abilities
+        {
+            get
+            {
+                if (_abilities == null)
+                {
+                    _abilities = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
+                    var abilities = Entity.Item?.Abilities
+                                     ?? Entity.Physical?.Abilities
+                                     ?? Entity.Sensor?.Abilities;
+                    if (abilities != null)
+                    {
+                        _abilities = abilities;
+                    }
+                }
+
+                return _abilities;
+            }
+        }
+
+        public IReadOnlyCollection<GameEntity> AppliedEffects
+        {
+            get
+            {
+                if (_appliedEffects == null)
+                {
+                    _appliedEffects = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
+                    var appliedEffects = Entity.Item?.AppliedEffects
+                                          ?? Entity.Physical?.AppliedEffects
+                                          ?? Entity.Sensor?.AppliedEffects;
+                    if (appliedEffects != null)
+                    {
+                        _appliedEffects = appliedEffects;
+                    }
+                }
+
+                return _appliedEffects;
+            }
+        }
+
+        public IReadOnlyDictionary<int, GameEntity> SlottedAbilities { get; private set; }
+        public IReadOnlyCollection<GameEntity> Races { get; private set; }
+
+        public IReadOnlyCollection<GameEntity> Items
+        {
+            get
+            {
+                if (_items == null)
+                {
+                    _items = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
+                    var items = Entity.Item?.Items
+                            ?? Entity.Physical?.Items
+                            ?? Entity.Sensor?.Items;
+                    if (items != null)
+                    {
+                        _items = items;
+                    }
+                }
+
+                return _items;
+            }
+        }
 
         protected override void Clean()
         {
@@ -434,6 +501,11 @@ namespace UnicornHack.Systems.Beings
             _primaryNaturalWeaponId = default;
             _secondaryNaturalWeaponId = default;
             _entropyState = default;
+            ((Dictionary<int, GameEntity>)SlottedAbilities)?.Clear();
+            ((HashSet<GameEntity>)Races)?.Clear();
+            _abilities = default;
+            _appliedEffects = default;
+            _items = default;
 
             base.Clean();
         }

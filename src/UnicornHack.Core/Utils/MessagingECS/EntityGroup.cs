@@ -1,161 +1,51 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 // ReSharper disable StaticMemberInGenericType
 namespace UnicornHack.Utils.MessagingECS
 {
-    public class EntityGroup<TEntity> : IEntityGroup<TEntity>
+    public class EntityGroup<TEntity> : EntityGroupBase<TEntity>, IEnumerable<TEntity>
         where TEntity : Entity, new()
     {
-        private readonly EntityManager<TEntity> _manager;
-        private readonly Dictionary<int, TEntity> _entities = new Dictionary<int, TEntity>();
+        private readonly Dictionary<int, TEntity> _entities = new();
 
-        private readonly List<IGroupChangesListener<TEntity>> _changeListeners
-            = new List<IGroupChangesListener<TEntity>>();
+        public EntityGroup(string name, EntityMatcher<TEntity> matcher)
+            : base(name)
+            => Matcher = matcher;
 
-        private string _entityAddedMessageName;
-        private string _entityRemovedMessageName;
-        private Dictionary<string, string> _propertyValueChangedMessageNames;
-
-        private const string EntityAddedMessageSuffix = "_EntityAdded";
-        private const string EntityRemovedMessageSuffix = "_EntityRemoved";
-        private const string PropertyValueChangedMessageSuffix = "_PropertyValueChanged_";
-
-        public EntityGroup(string name, EntityMatcher<TEntity> matcher, EntityManager<TEntity> manager)
-        {
-            Name = name;
-            Matcher = matcher;
-            _manager = manager;
-        }
-
-        public string Name { get; }
         public EntityMatcher<TEntity> Matcher { get; }
         public int Count => _entities.Count;
 
-        public string GetEntityAddedMessageName()
-            => _entityAddedMessageName
-               ?? (_entityAddedMessageName = Name + EntityAddedMessageSuffix);
+        public override TEntity FindEntity(int id) => _entities.TryGetValue(id, out var entity) ? entity : null;
+        public override bool ContainsEntity(int id) => _entities.ContainsKey(id);
 
-        public string GetEntityRemovedMessageName()
-            => _entityRemovedMessageName
-               ?? (_entityRemovedMessageName = Name + EntityRemovedMessageSuffix);
-
-        public string GetPropertyValueChangedMessageName(string propertyName)
+        public void HandleEntityComponentChanged(TEntity entity, Component removedComponent)
         {
-            if (_propertyValueChangedMessageNames == null)
+            if (!Matcher.Matches(entity))
             {
-                _propertyValueChangedMessageNames = new Dictionary<string, string>();
-            }
-
-            if (!_propertyValueChangedMessageNames.TryGetValue(propertyName, out var messageName))
-            {
-                messageName = Name + PropertyValueChangedMessageSuffix + propertyName;
-                _propertyValueChangedMessageNames[propertyName] = messageName;
-            }
-
-            return messageName;
-        }
-
-        public void AddListener(IGroupChangesListener<TEntity> index)
-            => _changeListeners.Add(index);
-
-        public TEntity FindEntity(int id) => _entities.TryGetValue(id, out var entity) ? entity : null;
-        public bool ContainsEntity(int id) => _entities.ContainsKey(id);
-        public bool IsLoading => _manager.IsLoading;
-
-        public void HandleEntityComponentChanged(TEntity entity, Component changedComponent)
-        {
-            if (_entities.ContainsKey(entity.Id))
-            {
-                if (!Matcher.Matches(entity))
+                if (_entities.Remove(entity.Id))
                 {
-                    RemoveEntity(entity, changedComponent);
+                    OnRemoved(new EntityChange<TEntity>(entity, removedComponent: removedComponent), principal: null);
                 }
             }
             else
             {
-                if (Matcher.Matches(entity))
+                if (_entities.TryAdd(entity.Id, entity))
                 {
-                    AddEntity(entity, changedComponent);
+                    OnAdded(new EntityChange<TEntity>(entity, removedComponent: removedComponent), principal: null);
                 }
             }
         }
 
-        private void AddEntity(TEntity entity, Component changedComponent)
+        public void HandlePropertyValuesChanged(in EntityChange<TEntity> entityChange)
         {
-            Debug.Assert(!_entities.ContainsKey(entity.Id));
-
-            _entities[entity.Id] = entity;
-
-            foreach (var entityIndex in _changeListeners)
+            if (Matcher.Matches(entityChange.Entity))
             {
-                entityIndex.HandleEntityAdded(entity, changedComponent, this);
-            }
-
-            if (_entityAddedMessageName != null
-                && !IsLoading)
-            {
-                var message = entity.Manager.Queue.CreateMessage<EntityAddedMessage<TEntity>>(_entityAddedMessageName);
-                message.Entity = entity;
-                message.ChangedComponent = changedComponent;
-                message.Group = this;
-
-                entity.Manager.Queue.Enqueue(message);
-            }
-        }
-
-        private void RemoveEntity(TEntity entity, Component changedComponent)
-        {
-            Debug.Assert(_entities.ContainsKey(entity.Id));
-
-            var manager = entity.Manager;
-            _entities.Remove(entity.Id);
-
-            if (_entityRemovedMessageName != null
-                && entity.Manager != null)
-            {
-                var message = manager.Queue.CreateMessage<EntityRemovedMessage<TEntity>>(_entityRemovedMessageName);
-                message.Entity = entity;
-                message.ChangedComponent = changedComponent;
-                message.Group = this;
-
-                manager.Queue.Enqueue(message);
-            }
-
-            foreach (var entityIndex in _changeListeners)
-            {
-                entityIndex.HandleEntityRemoved(entity, changedComponent, this);
-            }
-        }
-
-        public void HandlePropertyValuesChanged(IReadOnlyList<IPropertyValueChange> changes)
-        {
-            var entity = (TEntity)changes[0].ChangedComponent.Entity;
-            if (Matcher.Matches(entity))
-            {
-                foreach (var changeListener in _changeListeners)
-                {
-                    changeListener.HandlePropertyValuesChanged(changes, entity, this);
-                }
-
-                if (_propertyValueChangedMessageNames != null)
-                {
-                    foreach (var change in changes)
-                    {
-                        if (_propertyValueChangedMessageNames.TryGetValue(change.ChangedPropertyName,
-                                out var messageName)
-                            && entity.HasComponent(change.ChangedComponent.ComponentId))
-                        {
-                            change.EnqueuePropertyValueChangedMessage<TEntity>(messageName, entity.Manager);
-                        }
-                    }
-                }
+                OnPropertyValuesChanged(entityChange);
             }
         }
 
         public IEnumerator<TEntity> GetEnumerator() => _entities.Values.GetEnumerator();
-
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         public override string ToString() => "EntityGroup: " + Name;

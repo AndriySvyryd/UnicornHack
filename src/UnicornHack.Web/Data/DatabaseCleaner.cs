@@ -112,21 +112,21 @@ namespace UnicornHack.Data
         }
 
         protected virtual DropSequenceOperation Drop(DatabaseSequence sequence)
-            => new DropSequenceOperation
+            => new()
             {
                 Name = sequence.Name,
                 Schema = sequence.Schema
             };
 
         protected virtual DropTableOperation Drop(DatabaseTable table)
-            => new DropTableOperation
+            => new()
             {
                 Name = table.Name,
                 Schema = table.Schema
             };
 
         protected virtual DropForeignKeyOperation Drop(DatabaseForeignKey foreignKey)
-            => new DropForeignKeyOperation
+            => new()
             {
                 Name = foreignKey.Name,
                 Table = foreignKey.Table.Name,
@@ -134,7 +134,7 @@ namespace UnicornHack.Data
             };
 
         protected virtual DropIndexOperation Drop(DatabaseIndex index)
-            => new DropIndexOperation
+            => new()
             {
                 Name = index.Name,
                 Table = index.Table.Name,

@@ -1,204 +1,101 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace UnicornHack.Utils.MessagingECS
 {
-    public abstract class EntityRelationshipBase<TEntity> : EntityIndexBase<TEntity, int>, IEntityGroup<TEntity>
-        where TEntity : Entity, new()
+    public abstract class EntityRelationshipBase<TEntity> : EntityIndexBase<TEntity, int>, IEntityRelationshipBase<TEntity> where TEntity : Entity, new()
     {
-        private readonly Action<TEntity, TEntity, Component> _handleReferencedDeleted;
-        private readonly bool _referencedKeepAlive;
-        private readonly bool _referencingKeepAlive;
-
-        private readonly List<IGroupChangesListener<TEntity>> _changeListeners
-            = new List<IGroupChangesListener<TEntity>>();
-
-        private string _entityAddedMessageName;
-        private string _entityRemovedMessageName;
-        private Dictionary<string, string> _propertyValueChangedMessageNames;
-
-        private const string EntityAddedMessageSuffix = "_EntityAdded";
-        private const string EntityRemovedMessageSuffix = "_EntityRemoved";
-        private const string PropertyValueChangedMessageSuffix = "_PropertyValueChanged_";
+        private readonly Action<TEntity, EntityChange<TEntity>> _handlePrincipalDeleted;
+        private readonly bool _keepPrincipalAlive;
+        private readonly bool _keepDependentAlive;
 
         protected EntityRelationshipBase(
             string name,
-            IEntityGroup<TEntity> referencingGroup,
-            IEntityGroup<TEntity> referencedGroup,
+            IEntityGroup<TEntity> dependentGroup,
+            IEntityGroup<TEntity> principalGroup,
             IKeyValueGetter<TEntity, int> keyValueGetter,
-            Action<TEntity, TEntity, Component> handleReferencedDeleted,
-            bool referencedKeepAlive,
-            bool referencingKeepAlive)
-            : base(name, referencingGroup, keyValueGetter)
+            Action<TEntity, EntityChange<TEntity>> handlePrincipalDeleted,
+            bool keepPrincipalAlive,
+            bool keepDependentAlive)
+            : base(name, dependentGroup, keyValueGetter)
         {
-            ReferencingGroup = referencingGroup;
-            ReferencedGroup = referencedGroup;
-            _handleReferencedDeleted = handleReferencedDeleted;
-            _referencedKeepAlive = referencedKeepAlive;
-            _referencingKeepAlive = referencingKeepAlive;
+            DependentGroup = dependentGroup;
+            PrincipalGroup = principalGroup;
+            _handlePrincipalDeleted = handlePrincipalDeleted;
+            _keepPrincipalAlive = keepPrincipalAlive;
+            _keepDependentAlive = keepDependentAlive;
         }
 
-        protected IEntityGroup<TEntity> ReferencedGroup { get; }
-        protected IEntityGroup<TEntity> ReferencingGroup { get; }
-        public bool IsLoading => ReferencedGroup.IsLoading || ReferencingGroup.IsLoading;
-        public abstract int Count { get; }
+        protected IEntityGroup<TEntity> PrincipalGroup { get; }
+        protected IEntityGroup<TEntity> DependentGroup { get; }
 
-        protected TEntity FindReferenced(int key, TEntity entity, bool fallback)
+        protected TEntity FindPrincipal(int key, TEntity entity, bool fallback)
         {
-            var referenced = ReferencedGroup.FindEntity(key);
-            if (referenced == null)
+            var principal = PrincipalGroup.FindEntity(key);
+            if (principal != null)
             {
-                if (fallback)
-                {
-                    var manager = entity.Manager;
-                    // TODO: If loaded entity is to be deleted load all components as well
-                    referenced = (manager.FindEntity(key) ?? manager.LoadEntity(key)) as TEntity;
-                }
-                else if (!ReferencedGroup.IsLoading)
-                {
-                    throw new InvalidOperationException(
-                        $"Couldn't find entity '{key}' in '{ReferencedGroup.Name}' referenced from entity '{entity.Id}'"
-                        + $" in '{ReferencingGroup.Name}' through '{Name}'");
-                }
+                return principal;
             }
 
-            return referenced;
-        }
-
-        protected virtual void OnEntityAdded(TEntity entity, Component changedComponent, TEntity referenced)
-        {
-            if (_referencedKeepAlive)
-            {
-                referenced.AddReference(entity);
-            }
-
-            if (_referencingKeepAlive)
-            {
-                entity.AddReference(referenced);
-            }
-
-            foreach (var entityIndex in _changeListeners)
-            {
-                entityIndex.HandleEntityAdded(entity, changedComponent, this);
-            }
-
-            if (_entityAddedMessageName != null
-                && !IsLoading)
-            {
-                var message = entity.Manager.Queue.CreateMessage<EntityAddedMessage<TEntity>>(_entityAddedMessageName);
-                message.Entity = entity;
-                message.ChangedComponent = changedComponent;
-                message.Group = this;
-                message.ReferencedEntity = referenced;
-
-                entity.Manager.Queue.Enqueue(message);
-            }
-        }
-
-        protected void OnEntityRemoved(TEntity entity, Component changedComponent, TEntity referenced)
-        {
             var manager = entity.Manager;
-
-            if (_entityRemovedMessageName != null
-                && entity.Manager != null)
+            if (fallback
+                && manager.FindEntity(key) == null)
             {
-                var message = manager.Queue.CreateMessage<EntityRemovedMessage<TEntity>>(_entityRemovedMessageName);
-                message.Entity = entity;
-                message.ChangedComponent = changedComponent;
-                message.Group = this;
-                if (referenced.Manager != null)
-                {
-                    message.ReferencedEntity = referenced;
-                }
-
-                manager.Queue.Enqueue(message);
+                // TODO: If loaded entity is to be deleted load all components as well to delete recursively
+                manager.LoadEntity(key);
+                principal = PrincipalGroup.FindEntity(key);
             }
 
-            if (referenced?.Manager != null
-                && _referencedKeepAlive)
+            if (principal == null
+                && !manager.IsLoading
+                && !fallback)
             {
-                referenced.RemoveReference(entity);
+                throw new InvalidOperationException(
+                    $"Couldn't find entity '{key}' in '{PrincipalGroup.Name}' referenced from entity '{entity.Id}'"
+                    + $" in '{DependentGroup.Name}' through '{Name}'");
             }
 
-            if (_referencingKeepAlive)
-            {
-                entity.RemoveReference(referenced);
-            }
-
-            foreach (var entityIndex in _changeListeners)
-            {
-                entityIndex.HandleEntityRemoved(entity, changedComponent, this);
-            }
+            return principal;
         }
 
-        public override bool HandlePropertyValuesChanged(
-            IReadOnlyList<IPropertyValueChange> changes, TEntity entity, IEntityGroup<TEntity> group)
+        protected void HandlePrincipalEntityRemoved(TEntity dependentEntity, EntityChange<TEntity> principalEntityChange)
+            => _handlePrincipalDeleted(dependentEntity, principalEntityChange);
+
+        void IEntityRelationshipBase<TEntity>.OnEntityAdded(TEntity dependent, TEntity principal)
         {
-            if (base.HandlePropertyValuesChanged(changes, entity, group)
-                || !ContainsEntity(entity))
+            if (_keepPrincipalAlive)
             {
-                return true;
+                principal.AddReference(dependent);
             }
 
-            foreach (var entityIndex in _changeListeners)
+            if (_keepDependentAlive)
             {
-                entityIndex.HandlePropertyValuesChanged(changes, entity, this);
+                dependent.AddReference(principal);
             }
-
-            if (_propertyValueChangedMessageNames != null)
-            {
-                foreach (var change in changes)
-                {
-                    if (_propertyValueChangedMessageNames.TryGetValue(change.ChangedPropertyName, out var messageName)
-                        && entity.HasComponent(change.ChangedComponent.ComponentId))
-                    {
-                        change.EnqueuePropertyValueChangedMessage<TEntity>(messageName, entity.Manager);
-                    }
-                }
-            }
-
-            return false;
         }
 
-        protected void HandleReferencedEntityRemoved(
-            TEntity referencingEntity, TEntity referencedEntity, Component removedComponent)
-            => _handleReferencedDeleted(referencingEntity, referencedEntity, removedComponent);
-
-        public string GetEntityAddedMessageName()
-            => _entityAddedMessageName ??= Name + EntityAddedMessageSuffix;
-
-        public string GetEntityRemovedMessageName()
-            => _entityRemovedMessageName ??= Name + EntityRemovedMessageSuffix;
-
-        public string GetPropertyValueChangedMessageName(string propertyName)
+        void IEntityRelationshipBase<TEntity>.OnEntityRemoved(TEntity dependent, TEntity principal)
         {
-            if (_propertyValueChangedMessageNames == null)
+            if (principal?.Manager != null
+                && _keepPrincipalAlive)
             {
-                _propertyValueChangedMessageNames = new Dictionary<string, string>();
+                principal.RemoveReference(dependent);
             }
 
-            if (!_propertyValueChangedMessageNames.TryGetValue(propertyName, out var messageName))
+            if (_keepDependentAlive)
             {
-                messageName = Name + PropertyValueChangedMessageSuffix + propertyName;
-                _propertyValueChangedMessageNames[propertyName] = messageName;
+                dependent.RemoveReference(principal);
             }
-
-            return messageName;
         }
-
-        public void AddListener(IGroupChangesListener<TEntity> index)
-            => _changeListeners.Add(index);
 
         /// <summary>
         ///     Tries to find a referencing entity with the given <paramref name="id" />.
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public TEntity FindEntity(int id)
+        TEntity IEntityRelationshipBase<TEntity>.FindEntity(int id)
         {
-            var entity = ReferencingGroup.FindEntity(id);
-            if (entity != null
-                && ContainsEntity(entity))
+            var entity = DependentGroup.FindEntity(id);
+            if (entity != null && ContainsEntity(entity))
             {
                 return entity;
             }
@@ -211,14 +108,14 @@ namespace UnicornHack.Utils.MessagingECS
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public bool ContainsEntity(int id)
+        bool IEntityRelationshipBase<TEntity>.ContainsEntity(int id)
         {
-            var entity = ReferencingGroup.FindEntity(id);
+            var entity = DependentGroup.FindEntity(id);
             return entity != null && ContainsEntity(entity);
         }
 
-        public bool ContainsEntity(TEntity entity)
-            => KeyValueGetter.TryGetKey(entity, new IPropertyValueChange[0], getOldValue: false, out var referencedId)
-               && ReferencedGroup.ContainsEntity(referencedId);
+        private bool ContainsEntity(TEntity entity)
+            => KeyValueGetter.TryGetKey(new EntityChange<TEntity>(entity), ValueType.Current, out _)
+               && !entity.Manager.IsLoading;
     }
 }

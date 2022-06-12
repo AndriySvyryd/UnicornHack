@@ -16,7 +16,7 @@ namespace UnicornHack.Systems.Effects
         {
             var level = TestHelper.BuildLevel(".");
             var manager = level.Entity.Manager;
-            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
 
             manager.Queue.ProcessQueue(manager);
 
@@ -34,7 +34,7 @@ namespace UnicornHack.Systems.Effects
 
             Assert.Null(toggledAbility.Ability.Slot);
             Assert.False(toggledAbility.Ability.IsActive);
-            Assert.False(manager.SlottedAbilitiesIndex[playerEntity.Id].ContainsKey(2));
+            Assert.False(playerEntity.Being.SlottedAbilities.ContainsKey(2));
             Assert.Equal(0, playerEntity.Being.AcidResistance);
             Assert.Equal(0, playerEntity.Being.ColdResistance);
 
@@ -58,7 +58,7 @@ namespace UnicornHack.Systems.Effects
 
             Assert.Equal(2, toggledAbility.Ability.Slot);
             Assert.True(toggledAbility.Ability.IsActive);
-            Assert.Same(toggledAbility, manager.SlottedAbilitiesIndex[playerEntity.Id][2]);
+            Assert.Same(toggledAbility, playerEntity.Being.SlottedAbilities[2]);
             Assert.Equal(10, playerEntity.Being.AcidResistance);
             Assert.Equal(0, playerEntity.Being.ColdResistance);
 
@@ -107,7 +107,7 @@ namespace UnicornHack.Systems.Effects
         {
             var level = TestHelper.BuildLevel(".");
             var manager = level.Entity.Manager;
-            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
 
             manager.Queue.ProcessQueue(manager);
 

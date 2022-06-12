@@ -14,7 +14,7 @@ namespace UnicornHack.Generation
         // TODO: default terrain type for floor/wall/empty space
 
         public GameBranch Instantiate(Game game)
-            => new GameBranch
+            => new()
             {
                 Game = game,
                 Name = Name,
@@ -23,6 +23,6 @@ namespace UnicornHack.Generation
             };
 
         public static readonly CSScriptLoader<Branch> Loader =
-            new CSScriptLoader<Branch>(@"Data\Branches\", typeof(BranchData));
+            new(@"Data\Branches\", typeof(BranchData));
     }
 }

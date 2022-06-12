@@ -26,43 +26,43 @@ namespace UnicornHack
                 nameof(TemporalEntitiesIndex),
                 TemporalEntities,
                 new KeyValueGetter<GameEntity, (int Tick, int Id)>(
-                    (entity, changes, getOldValue, matcher) =>
+                    (change, matcher, valueType) =>
                     {
                         if (matcher.TryGetValue<int?>(
-                                entity, (int)EntityComponent.Ability, nameof(AbilityComponent.CooldownTick), changes,
-                                getOldValue, out var abilityTick)
+                                change, (int)EntityComponent.Ability, nameof(AbilityComponent.CooldownTick), valueType,
+                                out var abilityTick)
                             && abilityTick.HasValue)
                         {
-                            return ((abilityTick.Value, entity.Id), true);
+                            return ((abilityTick.Value, change.Entity.Id), true);
                         }
 
                         if (matcher.TryGetValue<int?>(
-                                entity, (int)EntityComponent.Effect, nameof(EffectComponent.ExpirationTick), changes,
-                                getOldValue, out var effectTick)
+                                change, (int)EntityComponent.Effect, nameof(EffectComponent.ExpirationTick), valueType,
+                                out var effectTick)
                             && effectTick.HasValue)
                         {
-                            return ((effectTick.Value, entity.Id), true);
+                            return ((effectTick.Value, change.Entity.Id), true);
                         }
 
                         if (matcher.TryGetValue<int?>(
-                                entity, (int)EntityComponent.AI, nameof(AIComponent.NextActionTick), changes,
-                                getOldValue, out var aiTick)
+                                change, (int)EntityComponent.AI, nameof(AIComponent.NextActionTick), valueType,
+                                out var aiTick)
                             && aiTick.HasValue)
                         {
-                            return ((aiTick.Value, entity.Id), true);
+                            return ((aiTick.Value, change.Entity.Id), true);
                         }
 
                         if (matcher.TryGetValue<int?>(
-                                entity, (int)EntityComponent.Player, nameof(PlayerComponent.NextActionTick), changes,
-                                getOldValue, out var playerTick)
+                                change, (int)EntityComponent.Player, nameof(PlayerComponent.NextActionTick), valueType,
+                                out var playerTick)
                             && playerTick.HasValue)
                         {
-                            return ((playerTick.Value, entity.Id), true);
+                            return ((playerTick.Value, change.Entity.Id), true);
                         }
 
                         return ((0, 0), false);
                     },
-                    new PropertyMatcher()
+                    new PropertyMatcher<GameEntity>()
                         .With(component => ((AIComponent)component).NextActionTick, (int)EntityComponent.AI)
                         .With(component => ((PlayerComponent)component).NextActionTick, (int)EntityComponent.Player)
                         .With(component => ((EffectComponent)component).ExpirationTick, (int)EntityComponent.Effect)
@@ -71,7 +71,7 @@ namespace UnicornHack
                 TickComparer.Instance);
 
             TimeSystem = new TimeSystem();
-            queue.Add(TimeSystem, AdvanceTurnMessage.Name, 0);
+            queue.Register(TimeSystem, AdvanceTurnMessage.Name, 0);
         }
     }
 }

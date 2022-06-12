@@ -10,36 +10,35 @@ namespace UnicornHack.Hubs
     public class LevelSnapshot
     {
         private Dictionary<GameEntity, LevelActorSnapshot> ActorsSnapshot { get; } =
-            new Dictionary<GameEntity, LevelActorSnapshot>(EntityEqualityComparer<GameEntity>.Instance);
+            new(EntityEqualityComparer<GameEntity>.Instance);
 
         private Dictionary<GameEntity, LevelItemSnapshot> ItemsSnapshot { get; } =
-            new Dictionary<GameEntity, LevelItemSnapshot>(EntityEqualityComparer<GameEntity>.Instance);
+            new(EntityEqualityComparer<GameEntity>.Instance);
 
         private HashSet<GameEntity> ConnectionsSnapshot { get; } =
-            new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
+            new(EntityEqualityComparer<GameEntity>.Instance);
 
-        private readonly HashSet<GameEntity> _tempHashSet = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
+        private readonly HashSet<GameEntity> _tempHashSet = new(EntityEqualityComparer<GameEntity>.Instance);
 
         private readonly Dictionary<GameEntity, LevelActorSnapshot> _tempActors =
-            new Dictionary<GameEntity, LevelActorSnapshot>(EntityEqualityComparer<GameEntity>.Instance);
+            new(EntityEqualityComparer<GameEntity>.Instance);
 
         private readonly Dictionary<GameEntity, LevelItemSnapshot> _tempItems =
-            new Dictionary<GameEntity, LevelItemSnapshot>(EntityEqualityComparer<GameEntity>.Instance);
+            new(EntityEqualityComparer<GameEntity>.Instance);
 
         public LevelSnapshot CaptureState(GameEntity levelEntity, SerializationContext context)
         {
             CaptureVisibleTerrain(levelEntity);
 
-            var manager = levelEntity.Manager;
-            var actors = GetActors(levelEntity, manager);
+            var actors = GetActors(levelEntity);
             ActorsSnapshot.Clear();
             ActorsSnapshot.AddRange(actors, i => new LevelActorSnapshot().CaptureState(i, context));
 
-            var items = GetItems(levelEntity, manager);
+            var items = GetItems(levelEntity);
             ItemsSnapshot.Clear();
             ItemsSnapshot.AddRange(items, i => new LevelItemSnapshot().CaptureState(i, context));
 
-            var connections = GetConnections(levelEntity, manager);
+            var connections = GetConnections(levelEntity);
             ConnectionsSnapshot.Clear();
             ConnectionsSnapshot.AddRange(connections);
 
@@ -118,7 +117,7 @@ namespace UnicornHack.Hubs
                         : new List<object>(11) {(int)state};
 
                     var actors = new List<object>();
-                    foreach (var actor in GetActors(levelEntity, manager))
+                    foreach (var actor in GetActors(levelEntity))
                     {
                         LevelActorSnapshot actorSnapshot = null;
                         if (snapshot != null
@@ -133,7 +132,7 @@ namespace UnicornHack.Hubs
                     properties.Add(actors);
 
                     var items = new List<object>();
-                    foreach (var item in GetItems(levelEntity, manager))
+                    foreach (var item in GetItems(levelEntity))
                     {
                         LevelItemSnapshot itemSnapshot = null;
                         if (snapshot != null
@@ -148,7 +147,7 @@ namespace UnicornHack.Hubs
                     properties.Add(items);
 
                     var connections = new List<object>();
-                    foreach (var connection in GetConnections(levelEntity, manager))
+                    foreach (var connection in GetConnections(levelEntity))
                     {
                         snapshot?.ConnectionsSnapshot.Add(connection);
 
@@ -171,7 +170,7 @@ namespace UnicornHack.Hubs
 
                     var i = 2;
                     var serializedActors = GameTransmissionProtocol.Serialize(
-                        GetActors(levelEntity, manager),
+                        GetActors(levelEntity),
                         snapshot.ActorsSnapshot,
                         LevelActorSnapshot.Serialize,
                         snapshot._tempActors,
@@ -184,7 +183,7 @@ namespace UnicornHack.Hubs
 
                     i++;
                     var serializedItems = GameTransmissionProtocol.Serialize(
-                        GetItems(levelEntity, manager),
+                        GetItems(levelEntity),
                         snapshot.ItemsSnapshot,
                         LevelItemSnapshot.Serialize,
                         snapshot._tempItems,
@@ -197,7 +196,7 @@ namespace UnicornHack.Hubs
 
                     i++;
                     var serializedConnections = GameTransmissionProtocol.Serialize(
-                        GetConnections(levelEntity, manager),
+                        GetConnections(levelEntity),
                         snapshot.ConnectionsSnapshot,
                         ConnectionSnapshot.Serialize,
                         snapshot._tempHashSet,
@@ -247,17 +246,17 @@ namespace UnicornHack.Hubs
                         }
 
                         i++;
-                        if (level.WallNeighboursChanges.Count > 0)
+                        if (level.WallNeighborsChanges.Count > 0)
                         {
-                            foreach (var wallNeighboursChange in level.WallNeighboursChanges)
+                            foreach (var wallNeighborsChange in level.WallNeighborsChanges)
                             {
-                                if (level.VisibleTerrain[wallNeighboursChange.Key] == 0)
+                                if (level.VisibleTerrain[wallNeighborsChange.Key] == 0)
                                 {
                                     continue;
                                 }
 
-                                wallNeighborsChanges.Add(wallNeighboursChange.Key);
-                                wallNeighborsChanges.Add(wallNeighboursChange.Value & (byte)DirectionFlags.Cross);
+                                wallNeighborsChanges.Add(wallNeighborsChange.Key);
+                                wallNeighborsChanges.Add(wallNeighborsChange.Value & (byte)DirectionFlags.Cross);
                             }
                         }
 
@@ -289,24 +288,21 @@ namespace UnicornHack.Hubs
             }
         }
 
-        private static IEnumerable<GameEntity> GetConnections(GameEntity levelEntity, GameManager manager)
-            => manager.LevelKnowledgesToLevelRelationship[levelEntity.Id]
+        private static IEnumerable<GameEntity> GetConnections(GameEntity levelEntity)
+            => levelEntity.Level.KnownConnections.Values
                 .Select(c => c.Knowledge)
-                .Where(c => c.KnownEntity.HasComponent(EntityComponent.Connection)
-                            && (c.KnownEntity.Connection.Direction == null
-                                || (c.KnownEntity.Connection.Direction & ConnectionDirection.Source) != 0))
+                .Where(c => c.KnownEntity.Connection.Direction == null
+                                || (c.KnownEntity.Connection.Direction & ConnectionDirection.Source) != 0)
                 .Select(c => c.Entity);
 
-        private static IEnumerable<GameEntity> GetItems(GameEntity levelEntity, GameManager manager)
-            => manager.LevelKnowledgesToLevelRelationship[levelEntity.Id]
+        private static IEnumerable<GameEntity> GetItems(GameEntity levelEntity)
+            => levelEntity.Level.KnownItems.Values
                 .Select(t => t.Knowledge)
-                .Where(t => t.KnownEntity.HasComponent(EntityComponent.Item))
                 .Select(t => t.Entity);
 
-        private static IEnumerable<GameEntity> GetActors(GameEntity levelEntity, GameManager manager)
-            => manager.LevelKnowledgesToLevelRelationship[levelEntity.Id]
+        private static IEnumerable<GameEntity> GetActors(GameEntity levelEntity)
+            => levelEntity.Level.KnownActors.Values
                 .Select(a => a.Knowledge)
-                .Where(a => a.KnownEntity.HasComponent(EntityComponent.Being))
                 .Select(a => a.Entity);
     }
 }

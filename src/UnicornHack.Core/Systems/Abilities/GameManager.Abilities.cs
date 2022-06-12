@@ -1,4 +1,5 @@
-﻿using UnicornHack.Systems.Abilities;
+﻿using System.Collections.Generic;
+using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Knowledge;
@@ -11,9 +12,8 @@ namespace UnicornHack
     {
         public EntityGroup<GameEntity> Abilities { get; private set; }
         public EntityGroup<GameEntity> AffectableEntities { get; private set; }
-        public SortedLookupEntityIndex<GameEntity, int, int> SlottedAbilitiesIndex { get; private set; }
         public UniqueEntityIndex<GameEntity, (int, string)> AffectableAbilitiesIndex { get; private set; }
-        public EntityRelationship<GameEntity> AbilitiesToAffectableRelationship { get; private set; }
+        public CollectionEntityRelationship<GameEntity, HashSet<GameEntity>> AbilitiesToAffectableRelationship { get; private set; }
         public AbilityActivationSystem AbilityActivationSystem { get; private set; }
         public AbilitySlottingSystem AbilitySlottingSystem { get; private set; }
 
@@ -23,35 +23,27 @@ namespace UnicornHack
 
             AffectableEntities = CreateGroup(nameof(AffectableEntities),
                 new EntityMatcher<GameEntity>().AnyOf(
-                    (int)EntityComponent.Being, (int)EntityComponent.Item, (int)EntityComponent.Physical,
+                    (int)EntityComponent.Being,
+                    (int)EntityComponent.Item,
+                    (int)EntityComponent.Physical,
                     (int)EntityComponent.Sensor));
 
             Abilities = CreateGroup(nameof(Abilities),
                 new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Ability));
 
-            SlottedAbilitiesIndex = new SortedLookupEntityIndex<GameEntity, int, int>(
-                nameof(SlottedAbilitiesIndex),
-                Abilities,
-                new SimpleKeyValueGetter<GameEntity, int>(
-                    component => ((AbilityComponent)component).OwnerId,
-                    (int)EntityComponent.Ability),
-                new SimpleKeyValueGetter<GameEntity, int>(
-                    component => ((AbilityComponent)component).Slot,
-                    (int)EntityComponent.Ability));
-
-            AffectableAbilitiesIndex = new UniqueEntityIndex<GameEntity, (int, string)>(
+            AffectableAbilitiesIndex = new (
                 nameof(AffectableAbilitiesIndex),
                 Abilities,
                 new KeyValueGetter<GameEntity, (int, string)>(
-                    (entity, changes, getOldValue, matcher) =>
+                    (change, matcher, valueType) =>
                     {
                         if (!matcher.TryGetValue<int?>(
-                                entity, (int)EntityComponent.Ability, nameof(AbilityComponent.OwnerId), changes,
-                                getOldValue, out var ownerId)
+                                change, (int)EntityComponent.Ability, nameof(AbilityComponent.OwnerId),
+                                valueType, out var ownerId)
                             || !ownerId.HasValue
                             || !matcher.TryGetValue<string>(
-                                entity, (int)EntityComponent.Ability, nameof(AbilityComponent.Name), changes,
-                                getOldValue, out var name)
+                                change, (int)EntityComponent.Ability, nameof(AbilityComponent.Name),
+                                valueType, out var name)
                             || name == null)
                         {
                             return ((0, null), false);
@@ -59,46 +51,50 @@ namespace UnicornHack
 
                         return ((ownerId.Value, name), true);
                     },
-                    new PropertyMatcher()
+                    new PropertyMatcher<GameEntity>()
                         .With(component => ((AbilityComponent)component).OwnerId, (int)EntityComponent.Ability)
                         .With(component => ((AbilityComponent)component).Name, (int)EntityComponent.Ability)
                 ));
 
-            AbilitiesToAffectableRelationship = new EntityRelationship<GameEntity>(
+            AbilitiesToAffectableRelationship = new(
                 nameof(AbilitiesToAffectableRelationship),
                 Abilities,
                 AffectableEntities,
                 new SimpleKeyValueGetter<GameEntity, int>(
                     component => ((AbilityComponent)component).OwnerId,
                     (int)EntityComponent.Ability),
-                (effectEntity, _, __) => effectEntity.RemoveComponent((int)EntityComponent.Ability),
-                referencedKeepAlive: false,
-                referencingKeepAlive: true);
+                (effectEntity, _) => effectEntity.RemoveComponent((int)EntityComponent.Ability),
+                containerEntity => (HashSet<GameEntity>)(containerEntity.Being.Abilities
+                     ?? containerEntity.Item.Abilities
+                     ?? containerEntity.Physical.Abilities
+                     ?? containerEntity.Sensor.Abilities),
+                keepPrincipalAlive: false,
+                keepDependentAlive: true);
 
             AbilityActivationSystem = new AbilityActivationSystem();
-            queue.Add<ActivateAbilityMessage>(AbilityActivationSystem,
+            queue.Register<ActivateAbilityMessage>(AbilityActivationSystem,
                 ActivateAbilityMessage.Name, 0);
-            queue.Add<DeactivateAbilityMessage>(AbilityActivationSystem,
+            queue.Register<DeactivateAbilityMessage>(AbilityActivationSystem,
                 DeactivateAbilityMessage.Name, 0);
-            queue.Add<ItemEquippedMessage>(AbilityActivationSystem, ItemEquippedMessage.Name, 0);
-            queue.Add<DiedMessage>(AbilityActivationSystem, DiedMessage.Name, 2);
-            queue.Add<LeveledUpMessage>(AbilityActivationSystem, LeveledUpMessage.Name, 0);
-            queue.Add<EntityAddedMessage<GameEntity>>(
-                AbilityActivationSystem, AbilitiesToAffectableRelationship.GetEntityAddedMessageName(), 0);
-            queue.Add<EntityRemovedMessage<GameEntity>>(
-                AbilityActivationSystem, AbilitiesToAffectableRelationship.GetEntityRemovedMessageName(), 0);
+            queue.Register<ItemEquippedMessage>(AbilityActivationSystem, ItemEquippedMessage.Name, 0);
+            queue.Register<DiedMessage>(AbilityActivationSystem, DiedMessage.Name, 2);
+            queue.Register<LeveledUpMessage>(AbilityActivationSystem, LeveledUpMessage.Name, 0);
+            queue.Register<EntityAddedMessage<GameEntity>>(
+                AbilityActivationSystem, AbilitiesToAffectableRelationship.Dependents.GetEntityAddedMessageName(), 0);
+            queue.Register<EntityRemovedMessage<GameEntity>>(
+                AbilityActivationSystem, AbilitiesToAffectableRelationship.Dependents.GetEntityRemovedMessageName(), 0);
 
             AbilitySlottingSystem = new AbilitySlottingSystem();
-            queue.Add<SetAbilitySlotMessage>(AbilitySlottingSystem,
+            queue.Register<SetAbilitySlotMessage>(AbilitySlottingSystem,
                 SetAbilitySlotMessage.Name, 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, bool>>(AbilitySlottingSystem,
-                AbilitiesToAffectableRelationship.GetPropertyValueChangedMessageName(nameof(AbilityComponent.IsUsable)),
+            queue.Register<PropertyValueChangedMessage<GameEntity, bool>>(AbilitySlottingSystem,
+                AbilitiesToAffectableRelationship.Dependents.GetPropertyValueChangedMessageName(nameof(AbilityComponent.IsUsable)),
                 0);
-            queue.Add<PropertyValueChangedMessage<GameEntity, int>>(AbilitySlottingSystem,
+            queue.Register<PropertyValueChangedMessage<GameEntity, int>>(AbilitySlottingSystem,
                 Beings.GetPropertyValueChangedMessageName(nameof(PhysicalComponent.Capacity)),
                 0);
-            queue.Add<EntityAddedMessage<GameEntity>>(
-                AbilitySlottingSystem, AbilitiesToAffectableRelationship.GetEntityAddedMessageName(), 2);
+            queue.Register<EntityAddedMessage<GameEntity>>(
+                AbilitySlottingSystem, AbilitiesToAffectableRelationship.Dependents.GetEntityAddedMessageName(), 2);
         }
     }
 }

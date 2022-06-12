@@ -18,8 +18,7 @@ namespace UnicornHack.Hubs
         public InventoryItemSnapshot Snapshot(GameEntity itemEntity, SerializationContext context)
         {
             var item = itemEntity.Item;
-            var manager = context.Manager;
-            NameSnapshot = context.Services.Language.GetString(item, item.GetQuantity(manager), SenseType.Sight);
+            NameSnapshot = context.Services.Language.GetString(item, item.GetQuantity(), SenseType.Sight);
 
             return this;
         }
@@ -42,7 +41,7 @@ namespace UnicornHack.Hubs
                     properties.Add((int)item.Type);
                     properties.Add(item.TemplateName);
                     properties.Add(
-                        context.Services.Language.GetString(item, item.GetQuantity(manager), SenseType.Sight));
+                        context.Services.Language.GetString(item, item.GetQuantity(), SenseType.Sight));
                     var slots = manager.ItemUsageSystem.GetEquipableSlots(item, context.Observer.Physical.Size)
                         .GetNonRedundantFlags(removeComposites: true)
                         .Select(s => Serialize(s, context))
@@ -70,7 +69,7 @@ namespace UnicornHack.Hubs
                     };
 
                     var i = 3;
-                    var newName = context.Services.Language.GetString(item, item.GetQuantity(manager), SenseType.Sight);
+                    var newName = context.Services.Language.GetString(item, item.GetQuantity(), SenseType.Sight);
                     if (snapshot.NameSnapshot != newName)
                     {
                         properties.Add(i);
@@ -99,7 +98,7 @@ namespace UnicornHack.Hubs
                         properties.Add(item.EquippedSlot == EquipmentSlot.None
                             ? null
                             : Serialize(item.EquippedSlot, context));
-                        }
+                    }
 
                     return properties.Count > 2 ? properties : null;
                 }
@@ -131,7 +130,7 @@ namespace UnicornHack.Hubs
                 .ToList();
             return new List<object>(12)
             {
-                context.Services.Language.GetString(item, item.GetQuantity(manager), sense),
+                context.Services.Language.GetString(item, item.GetQuantity(), sense),
                 context.Services.Language.GetDescription(item.TemplateName, DescriptionCategory.Item),
                 item.Type,
                 (int)physical.Material,
@@ -142,7 +141,7 @@ namespace UnicornHack.Hubs
                 template.RequiredFocus ?? 0,
                 template.RequiredPerception ?? 0,
                 equipableSlots,
-                manager.AbilitiesToAffectableRelationship[itemEntity.Id]
+                physical.Abilities
                     .Where(a => a.Ability.IsUsable
                                 && a.Ability.Activation != ActivationType.Default
                                 && a.Ability.Activation != ActivationType.Always

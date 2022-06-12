@@ -31,7 +31,7 @@ namespace UnicornHack.Generation.Map
             Point? targetCell = null;
             if (targetLevel != null)
             {
-                var matchingConnection = manager.IncomingConnectionsToLevelRelationship[targetLevel.EntityId]
+                var matchingConnection = targetLevel.IncomingConnections
                     .Select(c => c.Connection)
                     .FirstOrDefault(c => c.TargetLevelId == level.EntityId
                                          && c.TargetLevelX == null

@@ -66,8 +66,12 @@ namespace UnicornHack.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // TODO: Use pre-convention model configuration to ignore all collection types
+
             modelBuilder.HasChangeTrackingStrategy(ChangeTrackingStrategy
                 .ChangingAndChangedNotificationsWithOriginalValues);
+
+            modelBuilder.UsePropertyAccessMode(PropertyAccessMode.PreferProperty);
 
             modelBuilder.Entity<Game>(eb =>
             {
@@ -285,6 +289,8 @@ namespace UnicornHack.Data
                 eb.Ignore(c => c.Template);
                 eb.Ignore(c => c.AccuracyFunction);
                 eb.Ignore(c => c.DelayFunction);
+                eb.Ignore(c => c.Effects);
+                // TODO: Consider whether this needs to be persisted
                 eb.Property("_tracked");
                 eb.HasKey(c => new
                 {
@@ -303,10 +309,11 @@ namespace UnicornHack.Data
                 });
             });
 
-            modelBuilder.Entity<PlayerComponent>(pb =>
+            modelBuilder.Entity<PlayerComponent>(eb =>
             {
-                pb.HasIndex(p => p.ProperName).IsUnique();
-                pb.HasKey(p => new
+                eb.Property("_tracked");
+                eb.HasIndex(p => p.ProperName).IsUnique();
+                eb.HasKey(p => new
                 {
                     p.GameId,
                     p.EntityId
@@ -315,7 +322,12 @@ namespace UnicornHack.Data
 
             modelBuilder.Entity<BeingComponent>(eb =>
             {
-
+                eb.Ignore(c => c.IsAlive);
+                eb.Ignore(c => c.Abilities);
+                eb.Ignore(c => c.AppliedEffects);
+                eb.Ignore(c => c.SlottedAbilities);
+                eb.Ignore(c => c.Races);
+                eb.Ignore(c => c.Items);
                 eb.Property("_tracked");
                 eb.HasKey(c => new
                 {
@@ -326,6 +338,9 @@ namespace UnicornHack.Data
 
             modelBuilder.Entity<PhysicalComponent>(eb =>
             {
+                eb.Ignore(c => c.Abilities);
+                eb.Ignore(c => c.AppliedEffects);
+                eb.Ignore(c => c.Items);
                 eb.Property("_tracked");
                 eb.HasKey(c => new
                 {
@@ -345,6 +360,10 @@ namespace UnicornHack.Data
 
             modelBuilder.Entity<EffectComponent>(eb =>
             {
+                eb.Ignore(c => c.AffectedEntity);
+                eb.Ignore(c => c.SourceEffect);
+                eb.Ignore(c => c.SourceAbility);
+                eb.Ignore(c => c.ContainingAbility);
                 eb.Ignore(c => c.AmountFunction);
                 eb.Ignore(c => c.SecondaryAmountFunction);
                 eb.Ignore(c => c.DurationAmountFunction);
@@ -359,6 +378,9 @@ namespace UnicornHack.Data
             modelBuilder.Entity<ItemComponent>(eb =>
             {
                 eb.Ignore(c => c.ContainerEntity);
+                eb.Ignore(c => c.Abilities);
+                eb.Ignore(c => c.AppliedEffects);
+                eb.Ignore(c => c.Items);
                 eb.Property("_tracked");
                 eb.HasKey(c => new {c.GameId, c.EntityId});
             });
@@ -377,6 +399,7 @@ namespace UnicornHack.Data
             modelBuilder.Entity<ConnectionComponent>(eb =>
             {
                 eb.Ignore(c => c.TargetLevelCell);
+                eb.Ignore(c => c.TargetLevelEntity);
                 eb.Property("_tracked");
                 eb.HasKey(c => new
                 {
@@ -387,14 +410,21 @@ namespace UnicornHack.Data
 
             modelBuilder.Entity<LevelComponent>(eb =>
             {
+                eb.Ignore(l => l.Actors);
+                eb.Ignore(l => l.Items);
+                eb.Ignore(l => l.Connections);
+                eb.Ignore(l => l.IncomingConnections);
+                eb.Ignore(l => l.KnownActors);
+                eb.Ignore(l => l.KnownItems);
+                eb.Ignore(l => l.KnownConnections);
                 eb.Ignore(l => l.IndexToPoint);
                 eb.Ignore(l => l.PointToIndex);
                 eb.Ignore(l => l.TerrainChanges);
                 eb.Ignore(l => l.KnownTerrainChanges);
-                eb.Ignore(l => l.WallNeighboursChanges);
+                eb.Ignore(l => l.WallNeighborsChanges);
                 eb.Ignore(l => l.VisibleTerrainSnapshot);
                 eb.Ignore(l => l.VisibleTerrainChanges);
-                eb.Ignore(l => l.VisibleNeighboursChanged);
+                eb.Ignore(l => l.VisibleNeighborsChanged);
                 eb.Ignore(l => l.PathFinder);
                 eb.Ignore(l => l.VisibilityCalculator);
                 eb.Property("_tracked");
@@ -411,6 +441,7 @@ namespace UnicornHack.Data
             {
                 eb.Ignore(c => c.LevelCell);
                 eb.Ignore(c => c.LevelEntity);
+                eb.Ignore(c => c.Knowledge);
                 eb.Property("_tracked");
                 eb.HasKey(c => new
                 {
@@ -423,6 +454,9 @@ namespace UnicornHack.Data
             {
                 eb.Ignore(c => c.VisibleTerrain);
                 eb.Ignore(c => c.VisibleTerrainIsCurrent);
+                eb.Ignore(c => c.Abilities);
+                eb.Ignore(c => c.AppliedEffects);
+                eb.Ignore(c => c.Items);
                 eb.Property("_tracked");
                 eb.HasKey(c => new
                 {
@@ -679,6 +713,23 @@ namespace UnicornHack.Data
 
         void IRepository.Remove(object entity)
             => Entry(entity).State = EntityState.Deleted;
+
+        T IRepository.Find<T>(params object[] keyValues) where T : class
+        {
+            var entity = Find<T>(keyValues);
+            if (entity == null)
+            {
+                return null;
+            }
+
+            if (Entry(entity).State == EntityState.Deleted)
+            {
+                SaveChanges();
+                return null;
+            }
+
+            return entity;
+        }
 
         public void RemoveTracked(object entity)
         {

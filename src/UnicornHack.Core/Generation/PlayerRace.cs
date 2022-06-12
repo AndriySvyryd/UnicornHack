@@ -20,9 +20,9 @@ namespace UnicornHack.Generation
         public int TraitPointRate { get; set; }
         public int MutationPointRate { get; set; }
 
-        public static GameEntity InstantiatePlayer(string name, Sex sex, GameEntity levelEntity, Point cell)
+        public static GameEntity InstantiatePlayer(string name, Sex sex, LevelComponent level, Point cell)
         {
-            var manager = levelEntity.Manager;
+            var manager = level.Entity.Manager;
             using (var playerEntityReference = manager.CreateEntity())
             {
                 var playerEntity = playerEntityReference.Referenced;
@@ -45,7 +45,7 @@ namespace UnicornHack.Generation
                 playerEntity.Physical = physical;
 
                 var position = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
-                position.LevelId = levelEntity.Id;
+                position.LevelId = level.EntityId;
                 position.LevelCell = cell;
                 position.Heading = Direction.South;
 
@@ -69,13 +69,13 @@ namespace UnicornHack.Generation
 
                     innateAbilityEntity.Ability = innateAbility;
 
-                    defaultRace.CreatePropertyEffect(nameof(PhysicalComponent.Material), (int?)Material.Flesh,
+                    defaultRace.AddPropertyEffect(nameof(PhysicalComponent.Material), (int?)Material.Flesh,
                         innateAbilityEntity.Id, manager, ValueCombinationFunction.Override);
-                    defaultRace.CreatePropertyEffect(nameof(PhysicalComponent.Capacity),
+                    defaultRace.AddPropertyEffect(nameof(PhysicalComponent.Capacity),
                         AbilitySlottingSystem.DefaultSlotCapacity + 2, innateAbilityEntity.Id, manager);
 
                     innateAbility.OwnerEntity = playerEntity;
-                    innateEffect.AffectedEntityId = playerEntity.Id;
+                    innateEffect.AffectedEntity = playerEntity;
                 }
 
                 using (var raceEntityReference = manager.CreateEntity())
@@ -89,7 +89,7 @@ namespace UnicornHack.Generation
 
                     defaultRace.AddToAppliedEffect(raceEffectEntity, playerEntity);
 
-                    raceEffect.AffectedEntityId = playerEntity.Id;
+                    raceEffect.AffectedEntity = playerEntity;
                 }
 
                 return playerEntity;

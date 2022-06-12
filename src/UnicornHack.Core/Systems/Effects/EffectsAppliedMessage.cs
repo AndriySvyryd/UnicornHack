@@ -14,7 +14,7 @@ namespace UnicornHack.Systems.Effects
         private GameEntity _activatorEntity;
         private GameEntity _abilityEntity;
         private GameEntity _targetEntity;
-        private ReferencingList<GameEntity> _appliedEffects;
+        private ReferencingList<GameEntity> _appliedEffects = new();
 
         public GameEntity ActivatorEntity
         {
@@ -52,11 +52,6 @@ namespace UnicornHack.Systems.Effects
         public ReferencingList<GameEntity> AppliedEffects
         {
             get => _appliedEffects;
-            set
-            {
-                _appliedEffects?.Clear();
-                _appliedEffects = value;
-            }
         }
 
         public ActivationType AbilityTrigger { get; set; }
@@ -69,7 +64,7 @@ namespace UnicornHack.Systems.Effects
             ActivatorEntity = default;
             AbilityEntity = default;
             TargetEntity = default;
-            AppliedEffects = default;
+            _appliedEffects.Clear();
             AbilityTrigger = default;
             SuccessfulApplication = default;
         }

@@ -12,8 +12,7 @@ namespace UnicornHack.Generation
 
         public virtual void Fill(LevelComponent level, IReadOnlyList<Room> rooms)
         {
-            var manager = level.Entity.Manager;
-            var actorsCount = manager.LevelActorsToLevelRelationship[level.EntityId].Count;
+            var actorsCount = level.Actors.Count;
             var creaturesToPlace = level.GenerationRandom.NextBinomial(0.5f, (ExpectedInitialCount - actorsCount) * 2);
             var roomsToFill = rooms.Count;
             var difficultyFraction = (float)(level.Difficulty - 1) / LevelGenerator.MaxDifficulty;
@@ -25,7 +24,7 @@ namespace UnicornHack.Generation
                 {
                     if (!level.GenerationRandom.TryPick(
                         room.InsidePoints,
-                        p => manager.LevelActorToLevelCellIndex[(level.EntityId, p.X, p.Y)] == null,
+                        p => !level.Actors.ContainsKey(p),
                         out var point))
                     {
                         goto NextRoom;

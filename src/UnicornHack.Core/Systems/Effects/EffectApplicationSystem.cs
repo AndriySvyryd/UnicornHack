@@ -67,7 +67,6 @@ namespace UnicornHack.Systems.Effects
             effectsAppliedMessage.AbilityTrigger = message.Trigger;
             effectsAppliedMessage.SuccessfulApplication = message.Outcome == ApplicationOutcome.Success;
 
-            var appliedEffects = new ReferencingList<GameEntity>();
             // TODO: Group effects by duration so they can be applied in proper order
             // TODO: Fire a message for effects that are DuringApplication, so they get unapplied as soon as the previous messages are processed
             Dictionary<EffectType, (int Damage, GameEntity EffectEntity)> damageEffects = null;
@@ -116,7 +115,7 @@ namespace UnicornHack.Systems.Effects
                         break;
                     default:
                         ApplyEffect(effectEntity, message.TargetEntity, message.TargetCell, message.ActivatorEntity,
-                            null, appliedEffects, manager, pretend);
+                            null, effectsAppliedMessage.AppliedEffects, manager, pretend);
                         break;
                 }
             }
@@ -126,11 +125,9 @@ namespace UnicornHack.Systems.Effects
                 foreach (var damageEffect in damageEffects)
                 {
                     ApplyEffect(damageEffect.Value.EffectEntity, message.TargetEntity, message.TargetCell,
-                        message.ActivatorEntity, damageEffect.Value.Damage, appliedEffects, manager, pretend);
+                        message.ActivatorEntity, damageEffect.Value.Damage, effectsAppliedMessage.AppliedEffects, manager, pretend);
                 }
             }
-
-            effectsAppliedMessage.AppliedEffects = appliedEffects;
 
             return effectsAppliedMessage;
         }
@@ -153,7 +150,6 @@ namespace UnicornHack.Systems.Effects
             bool pretend)
         {
             var effect = effectEntity.Effect;
-
             var being = targetEntity?.Being;
             switch (effect.EffectType)
             {
@@ -165,8 +161,11 @@ namespace UnicornHack.Systems.Effects
 
                     break;
                 case EffectType.AddAbility:
-                    var abilityAddedEntity = manager.AppliedEffectsToAffectableEntityRelationship[targetEntity.Id]
-                                                 .FirstOrDefault(e => e.Effect.SourceEffectId == effect.EntityId)
+                    var abilityAddedEntity = (targetEntity.Physical?.AppliedEffects
+                                                ?? targetEntity.Item?.AppliedEffects
+                                                 ?? targetEntity.Sensor?.AppliedEffects
+                                                 ?? being?.AppliedEffects)
+                                             .FirstOrDefault(e => e.Effect.SourceEffectId == effect.EntityId)
                                              ?? ApplyEffect(
                                                  effect, targetEntity, activatorEntity, amountOverride,
                                                  appliedEffects, manager, pretend);
@@ -205,7 +204,7 @@ namespace UnicornHack.Systems.Effects
                     {
                         Debug.Assert(effect.Duration == EffectDuration.Instant);
 
-                        var raceEntity = manager.RacesToBeingRelationship[targetEntity.Id].Values
+                        var raceEntity = targetEntity.Being.Races
                             .SingleOrDefault(r => r.Race.TemplateName == raceName);
                         raceEntity?.RemoveComponent(EntityComponent.Effect);
                     }
@@ -220,8 +219,8 @@ namespace UnicornHack.Systems.Effects
 
                         var raceDefinition = PlayerRace.Loader.Find(raceName);
 
-                        var existingRace = manager.RacesToBeingRelationship[targetEntity.Id].Values
-                            .SingleOrDefault(r => r.Race.Species == raceDefinition.Species);
+                        var existingRace = targetEntity.Being.Races
+                            ?.SingleOrDefault(r => r.Race.Species == raceDefinition.Species);
                         if (existingRace == null)
                         {
                             var addedRaceEntity = ApplyEffect(
@@ -328,14 +327,13 @@ namespace UnicornHack.Systems.Effects
                         effect, targetEntity, activatorEntity, amountOverride, appliedEffects, manager, pretend);
                 case EffectType.RemoveItem:
                     var itemToRemove = manager.FindEntity(effect.TargetEntityId);
-                    var abilityId = effect.ContainingAbilityId;
-                    while (abilityId != null)
+                    var containingAbilityEntity = effect.ContainingAbility;
+                    while (containingAbilityEntity != null)
                     {
-                        var abilityEntity = manager.FindEntity(abilityId);
-                        itemToRemove = abilityEntity.Ability.OwnerEntity;
+                        itemToRemove = containingAbilityEntity.Ability.OwnerEntity;
                         if (itemToRemove?.HasComponent(EntityComponent.Item) != true)
                         {
-                            abilityId = abilityEntity.Effect.ContainingAbilityId;
+                            containingAbilityEntity = containingAbilityEntity.Effect?.ContainingAbility;
                         }
                         else
                         {
@@ -435,22 +433,20 @@ namespace UnicornHack.Systems.Effects
                 var entity = appliedEffectEntity.Referenced;
 
                 var appliedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                appliedEffect.ShouldTargetActivator = effect.ShouldTargetActivator;
                 appliedEffect.SourceEffectId = effect.EntityId;
-                appliedEffect.SourceAbilityId = effect.ContainingAbilityId;
+                appliedEffect.SourceAbility = effect.ContainingAbility;
                 appliedEffect.AppliedAmount = amountOverride
                                        ?? (effect.AppliedAmount != null || effect.Amount != null
                                            ? GetAmount(effect, activatorEntity)
                                            : null);
                 appliedEffect.Duration = effect.Duration;
-                appliedEffect.DurationAmount = effect.DurationAmount;
                 appliedEffect.EffectType = effect.EffectType;
                 appliedEffect.CombinationFunction = effect.CombinationFunction;
                 appliedEffect.TargetName = effect.TargetName;
                 appliedEffect.TargetEntityId = effect.TargetEntityId;
                 if (!pretend)
                 {
-                    appliedEffect.AffectedEntityId = affectedEntity.Id;
+                    appliedEffect.AffectedEntity = affectedEntity;
                 }
 
                 switch (effect.Duration)
@@ -609,20 +605,19 @@ namespace UnicornHack.Systems.Effects
 
         public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager manager)
         {
-            if (message.ChangedComponent?.ComponentId == (int)EntityComponent.Effect)
+            if (message.Group.Name == nameof(manager.Effects))
             {
-                return ProcessEffectChanges(
-                    message.Entity, (EffectComponent)message.ChangedComponent, manager, State.Added);
+                return ProcessEffectChanges(message.Entity, message.Entity.Effect, manager, State.Added);
             }
 
-            InitializeProperties(message.Entity, manager);
+            InitializeProperties(message.Entity);
 
             return MessageProcessingResult.ContinueProcessing;
         }
 
         public MessageProcessingResult Process(EntityRemovedMessage<GameEntity> message, GameManager manager)
             => ProcessEffectChanges(
-                message.Entity, (EffectComponent)message.ChangedComponent, manager, State.Removed);
+                message.Entity, (EffectComponent)message.RemovedComponent ?? message.Entity.Effect, manager, State.Removed);
 
         public MessageProcessingResult Process(
             PropertyValueChangedMessage<GameEntity, int?> message, GameManager manager)
@@ -655,12 +650,7 @@ namespace UnicornHack.Systems.Effects
         {
             if (effect.AffectedEntityId == null)
             {
-                if (effect.ContainingAbilityId == null)
-                {
-                    return MessageProcessingResult.ContinueProcessing;
-                }
-
-                var containingAbility = manager.FindEntity(effect.ContainingAbilityId)?.Ability;
+                var containingAbility = effect.ContainingAbility?.Ability;
                 if (containingAbility?.IsActive != true)
                 {
                     return MessageProcessingResult.ContinueProcessing;
@@ -668,13 +658,12 @@ namespace UnicornHack.Systems.Effects
 
                 var activator = containingAbility.OwnerEntity;
 
-                var appliedEffects = manager.AppliedEffectsToSourceAbilityRelationship[containingAbility.EntityId];
+                var appliedEffects = manager.AppliedEffectsToSourceAbilityRelationship.GetDependents(containingAbility.Entity);
                 if (state == State.Added)
                 {
                     if (appliedEffects.Count != 0)
                     {
-                        var appliedEffect = appliedEffects.First().Effect;
-                        var affectedEntity = manager.FindEntity(appliedEffect.AffectedEntityId);
+                        var affectedEntity = appliedEffects.First().Effect.AffectedEntity;
 
                         // Handle the effect added to an ability that's already active
                         ApplyEffect(effectEntity, affectedEntity, targetCell: null, activatorEntity: activator,
@@ -721,7 +710,7 @@ namespace UnicornHack.Systems.Effects
                     }
 
                     var propertyDescription = PropertyDescription.Loader.Find(effect.TargetName);
-                    UpdateProperty(propertyDescription, targetEntity, effect, manager);
+                    UpdateProperty(propertyDescription, targetEntity, effect);
 
                     break;
                 case EffectType.AddAbility:
@@ -743,8 +732,11 @@ namespace UnicornHack.Systems.Effects
                             break;
                         }
 
-                        foreach (var duplicateEffectEntity in manager.AppliedEffectsToAffectableEntityRelationship[
-                            targetEntity.Id])
+                        var appliedEffects = targetEntity.Physical?.AppliedEffects
+                                             ?? targetEntity.Item?.AppliedEffects
+                                             ?? targetEntity.Sensor?.AppliedEffects
+                                             ?? targetEntity.Being.AppliedEffects;
+                        foreach (var duplicateEffectEntity in appliedEffects)
                         {
                             var duplicateEffect = duplicateEffectEntity.Effect;
                             if (duplicateEffect.EffectType != EffectType.AddDuplicateAbility)
@@ -752,7 +744,7 @@ namespace UnicornHack.Systems.Effects
                                 continue;
                             }
 
-                            var sourceEffectEntity = manager.FindEntity(duplicateEffect.SourceEffectId);
+                            var sourceEffectEntity = duplicateEffect.SourceEffect;
                             if (sourceEffectEntity?.Effect == null
                                 || (sourceEffectEntity.Ability?.Name ?? sourceEffectEntity.Effect.TargetName) !=
                                 abilityName)
@@ -771,6 +763,7 @@ namespace UnicornHack.Systems.Effects
                         {
                             // TODO: Try set slot even if no duplicate ability present yet
                             var setSlotMessage = SetAbilitySlotMessage.Create(manager);
+                            // TODO: use Id instead of the name
                             setSlotMessage.AbilityName = abilityName;
                             setSlotMessage.OwnerEntity = targetEntity;
                             setSlotMessage.Slot = abilitySlot;
@@ -786,7 +779,7 @@ namespace UnicornHack.Systems.Effects
                     break;
                 case EffectType.AddDuplicateAbility:
                 {
-                    var sourceEffectEntity = manager.FindEntity(effect.SourceEffectId);
+                    var sourceEffectEntity = effect.SourceEffect;
                     if (sourceEffectEntity?.Effect != null)
                     {
                         var abilityName = sourceEffectEntity.Ability?.Name ?? sourceEffectEntity.Effect.TargetName;
@@ -801,7 +794,7 @@ namespace UnicornHack.Systems.Effects
                     if (state == State.Removed)
                     {
                         effectEntity.RemoveComponent(EntityComponent.Race);
-                        if (manager.RacesToBeingRelationship[targetEntity.Id].Count == 0)
+                        if (targetEntity.Being.Races.Count == 0)
                         {
                             var being = targetEntity.Being;
                             if (being != null)
@@ -925,7 +918,7 @@ namespace UnicornHack.Systems.Effects
                 && (effect.Duration == EffectDuration.Instant
                     || effect.Duration == EffectDuration.DuringApplication))
             {
-                effect.AffectedEntityId = null;
+                effect.AffectedEntity = null;
 
                 RemoveComponentMessage.Enqueue(effectEntity, EntityComponent.Effect, manager);
             }
@@ -942,7 +935,7 @@ namespace UnicornHack.Systems.Effects
                 {
                     // TODO: If cumulative and leveling up just add the extra effects to the existing ability
 
-                    var sourceEffectEntity = manager.FindEntity(abilityEntity.Effect.SourceEffectId);
+                    var sourceEffectEntity = abilityEntity.Effect.SourceEffect;
                     if (sourceEffectEntity != null)
                     {
                         abilityEntity.Ability = null;
@@ -954,7 +947,7 @@ namespace UnicornHack.Systems.Effects
 
         private static void EnqueueApplyEffect(GameEntity targetEntity, GameEntity effectEntity, GameManager manager)
         {
-            var sourceAbilityEntity = manager.FindEntity(effectEntity.Effect.ContainingAbilityId);
+            var sourceAbilityEntity = effectEntity.Effect.ContainingAbility;
             var applyEffectMessage = ApplyEffectMessage.Create(manager);
             applyEffectMessage.ActivatorEntity = sourceAbilityEntity.Ability.OwnerEntity;
             applyEffectMessage.TargetEntity = targetEntity;
@@ -967,10 +960,12 @@ namespace UnicornHack.Systems.Effects
         {
             var abilityName = abilityEffect.TargetName;
             var level = 0;
-            var activeEffects = new List<EffectComponent>
-                {abilityEffect};
-            foreach (var duplicateEffectEntity in
-                manager.AppliedEffectsToAffectableEntityRelationship[abilityEffect.AffectedEntityId.Value])
+            var activeEffects = new List<EffectComponent> {abilityEffect};
+            var appliedEffects = abilityEffect.AffectedEntity.Physical?.AppliedEffects
+                                 ?? abilityEffect.AffectedEntity.Item?.AppliedEffects
+                                 ?? abilityEffect.AffectedEntity.Sensor?.AppliedEffects
+                                 ?? abilityEffect.AffectedEntity.Being.AppliedEffects;
+            foreach (var duplicateEffectEntity in appliedEffects)
             {
                 var effect = duplicateEffectEntity.Effect;
                 if (effect.EffectType != EffectType.AddDuplicateAbility)
@@ -978,8 +973,7 @@ namespace UnicornHack.Systems.Effects
                     continue;
                 }
 
-                var sourceEffectEntity = manager.FindEntity(effect.SourceEffectId);
-                if (sourceEffectEntity?.Effect?.TargetName != abilityName)
+                if (effect.SourceEffect?.Effect?.TargetName != abilityName)
                 {
                     continue;
                 }
@@ -1009,11 +1003,8 @@ namespace UnicornHack.Systems.Effects
                 return 0;
             }
 
-            if (effect.DurationAmountFunction == null)
-            {
-                var ability = activatorEntity.Manager.FindEntity(effect.ContainingAbilityId).Ability;
-                effect.DurationAmountFunction = CreateAmountFunction(effect.DurationAmount, ability.Name);
-            }
+            var ability = effect.ContainingAbility.Ability;
+            effect.DurationAmountFunction ??= CreateAmountFunction(effect.DurationAmount, ability.Name);
 
             try
             {
@@ -1021,7 +1012,6 @@ namespace UnicornHack.Systems.Effects
             }
             catch (Exception e)
             {
-                var ability = activatorEntity.Manager.FindEntity(effect.ContainingAbilityId).Ability;
                 throw new InvalidOperationException("Error while evaluating the Duration for " + ability.Name, e);
             }
         }
@@ -1045,11 +1035,8 @@ namespace UnicornHack.Systems.Effects
                 return effect.AppliedAmount.Value;
             }
 
-            if (effect.AmountFunction == null)
-            {
-                var ability = activatorEntity.Manager.FindEntity(effect.ContainingAbilityId).Ability;
-                effect.AmountFunction = CreateAmountFunction(effect.Amount, ability.Name);
-            }
+            var ability = effect.ContainingAbility.Ability;
+            effect.AmountFunction ??= CreateAmountFunction(effect.Amount, ability.Name);
 
             try
             {
@@ -1057,7 +1044,6 @@ namespace UnicornHack.Systems.Effects
             }
             catch (Exception e)
             {
-                var ability = activatorEntity.Manager.FindEntity(effect.ContainingAbilityId).Ability;
                 throw new InvalidOperationException("Error while evaluating the Amount for " + ability.Name, e);
             }
         }
@@ -1069,11 +1055,8 @@ namespace UnicornHack.Systems.Effects
                 return 0;
             }
 
-            if (effect.SecondaryAmountFunction == null)
-            {
-                var ability = activatorEntity.Manager.FindEntity(effect.ContainingAbilityId).Ability;
-                effect.SecondaryAmountFunction = CreateAmountFunction(effect.SecondaryAmount, ability.Name);
-            }
+            var ability = effect.ContainingAbility.Ability;
+            effect.SecondaryAmountFunction ??= CreateAmountFunction(effect.SecondaryAmount, ability.Name);
 
             try
             {
@@ -1081,7 +1064,6 @@ namespace UnicornHack.Systems.Effects
             }
             catch (Exception e)
             {
-                var ability = activatorEntity.Manager.FindEntity(effect.ContainingAbilityId).Ability;
                 throw new InvalidOperationException("Error while evaluating the SecondaryAmount for " + ability.Name, e);
             }
         }
@@ -1101,7 +1083,7 @@ namespace UnicornHack.Systems.Effects
         private static float GetRequirementsModifier(GameEntity effectEntity, GameEntity activatorEntity)
         {
             var manager = effectEntity.Manager;
-            var item = manager.FindEntity(effectEntity.Effect.ContainingAbilityId).Ability.OwnerEntity.Item;
+            var item = effectEntity.Effect.ContainingAbility.Ability.OwnerEntity.Item;
 
             //TODO: Show stats for each equipable slot
             var slot = item.EquippedSlot == EquipmentSlot.None
@@ -1138,52 +1120,50 @@ namespace UnicornHack.Systems.Effects
         }
 
         private static float GetMightModifier(GameEntity effectEntity, GameEntity activatorEntity)
-        {
-            var scale = 10 + activatorEntity.Being.Might;
-            return scale / 10f;
-        }
+            => (10 + activatorEntity.Being.Might) / 10f;
 
         private static float GetFocusModifier(GameEntity effectEntity, GameEntity activatorEntity)
+            => (10 + activatorEntity.Being.Focus) / 10f;
+
+        /// <summary>
+        ///     Returns a permanently applied effect that affects the specified property.
+        ///     The effect amount can be changed without having to reapply it.
+        /// </summary>
+        public EffectComponent UpdateOrAddPropertyEffect(
+            int? amount, string propertyName, string abilityName, GameEntity entity, ValueCombinationFunction? function = null)
         {
-            var scale = 10 + activatorEntity.Being.Focus;
-            return scale / 10f;
+            var manager = entity.Manager;
+            var abilityEntity = GetOrAddPermanentAbility(entity, abilityName, manager);
+
+            var effect = abilityEntity.Ability.Effects.Select(e => e.Effect)
+                .FirstOrDefault(e => e.EffectType == EffectType.ChangeProperty && e.TargetName == propertyName);
+            if (effect != null)
+            {
+                effect.AppliedAmount = amount;
+                return effect;
+            }
+
+            return AddPropertyEffect(propertyName, amount, abilityEntity.Id, manager, function);
         }
 
         /// <summary>
         ///     Returns a permanently applied effect that affects the specified property.
         ///     The effect amount can be changed without having to reapply it.
         /// </summary>
-        public EffectComponent GetOrAddPropertyEffect(
-            GameEntity entity, string propertyName, string abilityName, ValueCombinationFunction? function = null)
+        public EffectComponent GetOrAddAbilityEffect(GameEntity entity, string abilityName, string containingAbilityName)
         {
             var manager = entity.Manager;
-            var abilityEntity = GetOrAddPermanentAbility(entity.Id, abilityName, manager);
+            var abilityEntity = GetOrAddPermanentAbility(entity, containingAbilityName, manager);
 
-            return manager.EffectsToContainingAbilityRelationship[abilityEntity.Id].Select(e => e.Effect)
-                       .FirstOrDefault(e => e.EffectType == EffectType.ChangeProperty
-                                            && e.TargetName == propertyName)
-                   ?? AddPropertyEffect(abilityEntity.Id, propertyName, function, manager);
-        }
-
-        /// <summary>
-        ///     Returns a permanently applied effect that affects the specified property.
-        ///     The effect amount can be changed without having to reapply it.
-        /// </summary>
-        public EffectComponent GetAbilityEffect(GameEntity entity, string abilityName, string containingAbilityName)
-        {
-            var manager = entity.Manager;
-            var abilityEntity = GetOrAddPermanentAbility(entity.Id, containingAbilityName, manager);
-
-            return manager.EffectsToContainingAbilityRelationship[abilityEntity.Id].Select(e => e.Effect)
+            return abilityEntity.Ability.Effects.Select(e => e.Effect)
                        .FirstOrDefault(e => e.EffectType == EffectType.ChangeProperty
                                             && e.TargetName == abilityName)
                    ?? AddAbilityEffect(abilityEntity.Id, abilityName, manager);
         }
 
-        private GameEntity GetOrAddPermanentAbility(int beingId, string abilityName, GameManager manager)
+        private GameEntity GetOrAddPermanentAbility(GameEntity entity, string abilityName, GameManager manager)
         {
-            var propertyAbility = manager.AbilitiesToAffectableRelationship[beingId]
-                .FirstOrDefault(a => a.Ability.Name == abilityName);
+            var propertyAbility = manager.AffectableAbilitiesIndex[(entity.Id, abilityName)];
             if (propertyAbility == null)
             {
                 using (var abilityReference = manager.CreateEntity())
@@ -1192,7 +1172,7 @@ namespace UnicornHack.Systems.Effects
 
                     var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
                     ability.Name = abilityName;
-                    ability.OwnerId = beingId;
+                    ability.OwnerId = entity.Id;
                     ability.Activation = ActivationType.Always;
 
                     propertyAbility.Ability = ability;
@@ -1202,20 +1182,26 @@ namespace UnicornHack.Systems.Effects
             return propertyAbility;
         }
 
-        private EffectComponent AddPropertyEffect(int abilityId, string propertyName, ValueCombinationFunction? function, GameManager manager)
+        public EffectComponent AddPropertyEffect(
+            string propertyName, int? value, int abilityId, GameManager manager, ValueCombinationFunction? function = null)
         {
-            using (var effectReference = manager.CreateEntity())
+            if (value == null)
+            {
+                return null;
+            }
+
+            using (var effectEntityReference = manager.CreateEntity())
             {
                 var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
 
-                effect.ContainingAbilityId = abilityId;
                 effect.EffectType = EffectType.ChangeProperty;
                 effect.Duration = EffectDuration.Infinite;
-                effect.CombinationFunction = function ?? ValueCombinationFunction.Sum;
                 effect.TargetName = propertyName;
-                effect.AppliedAmount = 0;
+                effect.AppliedAmount = value;
+                effect.CombinationFunction = function ?? ValueCombinationFunction.Sum;
+                effect.ContainingAbilityId = abilityId;
 
-                effectReference.Referenced.Effect = effect;
+                effectEntityReference.Referenced.Effect = effect;
 
                 return effect;
             }
@@ -1240,14 +1226,14 @@ namespace UnicornHack.Systems.Effects
             }
         }
 
-        private void InitializeProperties(GameEntity entity, GameManager manager)
+        private void InitializeProperties(GameEntity entity)
         {
             foreach (var propertyDescription in PropertyDescription.Loader.GetAll())
             {
                 if (propertyDescription.IsCalculated
                     && entity.HasComponent(propertyDescription.ComponentId))
                 {
-                    UpdateProperty(propertyDescription, entity, null, manager);
+                    UpdateProperty(propertyDescription, entity, null);
                 }
             }
         }
@@ -1255,32 +1241,28 @@ namespace UnicornHack.Systems.Effects
         private void UpdateProperty(
             PropertyDescription propertyDescription,
             GameEntity targetEntity,
-            EffectComponent appliedEffectComponent,
-            GameManager manager)
+            EffectComponent appliedEffectComponent)
         {
             if (propertyDescription.PropertyType == typeof(bool))
             {
                 UpdatePropertyValue(
                     (PropertyDescription<bool>)propertyDescription,
                     targetEntity,
-                    appliedEffectComponent,
-                    manager);
+                    appliedEffectComponent);
             }
             else
             {
                 UpdatePropertyValue(
                     (PropertyDescription<int>)propertyDescription,
                     targetEntity,
-                    appliedEffectComponent,
-                    manager);
+                    appliedEffectComponent);
             }
         }
 
         private void UpdatePropertyValue(
             PropertyDescription<int> propertyDescription,
             GameEntity targetEntity,
-            EffectComponent effect,
-            GameManager manager)
+            EffectComponent effect)
         {
             var targetComponent = targetEntity.FindComponent(propertyDescription.ComponentId);
             if (targetComponent == null)
@@ -1293,7 +1275,7 @@ namespace UnicornHack.Systems.Effects
             var summandCount = 0;
             if (propertyDescription.IsCalculated)
             {
-                var activeEffects = GetSortedAppliedEffects(targetEntity, propertyDescription, effect, manager);
+                var activeEffects = GetSortedAppliedEffects(targetEntity, propertyDescription, effect);
                 newValue = propertyDescription.DefaultValue ?? default;
                 if (activeEffects != null)
                 {
@@ -1325,8 +1307,7 @@ namespace UnicornHack.Systems.Effects
         private void UpdatePropertyValue(
             PropertyDescription<bool> propertyDescription,
             GameEntity targetEntity,
-            EffectComponent effect,
-            GameManager manager)
+            EffectComponent effect)
         {
             var targetComponent = targetEntity.FindComponent(propertyDescription.ComponentId);
             if (targetComponent == null)
@@ -1339,7 +1320,7 @@ namespace UnicornHack.Systems.Effects
             var summandCount = 0;
             if (propertyDescription.IsCalculated)
             {
-                var activeEffects = GetSortedAppliedEffects(targetEntity, propertyDescription, effect, manager);
+                var activeEffects = GetSortedAppliedEffects(targetEntity, propertyDescription, effect);
                 newValue = propertyDescription.DefaultValue ?? default;
                 if (activeEffects != null)
                 {
@@ -1478,20 +1459,21 @@ namespace UnicornHack.Systems.Effects
             summandCount = 1;
         }
 
-        private List<EffectComponent> GetSortedAppliedEffects(
-            GameEntity targetEntity, PropertyDescription propertyDescription, EffectComponent effect,
-            GameManager manager)
+        private List<EffectComponent> GetSortedAppliedEffects(GameEntity targetEntity, PropertyDescription propertyDescription, EffectComponent effect)
         {
             List<EffectComponent> activeEffects = null;
-            foreach (var otherEffectEntity in manager.AppliedEffectsToAffectableEntityRelationship[targetEntity.Id])
+            var appliedEffects = targetEntity.Physical?.AppliedEffects
+                                 ?? targetEntity.Item?.AppliedEffects
+                                 ?? targetEntity.Sensor?.AppliedEffects
+                                 ?? targetEntity.Being.AppliedEffects;
+            foreach (var otherEffectEntity in appliedEffects)
             {
                 var otherEffect = otherEffectEntity.Effect;
                 if (otherEffect != effect
                     && otherEffect.EffectType == EffectType.ChangeProperty
                     && otherEffect.TargetName.Equals(propertyDescription.Name))
                 {
-                    activeEffects = new List<EffectComponent>();
-                    activeEffects.Add(otherEffect);
+                    activeEffects = new List<EffectComponent> {otherEffect};
                 }
             }
 
@@ -1545,7 +1527,7 @@ namespace UnicornHack.Systems.Effects
 
         private class AppliedEffectComponentComparer : IComparer<EffectComponent>
         {
-            public static readonly AppliedEffectComponentComparer Instance = new AppliedEffectComponentComparer();
+            public static readonly AppliedEffectComponentComparer Instance = new ();
 
             private AppliedEffectComponentComparer()
             {
@@ -1553,13 +1535,8 @@ namespace UnicornHack.Systems.Effects
 
             public int Compare(EffectComponent x, EffectComponent y)
             {
-                var game = x.Entity.Manager;
-                var xAbility = x.SourceAbilityId.HasValue
-                    ? game.FindEntity(x.SourceAbilityId.Value).Ability
-                    : null;
-                var yAbility = y.SourceAbilityId.HasValue
-                    ? game.FindEntity(y.SourceAbilityId.Value).Ability
-                    : null;
+                var xAbility = x.SourceAbility?.Ability;
+                var yAbility = y.SourceAbility?.Ability;
 
                 if (xAbility != null
                     && yAbility != null)

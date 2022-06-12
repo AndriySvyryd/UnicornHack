@@ -5,7 +5,7 @@ namespace UnicornHack.Utils.DataStructures
     /// <summary>
     ///     Represents an inclusive segment
     /// </summary>
-    public struct Segment
+    public readonly struct Segment : IEquatable<Segment>
     {
         public Segment(byte beginning, byte end)
         {
@@ -73,5 +73,20 @@ namespace UnicornHack.Utils.DataStructures
         public byte RandomPoint(SimpleRandom random) => (byte)random.Next(Beginning, End + 1);
 
         public override string ToString() => $"[{Beginning}, {End}]";
+
+        public bool Equals(Segment other)
+            => Beginning == other.Beginning && End == other.End;
+
+        public override bool Equals(object obj)
+            => obj is Segment other && Equals(other);
+
+        public override int GetHashCode()
+            => HashCode.Combine(Beginning, End);
+
+        public static bool operator ==(Segment left, Segment right)
+            => left.Equals(right);
+
+        public static bool operator !=(Segment left, Segment right)
+            => !left.Equals(right);
     }
 }

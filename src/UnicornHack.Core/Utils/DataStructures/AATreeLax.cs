@@ -151,7 +151,7 @@ namespace UnicornHack.Utils.DataStructures
                 var skip = false;
                 if (compare == 0)
                 {
-                    if (Equals(node.Value, value))
+                    if (EqualityComparer<TValue>.Default.Equals(node.Value, value))
                     {
                         Deleted = node;
                     }

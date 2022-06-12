@@ -24,7 +24,7 @@ namespace UnicornHack.Systems.Knowledge
 ..#");
             level.Difficulty = 3;
 
-            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
             player.Position.Heading = Direction.West;
             var manager = player.Manager;
 
@@ -48,7 +48,7 @@ namespace UnicornHack.Systems.Knowledge
         {
             var level = TestHelper.BuildLevel("..");
             var undine = CreatureData.Undine.Instantiate(level, new Point(0, 0));
-            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(1, 0));
+            var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(1, 0));
             player.Position.Heading = Direction.West;
             var manager = player.Manager;
 
@@ -66,7 +66,7 @@ namespace UnicornHack.Systems.Knowledge
         public void Races_level_up()
         {
             var level = TestHelper.BuildLevel(".");
-            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
             var player = playerEntity.Player;
             var manager = playerEntity.Manager;
 
@@ -81,13 +81,13 @@ namespace UnicornHack.Systems.Knowledge
             Assert.Equal(0, player.TraitPoints);
             Assert.Equal(0, player.MutationPoints);
             Assert.Equal(1000, player.NextLevelXP);
-            Assert.Equal(15, manager.AbilitiesToAffectableRelationship[playerEntity.Id].Count);
-            Assert.Equal(2, manager.EntityItemsToContainerRelationship[playerEntity.Id].Count);
+            Assert.Equal(15, playerEntity.Being.Abilities.Count);
+            Assert.Equal(2, playerEntity.Being.Items.Count);
 
             TestHelper.ActivateAbility(ItemData.PotionOfExperience.Name + ": Drink", playerEntity, manager);
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Equal(2, manager.XPSystem.GetXPLevel(playerEntity, manager));
+            Assert.Equal(2, manager.XPSystem.GetXPLevel(playerEntity));
             Assert.Equal(3, player.SkillPoints);
             Assert.Equal(3, player.TraitPoints);
             Assert.Equal(0, player.MutationPoints);
@@ -96,18 +96,18 @@ namespace UnicornHack.Systems.Knowledge
                 manager.AffectableAbilitiesIndex[(playerEntity.Id, ItemData.PotionOfExperience.Name + ": Drink")];
             Assert.Equal(4, experienceAbility.Ability.Slot);
 
-            var humanEntity = manager.RacesToBeingRelationship[playerEntity.Id].Single().Value;
+            var humanEntity = playerEntity.Being.Races.Single();
             TestHelper.ActivateAbility(ItemData.PotionOfElfness.Name + ": Drink", playerEntity, manager);
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Equal(1, manager.EntityItemsToContainerRelationship[playerEntity.Id].Count);
-            Assert.DoesNotContain(manager.AbilitiesToAffectableRelationship[playerEntity.Id],
+            Assert.Equal(1, playerEntity.Being.Items.Count);
+            Assert.DoesNotContain(playerEntity.Being.Abilities,
                 a => a.Ability.Name.Contains(ItemData.PotionOfElfness.Name));
-            Assert.Equal(2, manager.RacesToBeingRelationship[playerEntity.Id].Count);
-            var elfEntity = manager.RacesToBeingRelationship[playerEntity.Id].Values.Single(r => r != humanEntity);
+            Assert.Equal(2, playerEntity.Being.Races.Count);
+            var elfEntity = playerEntity.Being.Races.Single(r => r != humanEntity);
             Assert.Equal(2, humanEntity.Race.Level);
             Assert.Equal(1, elfEntity.Race.Level);
-            Assert.Equal(3, manager.XPSystem.GetXPLevel(playerEntity, manager));
+            Assert.Equal(3, manager.XPSystem.GetXPLevel(playerEntity));
             Assert.Equal(3, player.SkillPoints);
             Assert.Equal(3, player.TraitPoints);
             Assert.Equal(0, player.MutationPoints);
@@ -120,8 +120,8 @@ namespace UnicornHack.Systems.Knowledge
                 manager.Queue.ProcessQueue(manager);
             }
 
-            Assert.Equal(4, manager.XPSystem.GetXPLevel(playerEntity, manager));
-            Assert.Equal(17, manager.AbilitiesToAffectableRelationship[playerEntity.Id].Count);
+            Assert.Equal(4, manager.XPSystem.GetXPLevel(playerEntity));
+            Assert.Equal(17, playerEntity.Being.Abilities.Count);
             Assert.Equal(2, humanEntity.Race.Level);
             Assert.Equal(2, elfEntity.Race.Level);
             Assert.Equal(5, player.SkillPoints);
@@ -136,15 +136,15 @@ namespace UnicornHack.Systems.Knowledge
             }
 
             Assert.Equal(3, humanEntity.Race.Level);
-            Assert.Equal(18, manager.AbilitiesToAffectableRelationship[playerEntity.Id].Count);
+            Assert.Equal(18, playerEntity.Being.Abilities.Count);
 
             TestHelper.ActivateAbility(ItemData.PotionOfInhumanity.Name + ": Drink", playerEntity, manager);
 
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Equal(1, manager.RacesToBeingRelationship[playerEntity.Id].Count);
-            Assert.Equal(17, manager.AbilitiesToAffectableRelationship[playerEntity.Id].Count);
-            Assert.Equal(2, manager.XPSystem.GetXPLevel(playerEntity, manager));
+            Assert.Equal(1, playerEntity.Being.Races.Count);
+            Assert.Equal(17, playerEntity.Being.Abilities.Count);
+            Assert.Equal(2, manager.XPSystem.GetXPLevel(playerEntity));
             Assert.Equal(2, elfEntity.Race.Level);
             Assert.Equal(2, player.SkillPoints);
             Assert.Equal(3, player.TraitPoints);
@@ -157,9 +157,9 @@ namespace UnicornHack.Systems.Knowledge
                 manager.Queue.ProcessQueue(manager);
             }
 
-            Assert.Equal(16, manager.AbilitiesToAffectableRelationship[playerEntity.Id].Count);
-            Assert.Empty(manager.EntityItemsToContainerRelationship[playerEntity.Id]);
-            Assert.Equal(3, manager.XPSystem.GetXPLevel(playerEntity, manager));
+            Assert.Equal(16, playerEntity.Being.Abilities.Count);
+            Assert.Empty(playerEntity.Being.Items);
+            Assert.Equal(3, manager.XPSystem.GetXPLevel(playerEntity));
             Assert.Equal(2000, player.NextLevelXP);
         }
 
@@ -167,7 +167,7 @@ namespace UnicornHack.Systems.Knowledge
         public void Some_abilities_cooldown_with_xp()
         {
             var level = TestHelper.BuildLevel(".");
-            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
             var manager = playerEntity.Manager;
 
             manager.Queue.ProcessQueue(manager);
@@ -208,7 +208,7 @@ namespace UnicornHack.Systems.Knowledge
         public void Some_effects_expire_with_xp()
         {
             var level = TestHelper.BuildLevel(".");
-            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
             var manager = playerEntity.Manager;
 
             manager.Queue.ProcessQueue(manager);
@@ -245,7 +245,7 @@ namespace UnicornHack.Systems.Knowledge
             TestHelper.ActivateAbility(debuffAbilityEntity, playerEntity, manager, 3);
             manager.Queue.ProcessQueue(manager);
 
-            var appliedEffect = manager.AppliedEffectsToSourceAbilityRelationship[debuffAbilityEntity.Id].Single();
+            var appliedEffect = manager.AppliedEffectsToSourceAbilityRelationship.GetDependents(debuffAbilityEntity).Single();
 
             Assert.Equal(200, appliedEffect.Effect.ExpirationXp);
             Assert.Equal(9, playerEntity.Being.Might);

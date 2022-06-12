@@ -610,7 +610,9 @@ namespace UnicornHack.Utils
                                     else
                                     {
                                         Span<(float NextTopIntersectionY, float NextBottomIntersectionY, Slope Top, Slope Bottom)> newSectors =
+#pragma warning disable CA2014 // Do not use stackalloc in loops
                                             stackalloc (float, float, Slope, Slope)[sectors.Length + 1];
+#pragma warning restore CA2014 // Do not use stackalloc in loops
 
                                         var j = 0;
                                         for (var i = 0; i < sectors.Length; i++)

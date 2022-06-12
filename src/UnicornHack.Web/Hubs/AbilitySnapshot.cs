@@ -181,7 +181,7 @@ namespace UnicornHack.Hubs
         }
 
         private static List<object> Serialize(SubAttackStats stats, GameEntity activator, SerializationContext context)
-            => new List<object>(3)
+            => new(3)
             {
                 stats.SuccessCondition,
                 stats.Accuracy,

@@ -30,8 +30,8 @@ namespace UnicornHack
         protected override void InitializeSystems(IMessageQueue queue)
         {
             var gameQueue = (SequentialMessageQueue<GameManager>)queue;
-            gameQueue.Add<RemoveComponentMessage>(this, RemoveComponentMessage.Name, 0);
-            gameQueue.Add<EntityReferenceMessage<GameEntity>>(this, EntityReferenceMessage<GameEntity>.Name, 0);
+            gameQueue.Register<RemoveComponentMessage>(this, RemoveComponentMessage.Name, 0);
+            gameQueue.Register<EntityReferenceMessage<GameEntity>>(this, EntityReferenceMessage<GameEntity>.Name, 0);
 
             InitializeLevels(gameQueue);
             InitializeBeings(gameQueue);
@@ -72,7 +72,7 @@ namespace UnicornHack
             => _componentPropertyNames[componentId];
 
         public GameEntity FindEntity(int? id) => id.HasValue ? base.FindEntity(id.Value) : null;
-        public override Entity LoadEntity(int id) => Game.Repository.Find<GameEntity>(id);
+        public override Entity LoadEntity(int id) => Game.Repository.Find<GameEntity>(Game.Id, id);
 
         public override void RemoveFromSecondaryTracker(ITrackable trackable)
             => Game.Repository.RemoveTracked(trackable);

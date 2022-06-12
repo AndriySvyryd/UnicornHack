@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Levels;
@@ -31,14 +32,13 @@ namespace UnicornHack.Systems.Actors
             else
             {
                 targetCell = Point.Unpack(target).Value;
-                targetActor =
-                    manager.LevelActorToLevelCellIndex[(actorEntity.Position.LevelId, targetCell.X, targetCell.Y)];
+                targetActor = actorEntity.Position.LevelEntity.Level.Actors.GetValueOrDefault(targetCell);
             }
 
             GameEntity abilityEntity;
             if (slot.HasValue)
             {
-                abilityEntity = manager.AbilitySlottingSystem.GetAbility(actorEntity.Id, slot.Value, manager);
+                abilityEntity = manager.AbilitySlottingSystem.GetAbility(actorEntity, slot.Value);
                 if (abilityEntity == null)
                 {
                     throw new InvalidOperationException("Actor " + actorEntity.Id + ". No ability in slot " + target);
@@ -69,11 +69,10 @@ namespace UnicornHack.Systems.Actors
 
         public virtual GameEntity GetDefaultAttack(GameEntity actorEntity, bool melee, GameManager manager)
             => manager.AbilitySlottingSystem.GetAbility(
-                actorEntity.Id,
+                actorEntity,
                 melee
                     ? AbilitySlottingSystem.DefaultMeleeAttackSlot
-                    : AbilitySlottingSystem.DefaultRangedAttackSlot,
-                manager);
+                    : AbilitySlottingSystem.DefaultRangedAttackSlot);
 
         protected virtual bool ActivateAbility(
             GameEntity abilityEntity, GameEntity actorEntity, Point targetCell, GameEntity targetEntity, GameManager manager)
@@ -112,7 +111,7 @@ namespace UnicornHack.Systems.Actors
             if (!onlyChangeHeading
                 && targetCell != position.LevelCell)
             {
-                var conflictingActor = manager.LevelActorToLevelCellIndex[(position.LevelId, targetCell.X, targetCell.Y)];
+                var conflictingActor = position.LevelEntity.Level.Actors.GetValueOrDefault(targetCell);
                 if (conflictingActor != null)
                 {
                     if (position.Heading != direction)
@@ -127,7 +126,7 @@ namespace UnicornHack.Systems.Actors
                     }
 
                     var abilityEntity = manager.AbilitySlottingSystem.GetAbility(
-                        actorEntity.Id, AbilitySlottingSystem.DefaultMeleeAttackSlot, manager);
+                        actorEntity, AbilitySlottingSystem.DefaultMeleeAttackSlot);
                     return abilityEntity != null
                            && ActivateAbility(abilityEntity, actorEntity, targetCell, conflictingActor, manager);
                 }

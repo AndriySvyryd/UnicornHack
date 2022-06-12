@@ -53,11 +53,11 @@ namespace UnicornHack.Utils.MessagingECS
 
                 testSystem = new GroupTestSystem(entity, effect);
 
-                manager.Queue.Add<EntityAddedMessage<GameEntity>>(
+                manager.Queue.Register<EntityAddedMessage<GameEntity>>(
                     testSystem, manager.Effects.GetEntityAddedMessageName(), 10);
-                manager.Queue.Add<EntityRemovedMessage<GameEntity>>(
+                manager.Queue.Register<EntityRemovedMessage<GameEntity>>(
                     testSystem, manager.Effects.GetEntityRemovedMessageName(), 10);
-                manager.Queue.Add<PropertyValueChangedMessage<GameEntity, string>>(
+                manager.Queue.Register<PropertyValueChangedMessage<GameEntity, string>>(
                     testSystem, manager.Effects.GetPropertyValueChangedMessageName(nameof(EffectComponent.DurationAmount)), 10);
 
                 entity.Effect = effect;
@@ -96,7 +96,8 @@ namespace UnicornHack.Utils.MessagingECS
             public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager state)
             {
                 Assert.Same(_testEntity, message.Entity);
-                Assert.Same(_testComponent, message.ChangedComponent);
+                Assert.Null(message.RemovedComponent);
+                Assert.Equal(0, message.PropertyChanges.Count);
 
                 MessagesProcessed++;
                 return MessageProcessingResult.ContinueProcessing;
@@ -105,7 +106,9 @@ namespace UnicornHack.Utils.MessagingECS
             public MessageProcessingResult Process(EntityRemovedMessage<GameEntity> message, GameManager state)
             {
                 Assert.Same(_testEntity, message.Entity);
-                Assert.Same(_testComponent, message.ChangedComponent);
+                Assert.Same(_testComponent, message.RemovedComponent);
+                Assert.Equal(0, message.PropertyChanges.Count);
+                Assert.Same(_testComponent, message.RemovedComponent);
 
                 MessagesProcessed++;
                 return MessageProcessingResult.ContinueProcessing;

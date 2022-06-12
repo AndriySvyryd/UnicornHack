@@ -46,7 +46,7 @@ namespace UnicornHack.Generation
         private static readonly CSScriptSerializer Serializer =
             new PropertyCSScriptSerializer<LeveledAbility>(GetPropertyConditions<LeveledAbility>());
 
-        protected new static Dictionary<string, Func<TAbility, object, bool>>
+        protected static new Dictionary<string, Func<TAbility, object, bool>>
             GetPropertyConditions<TAbility>() where TAbility : Ability
         {
             var propertyConditions = Ability.GetPropertyConditions<TAbility>();

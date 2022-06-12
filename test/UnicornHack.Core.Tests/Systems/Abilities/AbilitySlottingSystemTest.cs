@@ -21,7 +21,7 @@ namespace UnicornHack.Systems.Abilities
         {
             var level = TestHelper.BuildLevel(".");
             var manager = level.Entity.Manager;
-            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
 
             manager.Queue.ProcessQueue(manager);
 
@@ -56,7 +56,7 @@ namespace UnicornHack.Systems.Abilities
 
             Assert.Equal(2, toggledAbility.Ability.Slot);
             Assert.True(toggledAbility.Ability.IsActive);
-            Assert.Same(toggledAbility, manager.SlottedAbilitiesIndex[playerEntity.Id][2]);
+            Assert.Same(toggledAbility, playerEntity.Being.SlottedAbilities[2]);
             Assert.Equal(10, playerEntity.Being.BleedingResistance);
 
             GameEntity targetedAbility;
@@ -101,7 +101,7 @@ namespace UnicornHack.Systems.Abilities
             manager.Enqueue(setSlotMessage);
             manager.Queue.ProcessQueue(manager);
             Assert.Null(targetedAbility.Ability.Slot);
-            Assert.False(manager.SlottedAbilitiesIndex[playerEntity.Id].ContainsKey(2));
+            Assert.False(playerEntity.Being.SlottedAbilities.ContainsKey(2));
 
             setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = targetedAbility;
@@ -138,7 +138,7 @@ namespace UnicornHack.Systems.Abilities
             Assert.Throws<InvalidOperationException>(() => manager.AbilitySlottingSystem.Process(setSlotMessage, manager));
             Assert.Null(targetedAbility.Ability.Slot);
 
-            var alwaysAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
+            var alwaysAbility = playerEntity.Being.Abilities
                 .First(a => (a.Ability.Activation & ActivationType.Always) != 0);
             setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = alwaysAbility;
@@ -167,13 +167,13 @@ namespace UnicornHack.Systems.Abilities
 ...
 ..#");
 
-            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
             ItemData.GoldCoin.Instantiate(level, new Point(1, 0));
             var manager = playerEntity.Manager;
 
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Null(manager.SlottedAbilitiesIndex[playerEntity.Id].GetValueOrDefault(2));
+            Assert.Null(playerEntity.Being.SlottedAbilities.GetValueOrDefault(2));
 
             var travelMessage = TravelMessage.Create(manager);
             travelMessage.ActorEntity = playerEntity;
@@ -183,8 +183,8 @@ namespace UnicornHack.Systems.Abilities
 
             manager.Queue.ProcessQueue(manager);
 
-            var coinItem = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single().Item;
-            var dropCoinAbilityEntity = manager.SlottedAbilitiesIndex[playerEntity.Id].GetValueOrDefault(2);
+            var coinItem = playerEntity.Being.Items.Single().Item;
+            var dropCoinAbilityEntity = playerEntity.Being.SlottedAbilities.GetValueOrDefault(2);
 
             var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = dropCoinAbilityEntity;
@@ -194,7 +194,7 @@ namespace UnicornHack.Systems.Abilities
 
             Assert.Null(coinItem.ContainerId);
             Assert.Equal(new Point(1, 0), coinItem.Entity.Position.LevelCell);
-            Assert.Null(manager.SlottedAbilitiesIndex[playerEntity.Id].GetValueOrDefault(2));
+            Assert.Null(playerEntity.Being.SlottedAbilities.GetValueOrDefault(2));
 
             var moveItemMessage = MoveItemMessage.Create(manager);
             moveItemMessage.ItemEntity = coinItem.Entity;
@@ -205,7 +205,7 @@ namespace UnicornHack.Systems.Abilities
 
             Assert.Equal(playerEntity.Id, coinItem.ContainerId);
 
-            dropCoinAbilityEntity = manager.SlottedAbilitiesIndex[playerEntity.Id].GetValueOrDefault(2);
+            dropCoinAbilityEntity = playerEntity.Being.SlottedAbilities.GetValueOrDefault(2);
             TestHelper.ActivateAbility(dropCoinAbilityEntity, playerEntity, manager);
 
             manager.Queue.ProcessQueue(manager);
@@ -225,7 +225,7 @@ namespace UnicornHack.Systems.Abilities
 
             Assert.Null(coinItem.ContainerId);
             Assert.Equal(new Point(1, 0), coinItem.Entity.Position.LevelCell);
-            Assert.Null(manager.SlottedAbilitiesIndex[playerEntity.Id].GetValueOrDefault(2));
+            Assert.Null(playerEntity.Being.SlottedAbilities.GetValueOrDefault(2));
         }
     }
 }

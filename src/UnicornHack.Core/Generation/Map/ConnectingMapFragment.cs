@@ -69,12 +69,10 @@ namespace UnicornHack.Generation.Map
                 connectionDefinitions = new[] {new LevelConnection()};
             }
 
-            var manager = level.Entity.Manager;
             foreach (var levelConnection in connectionDefinitions.Where(c => c.Glyph == null))
             {
                 var connectionPoint = level.GenerationRandom.Pick(room.InsidePoints,
-                    p => manager.ConnectionsToLevelRelationship[level.EntityId]
-                        .All(c => c.Position.LevelCell != p));
+                    p => !level.Connections.ContainsKey(p));
                 CreateConnection(level, connectionPoint, levelConnection);
             }
 
@@ -89,7 +87,7 @@ namespace UnicornHack.Generation.Map
         {
             var manager = level.Entity.Manager;
 
-            foreach (var connectionEntity in manager.IncomingConnectionsToLevelRelationship[level.EntityId])
+            foreach (var connectionEntity in level.IncomingConnections)
             {
                 var connection = connectionEntity.Connection;
                 if (connection.TargetLevelX == null)

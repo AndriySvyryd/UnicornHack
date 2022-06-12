@@ -49,8 +49,7 @@ namespace UnicornHack.Hubs
                     if (actorKnowledge.SensedType.CanIdentify())
                     {
                         properties.Add(ai != null
-                            ? manager.RacesToBeingRelationship[actorKnowledge.KnownEntityId].Values.First().Race
-                                .TemplateName
+                            ? actorKnowledge.KnownEntity.Being.Races.First().Race.TemplateName
                             : "player");
                         properties.Add(context.Services.Language.GetActorName(knownEntity, actorKnowledge.SensedType));
                     }
@@ -138,8 +137,7 @@ namespace UnicornHack.Hubs
                         properties.Add(!canIdentify
                             ? null
                             : ai != null
-                                ? manager.RacesToBeingRelationship[actorKnowledge.KnownEntityId].Values.First().Race
-                                    .TemplateName
+                                ? actorKnowledge.KnownEntity.Being.Races.First().Race.TemplateName
                                 : "player");
 
                         i++;
@@ -332,7 +330,7 @@ namespace UnicornHack.Hubs
                         return null;
                     }
 
-                    var abilityEntity = manager.AbilitySlottingSystem.GetAbility(ai.EntityId, slot.Value, manager);
+                    var abilityEntity = manager.AbilitySlottingSystem.GetAbility(ai.Entity, slot.Value);
                     if (abilityEntity == null)
                     {
                         // TODO: Log
@@ -424,13 +422,13 @@ namespace UnicornHack.Hubs
             var description = actorEntity.HasComponent(EntityComponent.Player)
                 ? ""
                 : context.Services.Language.GetDescription(
-                    actorEntity.Manager.RacesToBeingRelationship[actorEntity.Id].Values.First().Race.TemplateName,
+                    actorEntity.Being.Races.First().Race.TemplateName,
                     DescriptionCategory.Creature);
             var result = new List<object>(42)
             {
                 context.Services.Language.GetActorName(actorEntity, sense),
                 description,
-                actorEntity.Manager.XPSystem.GetXPLevel(actorEntity, actorEntity.Manager),
+                actorEntity.Manager.XPSystem.GetXPLevel(actorEntity),
                 actorEntity.Position.MovementDelay,
                 physical.Size,
                 physical.Weight,
@@ -475,7 +473,7 @@ namespace UnicornHack.Hubs
 
             var isPlayer = actorEntity.HasComponent(EntityComponent.Player);
 
-            result.Add(actorEntity.Manager.AbilitiesToAffectableRelationship[actorEntity.Id]
+            result.Add(actorEntity.Being.Abilities
                 .Where(a => a.Ability.IsUsable
                             && ((!isPlayer
                                  && a.Ability.Activation != ActivationType.Default

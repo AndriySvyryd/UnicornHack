@@ -1,10 +1,9 @@
-﻿using System.Collections.Generic;
-
-namespace UnicornHack.Utils.MessagingECS
+﻿namespace UnicornHack.Utils.MessagingECS
 {
     public interface IEntityManager
     {
         IMessageQueue Queue { get; }
+        bool IsLoading { get; }
 
         ITransientReference<Entity> CreateEntity();
         void RemoveEntity(Entity entity);
@@ -14,13 +13,13 @@ namespace UnicornHack.Utils.MessagingECS
         TComponent CreateComponent<TComponent>(int componentId)
             where TComponent : Component, new();
 
-        void HandleComponentAdded(Component component);
-        void HandleComponentRemoved(Component component);
+        void OnComponentAdded(Component component);
+        void OnComponentRemoved(Component component);
 
-        void HandlePropertyValueChanged<T>(
+        void OnPropertyValueChanged<T>(
             string propertyName, T oldValue, T newValue, int componentId, Component component);
 
-        void HandlePropertyValuesChanged(IReadOnlyList<IPropertyValueChange> changes);
+        void OnPropertyValuesChanged(Entity entity, IPropertyValueChanges changes);
 
         void RemoveFromSecondaryTracker(ITrackable trackable);
     }

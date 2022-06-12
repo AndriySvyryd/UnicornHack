@@ -10,7 +10,7 @@ namespace UnicornHack.PerformanceTests.Utils
     {
         public int Iterations = 10000;
 
-        //[Benchmark]
+        [Benchmark]
         public void Multiple_paths()
         {
             var (level, target) = PathFinderTest.TestPath(@"

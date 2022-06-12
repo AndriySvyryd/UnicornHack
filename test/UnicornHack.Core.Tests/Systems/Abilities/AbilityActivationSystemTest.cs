@@ -28,9 +28,9 @@ namespace UnicornHack.Systems.Abilities
 
             var manager = level.Entity.Manager;
             var listener = new AbilityActivatedListener();
-            manager.Queue.Add(listener, AbilityActivatedMessage.Name, -1);
+            manager.Queue.Register(listener, AbilityActivatedMessage.Name, -1);
 
-            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(2, 0));
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 0));
             playerEntity.Position.Heading = Direction.West;
             playerEntity.Player.SkillPoints = 5;
             manager.SkillAbilitiesSystem.BuyAbilityLevel(AbilityData.Conjuration, playerEntity);
@@ -48,7 +48,7 @@ namespace UnicornHack.Systems.Abilities
             Assert.Equal(50, sylph.Being.Accuracy);
             Assert.Equal(75, sylph.Being.Evasion);
 
-            var bow = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single();
+            var bow = playerEntity.Being.Items.Single();
             var equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = bow;
@@ -57,7 +57,7 @@ namespace UnicornHack.Systems.Abilities
             manager.Enqueue(equipMessage);
             manager.Queue.ProcessQueue(manager);
 
-            var nymphAbility = manager.AbilitiesToAffectableRelationship[undine.Id]
+            var nymphAbility = undine.Being.Abilities
                 .First(a => (a.Ability.Activation & ActivationType.Slottable) != 0
                     && a.Ability.Template?.Type != AbilityType.DefaultAttack);
             Assert.Equal(2, nymphAbility.Ability.Slot);
@@ -157,7 +157,7 @@ namespace UnicornHack.Systems.Abilities
         public void Can_use_toggleable_abilities()
         {
             var level = TestHelper.BuildLevel(".");
-            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
             var player = playerEntity.Player;
             var manager = playerEntity.Manager;
 
@@ -167,7 +167,7 @@ namespace UnicornHack.Systems.Abilities
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(0, playerEntity.Being.ReservedEnergyPoints);
-            var toggledAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
+            var toggledAbility = playerEntity.Being.Abilities
                 .Single(a => (a.Ability.Activation & ActivationType.WhileToggled) != 0);
             var setSlotMessage = SetAbilitySlotMessage.Create(manager);
             setSlotMessage.AbilityEntity = toggledAbility;

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Diagnostics;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
@@ -235,11 +234,6 @@ namespace UnicornHack
             }
         }
 
-        // Used for debugging
-#pragma warning disable RCS1213 // Remove unused member declaration.
-        private RelationshipsView Relationships => new RelationshipsView(this);
-#pragma warning restore RCS1213 // Remove unused member declaration.
-
         public override void Initialize(int id, int componentCount, IEntityManager manager)
         {
             base.Initialize(id, componentCount, manager);
@@ -276,46 +270,5 @@ namespace UnicornHack
 
         public new OwnerTransientReference<GameEntity, TOwner> AddReference<TOwner>(TOwner owner)
             => new(this, owner);
-
-        private class RelationshipsView
-        {
-            public RelationshipsView(GameEntity entity) => Entity = entity;
-            private GameEntity Entity { get; }
-
-            public IReadOnlyCollection<GameEntity> AffectableAbilities
-                => Entity.Manager.AbilitiesToAffectableRelationship[Entity.Id];
-
-            public IReadOnlyCollection<GameEntity> AffectableAppliedEffects
-                => Entity.Manager.AppliedEffectsToAffectableEntityRelationship[Entity.Id];
-
-            public IReadOnlyCollection<GameEntity> AbilityAppliedEffects
-                => Entity.Manager.AppliedEffectsToSourceAbilityRelationship[Entity.Id];
-
-            public IReadOnlyCollection<GameEntity> AbilityEffects
-                => Entity.Manager.EffectsToContainingAbilityRelationship[Entity.Id];
-
-            public IEnumerable<GameEntity> Races
-                => Entity.Manager.RacesToBeingRelationship[Entity.Id].Values;
-
-            public IReadOnlyCollection<GameEntity> ContainerItems
-                => Entity.Manager.EntityItemsToContainerRelationship[Entity.Id];
-
-            public IReadOnlyCollection<GameEntity> Connections
-                => Entity.Manager.ConnectionsToLevelRelationship[Entity.Id];
-
-            public IReadOnlyCollection<GameEntity> IncomingConnections
-                => Entity.Manager.IncomingConnectionsToLevelRelationship[Entity.Id];
-
-            public IReadOnlyCollection<GameEntity> LevelActors
-                => Entity.Manager.LevelActorsToLevelRelationship[Entity.Id];
-
-            public IReadOnlyCollection<GameEntity> LevelItems
-                => Entity.Manager.LevelItemsToLevelRelationship[Entity.Id];
-
-            public IReadOnlyCollection<GameEntity> LevelKnowledges
-                => Entity.Manager.LevelKnowledgesToLevelRelationship[Entity.Id];
-
-            public GameEntity Knowledge => Entity.Manager.LevelKnowledgeToLevelEntityRelationship[Entity.Id];
-        }
     }
 }

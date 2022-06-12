@@ -19,7 +19,7 @@ namespace UnicornHack.Systems.Levels
         private byte _width;
         private SimpleRandom _generationRandom;
         private byte[] _visibleTerrain;
-        private byte[] _visibleNeighbours;
+        private byte[] _visibleNeighbors;
         private byte[] _terrain;
         private byte[] _knownTerrain;
         private byte[] _wallNeighbors;
@@ -77,11 +77,16 @@ namespace UnicornHack.Systems.Levels
             set => SetWithNotify(value, ref _visibleTerrain);
         }
 
-        public byte[] VisibleNeighbours
+        public byte[] VisibleTerrainSnapshot { get; set; }
+        public Dictionary<int, byte> VisibleTerrainChanges { get; set; }
+
+        public byte[] VisibleNeighbors
         {
-            get => _visibleNeighbours;
-            set => SetWithNotify(value, ref _visibleNeighbours);
+            get => _visibleNeighbors;
+            set => SetWithNotify(value, ref _visibleNeighbors);
         }
+
+        public bool VisibleNeighborsChanged { get; set; }
 
         public byte[] Terrain
         {
@@ -89,32 +94,39 @@ namespace UnicornHack.Systems.Levels
             set => SetWithNotify(value, ref _terrain);
         }
 
+        public Dictionary<int, byte> TerrainChanges { get; set; } = new();
+
         public byte[] KnownTerrain
         {
             get => _knownTerrain;
             set => SetWithNotify(value, ref _knownTerrain);
         }
 
-        // TODO: Track known neighbours as well
+        public Dictionary<int, byte> KnownTerrainChanges { get; set; } = new();
+
+        // TODO: Track known neighbors as well
         public byte[] WallNeighbors
         {
             get => _wallNeighbors;
             set => SetWithNotify(value, ref _wallNeighbors);
         }
 
-        // Untracked properties
-        public byte[] VisibleTerrainSnapshot { get; set; }
-        public Dictionary<int, byte> VisibleTerrainChanges { get; set; }
-        public bool VisibleNeighboursChanged { get; set; }
-        public Dictionary<int, byte> TerrainChanges { get; set; } = new Dictionary<int, byte>();
-        public Dictionary<int, byte> KnownTerrainChanges { get; set; } = new Dictionary<int, byte>();
-        public Dictionary<int, byte> WallNeighboursChanges { get; set; } = new Dictionary<int, byte>();
+        public Dictionary<int, byte> WallNeighborsChanges { get; set; } = new();
+
+        public IReadOnlyDictionary<Point, GameEntity> Actors { get; } = new Dictionary<Point, GameEntity>();
+        public IReadOnlyDictionary<Point, GameEntity> Items { get; } = new Dictionary<Point, GameEntity>();
+        public IReadOnlyDictionary<Point, GameEntity> Connections { get; } = new Dictionary<Point, GameEntity>();
+
+        public IReadOnlyCollection<GameEntity> IncomingConnections { get; } = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
+        public IReadOnlyDictionary<Point, GameEntity> KnownActors { get; } = new Dictionary<Point, GameEntity>();
+        public IReadOnlyDictionary<Point, GameEntity> KnownItems { get; } = new Dictionary<Point, GameEntity>();
+        public IReadOnlyDictionary<Point, GameEntity> KnownConnections { get; } = new Dictionary<Point, GameEntity>();
 
         public BeveledVisibilityCalculator VisibilityCalculator { get; private set; }
         public PathFinder PathFinder { get; private set; }
         public int[,] PointToIndex { get; private set; }
         public Point[] IndexToPoint { get; private set; }
-        public Rectangle BoundingRectangle => new Rectangle(new Point(0, 0), Width, Height);
+        public Rectangle BoundingRectangle => new(new Point(0, 0), Width, Height);
 
         public void EnsureInitialized()
         {
@@ -123,12 +135,12 @@ namespace UnicornHack.Systems.Levels
             {
                 (PointToIndex, IndexToPoint) = Rectangle.GetPointIndex(Game.Services.SharedCache, Width, Height);
                 PathFinder = new PathFinder(PointToIndex, IndexToPoint);
-                VisibilityCalculator = new BeveledVisibilityCalculator(GetVisibleNeighbours, this);
+                VisibilityCalculator = new BeveledVisibilityCalculator(GetVisibleNeighbors, this);
             }
         }
 
-        private DirectionFlags GetVisibleNeighbours(byte x, byte y) => x < Width && y < Height
-            ? (DirectionFlags)VisibleNeighbours[PointToIndex[x, y]]
+        private DirectionFlags GetVisibleNeighbors(byte x, byte y) => x < Width && y < Height
+            ? (DirectionFlags)VisibleNeighbors[PointToIndex[x, y]]
             : DirectionFlags.None;
 
         public bool IsValid(Point point)
@@ -140,9 +152,9 @@ namespace UnicornHack.Systems.Levels
             {
                 ArrayPool<byte>.Shared.Return(_visibleTerrain);
             }
-            if (_visibleNeighbours != null)
+            if (_visibleNeighbors != null)
             {
-                ArrayPool<byte>.Shared.Return(_visibleNeighbours);
+                ArrayPool<byte>.Shared.Return(_visibleNeighbors);
             }
             if (_terrain != null)
             {
@@ -157,6 +169,14 @@ namespace UnicornHack.Systems.Levels
                 ArrayPool<byte>.Shared.Return(_wallNeighbors);
             }
 
+            ((Dictionary<Point, GameEntity>)Actors)?.Clear();
+            ((Dictionary<Point, GameEntity>)Items)?.Clear();
+            ((Dictionary<Point, GameEntity>)Connections)?.Clear();
+            ((HashSet<GameEntity>)IncomingConnections)?.Clear();
+            ((Dictionary<Point, GameEntity>)KnownActors)?.Clear();
+            ((Dictionary<Point, GameEntity>)KnownItems)?.Clear();
+            ((Dictionary<Point, GameEntity>)KnownConnections)?.Clear();
+
             _branchName = default;
             _branch = default;
             _difficulty = default;
@@ -165,7 +185,7 @@ namespace UnicornHack.Systems.Levels
             _width = default;
             _generationRandom = default;
             _visibleTerrain = default;
-            _visibleNeighbours = default;
+            _visibleNeighbors = default;
             _terrain = default;
             _knownTerrain = default;
             _wallNeighbors = default;

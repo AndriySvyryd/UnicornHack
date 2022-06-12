@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using JetBrains.Annotations;
 using UnicornHack.Utils.DataStructures;
+using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Utils
 {
@@ -15,16 +16,16 @@ namespace UnicornHack.Utils
         {
             var values = new List<T>();
             var defaultValue = Enum.ToObject(typeof(T), value: 0);
-            foreach (Enum currValue in Enum.GetValues(typeof(T)))
+            foreach (Enum enumValue in Enum.GetValues(typeof(T)))
             {
-                if (currValue.Equals(defaultValue))
+                if (enumValue.Equals(defaultValue))
                 {
                     continue;
                 }
 
-                if (((Enum)(object)flags).HasFlag(currValue))
+                if (((Enum)(object)flags).HasFlag(enumValue))
                 {
-                    values.Add((T)(object)currValue);
+                    values.Add((T)(object)enumValue);
                 }
             }
 
@@ -45,7 +46,7 @@ namespace UnicornHack.Utils
                     }
                     else
                     {
-                        values.ExceptWith(decomposedValues.Where(v => !Equals(v, currentValue)));
+                        values.ExceptWith(decomposedValues.Where(v => !EqualityComparer<T>.Default.Equals(v, currentValue)));
                     }
                 }
             }
@@ -113,7 +114,7 @@ namespace UnicornHack.Utils
             }
         }
 
-        public static PropertyInfo GetPropertyAccess([NotNull] this LambdaExpression propertyAccessExpression)
+        public static PropertyInfo GetSimplePropertyAccess([NotNull] this LambdaExpression propertyAccessExpression)
         {
             Debug.Assert(propertyAccessExpression.Parameters.Count == 1);
 
@@ -125,28 +126,7 @@ namespace UnicornHack.Utils
                 throw new ArgumentException(nameof(propertyAccessExpression));
             }
 
-            var declaringType = propertyInfo.DeclaringType;
-            var parameterType = parameterExpression.Type;
-
-            if (declaringType != null
-                && declaringType != parameterType
-                && declaringType.GetTypeInfo().IsInterface
-                && declaringType.GetTypeInfo().IsAssignableFrom(parameterType.GetTypeInfo()))
-            {
-                var propertyGetter = propertyInfo.GetMethod;
-                var interfaceMapping = parameterType.GetTypeInfo().GetRuntimeInterfaceMap(declaringType);
-                var index = Array.FindIndex(interfaceMapping.InterfaceMethods, p => propertyGetter.Equals(p));
-                var targetMethod = interfaceMapping.TargetMethods[index];
-                foreach (var runtimeProperty in parameterType.GetRuntimeProperties())
-                {
-                    if (targetMethod.Equals(runtimeProperty.GetMethod))
-                    {
-                        return runtimeProperty;
-                    }
-                }
-            }
-
-            return propertyInfo;
+            return BindRuntimeProperty(propertyInfo, parameterExpression.Type);
         }
 
         private static PropertyInfo MatchSimplePropertyAccess(
@@ -205,6 +185,221 @@ namespace UnicornHack.Utils
             return expression;
         }
 
+        private static PropertyInfo BindRuntimeProperty(PropertyInfo propertyInfo, Type parameterType)
+        {
+            var declaringType = propertyInfo?.DeclaringType;
+
+            if (declaringType == null
+                || declaringType == parameterType
+                || !declaringType.GetTypeInfo().IsInterface
+                || !declaringType.GetTypeInfo().IsAssignableFrom(parameterType.GetTypeInfo()))
+            {
+                return propertyInfo;
+            }
+
+            var propertyGetter = propertyInfo.GetMethod;
+            if (propertyGetter == null)
+            {
+                return null;
+            }
+
+            var interfaceMapping = parameterType.GetTypeInfo().GetRuntimeInterfaceMap(declaringType);
+            var index = Array.FindIndex(interfaceMapping.InterfaceMethods, p => propertyGetter.Equals(p));
+            var targetMethod = interfaceMapping.TargetMethods[index];
+            foreach (var runtimeProperty in parameterType.GetRuntimeProperties())
+            {
+                if (targetMethod.Equals(runtimeProperty.GetMethod))
+                {
+                    return runtimeProperty;
+                }
+            }
+
+            return propertyInfo;
+        }
+
+        public static (Delegate Get, Delegate ComponentGet, Delegate Set) GetPropertyAccessors(
+            [NotNull] this LambdaExpression propertyAccessExpression)
+            => new PropertyAccessorExpressionVisitor().GetPropertyAccessors(propertyAccessExpression);
+
+        private class PropertyAccessorExpressionVisitor : ExpressionVisitor
+        {
+            private ParameterExpression _rootParameter;
+            private Type _resultType;
+            private ParameterExpression _valueParameter;
+            private ParameterExpression _componentParameter;
+            private Expression _componentGetExpression;
+            private Expression _setExpression;
+            private bool _isLastMember;
+
+            public (Delegate Get, Delegate ComponentGet, Delegate Set) GetPropertyAccessors(
+                [NotNull] LambdaExpression propertyAccessExpression)
+            {
+                if (propertyAccessExpression.Parameters.Count != 1)
+                {
+                    throw new InvalidOperationException("Expected a lambda with only 1 parameter, got "
+                                                        + propertyAccessExpression.Parameters.Count);
+                }
+
+                _rootParameter = propertyAccessExpression.Parameters.Single();
+                _resultType = propertyAccessExpression.Body.Type;
+                _valueParameter = Expression.Parameter(_resultType);
+                _componentParameter = Expression.Parameter(typeof(Component));
+
+                _isLastMember = true;
+
+                var getExpression = Visit(propertyAccessExpression.Body);
+
+                var get = Expression.Lambda(getExpression, _rootParameter).Compile();
+                var componentGet = _componentGetExpression == null
+                    ? null
+                    : Expression.Lambda(_componentGetExpression, _componentParameter).Compile();
+                var set = _setExpression == null
+                    ? null
+                    : Expression.Lambda(_setExpression, _rootParameter, _valueParameter).Compile();
+                return (get, componentGet, set);
+            }
+
+            protected override Expression VisitParameter(ParameterExpression node)
+            {
+                _componentGetExpression = null;
+                _setExpression = _rootParameter;
+                return _rootParameter;
+            }
+
+            protected override Expression VisitUnary(UnaryExpression node)
+            {
+                if (node.NodeType is ExpressionType.Convert
+                    or ExpressionType.ConvertChecked
+                    or ExpressionType.TypeAs)
+                {
+                    return base.Visit(node.Operand);
+                }
+
+                throw new InvalidOperationException("Unexpected expression type " + node.NodeType);
+            }
+
+            protected override Expression VisitBinary(BinaryExpression node)
+            {
+                if (node.NodeType == ExpressionType.Coalesce)
+                {
+                    var left = base.Visit(node.Left);
+                    var leftSet = _setExpression;
+                    var leftComponentGetExpression = _componentGetExpression;
+
+                    _isLastMember = true;
+                    var right = base.Visit(node.Right);
+
+                    if (_setExpression == null)
+                    {
+                        _setExpression = leftSet;
+                    }
+                    else if (leftSet == null)
+                    {
+                    }
+                    else if (leftSet is not BlockExpression leftBlock)
+                    {
+                        _setExpression = Expression.Block(new[] {leftSet, _setExpression});
+                    }
+                    else if (_setExpression is BlockExpression rightBlock)
+                    {
+                        _setExpression = leftBlock.Update(leftBlock.Variables.Concat(rightBlock.Variables),
+                            leftBlock.Expressions.Concat(rightBlock.Expressions));
+                    }
+                    else
+                    {
+                        _setExpression = leftBlock.Update(leftBlock.Variables,
+                            leftBlock.Expressions.Concat(new[] {_setExpression}));
+                    }
+
+                    _componentGetExpression = Expression.Coalesce(leftComponentGetExpression, _componentGetExpression);
+                    return Expression.Coalesce(left, right);
+                }
+
+                throw new InvalidOperationException("Unexpected expression type " + node.NodeType);
+            }
+
+            protected override Expression VisitMember(MemberExpression node)
+            {
+                var propertyInfo = node.Member as PropertyInfo;
+                if (propertyInfo == null)
+                {
+                    throw new InvalidOperationException(node.Member.Name + " is not a property, only properties are supported.");
+                }
+
+                var isLastMember = _isLastMember;
+                _isLastMember = false;
+                var getExpression = base.Visit(node.Expression);
+
+                var runtimeProperty = BindRuntimeProperty(propertyInfo, getExpression.Type);
+                var type = runtimeProperty.PropertyType;
+
+                if (runtimeProperty == null)
+                {
+                    throw new InvalidOperationException($"Property {propertyInfo.Name} is not present on {node.Expression?.Type.Name}");
+                }
+
+                if (type.IsAssignableTo(typeof(Component)))
+                {
+                    _componentGetExpression = Expression.TypeAs(_componentParameter, type);
+                }
+                else if (_componentGetExpression != null)
+                {
+                    var componentCondition = Expression.Equal(_componentGetExpression,
+                        Expression.Constant(null, _componentGetExpression.Type));
+                    _componentGetExpression = Expression.Property(_componentGetExpression, runtimeProperty);
+                    _componentGetExpression = Expression.Condition(componentCondition,
+                        Expression.Default(_componentGetExpression.Type),
+                        _componentGetExpression);
+                }
+
+                Expression propertyAccess = Expression.Property(getExpression, runtimeProperty);
+
+                var propertyType = propertyAccess.Type;
+                if (propertyType.IsValueType
+                    && Nullable.GetUnderlyingType(propertyType) == null)
+                {
+                    propertyAccess = Expression.Convert(
+                        propertyAccess, typeof(Nullable<>).MakeGenericType(propertyType));
+                }
+
+                var condition = Expression.Equal(getExpression, Expression.Constant(null, getExpression.Type));
+
+                if (isLastMember)
+                {
+                    var setMethod = runtimeProperty.SetMethod;
+                    if (setMethod == null
+                        && runtimeProperty.PropertyType.TryGetSequenceType() == null)
+                    {
+                        throw new ArgumentException($"The property {runtimeProperty.Name} doesn't have a setter.");
+                    }
+
+                    _setExpression = setMethod == null
+                        ? null
+                        : Expression.Condition(condition,
+                            Expression.Default(typeof(void)),
+                            Expression.Call(getExpression, setMethod, _valueParameter));
+                }
+
+                getExpression = Expression.Condition(condition, Expression.Default(propertyAccess.Type), propertyAccess);
+
+                if (isLastMember)
+                {
+                    if (getExpression.Type != _resultType)
+                    {
+                        getExpression = Expression.Convert(getExpression, _resultType);
+                    }
+
+                    if (_componentGetExpression != null
+                        && _componentGetExpression.Type != _resultType)
+                    {
+                        _componentGetExpression = Expression.Convert(_componentGetExpression, _resultType);
+                    }
+                }
+
+                return getExpression;
+            }
+        }
+
         public static MethodInfo GetRequiredRuntimeMethod(this Type type, string name, params Type[] parameters)
         {
             var method = type.GetTypeInfo().GetRuntimeMethod(name, parameters);
@@ -214,6 +409,74 @@ namespace UnicornHack.Utils
             }
 
             return method;
+        }
+
+        public static Type TryGetSequenceType(this Type type)
+            => type.TryGetElementType(typeof(IEnumerable<>))
+               ?? type.TryGetElementType(typeof(IAsyncEnumerable<>));
+
+
+        public static Type TryGetElementType(this Type type, Type interfaceOrBaseType)
+        {
+            if (type.IsGenericTypeDefinition)
+            {
+                return null;
+            }
+
+            var types = GetGenericTypeImplementations(type, interfaceOrBaseType);
+
+            Type singleImplementation = null;
+            foreach (var implementation in types)
+            {
+                if (singleImplementation == null)
+                {
+                    singleImplementation = implementation;
+                }
+                else
+                {
+                    singleImplementation = null;
+                    break;
+                }
+            }
+
+            return singleImplementation?.GenericTypeArguments.FirstOrDefault();
+        }
+
+        public static IEnumerable<Type> GetGenericTypeImplementations(this Type type, Type interfaceOrBaseType)
+        {
+            var typeInfo = type.GetTypeInfo();
+            if (!typeInfo.IsGenericTypeDefinition)
+            {
+                var baseTypes = interfaceOrBaseType.GetTypeInfo().IsInterface
+                    ? typeInfo.ImplementedInterfaces
+                    : type.GetBaseTypes();
+                foreach (var baseType in baseTypes)
+                {
+                    if (baseType.IsGenericType
+                        && baseType.GetGenericTypeDefinition() == interfaceOrBaseType)
+                    {
+                        yield return baseType;
+                    }
+                }
+
+                if (type.IsGenericType
+                    && type.GetGenericTypeDefinition() == interfaceOrBaseType)
+                {
+                    yield return type;
+                }
+            }
+        }
+
+        public static IEnumerable<Type> GetBaseTypes(this Type type)
+        {
+            var currentType = type.BaseType;
+
+            while (currentType != null)
+            {
+                yield return currentType;
+
+                currentType = currentType.BaseType;
+            }
         }
 
         public static Type UnwrapNullableType(this Type type)

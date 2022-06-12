@@ -1,5 +1,7 @@
-﻿using UnicornHack.Generation;
+﻿using System.Collections.Generic;
+using UnicornHack.Generation;
 using UnicornHack.Primitives;
+using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Items
 {
@@ -16,6 +18,9 @@ namespace UnicornHack.Systems.Items
         private EquipmentSlot _equippedSlot;
         private int _maxStackSize;
         private int? _count;
+        private IReadOnlyCollection<GameEntity> _abilities;
+        private IReadOnlyCollection<GameEntity> _appliedEffects;
+        private IReadOnlyCollection<GameEntity> _items;
 
         public ItemComponent()
             => ComponentId = (int)EntityComponent.Item;
@@ -78,7 +83,6 @@ namespace UnicornHack.Systems.Items
             set => SetWithNotify(value, ref _count);
         }
 
-        // Unmapped properties
         public GameEntity ContainerEntity
         {
             get => _containerEntity ??= Entity.Manager.FindEntity(_containerId);
@@ -89,10 +93,92 @@ namespace UnicornHack.Systems.Items
             }
         }
 
-        public int GetQuantity(GameManager manager)
-            => Count ?? (Entity.Physical.Capacity == 0
+        public IReadOnlyCollection<GameEntity> Abilities
+        {
+            get
+            {
+                if (_abilities == null)
+                {
+                    var abilities = Entity.Being?.Abilities;
+                    if (abilities != null)
+                    {
+                        _abilities = abilities;
+                    }
+                    else
+                    {
+                        _abilities = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
+                        abilities = Entity.Physical?.Abilities
+                                ?? Entity.Sensor?.Abilities;
+                        if (abilities != null)
+                        {
+                            _abilities = abilities;
+                        }
+                    }
+                }
+
+                return _abilities;
+            }
+        }
+
+        public IReadOnlyCollection<GameEntity> AppliedEffects
+        {
+            get
+            {
+                if (_appliedEffects == null)
+                {
+                    var appliedEffects = Entity.Being?.AppliedEffects;
+                    if (appliedEffects != null)
+                    {
+                        _appliedEffects = appliedEffects;
+                    }
+                    else
+                    {
+                        _appliedEffects = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
+                        appliedEffects = Entity.Physical?.AppliedEffects
+                                    ?? Entity.Sensor?.AppliedEffects;
+                        if (appliedEffects != null)
+                        {
+                            _appliedEffects = appliedEffects;
+                        }
+                    }
+                }
+
+                return _appliedEffects;
+            }
+        }
+
+        public IReadOnlyCollection<GameEntity> Items
+        {
+            get
+            {
+                if (_items == null)
+                {
+                    var items = Entity.Being?.Items;
+
+                    if (items != null)
+                    {
+                        _items = items;
+                    }
+                    else
+                    {
+                        _items = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
+                        items = Entity.Physical?.Items
+                                ?? Entity.Sensor?.Items;
+                        if (items != null)
+                        {
+                            _items = items;
+                        }
+                    }
+                }
+
+                return _items;
+            }
+        }
+
+        public int GetQuantity()
+            => Count ?? ((Entity.Physical?.Capacity ?? 0) == 0
                    ? 1
-                   : manager.EntityItemsToContainerRelationship[EntityId].Count + 1);
+                   : Entity.Physical.Items.Count + 1);
 
         protected override void Clean()
         {
@@ -105,6 +191,9 @@ namespace UnicornHack.Systems.Items
             _equippedSlot = default;
             _maxStackSize = default;
             _count = default;
+            _abilities = default;
+            _appliedEffects = default;
+            _items = default;
 
             base.Clean();
         }

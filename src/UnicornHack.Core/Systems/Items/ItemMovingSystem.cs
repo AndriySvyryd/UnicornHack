@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
@@ -7,6 +8,7 @@ using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
 using UnicornHack.Utils;
+using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Items
@@ -41,7 +43,7 @@ namespace UnicornHack.Systems.Items
                 return MessageProcessingResult.ContinueProcessing;
             }
 
-            var levelItem = manager.LevelItemsToLevelCellIndex[(position.LevelId, position.LevelX, position.LevelY)];
+            var levelItem = position.LevelEntity.Level.Items.GetValueOrDefault(new Point(position.LevelX, position.LevelY));
             if (levelItem != null)
             {
                 // Pickup item on move over
@@ -60,7 +62,7 @@ namespace UnicornHack.Systems.Items
         public MessageProcessingResult Process(DiedMessage message, GameManager manager)
         {
             var position = message.BeingEntity.Position;
-            foreach (var item in manager.EntityItemsToContainerRelationship[message.BeingEntity.Id])
+            foreach (var item in message.BeingEntity.Being.Items)
             {
                 var moveItemMessage = MoveItemMessage.Create(manager);
                 moveItemMessage.ItemEntity = item;
@@ -86,7 +88,7 @@ namespace UnicornHack.Systems.Items
             itemMovedMessage.InitialContainer = item.ContainerId != null
                 ? manager.FindEntity(item.ContainerId.Value)
                 : null;
-            itemMovedMessage.InitialCount = item.GetQuantity(manager);
+            itemMovedMessage.InitialCount = item.GetQuantity();
             itemMovedMessage.SuppressLog = message.SuppressLog;
 
             if (item.ContainerId != null
@@ -146,9 +148,7 @@ namespace UnicornHack.Systems.Items
                         continue;
                     }
 
-                    var (levelX, levelY) = targetPoint;
-                    var existingItem =
-                        manager.LevelItemsToLevelCellIndex[(message.TargetLevelEntity.Id, levelX, levelY)];
+                    var existingItem = message.TargetLevelEntity.Level.Items.GetValueOrDefault(targetPoint);
                     if (existingItem == null)
                     {
                         itemMovedMessage.Successful = true;
@@ -195,8 +195,8 @@ namespace UnicornHack.Systems.Items
             }
             else
             {
-                var targetContainer = message.TargetContainerEntity.Physical;
-                if (targetContainer.Capacity == 0)
+                var targetContainer = message.TargetContainerEntity?.Physical;
+                if ((targetContainer?.Capacity ?? 0) == 0)
                 {
                     return itemMovedMessage;
                 }
@@ -207,7 +207,7 @@ namespace UnicornHack.Systems.Items
                 if (leftover.MaxStackSize > 1
                     || leftover.Count != null)
                 {
-                    foreach (var existingItem in manager.EntityItemsToContainerRelationship[targetContainer.EntityId])
+                    foreach (var existingItem in targetContainer.Items)
                     {
                         leftover = TryStackWith(itemMovedMessage, existingItem.Item, pretend);
                         if (leftover == null)
@@ -222,9 +222,9 @@ namespace UnicornHack.Systems.Items
                 if (leftover != null)
                 {
                     if (targetContainer.Capacity
-                        <= manager.EntityItemsToContainerRelationship[targetContainer.EntityId].Count
+                        <= targetContainer.Items.Count
                         || targetContainer.Capacity
-                            <= manager.SlottedAbilitiesIndex[targetContainer.EntityId].Count)
+                            <= (targetContainer.Entity.Being?.SlottedAbilities?.Count ?? 0))
                     {
                         return itemMovedMessage;
                     }
@@ -275,11 +275,10 @@ namespace UnicornHack.Systems.Items
                 return null;
             }
 
-            var manager = item.Entity.Manager;
-            var stack = manager.EntityItemsToContainerRelationship[item.EntityId].ToList();
+            var stack = item.Items.ToList();
             var stackSize = stack.Count + 1;
 
-            var existingStackSize = manager.EntityItemsToContainerRelationship[existingItem.EntityId].Count + 1;
+            var existingStackSize = existingItem.Items.Count + 1;
 
             if (stackSize > 1 && existingStackSize < existingItem.MaxStackSize)
             {
@@ -335,7 +334,7 @@ namespace UnicornHack.Systems.Items
                 return newItemEntityReference;
             }
 
-            var stackedItems = manager.EntityItemsToContainerRelationship[item.EntityId].ToList();
+            var stackedItems = item.Items.ToList();
             var stackSize = stackedItems.Count + 1;
             if (quantity > stackSize || quantity <= 0)
             {
@@ -349,12 +348,12 @@ namespace UnicornHack.Systems.Items
                 return reference;
             }
 
-            var newStack = stackedItems[stackedItems.Count - 1];
+            var newStack = stackedItems[^1];
             stackedItems.RemoveAt(stackedItems.Count - 1);
             stackSize--;
 
             var itemReference = item.Entity.AddReference(manager);
-            using (var stackReference = newStack.AddReference(manager))
+            using (newStack.AddReference(manager))
             {
                 newStack.Item.ContainerId = item.ContainerId;
                 item.ContainerId = null;
@@ -366,7 +365,7 @@ namespace UnicornHack.Systems.Items
                         break;
                     }
 
-                    using (var stackedItemReference = stackedItem.AddReference(manager))
+                    using (stackedItem.AddReference(manager))
                     {
                         stackedItem.Item.ContainerId = newStack.Id;
                     }

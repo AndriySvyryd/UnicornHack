@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
@@ -73,17 +72,15 @@ namespace UnicornHack.Systems.Levels
                 return traveledMessage;
             }
 
-            var targetLevelId = position.LevelId;
-            var connectionEntity = manager.ConnectionsToLevelRelationship[position.LevelId]
-                .SingleOrDefault(c => c.Position.LevelCell == targetCell);
+            var targetLevelEntity = position.LevelEntity;
+            var connectionEntity = level.Connections.GetValueOrDefault(targetCell);
             if (connectionEntity != null)
             {
                 var connection = connectionEntity.Connection;
                 if (connection.Direction == null
                     || (connection.Direction & ConnectionDirection.Source) != 0)
                 {
-                    targetLevelId = connection.TargetLevelId;
-                    manager.Game.LoadLevel(targetLevelId);
+                    targetLevelEntity = manager.Game.LoadLevel(connection.TargetLevelId);
                     targetCell = connection.TargetLevelCell.Value;
 
                     if (pretend)
@@ -94,7 +91,7 @@ namespace UnicornHack.Systems.Levels
                 }
             }
 
-            var conflictingActor = manager.LevelActorToLevelCellIndex[(targetLevelId, targetCell.X, targetCell.Y)];
+            var conflictingActor = targetLevelEntity.Level.Actors.GetValueOrDefault(targetCell);
             if (conflictingActor != null
                 && (!message.MoveOffConflicting
                     || !MoveOffCell(conflictingActor, manager)))
@@ -108,9 +105,9 @@ namespace UnicornHack.Systems.Levels
                 return traveledMessage;
             }
 
-            if (position.LevelId != targetLevelId)
+            if (position.LevelId != targetLevelEntity.Id)
             {
-                position.SetLevelPosition(targetLevelId, targetCell);
+                position.SetLevelPosition(targetLevelEntity.Id, targetCell);
             }
             else
             {
@@ -137,7 +134,7 @@ namespace UnicornHack.Systems.Levels
         private bool MoveOffCell(GameEntity entity, GameManager manager, bool pretend = false)
         {
             var position = entity.Position;
-            var possibleDirectionsToMove = GetPossibleMovementDirections(position, safe: true, manager);
+            var possibleDirectionsToMove = GetPossibleMovementDirections(position, safe: true);
             if (possibleDirectionsToMove.Count == 0)
             {
                 // TODO: cascade move actors
@@ -197,30 +194,26 @@ namespace UnicornHack.Systems.Levels
 
         public IReadOnlyList<Direction> GetPossibleMovementDirections(
             PositionComponent currentPosition,
-            bool safe,
-            GameManager manager)
+            bool safe)
         {
             var availableDirections = new List<Direction>();
             for (var i = 0; i < 8; i++)
             {
-                if (CanMoveTo(currentPosition.LevelCell, i, currentPosition.LevelEntity.Level) == null)
+                var level = currentPosition.LevelEntity.Level;
+                if (CanMoveTo(currentPosition.LevelCell, i, level) == null)
                 {
                     continue;
                 }
 
                 var direction = Vector.MovementDirections[i];
                 var targetCell = currentPosition.LevelCell.Translate(direction);
-
-                var connectionEntity = manager.ConnectionsToLevelRelationship[currentPosition.LevelId]
-                    .SingleOrDefault(c => c.Position.LevelCell == targetCell);
+                var connectionEntity = level.Connections.GetValueOrDefault(targetCell);
                 if (connectionEntity != null)
                 {
                     continue;
                 }
 
-                if (safe
-                    && manager.LevelActorToLevelCellIndex[(currentPosition.LevelId, targetCell.X, targetCell.Y)] !=
-                    null)
+                if (safe && level.Actors.ContainsKey(targetCell))
                 {
                     continue;
                 }

@@ -157,7 +157,7 @@ namespace UnicornHack.Utils.MessagingECS
         public void Removing_from_tracker_does_not_return_to_pool_until_removed_from_entity()
         {
             var manager = TestHelper.CreateGameManager();
-            GameEntity entity = null;
+            GameEntity entity;
             using (var entityReference = manager.CreateEntity())
             {
                 entity = entityReference.Referenced;
@@ -169,7 +169,7 @@ namespace UnicornHack.Utils.MessagingECS
                     Assert.NotSame(entity, anotherEntityReference.Referenced);
                 }
 
-                var component = entity.AddComponent<ConnectionComponent>((int)EntityComponent.Connection);
+                entity.AddComponent<ConnectionComponent>((int)EntityComponent.Connection);
             }
 
             Assert.Null(entity.Manager);

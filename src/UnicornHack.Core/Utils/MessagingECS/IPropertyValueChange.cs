@@ -4,8 +4,9 @@
     {
         Component ChangedComponent { get; }
         string ChangedPropertyName { get; }
+        bool IsEmpty { get; }
 
-        void EnqueuePropertyValueChangedMessage<TEntity>(string messageName, IEntityManager manager)
+        void EnqueuePropertyValueChangedMessage<TEntity>(string messageName)
             where TEntity : Entity, new();
     }
 }

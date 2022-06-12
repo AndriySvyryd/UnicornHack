@@ -14,8 +14,8 @@ namespace UnicornHack
             Add<SensorComponent>(EntityComponent.Sensor, poolSize: 32);
 
             SensorySystem = new SensorySystem();
-            queue.Add<TraveledMessage>(SensorySystem, TraveledMessage.Name, 3);
-            queue.Add<EntityAddedMessage<GameEntity>>(SensorySystem, Beings.GetEntityAddedMessageName(), 1);
+            queue.Register<TraveledMessage>(SensorySystem, TraveledMessage.Name, 3);
+            queue.Register<EntityAddedMessage<GameEntity>>(SensorySystem, Beings.GetEntityAddedMessageName(), 1);
         }
     }
 }

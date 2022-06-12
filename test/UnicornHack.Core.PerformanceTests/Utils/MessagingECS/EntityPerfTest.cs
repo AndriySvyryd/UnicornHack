@@ -12,7 +12,7 @@ namespace UnicornHack.PerformanceTests.Utils.MessagingECS
 
         private Entity[] _entities;
 
-        [GlobalSetup(Target = nameof(AddComponent) + "," + nameof(FindComponent) + "," + nameof(HasComponent))]
+        [GlobalSetup(Target = nameof(AddRemoveComponent) + "," + nameof(FindComponent) + "," + nameof(HasComponent))]
         public void ComponentSetup()
         {
             var manager = TestHelper.CreateGameManager();
@@ -29,29 +29,23 @@ namespace UnicornHack.PerformanceTests.Utils.MessagingECS
                 entity.AddComponent<LevelComponent>((int)EntityComponent.Level);
                 _entities[i] = entity;
             }
+
+            manager.Queue.ProcessQueue(manager);
+            manager.Queue.Suspend();
         }
 
-        [GlobalCleanup(Target = nameof(AddComponent) + "," + nameof(FindComponent) + "," + nameof(HasComponent))]
-        public void ComponentCleanup()
-        {
-            var context = _entities[0].Manager;
-            for (var i = 0; i < EntityCount; i++)
-            {
-                context.RemoveEntity(_entities[i]);
-            }
-        }
-
-        //[Benchmark]
-        public void AddComponent()
+        [Benchmark]
+        public void AddRemoveComponent()
         {
             for (var i = 0; i < EntityCount; i++)
             {
                 var entity = _entities[i];
                 entity.AddComponent<AIComponent>((int)EntityComponent.AI);
+                entity.RemoveComponent((int)EntityComponent.AI);
             }
         }
 
-        //[Benchmark]
+        [Benchmark]
         public void FindComponent()
         {
             for (var i = 0; i < EntityCount; i++)
@@ -60,7 +54,7 @@ namespace UnicornHack.PerformanceTests.Utils.MessagingECS
             }
         }
 
-        //[Benchmark]
+        [Benchmark]
         public void HasComponent()
         {
             for (var i = 0; i < EntityCount; i++)

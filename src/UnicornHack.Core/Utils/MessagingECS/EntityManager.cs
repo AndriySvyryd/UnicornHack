@@ -9,8 +9,7 @@ namespace UnicornHack.Utils.MessagingECS
     public abstract class EntityManager<TEntity> : IEntityManager
         where TEntity : Entity, new()
     {
-        private readonly DictionaryAdapter<int, TEntity> _entities =
-            new DictionaryAdapter<int, TEntity>(new Dictionary<int, TEntity>(), e => e.Id);
+        private readonly DictionaryAdapter<int, TEntity> _entities = new(new Dictionary<int, TEntity>(), e => e.Id);
 
         private readonly List<EntityGroup<TEntity>>[] _groupsByComponentId;
         private readonly ListObjectPool<TEntity> _entityPool;
@@ -56,7 +55,7 @@ namespace UnicornHack.Utils.MessagingECS
 
         protected EntityGroup<TEntity> CreateGroup(string name, EntityMatcher<TEntity> matcher)
         {
-            var group = new EntityGroup<TEntity>(name, matcher, this);
+            var group = new EntityGroup<TEntity>(name, matcher);
 
             foreach (var id in matcher.GetAllIds())
             {
@@ -72,7 +71,7 @@ namespace UnicornHack.Utils.MessagingECS
         ITransientReference<Entity> IEntityManager.CreateEntity() => CreateEntity();
 
         public OwnerTransientReference<TEntity, EntityManager<TEntity>> CreateEntity()
-            => new OwnerTransientReference<TEntity, EntityManager<TEntity>>(CreateEntityNoReference(), this);
+            => new(CreateEntityNoReference(), this);
 
         protected virtual TEntity CreateEntityNoReference()
         {
@@ -114,49 +113,71 @@ namespace UnicornHack.Utils.MessagingECS
         public TComponent CreateComponent<TComponent>(int componentId)
             where TComponent : Component, new() => ((ListObjectPool<TComponent>)_componentPools[componentId]).Rent();
 
-        public void HandleComponentAdded(Component component)
-            => HandleComponentAddedOrRemoved(component.Entity, component);
+        public void OnComponentAdded(Component component)
+            => OnComponentAddedOrRemoved(component, removed: false);
 
-        public void HandleComponentRemoved(Component component)
-            => HandleComponentAddedOrRemoved(component.Entity, component);
+        public void OnComponentRemoved(Component component)
+            => OnComponentAddedOrRemoved(component, removed: true);
 
-        private void HandleComponentAddedOrRemoved(Entity entity, Component component)
+        private void OnComponentAddedOrRemoved(Component component, bool removed)
         {
+            var entity = (TEntity)component.Entity;
             var groups = _groupsByComponentId[component.ComponentId];
             if (groups != null)
             {
-                var typedEntity = (TEntity)entity;
-
                 foreach (var group in groups)
                 {
-                    group.HandleEntityComponentChanged(typedEntity, component);
+                    group.HandleEntityComponentChanged(entity, removed ? component : null);
                 }
             }
         }
 
-        public void HandlePropertyValueChanged<T>(
+        public void OnPropertyValueChanged<T>(
             string propertyName, T oldValue, T newValue, int componentId, Component component)
         {
             var groups = _groupsByComponentId[componentId];
             if (groups != null)
             {
-                var changes = new IPropertyValueChange[]
-                    {new PropertyValueChange<T>(component, propertyName, oldValue, newValue)};
+                var entityChange = new EntityChange<TEntity>((TEntity)component.Entity,
+                    IPropertyValueChanges.Create(new PropertyValueChange<T>(component, propertyName, oldValue, newValue)));
                 foreach (var group in groups)
                 {
-                    group.HandlePropertyValuesChanged(changes);
+                    group.HandlePropertyValuesChanged(entityChange);
                 }
             }
         }
 
-        public void HandlePropertyValuesChanged(IReadOnlyList<IPropertyValueChange> changes)
+        public void OnPropertyValuesChanged(Entity entity, IPropertyValueChanges changes)
         {
-            foreach (var group in changes.SelectMany(c =>
-                    _groupsByComponentId[c.ChangedComponent.ComponentId]
-                    ?? Enumerable.Empty<EntityGroup<TEntity>>())
-                .Distinct())
+            var entityChange = new EntityChange<TEntity>((TEntity)entity, changes);
+            var propertyChanges = entityChange.PropertyChanges;
+            HashSet<string> handledGroups = null;
+            for (var i = 0; i < propertyChanges.Count; i++)
             {
-                group.HandlePropertyValuesChanged(changes);
+                var groups = _groupsByComponentId[propertyChanges.GetChangedComponent(i).ComponentId];
+                if (groups == null)
+                {
+                    continue;
+                }
+
+                if (handledGroups == null
+                    && i < propertyChanges.Count - 1)
+                {
+                    handledGroups = new HashSet<string>();
+                }
+
+                foreach (var group in groups)
+                {
+                    if (handledGroups != null)
+                    {
+                        if (!handledGroups.Add(group.Name))
+                        {
+                            continue;
+                        }
+                    }
+
+                    group.HandlePropertyValuesChanged(entityChange);
+                }
             }
         }
 

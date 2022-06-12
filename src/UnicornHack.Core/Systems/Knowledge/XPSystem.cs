@@ -34,7 +34,7 @@ namespace UnicornHack.Systems.Knowledge
                 var xp = message.BeingEntity.Being.ExperiencePoints;
                 if (xp == 0)
                 {
-                    var level = GetXPLevel(message.BeingEntity, manager);
+                    var level = GetXPLevel(message.BeingEntity);
                     xp = 100 + level * 10;
                 }
                 AddPlayerXP(xp, manager);
@@ -57,14 +57,14 @@ namespace UnicornHack.Systems.Knowledge
 
         public MessageProcessingResult Process(EntityRemovedMessage<GameEntity> message, GameManager manager)
         {
-            var effect = message.Entity.Effect ?? message.ChangedComponent as EffectComponent;
+            var effect = message.Entity.Effect ?? message.RemovedComponent as EffectComponent;
             var player = manager.FindEntity(effect?.AffectedEntityId)?.Player;
             if (player?.Entity.Being.IsAlive != true)
             {
                 return MessageProcessingResult.ContinueProcessing;
             }
 
-            var race = message.Entity.Race ?? message.ChangedComponent as RaceComponent;
+            var race = message.Entity.Race ?? message.RemovedComponent as RaceComponent;
             var template = PlayerRace.Loader.Find(race.TemplateName);
             var levelsLost = race.Level - 1;
             player.SkillPoints -= levelsLost * template.SkillPointRate;
@@ -82,12 +82,17 @@ namespace UnicornHack.Systems.Knowledge
                 AddXP(playerEntity, xp, manager);
             }
 
-            foreach (var xpEntity in manager.XPEntities.ToList())
+            if (!manager.XPCooldownEntities.Any())
+            {
+                return;
+            }
+
+            foreach (var xpEntity in manager.XPCooldownEntities.ToList())
             {
                 var ability = xpEntity.Ability;
                 if (ability?.CooldownXpLeft != null)
                 {
-                    // TODO: Perf: Queue as a message and remove .ToList()
+                    // TODO: Perf: Queue as a change value message and remove .ToList()
                     var newCooldown = ability.CooldownXpLeft - xp;
                     ability.CooldownXpLeft = newCooldown > 0 ? newCooldown : null;
                 }
@@ -108,11 +113,11 @@ namespace UnicornHack.Systems.Knowledge
             }
         }
 
-        public RaceComponent GetLearningRace(GameEntity actorEntity, GameManager manager)
-            => manager.RacesToBeingRelationship[actorEntity.Id].Values.First().Race;
+        public RaceComponent GetLearningRace(GameEntity actorEntity)
+            => actorEntity.Being.Races.Select(r => r.Race).OrderBy(r => r.Level).First();
 
-        public byte GetXPLevel(GameEntity actorEntity, GameManager manager)
-            => (byte)manager.RacesToBeingRelationship[actorEntity.Id].Values.Sum(r => r.Race.Level);
+        public byte GetXPLevel(GameEntity actorEntity)
+            => (byte)actorEntity.Being.Races.Sum(r => r.Race.Level);
 
         private void AddXP(GameEntity actorEntity, int xp, GameManager manager)
         {
@@ -127,7 +132,7 @@ namespace UnicornHack.Systems.Knowledge
                     leftoverXP = being.ExperiencePoints - player.NextLevelXP;
                     being.ExperiencePoints = 0;
 
-                    var race = GetLearningRace(actorEntity, manager);
+                    var race = GetLearningRace(actorEntity);
                     race.Level++;
 
                     var template = PlayerRace.Loader.Find(race.TemplateName);
@@ -160,7 +165,7 @@ namespace UnicornHack.Systems.Knowledge
         public void UpdateNextLevelXP(GameEntity actorEntity)
         {
             var player = actorEntity.Player;
-            var playerLevel = GetXPLevel(actorEntity, actorEntity.Manager);
+            var playerLevel = GetXPLevel(actorEntity);
             if (playerLevel > player.MaxLevel)
             {
                 player.MaxLevel = playerLevel;

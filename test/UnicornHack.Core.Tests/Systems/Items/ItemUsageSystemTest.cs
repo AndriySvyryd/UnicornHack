@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using UnicornHack.Data.Items;
 using UnicornHack.Generation;
 using UnicornHack.Primitives;
@@ -17,7 +16,7 @@ namespace UnicornHack.Systems.Items
         public void Cannot_unequip_items_in_use()
         {
             var level = TestHelper.BuildLevel(".");
-            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
             var player = playerEntity.Player;
             player.NextAction = ActorAction.Wait;
             var manager = playerEntity.Manager;
@@ -28,7 +27,7 @@ namespace UnicornHack.Systems.Items
 
             manager.Queue.ProcessQueue(manager);
 
-            var shieldEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single();
+            var shieldEntity = playerEntity.Being.Items.Single();
 
             var shieldAbilityName = ItemData.FieryAegis.Name + ": Equip";
             Assert.NotNull(manager.AffectableAbilitiesIndex[(playerEntity.Id, shieldAbilityName)]);
@@ -41,7 +40,7 @@ namespace UnicornHack.Systems.Items
             manager.Enqueue(equipMessage);
             manager.Queue.ProcessQueue(manager);
 
-            var shieldAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
+            var shieldAbility = playerEntity.Being.Abilities
                 .Select(a => a.Ability)
                 .Single(a => (a.Activation & ActivationType.Slottable) != 0
                              && a.Template?.Type != AbilityType.DefaultAttack);
@@ -125,7 +124,7 @@ namespace UnicornHack.Systems.Items
             Assert.Equal(playerEntity.Id, shieldEntity.Item.ContainerId);
             Assert.NotNull(manager.AffectableAbilitiesIndex[(playerEntity.Id, shieldAbilityName)]);
 
-            var equipShieldAbility = manager.SlottedAbilitiesIndex[playerEntity.Id].GetValueOrDefault(3).Ability;
+            var equipShieldAbility = playerEntity.Being.SlottedAbilities[3].Ability;
             Assert.Equal(shieldAbilityName, equipShieldAbility.Name);
 
             TestHelper.ActivateAbility(equipShieldAbility.Entity, playerEntity, manager);
@@ -150,7 +149,7 @@ namespace UnicornHack.Systems.Items
         public void Can_force_unequip_items_in_use()
         {
             var level = TestHelper.BuildLevel(".");
-            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
             var player = playerEntity.Player;
             player.NextAction = ActorAction.Wait;
             var manager = playerEntity.Manager;
@@ -161,7 +160,7 @@ namespace UnicornHack.Systems.Items
 
             manager.Queue.ProcessQueue(manager);
 
-            var shieldEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single();
+            var shieldEntity = playerEntity.Being.Items.Single();
 
             var equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
@@ -171,7 +170,7 @@ namespace UnicornHack.Systems.Items
             manager.Enqueue(equipMessage);
             manager.Queue.ProcessQueue(manager);
 
-            var shieldAbility = manager.AbilitiesToAffectableRelationship[playerEntity.Id]
+            var shieldAbility = playerEntity.Being.Abilities
                 .Select(a => a.Ability)
                 .Single(a => (a.Activation & ActivationType.Slottable) != 0
                              && a.Template?.Type != AbilityType.DefaultAttack);
@@ -196,7 +195,7 @@ namespace UnicornHack.Systems.Items
             Assert.Null(shieldAbility.Entity);
             Assert.False(shieldAbility.IsActive);
             Assert.Equal(0, playerEntity.Being.FireResistance);
-            var activateAbility = manager.AbilitiesToAffectableRelationship[shieldEntity.Id]
+            var activateAbility = shieldEntity.Item.Abilities
                 .Select(a => a.Ability)
                 .Single(a => (a.Activation & ActivationType.Slottable) != 0
                              && a.Template?.Type != AbilityType.DefaultAttack);
@@ -220,7 +219,7 @@ namespace UnicornHack.Systems.Items
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(EquipmentSlot.GraspBothMelee, shieldEntity.Item.EquippedSlot);
-            Assert.Equal(1, manager.EntityItemsToContainerRelationship[playerEntity.Id].Count);
+            Assert.Equal(1, playerEntity.Being.Items.Count);
 
             moveItemMessage = MoveItemMessage.Create(manager);
             moveItemMessage.ItemEntity = shieldEntity;
@@ -231,14 +230,14 @@ namespace UnicornHack.Systems.Items
             manager.Enqueue(moveItemMessage);
             manager.Queue.ProcessQueue(manager);
 
-            Assert.Empty(manager.EntityItemsToContainerRelationship[playerEntity.Id]);
+            Assert.Empty(playerEntity.Being.Items);
         }
 
         [Fact]
         public void Cannot_equip_items_that_require_EP()
         {
             var level = TestHelper.BuildLevel(".");
-            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
             var player = playerEntity.Player;
             player.NextAction = ActorAction.Wait;
             var manager = playerEntity.Manager;
@@ -251,7 +250,7 @@ namespace UnicornHack.Systems.Items
 
             Assert.Equal(100, playerEntity.Being.Visibility);
 
-            var cloakEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single();
+            var cloakEntity = playerEntity.Being.Items.Single();
             var equipMessage = EquipItemMessage.Create(manager);
             equipMessage.ActorEntity = playerEntity;
             equipMessage.ItemEntity = cloakEntity;
@@ -297,7 +296,7 @@ namespace UnicornHack.Systems.Items
         public void Items_add_hindrance_when_requirements_not_met()
         {
             var level = TestHelper.BuildLevel(".");
-            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
             var player = playerEntity.Player;
             player.NextAction = ActorAction.Wait;
             var manager = playerEntity.Manager;
@@ -313,7 +312,7 @@ namespace UnicornHack.Systems.Items
             Assert.Equal(100, playerEntity.Position.MovementDelay);
             Assert.Equal(100, playerEntity.Position.TurningDelay);
 
-            var swordEntity = manager.EntityItemsToContainerRelationship[playerEntity.Id].Single();
+            var swordEntity = playerEntity.Being.Items.Single();
 
             Assert.Equal(10, swordEntity.Physical.Weight);
 

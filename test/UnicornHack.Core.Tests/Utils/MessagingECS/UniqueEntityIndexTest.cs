@@ -1,5 +1,10 @@
 ﻿using System;
+using System.Linq;
+using UnicornHack.Primitives;
+using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Beings;
+using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.DataStructures;
 using Xunit;
@@ -11,96 +16,77 @@ namespace UnicornHack.Utils.MessagingECS
         [Fact]
         public void Index_is_updated()
         {
-            var manager = TestHelper.CreateGameManager();
-            using (var levelEntityReference = manager.CreateEntity())
-            {
-                var levelEntity = levelEntityReference.Referenced;
-                levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+            var level = TestHelper.BuildLevel(".");
+            var manager = level.Entity.Manager;
 
-                using (var firstPositionEntityReference = manager.CreateEntity())
-                {
-                    var firstPositionEntity = firstPositionEntityReference.Referenced;
-                    firstPositionEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
-                    var firstPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-                    firstPosition.LevelId = levelEntity.Id;
-                    firstPosition.LevelCell = new Point(2, 3);
-                    firstPositionEntity.Position = firstPosition;
+            manager.Queue.ProcessQueue(manager);
 
-                    Assert.Same(firstPositionEntity, manager.LevelActorToLevelCellIndex[(levelEntity.Id, 2, 3)]);
+            using var beingEntityReference = manager.CreateEntity();
+            var beingEntity = beingEntityReference.Referenced;
+            beingEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
+            beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+            var position = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
+            position.LevelId = level.EntityId;
+            position.LevelCell = new Point(2, 3);
+            beingEntity.Position = position;
 
-                    firstPosition.LevelCell = new Point(1, 2);
+            using var innateAbilityReference = manager.CreateEntity();
+            var innateAbilityEntity = innateAbilityReference.Referenced;
 
-                    Assert.Same(firstPositionEntity, manager.LevelActorToLevelCellIndex[(levelEntity.Id, 1, 2)]);
-                    Assert.Null(manager.LevelActorToLevelCellIndex[(levelEntity.Id, 2, 3)]);
+            var innateEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+            innateEffect.EffectType = EffectType.AddAbility;
+            innateEffect.Duration = EffectDuration.Infinite;
 
-                    using (var secondPositionEntityReference = manager.CreateEntity())
-                    {
-                        var secondPositionEntity = secondPositionEntityReference.Referenced;
-                        secondPositionEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
-                        var secondPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-                        secondPosition.LevelId = levelEntity.Id;
-                        secondPosition.LevelX = 2;
-                        secondPosition.LevelY = 3;
-                        secondPositionEntity.Position = secondPosition;
+            innateAbilityEntity.Effect = innateEffect;
 
-                        Assert.Same(secondPositionEntity, manager.LevelActorToLevelCellIndex[(levelEntity.Id, 2, 3)]);
+            var innateAbility = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+            innateAbility.Name = EffectApplicationSystem.InnateAbilityName;
+            innateAbility.OwnerId = beingEntity.Id;
+            innateAbility.Activation = ActivationType.Always;
+            innateAbility.SuccessCondition = AbilitySuccessCondition.Always;
 
-                        secondPositionEntity.Position = null;
+            innateAbilityEntity.Ability = innateAbility;
 
-                        Assert.Null(manager.LevelActorToLevelCellIndex[(levelEntity.Id, 2, 3)]);
-                    }
+            manager.EffectApplicationSystem.AddPropertyEffect(nameof(PhysicalComponent.Capacity),
+                (AbilitySlottingSystem.DefaultSlotCapacity) + 2, innateAbilityEntity.Id, manager);
 
-                    Assert.Same(firstPositionEntity, manager.LevelActorToLevelCellIndex[(levelEntity.Id, 1, 2)]);
+            manager.Queue.ProcessQueue(manager);
 
-                    using (var secondLevelEntityReference = manager.CreateEntity())
-                    {
-                        var secondLevelEntity = secondLevelEntityReference.Referenced;
-                        secondLevelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
-                        firstPosition.LevelId = secondLevelEntity.Id;
+            Assert.Equal(1, manager.AffectableAbilitiesIndex.Count());
+            Assert.Same(innateAbilityEntity,
+                manager.AffectableAbilitiesIndex[(beingEntity.Id, innateAbility.Name)]);
 
-                        Assert.Null(manager.LevelActorToLevelCellIndex[(levelEntity.Id, 1, 2)]);
+            using var manualAbilityEntityReference = manager.CreateEntity();
+            var manualAbilityEntity = manualAbilityEntityReference.Referenced;
 
-                        secondLevelEntity.Level = null;
-                    }
+            var manualAbility = manager.CreateComponent<AbilityComponent>((int)EntityComponent.Ability);
+            manualAbility.Name = "Test Ability";
+            manualAbility.OwnerId = beingEntity.Id;
+            manualAbility.Activation = ActivationType.Manual;
+            manualAbility.Slot = 2;
+            manualAbilityEntity.Ability = manualAbility;
 
-                    Assert.Null(firstPositionEntity.Position);
-                }
-            }
-        }
+            manager.Queue.ProcessQueue(manager);
 
-        [Fact]
-        public void Throws_on_conflict()
-        {
-            var manager = TestHelper.CreateGameManager();
-            using (var levelEntityReference = manager.CreateEntity())
-            {
-                var levelEntity = levelEntityReference.Referenced;
-                levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+            Assert.Equal(2, manager.AffectableAbilitiesIndex.Count());
+            Assert.Same(manualAbilityEntity,
+                manager.AffectableAbilitiesIndex[(beingEntity.Id, manualAbility.Name)]);
 
-                using (var firstPositionEntityReference = manager.CreateEntity())
-                {
-                    var firstPositionEntity = firstPositionEntityReference.Referenced;
-                    firstPositionEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
-                    var firstPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-                    firstPosition.LevelId = levelEntity.Id;
-                    firstPosition.LevelCell = new Point(2, 3);
-                    firstPositionEntity.Position = firstPosition;
+            manualAbility.Name = "Test Ability 2";
 
-                    Assert.Same(firstPositionEntity, manager.LevelActorToLevelCellIndex[(levelEntity.Id, 2, 3)]);
+            Assert.Equal(2, manager.AffectableAbilitiesIndex.Count());
+            Assert.Same(manualAbilityEntity,
+                manager.AffectableAbilitiesIndex[(beingEntity.Id, manualAbility.Name)]);
 
-                    using (var secondPositionEntityReference = manager.CreateEntity())
-                    {
-                        var secondPositionEntity = secondPositionEntityReference.Referenced;
-                        secondPositionEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
-                        var secondPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-                        secondPosition.LevelId = levelEntity.Id;
-                        secondPosition.LevelX = 2;
-                        secondPosition.LevelY = 3;
+            manualAbility.OwnerId = null;
 
-                        Assert.Throws<InvalidOperationException>(() => secondPositionEntity.Position = secondPosition);
-                    }
-                }
-            }
+            manager.Queue.ProcessQueue(manager);
+            Assert.Same(innateAbilityEntity, manager.AffectableAbilitiesIndex.Single());
+            Assert.Null(manager.AffectableAbilitiesIndex[(beingEntity.Id, manualAbility.Name)]);
+
+            manualAbility.OwnerId = beingEntity.Id;
+
+            Assert.Throws<InvalidOperationException>(() => manualAbility.Name = EffectApplicationSystem.InnateAbilityName);
         }
     }
 }

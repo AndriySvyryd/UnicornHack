@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Generation;
+﻿using UnicornHack.Generation;
 using UnicornHack.Primitives;
 using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
@@ -9,7 +8,7 @@ namespace UnicornHack.Systems.Levels
     [Component(Id = (int)EntityComponent.Position)]
     public class PositionComponent : GameComponent, IKeepAliveComponent
     {
-        private GameEntity _level;
+        private GameEntity _levelEntity;
         private int _levelId;
         private byte _levelX;
         private byte _levelY;
@@ -25,8 +24,18 @@ namespace UnicornHack.Systems.Levels
             get => _levelId;
             set
             {
-                _level = null;
+                _levelEntity = null;
                 SetWithNotify(value, ref _levelId);
+            }
+        }
+
+        public GameEntity LevelEntity
+        {
+            get => _levelEntity ??= Entity.Manager.FindEntity(_levelId);
+            set
+            {
+                LevelId = value.Id;
+                _levelEntity = value;
             }
         }
 
@@ -40,6 +49,38 @@ namespace UnicornHack.Systems.Levels
         {
             get => _levelY;
             set => SetWithNotify(value, ref _levelY);
+        }
+
+        public Point LevelCell
+        {
+            get => new(LevelX, LevelY);
+            set
+            {
+                var levelXSet = NotifyChanging(value.X, ref _levelX, nameof(LevelX), out var oldLevelX);
+                var levelYSet = NotifyChanging(value.Y, ref _levelY, nameof(LevelY), out var oldLevelY);
+
+                var anyChanges = false;
+                var levelXChange = PropertyValueChange<byte>.Empty;
+                if (levelXSet)
+                {
+                    anyChanges = true;
+                    NotifyChanged(nameof(LevelX));
+                    levelXChange = new PropertyValueChange<byte>(this, nameof(LevelX), oldLevelX, value.X);
+                }
+
+                var levelYChange = PropertyValueChange<byte>.Empty;
+                if (levelYSet)
+                {
+                    anyChanges = true;
+                    NotifyChanged(nameof(LevelY));
+                    levelYChange = new PropertyValueChange<byte>(this, nameof(LevelY), oldLevelY, value.Y);
+                }
+
+                if (anyChanges)
+                {
+                    Entity?.HandlePropertyValuesChanged(IPropertyValueChanges.Create(levelXChange, levelYChange));
+                }
+            }
         }
 
         public Direction? Heading
@@ -62,44 +103,7 @@ namespace UnicornHack.Systems.Levels
             set => SetWithNotify(value, ref _turningDelay);
         }
 
-        // Unmapped properties
-        public GameEntity LevelEntity
-        {
-            get => _level ?? (_level = Entity.Manager.FindEntity(_levelId));
-            set
-            {
-                LevelId = value.Id;
-                _level = value;
-            }
-        }
-
-        public Point LevelCell
-        {
-            get => new Point(LevelX, LevelY);
-            set
-            {
-                var levelXSet = NotifyChanging(value.X, ref _levelX, nameof(LevelX), out var oldLevelX);
-                var levelYSet = NotifyChanging(value.Y, ref _levelY, nameof(LevelY), out var oldLevelY);
-
-                var changes = new List<IPropertyValueChange>();
-                if (levelXSet)
-                {
-                    NotifyChanged(nameof(LevelX));
-                    changes.Add(new PropertyValueChange<byte>(this, nameof(LevelX), oldLevelX, value.X));
-                }
-
-                if (levelYSet)
-                {
-                    NotifyChanged(nameof(LevelY));
-                    changes.Add(new PropertyValueChange<byte>(this, nameof(LevelY), oldLevelY, value.Y));
-                }
-
-                if (changes.Count > 0)
-                {
-                    Entity?.HandlePropertyValuesChanged(changes);
-                }
-            }
-        }
+        public GameEntity Knowledge { get; set; }
 
         /// <summary>
         ///     Sets <see cref="LevelId" /> and <see cref="LevelCell" /> atomically.
@@ -110,41 +114,48 @@ namespace UnicornHack.Systems.Levels
             var levelXSet = NotifyChanging(levelCell.X, ref _levelX, nameof(LevelX), out var oldLevelX);
             var levelYSet = NotifyChanging(levelCell.Y, ref _levelY, nameof(LevelY), out var oldLevelY);
 
-            var changes = new List<IPropertyValueChange>();
+            var anyChanges = false;
+            var levelIdChange = PropertyValueChange<int>.Empty;
             if (levelIdSet)
             {
-                _level = null;
+                anyChanges = true;
+                _levelEntity = null;
                 NotifyChanged(nameof(LevelId));
-                changes.Add(new PropertyValueChange<int>(this, nameof(LevelId), oldLevelId, levelId));
+                levelIdChange = new PropertyValueChange<int>(this, nameof(LevelId), oldLevelId, levelId);
             }
 
+            var levelXChange = PropertyValueChange<byte>.Empty;
             if (levelXSet)
             {
+                anyChanges = true;
                 NotifyChanged(nameof(LevelX));
-                changes.Add(new PropertyValueChange<byte>(this, nameof(LevelX), oldLevelX, levelCell.X));
+                levelXChange = new PropertyValueChange<byte>(this, nameof(LevelX), oldLevelX, levelCell.X);
             }
 
+            var levelYChange = PropertyValueChange<byte>.Empty;
             if (levelYSet)
             {
+                anyChanges = true;
                 NotifyChanged(nameof(LevelY));
-                changes.Add(new PropertyValueChange<byte>(this, nameof(LevelY), oldLevelY, levelCell.Y));
+                levelYChange = new PropertyValueChange<byte>(this, nameof(LevelY), oldLevelY, levelCell.Y);
             }
 
-            if (changes.Count > 0)
+            if (anyChanges)
             {
-                Entity?.HandlePropertyValuesChanged(changes);
+                Entity?.HandlePropertyValuesChanged(IPropertyValueChanges.Create(levelIdChange, levelXChange, levelYChange));
             }
         }
 
         protected override void Clean()
         {
-            _level = default;
+            _levelEntity = default;
             _levelId = default;
             _levelX = default;
             _levelY = default;
             _heading = default;
             _movementDelay = default;
             _turningDelay = default;
+            Knowledge = default;
 
             base.Clean();
         }

@@ -16,27 +16,26 @@ namespace UnicornHack.Hubs
     public class PlayerSnapshot
     {
         public int SnapshotTick { get; set; }
-        private HashSet<LogEntry> LogEntriesSnapshot { get; } = new HashSet<LogEntry>(10, LogEntry.EqualityComparer);
+        private HashSet<LogEntry> LogEntriesSnapshot { get; } = new(10, LogEntry.EqualityComparer);
 
         private HashSet<GameEntity> RacesSnapshot { get; } =
-            new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
+            new(EntityEqualityComparer<GameEntity>.Instance);
 
         private HashSet<GameEntity> AbilitiesSnapshot { get; } =
-            new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
+            new(EntityEqualityComparer<GameEntity>.Instance);
 
-        private readonly HashSet<LogEntry> _tempLogEntries = new HashSet<LogEntry>(10, LogEntry.EqualityComparer);
-        private readonly HashSet<GameEntity> _tempHashSet = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
+        private readonly HashSet<LogEntry> _tempLogEntries = new(10, LogEntry.EqualityComparer);
+        private readonly HashSet<GameEntity> _tempHashSet = new (EntityEqualityComparer<GameEntity>.Instance);
 
         public PlayerSnapshot CaptureState(GameEntity playerEntity, SerializationContext context)
         {
             SnapshotTick = playerEntity.Game.CurrentTick;
 
-            var manager = playerEntity.Manager;
-            var races = manager.RacesToBeingRelationship[playerEntity.Id].Values;
+            var races = playerEntity.Being.Races;
             RacesSnapshot.Clear();
             RacesSnapshot.AddRange(races);
 
-            var abilities = GetSlottedAbilities(playerEntity, manager);
+            var abilities = GetSlottedAbilities(playerEntity);
             AbilitiesSnapshot.Clear();
             AbilitiesSnapshot.AddRange(abilities);
 
@@ -53,21 +52,22 @@ namespace UnicornHack.Hubs
             List<object> serializedLevel,
             SerializationContext context)
         {
-            var manager = context.Manager;
             var player = playerEntity.Player;
             var being = playerEntity.Being;
             List<object> properties;
             if (state == EntityState.Added)
             {
-                properties = new List<object>(13) {(int)state};
-
-                properties.Add(player.ProperName);
-                properties.Add(context.Manager.LevelKnowledges.Single(k => k.Knowledge.KnownEntityId == player.EntityId).Id);
-                properties.Add(player.Game.CurrentTick);
-                properties.Add(serializedLevel);
+                properties = new List<object>(13)
+                {
+                    (int)state,
+                    player.ProperName,
+                    playerEntity.Position.Knowledge.Id,
+                    player.Game.CurrentTick,
+                    serializedLevel
+                };
 
                 var races = new List<object>();
-                foreach (var race in manager.RacesToBeingRelationship[playerEntity.Id].Values)
+                foreach (var race in being.Races)
                 {
                     snapshot?.RacesSnapshot.Add(race);
 
@@ -77,7 +77,7 @@ namespace UnicornHack.Hubs
 
                 // TODO: Send current slot capacity
                 var abilities = new List<object>();
-                foreach (var ability in GetSlottedAbilities(playerEntity, manager))
+                foreach (var ability in GetSlottedAbilities(playerEntity))
                 {
                     snapshot?.AbilitiesSnapshot.Add(ability);
 
@@ -129,7 +129,7 @@ namespace UnicornHack.Hubs
 
             i++;
             var serializedRaces = GameTransmissionProtocol.Serialize(
-                manager.RacesToBeingRelationship[playerEntity.Id].Values,
+                being.Races,
                 snapshot.RacesSnapshot,
                 RaceSnapshot.Serialize,
                 snapshot._tempHashSet,
@@ -142,7 +142,7 @@ namespace UnicornHack.Hubs
 
             i++;
             var serializedAbilities = GameTransmissionProtocol.Serialize(
-                GetSlottedAbilities(playerEntity, manager),
+                GetSlottedAbilities(playerEntity),
                 snapshot.AbilitiesSnapshot,
                 AbilitySnapshot.Serialize,
                 snapshot._tempHashSet,
@@ -242,20 +242,17 @@ namespace UnicornHack.Hubs
         }
 
         public static List<object> SerializeItems(GameEntity playerEntity, SerializationContext context)
-        {
-            var manager = context.Manager;
-            return new List<object>(1)
+            => new(1)
             {
-                manager.EntityItemsToContainerRelationship[playerEntity.Id]
+                playerEntity.Being.Items
                     .Select(t => InventoryItemSnapshot.Serialize(t, null, null, context)).ToList()
             };
-        }
 
         public static List<object> SerializeAdaptations(GameEntity playerEntity, SerializationContext context)
         {
             var traits = new List<(string, int)>();
             var mutations = new List<(string, int)>();
-            foreach (var effectEntity in context.Manager.AppliedEffectsToAffectableEntityRelationship[playerEntity.Id])
+            foreach (var effectEntity in playerEntity.Being.AppliedEffects)
             {
                 var effect = effectEntity.Effect;
                 if (effect.EffectType != EffectType.AddAbility
@@ -335,8 +332,8 @@ namespace UnicornHack.Hubs
             => player.LogEntries.OrderBy(e => e, LogEntry.Comparer)
                 .Skip(Math.Max(0, player.LogEntries.Count - 10));
 
-        private static IEnumerable<GameEntity> GetSlottedAbilities(GameEntity playerEntity, GameManager manager)
-            => manager.AbilitiesToAffectableRelationship[playerEntity.Id]
+        private static IEnumerable<GameEntity> GetSlottedAbilities(GameEntity playerEntity)
+            => playerEntity.Being.Abilities
                 .Select(a => a.Ability)
                 .Where(a => a.Slot != null)
                 .Select(a => a.Entity);

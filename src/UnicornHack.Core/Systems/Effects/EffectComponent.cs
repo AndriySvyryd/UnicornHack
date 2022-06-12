@@ -8,8 +8,11 @@ namespace UnicornHack.Systems.Effects
     public class EffectComponent : GameComponent
     {
         private int? _affectedEntityId;
+        private GameEntity _affectedEntity;
         private int? _sourceEffectId;
+        private GameEntity _sourceEffect;
         private int? _sourceAbilityId;
+        private GameEntity _sourceAbility;
         private int? _containingAbilityId;
         private string _durationAmount;
         private int? _expirationTick;
@@ -19,7 +22,7 @@ namespace UnicornHack.Systems.Effects
         private string _amount;
         private string _secondaryAmount;
         private EffectType _effectType;
-        private ValueCombinationFunction _function;
+        private ValueCombinationFunction _combinationFunction;
         private string _targetName;
         private int? _targetEntityId;
         private EffectDuration _duration;
@@ -33,10 +36,30 @@ namespace UnicornHack.Systems.Effects
             set => SetWithNotify(value, ref _affectedEntityId);
         }
 
+        public GameEntity AffectedEntity
+        {
+            get => _affectedEntity ??= Entity.Manager.FindEntity(_affectedEntityId);
+            set
+            {
+                AffectedEntityId = value?.Id;
+                _affectedEntity = value;
+            }
+        }
+
         public int? SourceEffectId
         {
             get => _sourceEffectId;
             set => SetWithNotify(value, ref _sourceEffectId);
+        }
+
+        public GameEntity SourceEffect
+        {
+            get => _sourceEffect ??= Entity.Manager.FindEntity(_sourceEffectId);
+            set
+            {
+                SourceEffectId = value?.Id;
+                _sourceEffect = value;
+            }
         }
 
         public int? SourceAbilityId
@@ -45,11 +68,23 @@ namespace UnicornHack.Systems.Effects
             set => SetWithNotify(value, ref _sourceAbilityId);
         }
 
+        public GameEntity SourceAbility
+        {
+            get => _sourceAbility ??= Entity.Manager.FindEntity(_sourceAbilityId);
+            set
+            {
+                SourceAbilityId = value?.Id;
+                _sourceAbility = value;
+            }
+        }
+
         public int? ContainingAbilityId
         {
             get => _containingAbilityId;
             set => SetWithNotify(value, ref _containingAbilityId);
         }
+
+        public GameEntity ContainingAbility { get; private set; }
 
         public EffectDuration Duration
         {
@@ -87,6 +122,7 @@ namespace UnicornHack.Systems.Effects
             set => SetWithNotify(value, ref _shouldTargetActivator);
         }
 
+        // The amount for an applied effect or a constant amount for an effect
         public int? AppliedAmount
         {
             get => _appliedAmount;
@@ -94,7 +130,6 @@ namespace UnicornHack.Systems.Effects
         }
 
         public Func<GameEntity, GameEntity, float> AmountFunction { get; set; }
-        public Func<GameEntity, GameEntity, float> SecondaryAmountFunction { get; set; }
 
         public string Amount
         {
@@ -105,6 +140,8 @@ namespace UnicornHack.Systems.Effects
                 AmountFunction = null;
             }
         }
+
+        public Func<GameEntity, GameEntity, float> SecondaryAmountFunction { get; set; }
 
         public string SecondaryAmount
         {
@@ -124,8 +161,8 @@ namespace UnicornHack.Systems.Effects
 
         public ValueCombinationFunction CombinationFunction
         {
-            get => _function;
-            set => SetWithNotify(value, ref _function);
+            get => _combinationFunction;
+            set => SetWithNotify(value, ref _combinationFunction);
         }
 
         public string TargetName
@@ -149,8 +186,12 @@ namespace UnicornHack.Systems.Effects
                 clone.ShouldTargetActivator = ShouldTargetActivator;
                 clone.Duration = Duration;
                 clone.DurationAmount = DurationAmount;
+                clone.DurationAmountFunction = DurationAmountFunction;
                 clone.AppliedAmount = AppliedAmount;
                 clone.Amount = Amount;
+                clone.AmountFunction = AmountFunction;
+                clone.SecondaryAmount = SecondaryAmount;
+                clone.SecondaryAmountFunction = SecondaryAmountFunction;
                 clone.EffectType = EffectType;
                 clone.CombinationFunction = CombinationFunction;
                 clone.TargetName = TargetName;
@@ -171,9 +212,13 @@ namespace UnicornHack.Systems.Effects
         protected override void Clean()
         {
             _affectedEntityId = default;
+            _affectedEntity = default;
             _sourceEffectId = default;
+            _sourceEffect = default;
             _sourceAbilityId = default;
+            _sourceAbility = default;
             _containingAbilityId = default;
+            ContainingAbility = default;
             _duration = default;
             DurationAmountFunction = default;
             _durationAmount = default;
@@ -186,7 +231,7 @@ namespace UnicornHack.Systems.Effects
             SecondaryAmountFunction = default;
             _secondaryAmount = default;
             _effectType = default;
-            _function = default;
+            _combinationFunction = default;
             _targetName = default;
             _targetEntityId = default;
 

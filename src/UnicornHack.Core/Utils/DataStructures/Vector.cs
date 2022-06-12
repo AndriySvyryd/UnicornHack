@@ -3,7 +3,7 @@ using UnicornHack.Primitives;
 
 namespace UnicornHack.Utils.DataStructures
 {
-    public struct Vector
+    public readonly struct Vector : IEquatable<Vector>
     {
         public Vector(int x, int y)
         {
@@ -154,7 +154,7 @@ namespace UnicornHack.Utils.DataStructures
         public int OctantsTo(Direction direction)
         {
             var targetOctant = (int)direction;
-            var octant = 0;
+            int octant;
 
             // Get the closest octant centered on a cardinal or intercardinal direction
             if (Y <= 0)
@@ -294,29 +294,18 @@ namespace UnicornHack.Utils.DataStructures
         }
 
         public Vector ToOctant(int octant)
-        {
-            switch (octant)
+            => octant switch
             {
-                case 0:
-                    return new Vector(X, -Y);
-                case 1:
-                    return new Vector(-Y, X);
-                case 2:
-                    return new Vector(-Y, -X);
-                case 3:
-                    return new Vector(-X, -Y);
-                case 4:
-                    return new Vector(-X, Y);
-                case 5:
-                    return new Vector(Y, -X);
-                case 6:
-                    return new Vector(Y, X);
-                case 7:
-                    return new Vector(X, Y);
-                default:
-                    throw new InvalidOperationException();
-            }
-        }
+                0 => new Vector(X, -Y),
+                1 => new Vector(-Y, X),
+                2 => new Vector(-Y, -X),
+                3 => new Vector(-X, -Y),
+                4 => new Vector(-X, Y),
+                5 => new Vector(Y, -X),
+                6 => new Vector(Y, X),
+                7 => new Vector(X, Y),
+                _ => throw new InvalidOperationException()
+            };
 
         public override string ToString() => $"<{X}, {Y}>";
 
@@ -333,12 +322,7 @@ namespace UnicornHack.Utils.DataStructures
         public bool Equals(Vector other) => X == other.X && Y == other.Y;
 
         public override int GetHashCode()
-        {
-            unchecked
-            {
-                return (X.GetHashCode() * 397) ^ Y.GetHashCode();
-            }
-        }
+            => HashCode.Combine(X, Y);
 
         public static bool operator ==(Vector left, Vector right) => left.Equals(right);
 

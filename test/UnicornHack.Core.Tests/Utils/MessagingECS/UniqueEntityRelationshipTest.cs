@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Senses;
@@ -20,7 +18,7 @@ namespace UnicornHack.Utils.MessagingECS
                 weaponEntity.AddComponent<ItemComponent>((int)EntityComponent.Item);
                 weaponEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
 
-                Assert.Null(manager.BeingToPrimaryNaturalWeaponRelationship[weaponEntity.Id]);
+                Assert.Null(manager.BeingToPrimaryNaturalWeaponRelationship.GetDependent(weaponEntity));
 
                 using (var beingEntityReference = manager.CreateEntity())
                 {
@@ -30,19 +28,15 @@ namespace UnicornHack.Utils.MessagingECS
                     beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
                     being.PrimaryNaturalWeaponId = weaponEntity.Id;
 
-                    Assert.Equal(1, manager.BeingToPrimaryNaturalWeaponRelationship.Count);
-                    Assert.True(manager.BeingToPrimaryNaturalWeaponRelationship.ContainsEntity(beingEntity.Id));
-                    Assert.Same(beingEntity, manager.BeingToPrimaryNaturalWeaponRelationship.FindEntity(beingEntity.Id));
-                    Assert.Same(beingEntity, manager.BeingToPrimaryNaturalWeaponRelationship.Single());
-                    Assert.Same(beingEntity, manager.BeingToPrimaryNaturalWeaponRelationship[weaponEntity.Id]);
+                    Assert.True(manager.BeingToPrimaryNaturalWeaponRelationship.Dependents.ContainsEntity(beingEntity.Id));
+                    Assert.Same(beingEntity, manager.BeingToPrimaryNaturalWeaponRelationship.Dependents.FindEntity(beingEntity.Id));
+                    Assert.Same(beingEntity, manager.BeingToPrimaryNaturalWeaponRelationship.GetDependent(weaponEntity));
 
                     beingEntity.Being.PrimaryNaturalWeaponId = null;
 
-                    Assert.Equal(0, manager.BeingToPrimaryNaturalWeaponRelationship.Count);
-                    Assert.False(manager.BeingToPrimaryNaturalWeaponRelationship.ContainsEntity(beingEntity.Id));
-                    Assert.Null(manager.BeingToPrimaryNaturalWeaponRelationship.FindEntity(beingEntity.Id));
-                    Assert.Empty(manager.BeingToPrimaryNaturalWeaponRelationship);
-                    Assert.Null(manager.BeingToPrimaryNaturalWeaponRelationship[weaponEntity.Id]);
+                    Assert.False(manager.BeingToPrimaryNaturalWeaponRelationship.Dependents.ContainsEntity(beingEntity.Id));
+                    Assert.Null(manager.BeingToPrimaryNaturalWeaponRelationship.Dependents.FindEntity(beingEntity.Id));
+                    Assert.Null(manager.BeingToPrimaryNaturalWeaponRelationship.GetDependent(weaponEntity));
                 }
             }
 
@@ -69,18 +63,15 @@ namespace UnicornHack.Utils.MessagingECS
                     being.PrimaryNaturalWeaponId = weaponEntity.Id;
                 }
 
-                Assert.Equal(1, manager.BeingToPrimaryNaturalWeaponRelationship.Count);
                 Assert.Equal(1, manager.ContainedItems.Count);
             }
 
-            Assert.Equal(1, manager.BeingToPrimaryNaturalWeaponRelationship.Count);
             Assert.Equal(1, manager.ContainedItems.Count);
             Assert.Equal(3, manager.Queue.QueuedCount);
 
             manager.Queue.ProcessQueue(manager);
 
             Assert.Equal(0, manager.Beings.Count);
-            Assert.Equal(0, manager.BeingToPrimaryNaturalWeaponRelationship.Count);
             Assert.Equal(0, manager.ContainedItems.Count);
             Assert.Equal(0, manager.Queue.QueuedCount);
         }
@@ -139,8 +130,6 @@ namespace UnicornHack.Utils.MessagingECS
             var manager = TestHelper.CreateGameManager();
             manager.IsLoading = true;
 
-            Assert.True(manager.BeingToPrimaryNaturalWeaponRelationship.IsLoading);
-
             using (var beingEntityReference = manager.CreateEntity())
             {
                 var beingEntity = beingEntityReference.Referenced;
@@ -156,7 +145,7 @@ namespace UnicornHack.Utils.MessagingECS
                     weaponEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
 
                     Assert.Equal(2, weaponEntity.Id);
-                    Assert.Same(beingEntity, manager.BeingToPrimaryNaturalWeaponRelationship[weaponEntity.Id]);
+                    Assert.Same(beingEntity, manager.BeingToPrimaryNaturalWeaponRelationship.GetDependent(weaponEntity));
                 }
             }
 
@@ -208,7 +197,7 @@ namespace UnicornHack.Utils.MessagingECS
                     conflictingBeingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
                     conflictingBeingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
 
-                    Assert.Throws<InvalidOperationException>(() => conflictingBeing.PrimaryNaturalWeaponId = 1);
+                    Assert.Throws<ArgumentException>(() => conflictingBeing.PrimaryNaturalWeaponId = 1);
                 }
             }
         }
@@ -236,16 +225,16 @@ namespace UnicornHack.Utils.MessagingECS
 
                     manager.Queue.ProcessQueue(manager);
 
-                    testSystem = new RelationshipTestSystem(beingEntity, being, manager.BeingToPrimaryNaturalWeaponRelationship);
+                    testSystem = new RelationshipTestSystem(beingEntity, being, manager.BeingToPrimaryNaturalWeaponRelationship.Dependents);
 
-                    manager.Queue.Add<EntityAddedMessage<GameEntity>>(
-                        testSystem, manager.BeingToPrimaryNaturalWeaponRelationship.GetEntityAddedMessageName(), 10);
-                    manager.Queue.Add<EntityRemovedMessage<GameEntity>>(
-                        testSystem, manager.BeingToPrimaryNaturalWeaponRelationship.GetEntityRemovedMessageName(), 10);
-                    manager.Queue.Add<PropertyValueChangedMessage<GameEntity, int>>(
-                        testSystem, manager.BeingToPrimaryNaturalWeaponRelationship.GetPropertyValueChangedMessageName(
+                    manager.Queue.Register<EntityAddedMessage<GameEntity>>(
+                        testSystem, manager.BeingToPrimaryNaturalWeaponRelationship.Dependents.GetEntityAddedMessageName(), 10);
+                    manager.Queue.Register<EntityRemovedMessage<GameEntity>>(
+                        testSystem, manager.BeingToPrimaryNaturalWeaponRelationship.Dependents.GetEntityRemovedMessageName(), 10);
+                    manager.Queue.Register<PropertyValueChangedMessage<GameEntity, int>>(
+                        testSystem, manager.BeingToPrimaryNaturalWeaponRelationship.Dependents.GetPropertyValueChangedMessageName(
                             nameof(BeingComponent.ColdResistance)), 10);
-                    manager.BeingToPrimaryNaturalWeaponRelationship.AddListener(testSystem);
+                    manager.BeingToPrimaryNaturalWeaponRelationship.Dependents.AddListener(testSystem);
 
                     being.PrimaryNaturalWeaponId = weaponEntity.Id;
 
@@ -273,7 +262,7 @@ namespace UnicornHack.Utils.MessagingECS
             IGameSystem<EntityAddedMessage<GameEntity>>,
             IGameSystem<EntityRemovedMessage<GameEntity>>,
             IGameSystem<PropertyValueChangedMessage<GameEntity, int>>,
-            IGroupChangesListener<GameEntity>
+            IEntityChangeListener<GameEntity>
         {
             private readonly GameEntity _testEntity;
             private readonly GameComponent _testComponent;
@@ -292,7 +281,10 @@ namespace UnicornHack.Utils.MessagingECS
             public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager state)
             {
                 Assert.Same(_testEntity, message.Entity);
-                Assert.Same(_testComponent, message.ChangedComponent);
+                Assert.Same(_group, message.Group);
+                Assert.Null(message.RemovedComponent);
+                Assert.Equal(1, message.PropertyChanges.Count);
+                Assert.Same(_testComponent, message.PropertyChanges.GetChangedComponent(0));
 
                 MessagesProcessed++;
                 return MessageProcessingResult.ContinueProcessing;
@@ -301,7 +293,9 @@ namespace UnicornHack.Utils.MessagingECS
             public MessageProcessingResult Process(EntityRemovedMessage<GameEntity> message, GameManager state)
             {
                 Assert.Same(_testEntity, message.Entity);
-                Assert.Same(_testComponent, message.ChangedComponent);
+                Assert.Same(_group, message.Group);
+                Assert.Same(_testComponent, message.RemovedComponent);
+                Assert.Equal(0, message.PropertyChanges.Count);
 
                 MessagesProcessed++;
                 return MessageProcessingResult.ContinueProcessing;
@@ -320,55 +314,36 @@ namespace UnicornHack.Utils.MessagingECS
                 return MessageProcessingResult.ContinueProcessing;
             }
 
-            public void HandleEntityAdded(
-                GameEntity entity, Component addedComponent, IEntityGroup<GameEntity> group)
+            public void OnEntityAdded(in EntityChange<GameEntity> entityChange)
             {
-                Assert.Same(_testEntity, entity);
-                Assert.Same(_testComponent, addedComponent);
-                Assert.Same(_group, group);
+                Assert.Same(_testEntity, entityChange.Entity);
+                Assert.Null(entityChange.RemovedComponent);
+                Assert.Equal(1, entityChange.PropertyChanges.Count);
+                Assert.Same(_testComponent, entityChange.PropertyChanges.GetChangedComponent(0));
 
                 GroupChangesDetected++;
             }
 
-            public void HandleEntityRemoved(
-                GameEntity entity, Component removedComponent, IEntityGroup<GameEntity> group)
+            public void OnEntityRemoved(in EntityChange<GameEntity> entityChange)
             {
-                Assert.Same(_testEntity, entity);
-                Assert.Same(_testComponent, removedComponent);
-                Assert.Same(_group, group);
+                Assert.Same(_testEntity, entityChange.Entity);
+                Assert.Same(_testComponent, entityChange.RemovedComponent);
+                Assert.Equal(0, entityChange.PropertyChanges.Count);
 
                 GroupChangesDetected++;
             }
 
-            public bool HandlePropertyValueChanged<T>(
-                string propertyName, T oldValue, T newValue, int componentId, Component component,
-                GameEntity entity, IEntityGroup<GameEntity> group)
+            public bool OnPropertyValuesChanged(in EntityChange<GameEntity> entityChange)
             {
-                Assert.Same(_testEntity, entity);
-                Assert.Equal(_testComponent.ComponentId, componentId);
-                Assert.Same(_testComponent, component);
-                Assert.Equal(nameof(BeingComponent.ColdResistance), propertyName);
-                Assert.Equal(0, (int)(object)oldValue);
-                Assert.Equal(10, (int)(object)newValue);
-                Assert.Same(_group, group);
+                var changes = entityChange.PropertyChanges;
 
-                GroupChangesDetected++;
-
-                return false;
-            }
-
-            public bool HandlePropertyValuesChanged(
-                IReadOnlyList<IPropertyValueChange> changes, GameEntity entity, IEntityGroup<GameEntity> group)
-            {
-                var change = (PropertyValueChange<int>)changes[0];
-
-                Assert.Same(_testEntity, entity);
-                Assert.Equal(_testComponent.ComponentId, change.ChangedComponent?.ComponentId);
-                Assert.Same(_testComponent, change.ChangedComponent);
-                Assert.Equal(nameof(BeingComponent.ColdResistance), change.ChangedPropertyName);
-                Assert.Equal(0, change.OldValue);
-                Assert.Equal(10, change.NewValue);
-                Assert.Same(_group, group);
+                Assert.Same(_testEntity, entityChange.Entity);
+                Assert.Equal(1, entityChange.PropertyChanges.Count);
+                Assert.Equal(_testComponent.ComponentId, changes.GetChangedComponent(0).ComponentId);
+                Assert.Same(_testComponent, changes.GetChangedComponent(0));
+                Assert.Equal(nameof(BeingComponent.ColdResistance), changes.GetChangedPropertyName(0));
+                Assert.Equal(0, changes.GetValue<int>(0, ValueType.Old));
+                Assert.Equal(10, changes.GetValue<int>(0, ValueType.Current));
 
                 GroupChangesDetected++;
 

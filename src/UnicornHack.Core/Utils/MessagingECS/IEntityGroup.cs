@@ -1,16 +1,13 @@
-﻿using System.Collections.Generic;
-
-namespace UnicornHack.Utils.MessagingECS
+﻿namespace UnicornHack.Utils.MessagingECS
 {
-    public interface IEntityGroup<TEntity> : IEnumerable<TEntity> where TEntity : Entity
+    public interface IEntityGroup<TEntity>
+        where TEntity : Entity, new()
     {
         string Name { get; }
-        bool IsLoading { get; }
-        int Count { get; }
         string GetEntityAddedMessageName();
         string GetEntityRemovedMessageName();
         string GetPropertyValueChangedMessageName(string propertyName);
-        void AddListener(IGroupChangesListener<TEntity> index);
+        void AddListener(IEntityChangeListener<TEntity> index);
         TEntity FindEntity(int id);
         bool ContainsEntity(int id);
     }

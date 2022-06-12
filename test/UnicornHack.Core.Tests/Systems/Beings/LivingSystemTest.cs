@@ -12,7 +12,7 @@ namespace UnicornHack.Systems.Beings
         public void Hp_and_ep_depend_on_might_and_focus_and_regenerate_with_xp()
         {
             var level = TestHelper.BuildLevel(".");
-            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
 
             var manager = playerEntity.Manager;
             manager.Queue.ProcessQueue(manager);
@@ -49,7 +49,7 @@ namespace UnicornHack.Systems.Beings
         public void Reserved_ep_does_not_replenish()
         {
             var level = TestHelper.BuildLevel(".");
-            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level.Entity, new Point(0, 0));
+            var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
             var manager = playerEntity.Manager;
 
             manager.Queue.ProcessQueue(manager);
@@ -73,7 +73,7 @@ namespace UnicornHack.Systems.Beings
 
             being.EnergyPoints = 100;
             being.ReservedEnergyPoints = 60;
-            
+
             Assert.Equal(40, being.EnergyPoints);
 
             being.EnergyPoints = 100;

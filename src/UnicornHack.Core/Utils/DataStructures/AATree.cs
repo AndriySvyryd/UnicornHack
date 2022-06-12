@@ -7,7 +7,7 @@ namespace UnicornHack.Utils.DataStructures
     // ReSharper disable once InconsistentNaming
     public abstract class AATree<TKey, TValue> : IEnumerable<(TKey, TValue)> where TKey : IComparable<TKey>
     {
-        protected static readonly Node Sentinel = new Node();
+        protected static readonly Node Sentinel = new();
 
         protected Node Root;
         protected Node Deleted;

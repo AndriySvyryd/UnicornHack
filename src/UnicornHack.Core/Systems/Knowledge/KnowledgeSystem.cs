@@ -1,4 +1,5 @@
-﻿using UnicornHack.Primitives;
+﻿using System.Collections.Generic;
+using UnicornHack.Primitives;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
@@ -20,27 +21,23 @@ namespace UnicornHack.Systems.Knowledge
         public MessageProcessingResult Process(VisibleTerrainChangedMessage message, GameManager manager)
         {
             var level = message.LevelEntity.Level;
-
-            UpdateAllEntitiesKnowledge(
-                manager.LevelActorsToLevelRelationship, manager.LevelActors.Matcher, level, manager);
-            UpdateAllEntitiesKnowledge(
-                manager.ConnectionsToLevelRelationship, manager.Connections.Matcher, level, manager);
-            UpdateAllEntitiesKnowledge(
-                manager.LevelItemsToLevelRelationship, manager.LevelItems.Matcher, level, manager);
+            UpdateAllEntitiesKnowledge(level.Actors, level.KnownActors, level, manager);
+            UpdateAllEntitiesKnowledge(level.Connections, level.KnownConnections, level, manager);
+            UpdateAllEntitiesKnowledge(level.Items, level.KnownItems, level, manager);
 
             return MessageProcessingResult.ContinueProcessing;
         }
 
         private void UpdateAllEntitiesKnowledge(
-            EntityRelationship<GameEntity> levelEntitiesToLevelRelationship,
-            EntityMatcher<GameEntity> matcher,
+            IReadOnlyDictionary<Point, GameEntity> levelEntities,
+            IReadOnlyDictionary<Point, GameEntity> knownPositions,
             LevelComponent level,
             GameManager manager)
         {
             // TODO: Perf: use interval tree to only get the entities and knowledge within sense range
-            foreach (var levelEntity in levelEntitiesToLevelRelationship[level.EntityId])
+            foreach (var levelEntity in levelEntities.Values)
             {
-                UpdateEntityKnowledge(levelEntity, matcher, manager, level: level);
+                UpdateEntityKnowledge(levelEntity, knownPositions, manager, level);
             }
         }
 
@@ -48,8 +45,8 @@ namespace UnicornHack.Systems.Knowledge
         {
             if (message.Successful)
             {
-                UpdateEntityKnowledge(message.Entity, manager.LevelActors.Matcher, manager,
-                    additionalCellToTest: message.InitialLevelCell);
+                var level = message.Entity.Position.LevelEntity.Level;
+                UpdateEntityKnowledge(message.Entity, level.KnownActors, manager, level, additionalCellToTest: message.InitialLevelCell);
             }
             else if (message.Entity.HasComponent(EntityComponent.Player))
             {
@@ -68,35 +65,31 @@ namespace UnicornHack.Systems.Knowledge
 
         private void UpdateEntityKnowledge(
             GameEntity entity,
-            EntityMatcher<GameEntity> matcher,
+            IReadOnlyDictionary<Point, GameEntity> knownPositions,
             GameManager manager,
-            Point? additionalCellToTest = null,
-            LevelComponent level = null)
+            LevelComponent level,
+            Point? additionalCellToTest = null)
         {
             var position = entity.Position;
-            if (position != null)
+            if (position == null)
             {
-                level = level ?? position.LevelEntity.Level;
+                return;
             }
 
             SenseType sensedType;
-            if (position != null
-                && ((sensedType = manager.SensorySystem.SensedByPlayer(entity, position.LevelCell))
-                    != SenseType.None
-                    || (additionalCellToTest != null
-                        && (sensedType = manager.SensorySystem.SensedByPlayer(entity, additionalCellToTest.Value))
-                        != SenseType.None)))
+            if ((sensedType = manager.SensorySystem.SensedByPlayer(entity, position.LevelCell)) != SenseType.None
+                || (additionalCellToTest != null
+                    && (sensedType = manager.SensorySystem.SensedByPlayer(entity, additionalCellToTest.Value))
+                    != SenseType.None))
             {
-                foreach (var conflictingKnowledge in
-                    manager.LevelKnowledgeToLevelCellIndex[(position.LevelId, position.LevelX, position.LevelY)])
+                var conflictingKnowledge = knownPositions.GetValueOrDefault(position.LevelCell);
+                if (conflictingKnowledge != null)
                 {
                     var conflictingEntityId = conflictingKnowledge.Knowledge.KnownEntityId;
-                    if (conflictingEntityId != entity.Id
-                        && matcher.Matches(manager.FindEntity(conflictingEntityId)))
+                    if (conflictingEntityId != entity.Id)
                     {
                         conflictingKnowledge.RemoveComponent(EntityComponent.Knowledge);
                         conflictingKnowledge.RemoveComponent(EntityComponent.Position);
-                        break;
                     }
                 }
 
@@ -123,15 +116,10 @@ namespace UnicornHack.Systems.Knowledge
             }
             else
             {
-                var knowledge = manager.LevelKnowledgeToLevelEntityRelationship[entity.Id];
+                var knowledge = position.Knowledge;
                 if (knowledge != null)
                 {
                     var knowledgePosition = knowledge.Position;
-                    if (level == null)
-                    {
-                        level = knowledgePosition.LevelEntity.Level;
-                    }
-
                     if (level != knowledgePosition.LevelEntity?.Level
                         || (manager.SensorySystem.SensedByPlayer(knowledge, knowledgePosition.LevelCell)
                             & knowledge.Knowledge.SensedType) != SenseType.None)
@@ -145,7 +133,7 @@ namespace UnicornHack.Systems.Knowledge
 
         private void UpdateKnowledge(PositionComponent position, SenseType sensedType, GameManager manager)
         {
-            var knowledge = manager.LevelKnowledgeToLevelEntityRelationship[position.EntityId];
+            var knowledge = position.Knowledge;
             if (knowledge == null)
             {
                 using (var entityReference = manager.CreateEntity())
@@ -199,8 +187,11 @@ namespace UnicornHack.Systems.Knowledge
             if (message.Successful)
             {
                 var itemEntity = message.ItemEntity;
-                UpdateEntityKnowledge(itemEntity, manager.LevelItems.Matcher, manager,
-                    additionalCellToTest: message.InitialLevelCell);
+                var level = itemEntity.Position?.LevelEntity.Level ?? itemEntity.Item.ContainerEntity?.Position?.LevelEntity.Level;
+                if (level != null)
+                {
+                    UpdateEntityKnowledge(itemEntity, level.KnownItems, manager, level, additionalCellToTest: message.InitialLevelCell);
+                }
             }
 
             return MessageProcessingResult.ContinueProcessing;

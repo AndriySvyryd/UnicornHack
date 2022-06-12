@@ -90,7 +90,7 @@ namespace UnicornHack.Systems.Items
                     return equippedMessage;
                 }
 
-                var equippedItem = GetEquippedItem(message.Slot, message.ActorEntity, manager);
+                var equippedItem = GetEquippedItem(message.Slot, message.ActorEntity);
                 if (equippedItem != null)
                 {
                     if (equippedItem == message.ItemEntity)
@@ -108,7 +108,7 @@ namespace UnicornHack.Systems.Items
                 if (message.Slot == EquipmentSlot.GraspPrimaryMelee
                     || message.Slot == EquipmentSlot.GraspSecondaryMelee)
                 {
-                    equippedItem = GetEquippedItem(EquipmentSlot.GraspBothMelee, message.ActorEntity, manager);
+                    equippedItem = GetEquippedItem(EquipmentSlot.GraspBothMelee, message.ActorEntity);
                     if (equippedItem != null
                         && (!message.Force
                             || !Unequip(equippedItem, message.ActorEntity, manager, pretend)))
@@ -118,7 +118,7 @@ namespace UnicornHack.Systems.Items
                 }
                 else if (message.Slot == EquipmentSlot.GraspBothMelee)
                 {
-                    equippedItem = GetEquippedItem(EquipmentSlot.GraspPrimaryMelee, message.ActorEntity, manager);
+                    equippedItem = GetEquippedItem(EquipmentSlot.GraspPrimaryMelee, message.ActorEntity);
                     if (equippedItem != null
                         && (!message.Force
                             || !Unequip(equippedItem, message.ActorEntity, manager, pretend)))
@@ -126,7 +126,7 @@ namespace UnicornHack.Systems.Items
                         return equippedMessage;
                     }
 
-                    equippedItem = GetEquippedItem(EquipmentSlot.GraspSecondaryMelee, message.ActorEntity, manager);
+                    equippedItem = GetEquippedItem(EquipmentSlot.GraspSecondaryMelee, message.ActorEntity);
                     if (equippedItem != null
                         && (!message.Force
                             || !Unequip(equippedItem, message.ActorEntity, manager, pretend)))
@@ -138,7 +138,7 @@ namespace UnicornHack.Systems.Items
                 if (message.Slot == EquipmentSlot.GraspPrimaryRanged
                     || message.Slot == EquipmentSlot.GraspSecondaryRanged)
                 {
-                    equippedItem = GetEquippedItem(EquipmentSlot.GraspBothRanged, message.ActorEntity, manager);
+                    equippedItem = GetEquippedItem(EquipmentSlot.GraspBothRanged, message.ActorEntity);
                     if (equippedItem != null
                         && (!message.Force
                             || !Unequip(equippedItem, message.ActorEntity, manager, pretend)))
@@ -148,7 +148,7 @@ namespace UnicornHack.Systems.Items
                 }
                 else if (message.Slot == EquipmentSlot.GraspBothRanged)
                 {
-                    equippedItem = GetEquippedItem(EquipmentSlot.GraspPrimaryRanged, message.ActorEntity, manager);
+                    equippedItem = GetEquippedItem(EquipmentSlot.GraspPrimaryRanged, message.ActorEntity);
                     if (equippedItem != null
                         && (!message.Force
                             || !Unequip(equippedItem, message.ActorEntity, manager, pretend)))
@@ -156,7 +156,7 @@ namespace UnicornHack.Systems.Items
                         return equippedMessage;
                     }
 
-                    equippedItem = GetEquippedItem(EquipmentSlot.GraspSecondaryRanged, message.ActorEntity, manager);
+                    equippedItem = GetEquippedItem(EquipmentSlot.GraspSecondaryRanged, message.ActorEntity);
                     if (equippedItem != null
                         && (!message.Force
                             || !Unequip(equippedItem, message.ActorEntity, manager, pretend)))
@@ -179,7 +179,7 @@ namespace UnicornHack.Systems.Items
             {
                 if (item.EquippedSlot == EquipmentSlot.None
                     || (!message.Force
-                        && manager.AbilitiesToAffectableRelationship[item.EntityId].Select(a => a.Ability)
+                        && item.Abilities.Select(a => a.Ability)
                             .Any(a => a.CooldownTick != null
                                       || a.CooldownXpLeft != null
                                       || (a.Activation & ActivationType.Slottable) != 0 && a.IsActive)))
@@ -313,7 +313,7 @@ namespace UnicornHack.Systems.Items
         }
 
         // TODO: Add an index for EquipmentSlot?
-        public GameEntity GetEquippedItem(EquipmentSlot slot, GameEntity actor, GameManager manager) =>
-            manager.EntityItemsToContainerRelationship[actor.Id].FirstOrDefault(item => item.Item.EquippedSlot == slot);
+        public GameEntity GetEquippedItem(EquipmentSlot slot, GameEntity actor) =>
+            actor.Being.Items.FirstOrDefault(item => item.Item.EquippedSlot == slot);
     }
 }

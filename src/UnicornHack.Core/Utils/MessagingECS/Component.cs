@@ -15,7 +15,7 @@ namespace UnicornHack.Utils.MessagingECS
         public event PropertyChangingEventHandler PropertyChanging;
 
 #if DEBUG
-        private readonly List<object> _owners = new List<object>();
+        private readonly List<object> _owners = new();
 #endif
         private int _referenceCount;
         private IObjectPool _pool;
@@ -37,6 +37,7 @@ namespace UnicornHack.Utils.MessagingECS
                     {
                         // Done here because reference count is not persisted
                         ((IOwnerReferenceable)this).AddReference(value);
+
                         Manager = value.Manager;
                     }
 
@@ -67,7 +68,7 @@ namespace UnicornHack.Utils.MessagingECS
             string propertyName,
             out T oldValue)
         {
-            if (Equals(field, value))
+            if (EqualityComparer<T>.Default.Equals(field, value))
             {
                 oldValue = default;
                 return false;

@@ -20,7 +20,7 @@ namespace UnicornHack.Hubs
             var manager = context.Manager;
             CurrentlyPerceived = manager.SensorySystem.SensedByPlayer(knownEntity, position.LevelCell).CanIdentify();
             NameSnapshot = itemKnowledge.SensedType.CanIdentify()
-                ? context.Services.Language.GetString(item, item.GetQuantity(manager), itemKnowledge.SensedType)
+                ? context.Services.Language.GetString(item, item.GetQuantity(), itemKnowledge.SensedType)
                 : null;
 
             return this;
@@ -49,7 +49,7 @@ namespace UnicornHack.Hubs
                     {
                         properties.Add((int)item.Type);
                         properties.Add(item.TemplateName);
-                        name = context.Services.Language.GetString(item, item.GetQuantity(manager), itemKnowledge.SensedType);
+                        name = context.Services.Language.GetString(item, item.GetQuantity(), itemKnowledge.SensedType);
                     }
                     else
                     {
@@ -115,7 +115,7 @@ namespace UnicornHack.Hubs
 
                     i++;
                     var newName = itemKnowledge.SensedType.CanIdentify()
-                        ? context.Services.Language.GetString(item, item.GetQuantity(manager), itemKnowledge.SensedType)
+                        ? context.Services.Language.GetString(item, item.GetQuantity(), itemKnowledge.SensedType)
                         : null;
                     if (snapshot.NameSnapshot != newName)
                     {

@@ -1,13 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Items;
+using UnicornHack.Systems.Senses;
 using Xunit;
 
 namespace UnicornHack.Utils.MessagingECS
 {
-    public class EntityRelationshipTest
+    public class CollectionEntityRelationshipTest
     {
         [Fact]
         public void Relationship_is_updated()
@@ -18,28 +20,31 @@ namespace UnicornHack.Utils.MessagingECS
                 var abilityEntity = abilityEntityReference.Referenced;
                 abilityEntity.AddComponent<AbilityComponent>((int)EntityComponent.Ability);
 
-                Assert.Empty(manager.EffectsToContainingAbilityRelationship[abilityEntity.Id]);
+                Assert.Empty(manager.EffectsToContainingAbilityRelationship.GetDependents(abilityEntity));
+                Assert.Empty(abilityEntity.Ability.Effects);
+                Assert.Null(abilityEntity.Effect);
 
-                GameEntity effectEntity;
                 using (var effectEntityReference = manager.CreateEntity())
                 {
-                    effectEntity = effectEntityReference.Referenced;
+                    var effectEntity = effectEntityReference.Referenced;
                     var effect = effectEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
                     effect.ContainingAbilityId = abilityEntity.Id;
 
-                    Assert.Equal(1, manager.EffectsToContainingAbilityRelationship.Count);
-                    Assert.True(manager.EffectsToContainingAbilityRelationship.ContainsEntity(effectEntity.Id));
-                    Assert.Same(effectEntity, manager.EffectsToContainingAbilityRelationship.FindEntity(effectEntity.Id));
-                    Assert.Same(effectEntity, manager.EffectsToContainingAbilityRelationship.Single());
-                    Assert.Same(effectEntity, manager.EffectsToContainingAbilityRelationship[abilityEntity.Id].Single());
+                    Assert.Same(abilityEntity, effectEntity.Effect.ContainingAbility);
+                    Assert.True(manager.EffectsToContainingAbilityRelationship.Dependents.ContainsEntity(effectEntity.Id));
+                    Assert.Same(effectEntity, manager.EffectsToContainingAbilityRelationship.Dependents.FindEntity(effectEntity.Id));
+                    Assert.Same(abilityEntity, manager.EffectsToContainingAbilityRelationship.GetPrincipal(effectEntity));
+                    Assert.Same(effectEntity, manager.EffectsToContainingAbilityRelationship.GetDependents(abilityEntity).Single());
+                    Assert.Same(effectEntity, abilityEntity.Ability.Effects.Single());
 
                     effectEntity.Effect.ContainingAbilityId = null;
 
-                    Assert.Equal(0, manager.EffectsToContainingAbilityRelationship.Count);
-                    Assert.False(manager.EffectsToContainingAbilityRelationship.ContainsEntity(effectEntity.Id));
-                    Assert.Null(manager.EffectsToContainingAbilityRelationship.FindEntity(effectEntity.Id));
-                    Assert.Empty(manager.EffectsToContainingAbilityRelationship);
-                    Assert.Empty(manager.EffectsToContainingAbilityRelationship[abilityEntity.Id]);
+                    Assert.Null(effectEntity.Effect.ContainingAbility);
+                    Assert.False(manager.EffectsToContainingAbilityRelationship.Dependents.ContainsEntity(effectEntity.Id));
+                    Assert.Null(manager.EffectsToContainingAbilityRelationship.Dependents.FindEntity(effectEntity.Id));
+                    Assert.Null(manager.EffectsToContainingAbilityRelationship.GetPrincipal(effectEntity));
+                    Assert.Empty(manager.EffectsToContainingAbilityRelationship.GetDependents(abilityEntity));
+                    Assert.Empty(abilityEntity.Ability.Effects);
                 }
             }
 
@@ -69,12 +74,10 @@ namespace UnicornHack.Utils.MessagingECS
                     effect.ContainingAbilityId = abilityEntity.Id;
                 }
 
-                Assert.Equal(2, manager.EffectsToContainingAbilityRelationship.Count);
                 Assert.Equal(2, manager.Effects.Count);
             }
 
             Assert.Equal(0, manager.Abilities.Count);
-            Assert.Equal(0, manager.EffectsToContainingAbilityRelationship.Count);
             Assert.Equal(0, manager.Effects.Count);
         }
 
@@ -97,12 +100,11 @@ namespace UnicornHack.Utils.MessagingECS
             var manager = TestHelper.CreateGameManager();
             manager.IsLoading = true;
 
-            Assert.True(manager.Abilities.IsLoading);
+            Assert.True(manager.IsLoading);
 
-            GameEntity effectEntity;
             using (var effectEntityReference = manager.CreateEntity())
             {
-                effectEntity = effectEntityReference.Referenced;
+                var effectEntity = effectEntityReference.Referenced;
                 var effect = effectEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
                 effect.ContainingAbilityId = 2;
 
@@ -112,11 +114,13 @@ namespace UnicornHack.Utils.MessagingECS
                     abilityEntity.AddComponent<AbilityComponent>((int)EntityComponent.Ability);
 
                     Assert.Equal(2, abilityEntity.Id);
-                    Assert.Same(effectEntity, manager.EffectsToContainingAbilityRelationship[abilityEntity.Id].Single());
+                    Assert.Same(effectEntity, abilityEntity.Ability.Effects.Single());
                 }
             }
 
             manager.IsLoading = false;
+
+            Assert.Equal(1, manager.Queue.QueuedCount);
         }
 
         [Fact]
@@ -135,6 +139,30 @@ namespace UnicornHack.Utils.MessagingECS
             Assert.Equal(0, manager.Effects.Count);
 
             manager.IsLoading = false;
+
+            Assert.Equal(1, manager.Queue.QueuedCount);
+        }
+
+        [Fact]
+        public void Collections_initialized_to_same_value()
+        {
+            var manager = TestHelper.CreateGameManager();
+            using (var containerEntityReference = manager.CreateEntity())
+            {
+                var containerEntity = containerEntityReference.Referenced;
+                var being = containerEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+                var physical = containerEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
+                var item = containerEntity.AddComponent<ItemComponent>((int)EntityComponent.Item);
+                var sensor = containerEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
+
+                Assert.Same(sensor.Items, item.Items);
+                Assert.Same(sensor.Items, physical.Items);
+                Assert.Same(physical.Items, being.Items);
+
+                Assert.Same(sensor.Abilities, item.Abilities);
+                Assert.Same(sensor.Abilities, physical.Abilities);
+                Assert.Same(physical.Abilities, being.Abilities);
+            }
         }
 
         [Fact]
@@ -157,16 +185,16 @@ namespace UnicornHack.Utils.MessagingECS
 
                     manager.Queue.ProcessQueue(manager);
 
-                    testSystem = new RelationshipTestSystem(effectEntity, effect, manager.EffectsToContainingAbilityRelationship);
+                    testSystem = new RelationshipTestSystem(effectEntity, effect, manager.EffectsToContainingAbilityRelationship.Dependents);
 
-                    manager.Queue.Add<EntityAddedMessage<GameEntity>>(
-                        testSystem, manager.EffectsToContainingAbilityRelationship.GetEntityAddedMessageName(), 10);
-                    manager.Queue.Add<EntityRemovedMessage<GameEntity>>(
-                        testSystem, manager.EffectsToContainingAbilityRelationship.GetEntityRemovedMessageName(), 10);
-                    manager.Queue.Add<PropertyValueChangedMessage<GameEntity, string>>(
-                        testSystem, manager.EffectsToContainingAbilityRelationship.GetPropertyValueChangedMessageName(
+                    manager.Queue.Register<EntityAddedMessage<GameEntity>>(
+                        testSystem, manager.EffectsToContainingAbilityRelationship.Dependents.GetEntityAddedMessageName(), 10);
+                    manager.Queue.Register<EntityRemovedMessage<GameEntity>>(
+                        testSystem, manager.EffectsToContainingAbilityRelationship.Dependents.GetEntityRemovedMessageName(), 10);
+                    manager.Queue.Register<PropertyValueChangedMessage<GameEntity, string>>(
+                        testSystem, manager.EffectsToContainingAbilityRelationship.Dependents.GetPropertyValueChangedMessageName(
                             nameof(EffectComponent.DurationAmount)), 10);
-                    manager.EffectsToContainingAbilityRelationship.AddListener(testSystem);
+                    manager.EffectsToContainingAbilityRelationship.Dependents.AddListener(testSystem);
 
                     effect.ContainingAbilityId = abilityEntity.Id;
 
@@ -190,7 +218,7 @@ namespace UnicornHack.Utils.MessagingECS
             IGameSystem<EntityAddedMessage<GameEntity>>,
             IGameSystem<EntityRemovedMessage<GameEntity>>,
             IGameSystem<PropertyValueChangedMessage<GameEntity, string>>,
-            IGroupChangesListener<GameEntity>
+            IEntityChangeListener<GameEntity>
         {
             private readonly GameEntity _testEntity;
             private readonly GameComponent _testComponent;
@@ -209,7 +237,10 @@ namespace UnicornHack.Utils.MessagingECS
             public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager state)
             {
                 Assert.Same(_testEntity, message.Entity);
-                Assert.Same(_testComponent, message.ChangedComponent);
+                Assert.Same(_group, message.Group);
+                Assert.Null(message.RemovedComponent);
+                Assert.Equal(1, message.PropertyChanges.Count);
+                Assert.Same(_testComponent, message.PropertyChanges.GetChangedComponent(0));
 
                 MessagesProcessed++;
                 return MessageProcessingResult.ContinueProcessing;
@@ -218,6 +249,9 @@ namespace UnicornHack.Utils.MessagingECS
             public MessageProcessingResult Process(EntityRemovedMessage<GameEntity> message, GameManager state)
             {
                 Assert.Same(_testEntity, message.Entity);
+                Assert.Same(_group, message.Group);
+                Assert.Null(message.RemovedComponent);
+                Assert.Equal(0, message.PropertyChanges.Count);
 
                 MessagesProcessed++;
                 return MessageProcessingResult.ContinueProcessing;
@@ -236,54 +270,36 @@ namespace UnicornHack.Utils.MessagingECS
                 return MessageProcessingResult.ContinueProcessing;
             }
 
-            public void HandleEntityAdded(
-                GameEntity entity, Component addedComponent, IEntityGroup<GameEntity> group)
+            public void OnEntityAdded(in EntityChange<GameEntity> entityChange)
             {
-                Assert.Same(_testEntity, entity);
-                Assert.Same(_testComponent, addedComponent);
-                Assert.Same(_group, group);
+                Assert.Same(_testEntity, entityChange.Entity);
+                Assert.Null(entityChange.RemovedComponent);
+                Assert.Equal(1, entityChange.PropertyChanges.Count);
+                Assert.Same(_testComponent, entityChange.PropertyChanges.GetChangedComponent(0));
 
                 GroupChangesDetected++;
             }
 
-            public void HandleEntityRemoved(
-                GameEntity entity, Component removedComponent, IEntityGroup<GameEntity> group)
+            public void OnEntityRemoved(in EntityChange<GameEntity> entityChange)
             {
-                Assert.Same(_testEntity, entity);
-                Assert.Same(_group, group);
+                Assert.Same(_testEntity, entityChange.Entity);
+                Assert.Null(entityChange.RemovedComponent);
+                Assert.Equal(0, entityChange.PropertyChanges.Count);
 
                 GroupChangesDetected++;
             }
 
-            public bool HandlePropertyValueChanged<T>(
-                string propertyName, T oldValue, T newValue, int componentId, Component component,
-                GameEntity entity, IEntityGroup<GameEntity> group)
+            public bool OnPropertyValuesChanged(in EntityChange<GameEntity> entityChange)
             {
-                Assert.Same(_testEntity, entity);
-                Assert.Equal(_testComponent.ComponentId, componentId);
-                Assert.Same(_testComponent, component);
-                Assert.Equal(nameof(EffectComponent.DurationAmount), propertyName);
-                Assert.Null((string)(object)oldValue);
-                Assert.Equal("10", (string)(object)newValue);
-                Assert.Same(_group, group);
+                var changes = entityChange.PropertyChanges;
 
-                GroupChangesDetected++;
-
-                return false;
-            }
-
-            public bool HandlePropertyValuesChanged(
-                IReadOnlyList<IPropertyValueChange> changes, GameEntity entity, IEntityGroup<GameEntity> group)
-            {
-                var change = (PropertyValueChange<string>)changes[0];
-
-                Assert.Same(_testEntity, entity);
-                Assert.Equal(_testComponent.ComponentId, change.ChangedComponent?.ComponentId);
-                Assert.Same(_testComponent, change.ChangedComponent);
-                Assert.Equal(nameof(EffectComponent.DurationAmount), change.ChangedPropertyName);
-                Assert.Null(change.OldValue);
-                Assert.Equal("10", change.NewValue);
-                Assert.Same(_group, group);
+                Assert.Same(_testEntity, entityChange.Entity);
+                Assert.Equal(1, entityChange.PropertyChanges.Count);
+                Assert.Equal(_testComponent.ComponentId, changes.GetChangedComponent(0).ComponentId);
+                Assert.Same(_testComponent, changes.GetChangedComponent(0));
+                Assert.Equal(nameof(EffectComponent.DurationAmount), changes.GetChangedPropertyName(0));
+                Assert.Null(changes.GetValue<string>(0, ValueType.Old));
+                Assert.Equal("10", changes.GetValue<string>(0, ValueType.Current));
 
                 GroupChangesDetected++;
 

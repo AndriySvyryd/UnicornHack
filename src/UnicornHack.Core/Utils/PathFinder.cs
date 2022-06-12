@@ -13,7 +13,7 @@ namespace UnicornHack.Utils
         private readonly Point[] _indexToPoint;
 
         private readonly PriorityQueue<int> _openNodes;
-        private readonly List<Point> _shortestPath = new List<Point>();
+        private readonly List<Point> _shortestPath = new();
         private readonly PathFinderNode[] _graph;
         private byte _openNodeStatus = 1;
         private byte _closedNodeStatus = 2;

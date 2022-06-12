@@ -81,7 +81,7 @@ namespace UnicornHack.Hubs
                     var abilities = new List<object>();
                     result.Add(abilities);
 
-                    foreach (var slottableAbilityEntity in manager.AbilitiesToAffectableRelationship[player.EntityId])
+                    foreach (var slottableAbilityEntity in manager.AbilitiesToAffectableRelationship.GetDependents(player.Entity))
                     {
                         var ability = slottableAbilityEntity.Ability;
                         if (!ability.IsUsable)
@@ -173,7 +173,7 @@ namespace UnicornHack.Hubs
         }
 
         public List<object> QueryStaticDescription(string topicId, DescriptionCategory category)
-            => new List<object>(2)
+            => new(2)
             {
                 GameQueryType.StaticDescription,
                 _gameServices.Language.GetDescription(topicId, category)
@@ -261,13 +261,13 @@ namespace UnicornHack.Hubs
                     level.KnownTerrainChanges = new Dictionary<int, byte>();
                 }
 
-                if (level.WallNeighboursChanges != null)
+                if (level.WallNeighborsChanges != null)
                 {
-                    level.WallNeighboursChanges.Clear();
+                    level.WallNeighborsChanges.Clear();
                 }
                 else
                 {
-                    level.WallNeighboursChanges = new Dictionary<int, byte>();
+                    level.WallNeighborsChanges = new Dictionary<int, byte>();
                 }
 
                 if (_dbContext.Snapshot?.LevelSnapshots.ContainsKey(levelEntity.Id) != true)
@@ -275,7 +275,7 @@ namespace UnicornHack.Hubs
                     level.VisibleTerrainSnapshot = null;
                 }
 
-                level.VisibleNeighboursChanged = false;
+                level.VisibleNeighborsChanged = false;
             }
 
             currentPlayer.Game.ActingPlayer = null;
@@ -308,8 +308,8 @@ namespace UnicornHack.Hubs
                     levelEntry.Property(l => l.KnownTerrain).IsModified = true;
                 }
 
-                if (level.WallNeighboursChanges == null
-                    || level.WallNeighboursChanges.Count > 0)
+                if (level.WallNeighborsChanges == null
+                    || level.WallNeighborsChanges.Count > 0)
                 {
                     levelEntry.Property(l => l.WallNeighbors).IsModified = true;
                 }
@@ -343,9 +343,9 @@ namespace UnicornHack.Hubs
                     levelEntry.Property(l => l.VisibleTerrain).IsModified = true;
                 }
 
-                if (level.VisibleNeighboursChanged)
+                if (level.VisibleNeighborsChanged)
                 {
-                    levelEntry.Property(l => l.VisibleNeighbours).IsModified = true;
+                    levelEntry.Property(l => l.VisibleNeighbors).IsModified = true;
                 }
             }
 
@@ -379,14 +379,13 @@ namespace UnicornHack.Hubs
             var surfaceLevel = LevelGenerator.CreateEmpty(surfaceBranch, depth: 1, seed, manager);
             LevelGenerator.EnsureGenerated(surfaceLevel);
 
-            var initialLevelConnection =
-                manager.ConnectionsToLevelRelationship[surfaceLevel.EntityId].Single().Connection;
-            var initialLevelEntity = manager.FindEntity(initialLevelConnection.TargetLevelId);
+            var initialLevelConnection = surfaceLevel.Connections.Single().Value.Connection;
+            var initialLevelEntity = initialLevelConnection.TargetLevelEntity;
             LevelGenerator.EnsureGenerated(initialLevelEntity.Level);
 
             // TODO: Set correct sex
             var playerEntity = PlayerRace.InstantiatePlayer(
-                name, Sex.Male, initialLevelEntity, initialLevelConnection.TargetLevelCell.Value);
+                name, Sex.Male, initialLevelEntity.Level, initialLevelConnection.TargetLevelCell.Value);
 
             manager.Queue.ProcessQueue(manager);
 
@@ -402,7 +401,6 @@ namespace UnicornHack.Hubs
             ItemData.PotionOfOgreness.Instantiate(playerEntity);
             ItemData.PotionOfElfness.Instantiate(playerEntity);
             ItemData.PotionOfDwarfness.Instantiate(playerEntity);
-            ItemData.PotionOfExperience.Instantiate(playerEntity, quantity: 6);
             ItemData.SkillbookOfConjuration.Instantiate(playerEntity);
 
             manager.LoggingSystem.WriteLog(game.Services.Language.Welcome(playerEntity), playerEntity, manager);

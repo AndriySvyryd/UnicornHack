@@ -9,9 +9,9 @@ namespace UnicornHack.Hubs
     public class GameSnapshot
     {
         public int SnapshotTick { get; set; } = -1;
-        public Dictionary<int, PlayerSnapshot> PlayerSnapshots { get; } = new Dictionary<int, PlayerSnapshot>();
-        public Dictionary<int, LevelSnapshot> LevelSnapshots { get; } = new Dictionary<int, LevelSnapshot>();
-        private Dictionary<int, List<object>> SerializedLevels { get; } = new Dictionary<int, List<object>>();
+        public Dictionary<int, PlayerSnapshot> PlayerSnapshots { get; } = new();
+        public Dictionary<int, LevelSnapshot> LevelSnapshots { get; } = new();
+        private Dictionary<int, List<object>> SerializedLevels { get; } = new();
 
         // TODO: Perf: Use change notifications instead
         public void CaptureState(GameDbContext dbContext, GameServices services)

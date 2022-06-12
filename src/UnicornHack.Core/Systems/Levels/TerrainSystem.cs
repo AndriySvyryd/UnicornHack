@@ -25,27 +25,27 @@ namespace UnicornHack.Systems.Levels
                 case MapFeature.Pool:
                 case MapFeature.RockFloor:
                 case MapFeature.StoneFloor:
-                    if (ModifyNeighbors(level, level.VisibleNeighbours, null, point, add: true))
+                    if (ModifyNeighbors(level, level.VisibleNeighbors, null, point, add: true))
                     {
-                        level.VisibleNeighboursChanged = true;
+                        level.VisibleNeighborsChanged = true;
                     }
 
                     if (level.TerrainChanges != null)
                     {
                         ModifyNeighbors(level, level.WallNeighbors,
-                            level.WallNeighboursChanges, point, add: false);
+                            level.WallNeighborsChanges, point, add: false);
                     }
 
                     break;
                 case MapFeature.StoneArchway:
                 case MapFeature.StoneWall:
                     ModifyNeighbors(level, level.WallNeighbors,
-                        level.WallNeighboursChanges, point, add: true);
+                        level.WallNeighborsChanges, point, add: true);
 
                     if (level.TerrainChanges != null
-                        && ModifyNeighbors(level, level.VisibleNeighbours, null, point, add: false))
+                        && ModifyNeighbors(level, level.VisibleNeighbors, null, point, add: false))
                     {
-                        level.VisibleNeighboursChanged = true;
+                        level.VisibleNeighborsChanged = true;
                     }
 
                     break;
