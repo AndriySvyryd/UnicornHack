@@ -1,86 +1,94 @@
 ﻿using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
-namespace UnicornHack.Systems.Abilities
+namespace UnicornHack.Systems.Abilities;
+
+public class ActivateAbilityMessage : IMessage
 {
-    public class ActivateAbilityMessage : IMessage
+    public const string Name = "ActivateAbility";
+
+    public static ActivateAbilityMessage Create(GameManager manager)
+        => manager.Queue.CreateMessage<ActivateAbilityMessage>(Name);
+
+    public static ActivateAbilityMessage Create(GameEntity abilityEntity, GameEntity activatorEntity,
+        GameEntity targetEntity)
     {
-        public const string Name = "ActivateAbility";
+        var activationMessage = abilityEntity.Manager.Queue.CreateMessage<ActivateAbilityMessage>(Name);
 
-        public static ActivateAbilityMessage Create(GameManager manager)
-            => manager.Queue.CreateMessage<ActivateAbilityMessage>(Name);
+        activationMessage.AbilityEntity = abilityEntity;
+        activationMessage.ActivatorEntity = activatorEntity;
+        activationMessage.TargetEntity = targetEntity;
 
-        public static ActivateAbilityMessage Create(GameEntity abilityEntity, GameEntity activatorEntity, GameEntity targetEntity)
+        return activationMessage;
+    }
+
+    private GameEntity _activatorEntity;
+    private GameEntity _abilityEntity;
+    private GameEntity _targetEntity;
+
+    public GameEntity ActivatorEntity
+    {
+        get => _activatorEntity;
+        set
         {
-            var activationMessage = abilityEntity.Manager.Queue.CreateMessage<ActivateAbilityMessage>(Name);
-
-            activationMessage.AbilityEntity = abilityEntity;
-            activationMessage.ActivatorEntity = activatorEntity;
-            activationMessage.TargetEntity = targetEntity;
-
-            return activationMessage;
+            _activatorEntity?.RemoveReference(this);
+            _activatorEntity = value;
+            _activatorEntity?.AddReference(this);
         }
+    }
 
-        private GameEntity _activatorEntity;
-        private GameEntity _abilityEntity;
-        private GameEntity _targetEntity;
-
-        public GameEntity ActivatorEntity
+    public GameEntity AbilityEntity
+    {
+        get => _abilityEntity;
+        set
         {
-            get => _activatorEntity;
-            set
-            {
-                _activatorEntity?.RemoveReference(this);
-                _activatorEntity = value;
-                _activatorEntity?.AddReference(this);
-            }
+            _abilityEntity?.RemoveReference(this);
+            _abilityEntity = value;
+            _abilityEntity?.AddReference(this);
         }
+    }
 
-        public GameEntity AbilityEntity
+    public GameEntity TargetEntity
+    {
+        get => _targetEntity;
+        set
         {
-            get => _abilityEntity;
-            set
-            {
-                _abilityEntity?.RemoveReference(this);
-                _abilityEntity = value;
-                _abilityEntity?.AddReference(this);
-            }
+            _targetEntity?.RemoveReference(this);
+            _targetEntity = value;
+            _targetEntity?.AddReference(this);
         }
+    }
 
-        public GameEntity TargetEntity
-        {
-            get => _targetEntity;
-            set
-            {
-                _targetEntity?.RemoveReference(this);
-                _targetEntity = value;
-                _targetEntity?.AddReference(this);
-            }
-        }
+    public Point? TargetCell
+    {
+        get;
+        set;
+    }
 
-        public Point? TargetCell { get; set; }
+    public ActivateAbilityMessage Clone(ActivateAbilityMessage message)
+    {
+        var manager = message.ActivatorEntity.Manager;
 
-        public ActivateAbilityMessage Clone(ActivateAbilityMessage message)
-        {
-            var manager = message.ActivatorEntity.Manager;
+        var abilityMessage = Create(manager);
+        abilityMessage.AbilityEntity = message.AbilityEntity;
+        abilityMessage.ActivatorEntity = message.ActivatorEntity;
+        abilityMessage.TargetEntity = message.TargetEntity;
+        abilityMessage.TargetCell = message.TargetCell;
 
-            var abilityMessage = ActivateAbilityMessage.Create(manager);
-            abilityMessage.AbilityEntity = message.AbilityEntity;
-            abilityMessage.ActivatorEntity = message.ActivatorEntity;
-            abilityMessage.TargetEntity = message.TargetEntity;
-            abilityMessage.TargetCell = message.TargetCell;
+        return abilityMessage;
+    }
 
-            return abilityMessage;
-        }
+    string IMessage.MessageName
+    {
+        get;
+        set;
+    }
 
-        string IMessage.MessageName { get; set; }
-
-        public void Clean()
-        {
-            ActivatorEntity = default;
-            AbilityEntity = default;
-            TargetEntity = default;
-            TargetCell = default;
-        }
+    public void Clean()
+    {
+        ActivatorEntity = default;
+        AbilityEntity = default;
+        TargetEntity = default;
+        TargetCell = default;
     }
 }

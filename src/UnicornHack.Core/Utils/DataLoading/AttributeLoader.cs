@@ -2,65 +2,64 @@
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace UnicornHack.Utils.DataLoading
-{
-    public class AttributeLoader<TPropertyAttribute, TClassAttribute, TLoadable> : Loader<TLoadable>
-        where TClassAttribute : Attribute
-        where TPropertyAttribute : Attribute
-        where TLoadable : class, ILoadable
-    {
-        private readonly Func<PropertyInfo, Type, TPropertyAttribute, TClassAttribute, TLoadable> _createLoadable;
-        private readonly Assembly _targetAssembly;
-        private readonly object _lockRoot = new object();
+namespace UnicornHack.Utils.DataLoading;
 
-        public AttributeLoader(
-            Func<PropertyInfo, Type, TPropertyAttribute, TClassAttribute, TLoadable> createLoadable,
-            Assembly targetAssembly)
+public class AttributeLoader<TPropertyAttribute, TClassAttribute, TLoadable> : Loader<TLoadable>
+    where TClassAttribute : Attribute
+    where TPropertyAttribute : Attribute
+    where TLoadable : class, ILoadable
+{
+    private readonly Func<PropertyInfo, Type, TPropertyAttribute, TClassAttribute, TLoadable> _createLoadable;
+    private readonly Assembly _targetAssembly;
+    private readonly object _lockRoot = new object();
+
+    public AttributeLoader(
+        Func<PropertyInfo, Type, TPropertyAttribute, TClassAttribute, TLoadable> createLoadable,
+        Assembly targetAssembly)
+    {
+        _createLoadable = createLoadable;
+        _targetAssembly = targetAssembly;
+    }
+
+    protected override void EnsureLoaded()
+    {
+        if (NameLookup != null)
         {
-            _createLoadable = createLoadable;
-            _targetAssembly = targetAssembly;
+            return;
         }
 
-        protected override void EnsureLoaded()
+        lock (_lockRoot)
         {
             if (NameLookup != null)
             {
                 return;
             }
 
-            lock (_lockRoot)
+            var lookup = new Dictionary<string, TLoadable>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var type in _targetAssembly.GetTypes())
             {
-                if (NameLookup != null)
+                var typeAttribute =
+                    (TClassAttribute)type.GetCustomAttribute(typeof(TClassAttribute), inherit: true);
+                if (typeAttribute == null)
                 {
-                    return;
+                    continue;
                 }
 
-                var lookup = new Dictionary<string, TLoadable>(StringComparer.OrdinalIgnoreCase);
-
-                foreach (var type in _targetAssembly.GetTypes())
+                foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
                 {
-                    var typeAttribute =
-                        (TClassAttribute)type.GetCustomAttribute(typeof(TClassAttribute), inherit: true);
-                    if (typeAttribute == null)
+                    var propertyAttribute = property.GetCustomAttribute<TPropertyAttribute>(inherit: true);
+                    if (propertyAttribute == null)
                     {
                         continue;
                     }
 
-                    foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
-                    {
-                        var propertyAttribute = property.GetCustomAttribute<TPropertyAttribute>(inherit: true);
-                        if (propertyAttribute == null)
-                        {
-                            continue;
-                        }
-
-                        var instance = _createLoadable(property, type, propertyAttribute, typeAttribute);
-                        lookup[instance.Name] = instance;
-                    }
+                    var instance = _createLoadable(property, type, propertyAttribute, typeAttribute);
+                    lookup[instance.Name] = instance;
                 }
-
-                NameLookup = lookup;
             }
+
+            NameLookup = lookup;
         }
     }
 }

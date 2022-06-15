@@ -2,51 +2,50 @@
 using UnicornHack.Systems.Levels;
 using Xunit;
 
-namespace UnicornHack.Utils.MessagingECS
+namespace UnicornHack.Utils.MessagingECS;
+
+public class EntityManagerTest
 {
-    public class EntityManagerTest
+    [Fact]
+    public void AddEntity()
     {
-        [Fact]
-        public void AddEntity()
+        var manager = TestHelper.CreateGameManager();
+        GameEntity entity;
+        using (var entityReference = ((IEntityManager)manager).CreateEntity())
         {
-            var manager = TestHelper.CreateGameManager();
-            GameEntity entity;
-            using (var entityReference = ((IEntityManager)manager).CreateEntity())
-            {
-                entity = (GameEntity)entityReference.Referenced;
-                entity.AddComponent<ConnectionComponent>((int)EntityComponent.Connection);
+            entity = (GameEntity)entityReference.Referenced;
+            entity.AddComponent<ConnectionComponent>((int)EntityComponent.Connection);
 
-                Assert.Same(entity, ((IEntityManager)manager).FindEntity(entity.Id));
-                Assert.Same(entity, manager.GetEntities().Single());
-            }
-
-            manager.AddEntity(entity);
-            Assert.Same(entity, manager.FindEntity(entity.Id));
+            Assert.Same(entity, ((IEntityManager)manager).FindEntity(entity.Id));
             Assert.Same(entity, manager.GetEntities().Single());
         }
 
-        [Fact]
-        public void RemoveComponent()
+        manager.AddEntity(entity);
+        Assert.Same(entity, manager.FindEntity(entity.Id));
+        Assert.Same(entity, manager.GetEntities().Single());
+    }
+
+    [Fact]
+    public void RemoveComponent()
+    {
+        var manager = TestHelper.CreateGameManager();
+        GameEntity entity;
+        using (var entityReference = ((IEntityManager)manager).CreateEntity())
         {
-            var manager = TestHelper.CreateGameManager();
-            GameEntity entity;
-            using (var entityReference = ((IEntityManager)manager).CreateEntity())
-            {
-                entity = (GameEntity)entityReference.Referenced;
-                entity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+            entity = (GameEntity)entityReference.Referenced;
+            entity.AddComponent<LevelComponent>((int)EntityComponent.Level);
 
-                Assert.Same(entity, manager.FindEntity(entity.Id));
+            Assert.Same(entity, manager.FindEntity(entity.Id));
 
-                RemoveComponentMessage.Enqueue(entity, EntityComponent.Level, manager);
+            RemoveComponentMessage.Enqueue(entity, EntityComponent.Level, manager);
 
-                Assert.NotNull(manager.FindEntity(entity.Id));
-                Assert.True(entity.HasComponent(EntityComponent.Level));
+            Assert.NotNull(manager.FindEntity(entity.Id));
+            Assert.True(entity.HasComponent(EntityComponent.Level));
 
-                manager.Queue.ProcessQueue(manager);
-                Assert.False(entity.HasComponent(EntityComponent.Level));
-            }
-
-            Assert.Null(manager.FindEntity(entity.Id));
+            manager.Queue.ProcessQueue(manager);
+            Assert.False(entity.HasComponent(EntityComponent.Level));
         }
+
+        Assert.Null(manager.FindEntity(entity.Id));
     }
 }

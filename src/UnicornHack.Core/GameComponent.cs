@@ -1,21 +1,29 @@
 ﻿using UnicornHack.Utils.MessagingECS;
 
-namespace UnicornHack
+namespace UnicornHack;
+
+public abstract class GameComponent : Component
 {
-    public abstract class GameComponent : Component
+    public int GameId
     {
-        public int GameId { get; set; }
-        public int EntityId { get; set; }
+        get;
+        set;
+    }
 
-        public Game Game => Entity.Game;
-        public new GameEntity Entity => (GameEntity)base.Entity;
+    public int EntityId
+    {
+        get;
+        set;
+    }
 
-        protected override void Clean()
-        {
-            base.Clean();
+    public Game Game => Entity.Game;
+    public new GameEntity Entity => (GameEntity)base.Entity;
 
-            GameId = default;
-            EntityId = default;
-        }
+    protected override void Clean()
+    {
+        base.Clean();
+
+        GameId = default;
+        EntityId = default;
     }
 }

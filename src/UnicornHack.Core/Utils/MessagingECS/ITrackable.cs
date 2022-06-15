@@ -1,8 +1,7 @@
-﻿namespace UnicornHack.Utils.MessagingECS
+﻿namespace UnicornHack.Utils.MessagingECS;
+
+public interface ITrackable
 {
-    public interface ITrackable
-    {
-        void StartTracking(object tracker);
-        void StopTracking(object tracker);
-    }
+    void StartTracking(object tracker);
+    void StopTracking(object tracker);
 }

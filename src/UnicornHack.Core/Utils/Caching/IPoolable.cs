@@ -1,7 +1,6 @@
-﻿namespace UnicornHack.Utils.Caching
+﻿namespace UnicornHack.Utils.Caching;
+
+public interface IPoolable
 {
-    public interface IPoolable
-    {
-        void SetPool(IObjectPool pool);
-    }
+    void SetPool(IObjectPool pool);
 }

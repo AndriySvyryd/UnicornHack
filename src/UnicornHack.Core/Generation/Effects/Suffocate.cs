@@ -2,20 +2,19 @@ using CSharpScriptSerialization;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Effects;
 
-namespace UnicornHack.Generation.Effects
+namespace UnicornHack.Generation.Effects;
+
+public class Suffocate : DurationEffect
 {
-    public class Suffocate : DurationEffect
+    protected override void ConfigureEffect(EffectComponent effect)
     {
-        protected override void ConfigureEffect(EffectComponent effect)
-        {
-            base.ConfigureEffect(effect);
+        base.ConfigureEffect(effect);
 
-            effect.EffectType = EffectType.Suffocate;
-        }
-
-        private static readonly CSScriptSerializer Serializer =
-            new PropertyCSScriptSerializer<Suffocate>(GetPropertyConditions<Suffocate>());
-
-        public override ICSScriptSerializer GetSerializer() => Serializer;
+        effect.EffectType = EffectType.Suffocate;
     }
+
+    private static readonly CSScriptSerializer Serializer =
+        new PropertyCSScriptSerializer<Suffocate>(GetPropertyConditions<Suffocate>());
+
+    public override ICSScriptSerializer GetSerializer() => Serializer;
 }

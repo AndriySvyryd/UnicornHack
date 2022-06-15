@@ -1,8 +1,7 @@
-namespace UnicornHack.Utils
+namespace UnicornHack.Utils;
+
+public interface IOwnerReferenceable
 {
-    public interface IOwnerReferenceable
-    {
-        void AddReference(object owner);
-        void RemoveReference(object owner);
-    }
+    void AddReference(object owner);
+    void RemoveReference(object owner);
 }

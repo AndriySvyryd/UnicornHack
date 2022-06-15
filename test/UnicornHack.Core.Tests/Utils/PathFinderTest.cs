@@ -7,32 +7,32 @@ using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.DataStructures;
 using Xunit;
 
-namespace UnicornHack.Utils
+namespace UnicornHack.Utils;
+
+// * - expected path
+public class PathFinderTest
 {
-    // * - expected path
-    public class PathFinderTest
-    {
-        [Fact]
-        public void Pattern1() => TestPath(@"
+    [Fact]
+    public void Pattern1() => TestPath(@"
 **.
 ##*
 **.",
-            Direction.North);
+        Direction.North);
 
-        [Fact]
-        public void Pattern2() => TestPath(@"
+    [Fact]
+    public void Pattern2() => TestPath(@"
 **.
 ..*",
-            Direction.North);
+        Direction.North);
 
-        [Fact]
-        public void Pattern3() => TestPath(@"
+    [Fact]
+    public void Pattern3() => TestPath(@"
 *..
 .**",
-            Direction.South);
+        Direction.South);
 
-        [Fact]
-        public void Pattern4() => TestPath(@"
+    [Fact]
+    public void Pattern4() => TestPath(@"
 *.#
 #*##
 .#*#
@@ -40,92 +40,91 @@ namespace UnicornHack.Utils
 #*##.
 #.*.#*
 ...**",
-            Direction.North);
+        Direction.North);
 
-        public static (LevelComponent, Point) TestPath(string expectedPathMap, Direction initialDirection)
+    public static (LevelComponent, Point) TestPath(string expectedPathMap, Direction initialDirection)
+    {
+        var seed = (uint)Environment.TickCount;
+        var map = expectedPathMap.Replace('*', '.');
+        var level = TestHelper.BuildLevel(map, seed);
+
+        var expectedFragment = new NormalMapFragment { Map = expectedPathMap };
+        expectedFragment.EnsureInitialized(level.Game);
+        var expectedPathArray = new byte[level.TileCount];
+        expectedFragment.WriteMap(
+            new Point(0, 0),
+            level,
+            (c, point, l, _) => expectedPathArray[l.PointToIndex[point.X, point.Y]] = c == '*' ? (byte)1 : (byte)0,
+            (object)null);
+
+        var manager = level.Entity.Manager;
+        var expectedPath = ExtractPath(level, expectedPathArray, 1);
+        var actualPath = manager.TravelSystem.GetShortestPath(
+            level, new Point(0, 0), expectedPath.Last(), initialDirection);
+        actualPath.Reverse();
+
+        var actualPathArray = new byte[level.TileCount];
+        actualPathArray[0] = 1;
+        var pathMatches = true;
+        for (var i = 0; i < actualPath.Count; i++)
         {
-            var seed = (uint)Environment.TickCount;
-            var map = expectedPathMap.Replace('*', '.');
-            var level = TestHelper.BuildLevel(map, seed);
-
-            var expectedFragment = new NormalMapFragment {Map = expectedPathMap};
-            expectedFragment.EnsureInitialized(level.Game);
-            var expectedPathArray = new byte[level.TileCount];
-            expectedFragment.WriteMap(
-                new Point(0, 0),
-                level,
-                (c, point, l, _) => expectedPathArray[l.PointToIndex[point.X, point.Y]] = c == '*' ? (byte)1 : (byte)0,
-                (object)null);
-
-            var manager = level.Entity.Manager;
-            var expectedPath = ExtractPath(level, expectedPathArray, 1);
-            var actualPath = manager.TravelSystem.GetShortestPath(
-                level, new Point(0, 0), expectedPath.Last(), initialDirection);
-            actualPath.Reverse();
-
-            var actualPathArray = new byte[level.TileCount];
-            actualPathArray[0] = 1;
-            var pathMatches = true;
-            for (var i = 0; i < actualPath.Count; i++)
+            var point = actualPath[i];
+            if (i < expectedPath.Count)
             {
-                var point = actualPath[i];
-                if (i < expectedPath.Count)
-                {
-                    pathMatches = pathMatches && point.Equals(expectedPath[i]);
-                }
-
-                actualPathArray[level.PointToIndex[point.X, point.Y]] = 1;
+                pathMatches = pathMatches && point.Equals(expectedPath[i]);
             }
 
-            Assert.True(pathMatches, @"Expected:
+            actualPathArray[level.PointToIndex[point.X, point.Y]] = 1;
+        }
+
+        Assert.True(pathMatches, @"Expected:
 " + TestHelper.PrintMap(level, expectedPathArray) + @"
 Actual:
 " + TestHelper.PrintMap(level, actualPathArray) + @"
 Seed: " + seed);
 
-            return (level, expectedPath.Last());
-        }
+        return (level, expectedPath.Last());
+    }
 
-        private static List<Point> ExtractPath(LevelComponent level, byte[] expectedPathArray, byte pathValue)
+    private static List<Point> ExtractPath(LevelComponent level, byte[] expectedPathArray, byte pathValue)
+    {
+        var expectedPath = new List<Point>();
+        var currentPathPoint = new Point(0, 0);
+        var previousPointDirectionIndex = (byte)Direction.North;
+        while (previousPointDirectionIndex != byte.MaxValue)
         {
-            var expectedPath = new List<Point>();
-            var currentPathPoint = new Point(0, 0);
-            var previousPointDirectionIndex = (byte)Direction.North;
-            while (previousPointDirectionIndex != byte.MaxValue)
+            for (var directionIndex = 0; directionIndex < 8; directionIndex++)
             {
-                for (var directionIndex = 0; directionIndex < 8; directionIndex++)
+                if (directionIndex == previousPointDirectionIndex)
                 {
-                    if (directionIndex == previousPointDirectionIndex)
-                    {
-                        continue;
-                    }
-
-                    var direction = Vector.MovementDirections[directionIndex];
-                    var newLocationX = (byte)(currentPathPoint.X + direction.X);
-                    var newLocationY = (byte)(currentPathPoint.Y + direction.Y);
-
-                    if (newLocationX >= level.Width || newLocationY >= level.Height)
-                    {
-                        continue;
-                    }
-
-                    var newLocationIndex = level.PointToIndex[newLocationX, newLocationY];
-                    if (expectedPathArray[newLocationIndex] != pathValue)
-                    {
-                        continue;
-                    }
-
-                    currentPathPoint = new Point(newLocationX, newLocationY);
-                    expectedPath.Add(currentPathPoint);
-                    previousPointDirectionIndex = Vector.OppositeDirectionIndexes[directionIndex];
-                    goto NextPointFound;
+                    continue;
                 }
 
-                previousPointDirectionIndex = byte.MaxValue;
-                NextPointFound: ;
+                var direction = Vector.MovementDirections[directionIndex];
+                var newLocationX = (byte)(currentPathPoint.X + direction.X);
+                var newLocationY = (byte)(currentPathPoint.Y + direction.Y);
+
+                if (newLocationX >= level.Width || newLocationY >= level.Height)
+                {
+                    continue;
+                }
+
+                var newLocationIndex = level.PointToIndex[newLocationX, newLocationY];
+                if (expectedPathArray[newLocationIndex] != pathValue)
+                {
+                    continue;
+                }
+
+                currentPathPoint = new Point(newLocationX, newLocationY);
+                expectedPath.Add(currentPathPoint);
+                previousPointDirectionIndex = Vector.OppositeDirectionIndexes[directionIndex];
+                goto NextPointFound;
             }
 
-            return expectedPath;
+            previousPointDirectionIndex = byte.MaxValue;
+            NextPointFound: ;
         }
+
+        return expectedPath;
     }
 }

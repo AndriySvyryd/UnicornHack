@@ -1,21 +1,24 @@
 using System;
 
-namespace UnicornHack.Utils
+namespace UnicornHack.Utils;
+
+public struct TransientReference<T> : IDisposable where T : IReferenceable
 {
-    public struct TransientReference<T> : IDisposable where T : IReferenceable
+    public TransientReference(T referenced)
     {
-        public TransientReference(T referenced)
-        {
-            referenced.AddReference();
-            Referenced = referenced;
-        }
+        referenced.AddReference();
+        Referenced = referenced;
+    }
 
-        public T Referenced { get; private set; }
+    public T Referenced
+    {
+        get;
+        private set;
+    }
 
-        public void Dispose()
-        {
-            Referenced?.RemoveReference();
-            Referenced = default;
-        }
+    public void Dispose()
+    {
+        Referenced?.RemoveReference();
+        Referenced = default;
     }
 }

@@ -1,9 +1,8 @@
-namespace UnicornHack.Primitives
+namespace UnicornHack.Primitives;
+
+public enum Sex
 {
-    public enum Sex
-    {
-        None,
-        Male,
-        Female
-    }
+    None,
+    Male,
+    Female
 }

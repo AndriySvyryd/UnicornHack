@@ -2,10 +2,9 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>UnicornHack.PerformanceTests</RootNamespace>
-    <CodeAnalysisRuleSet>..\..\UnicornHack.ruleset</CodeAnalysisRuleSet>
-    <LangVersion>9.0</LangVersion>
+    <LangVersion>10.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

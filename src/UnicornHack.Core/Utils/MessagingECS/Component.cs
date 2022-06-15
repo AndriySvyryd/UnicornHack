@@ -5,151 +5,158 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using UnicornHack.Utils.Caching;
 
-namespace UnicornHack.Utils.MessagingECS
+namespace UnicornHack.Utils.MessagingECS;
+
+public abstract class Component :
+    IOwnerReferenceable, ITrackable, IPoolable, INotifyPropertyChanged, INotifyPropertyChanging
 {
-    public abstract class Component :
-        IOwnerReferenceable, ITrackable, IPoolable, INotifyPropertyChanged, INotifyPropertyChanging
+    public static int NullId = int.MinValue;
+    public event PropertyChangedEventHandler PropertyChanged;
+    public event PropertyChangingEventHandler PropertyChanging;
+
+#if DEBUG
+    private readonly List<object> _owners = new();
+#endif
+    private int _referenceCount;
+    private IObjectPool _pool;
+    private bool _tracked;
+    private Entity _entity;
+
+    public int ComponentId
     {
-        public static int NullId = int.MinValue;
-        public event PropertyChangedEventHandler PropertyChanged;
-        public event PropertyChangingEventHandler PropertyChanging;
+        get;
+        protected set;
+    }
 
-#if DEBUG
-        private readonly List<object> _owners = new();
-#endif
-        private int _referenceCount;
-        private IObjectPool _pool;
-        private bool _tracked;
-        private Entity _entity;
-
-        public int ComponentId { get; protected set; }
-
-        public Entity Entity
+    public Entity Entity
+    {
+        get => _entity;
+        set
         {
-            get => _entity;
-            set
+            if (_entity != value)
             {
-                if (_entity != value)
+                Debug.Assert(_entity == null || value == null);
+
+                if (value != null)
                 {
-                    Debug.Assert(_entity == null || value == null);
+                    // Done here because reference count is not persisted
+                    ((IOwnerReferenceable)this).AddReference(value);
 
-                    if (value != null)
-                    {
-                        // Done here because reference count is not persisted
-                        ((IOwnerReferenceable)this).AddReference(value);
-
-                        Manager = value.Manager;
-                    }
-
-                    _entity = value;
+                    Manager = value.Manager;
                 }
+
+                _entity = value;
             }
         }
+    }
 
-        protected IEntityManager Manager { get; set; }
+    protected IEntityManager Manager
+    {
+        get;
+        set;
+    }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void SetWithNotify<T>(
-            T value,
-            ref T field,
-            [CallerMemberName] string propertyName = "")
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected void SetWithNotify<T>(
+        T value,
+        ref T field,
+        [CallerMemberName] string propertyName = "")
+    {
+        if (NotifyChanging(value, ref field, propertyName, out var oldValue))
         {
-            if (NotifyChanging(value, ref field, propertyName, out var oldValue))
-            {
-                NotifyChanged(propertyName);
-                Entity?.HandlePropertyValueChanged(propertyName, oldValue, value, ComponentId, this);
-            }
+            NotifyChanged(propertyName);
+            Entity?.HandlePropertyValueChanged(propertyName, oldValue, value, ComponentId, this);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected bool NotifyChanging<T>(
+        T value,
+        ref T field,
+        string propertyName,
+        out T oldValue)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value))
+        {
+            oldValue = default;
+            return false;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected bool NotifyChanging<T>(
-            T value,
-            ref T field,
-            string propertyName,
-            out T oldValue)
-        {
-            if (EqualityComparer<T>.Default.Equals(field, value))
-            {
-                oldValue = default;
-                return false;
-            }
+        PropertyChanging?.Invoke(this, new PropertyChangingEventArgs(propertyName));
+        oldValue = field;
+        field = value;
 
-            PropertyChanging?.Invoke(this, new PropertyChangingEventArgs(propertyName));
-            oldValue = field;
-            field = value;
+        return true;
+    }
 
-            return true;
-        }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected void NotifyChanged(string propertyName)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void NotifyChanged(string propertyName)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    void ITrackable.StartTracking(object tracker)
+    {
+        Debug.Assert(!_tracked, $"Component {GetType().Name} is already tracked by {tracker}");
 
-        void ITrackable.StartTracking(object tracker)
-        {
-            Debug.Assert(!_tracked, $"Component {GetType().Name} is already tracked by {tracker}");
+        _tracked = true;
+    }
 
-            _tracked = true;
-        }
+    void ITrackable.StopTracking(object tracker)
+    {
+        Debug.Assert(_tracked, $"Component {GetType().Name} is not tracked by {tracker}");
 
-        void ITrackable.StopTracking(object tracker)
-        {
-            Debug.Assert(_tracked, $"Component {GetType().Name} is not tracked by {tracker}");
+        _tracked = false;
+        ((IOwnerReferenceable)this).AddReference(tracker);
+        ((IOwnerReferenceable)this).RemoveReference(tracker);
+    }
 
-            _tracked = false;
-            ((IOwnerReferenceable)this).AddReference(tracker);
-            ((IOwnerReferenceable)this).RemoveReference(tracker);
-        }
-
-        void IOwnerReferenceable.AddReference(object owner)
-        {
+    void IOwnerReferenceable.AddReference(object owner)
+    {
 #if DEBUG
-            _owners.Add(owner);
+        _owners.Add(owner);
 #endif
-            _referenceCount++;
+        _referenceCount++;
+    }
+
+    void IOwnerReferenceable.RemoveReference(object owner)
+    {
+#if DEBUG
+        _owners.Remove(owner);
+#endif
+        if (--_referenceCount > 0)
+        {
+            return;
         }
 
-        void IOwnerReferenceable.RemoveReference(object owner)
+        if (_referenceCount == 0)
         {
-#if DEBUG
-            _owners.Remove(owner);
-#endif
-            if (--_referenceCount > 0)
+            if (_tracked)
             {
-                return;
-            }
-
-            if (_referenceCount == 0)
-            {
-                if (_tracked)
-                {
-                    Manager.RemoveFromSecondaryTracker(this);
-                }
-                else
-                {
-                    Clean();
-                }
+                Manager.RemoveFromSecondaryTracker(this);
             }
             else
             {
-                throw new InvalidOperationException($"Component {ComponentId} is not referenced by object {owner}");
+                Clean();
             }
         }
-
-        protected virtual void Clean()
+        else
         {
-            Debug.Assert(Entity?.FindComponent(ComponentId) != this
-                         && _referenceCount == 0
-                         && !_tracked
-                         && PropertyChanged == null
-                         && PropertyChanging == null);
-
-            Entity = null;
-
-            _pool?.Return(this);
+            throw new InvalidOperationException($"Component {ComponentId} is not referenced by object {owner}");
         }
-
-        void IPoolable.SetPool(IObjectPool pool)
-            => _pool = pool;
     }
+
+    protected virtual void Clean()
+    {
+        Debug.Assert(Entity?.FindComponent(ComponentId) != this
+                     && _referenceCount == 0
+                     && !_tracked
+                     && PropertyChanged == null
+                     && PropertyChanging == null);
+
+        Entity = null;
+
+        _pool?.Return(this);
+    }
+
+    void IPoolable.SetPool(IObjectPool pool)
+        => _pool = pool;
 }

@@ -1,10 +1,9 @@
-﻿namespace UnicornHack.Primitives
+﻿namespace UnicornHack.Primitives;
+
+public enum RespirationType
 {
-    public enum RespirationType
-    {
-        None,
-        Oxygen,
-        Water,
-        Amphibious
-    }
+    None,
+    Oxygen,
+    Water,
+    Amphibious
 }

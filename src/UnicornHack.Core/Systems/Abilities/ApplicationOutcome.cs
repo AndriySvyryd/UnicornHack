@@ -1,9 +1,8 @@
-﻿namespace UnicornHack.Systems.Abilities
+﻿namespace UnicornHack.Systems.Abilities;
+
+public enum ApplicationOutcome
 {
-    public enum ApplicationOutcome
-    {
-        Miss,
-        Success,
-        Deflection
-    }
+    Miss,
+    Success,
+    Deflection
 }

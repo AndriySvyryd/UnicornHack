@@ -2,20 +2,19 @@ using CSharpScriptSerialization;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Effects;
 
-namespace UnicornHack.Generation.Effects
+namespace UnicornHack.Generation.Effects;
+
+public class Heal : AmountEffect
 {
-    public class Heal : AmountEffect
+    protected override void ConfigureEffect(EffectComponent effect)
     {
-        protected override void ConfigureEffect(EffectComponent effect)
-        {
-            base.ConfigureEffect(effect);
+        base.ConfigureEffect(effect);
 
-            effect.EffectType = EffectType.Heal;
-        }
-
-        private static readonly CSScriptSerializer Serializer =
-            new PropertyCSScriptSerializer<Heal>(GetPropertyConditions<Heal>());
-
-        public override ICSScriptSerializer GetSerializer() => Serializer;
+        effect.EffectType = EffectType.Heal;
     }
+
+    private static readonly CSScriptSerializer Serializer =
+        new PropertyCSScriptSerializer<Heal>(GetPropertyConditions<Heal>());
+
+    public override ICSScriptSerializer GetSerializer() => Serializer;
 }

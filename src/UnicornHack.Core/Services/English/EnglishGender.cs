@@ -1,9 +1,8 @@
-namespace UnicornHack.Services.English
+namespace UnicornHack.Services.English;
+
+public enum EnglishGender
 {
-    public enum EnglishGender
-    {
-        Neutral = 0,
-        Masculine = 1,
-        Feminine = 2
-    }
+    Neutral = 0,
+    Masculine = 1,
+    Feminine = 2
 }

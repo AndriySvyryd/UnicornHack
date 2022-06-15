@@ -1,9 +1,8 @@
-﻿namespace UnicornHack.Generation
+﻿namespace UnicornHack.Generation;
+
+public enum ItemComplexity
 {
-    public enum ItemComplexity
-    {
-        Normal = 0,
-        Intricate,
-        Exotic
-    }
+    Normal = 0,
+    Intricate,
+    Exotic
 }

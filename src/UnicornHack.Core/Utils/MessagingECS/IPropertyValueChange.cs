@@ -1,12 +1,22 @@
-﻿namespace UnicornHack.Utils.MessagingECS
-{
-    public interface IPropertyValueChange
-    {
-        Component ChangedComponent { get; }
-        string ChangedPropertyName { get; }
-        bool IsEmpty { get; }
+﻿namespace UnicornHack.Utils.MessagingECS;
 
-        void EnqueuePropertyValueChangedMessage<TEntity>(string messageName)
-            where TEntity : Entity, new();
+public interface IPropertyValueChange
+{
+    Component ChangedComponent
+    {
+        get;
     }
+
+    string ChangedPropertyName
+    {
+        get;
+    }
+
+    bool IsEmpty
+    {
+        get;
+    }
+
+    void EnqueuePropertyValueChangedMessage<TEntity>(string messageName)
+        where TEntity : Entity, new();
 }

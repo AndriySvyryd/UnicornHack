@@ -1,11 +1,10 @@
-namespace UnicornHack.Services.English
+namespace UnicornHack.Services.English;
+
+public enum EnglishPronounForm
 {
-    public enum EnglishPronounForm
-    {
-        Normal = 0,
-        Possessive = 1,
-        Reflexive = 2,
-        Subjective = 3,
-        Objective = 4
-    }
+    Normal = 0,
+    Possessive = 1,
+    Reflexive = 2,
+    Subjective = 3,
+    Objective = 4
 }

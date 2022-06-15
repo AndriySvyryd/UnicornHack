@@ -1,9 +1,8 @@
-﻿namespace UnicornHack.Utils.MessagingECS
+﻿namespace UnicornHack.Utils.MessagingECS;
+
+public enum ValueType
 {
-    public enum ValueType
-    {
-        Current,
-        Old,
-        PreferOld
-    }
+    Current,
+    Old,
+    PreferOld
 }

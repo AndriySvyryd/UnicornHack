@@ -1,15 +1,15 @@
 using UnicornHack.Generation.Map;
 
-namespace UnicornHack.Data.Fragments
+namespace UnicornHack.Data.Fragments;
+
+public static partial class DefiningMapFragmentData
 {
-    public static partial class DefiningMapFragmentData
+    public static readonly DefiningMapFragment FOVTest = new DefiningMapFragment
     {
-        public static readonly DefiningMapFragment FOVTest = new DefiningMapFragment
-        {
-            Name = "FOVTest",
-            GenerationWeight = "0",
-            NoRandomDoorways = true,
-            Map = @"
+        Name = "FOVTest",
+        GenerationWeight = "0",
+        NoRandomDoorways = true,
+        Map = @"
 #####                                       #####################
 #...###################                     #...................#
 ###...................#######################.......#...#...#...#
@@ -51,6 +51,5 @@ namespace UnicornHack.Data.Fragments
 #...............................................................#
 #################################################################
 "
-        };
-    }
+    };
 }

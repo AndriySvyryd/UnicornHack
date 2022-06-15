@@ -1,11 +1,10 @@
-namespace UnicornHack.Systems.Knowledge
+namespace UnicornHack.Systems.Knowledge;
+
+public enum LogEntryImportance
 {
-    public enum LogEntryImportance
-    {
-        Default,
-        Information,
-        Warning,
-        ImportantBad,
-        ImportantGood
-    }
+    Default,
+    Information,
+    Warning,
+    ImportantBad,
+    ImportantGood
 }

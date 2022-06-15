@@ -1,9 +1,12 @@
-﻿
-namespace UnicornHack.Utils.MessagingECS
+﻿namespace UnicornHack.Utils.MessagingECS;
+
+public interface IMessage
 {
-    public interface IMessage
+    string MessageName
     {
-        string MessageName { get; set; }
-        void Clean();
+        get;
+        set;
     }
+
+    void Clean();
 }

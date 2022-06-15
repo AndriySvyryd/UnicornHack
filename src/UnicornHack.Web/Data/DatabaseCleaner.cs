@@ -15,144 +15,127 @@ using Microsoft.EntityFrameworkCore.SqlServer.Scaffolding.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 
-namespace UnicornHack.Data
+namespace UnicornHack.Data;
+
+public class DatabaseCleaner
 {
-    public class DatabaseCleaner
+    public virtual void Clean(DatabaseFacade facade)
     {
-        public virtual void Clean(DatabaseFacade facade)
+        var creator = facade.GetService<IRelationalDatabaseCreator>();
+        var sqlGenerator = facade.GetService<IMigrationsSqlGenerator>();
+        var executor = facade.GetService<IMigrationCommandExecutor>();
+        var connection = facade.GetService<IRelationalConnection>();
+        var sqlBuilder = facade.GetService<IRawSqlCommandBuilder>();
+        var loggerFactory = facade.GetService<ILoggerFactory>();
+
+        if (!creator.Exists())
         {
-            var creator = facade.GetService<IRelationalDatabaseCreator>();
-            var sqlGenerator = facade.GetService<IMigrationsSqlGenerator>();
-            var executor = facade.GetService<IMigrationCommandExecutor>();
-            var connection = facade.GetService<IRelationalConnection>();
-            var sqlBuilder = facade.GetService<IRawSqlCommandBuilder>();
-            var loggerFactory = facade.GetService<ILoggerFactory>();
-
-            if (!creator.Exists())
-            {
-                creator.Create();
-            }
-            else
-            {
-                var databaseModelFactory = CreateDatabaseModelFactory(loggerFactory);
-                var databaseModel = databaseModelFactory.Create(connection.DbConnection, new DatabaseModelFactoryOptions());
-
-                var operations = new List<MigrationOperation>();
-
-                foreach (var foreignKey in databaseModel.Tables
-                    .SelectMany(t => t.ForeignKeys))
-                {
-                    operations.Add(Drop(foreignKey));
-                }
-
-                foreach (var table in databaseModel.Tables)
-                {
-                    operations.Add(Drop(table));
-                }
-
-                foreach (var sequence in databaseModel.Sequences)
-                {
-                    operations.Add(Drop(sequence));
-                }
-
-                connection.Open();
-
-                try
-                {
-                    var customSql = BuildCustomSql();
-                    if (!string.IsNullOrWhiteSpace(customSql))
-                    {
-                        ExecuteScript(connection, sqlBuilder, customSql);
-                    }
-
-                    if (operations.Any())
-                    {
-                        var commands = sqlGenerator.Generate(operations);
-                        executor.ExecuteNonQuery(commands, connection);
-                    }
-
-                    customSql = BuildCustomEndingSql();
-                    if (!string.IsNullOrWhiteSpace(customSql))
-                    {
-                        ExecuteScript(connection, sqlBuilder, customSql);
-                    }
-                }
-                finally
-                {
-                    connection.Close();
-                }
-            }
-
-            creator.CreateTables();
+            creator.Create();
         }
-
-        private static void ExecuteScript(IRelationalConnection connection, IRawSqlCommandBuilder sqlBuilder, string customSql)
+        else
         {
-            var batches = Regex.Split(
-                Regex.Replace(
-                    customSql,
-                    @"\\\r?\n",
-                    string.Empty,
-                    default,
-                    TimeSpan.FromMilliseconds(1000.0)),
-                @"^\s*(GO[ \t]+[0-9]+|GO)(?:\s+|$)",
-                RegexOptions.IgnoreCase | RegexOptions.Multiline,
-                TimeSpan.FromMilliseconds(1000.0));
-            for (var i = 0; i < batches.Length; i++)
+            var databaseModelFactory = CreateDatabaseModelFactory(loggerFactory);
+            var databaseModel = databaseModelFactory.Create(connection.DbConnection, new DatabaseModelFactoryOptions());
+
+            var operations = new List<MigrationOperation>();
+
+            foreach (var foreignKey in databaseModel.Tables
+                         .SelectMany(t => t.ForeignKeys))
             {
-                if (batches[i].StartsWith("GO", StringComparison.OrdinalIgnoreCase)
-                    || string.IsNullOrWhiteSpace(batches[i]))
+                operations.Add(Drop(foreignKey));
+            }
+
+            foreach (var table in databaseModel.Tables)
+            {
+                operations.Add(Drop(table));
+            }
+
+            foreach (var sequence in databaseModel.Sequences)
+            {
+                operations.Add(Drop(sequence));
+            }
+
+            connection.Open();
+
+            try
+            {
+                var customSql = BuildCustomSql();
+                if (!string.IsNullOrWhiteSpace(customSql))
                 {
-                    continue;
+                    ExecuteScript(connection, sqlBuilder, customSql);
                 }
 
-                sqlBuilder.Build(batches[i])
-                    .ExecuteNonQuery(new RelationalCommandParameterObject(connection, null, null, null, null));
+                if (operations.Any())
+                {
+                    var commands = sqlGenerator.Generate(operations);
+                    executor.ExecuteNonQuery(commands, connection);
+                }
+
+                customSql = BuildCustomEndingSql();
+                if (!string.IsNullOrWhiteSpace(customSql))
+                {
+                    ExecuteScript(connection, sqlBuilder, customSql);
+                }
+            }
+            finally
+            {
+                connection.Close();
             }
         }
 
-        protected virtual DropSequenceOperation Drop(DatabaseSequence sequence)
-            => new()
-            {
-                Name = sequence.Name,
-                Schema = sequence.Schema
-            };
+        creator.CreateTables();
+    }
 
-        protected virtual DropTableOperation Drop(DatabaseTable table)
-            => new()
+    private static void ExecuteScript(IRelationalConnection connection, IRawSqlCommandBuilder sqlBuilder,
+        string customSql)
+    {
+        var batches = Regex.Split(
+            Regex.Replace(
+                customSql,
+                @"\\\r?\n",
+                string.Empty,
+                default,
+                TimeSpan.FromMilliseconds(1000.0)),
+            @"^\s*(GO[ \t]+[0-9]+|GO)(?:\s+|$)",
+            RegexOptions.IgnoreCase | RegexOptions.Multiline,
+            TimeSpan.FromMilliseconds(1000.0));
+        for (var i = 0; i < batches.Length; i++)
+        {
+            if (batches[i].StartsWith("GO", StringComparison.OrdinalIgnoreCase)
+                || string.IsNullOrWhiteSpace(batches[i]))
             {
-                Name = table.Name,
-                Schema = table.Schema
-            };
+                continue;
+            }
 
-        protected virtual DropForeignKeyOperation Drop(DatabaseForeignKey foreignKey)
-            => new()
-            {
-                Name = foreignKey.Name,
-                Table = foreignKey.Table.Name,
-                Schema = foreignKey.Table.Schema
-            };
+            sqlBuilder.Build(batches[i])
+                .ExecuteNonQuery(new RelationalCommandParameterObject(connection, null, null, null, null));
+        }
+    }
 
-        protected virtual DropIndexOperation Drop(DatabaseIndex index)
-            => new()
-            {
-                Name = index.Name,
-                Table = index.Table.Name,
-                Schema = index.Table.Schema
-            };
+    protected virtual DropSequenceOperation Drop(DatabaseSequence sequence)
+        => new() { Name = sequence.Name, Schema = sequence.Schema };
+
+    protected virtual DropTableOperation Drop(DatabaseTable table)
+        => new() { Name = table.Name, Schema = table.Schema };
+
+    protected virtual DropForeignKeyOperation Drop(DatabaseForeignKey foreignKey)
+        => new() { Name = foreignKey.Name, Table = foreignKey.Table.Name, Schema = foreignKey.Table.Schema };
+
+    protected virtual DropIndexOperation Drop(DatabaseIndex index)
+        => new() { Name = index.Name, Table = index.Table.Name, Schema = index.Table.Schema };
 
 #pragma warning disable EF1001 // Internal EF Core API usage.
-        protected static IDatabaseModelFactory CreateDatabaseModelFactory(ILoggerFactory loggerFactory)
-            => new SqlServerDatabaseModelFactory(
-                new DiagnosticsLogger<DbLoggerCategory.Scaffolding>(
-                    loggerFactory,
-                    new LoggingOptions(),
-                    new DiagnosticListener("Fake"),
-                    new SqlServerLoggingDefinitions()));
+    protected static IDatabaseModelFactory CreateDatabaseModelFactory(ILoggerFactory loggerFactory)
+        => new SqlServerDatabaseModelFactory(
+            new DiagnosticsLogger<DbLoggerCategory.Scaffolding>(
+                loggerFactory,
+                new LoggingOptions(),
+                new DiagnosticListener("Fake"),
+                new SqlServerLoggingDefinitions()));
 #pragma warning restore EF1001 // Internal EF Core API usage.
 
-        protected static string BuildCustomSql()
-            => @"
+    protected static string BuildCustomSql()
+        => @"
 DECLARE @name VARCHAR(MAX) = '__dummy__', @SQL VARCHAR(MAX);
 
 WHILE @name IS NOT NULL
@@ -174,8 +157,8 @@ BEGIN
     EXEC (@SQL)
 END";
 
-        protected static string BuildCustomEndingSql()
-            => @"
+    protected static string BuildCustomEndingSql()
+        => @"
 DECLARE @SQL VARCHAR(MAX) = '';
 SELECT @SQL = @SQL + 'DROP FUNCTION ' + QUOTENAME(ROUTINE_SCHEMA) + '.' + QUOTENAME(ROUTINE_NAME) + ';'
   FROM [INFORMATION_SCHEMA].[ROUTINES] WHERE ROUTINE_TYPE = 'FUNCTION' AND ROUTINE_BODY = 'SQL';
@@ -197,5 +180,4 @@ EXEC (@SQL);
 SET @SQL ='';
 SELECT @SQL = @SQL + 'DROP SCHEMA ' + QUOTENAME(name) + ';' FROM sys.schemas WHERE principal_id <> schema_id;
 EXEC (@SQL);";
-    }
 }

@@ -1,11 +1,10 @@
-﻿namespace UnicornHack.Primitives
+﻿namespace UnicornHack.Primitives;
+
+public enum EffectDuration
 {
-    public enum EffectDuration
-    {
-        Infinite = -1,
-        Instant = 0,
-        UntilTimeout = 1,
-        UntilXPGained = 2,
-        DuringApplication = 3
-    }
+    Infinite = -1,
+    Instant = 0,
+    UntilTimeout = 1,
+    UntilXPGained = 2,
+    DuringApplication = 3
 }

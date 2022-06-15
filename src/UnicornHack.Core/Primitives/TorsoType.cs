@@ -1,11 +1,10 @@
-﻿namespace UnicornHack.Primitives
+﻿namespace UnicornHack.Primitives;
+
+public enum TorsoType
 {
-    public enum TorsoType
-    {
-        None,
-        Humanoid,
-        Quadruped,
-        Serpentine,
-        Amorphic
-    }
+    None,
+    Humanoid,
+    Quadruped,
+    Serpentine,
+    Amorphic
 }

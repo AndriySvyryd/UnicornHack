@@ -6,178 +6,177 @@ using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Levels;
 using Xunit;
 
-namespace UnicornHack.Utils.MessagingECS
+namespace UnicornHack.Utils.MessagingECS;
+
+public class EntityTest
 {
-    public class EntityTest
+    [Fact]
+    public void AddComponent()
     {
-        [Fact]
-        public void AddComponent()
+        var manager = TestHelper.CreateGameManager();
+        using (var entityReference = manager.CreateEntity())
         {
-            var manager = TestHelper.CreateGameManager();
-            using (var entityReference = manager.CreateEntity())
+            var entity = entityReference.Referenced;
+            var component = entity.AddComponent<PositionComponent>((int)EntityComponent.Position);
+
+            Assert.Same(component, entityReference.Referenced.FindComponent((int)EntityComponent.Position));
+
+            using (var anotherEntityReference = manager.CreateEntity())
             {
-                var entity = entityReference.Referenced;
-                var component = entity.AddComponent<PositionComponent>((int)EntityComponent.Position);
-
-                Assert.Same(component, entityReference.Referenced.FindComponent((int)EntityComponent.Position));
-
-                using (var anotherEntityReference = manager.CreateEntity())
-                {
-                    Assert.Throws<InvalidOperationException>(() =>
-                        anotherEntityReference.Referenced.RemoveComponent(component));
-                }
-
-                entity.RemoveComponent(component);
-
-                Assert.False(entity.HasComponent(EntityComponent.Position));
-
-                entity.RemoveComponent(component);
+                Assert.Throws<InvalidOperationException>(() =>
+                    anotherEntityReference.Referenced.RemoveComponent(component));
             }
+
+            entity.RemoveComponent(component);
+
+            Assert.False(entity.HasComponent(EntityComponent.Position));
+
+            entity.RemoveComponent(component);
         }
+    }
 
-        [Fact]
-        public void Setting_component_property_fires_events()
+    [Fact]
+    public void Setting_component_property_fires_events()
+    {
+        var manager = TestHelper.CreateGameManager();
+        using (var entityReference = manager.CreateEntity())
         {
-            var manager = TestHelper.CreateGameManager();
-            using (var entityReference = manager.CreateEntity())
+            var component = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+
+            AbilityComponent expectedCurrentValue = null;
+            var expectedNewValue = component;
+
+            var entity = entityReference.Referenced;
+            var propertyChangingCalled = false;
+            entity.PropertyChanging += (s, e) =>
             {
-                var component = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+                propertyChangingCalled = true;
 
-                AbilityComponent expectedCurrentValue = null;
-                var expectedNewValue = component;
+                Assert.Equal(nameof(GameEntity.Ability), e.PropertyName);
+                Assert.Equal(expectedCurrentValue, ((GameEntity)s).Ability);
+            };
 
-                var entity = entityReference.Referenced;
-                var propertyChangingCalled = false;
-                entity.PropertyChanging += (s, e) =>
-                {
-                    propertyChangingCalled = true;
+            var propertyChangedCalled = false;
+            entity.PropertyChanged += (s, e) =>
+            {
+                propertyChangedCalled = true;
 
-                    Assert.Equal(nameof(GameEntity.Ability), e.PropertyName);
-                    Assert.Equal(expectedCurrentValue, ((GameEntity)s).Ability);
-                };
+                Assert.Equal(nameof(GameEntity.Ability), e.PropertyName);
+                Assert.Equal(expectedNewValue, ((GameEntity)s).Ability);
+            };
 
-                var propertyChangedCalled = false;
-                entity.PropertyChanged += (s, e) =>
-                {
-                    propertyChangedCalled = true;
+            entity.Ability = null;
 
-                    Assert.Equal(nameof(GameEntity.Ability), e.PropertyName);
-                    Assert.Equal(expectedNewValue, ((GameEntity)s).Ability);
-                };
+            Assert.False(propertyChangingCalled);
+            Assert.False(propertyChangedCalled);
 
-                entity.Ability = null;
+            entity.Ability = component;
 
-                Assert.False(propertyChangingCalled);
-                Assert.False(propertyChangedCalled);
+            Assert.True(propertyChangingCalled);
+            Assert.True(propertyChangedCalled);
+            Assert.Same(component, entity.FindComponent((int)EntityComponent.Ability));
+            Assert.True(entity.HasComponent(EntityComponent.Ability));
 
-                entity.Ability = component;
+            propertyChangingCalled = false;
+            propertyChangedCalled = false;
+            expectedCurrentValue = component;
+            expectedNewValue = null;
 
-                Assert.True(propertyChangingCalled);
-                Assert.True(propertyChangedCalled);
-                Assert.Same(component, entity.FindComponent((int)EntityComponent.Ability));
-                Assert.True(entity.HasComponent(EntityComponent.Ability));
+            entity.Ability = null;
 
-                propertyChangingCalled = false;
-                propertyChangedCalled = false;
-                expectedCurrentValue = component;
-                expectedNewValue = null;
-
-                entity.Ability = null;
-
-                Assert.True(propertyChangingCalled);
-                Assert.True(propertyChangedCalled);
-                Assert.Null(entity.FindComponent((int)EntityComponent.Ability));
-                Assert.False(entity.HasComponent(EntityComponent.Ability));
-            }
+            Assert.True(propertyChangingCalled);
+            Assert.True(propertyChangedCalled);
+            Assert.Null(entity.FindComponent((int)EntityComponent.Ability));
+            Assert.False(entity.HasComponent(EntityComponent.Ability));
         }
+    }
 
-        [Fact]
-        public void ForEachComponent()
+    [Fact]
+    public void ForEachComponent()
+    {
+        var manager = TestHelper.CreateGameManager();
+        using (var entityReference = manager.CreateEntity())
         {
-            var manager = TestHelper.CreateGameManager();
-            using (var entityReference = manager.CreateEntity())
-            {
-                var entity = entityReference.Referenced;
-                var ai = entity.GetOrAddComponent<AIComponent>(EntityComponent.AI);
-                var being = entity.GetOrAddComponent<BeingComponent>(EntityComponent.Being);
+            var entity = entityReference.Referenced;
+            var ai = entity.GetOrAddComponent<AIComponent>(EntityComponent.AI);
+            var being = entity.GetOrAddComponent<BeingComponent>(EntityComponent.Being);
 
-                Assert.True(entity.HasComponents(new[] { (int)EntityComponent.AI, (int)EntityComponent.Being }));
-                Assert.False(entity.HasComponents(new[] { (int)EntityComponent.Player, (int)EntityComponent.Being }));
-                Assert.True(entity.HasAnyComponent(new[] { (int)EntityComponent.Player, (int)EntityComponent.Being }));
-                Assert.False(entity.HasAnyComponent(new[] { (int)EntityComponent.Player, (int)EntityComponent.Knowledge }));
+            Assert.True(entity.HasComponents(new[] { (int)EntityComponent.AI, (int)EntityComponent.Being }));
+            Assert.False(entity.HasComponents(new[] { (int)EntityComponent.Player, (int)EntityComponent.Being }));
+            Assert.True(entity.HasAnyComponent(new[] { (int)EntityComponent.Player, (int)EntityComponent.Being }));
+            Assert.False(entity.HasAnyComponent(new[] { (int)EntityComponent.Player, (int)EntityComponent.Knowledge }));
 
-                var count = 0;
-                entity.ForEachComponent(new Dictionary<int, Component>
+            var count = 0;
+            entity.ForEachComponent(
+                new Dictionary<int, Component>
                 {
-                    { (int)EntityComponent.AI, ai },
-                    { (int)EntityComponent.Being, being }
+                    { (int)EntityComponent.AI, ai }, { (int)EntityComponent.Being, being }
                 },
-                    (s, id, c) =>
+                (s, id, c) =>
                 {
                     count++;
                     Assert.Same(s[id], c);
                 });
 
-                Assert.Equal(2, count);
-            }
+            Assert.Equal(2, count);
+        }
+    }
+
+    [Fact]
+    public void Removing_reference_returns_to_pool()
+    {
+        var manager = TestHelper.CreateGameManager();
+        GameEntity entity = null;
+        var id = 0;
+        using (var entityReference = manager.CreateEntity())
+        {
+            entity = entityReference.Referenced;
+            entity.AddComponent<ConnectionComponent>((int)EntityComponent.Connection);
+
+            id = entity.Id;
+            Assert.Same(entity, manager.FindEntity(id));
         }
 
-        [Fact]
-        public void Removing_reference_returns_to_pool()
+        var count = 0;
+        entity.ForEachComponent(count, (_, __, ___) => count++);
+        Assert.Equal(0, count);
+        Assert.Equal(0, entity.Id);
+        Assert.Null(entity.Manager);
+        Assert.Null(manager.FindEntity(id));
+
+        using (var entityReference = manager.CreateEntity())
         {
-            var manager = TestHelper.CreateGameManager();
-            GameEntity entity = null;
-            var id = 0;
-            using (var entityReference = manager.CreateEntity())
-            {
-                entity = entityReference.Referenced;
-                entity.AddComponent<ConnectionComponent>((int)EntityComponent.Connection);
-
-                id = entity.Id;
-                Assert.Same(entity, manager.FindEntity(id));
-            }
-
-            var count = 0;
-            entity.ForEachComponent(count, (_, __, ___) => count++);
-            Assert.Equal(0, count);
-            Assert.Equal(0, entity.Id);
-            Assert.Null(entity.Manager);
-            Assert.Null(manager.FindEntity(id));
-
-            using (var entityReference = manager.CreateEntity())
-            {
-                Assert.Same(entity, entityReference.Referenced);
-                Assert.NotEqual(id, entityReference.Referenced.Id);
-            }
-
-            Assert.Throws<InvalidOperationException>(() => entity.RemoveReference(manager));
+            Assert.Same(entity, entityReference.Referenced);
+            Assert.NotEqual(id, entityReference.Referenced.Id);
         }
 
-        [Fact]
-        public void Removing_from_tracker_does_not_return_to_pool_until_removed_from_entity()
+        Assert.Throws<InvalidOperationException>(() => entity.RemoveReference(manager));
+    }
+
+    [Fact]
+    public void Removing_from_tracker_does_not_return_to_pool_until_removed_from_entity()
+    {
+        var manager = TestHelper.CreateGameManager();
+        GameEntity entity;
+        using (var entityReference = manager.CreateEntity())
         {
-            var manager = TestHelper.CreateGameManager();
-            GameEntity entity;
-            using (var entityReference = manager.CreateEntity())
+            entity = entityReference.Referenced;
+
+            manager.Game.Repository.RemoveTracked(entity);
+
+            using (var anotherEntityReference = manager.CreateEntity())
             {
-                entity = entityReference.Referenced;
-
-                manager.Game.Repository.RemoveTracked(entity);
-
-                using (var anotherEntityReference = manager.CreateEntity())
-                {
-                    Assert.NotSame(entity, anotherEntityReference.Referenced);
-                }
-
-                entity.AddComponent<ConnectionComponent>((int)EntityComponent.Connection);
+                Assert.NotSame(entity, anotherEntityReference.Referenced);
             }
 
-            Assert.Null(entity.Manager);
+            entity.AddComponent<ConnectionComponent>((int)EntityComponent.Connection);
+        }
 
-            using (var entityReference = manager.CreateEntity())
-            {
-                Assert.Same(entity, entityReference.Referenced);
-            }
+        Assert.Null(entity.Manager);
+
+        using (var entityReference = manager.CreateEntity())
+        {
+            Assert.Same(entity, entityReference.Referenced);
         }
     }
 }

@@ -1,39 +1,38 @@
 ﻿using System.Collections.Generic;
 using UnicornHack.Utils;
 
-namespace UnicornHack
+namespace UnicornHack;
+
+public class TestRandom : SimpleRandom
 {
-    public class TestRandom : SimpleRandom
+    private Queue<bool> _boolsToReturn;
+
+    public void EnqueueNextBool(bool value)
     {
-        private Queue<bool> _boolsToReturn;
-
-        public void EnqueueNextBool(bool value)
+        if (_boolsToReturn == null)
         {
-            if (_boolsToReturn == null)
-            {
-                _boolsToReturn = new Queue<bool>();
-            }
-
-            _boolsToReturn.Enqueue(value);
+            _boolsToReturn = new Queue<bool>();
         }
 
-        public override bool NextBool(int successProbability, ref int entropyState)
+        _boolsToReturn.Enqueue(value);
+    }
+
+    public override bool NextBool(int successProbability, ref int entropyState)
+    {
+        switch (successProbability)
         {
-            switch (successProbability)
-            {
-                case 0:
-                    return false;
-                case 100:
-                    return true;
-            }
-
-            if (_boolsToReturn != null
-                && _boolsToReturn.Count > 0)
-            {
-                return _boolsToReturn.Dequeue();
-            }
-
-            return base.NextBool(successProbability, ref entropyState);
+            case 0:
+                return false;
+            case 100:
+                return true;
         }
+
+        if (_boolsToReturn != null
+            && _boolsToReturn.Count > 0)
+        {
+            return _boolsToReturn.Dequeue();
+        }
+
+        return base.NextBool(successProbability, ref entropyState);
     }
 }

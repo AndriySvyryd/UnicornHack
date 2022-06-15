@@ -1,10 +1,13 @@
 ﻿using System;
 
-namespace UnicornHack.Generation
+namespace UnicornHack.Generation;
+
+[AttributeUsage(AttributeTargets.Class)]
+public sealed class ComponentAttribute : Attribute
 {
-    [AttributeUsage(AttributeTargets.Class)]
-    public sealed class ComponentAttribute : Attribute
+    public int Id
     {
-        public int Id { get; set; }
+        get;
+        set;
     }
 }

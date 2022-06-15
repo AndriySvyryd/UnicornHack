@@ -1,16 +1,15 @@
-﻿namespace UnicornHack.Systems.Actors
+﻿namespace UnicornHack.Systems.Actors;
+
+public enum ActorAction
 {
-    public enum ActorAction
-    {
-        Wait = 0,
-        ChangeHeading,
-        MoveOneCell,
-        MoveToCell,
-        PickupItem,
-        DropItem,
-        EquipItem,
-        UnequipItem,
-        SetAbilitySlot,
-        UseAbilitySlot
-    }
+    Wait = 0,
+    ChangeHeading,
+    MoveOneCell,
+    MoveToCell,
+    PickupItem,
+    DropItem,
+    EquipItem,
+    UnequipItem,
+    SetAbilitySlot,
+    UseAbilitySlot
 }

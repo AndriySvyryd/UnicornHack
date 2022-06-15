@@ -1,10 +1,12 @@
 ﻿using System;
 
-namespace UnicornHack.Utils
+namespace UnicornHack.Utils;
+
+public interface ITransientReference<out T> : IDisposable
+    where T : class, IOwnerReferenceable
 {
-    public interface ITransientReference<out T> : IDisposable
-        where T : class, IOwnerReferenceable
+    T Referenced
     {
-        T Referenced { get; }
+        get;
     }
 }

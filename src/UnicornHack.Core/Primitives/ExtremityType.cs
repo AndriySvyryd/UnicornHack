@@ -1,13 +1,12 @@
-﻿namespace UnicornHack.Primitives
+﻿namespace UnicornHack.Primitives;
+
+public enum ExtremityType
 {
-    public enum ExtremityType
-    {
-        None,
-        Fingers,
-        GraspingFingers,
-        Claws,
-        Hooves,
-        Tentacles,
-        Fins
-    }
+    None,
+    Fingers,
+    GraspingFingers,
+    Claws,
+    Hooves,
+    Tentacles,
+    Fins
 }

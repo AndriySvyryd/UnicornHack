@@ -1,8 +1,7 @@
-﻿namespace UnicornHack.Utils.MessagingECS
+﻿namespace UnicornHack.Utils.MessagingECS;
+
+public enum MessageProcessingResult
 {
-    public enum MessageProcessingResult
-    {
-        StopProcessing,
-        ContinueProcessing
-    }
+    StopProcessing,
+    ContinueProcessing
 }

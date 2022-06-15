@@ -1,9 +1,8 @@
-namespace UnicornHack.Services.English
+namespace UnicornHack.Services.English;
+
+public enum EnglishNounForm
 {
-    public enum EnglishNounForm
-    {
-        Normal = 0,
-        Plural,
-        Possesive
-    }
+    Normal = 0,
+    Plural,
+    Possesive
 }

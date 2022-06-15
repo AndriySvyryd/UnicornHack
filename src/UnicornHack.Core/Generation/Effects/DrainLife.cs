@@ -2,20 +2,19 @@ using CSharpScriptSerialization;
 using UnicornHack.Primitives;
 using UnicornHack.Systems.Effects;
 
-namespace UnicornHack.Generation.Effects
+namespace UnicornHack.Generation.Effects;
+
+public class DrainLife : AmountEffect
 {
-    public class DrainLife : AmountEffect
+    protected override void ConfigureEffect(EffectComponent effect)
     {
-        protected override void ConfigureEffect(EffectComponent effect)
-        {
-            base.ConfigureEffect(effect);
+        base.ConfigureEffect(effect);
 
-            effect.EffectType = EffectType.DrainLife;
-        }
-
-        private static readonly CSScriptSerializer Serializer =
-            new PropertyCSScriptSerializer<DrainLife>(GetPropertyConditions<DrainLife>());
-
-        public override ICSScriptSerializer GetSerializer() => Serializer;
+        effect.EffectType = EffectType.DrainLife;
     }
+
+    private static readonly CSScriptSerializer Serializer =
+        new PropertyCSScriptSerializer<DrainLife>(GetPropertyConditions<DrainLife>());
+
+    public override ICSScriptSerializer GetSerializer() => Serializer;
 }

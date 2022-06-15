@@ -1,7 +1,9 @@
-﻿namespace UnicornHack.Utils.DataLoading
+﻿namespace UnicornHack.Utils.DataLoading;
+
+public interface ILoadable
 {
-    public interface ILoadable
+    string Name
     {
-        string Name { get; }
+        get;
     }
 }

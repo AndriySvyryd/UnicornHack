@@ -1,15 +1,14 @@
 using System;
 
-namespace UnicornHack.Primitives
+namespace UnicornHack.Primitives;
+
+[Flags]
+public enum AbilityType
 {
-    [Flags]
-    public enum AbilityType
-    {
-        Default = 0,
-        DefaultAttack,
-        Item,
-        Skill,
-        Trait,
-        Mutation
-    }
+    Default = 0,
+    DefaultAttack,
+    Item,
+    Skill,
+    Trait,
+    Mutation
 }

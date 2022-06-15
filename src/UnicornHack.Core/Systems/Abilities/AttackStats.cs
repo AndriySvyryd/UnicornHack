@@ -1,12 +1,25 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 
-namespace UnicornHack.Systems.Abilities
+namespace UnicornHack.Systems.Abilities;
+
+public class AttackStats
 {
-    public class AttackStats
+    public int Delay
     {
-        public int Delay { get; set; }
-        public ImmutableList<GameEntity> SelfEffects { get; set; }
-        public List<SubAttackStats> SubAttacks { get; set; } = new List<SubAttackStats>();
+        get;
+        set;
     }
+
+    public ImmutableList<GameEntity> SelfEffects
+    {
+        get;
+        set;
+    }
+
+    public List<SubAttackStats> SubAttacks
+    {
+        get;
+        set;
+    } = new List<SubAttackStats>();
 }

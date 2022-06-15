@@ -1,9 +1,8 @@
-namespace UnicornHack.Primitives
+namespace UnicornHack.Primitives;
+
+public enum WieldingStyle
 {
-    public enum WieldingStyle
-    {
-        OneHanded,
-        TwoHanded,
-        Dual
-    }
+    OneHanded,
+    TwoHanded,
+    Dual
 }

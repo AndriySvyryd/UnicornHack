@@ -79,7 +79,7 @@ namespace UnicornHack.Utils
         private void TestPick(float[] itemWeights, float weightSum)
         {
             var seed = (uint)Environment.TickCount;
-            var random = new SimpleRandom {Seed = seed};
+            var random = new SimpleRandom { Seed = seed };
             var selectedCounts = new int[itemWeights.Length];
             var selectionCount = 100000;
             for (var i = 0; i < selectionCount; i++)
@@ -155,7 +155,7 @@ namespace UnicornHack.Utils
             }
 
             var seed = (uint)Environment.TickCount;
-            var random = new SimpleRandom {Seed = seed};
+            var random = new SimpleRandom { Seed = seed };
             var selectedCounts = new int[itemWeights.Length];
             var selectionCount = 500000;
             for (var i = 0; i < selectionCount; i++)
@@ -177,7 +177,7 @@ namespace UnicornHack.Utils
         [InlineData(100)]
         public void NoStreakBool(int p)
         {
-            var itemWeights = new[] {p, 100f - p};
+            var itemWeights = new[] { p, 100f - p };
             var maxPositiveStreak = 2;
             var maxNegativeStreak = 2;
             if (p == 0)
@@ -200,7 +200,7 @@ namespace UnicornHack.Utils
             }
 
             var seed = (uint)Environment.TickCount;
-            var random = new SimpleRandom {Seed = seed};
+            var random = new SimpleRandom { Seed = seed };
             var selectedCounts = new int[itemWeights.Length];
             var selectionCount = 500000;
             var entropy = 0;

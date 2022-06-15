@@ -1,11 +1,10 @@
-﻿namespace UnicornHack.Primitives
+﻿namespace UnicornHack.Primitives;
+
+public enum HeadType
 {
-    public enum HeadType
-    {
-        None,
-        Humanoid,
-        Horned,
-        Beak,
-        Snout
-    }
+    None,
+    Humanoid,
+    Horned,
+    Beak,
+    Snout
 }

@@ -1,16 +1,15 @@
 ﻿using System;
 
-namespace UnicornHack.Generation
-{
-    public class UnicornExpressionException : Exception
-    {
-        public UnicornExpressionException()
-        {
-        }
+namespace UnicornHack.Generation;
 
-        public UnicornExpressionException(Exception innerException)
-            : base("", innerException)
-        {
-        }
+public class UnicornExpressionException : Exception
+{
+    public UnicornExpressionException()
+    {
+    }
+
+    public UnicornExpressionException(Exception innerException)
+        : base("", innerException)
+    {
     }
 }

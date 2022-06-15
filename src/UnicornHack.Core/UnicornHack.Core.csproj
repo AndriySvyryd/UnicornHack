@@ -4,15 +4,14 @@
     <AssemblyName>UnicornHack.Core</AssemblyName>
     <PackageId>UnicornHack.Core</PackageId>
     <VersionPrefix>0.1.0</VersionPrefix>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <RootNamespace>UnicornHack</RootNamespace>
-    <CodeAnalysisRuleSet>..\..\UnicornHack.ruleset</CodeAnalysisRuleSet>
-    <LangVersion>9.0</LangVersion>
-    <NoWarn>3021;1701;1702</NoWarn>
+    <LangVersion>10.0</LangVersion>
+    <NoWarn>3021;1701;1702;SA0001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,14 +24,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.9.2" />
-    <PackageReference Include="Antlr4BuildTasks" Version="8.14.0">
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.9.3" />
+    <PackageReference Include="Antlr4BuildTasks" Version="9.3.0">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="CSharpScriptSerializer" Version="2.0.0" />
-    <PackageReference Include="JetBrains.Annotations" Version="2021.1.0" />
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="CSharpScriptSerializer" Version="3.0.4" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="3.1.1" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
 </Project>

@@ -1,10 +1,9 @@
-﻿namespace UnicornHack.Primitives
+﻿namespace UnicornHack.Primitives;
+
+public enum AbilitySuccessCondition
 {
-    public enum AbilitySuccessCondition
-    {
-        Always,
-        NormalAttack,
-        UnblockableAttack,
-        UnavoidableAttack
-    }
+    Always,
+    NormalAttack,
+    UnblockableAttack,
+    UnavoidableAttack
 }

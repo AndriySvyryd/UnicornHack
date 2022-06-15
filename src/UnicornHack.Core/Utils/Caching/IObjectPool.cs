@@ -1,8 +1,7 @@
-﻿namespace UnicornHack.Utils.Caching
+﻿namespace UnicornHack.Utils.Caching;
+
+public interface IObjectPool
 {
-    public interface IObjectPool
-    {
-        object Rent();
-        void Return(object obj);
-    }
+    object Rent();
+    void Return(object obj);
 }

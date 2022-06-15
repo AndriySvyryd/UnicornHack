@@ -1,10 +1,13 @@
 using System.Collections.Generic;
 
-namespace UnicornHack.Utils.DataStructures
+namespace UnicornHack.Utils.DataStructures;
+
+public interface ISnapshotableCollection<T> : ICollection<T>
 {
-    public interface ISnapshotableCollection<T> : ICollection<T>
+    HashSet<T> Snapshot
     {
-        HashSet<T> Snapshot { get; }
-        HashSet<T> CreateSnapshot();
+        get;
     }
+
+    HashSet<T> CreateSnapshot();
 }

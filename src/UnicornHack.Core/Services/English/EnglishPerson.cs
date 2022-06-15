@@ -1,9 +1,8 @@
-namespace UnicornHack.Services.English
+namespace UnicornHack.Services.English;
+
+public enum EnglishPerson
 {
-    public enum EnglishPerson
-    {
-        First = 0,
-        Second = 1,
-        Third = 2
-    }
+    First = 0,
+    Second = 1,
+    Third = 2
 }

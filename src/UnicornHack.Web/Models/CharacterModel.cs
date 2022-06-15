@@ -1,13 +1,16 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace UnicornHack.Models
+namespace UnicornHack.Models;
+
+public class CharacterModel
 {
-    public class CharacterModel
+    [Required]
+    [RegularExpression("[w]+")]
+    [StringLength(32)]
+    [Display(Name = "Character Name", Prompt = "Type in your character name")]
+    public string Name
     {
-        [Required]
-        [RegularExpression("[w]+")]
-        [StringLength(32)]
-        [Display(Name = "Character Name", Prompt = "Type in your character name")]
-        public string Name { get; set; }
+        get;
+        set;
     }
 }

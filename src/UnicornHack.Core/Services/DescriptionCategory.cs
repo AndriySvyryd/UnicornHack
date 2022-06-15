@@ -1,13 +1,12 @@
-﻿namespace UnicornHack.Services
+﻿namespace UnicornHack.Services;
+
+public enum DescriptionCategory
 {
-    public enum DescriptionCategory
-    {
-        Default = 0,
-        Creature,
-        Race,
-        Item,
-        Ability,
-        Effect,
-        Property
-    }
+    Default = 0,
+    Creature,
+    Race,
+    Item,
+    Ability,
+    Effect,
+    Property
 }

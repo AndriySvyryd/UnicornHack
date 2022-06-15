@@ -1,126 +1,125 @@
 using System;
 using UnicornHack.Utils.DataStructures;
 
-namespace UnicornHack.Primitives
+namespace UnicornHack.Primitives;
+
+// Order matters
+public enum Direction
 {
-    // Order matters
-    public enum Direction
+    East = 0,
+    Northeast,
+    North,
+    Northwest,
+    West,
+    Southwest,
+    South,
+    Southeast,
+    Up,
+    Down
+}
+
+[Flags]
+public enum DirectionFlags
+{
+    None = 0,
+    East = 1 << 0,
+    Northeast = 1 << 1,
+    North = 1 << 2,
+    Northwest = 1 << 3,
+    West = 1 << 4,
+    Southwest = 1 << 5,
+    South = 1 << 6,
+    Southeast = 1 << 7,
+    Up = 1 << 8,
+    Down = 1 << 9,
+    Center = 1 << 10,
+    NorthAndEast = North | East,
+    NorthAndWest = North | West,
+    SouthAndWest = South | West,
+    SouthAndEast = South | East,
+    Longitudinal = North | South,
+    Latitudinal = West | East,
+    Diagonal = Northeast | Southwest,
+    AntiDiagonal = Northwest | Southeast,
+    NorthEastWest = North | East | West,
+    NorthEastSouth = North | East | South,
+    NorthWestSouth = North | West | South,
+    SouthEastWest = South | East | West,
+    NorthwestCorner = West | Northwest | North,
+    NortheastCorner = North | Northeast | East,
+    SoutheastCorner = East | Southeast | South,
+    SouthwestCorner = South | Southwest | West,
+    Cross = Longitudinal | Latitudinal,
+    DiagonalCross = Diagonal | AntiDiagonal,
+    NorthSemicircle = NorthwestCorner | NortheastCorner,
+    EastSemicircle = NortheastCorner | SoutheastCorner,
+    SouthSemicircle = SoutheastCorner | SouthwestCorner,
+    WestSemicircle = SouthwestCorner | NorthwestCorner,
+    All = NorthSemicircle | SouthSemicircle
+}
+
+public static class DirectionExtensions
+{
+    public static Direction Rotate(this Direction direction, int octants)
     {
-        East = 0,
-        Northeast,
-        North,
-        Northwest,
-        West,
-        Southwest,
-        South,
-        Southeast,
-        Up,
-        Down
+        var result = direction.AsOctants() + octants;
+        if (result < 0)
+        {
+            result += 8;
+        }
+        else if (result > 7)
+        {
+            result -= 8;
+        }
+
+        return (Direction)result;
     }
 
-    [Flags]
-    public enum DirectionFlags
+    public static Vector AsVector(this Direction direction)
     {
-        None = 0,
-        East = 1 << 0,
-        Northeast = 1 << 1,
-        North = 1 << 2,
-        Northwest = 1 << 3,
-        West = 1 << 4,
-        Southwest = 1 << 5,
-        South = 1 << 6,
-        Southeast = 1 << 7,
-        Up = 1 << 8,
-        Down = 1 << 9,
-        Center = 1 << 10,
-        NorthAndEast = North | East,
-        NorthAndWest = North | West,
-        SouthAndWest = South | West,
-        SouthAndEast = South | East,
-        Longitudinal = North | South,
-        Latitudinal = West | East,
-        Diagonal = Northeast | Southwest,
-        AntiDiagonal = Northwest | Southeast,
-        NorthEastWest = North | East | West,
-        NorthEastSouth = North | East | South,
-        NorthWestSouth = North | West | South,
-        SouthEastWest = South | East | West,
-        NorthwestCorner = West | Northwest | North,
-        NortheastCorner = North | Northeast | East,
-        SoutheastCorner = East | Southeast | South,
-        SouthwestCorner = South | Southwest | West,
-        Cross = Longitudinal | Latitudinal,
-        DiagonalCross = Diagonal | AntiDiagonal,
-        NorthSemicircle = NorthwestCorner | NortheastCorner,
-        EastSemicircle = NortheastCorner | SoutheastCorner,
-        SouthSemicircle = SoutheastCorner | SouthwestCorner,
-        WestSemicircle = SouthwestCorner | NorthwestCorner,
-        All = NorthSemicircle | SouthSemicircle
+        switch (direction)
+        {
+            case Direction.North:
+                return new Vector(0, -1);
+            case Direction.South:
+                return new Vector(0, 1);
+            case Direction.West:
+                return new Vector(-1, 0);
+            case Direction.East:
+                return new Vector(1, 0);
+            case Direction.Northwest:
+                return new Vector(-1, -1);
+            case Direction.Northeast:
+                return new Vector(1, -1);
+            case Direction.Southwest:
+                return new Vector(-1, 1);
+            case Direction.Southeast:
+                return new Vector(1, 1);
+            default:
+                throw new ArgumentOutOfRangeException(nameof(direction), direction, message: null);
+        }
     }
 
-    public static class DirectionExtensions
+    public static int AsOctants(this Direction direction)
     {
-        public static Direction Rotate(this Direction direction, int octants)
+        var result = (int)direction;
+        if (result > 7)
         {
-            var result = direction.AsOctants() + octants;
-            if (result < 0)
-            {
-                result += 8;
-            }
-            else if (result > 7)
-            {
-                result -= 8;
-            }
-
-            return (Direction)result;
+            throw new InvalidOperationException("Angleless direction");
         }
 
-        public static Vector AsVector(this Direction direction)
-        {
-            switch (direction)
-            {
-                case Direction.North:
-                    return new Vector(0, -1);
-                case Direction.South:
-                    return new Vector(0, 1);
-                case Direction.West:
-                    return new Vector(-1, 0);
-                case Direction.East:
-                    return new Vector(1, 0);
-                case Direction.Northwest:
-                    return new Vector(-1, -1);
-                case Direction.Northeast:
-                    return new Vector(1, -1);
-                case Direction.Southwest:
-                    return new Vector(-1, 1);
-                case Direction.Southeast:
-                    return new Vector(1, 1);
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(direction), direction, message: null);
-            }
-        }
+        return result;
+    }
 
-        public static int AsOctants(this Direction direction)
-        {
-            var result = (int)direction;
-            if (result > 7)
-            {
-                throw new InvalidOperationException("Angleless direction");
-            }
+    public static int OctantsTo(this Direction direction, Direction otherDirection)
+    {
+        var difference = (int)otherDirection - (int)direction;
+        return difference < 0 ? 8 + difference : difference;
+    }
 
-            return result;
-        }
-
-        public static int OctantsTo(this Direction direction, Direction otherDirection)
-        {
-            var difference = (int)otherDirection - (int)direction;
-            return difference < 0 ? 8 + difference : difference;
-        }
-
-        public static int ClosestOctantsTo(this Direction direction, Direction otherDirection)
-        {
-            var difference = Math.Abs((int)otherDirection - (int)direction);
-            return difference > 4 ? 8 - difference : difference;
-        }
+    public static int ClosestOctantsTo(this Direction direction, Direction otherDirection)
+    {
+        var difference = Math.Abs((int)otherDirection - (int)direction);
+        return difference > 4 ? 8 - difference : difference;
     }
 }

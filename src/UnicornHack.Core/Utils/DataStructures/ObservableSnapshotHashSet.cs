@@ -1,24 +1,27 @@
 ﻿using System.Collections.Generic;
 
-namespace UnicornHack.Utils.DataStructures
+namespace UnicornHack.Utils.DataStructures;
+
+public class ObservableSnapshotHashSet<T> : ObservableHashSet<T>, ISnapshotableCollection<T>
 {
-    public class ObservableSnapshotHashSet<T> : ObservableHashSet<T>, ISnapshotableCollection<T>
+    public HashSet<T> Snapshot
     {
-        public HashSet<T> Snapshot { get; private set; }
+        get;
+        private set;
+    }
 
-        public HashSet<T> CreateSnapshot()
+    public HashSet<T> CreateSnapshot()
+    {
+        if (Snapshot == null)
         {
-            if (Snapshot == null)
-            {
-                Snapshot = new HashSet<T>(Set, Comparer);
-            }
-            else
-            {
-                Snapshot.Clear();
-                Snapshot.AddRange(Set);
-            }
-
-            return Snapshot;
+            Snapshot = new HashSet<T>(Set, Comparer);
         }
+        else
+        {
+            Snapshot.Clear();
+            Snapshot.AddRange(Set);
+        }
+
+        return Snapshot;
     }
 }

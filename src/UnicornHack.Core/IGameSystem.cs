@@ -1,8 +1,7 @@
 ﻿using UnicornHack.Utils.MessagingECS;
 
-namespace UnicornHack
+namespace UnicornHack;
+
+public interface IGameSystem<TMessage> : IMessageConsumer<TMessage, GameManager>
 {
-    public interface IGameSystem<TMessage> : IMessageConsumer<TMessage, GameManager>
-    {
-    }
 }
