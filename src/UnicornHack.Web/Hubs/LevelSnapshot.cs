@@ -12,20 +12,17 @@ public class LevelSnapshot
     private Dictionary<GameEntity, LevelActorSnapshot> ActorsSnapshot
     {
         get;
-    } =
-        new(EntityEqualityComparer<GameEntity>.Instance);
+    } = new(EntityEqualityComparer<GameEntity>.Instance);
 
     private Dictionary<GameEntity, LevelItemSnapshot> ItemsSnapshot
     {
         get;
-    } =
-        new(EntityEqualityComparer<GameEntity>.Instance);
+    } = new(EntityEqualityComparer<GameEntity>.Instance);
 
     private HashSet<GameEntity> ConnectionsSnapshot
     {
         get;
-    } =
-        new(EntityEqualityComparer<GameEntity>.Instance);
+    } = new(EntityEqualityComparer<GameEntity>.Instance);
 
     private readonly HashSet<GameEntity> _tempHashSet = new(EntityEqualityComparer<GameEntity>.Instance);
 
@@ -70,7 +67,6 @@ public class LevelSnapshot
     public static List<object> Serialize(
         GameEntity levelEntity, EntityState? state, LevelSnapshot snapshot, SerializationContext context)
     {
-        var manager = context.Manager;
         var level = levelEntity.Level;
         List<object> properties;
         var tileCount = level.TileCount;

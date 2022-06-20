@@ -428,7 +428,7 @@ public class GameHub : Hub
             // TODO: Unload non-adjacent levels when too many loaded
             loadedGame = cachedGame;
 
-            Initialize(loadedGame);
+            InitializeContext(loadedGame);
 
             _dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
             EntityAttacher.Attach(loadedGame, _dbContext);
@@ -472,6 +472,12 @@ public class GameHub : Hub
             game.Manager = gameManager;
         }
 
+        InitializeContext(game);
+        _dbContext.Snapshot = null;
+    }
+
+    private void InitializeContext(Game game)
+    {
         _dbContext.Manager = game.Manager;
         _dbContext.ChangeTracker.Tracked += OnTracked;
         _dbContext.ChangeTracker.StateChanged += OnStateChanged;

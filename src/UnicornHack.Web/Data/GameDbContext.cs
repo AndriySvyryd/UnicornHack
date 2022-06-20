@@ -178,7 +178,8 @@ public class GameDbContext : DbContext, IRepository
             eb.Ignore(g => g.Repository);
 
             eb.Property(g => g.Id)
-                .ValueGeneratedOnAdd();
+                .ValueGeneratedOnAdd()
+                .UseIdentityColumn();
             eb.OwnsOne(g => g.Random);
             eb.HasOne(g => g.ActingPlayer)
                 .WithOne()
@@ -794,5 +795,13 @@ public class GameDbContext : DbContext, IRepository
         SaveChanges();
 
         Debug.Assert(!ChangeTracker.Entries().Any());
+    }
+
+    public override void Dispose()
+    {
+        base.Dispose();
+
+        Manager = null;
+        Snapshot = null;
     }
 }

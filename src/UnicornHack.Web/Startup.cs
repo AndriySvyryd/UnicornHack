@@ -30,8 +30,9 @@ public class Startup
         services.AddSingleton<ILanguageService, EnglishLanguageService>();
         services.AddSingleton<GameServices>();
         services.AddSingleton<GameTransmissionProtocol>();
+        services.AddDatabaseDeveloperPageExceptionFilter();
 
-        services.AddDbContextPool<GameDbContext>((p, options) =>
+        services.AddDbContextPool<GameDbContext>((_, options) =>
         {
             options.UseSqlServer(_configuration.GetConnectionString(name: "DefaultConnection"))
                 .ConfigureWarnings(w => w.Default(WarningBehavior.Throw)
@@ -76,8 +77,7 @@ public class Startup
         if (env.IsDevelopment())
         {
             app.UseDeveloperExceptionPage();
-
-            app.UseDatabaseErrorPage();
+            app.UseMigrationsEndPoint();
 
             using (var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>()
                        .CreateScope())

@@ -4,8 +4,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics.Internal;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Microsoft.EntityFrameworkCore.Scaffolding;
@@ -131,7 +131,8 @@ public class DatabaseCleaner
                 loggerFactory,
                 new LoggingOptions(),
                 new DiagnosticListener("Fake"),
-                new SqlServerLoggingDefinitions()));
+                new SqlServerLoggingDefinitions(),
+                new NullDbContextLogger()));
 #pragma warning restore EF1001 // Internal EF Core API usage.
 
     protected static string BuildCustomSql()
