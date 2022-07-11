@@ -1,12 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using CSharpScriptSerialization;
-using UnicornHack.Generation;
-using UnicornHack.Generation.Effects;
-using UnicornHack.Generation.Map;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Utils.DataLoading;
@@ -16,8 +10,9 @@ namespace UnicornHack.Editor;
 public static class Program
 {
     private static readonly bool SerializeToScript = false;
-    private static string _directory;
-    private static CSClassSerializer _serializer;
+    
+    private static string _directory = "";
+    private static CSClassSerializer? _serializer;
 
     public static async Task Main()
     {
@@ -110,7 +105,7 @@ public static class Program
         return ability;
     }
 
-    private static async Task SerializeAsync<T>(CSScriptLoaderBase<T> loader, Func<T, T> transform = null)
+    private static async Task SerializeAsync<T>(CSScriptLoaderBase<T> loader, Func<T, T>? transform = null)
         where T : class, ILoadable
     {
         Console.WriteLine("Serializing " + typeof(T).Name + " instances...");
@@ -123,7 +118,7 @@ public static class Program
             try
             {
                 var itemToSerialize = transform != null ? transform(item) : item;
-                string script = null;
+                string? script = null;
                 if (SerializeToScript)
                 {
                     // TODO: use .editorconfig
@@ -136,8 +131,8 @@ public static class Program
                 }
                 else
                 {
-                    var code = await _serializer.SerializeAsync(
-                        itemToSerialize, itemToSerialize.Name, loader.DataType.Namespace, loader.DataType.Name);
+                    var code = await _serializer!.SerializeAsync(
+                        itemToSerialize, itemToSerialize.Name, loader.DataType.Namespace!, loader.DataType.Name);
                     await File.WriteAllTextAsync(
                         Path.Combine(directory, CSScriptLoaderHelpers.GetClassFilename(itemToSerialize.Name)),
                         code);
@@ -202,7 +197,7 @@ public static class Program
     private static void Verify(string script, DefiningMapFragment fragment)
         => Verify(script, fragment, f => f.Name, VerifyNoUnicode);
 
-    private static string VerifyNoUnicode(MapFragment fragment)
+    private static string? VerifyNoUnicode(MapFragment fragment)
     {
         int x = 0, y = 0;
         foreach (var character in fragment.Map)
@@ -228,10 +223,10 @@ public static class Program
         return null;
     }
 
-    private static void Verify<T>(string script, T variant,
+    private static void Verify<T>(string? script, T variant,
         Func<T, string> getName,
-        Func<T, string> validate = null,
-        Func<T, ISet<Ability>> getAbilities = null)
+        Func<T, string?>? validate = null,
+        Func<T, ISet<Ability>>? getAbilities = null)
     {
         try
         {
@@ -357,10 +352,7 @@ public static class Program
 
                     break;
                 case DamageEffect damageEffect:
-                    if (damageEffect.Damage != null)
-                    {
-                        EffectApplicationSystem.CreateAmountFunction(damageEffect.Damage, ability.Name);
-                    }
+                    EffectApplicationSystem.CreateAmountFunction(damageEffect.Damage, ability.Name);
 
                     break;
                 case DurationEffect durationEffect:
@@ -371,10 +363,7 @@ public static class Program
 
                     break;
                 case AmountEffect amountEffect:
-                    if (amountEffect.Amount != null)
-                    {
-                        EffectApplicationSystem.CreateAmountFunction(amountEffect.Amount, ability.Name);
-                    }
+                    EffectApplicationSystem.CreateAmountFunction(amountEffect.Amount, ability.Name);
 
                     break;
             }
@@ -384,7 +373,7 @@ public static class Program
     private static void Validate<T>(ChangeProperty<T> property)
         where T : struct, IComparable<T>, IConvertible
     {
-        var description = (PropertyDescription<T>)PropertyDescription.Loader.Find(property.PropertyName);
+        var description = (PropertyDescription<T>?)PropertyDescription.Loader.Find(property.PropertyName);
         if (description == null)
         {
             throw new InvalidOperationException("Invalid valued property: " + property.PropertyName);

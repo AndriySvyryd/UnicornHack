@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection;
+﻿using System.Reflection;
 
 namespace UnicornHack.Utils.DataLoading;
 
@@ -11,7 +9,7 @@ public class AttributeLoader<TPropertyAttribute, TClassAttribute, TLoadable> : L
 {
     private readonly Func<PropertyInfo, Type, TPropertyAttribute, TClassAttribute, TLoadable> _createLoadable;
     private readonly Assembly _targetAssembly;
-    private readonly object _lockRoot = new object();
+    private readonly object _lockRoot = new();
 
     public AttributeLoader(
         Func<PropertyInfo, Type, TPropertyAttribute, TClassAttribute, TLoadable> createLoadable,
@@ -21,26 +19,16 @@ public class AttributeLoader<TPropertyAttribute, TClassAttribute, TLoadable> : L
         _targetAssembly = targetAssembly;
     }
 
-    protected override void EnsureLoaded()
+    protected override Dictionary<string, TLoadable> Load()
     {
-        if (NameLookup != null)
-        {
-            return;
-        }
-
         lock (_lockRoot)
         {
-            if (NameLookup != null)
-            {
-                return;
-            }
-
             var lookup = new Dictionary<string, TLoadable>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var type in _targetAssembly.GetTypes())
             {
                 var typeAttribute =
-                    (TClassAttribute)type.GetCustomAttribute(typeof(TClassAttribute), inherit: true);
+                    (TClassAttribute?)type.GetCustomAttribute(typeof(TClassAttribute), inherit: true);
                 if (typeAttribute == null)
                 {
                     continue;
@@ -59,7 +47,7 @@ public class AttributeLoader<TPropertyAttribute, TClassAttribute, TLoadable> : L
                 }
             }
 
-            NameLookup = lookup;
+            return lookup;
         }
     }
 }

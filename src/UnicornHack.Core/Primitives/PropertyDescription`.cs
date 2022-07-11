@@ -1,4 +1,3 @@
-using System;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Primitives;
@@ -46,5 +45,5 @@ public class PropertyDescription<T> : PropertyDescription
         PropertyInfo.SetValue(component, value);
     }
 
-    public T GetValue(Component component) => (T)PropertyInfo.GetValue(component);
+    public T GetValue(Component component) => (T)PropertyInfo.GetValue(component)!;
 }

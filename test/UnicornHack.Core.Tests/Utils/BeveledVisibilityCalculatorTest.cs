@@ -1,10 +1,5 @@
-using System.Collections.Generic;
-using System.Linq;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Senses;
-using UnicornHack.Utils.DataStructures;
-using Xunit;
 
 namespace UnicornHack.Utils;
 
@@ -446,7 +441,7 @@ A###
     public static byte[] GetVisibleTerrain(
         LevelComponent level, Point origin, Direction heading, byte[] visibleTerrain, bool noFalloff = true)
     {
-        level.VisibilityCalculator.ComputeDirected(
+        level.VisibilityCalculator!.ComputeDirected(
             origin, heading, primaryFOVQuadrants: 1, primaryRange: 24, totalFOVQuadrants: 2, secondaryRange: 12,
             noFalloff, SensorySystem.TileBlocksVisibility, visibleTerrain);
         return visibleTerrain;
@@ -455,7 +450,7 @@ A###
     public static byte[] GetVisibleTerrain(LevelComponent level, Point origin, byte[] visibleTerrain,
         bool noFalloff = true)
     {
-        level.VisibilityCalculator.ComputeOmnidirectional(
+        level.VisibilityCalculator!.ComputeOmnidirectional(
             origin, range: 24, noFalloff, SensorySystem.TileBlocksVisibility, visibleTerrain);
         return visibleTerrain;
     }
@@ -471,7 +466,7 @@ A###
         var originDistance = 0;
         foreach (var (point, visibility) in visibleTerrainList)
         {
-            visibleTerrain[level.PointToIndex[point.X, point.Y]] += visibility;
+            visibleTerrain[level.PointToIndex![point.X, point.Y]] += visibility;
             var distance = origin.Value.DistanceTo(point);
             Assert.False(distance < originDistance, $"Point {point} is out of sequence");
 
@@ -482,6 +477,6 @@ A###
     }
 
     public static List<(Point, byte)> GetLOS(LevelComponent level, Point target, Point origin)
-        => level.VisibilityCalculator.ComputeLOS(origin, target, SensorySystem.TileBlocksVisibility,
+        => level.VisibilityCalculator!.ComputeLOS(origin, target, SensorySystem.TileBlocksVisibility,
             level.Entity.Manager);
 }

@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-
 namespace UnicornHack.Utils;
 
 /// <summary>
@@ -38,12 +33,12 @@ public class SimpleRandom : NotificationEntity
 
     public TInput TryPick<TInput>(IReadOnlyList<TInput> items) => items[Next(0, items.Count)];
 
-    public bool TryPick<TInput>(IReadOnlyList<TInput> items, Func<TInput, bool> condition, out TInput item)
+    public bool TryPick<TInput>(IReadOnlyList<TInput> items, Func<TInput, bool> condition, [NotNullWhen(true)] out TInput? item)
     {
         var index = Next(0, items.Count);
         for (var i = index; i < items.Count; i++)
         {
-            item = items[i];
+            item = items[i]!;
             if (condition(item))
             {
                 return true;
@@ -52,7 +47,7 @@ public class SimpleRandom : NotificationEntity
 
         for (var i = 0; i < index; i++)
         {
-            item = items[i];
+            item = items[i]!;
             if (condition(item))
             {
                 return true;
@@ -70,12 +65,12 @@ public class SimpleRandom : NotificationEntity
         Func<TInput, int, TResult> selector) => WeightedOrder(items, getWeight, selector).First();
 
     public IEnumerable<TInput> WeightedOrder<TInput>(IReadOnlyList<TInput> items,
-        Func<TInput, float> getWeight) => WeightedOrder(items, getWeight, (item, index) => item);
+        Func<TInput, float> getWeight) => WeightedOrder(items, getWeight, (item, _) => item);
 
     public IEnumerable<TResult> WeightedOrder<TInput, TResult>(IReadOnlyList<TInput> items,
         Func<TInput, float> getWeight, Func<TInput, int, TResult> selector)
     {
-        if (items == null || items.Count == 0)
+        if (items.Count == 0)
         {
             yield break;
         }

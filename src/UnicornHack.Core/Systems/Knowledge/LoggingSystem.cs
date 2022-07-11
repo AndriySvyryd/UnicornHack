@@ -1,6 +1,4 @@
-﻿using System.Linq;
-using UnicornHack.Primitives;
-using UnicornHack.Services.LogEvents;
+﻿using UnicornHack.Services.LogEvents;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
@@ -28,7 +26,7 @@ public class LoggingSystem :
         }
 
         var itemEntity = message.ItemEntity;
-        var item = itemEntity.Item;
+        var item = itemEntity.Item!;
         var position = itemEntity.Position;
         foreach (var playerEntity in manager.Players)
         {
@@ -48,7 +46,7 @@ public class LoggingSystem :
                 continue;
             }
 
-            string logMessage = null;
+            string? logMessage = null;
             if (message.InitialContainer != null)
             {
                 if (position != null)
@@ -99,7 +97,7 @@ public class LoggingSystem :
                 var actorSensed = manager.SensorySystem.CanSense(playerEntity, message.ActorEntity) ??
                                   SenseType.None;
                 if (message.SuppressLog
-                    || !message.ActorEntity.Being.IsAlive
+                    || !message.ActorEntity.Being!.IsAlive
                     || actorSensed == SenseType.None)
                 {
                     continue;
@@ -124,7 +122,7 @@ public class LoggingSystem :
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        var ability = message.AbilityEntity.Ability;
+        var ability = message.AbilityEntity.Ability!;
         if ((ability.Activation & ActivationType.OnAttack) != 0
             || (ability.Action != AbilityAction.Default
                 && ability.Action != AbilityAction.Modifier
@@ -143,8 +141,8 @@ public class LoggingSystem :
                 }
 
                 var weaponId = message.AppliedEffects
-                    .SingleOrDefault(e => e.Effect.EffectType == EffectType.Activate)?
-                    .Effect.TargetEntityId;
+                    .SingleOrDefault(e => e.Effect!.EffectType == EffectType.Activate)?
+                    .Effect!.TargetEntityId;
                 var weapon = manager.FindEntity(weaponId);
                 var logMessage = manager.Game.Services.Language.GetString(new AttackEvent(
                     playerEntity, message.ActivatorEntity, message.TargetEntity,
@@ -158,8 +156,8 @@ public class LoggingSystem :
         }
 
         var activatableId = message.AppliedEffects
-            .SingleOrDefault(e => e.Effect.EffectType == EffectType.Activate)?
-            .Effect.TargetEntityId;
+            .SingleOrDefault(e => e.Effect!.EffectType == EffectType.Activate)?
+            .Effect!.TargetEntityId;
         var activatableEntity = manager.FindEntity(activatableId);
         if (activatableEntity?.HasComponent(EntityComponent.Item) == false)
         {
@@ -183,7 +181,7 @@ public class LoggingSystem :
                 }
 
                 var consumed = message.AppliedEffects
-                    .Any(e => e.Effect.EffectType == EffectType.RemoveItem);
+                    .Any(e => e.Effect!.EffectType == EffectType.RemoveItem);
                 var itemSensed = manager.SensorySystem.CanSense(playerEntity, activatableEntity) ?? activatorSensed;
                 var logMessage = manager.Game.Services.Language.GetString(new ItemActivationEvent(
                     playerEntity, activatableEntity, message.ActivatorEntity, message.TargetEntity, itemSensed,
@@ -216,7 +214,6 @@ public class LoggingSystem :
 
     public MessageProcessingResult Process(LeveledUpMessage message, GameManager manager)
     {
-        var leveledPosition = message.Entity.Position;
         foreach (var playerEntity in manager.Players)
         {
             if (manager.SensorySystem.CanSense(playerEntity, message.Entity) == SenseType.None)
@@ -234,7 +231,7 @@ public class LoggingSystem :
     }
 
     public void WriteLog(
-        string message, GameEntity playerEntity, GameManager manager,
+        string? message, GameEntity playerEntity, GameManager manager,
         LogEntryImportance importance = LogEntryImportance.Default)
     {
         if (message == null)
@@ -251,6 +248,6 @@ public class LoggingSystem :
             Importance = importance
         };
 
-        playerEntity.Player.LogEntries.Add(entry);
+        playerEntity.Player!.LogEntries.Add(entry);
     }
 }

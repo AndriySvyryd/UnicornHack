@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using UnicornHack.Data.Abilities;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Knowledge;
-using UnicornHack.Utils;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Hubs;
@@ -45,7 +39,7 @@ public class PlayerSnapshot
     {
         SnapshotTick = playerEntity.Game.CurrentTick;
 
-        var races = playerEntity.Being.Races;
+        var races = playerEntity.Being!.Races;
         RacesSnapshot.Clear();
         RacesSnapshot.AddRange(races);
 
@@ -54,33 +48,33 @@ public class PlayerSnapshot
         AbilitiesSnapshot.AddRange(abilities);
 
         LogEntriesSnapshot.Clear();
-        LogEntriesSnapshot.AddRange(GetLogEntries(playerEntity.Player));
+        LogEntriesSnapshot.AddRange(GetLogEntries(playerEntity.Player!));
 
         return this;
     }
 
-    public static List<object> Serialize(
+    public static List<object?> Serialize(
         GameEntity playerEntity,
         EntityState state,
-        PlayerSnapshot snapshot,
-        List<object> serializedLevel,
+        PlayerSnapshot? snapshot,
+        List<object?>? serializedLevel,
         SerializationContext context)
     {
-        var player = playerEntity.Player;
-        var being = playerEntity.Being;
-        List<object> properties;
+        var player = playerEntity.Player!;
+        var being = playerEntity.Being!;
+        List<object?> properties;
         if (state == EntityState.Added)
         {
-            properties = new List<object>(13)
+            properties = new List<object?>(13)
             {
                 (int)state,
                 player.ProperName,
-                playerEntity.Position.Knowledge.Id,
+                playerEntity.Position!.Knowledge!.Id,
                 player.Game.CurrentTick,
                 serializedLevel
             };
 
-            var races = new List<object>();
+            var races = new List<object?>();
             foreach (var race in being.Races)
             {
                 snapshot?.RacesSnapshot.Add(race);
@@ -91,7 +85,7 @@ public class PlayerSnapshot
             properties.Add(races);
 
             // TODO: Send current slot capacity
-            var abilities = new List<object>();
+            var abilities = new List<object?>();
             foreach (var ability in GetSlottedAbilities(playerEntity))
             {
                 snapshot?.AbilitiesSnapshot.Add(ability);
@@ -103,7 +97,7 @@ public class PlayerSnapshot
 
             // TODO: Group log entries for the same tick
             // TODO: Only send entries since last player turn
-            var logEntries = new List<object>();
+            var logEntries = new List<object?>();
             foreach (var logEntry in GetLogEntries(player))
             {
                 snapshot?.LogEntriesSnapshot.Add(logEntry);
@@ -130,7 +124,7 @@ public class PlayerSnapshot
             return properties;
         }
 
-        properties = new List<object>(3) { (int)state, snapshot.SnapshotTick, player.Game.CurrentTick };
+        properties = new List<object?>(3) { (int)state, snapshot!.SnapshotTick, player.Game.CurrentTick };
 
         var playerEntry = context.DbContext.Entry(player);
         var i = 1;
@@ -247,10 +241,7 @@ public class PlayerSnapshot
             }
         }
 
-        if (snapshot != null)
-        {
-            snapshot.SnapshotTick = player.Game.CurrentTick;
-        }
+        snapshot.SnapshotTick = player.Game.CurrentTick;
 
         return properties;
     }
@@ -258,17 +249,17 @@ public class PlayerSnapshot
     public static List<object> SerializeItems(GameEntity playerEntity, SerializationContext context)
         => new(1)
         {
-            playerEntity.Being.Items
+            playerEntity.Being!.Items
                 .Select(t => InventoryItemSnapshot.Serialize(t, null, null, context)).ToList()
         };
 
-    public static List<object> SerializeAdaptations(GameEntity playerEntity, SerializationContext context)
+    public static List<object?> SerializeAdaptations(GameEntity playerEntity, SerializationContext context)
     {
         var traits = new List<(string, int)>();
         var mutations = new List<(string, int)>();
-        foreach (var effectEntity in playerEntity.Being.AppliedEffects)
+        foreach (var effectEntity in playerEntity.Being!.AppliedEffects)
         {
-            var effect = effectEntity.Effect;
+            var effect = effectEntity.Effect!;
             if (effect.EffectType != EffectType.AddAbility
                 || effect.TargetName == null
                 || !(Ability.Loader.Find(effect.TargetName) is LeveledAbility template))
@@ -279,19 +270,19 @@ public class PlayerSnapshot
             switch (template.Type)
             {
                 case AbilityType.Trait:
-                    traits.Add((template.Name, effect.AppliedAmount.Value));
+                    traits.Add((template.Name, effect.AppliedAmount!.Value));
                     break;
                 case AbilityType.Mutation:
-                    mutations.Add((template.Name, effect.AppliedAmount.Value));
+                    mutations.Add((template.Name, effect.AppliedAmount!.Value));
                     break;
                 default:
                     continue;
             }
         }
-
-        return new List<object>(4)
+        
+        return new List<object?>(4)
         {
-            playerEntity.Player.TraitPoints, playerEntity.Player.MutationPoints, traits, mutations
+            playerEntity.Player!.TraitPoints, playerEntity.Player.MutationPoints, traits, mutations
         };
     }
 
@@ -302,7 +293,7 @@ public class PlayerSnapshot
 
         return new List<object>(31)
         {
-            playerEntity.Player.SkillPoints,
+            playerEntity.Player!.SkillPoints,
             GetAbilityLevel(AbilityData.HandWeapons.Name, playerId, manager),
             GetAbilityLevel(AbilityData.ShortWeapons.Name, playerId, manager),
             GetAbilityLevel(AbilityData.MediumWeapons.Name, playerId, manager),
@@ -337,15 +328,15 @@ public class PlayerSnapshot
     }
 
     private static int GetAbilityLevel(string abilityName, int playerId, GameManager manager)
-        => manager.AffectableAbilitiesIndex[(playerId, abilityName)]?.Ability.Level ?? 0;
+        => manager.AffectableAbilitiesIndex[(playerId, abilityName)]?.Ability!.Level ?? 0;
 
     private static IEnumerable<LogEntry> GetLogEntries(PlayerComponent player)
         => player.LogEntries.OrderBy(e => e, LogEntry.Comparer)
             .Skip(Math.Max(0, player.LogEntries.Count - 10));
 
     private static IEnumerable<GameEntity> GetSlottedAbilities(GameEntity playerEntity)
-        => playerEntity.Being.Abilities
-            .Select(a => a.Ability)
+        => playerEntity.Being!.Abilities
+            .Select(a => a.Ability!)
             .Where(a => a.Slot != null)
             .Select(a => a.Entity);
 }

@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
 using CSharpScriptSerialization;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
@@ -12,7 +9,7 @@ public class ChangeRace : DurationEffect
     {
         get;
         set;
-    }
+    } = null!;
 
     public bool Remove
     {
@@ -38,14 +35,14 @@ public class ChangeRace : DurationEffect
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<ChangeRace>(GetPropertyConditions<ChangeRace>());
 
-    protected static new Dictionary<string, Func<TEffect, object, bool>>
+    protected static new Dictionary<string, Func<TEffect, object?, bool>>
         GetPropertyConditions<TEffect>() where TEffect : Effect
     {
         var propertyConditions = DurationEffect.GetPropertyConditions<TEffect>();
 
         propertyConditions.Add(nameof(RaceName), (o, v) => v != default);
-        propertyConditions.Add(nameof(Remove), (o, v) => (bool)v != default);
-        propertyConditions.Add(nameof(Delay), (o, v) => (int)v != default);
+        propertyConditions.Add(nameof(Remove), (o, v) => (bool)v! != default);
+        propertyConditions.Add(nameof(Delay), (o, v) => (int)v! != default);
         return propertyConditions;
     }
 

@@ -6,6 +6,7 @@
 /// </summary>
 /// <typeparam name="TMessage">The message type</typeparam>
 /// <typeparam name="TState">The state type</typeparam>
+// ReSharper disable TypeParameterCanBeVariant
 public interface IMessageConsumer<TMessage, TState>
 {
     /// <summary>

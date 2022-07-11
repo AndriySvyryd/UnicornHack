@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnicornHack.Primitives;
-using UnicornHack.Systems.Actors;
+﻿using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Senses;
-using UnicornHack.Utils.DataStructures;
-using Xunit;
 
 namespace UnicornHack.Utils.MessagingECS;
 
@@ -18,77 +12,75 @@ public class LookupEntityRelationshipTest
     public void Relationship_is_updated()
     {
         var manager = TestHelper.CreateGameManager();
-        using (var levelEntityReference = manager.CreateEntity())
+        using var levelEntityReference = manager.CreateEntity();
+        var levelEntity = levelEntityReference.Referenced;
+        levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+
+        using (var firstPositionEntityReference = manager.CreateEntity())
         {
-            var levelEntity = levelEntityReference.Referenced;
-            levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+            var firstPositionEntity = firstPositionEntityReference.Referenced;
+            firstPositionEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
+            firstPositionEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+            var firstPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
+            firstPosition.LevelId = levelEntity.Id;
+            firstPosition.LevelCell = new Point(2, 3);
+            firstPositionEntity.Position = firstPosition;
 
-            using (var firstPositionEntityReference = manager.CreateEntity())
+            Assert.True(
+                manager.LevelActorsToLevelCellRelationship.Dependents.ContainsEntity(firstPositionEntity.Id));
+            Assert.Same(firstPositionEntity,
+                manager.LevelActorsToLevelCellRelationship.Dependents.FindEntity(firstPositionEntity.Id));
+            Assert.Same(firstPositionEntity,
+                manager.LevelActorsToLevelCellRelationship.GetDependents(levelEntity)
+                    .GetValueOrDefault(new Point(2, 3)));
+            Assert.Same(firstPositionEntity, levelEntity.Level!.Actors.GetValueOrDefault(new Point(2, 3)));
+            Assert.Same(levelEntity, manager.LevelActorsToLevelCellRelationship.GetPrincipal(firstPositionEntity));
+            Assert.Same(levelEntity, firstPositionEntity.Position.LevelEntity);
+
+
+            firstPosition.LevelCell = new Point(1, 2);
+
+            Assert.Same(firstPositionEntity, levelEntity.Level.Actors.GetValueOrDefault(new Point(1, 2)));
+            Assert.Null(levelEntity.Level.Actors.GetValueOrDefault(new Point(2, 3)));
+
+            using (var secondPositionEntityReference = manager.CreateEntity())
             {
-                var firstPositionEntity = firstPositionEntityReference.Referenced;
-                firstPositionEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
-                firstPositionEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
-                var firstPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-                firstPosition.LevelId = levelEntity.Id;
-                firstPosition.LevelCell = new Point(2, 3);
-                firstPositionEntity.Position = firstPosition;
+                var secondPositionEntity = secondPositionEntityReference.Referenced;
+                secondPositionEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
+                secondPositionEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+                var secondPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
+                secondPosition.LevelId = levelEntity.Id;
+                secondPosition.LevelX = 2;
+                secondPosition.LevelY = 3;
+                secondPositionEntity.Position = secondPosition;
 
-                Assert.True(
-                    manager.LevelActorsToLevelCellRelationship.Dependents.ContainsEntity(firstPositionEntity.Id));
-                Assert.Same(firstPositionEntity,
-                    manager.LevelActorsToLevelCellRelationship.Dependents.FindEntity(firstPositionEntity.Id));
-                Assert.Same(firstPositionEntity,
-                    manager.LevelActorsToLevelCellRelationship.GetDependents(levelEntity)
-                        .GetValueOrDefault(new Point(2, 3)));
-                Assert.Same(firstPositionEntity, levelEntity.Level.Actors.GetValueOrDefault(new Point(2, 3)));
-                Assert.Same(levelEntity, manager.LevelActorsToLevelCellRelationship.GetPrincipal(firstPositionEntity));
-                Assert.Same(levelEntity, firstPositionEntity.Position.LevelEntity);
+                Assert.Same(secondPositionEntity, levelEntity.Level.Actors.GetValueOrDefault(new Point(2, 3)));
 
+                secondPositionEntity.Position = null;
 
-                firstPosition.LevelCell = new Point(1, 2);
-
-                Assert.Same(firstPositionEntity, levelEntity.Level.Actors.GetValueOrDefault(new Point(1, 2)));
                 Assert.Null(levelEntity.Level.Actors.GetValueOrDefault(new Point(2, 3)));
-
-                using (var secondPositionEntityReference = manager.CreateEntity())
-                {
-                    var secondPositionEntity = secondPositionEntityReference.Referenced;
-                    secondPositionEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
-                    secondPositionEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
-                    var secondPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-                    secondPosition.LevelId = levelEntity.Id;
-                    secondPosition.LevelX = 2;
-                    secondPosition.LevelY = 3;
-                    secondPositionEntity.Position = secondPosition;
-
-                    Assert.Same(secondPositionEntity, levelEntity.Level.Actors.GetValueOrDefault(new Point(2, 3)));
-
-                    secondPositionEntity.Position = null;
-
-                    Assert.Null(levelEntity.Level.Actors.GetValueOrDefault(new Point(2, 3)));
-                }
-
-                Assert.Same(firstPositionEntity, levelEntity.Level.Actors.GetValueOrDefault(new Point(1, 2)));
-
-                using (var secondLevelEntityReference = manager.CreateEntity())
-                {
-                    var secondLevelEntity = secondLevelEntityReference.Referenced;
-                    secondLevelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
-                    firstPosition.LevelId = secondLevelEntity.Id;
-
-                    Assert.Null(manager.LevelActorsToLevelCellRelationship.GetDependents(levelEntity)
-                        .GetValueOrDefault(new Point(1, 2)));
-                    Assert.Null(levelEntity.Level.Actors.GetValueOrDefault(new Point(1, 2)));
-
-                    secondLevelEntity.Level = null;
-                }
-
-                Assert.Null(firstPositionEntity.Position);
-                Assert.False(
-                    manager.LevelActorsToLevelCellRelationship.Dependents.ContainsEntity(firstPositionEntity.Id));
-                Assert.Null(manager.LevelActorsToLevelCellRelationship.Dependents.FindEntity(firstPositionEntity.Id));
-                Assert.Null(manager.LevelActorsToLevelCellRelationship.GetPrincipal(firstPositionEntity));
             }
+
+            Assert.Same(firstPositionEntity, levelEntity.Level.Actors.GetValueOrDefault(new Point(1, 2)));
+
+            using (var secondLevelEntityReference = manager.CreateEntity())
+            {
+                var secondLevelEntity = secondLevelEntityReference.Referenced;
+                secondLevelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+                firstPosition.LevelId = secondLevelEntity.Id;
+
+                Assert.Null(manager.LevelActorsToLevelCellRelationship.GetDependents(levelEntity)
+                    .GetValueOrDefault(new Point(1, 2)));
+                Assert.Null(levelEntity.Level.Actors.GetValueOrDefault(new Point(1, 2)));
+
+                secondLevelEntity.Level = null;
+            }
+
+            Assert.Null(firstPositionEntity.Position);
+            Assert.False(
+                manager.LevelActorsToLevelCellRelationship.Dependents.ContainsEntity(firstPositionEntity.Id));
+            Assert.Null(manager.LevelActorsToLevelCellRelationship.Dependents.FindEntity(firstPositionEntity.Id));
+            Assert.Null(manager.LevelActorsToLevelCellRelationship.GetPrincipal(firstPositionEntity));
         }
     }
 
@@ -96,36 +88,32 @@ public class LookupEntityRelationshipTest
     public void Throws_on_conflict()
     {
         var manager = TestHelper.CreateGameManager();
-        using (var levelEntityReference = manager.CreateEntity())
+        using var levelEntityReference = manager.CreateEntity();
+        var levelEntity = levelEntityReference.Referenced;
+        levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+
+        using var firstPositionEntityReference = manager.CreateEntity();
+        var firstPositionEntity = firstPositionEntityReference.Referenced;
+        firstPositionEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
+        firstPositionEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+        var firstPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
+        firstPosition.LevelId = levelEntity.Id;
+        firstPosition.LevelCell = new Point(2, 3);
+        firstPositionEntity.Position = firstPosition;
+
+        Assert.Same(firstPositionEntity, levelEntity.Level!.Actors[new Point(2, 3)]);
+
+        using (var secondPositionEntityReference = manager.CreateEntity())
         {
-            var levelEntity = levelEntityReference.Referenced;
-            levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+            var secondPositionEntity = secondPositionEntityReference.Referenced;
+            secondPositionEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
+            secondPositionEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+            var secondPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
+            secondPosition.LevelId = levelEntity.Id;
+            secondPosition.LevelX = 2;
+            secondPosition.LevelY = 3;
 
-            using (var firstPositionEntityReference = manager.CreateEntity())
-            {
-                var firstPositionEntity = firstPositionEntityReference.Referenced;
-                firstPositionEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
-                firstPositionEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
-                var firstPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-                firstPosition.LevelId = levelEntity.Id;
-                firstPosition.LevelCell = new Point(2, 3);
-                firstPositionEntity.Position = firstPosition;
-
-                Assert.Same(firstPositionEntity, levelEntity.Level.Actors[new Point(2, 3)]);
-
-                using (var secondPositionEntityReference = manager.CreateEntity())
-                {
-                    var secondPositionEntity = secondPositionEntityReference.Referenced;
-                    secondPositionEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
-                    secondPositionEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
-                    var secondPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-                    secondPosition.LevelId = levelEntity.Id;
-                    secondPosition.LevelX = 2;
-                    secondPosition.LevelY = 3;
-
-                    Assert.Throws<ArgumentException>(() => secondPositionEntity.Position = secondPosition);
-                }
-            }
+            Assert.Throws<ArgumentException>(() => secondPositionEntity.Position = secondPosition);
         }
     }
 
@@ -133,15 +121,12 @@ public class LookupEntityRelationshipTest
     public void Referenced_entity_not_present_throws()
     {
         var manager = TestHelper.CreateGameManager();
+        using var raceEntityReference = manager.CreateEntity();
+        var raceEntity = raceEntityReference.Referenced;
+        raceEntity.AddComponent<RaceComponent>((int)EntityComponent.Race);
+        var effect = raceEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
 
-        using (var raceEntityReference = manager.CreateEntity())
-        {
-            var raceEntity = raceEntityReference.Referenced;
-            raceEntity.AddComponent<RaceComponent>((int)EntityComponent.Race);
-            var effect = raceEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
-
-            Assert.Throws<InvalidOperationException>(() => effect.AffectedEntityId = 2);
-        }
+        Assert.Throws<InvalidOperationException>(() => effect.AffectedEntityId = 2);
     }
 
     [Fact]
@@ -166,7 +151,7 @@ public class LookupEntityRelationshipTest
                 beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
 
                 Assert.Equal(2, beingEntity.Id);
-                Assert.Same(raceEntity, beingEntity.Being.Races.Single());
+                Assert.Same(raceEntity, beingEntity.Being!.Races.Single());
             }
         }
 

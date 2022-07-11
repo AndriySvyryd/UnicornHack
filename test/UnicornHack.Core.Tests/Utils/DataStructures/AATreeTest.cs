@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Xunit;
-
-namespace UnicornHack.Utils.DataStructures;
+﻿namespace UnicornHack.Utils.DataStructures;
 
 // ReSharper disable once InconsistentNaming
 public class AATreeTest
@@ -56,7 +51,7 @@ public class AATreeTest
     {
         var strictTree = allowDuplicates ? null : new AATreeStrict<int, int>();
         var laxTree = allowDuplicates ? new AATreeLax<int, int>() : null;
-        var tree = (AATree<int, int>)strictTree ?? laxTree;
+        var tree = (AATree<int, int>?)strictTree ?? laxTree!;
         var i = 0;
         var min = int.MaxValue;
         var max = int.MinValue;
@@ -118,9 +113,9 @@ public class AATreeTest
                     int? result = null;
                     if (allowDuplicates)
                     {
-                        result = laxTree.GetValues(value2).Cast<int?>().SingleOrDefault(v => v == j + 1);
+                        result = laxTree!.GetValues(value2).Cast<int?>().SingleOrDefault(v => v == j + 1);
                     }
-                    else if (strictTree.TryGetValue(value2, out var index2))
+                    else if (strictTree!.TryGetValue(value2, out var index2))
                     {
                         result = index2;
                     }
@@ -132,13 +127,13 @@ public class AATreeTest
                 {
                     if (allowDuplicates)
                     {
-                        var found = laxTree.GetValues(value2).ToList();
+                        var found = laxTree!.GetValues(value2).ToList();
                         Assert.Contains(j + 1, found);
                         Assert.Equal(found, tree.GetRange(value2, value2).Select(v => v.Item2));
                     }
                     else
                     {
-                        Assert.Equal(j + 1, strictTree[value2]);
+                        Assert.Equal(j + 1, strictTree![value2]);
                         Assert.Equal(j + 1, tree.GetRange(value2, value2).Single().Item2);
                     }
                 }
@@ -147,8 +142,8 @@ public class AATreeTest
             }
 
             var removed = allowDuplicates
-                ? laxTree.Remove(value, i + 1)
-                : strictTree.Remove(value);
+                ? laxTree!.Remove(value, i + 1)
+                : strictTree!.Remove(value);
             Assert.True(removed, $"Failed to delete {value} at {i}");
 
             i++;

@@ -10,7 +10,7 @@ public class EntityPerfTest
 {
     public int EntityCount = 1000000;
 
-    private Entity[] _entities;
+    private Entity[] _entities = null!;
 
     [GlobalSetup(Target = nameof(AddRemoveComponent) + "," + nameof(FindComponent) + "," + nameof(HasComponent))]
     public void ComponentSetup()

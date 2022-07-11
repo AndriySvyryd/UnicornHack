@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace UnicornHack.Primitives;
+﻿namespace UnicornHack.Primitives;
 
 [Flags]
 public enum LocomotionType

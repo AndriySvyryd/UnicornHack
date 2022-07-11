@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using System.Reflection;
 using Antlr4.Runtime;
-using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
-using UnicornHack.Utils;
 using static System.Linq.Expressions.Expression;
 
 namespace UnicornHack.Generation;
@@ -17,21 +11,21 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
     private readonly IEnumerable<ParameterExpression> _orderedParameters;
 
     private static readonly MethodInfo _minMethod =
-        typeof(Math).GetMethod(nameof(Math.Min), new[] { typeof(int), typeof(int) });
+        typeof(Math).GetMethod(nameof(Math.Min), new[] { typeof(int), typeof(int) })!;
 
     private static readonly MethodInfo _minMethodD =
-        typeof(Math).GetMethod(nameof(Math.Min), new[] { typeof(double), typeof(double) });
+        typeof(Math).GetMethod(nameof(Math.Min), new[] { typeof(double), typeof(double) })!;
 
     private static readonly MethodInfo _maxMethod =
-        typeof(Math).GetMethod(nameof(Math.Max), new[] { typeof(int), typeof(int) });
+        typeof(Math).GetMethod(nameof(Math.Max), new[] { typeof(int), typeof(int) })!;
 
     private static readonly MethodInfo _maxMethodD =
-        typeof(Math).GetMethod(nameof(Math.Max), new[] { typeof(double), typeof(double) });
+        typeof(Math).GetMethod(nameof(Math.Max), new[] { typeof(double), typeof(double) })!;
 
-    private static readonly MethodInfo _absMethod = typeof(Math).GetMethod(nameof(Math.Abs), new[] { typeof(int) });
+    private static readonly MethodInfo _absMethod = typeof(Math).GetMethod(nameof(Math.Abs), new[] { typeof(int) })!;
 
     private static readonly MethodInfo _absMethodD =
-        typeof(Math).GetMethod(nameof(Math.Abs), new[] { typeof(double) });
+        typeof(Math).GetMethod(nameof(Math.Abs), new[] { typeof(double) })!;
 
     private static readonly MethodInfo _stringConcat = typeof(string)
         .GetRequiredRuntimeMethod(nameof(string.Concat), typeof(string), typeof(string));
@@ -41,14 +35,14 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
         _orderedParameters = parameters;
         foreach (var parameter in parameters)
         {
-            Parameters[parameter.Name] = parameter;
+            Parameters[parameter.Name!] = parameter;
         }
     }
 
     protected Dictionary<string, ParameterExpression> Parameters
     {
         get;
-    } = new Dictionary<string, ParameterExpression>();
+    } = new();
 
     public T Translate<T, TResult>(string expression)
     {
@@ -103,7 +97,7 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
         => throw new InvalidOperationException();
 
     public override Expression VisitConditionalExpression(
-        [NotNull] UnicornExpressionParser.ConditionalExpressionContext context)
+        UnicornExpressionParser.ConditionalExpressionContext context)
     {
         var ifTrue = Visit(context.True);
         var ifFalse = Visit(context.False);
@@ -112,15 +106,15 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
     }
 
     public override Expression VisitConditionalOrExpression(
-        [NotNull] UnicornExpressionParser.ConditionalOrExpressionContext context)
+        UnicornExpressionParser.ConditionalOrExpressionContext context)
         => OrElse(Visit(context.Left), Visit(context.Right));
 
     public override Expression VisitConditionalAndExpression(
-        [NotNull] UnicornExpressionParser.ConditionalAndExpressionContext context)
+        UnicornExpressionParser.ConditionalAndExpressionContext context)
         => AndAlso(Visit(context.Left), Visit(context.Right));
 
     public override Expression VisitPowerExpression(
-        [NotNull] UnicornExpressionParser.PowerExpressionContext context)
+        UnicornExpressionParser.PowerExpressionContext context)
     {
         var left = Visit(context.Left);
         var right = Visit(context.Right);
@@ -129,7 +123,7 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
     }
 
     public override Expression VisitRelationalExpression(
-        [NotNull] UnicornExpressionParser.RelationalExpressionContext context)
+        UnicornExpressionParser.RelationalExpressionContext context)
     {
         var left = Visit(context.Left);
         var right = Visit(context.Right);
@@ -165,7 +159,7 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
     }
 
     public override Expression VisitAdditiveExpression(
-        [NotNull] UnicornExpressionParser.AdditiveExpressionContext context)
+        UnicornExpressionParser.AdditiveExpressionContext context)
     {
         var left = Visit(context.Left);
         var right = Visit(context.Right);
@@ -181,7 +175,7 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
     }
 
     public override Expression VisitMultiplicativeExpression(
-        [NotNull] UnicornExpressionParser.MultiplicativeExpressionContext context)
+        UnicornExpressionParser.MultiplicativeExpressionContext context)
     {
         var left = Visit(context.Left);
         var right = Visit(context.Right);
@@ -193,7 +187,7 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
     }
 
     public override Expression VisitUnaryExpression(
-        [NotNull] UnicornExpressionParser.UnaryExpressionContext context)
+        UnicornExpressionParser.UnaryExpressionContext context)
     {
         if (context.exception != null)
         {
@@ -216,23 +210,23 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
     }
 
     public override Expression VisitIntegerLiteralExpression(
-        [NotNull] UnicornExpressionParser.IntegerLiteralExpressionContext context)
+        UnicornExpressionParser.IntegerLiteralExpressionContext context)
         => Constant(int.Parse(context.Integer.Text));
 
     public override Expression VisitFloatLiteralExpression(
-        [NotNull] UnicornExpressionParser.FloatLiteralExpressionContext context)
+        UnicornExpressionParser.FloatLiteralExpressionContext context)
         => Constant(double.Parse(context.Float.Text));
 
     public override Expression VisitStringLiteralExpression(
-        [NotNull] UnicornExpressionParser.StringLiteralExpressionContext context)
+        UnicornExpressionParser.StringLiteralExpressionContext context)
         => Constant(context.String.Text[1..^1]);
 
     public override Expression VisitConstantExpression(
-        [NotNull] UnicornExpressionParser.ConstantExpressionContext context)
+        UnicornExpressionParser.ConstantExpressionContext context)
         => Constant(double.PositiveInfinity);
 
     public override Expression VisitAccessExpression(
-        [NotNull] UnicornExpressionParser.AccessExpressionContext context)
+        UnicornExpressionParser.AccessExpressionContext context)
     {
         if (context.exception != null)
         {
@@ -245,7 +239,7 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
     }
 
     public override Expression VisitVariableExpression(
-        [NotNull] UnicornExpressionParser.VariableExpressionContext context)
+        UnicornExpressionParser.VariableExpressionContext context)
     {
         if (context.exception != null)
         {
@@ -256,14 +250,14 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
     }
 
     public override Expression VisitInvocationExpression(
-        [NotNull] UnicornExpressionParser.InvocationExpressionContext context)
+        UnicornExpressionParser.InvocationExpressionContext context)
     {
         if (context.exception != null)
         {
             throw new UnicornExpressionException(context.exception);
         }
 
-        var children = context.expression().Select(c => Visit(c)).ToList();
+        var children = context.expression().Select(Visit).ToList();
 
         var commonType = children.Count == 0
             ? typeof(object)
@@ -300,10 +294,10 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
     }
 
     public override Expression VisitParenthesizedExpression(
-        [NotNull] UnicornExpressionParser.ParenthesizedExpressionContext context)
+        UnicornExpressionParser.ParenthesizedExpressionContext context)
         => Visit(context.expression());
 
-    private Type GetCommonType(Expression left, Expression right)
+    private static Type GetCommonType(Expression left, Expression right)
         => left.Type == right.Type
             ? left.Type
             : left.Type.IsNumeric() && right.Type.IsNumeric()

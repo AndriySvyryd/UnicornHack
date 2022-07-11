@@ -1,8 +1,4 @@
-using System;
-using System.Linq;
 using System.Reflection;
-using UnicornHack.Generation;
-using UnicornHack.Utils;
 using UnicornHack.Utils.DataLoading;
 
 namespace UnicornHack.Primitives;
@@ -14,14 +10,14 @@ public abstract class PropertyDescription : ILoadable
     public int ComponentId
     {
         get;
-        set;
+        init;
     }
 
     protected PropertyInfo PropertyInfo
     {
         get;
-        set;
-    }
+        init;
+    } = null!;
 
     public abstract Type PropertyType
     {
@@ -31,12 +27,11 @@ public abstract class PropertyDescription : ILoadable
     public bool IsCalculated
     {
         get;
-        set;
+        init;
     }
 
     public static readonly AttributeLoader<PropertyAttribute, ComponentAttribute, PropertyDescription> Loader =
-        new AttributeLoader<PropertyAttribute, ComponentAttribute, PropertyDescription>(
-            CreatePropertyDescription, typeof(PropertyDescription).Assembly);
+        new(CreatePropertyDescription, typeof(PropertyDescription).Assembly);
 
     private static PropertyDescription CreatePropertyDescription(
         PropertyInfo property,
@@ -47,7 +42,7 @@ public abstract class PropertyDescription : ILoadable
             .MakeGenericMethod(property.PropertyType.IsEnum
                 ? property.PropertyType.GetEnumUnderlyingType().UnwrapNullableType()
                 : property.PropertyType.UnwrapNullableType())
-            .Invoke(null, new object[] { property, componentType, propertyAttribute, componentAttribute });
+            .Invoke(null, new object[] { property, componentType, propertyAttribute, componentAttribute })!;
 
     private static readonly MethodInfo CreatePropertyDescriptionMethod = typeof(PropertyDescription).GetTypeInfo()
         .GetDeclaredMethods(nameof(CreatePropertyDescription)).Single(mi => mi.IsGenericMethodDefinition);
@@ -59,7 +54,7 @@ public abstract class PropertyDescription : ILoadable
         PropertyAttribute propertyAttribute,
         ComponentAttribute componentAttribute)
         where T : struct, IComparable<T>
-        => new PropertyDescription<T>
+        => new()
         {
             ComponentId = componentAttribute.Id,
             PropertyInfo = property,

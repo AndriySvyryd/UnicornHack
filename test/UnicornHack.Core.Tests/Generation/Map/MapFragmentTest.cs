@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnicornHack.Utils.DataStructures;
-using Xunit;
-
-namespace UnicornHack.Generation.Map;
+﻿namespace UnicornHack.Generation.Map;
 
 public class MapFragmentTest
 {
@@ -130,7 +124,7 @@ PP
         var inside = new List<Point>();
         var perimeter = new List<Point>();
         var outside = new List<Point>();
-        var room = fragment.BuildRoom(level, input, inside.Add, perimeter.Add, outside.Add);
+        var room = fragment.BuildRoom(level, input, inside.Add, perimeter.Add, outside.Add)!;
 
         try
         {
@@ -151,14 +145,14 @@ PP
                 }
                 else
                 {
-                    Assert.Equal(1, lastPoint.Value.OrthogonalDistanceTo(point));
+                    Assert.Equal(1, lastPoint!.Value.OrthogonalDistanceTo(point));
                     lastPoint = point;
                 }
             }
 
             if (perimeter.Count > 1)
             {
-                Assert.Equal(1, firstPoint.Value.OrthogonalDistanceTo(lastPoint.Value));
+                Assert.Equal(1, firstPoint!.Value.OrthogonalDistanceTo(lastPoint!.Value));
             }
         }
         catch (Exception e)

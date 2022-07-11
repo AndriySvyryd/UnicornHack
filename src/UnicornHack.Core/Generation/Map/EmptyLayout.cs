@@ -1,5 +1,4 @@
 ﻿using UnicornHack.Utils;
-using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Generation.Map;
 

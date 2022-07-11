@@ -1,9 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-using System.Linq;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
-using UnicornHack.Systems.Abilities;
+﻿using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
@@ -51,7 +46,7 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
     public MessageProcessingResult Process(
         PropertyValueChangedMessage<GameEntity, ExtremityType> message, GameManager manager)
     {
-        if (message.Entity.Being.IsAlive)
+        if (message.Entity.Being!.IsAlive)
         {
             RecalculateWeaponAbilities(message.Entity, melee: true, manager);
             RecalculateWeaponAbilities(message.Entity, melee: false, manager);
@@ -95,10 +90,10 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
     {
         var canUseWeapons = CanUseWeapons(actorEntity);
 
-        var being = actorEntity.Being;
-        ItemComponent twoHandedWeapon = null;
-        ItemComponent primaryWeapon = null;
-        ItemComponent secondaryWeapon = null;
+        var being = actorEntity.Being!;
+        ItemComponent? twoHandedWeapon = null;
+        ItemComponent? primaryWeapon = null;
+        ItemComponent? secondaryWeapon = null;
 
         if (canUseWeapons)
         {
@@ -106,14 +101,14 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
             {
                 if (being.PrimaryNaturalWeaponId.HasValue)
                 {
-                    primaryWeapon = manager.FindEntity(being.PrimaryNaturalWeaponId.Value).Item;
+                    primaryWeapon = manager.FindEntity(being.PrimaryNaturalWeaponId.Value)!.Item;
                 }
                 else
                 {
                     var primaryWeaponReference = TryCreateNaturalWeapon(being.UpperExtremities, melee, manager);
                     if (primaryWeaponReference != null)
                     {
-                        primaryWeapon = primaryWeaponReference.Referenced.Item;
+                        primaryWeapon = primaryWeaponReference.Referenced.Item!;
                         primaryWeapon.EquippedSlot = EquipmentSlot.GraspPrimaryMelee;
                         being.PrimaryNaturalWeaponId = primaryWeapon.EntityId;
                         primaryWeaponReference.Dispose();
@@ -122,14 +117,14 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
 
                 if (being.SecondaryNaturalWeaponId.HasValue)
                 {
-                    secondaryWeapon = manager.FindEntity(being.SecondaryNaturalWeaponId.Value).Item;
+                    secondaryWeapon = manager.FindEntity(being.SecondaryNaturalWeaponId.Value)!.Item;
                 }
                 else
                 {
                     var secondaryWeaponReference = TryCreateNaturalWeapon(being.UpperExtremities, melee, manager);
                     if (secondaryWeaponReference != null)
                     {
-                        secondaryWeapon = secondaryWeaponReference.Referenced.Item;
+                        secondaryWeapon = secondaryWeaponReference.Referenced.Item!;
                         secondaryWeapon.EquippedSlot = EquipmentSlot.GraspSecondaryMelee;
                         being.SecondaryNaturalWeaponId = secondaryWeapon.EntityId;
                         secondaryWeaponReference.Dispose();
@@ -137,9 +132,9 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
                 }
             }
 
-            foreach (var itemEntity in actorEntity.Being.Items)
+            foreach (var itemEntity in actorEntity.Being!.Items)
             {
-                var item = itemEntity.Item;
+                var item = itemEntity.Item!;
 
                 if (melee)
                 {
@@ -200,11 +195,11 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
             }
         }
 
-        AbilityComponent defaultAttackAbility = null;
+        AbilityComponent? defaultAttackAbility = null;
         var expectedItemType = melee ? ItemType.WeaponMelee : ItemType.WeaponRanged;
         foreach (var abilityEntity in being.Abilities)
         {
-            var ability = abilityEntity.Ability;
+            var ability = abilityEntity.Ability!;
             if (ability.Template == null
                 || !(ability.Template is WieldingAbility wieldingAbility)
                 || (wieldingAbility.ItemType & expectedItemType) == 0)
@@ -216,9 +211,9 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
             {
                 case WieldingStyle.OneHanded:
                     var primaryUsable = IsCompatible(
-                        primaryWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType, manager);
+                        primaryWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType);
                     var secondaryUsable = IsCompatible(
-                        secondaryWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType, manager);
+                        secondaryWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType);
 
                     ResetWieldingAbility(ability, wieldingAbility,
                         primaryUsable == secondaryUsable ? null :
@@ -227,18 +222,16 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
                     break;
                 case WieldingStyle.TwoHanded:
                     var twoHandedUsable = IsCompatible(
-                        twoHandedWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType, manager);
+                        twoHandedWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType);
 
                     ResetWieldingAbility(ability, wieldingAbility,
                         twoHandedUsable ? twoHandedWeaponAttack : null, null, activation, actorEntity);
                     break;
                 case WieldingStyle.Dual:
                     var bothUsable = IsCompatible(
-                                         primaryWeapon, activation, wieldingAbility.ItemType,
-                                         wieldingAbility.DamageType, manager)
+                                         primaryWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType)
                                      && IsCompatible(
-                                         secondaryWeapon, activation, wieldingAbility.ItemType,
-                                         wieldingAbility.DamageType, manager);
+                                         secondaryWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType);
 
                     ResetWieldingAbility(ability, wieldingAbility,
                         bothUsable ? primaryWeaponAttack : null, bothUsable ? secondaryWeaponAttack : null,
@@ -246,11 +239,11 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
                     break;
                 default:
                     var primaryWeaponUsable = IsCompatible(
-                        primaryWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType, manager);
+                        primaryWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType);
                     var secondaryWeaponUsable = IsCompatible(
-                        secondaryWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType, manager);
+                        secondaryWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType);
                     var twoHandedWeaponUsable = IsCompatible(
-                        twoHandedWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType, manager);
+                        twoHandedWeapon, activation, wieldingAbility.ItemType, wieldingAbility.DamageType);
 
                     ResetWieldingAbility(ability, wieldingAbility,
                         primaryWeaponUsable ? primaryWeaponAttack :
@@ -278,7 +271,7 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
         return canUseWeapons;
     }
 
-    private ITransientReference<GameEntity> TryCreateNaturalWeapon(
+    private ITransientReference<GameEntity>? TryCreateNaturalWeapon(
         ExtremityType extremityType, bool melee, GameManager manager)
     {
         if (!melee
@@ -291,34 +284,32 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
         return Item.Loader.Get("fist").Instantiate(manager);
     }
 
-    private AbilityComponent ResetWeaponAbility(
+    private AbilityComponent? ResetWeaponAbility(
         string name,
         GameEntity ownerEntity,
-        ItemComponent weapon,
+        ItemComponent? weapon,
         ActivationType activation,
         GameManager manager)
     {
         var weaponAttack = manager.AffectableAbilitiesIndex[(ownerEntity.Id, name)]?.Ability;
         if (weaponAttack == null && weapon != null)
         {
-            using (var abilityEntityReference = manager.CreateEntity())
+            using var abilityEntityReference = manager.CreateEntity();
+            var abilityEntity = abilityEntityReference.Referenced;
+
+            weaponAttack = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+            weaponAttack.Name = name;
+            weaponAttack.OwnerId = ownerEntity.Id;
+
+            abilityEntity.Ability = weaponAttack;
+
+            using (var effectEntityReference = manager.CreateEntity())
             {
-                var abilityEntity = abilityEntityReference.Referenced;
+                var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+                effect.EffectType = EffectType.Activate;
+                effect.ContainingAbilityId = abilityEntity.Id;
 
-                weaponAttack = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
-                weaponAttack.Name = name;
-                weaponAttack.OwnerId = ownerEntity.Id;
-
-                abilityEntity.Ability = weaponAttack;
-
-                using (var effectEntityReference = manager.CreateEntity())
-                {
-                    var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                    effect.EffectType = EffectType.Activate;
-                    effect.ContainingAbilityId = abilityEntity.Id;
-
-                    effectEntityReference.Referenced.Effect = effect;
-                }
+                effectEntityReference.Referenced.Effect = effect;
             }
         }
 
@@ -326,7 +317,7 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
         {
             if (weapon != null)
             {
-                var abilityToActivate = weapon.Abilities.Select(a => a.Ability)
+                var abilityToActivate = weapon.Abilities.Select(a => a.Ability!)
                     .FirstOrDefault(a => (a.Activation & activation) != 0);
 
                 if (abilityToActivate != null)
@@ -341,7 +332,7 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
 
                 foreach (var effectEntity in weaponAttack.Effects)
                 {
-                    var effect = effectEntity.Effect;
+                    var effect = effectEntity.Effect!;
                     if (effect.EffectType == EffectType.Activate)
                     {
                         effect.TargetEntityId = weapon.EntityId;
@@ -368,8 +359,8 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
     private void ResetWieldingAbility(
         AbilityComponent ability,
         WieldingAbility template,
-        AbilityComponent firstWeaponAbility,
-        AbilityComponent secondWeaponAbility,
+        AbilityComponent? firstWeaponAbility,
+        AbilityComponent? secondWeaponAbility,
         ActivationType trigger,
         GameEntity ownerEntity)
     {
@@ -387,7 +378,7 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
         var manager = ownerEntity.Manager;
 
         // TODO: Only use weapon values when not specified by the ability
-        ability.Range = firstWeaponAbility.Range;
+        ability.Range = firstWeaponAbility!.Range;
         ability.MinHeadingDeviation = firstWeaponAbility.MinHeadingDeviation;
         ability.MaxHeadingDeviation = firstWeaponAbility.MaxHeadingDeviation;
         ability.TargetingShapeSize = firstWeaponAbility.TargetingShapeSize;
@@ -434,10 +425,10 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
         // TODO: Use an expression instead of precalculating the result
         ability.Delay = delay.ToString();
 
-        GameEntity firstEffectEntity = null;
+        GameEntity? firstEffectEntity = null;
         foreach (var effectEntity in ability.Effects)
         {
-            var effect = effectEntity.Effect;
+            var effect = effectEntity.Effect!;
             if (effect.EffectType != EffectType.Activate)
             {
                 continue;
@@ -462,8 +453,7 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
     }
 
     private bool IsCompatible(
-        ItemComponent weapon, ActivationType activation, ItemType? itemType,
-        EffectType? damageType, GameManager manager)
+        ItemComponent? weapon, ActivationType activation, ItemType? itemType, EffectType? damageType)
     {
         if (weapon != null
             && (itemType == null || (weapon.Type & itemType.Value) != 0))
@@ -475,14 +465,14 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
 
             foreach (var abilityEntity in weapon.Abilities)
             {
-                if ((abilityEntity.Ability.Activation & activation) == 0)
+                if ((abilityEntity.Ability!.Activation & activation) == 0)
                 {
                     continue;
                 }
 
                 foreach (var effectEntity in abilityEntity.Ability.Effects)
                 {
-                    if (effectEntity.Effect.EffectType == damageType)
+                    if (effectEntity.Effect!.EffectType == damageType)
                     {
                         return true;
                     }
@@ -494,16 +484,16 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
     }
 
     private bool CanUseWeapons(GameEntity actorEntity)
-        => actorEntity.Being.UpperExtremities == ExtremityType.GraspingFingers;
+        => actorEntity.Being!.UpperExtremities == ExtremityType.GraspingFingers;
 
     private void RecalculateHindrance(GameEntity actorEntity, GameManager manager)
     {
-        var being = actorEntity.Being;
+        var being = actorEntity.Being!;
         var hindrance = 0;
 
-        foreach (var itemEntity in actorEntity.Being.Items)
+        foreach (var itemEntity in actorEntity.Being!.Items)
         {
-            var item = itemEntity.Item;
+            var item = itemEntity.Item!;
             if (item.EquippedSlot == EquipmentSlot.None)
             {
                 continue;
@@ -524,16 +514,16 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
             var template = Item.Loader.Get(item.TemplateName);
             var skillBonus = GetItemSkillBonus(template, actorEntity.Player) * baseMultiplier;
 
-            var requiredMight = template?.RequiredMight ?? 0;
+            var requiredMight = template.RequiredMight ?? 0;
             var mightDifference = requiredMight * baseMultiplier - being.Might * handnessMultiplier -
                                   skillBonus;
-            var requiredFocus = template?.RequiredFocus ?? 0;
+            var requiredFocus = template.RequiredFocus ?? 0;
             var focusDifference = requiredFocus * baseMultiplier - being.Focus * handnessMultiplier -
                                   skillBonus;
-            var requiredSpeed = template?.RequiredSpeed ?? 0;
+            var requiredSpeed = template.RequiredSpeed ?? 0;
             var speedDifference = requiredSpeed * baseMultiplier - being.Speed * baseMultiplier -
                                   skillBonus;
-            var requiredPerception = template?.RequiredPerception ?? 0;
+            var requiredPerception = template.RequiredPerception ?? 0;
             var perceptionDifference = requiredPerception * baseMultiplier - being.Perception * baseMultiplier -
                                        skillBonus;
             var addedHindrance =
@@ -552,7 +542,7 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
             nameof(BeingComponent.Hindrance), EquippedAbilityName, actorEntity);
     }
 
-    public int GetItemSkillBonus(Item template, PlayerComponent player)
+    public int GetItemSkillBonus(Item template, PlayerComponent? player)
     {
         if (player == null)
         {
@@ -676,7 +666,7 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
     public bool BuyAbilityLevel(Ability ability, GameEntity playerEntity)
     {
         var manager = playerEntity.Manager;
-        var player = playerEntity.Player;
+        var player = playerEntity.Player!;
         var bought = true;
         switch (ability.Type)
         {

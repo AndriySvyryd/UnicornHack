@@ -1,12 +1,7 @@
-﻿using System.Linq;
-using UnicornHack.Data.Items;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
+﻿using UnicornHack.Data.Items;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Time;
-using UnicornHack.Utils.DataStructures;
-using Xunit;
 
 namespace UnicornHack.Systems.Items;
 
@@ -17,7 +12,7 @@ public class ItemUsageSystemTest
     {
         var level = TestHelper.BuildLevel(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var player = playerEntity.Player;
+        var player = playerEntity.Player!;
         player.NextAction = ActorAction.Wait;
         var manager = playerEntity.Manager;
 
@@ -27,7 +22,7 @@ public class ItemUsageSystemTest
 
         manager.Queue.ProcessQueue(manager);
 
-        var shieldEntity = playerEntity.Being.Items.Single();
+        var shieldEntity = playerEntity.Being!.Items.Single();
 
         var shieldAbilityName = ItemData.FieryAegis.Name + ": Equip";
         Assert.NotNull(manager.AffectableAbilitiesIndex[(playerEntity.Id, shieldAbilityName)]);
@@ -41,7 +36,7 @@ public class ItemUsageSystemTest
         manager.Queue.ProcessQueue(manager);
 
         var shieldAbility = playerEntity.Being.Abilities
-            .Select(a => a.Ability)
+            .Select(a => a.Ability!)
             .Single(a => (a.Activation & ActivationType.Slottable) != 0
                          && a.Template?.Type != AbilityType.DefaultAttack);
 
@@ -66,7 +61,7 @@ public class ItemUsageSystemTest
         manager.Enqueue(moveItemMessage);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(EquipmentSlot.GraspBothMelee, shieldEntity.Item.EquippedSlot);
+        Assert.Equal(EquipmentSlot.GraspBothMelee, shieldEntity.Item!.EquippedSlot);
         Assert.Equal(2, shieldAbility.Slot);
         Assert.True(shieldAbility.IsActive);
 
@@ -124,13 +119,13 @@ public class ItemUsageSystemTest
         Assert.Equal(playerEntity.Id, shieldEntity.Item.ContainerId);
         Assert.NotNull(manager.AffectableAbilitiesIndex[(playerEntity.Id, shieldAbilityName)]);
 
-        var equipShieldAbility = playerEntity.Being.SlottedAbilities[3].Ability;
+        var equipShieldAbility = playerEntity.Being.SlottedAbilities[3].Ability!;
         Assert.Equal(shieldAbilityName, equipShieldAbility.Name);
 
         TestHelper.ActivateAbility(equipShieldAbility.Entity, playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
-        playerEntity.Physical.Capacity = 2;
+        playerEntity.Physical!.Capacity = 2;
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(EquipmentSlot.GraspPrimaryMelee, shieldEntity.Item.EquippedSlot);
@@ -150,7 +145,7 @@ public class ItemUsageSystemTest
     {
         var level = TestHelper.BuildLevel(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var player = playerEntity.Player;
+        var player = playerEntity.Player!;
         player.NextAction = ActorAction.Wait;
         var manager = playerEntity.Manager;
 
@@ -160,7 +155,7 @@ public class ItemUsageSystemTest
 
         manager.Queue.ProcessQueue(manager);
 
-        var shieldEntity = playerEntity.Being.Items.Single();
+        var shieldEntity = playerEntity.Being!.Items.Single();
 
         var equipMessage = EquipItemMessage.Create(manager);
         equipMessage.ActorEntity = playerEntity;
@@ -171,7 +166,7 @@ public class ItemUsageSystemTest
         manager.Queue.ProcessQueue(manager);
 
         var shieldAbility = playerEntity.Being.Abilities
-            .Select(a => a.Ability)
+            .Select(a => a.Ability!)
             .Single(a => (a.Activation & ActivationType.Slottable) != 0
                          && a.Template?.Type != AbilityType.DefaultAttack);
 
@@ -195,8 +190,8 @@ public class ItemUsageSystemTest
         Assert.Null(shieldAbility.Entity);
         Assert.False(shieldAbility.IsActive);
         Assert.Equal(0, playerEntity.Being.FireResistance);
-        var activateAbility = shieldEntity.Item.Abilities
-            .Select(a => a.Ability)
+        var activateAbility = shieldEntity.Item!.Abilities
+            .Select(a => a.Ability!)
             .Single(a => (a.Activation & ActivationType.Slottable) != 0
                          && a.Template?.Type != AbilityType.DefaultAttack);
         Assert.Equal(200, activateAbility.CooldownTick);
@@ -238,7 +233,7 @@ public class ItemUsageSystemTest
     {
         var level = TestHelper.BuildLevel(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var player = playerEntity.Player;
+        var player = playerEntity.Player!;
         player.NextAction = ActorAction.Wait;
         var manager = playerEntity.Manager;
 
@@ -248,7 +243,7 @@ public class ItemUsageSystemTest
 
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(100, playerEntity.Being.Visibility);
+        Assert.Equal(100, playerEntity.Being!.Visibility);
 
         var cloakEntity = playerEntity.Being.Items.Single();
         var equipMessage = EquipItemMessage.Create(manager);
@@ -259,7 +254,7 @@ public class ItemUsageSystemTest
         manager.Enqueue(equipMessage);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(EquipmentSlot.Back, cloakEntity.Item.EquippedSlot);
+        Assert.Equal(EquipmentSlot.Back, cloakEntity.Item!.EquippedSlot);
         Assert.Equal(50, playerEntity.Being.EnergyPoints);
         Assert.Equal(50, playerEntity.Being.ReservedEnergyPoints);
         Assert.Equal(0, playerEntity.Being.Visibility);
@@ -297,7 +292,7 @@ public class ItemUsageSystemTest
     {
         var level = TestHelper.BuildLevel(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var player = playerEntity.Player;
+        var player = playerEntity.Player!;
         player.NextAction = ActorAction.Wait;
         var manager = playerEntity.Manager;
 
@@ -307,14 +302,14 @@ public class ItemUsageSystemTest
 
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(0, playerEntity.Being.Hindrance);
+        Assert.Equal(0, playerEntity.Being!.Hindrance);
         Assert.Equal(100, playerEntity.Being.Evasion);
-        Assert.Equal(100, playerEntity.Position.MovementDelay);
+        Assert.Equal(100, playerEntity.Position!.MovementDelay);
         Assert.Equal(100, playerEntity.Position.TurningDelay);
 
         var swordEntity = playerEntity.Being.Items.Single();
 
-        Assert.Equal(10, swordEntity.Physical.Weight);
+        Assert.Equal(10, swordEntity.Physical!.Weight);
 
         var equipMessage = EquipItemMessage.Create(manager);
         equipMessage.ActorEntity = playerEntity;
@@ -345,7 +340,7 @@ public class ItemUsageSystemTest
         manager.Enqueue(equipMessage);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(EquipmentSlot.GraspSecondaryMelee, swordEntity.Item.EquippedSlot);
+        Assert.Equal(EquipmentSlot.GraspSecondaryMelee, swordEntity.Item!.EquippedSlot);
         Assert.Equal(31, playerEntity.Being.Hindrance);
         Assert.Equal(85, playerEntity.Being.Evasion);
         Assert.Equal(142, playerEntity.Position.MovementDelay);

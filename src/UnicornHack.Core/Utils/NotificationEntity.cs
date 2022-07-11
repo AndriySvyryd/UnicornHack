@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace UnicornHack.Utils;
@@ -8,8 +7,8 @@ public abstract class NotificationEntity : INotifyPropertyChanged, INotifyProper
 {
     public static readonly PropertyChangedEventArgs CountPropertyChanged = new("Count");
     public static readonly PropertyChangingEventArgs CountPropertyChanging = new("Count");
-    public event PropertyChangedEventHandler PropertyChanged;
-    public event PropertyChangingEventHandler PropertyChanging;
+    public event PropertyChangedEventHandler? PropertyChanged;
+    public event PropertyChangingEventHandler? PropertyChanging;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected void SetWithNotify<T>(

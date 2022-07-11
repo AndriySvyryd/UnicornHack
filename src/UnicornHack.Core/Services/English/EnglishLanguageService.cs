@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
-using System.Text;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
 using UnicornHack.Services.LogEvents;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
@@ -31,7 +26,8 @@ public class EnglishLanguageService : ILanguageService
 
     #region Game concepts
 
-    public string GetActorName(GameEntity actorEntity, SenseType sense)
+    [return: NotNullIfNotNull("actorEntity")]
+    public string? GetActorName(GameEntity? actorEntity, SenseType sense)
         => GetString(actorEntity, EnglishPerson.Third, sense, definiteDeterminer: null);
 
     public string GetDescription(string id, DescriptionCategory category)
@@ -39,27 +35,29 @@ public class EnglishLanguageService : ILanguageService
         switch (category)
         {
             case DescriptionCategory.Creature:
-                return Creature.Loader.Get(id).EnglishDescription;
+                return Creature.Loader.Get(id).EnglishDescription ?? "";
         }
 
         return "";
     }
 
-    protected virtual string GetString(GameEntity actorEntity, EnglishPerson person, SenseType sense)
+    [return: NotNullIfNotNull("actorEntity")]
+    protected virtual string? GetString(GameEntity? actorEntity, EnglishPerson person, SenseType sense)
         => GetString(
             actorEntity,
             person,
             sense,
             definiteDeterminer: true);
 
-    protected virtual string GetString(
-        GameEntity actorEntity, EnglishPerson person, SenseType sense, bool? definiteDeterminer)
+    [return: NotNullIfNotNull("actorEntity")]
+    protected virtual string? GetString(
+        GameEntity? actorEntity, EnglishPerson person, SenseType sense, bool? definiteDeterminer)
     {
         if (actorEntity == null)
         {
             return null;
         }
-
+        
         if (person == EnglishPerson.Second)
         {
             return EnglishMorphologicalProcessor.GetPronoun(
@@ -78,9 +76,9 @@ public class EnglishLanguageService : ILanguageService
         }
 
         var name = "";
-        foreach (var raceEntity in actorEntity.Being.Races)
+        foreach (var raceEntity in actorEntity.Being!.Races)
         {
-            name += " " + raceEntity.Race.TemplateName;
+            name += " " + raceEntity.Race!.TemplateName;
         }
 
         if (definiteDeterminer.HasValue)
@@ -377,7 +375,7 @@ public class EnglishLanguageService : ILanguageService
 
     #region Events
 
-    public virtual string GetString(in AttackEvent @event)
+    public virtual string? GetString(in AttackEvent @event)
     {
         if (@event.SensorEntity != @event.VictimEntity
             && @event.SensorEntity != @event.AttackerEntity
@@ -532,7 +530,7 @@ public class EnglishLanguageService : ILanguageService
         return ToSentence(
             GetString(@event.PickerEntity, pickerPerson, @event.PickerSensed),
             EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "pick up", pickerPerson),
-            GetString(@event.ItemEntity.Item, @event.Quantity, @event.ItemSensed,
+            GetString(@event.ItemEntity.Item!, @event.Quantity, @event.ItemSensed,
                 definiteDeterminer: pickerPerson == EnglishPerson.Second));
     }
 
@@ -544,7 +542,7 @@ public class EnglishLanguageService : ILanguageService
         return ToSentence(
             GetString(@event.DropperEntity, dropperPerson, @event.DropperSensed),
             EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "drop", dropperPerson),
-            GetString(@event.ItemEntity.Item, @event.Quantity, @event.ItemSensed,
+            GetString(@event.ItemEntity.Item!, @event.Quantity, @event.ItemSensed,
                 definiteDeterminer: dropperPerson == EnglishPerson.Second));
     }
 
@@ -553,7 +551,7 @@ public class EnglishLanguageService : ILanguageService
         var consumerPerson = @event.SensorEntity == @event.ActivatorEntity
             ? EnglishPerson.Second
             : EnglishPerson.Third;
-        var verb = (@event.ItemEntity.Item.Type & ItemType.Potion) != 0
+        var verb = (@event.ItemEntity.Item!.Type & ItemType.Potion) != 0
             ? @event.Consumed ? "drink" : "drink from"
             : (@event.ItemEntity.Item.Type & ItemType.SkillBook) != 0
                 ? "read"
@@ -577,7 +575,7 @@ public class EnglishLanguageService : ILanguageService
             return ToSentence(
                 GetString(@event.EquipperEntity, equipperPerson, @event.EquipperSensed),
                 EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "unequip", equipperPerson),
-                GetString(@event.ItemEntity.Item, 1, @event.ItemSensed,
+                GetString(@event.ItemEntity.Item!, 1, @event.ItemSensed,
                     definiteDeterminer: equipperPerson == EnglishPerson.Second));
         }
 
@@ -586,7 +584,7 @@ public class EnglishLanguageService : ILanguageService
         return ToSentence(
             GetString(@event.EquipperEntity, equipperPerson, @event.EquipperSensed),
             EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "equip", equipperPerson),
-            GetString(@event.ItemEntity.Item, 1, @event.ItemSensed,
+            GetString(@event.ItemEntity.Item!, 1, @event.ItemSensed,
                 definiteDeterminer: equipperPerson == EnglishPerson.Second),
             slotKnown ? PrepositionFor(@event.Slot) : null,
             slotKnown ? GetString(@event.Slot, @event.EquipperEntity, abbreviate: false) : null);
@@ -597,7 +595,7 @@ public class EnglishLanguageService : ILanguageService
         var leveledPerson = @event.SensorEntity == @event.LeveledEntity
             ? EnglishPerson.Second
             : EnglishPerson.Third;
-        var leveledGender = (EnglishGender?)@event.LeveledEntity.Being.Sex;
+        var leveledGender = (EnglishGender?)@event.LeveledEntity.Being!.Sex;
 
         return ToSentence(
                    GetString(@event.LeveledEntity, leveledPerson, SenseType.Sight),
@@ -627,7 +625,7 @@ public class EnglishLanguageService : ILanguageService
         var manager = playerEntity.Manager;
         return Format(
             "Welcome to the {0}, {1}!",
-            manager.FindEntity(playerEntity.Position.LevelId).Level.Branch.Name,
+            manager.FindEntity(playerEntity.Position!.LevelId)!.Level!.Branch.Name,
             GetString(playerEntity, EnglishPerson.Third, SenseType.Sight));
     }
 
@@ -640,7 +638,7 @@ public class EnglishLanguageService : ILanguageService
 
     protected string Format(string format, params object[] arguments) => string.Format(Culture, format, arguments);
 
-    protected virtual string ToSentence(params string[] components)
+    protected virtual string ToSentence(params string?[] components)
     {
         var builder = new StringBuilder();
 
@@ -656,7 +654,7 @@ public class EnglishLanguageService : ILanguageService
 
         Capitalize(builder);
 
-        if (!char.IsPunctuation(builder[builder.Length - 1]))
+        if (!char.IsPunctuation(builder[^1]))
         {
             builder.Append(value: '.');
         }
@@ -683,5 +681,5 @@ public class EnglishLanguageService : ILanguageService
     #endregion
 
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public override string ToString() => base.ToString();
+    public override string? ToString() => base.ToString();
 }

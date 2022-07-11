@@ -1,5 +1,3 @@
-using System;
-
 namespace UnicornHack.Utils.DataLoading;
 
 public class SingleCSScriptLoader<T> : CSScriptLoaderBase<T> where T : class, ILoadable, new()
@@ -12,5 +10,5 @@ public class SingleCSScriptLoader<T> : CSScriptLoaderBase<T> where T : class, IL
         FilePattern = CSScriptLoaderHelpers.GetScriptFilename(_name) + CSScriptLoaderHelpers.ScriptExtension;
     }
 
-    public T Object => Find(_name);
+    public T Object => Find(_name)!;
 }

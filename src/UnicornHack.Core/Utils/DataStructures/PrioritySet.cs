@@ -1,7 +1,4 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace UnicornHack.Utils.DataStructures;
 
@@ -20,8 +17,6 @@ public class PrioritySet<TElement, TPriority> : IReadOnlyCollection<(TElement El
     private HeapEntry[] _heap;
     private int _version;
 
-    #region Constructors
-
     public PrioritySet()
         : this(0, null, null)
     {
@@ -33,12 +28,14 @@ public class PrioritySet<TElement, TPriority> : IReadOnlyCollection<(TElement El
     }
 
     public PrioritySet(IComparer<TPriority> comparer)
-        : this(0, null, null)
+        : this(0, comparer, null)
     {
     }
 
-    public PrioritySet(int initialCapacity, IComparer<TPriority> priorityComparer,
-        IEqualityComparer<TElement> elementComparer)
+    public PrioritySet(
+        int initialCapacity,
+        IComparer<TPriority>? priorityComparer,
+        IEqualityComparer<TElement>? elementComparer)
     {
         if (initialCapacity < 0)
         {
@@ -65,8 +62,8 @@ public class PrioritySet<TElement, TPriority> : IReadOnlyCollection<(TElement El
 
     public PrioritySet(
         IEnumerable<(TElement Element, TPriority Priority)> values,
-        IComparer<TPriority> comparer,
-        IEqualityComparer<TElement> elementComparer)
+        IComparer<TPriority>? comparer,
+        IEqualityComparer<TElement>? elementComparer)
     {
         Comparer = comparer ?? Comparer<TPriority>.Default;
         _index = new Dictionary<TElement, int>(elementComparer);
@@ -76,8 +73,6 @@ public class PrioritySet<TElement, TPriority> : IReadOnlyCollection<(TElement El
         AppendRaw(values);
         Heapify();
     }
-
-    #endregion
 
     public int Count
     {

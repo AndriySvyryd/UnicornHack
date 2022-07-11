@@ -1,10 +1,10 @@
 using System.Collections;
-using System.Collections.Generic;
 
 namespace UnicornHack.Utils.DataStructures;
 
-// TODO: Use the class from .NET 6
+// TODO: Use the class from .NET 6 and change this to a SnapshotablePriorityQueue
 public class PriorityQueue<T> : ISnapshotableCollection<T>
+    where T : notnull
 {
     private readonly List<T> _list = new();
     private readonly IComparer<T> _comparer;
@@ -52,7 +52,7 @@ public class PriorityQueue<T> : ISnapshotableCollection<T>
 
     public int Count => _list.Count;
 
-    public HashSet<T> Snapshot
+    public HashSet<T>? Snapshot
     {
         get;
         private set;
@@ -166,13 +166,13 @@ public class PriorityQueue<T> : ISnapshotableCollection<T>
         return position;
     }
 
-    public T Peek() => _list.Count > 0 ? _list[index: 0] : default;
+    public T? Peek() => _list.Count > 0 ? _list[index: 0] : default;
 
     private int GetPosition(T item)
     {
         for (var i = 0; i < _list.Count; i++)
         {
-            if (item.Equals(_list[i]))
+            if (Equals(item, _list[i]))
             {
                 return i;
             }
@@ -182,13 +182,10 @@ public class PriorityQueue<T> : ISnapshotableCollection<T>
     }
 
     private void SwitchElements(int i, int j)
-    {
-        var temp = _list[i];
-        _list[i] = _list[j];
-        _list[j] = temp;
-    }
+        => (_list[i], _list[j]) = (_list[j], _list[i]);
 
-    private int CompareItemsAt(int i, int j) => _comparer.Compare(_list[i], _list[j]);
+    private int CompareItemsAt(int i, int j)
+        => _comparer.Compare(_list[i], _list[j]);
 
     bool ICollection<T>.IsReadOnly => false;
 

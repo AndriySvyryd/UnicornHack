@@ -1,8 +1,4 @@
 ﻿using UnicornHack.Data.Items;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
-using UnicornHack.Utils.DataStructures;
-using Xunit;
 
 namespace UnicornHack.Systems.Beings;
 
@@ -21,7 +17,7 @@ public class LivingSystemTest
 
         manager.Queue.ProcessQueue(manager);
 
-        var being = playerEntity.Being;
+        var being = playerEntity.Being!;
         Assert.Equal(100, being.EnergyPointMaximum);
         Assert.Equal(100, being.EnergyPoints);
         Assert.Equal(100, being.HitPointMaximum);
@@ -54,7 +50,7 @@ public class LivingSystemTest
 
         manager.Queue.ProcessQueue(manager);
 
-        var being = playerEntity.Being;
+        var being = playerEntity.Being!;
         Assert.Equal(100, being.EnergyPointMaximum);
         Assert.Equal(100, being.EnergyPoints);
         Assert.Equal(0, being.ReservedEnergyPoints);

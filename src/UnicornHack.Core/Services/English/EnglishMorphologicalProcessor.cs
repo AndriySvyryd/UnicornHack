@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-
 namespace UnicornHack.Services.English;
 
 public class EnglishMorphologicalProcessor
@@ -25,7 +21,7 @@ public class EnglishMorphologicalProcessor
         "status", "hiatus"
     };
 
-    private static readonly Dictionary<string, string> IrregularPlurals = new Dictionary<string, string>
+    private static readonly Dictionary<string, string> IrregularPlurals = new()
     {
         { "trilby", "trilbys" },
         { "cheese", "cheeses" },
@@ -366,7 +362,7 @@ public class EnglishMorphologicalProcessor
     {
         var numberIndex = number == EnglishNumber.Plural ? 1 : 0;
         var formIndex = (int)form;
-        var personIndex = person == EnglishPerson.Third ? 2 + (int)gender.Value : (int)person;
+        var personIndex = person == EnglishPerson.Third ? 2 + (int)gender!.Value : (int)person;
         return Pronouns[numberIndex, formIndex, personIndex];
     }
 
@@ -391,7 +387,7 @@ public class EnglishMorphologicalProcessor
 
     private class SuffixReplacementStateMachine
     {
-        private readonly State _initialState = new State();
+        private readonly State _initialState = new();
 
         public void AddRule(string suffix, string replacement, int charactersToReplace)
         {
@@ -456,7 +452,7 @@ public class EnglishMorphologicalProcessor
 
         private class State
         {
-            private readonly Dictionary<char, State> _nextStates = new Dictionary<char, State>();
+            private readonly Dictionary<char, State> _nextStates = new();
 
             public ReplacementSuffix? Replacement
             {
@@ -466,7 +462,7 @@ public class EnglishMorphologicalProcessor
 
             public void AddNext(char character, State state) => _nextStates.Add(character, state);
 
-            public State Next(char character) =>
+            public State? Next(char character) =>
                 _nextStates.TryGetValue(character, out var nextState) ? nextState : null;
         }
 
@@ -475,13 +471,13 @@ public class EnglishMorphologicalProcessor
             public string ReplacementString
             {
                 get;
-                set;
+                init;
             }
 
             public int CharactersToReplace
             {
                 get;
-                set;
+                init;
             }
         }
     }

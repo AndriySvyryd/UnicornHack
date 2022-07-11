@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace UnicornHack.Utils.DataStructures;
 
 public abstract class IntervalTreeBase
@@ -8,7 +5,7 @@ public abstract class IntervalTreeBase
     protected IntervalTreeBase(Segment boundingSegment)
     {
         BoundingSegment = boundingSegment;
-        Root = NewNode(boundingSegment.MidPoint);
+        Root = CreateNode(boundingSegment.MidPoint);
     }
 
     public Segment BoundingSegment
@@ -40,7 +37,7 @@ public abstract class IntervalTreeBase
         var boundingSegment = BoundingSegment;
         if (!boundingSegment.Contains(projection))
         {
-            throw new ArgumentOutOfRangeException();
+            throw new ArgumentOutOfRangeException($"Rectangle {rectangle} outside of the bounding segment {BoundingSegment}");
         }
 
         if (projection.Length < 3)
@@ -54,10 +51,7 @@ public abstract class IntervalTreeBase
             if (projection.End < node.Key)
             {
                 boundingSegment = new Segment(boundingSegment.Beginning, (byte)(node.Key - 1));
-                if (node.Left == null)
-                {
-                    node.Left = NewNode(boundingSegment.MidPoint);
-                }
+                node.Left ??= CreateNode(boundingSegment.MidPoint);
 
                 node = node.Left;
                 continue;
@@ -66,10 +60,7 @@ public abstract class IntervalTreeBase
             if (projection.Beginning > node.Key)
             {
                 boundingSegment = new Segment((byte)(node.Key + 1), boundingSegment.End);
-                if (node.Right == null)
-                {
-                    node.Right = NewNode(boundingSegment.MidPoint);
-                }
+                node.Right ??= CreateNode(boundingSegment.MidPoint);
 
                 node = node.Right;
                 continue;
@@ -92,7 +83,7 @@ public abstract class IntervalTreeBase
         var node = Root;
         if (!BoundingSegment.Contains(projection))
         {
-            throw new ArgumentOutOfRangeException();
+            throw new ArgumentOutOfRangeException($"Rectangle {rectangle} outside of the bounding segment {BoundingSegment}");
         }
 
         while (true)
@@ -118,15 +109,15 @@ public abstract class IntervalTreeBase
         }
     }
 
-    protected abstract NodeBase NewNode(byte key);
+    protected abstract NodeBase CreateNode(byte key);
     protected abstract bool SubtreeInsert(Rectangle rectangle, NodeBase node);
     protected abstract bool SubtreeRemove(Rectangle rectangle, NodeBase node);
 
     protected abstract class NodeBase
     {
         public byte Key;
-        public NodeBase Left;
-        public NodeBase Right;
+        public NodeBase? Left;
+        public NodeBase? Right;
 
         protected NodeBase(byte key)
         {

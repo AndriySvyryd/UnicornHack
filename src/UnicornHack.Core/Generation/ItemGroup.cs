@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
 using UnicornHack.Data;
-using UnicornHack.Primitives;
 using UnicornHack.Utils.DataLoading;
 
 namespace UnicornHack.Generation;
@@ -26,7 +23,7 @@ public class ItemGroup : ILoadable
         set;
     }
 
-    public IReadOnlyList<ItemGroup> SubGroups
+    public IReadOnlyList<ItemGroup>? SubGroups
     {
         get;
         set;
@@ -38,7 +35,7 @@ public class ItemGroup : ILoadable
     } = "item groups";
 
     public static readonly SingleCSScriptLoader<ItemGroup> Loader =
-        new SingleCSScriptLoader<ItemGroup>("Data", typeof(ItemGroupData));
+        new ("Data", typeof(ItemGroupData));
 
     // TODO: Make more complex items more frequent on lower levels
     public IEnumerable<ItemGroup> GetGroups(Item item)

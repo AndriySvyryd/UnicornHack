@@ -12,6 +12,11 @@
     <RootNamespace>UnicornHack</RootNamespace>
     <LangVersion>10.0</LangVersion>
     <NoWarn>3021;1701;1702;SA0001</NoWarn>
+    <WarningsNotAsErrors>SA0001</WarningsNotAsErrors>
+    <WarningLevel>2</WarningLevel>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,8 +29,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.9.3" />
-    <PackageReference Include="Antlr4BuildTasks" Version="9.3.0">
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.10.1" />
+    <PackageReference Include="Antlr4BuildTasks" Version="10.7.0">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CSharpScriptSerializer" Version="3.0.4" />

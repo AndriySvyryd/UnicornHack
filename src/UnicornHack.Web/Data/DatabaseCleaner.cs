@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics.Internal;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -13,7 +9,6 @@ using Microsoft.EntityFrameworkCore.Scaffolding.Metadata;
 using Microsoft.EntityFrameworkCore.SqlServer.Diagnostics.Internal;
 using Microsoft.EntityFrameworkCore.SqlServer.Scaffolding.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.Extensions.Logging;
 
 namespace UnicornHack.Data;
 
@@ -119,10 +114,10 @@ public class DatabaseCleaner
         => new() { Name = table.Name, Schema = table.Schema };
 
     protected virtual DropForeignKeyOperation Drop(DatabaseForeignKey foreignKey)
-        => new() { Name = foreignKey.Name, Table = foreignKey.Table.Name, Schema = foreignKey.Table.Schema };
+        => new() { Name = foreignKey.Name!, Table = foreignKey.Table.Name, Schema = foreignKey.Table.Schema };
 
     protected virtual DropIndexOperation Drop(DatabaseIndex index)
-        => new() { Name = index.Name, Table = index.Table.Name, Schema = index.Table.Schema };
+        => new() { Name = index.Name!, Table = index.Table!.Name, Schema = index.Table.Schema };
 
 #pragma warning disable EF1001 // Internal EF Core API usage.
     protected static IDatabaseModelFactory CreateDatabaseModelFactory(ILoggerFactory loggerFactory)

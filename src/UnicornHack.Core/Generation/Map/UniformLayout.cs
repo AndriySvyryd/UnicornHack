@@ -1,10 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using CSharpScriptSerialization;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils;
-using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Generation.Map;
 
@@ -12,17 +8,21 @@ public class UniformLayout : Layout, ICSScriptSerializable
 {
     private Dimensions _lotSize;
 
+    protected static Dimensions DefaultMaxLotSize = new(15, 15);
+    
     public Dimensions MaxLotSize
     {
         get;
         set;
-    } = new Dimensions(15, 15);
+    } = DefaultMaxLotSize;
 
+    protected static Dimensions DefaultMinLotSize = new(5, 5);
+    
     public Dimensions MinLotSize
     {
         get;
         set;
-    } = new Dimensions(5, 5);
+    } = DefaultMinLotSize;
 
     protected int LotPlacementAttempts
     {
@@ -74,14 +74,14 @@ public class UniformLayout : Layout, ICSScriptSerializable
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<UniformLayout>(GetPropertyConditions<UniformLayout>());
 
-    protected static Dictionary<string, Func<TUniformLayout, object, bool>> GetPropertyConditions<TUniformLayout>()
-        where TUniformLayout : UniformLayout => new Dictionary<string, Func<TUniformLayout, object, bool>>
+    protected static Dictionary<string, Func<TUniformLayout, object?, bool>> GetPropertyConditions<TUniformLayout>()
+        where TUniformLayout : UniformLayout => new()
     {
         // ReSharper disable once CompareOfFloatsByEqualityOperator
-        { nameof(Coverage), (o, v) => (float)v != 0.4f },
-        { nameof(MaxRoomCount), (o, v) => (byte)v != 16 },
-        { nameof(MaxLotSize), (o, v) => !new Dimensions(20, 20).Equals(v) },
-        { nameof(MinLotSize), (o, v) => !new Dimensions(6, 6).Equals(v) }
+        { nameof(Coverage), (_, v) => (float)v! != DefaultCoverage },
+        { nameof(MaxRoomCount), (_, v) => (byte)v! != DefaultMaxRoomCount },
+        { nameof(MaxLotSize), (_, v) => !DefaultMaxLotSize.Equals(v) },
+        { nameof(MinLotSize), (_, v) => !DefaultMinLotSize.Equals(v) }
     };
 
     ICSScriptSerializer ICSScriptSerializable.GetSerializer() => Serializer;

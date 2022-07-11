@@ -1,19 +1,18 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
 
 namespace UnicornHack.Utils.DataStructures;
 
-public class SortedListAdapter<TKey, TValue> : IList<TValue>, ISnapshotableCollection<TValue>
+public class SnapshotableSortedList<TKey, TValue> : IList<TValue>, ISnapshotableCollection<TValue>
+    where TKey : notnull
 {
     private readonly Func<TValue, TKey> _keyAccessor;
 
-    public SortedListAdapter(Func<TValue, TKey> keyAccessor)
+    public SnapshotableSortedList(Func<TValue, TKey> keyAccessor)
         : this(new SortedList<TKey, TValue>(), keyAccessor)
     {
     }
 
-    public SortedListAdapter(SortedList<TKey, TValue> list, Func<TValue, TKey> keyAccessor)
+    public SnapshotableSortedList(SortedList<TKey, TValue> list, Func<TValue, TKey> keyAccessor)
     {
         List = list;
         _keyAccessor = keyAccessor;
@@ -27,7 +26,7 @@ public class SortedListAdapter<TKey, TValue> : IList<TValue>, ISnapshotableColle
     public int Count => List.Count;
     public bool IsReadOnly => List.Values.IsReadOnly;
 
-    public HashSet<TValue> Snapshot
+    public HashSet<TValue>? Snapshot
     {
         get;
         private set;

@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using UnicornHack.Systems.Abilities;
+﻿using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Levels;
-using Xunit;
 
 namespace UnicornHack.Utils.MessagingECS;
 
@@ -39,95 +36,91 @@ public class EntityTest
     public void Setting_component_property_fires_events()
     {
         var manager = TestHelper.CreateGameManager();
-        using (var entityReference = manager.CreateEntity())
+        using var entityReference = manager.CreateEntity();
+        var component = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+
+        AbilityComponent? expectedCurrentValue = null;
+        var expectedNewValue = component;
+
+        var entity = entityReference.Referenced;
+        var propertyChangingCalled = false;
+        entity.PropertyChanging += (s, e) =>
         {
-            var component = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+            propertyChangingCalled = true;
 
-            AbilityComponent expectedCurrentValue = null;
-            var expectedNewValue = component;
+            Assert.Equal(nameof(GameEntity.Ability), e.PropertyName);
+            Assert.Equal(expectedCurrentValue, ((GameEntity)s!).Ability);
+        };
 
-            var entity = entityReference.Referenced;
-            var propertyChangingCalled = false;
-            entity.PropertyChanging += (s, e) =>
-            {
-                propertyChangingCalled = true;
+        var propertyChangedCalled = false;
+        entity.PropertyChanged += (s, e) =>
+        {
+            propertyChangedCalled = true;
 
-                Assert.Equal(nameof(GameEntity.Ability), e.PropertyName);
-                Assert.Equal(expectedCurrentValue, ((GameEntity)s).Ability);
-            };
+            Assert.Equal(nameof(GameEntity.Ability), e.PropertyName);
+            Assert.Equal(expectedNewValue, ((GameEntity)s!).Ability);
+        };
 
-            var propertyChangedCalled = false;
-            entity.PropertyChanged += (s, e) =>
-            {
-                propertyChangedCalled = true;
+        entity.Ability = null;
 
-                Assert.Equal(nameof(GameEntity.Ability), e.PropertyName);
-                Assert.Equal(expectedNewValue, ((GameEntity)s).Ability);
-            };
+        Assert.False(propertyChangingCalled);
+        Assert.False(propertyChangedCalled);
 
-            entity.Ability = null;
+        entity.Ability = component;
 
-            Assert.False(propertyChangingCalled);
-            Assert.False(propertyChangedCalled);
+        Assert.True(propertyChangingCalled);
+        Assert.True(propertyChangedCalled);
+        Assert.Same(component, entity.FindComponent((int)EntityComponent.Ability));
+        Assert.True(entity.HasComponent(EntityComponent.Ability));
 
-            entity.Ability = component;
+        propertyChangingCalled = false;
+        propertyChangedCalled = false;
+        expectedCurrentValue = component;
+        expectedNewValue = null;
 
-            Assert.True(propertyChangingCalled);
-            Assert.True(propertyChangedCalled);
-            Assert.Same(component, entity.FindComponent((int)EntityComponent.Ability));
-            Assert.True(entity.HasComponent(EntityComponent.Ability));
+        entity.Ability = null;
 
-            propertyChangingCalled = false;
-            propertyChangedCalled = false;
-            expectedCurrentValue = component;
-            expectedNewValue = null;
-
-            entity.Ability = null;
-
-            Assert.True(propertyChangingCalled);
-            Assert.True(propertyChangedCalled);
-            Assert.Null(entity.FindComponent((int)EntityComponent.Ability));
-            Assert.False(entity.HasComponent(EntityComponent.Ability));
-        }
+        Assert.True(propertyChangingCalled);
+        Assert.True(propertyChangedCalled);
+        Assert.Null(entity.FindComponent((int)EntityComponent.Ability));
+        Assert.False(entity.HasComponent(EntityComponent.Ability));
     }
 
     [Fact]
     public void ForEachComponent()
     {
         var manager = TestHelper.CreateGameManager();
-        using (var entityReference = manager.CreateEntity())
-        {
-            var entity = entityReference.Referenced;
-            var ai = entity.GetOrAddComponent<AIComponent>(EntityComponent.AI);
-            var being = entity.GetOrAddComponent<BeingComponent>(EntityComponent.Being);
+        using var entityReference = manager.CreateEntity();
+        var entity = entityReference.Referenced;
+        var ai = entity.GetOrAddComponent<AIComponent>(EntityComponent.AI);
+        var being = entity.GetOrAddComponent<BeingComponent>(EntityComponent.Being);
 
-            Assert.True(entity.HasComponents(new[] { (int)EntityComponent.AI, (int)EntityComponent.Being }));
-            Assert.False(entity.HasComponents(new[] { (int)EntityComponent.Player, (int)EntityComponent.Being }));
-            Assert.True(entity.HasAnyComponent(new[] { (int)EntityComponent.Player, (int)EntityComponent.Being }));
-            Assert.False(entity.HasAnyComponent(new[] { (int)EntityComponent.Player, (int)EntityComponent.Knowledge }));
+        Assert.True(entity.HasComponents(new[] { (int)EntityComponent.AI, (int)EntityComponent.Being }));
+        Assert.False(entity.HasComponents(new[] { (int)EntityComponent.Player, (int)EntityComponent.Being }));
+        Assert.True(entity.HasAnyComponent(new[] { (int)EntityComponent.Player, (int)EntityComponent.Being }));
+        Assert.False(entity.HasAnyComponent(new[] { (int)EntityComponent.Player, (int)EntityComponent.Knowledge }));
 
-            var count = 0;
-            entity.ForEachComponent(
-                new Dictionary<int, Component>
-                {
-                    { (int)EntityComponent.AI, ai }, { (int)EntityComponent.Being, being }
-                },
-                (s, id, c) =>
-                {
-                    count++;
-                    Assert.Same(s[id], c);
-                });
+        var count = 0;
+        entity.ForEachComponent(
+            new Dictionary<int, Component>
+            {
+                { (int)EntityComponent.AI, ai }, { (int)EntityComponent.Being, being }
+            },
+            (s, id, c) =>
+            {
+                count++;
+                Assert.Same(s[id], c);
+            });
 
-            Assert.Equal(2, count);
-        }
+        Assert.Equal(2, count);
     }
 
     [Fact]
     public void Removing_reference_returns_to_pool()
     {
         var manager = TestHelper.CreateGameManager();
-        GameEntity entity = null;
-        var id = 0;
+        GameEntity entity;
+        int id;
         using (var entityReference = manager.CreateEntity())
         {
             entity = entityReference.Referenced;

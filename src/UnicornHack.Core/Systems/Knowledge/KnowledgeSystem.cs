@@ -1,10 +1,7 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Primitives;
-using UnicornHack.Systems.Effects;
+﻿using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Senses;
-using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Knowledge;
@@ -20,7 +17,7 @@ public class KnowledgeSystem :
 {
     public MessageProcessingResult Process(VisibleTerrainChangedMessage message, GameManager manager)
     {
-        var level = message.LevelEntity.Level;
+        var level = message.LevelEntity.Level!;
         UpdateAllEntitiesKnowledge(level.Actors, level.KnownActors, level, manager);
         UpdateAllEntitiesKnowledge(level.Connections, level.KnownConnections, level, manager);
         UpdateAllEntitiesKnowledge(level.Items, level.KnownItems, level, manager);
@@ -45,14 +42,14 @@ public class KnowledgeSystem :
     {
         if (message.Successful)
         {
-            var level = message.Entity.Position.LevelEntity.Level;
+            var level = message.Entity.Position!.LevelEntity.Level!;
             UpdateEntityKnowledge(message.Entity, level.KnownActors, manager, level,
                 additionalCellToTest: message.InitialLevelCell);
         }
         else if (message.Entity.HasComponent(EntityComponent.Player))
         {
-            var level = message.Entity.Position.LevelEntity.Level;
-            var index = level.PointToIndex[message.TargetCell.X, message.TargetCell.Y];
+            var level = message.Entity.Position!.LevelEntity.Level!;
+            var index = level.PointToIndex![message.TargetCell.X, message.TargetCell.Y];
 
             var tilesExplored = RevealTerrain(index, level);
             if (tilesExplored > 0)
@@ -86,7 +83,7 @@ public class KnowledgeSystem :
             var conflictingKnowledge = knownPositions.GetValueOrDefault(position.LevelCell);
             if (conflictingKnowledge != null)
             {
-                var conflictingEntityId = conflictingKnowledge.Knowledge.KnownEntityId;
+                var conflictingEntityId = conflictingKnowledge.Knowledge!.KnownEntityId;
                 if (conflictingEntityId != entity.Id)
                 {
                     conflictingKnowledge.RemoveComponent(EntityComponent.Knowledge);
@@ -100,11 +97,11 @@ public class KnowledgeSystem :
             {
                 foreach (var playerEntity in manager.Players)
                 {
-                    var playerPosition = playerEntity.Position;
+                    var playerPosition = playerEntity.Position!;
                     if (position.LevelId == playerPosition.LevelId
                         && position.LevelCell.DistanceTo(playerPosition.LevelCell) <= 2)
                     {
-                        var player = playerEntity.Player;
+                        var player = playerEntity.Player!;
                         if (player.QueuedAction)
                         {
                             player.NextAction = null;
@@ -120,10 +117,10 @@ public class KnowledgeSystem :
             var knowledge = position.Knowledge;
             if (knowledge != null)
             {
-                var knowledgePosition = knowledge.Position;
+                var knowledgePosition = knowledge.Position!;
                 if (level != knowledgePosition.LevelEntity?.Level
                     || (manager.SensorySystem.SensedByPlayer(knowledge, knowledgePosition.LevelCell)
-                        & knowledge.Knowledge.SensedType) != SenseType.None)
+                        & knowledge.Knowledge!.SensedType) != SenseType.None)
                 {
                     knowledge.RemoveComponent(EntityComponent.Knowledge);
                     knowledge.RemoveComponent(EntityComponent.Position);
@@ -154,9 +151,9 @@ public class KnowledgeSystem :
         }
         else
         {
-            knowledge.Knowledge.SensedType = sensedType;
+            knowledge.Knowledge!.SensedType = sensedType;
 
-            var knowledgePosition = knowledge.Position;
+            var knowledgePosition = knowledge.Position!;
             knowledgePosition.SetLevelPosition(position.LevelId, position.LevelCell);
             knowledgePosition.Heading = position.Heading;
         }
@@ -189,7 +186,7 @@ public class KnowledgeSystem :
         {
             var itemEntity = message.ItemEntity;
             var level = itemEntity.Position?.LevelEntity.Level ??
-                        itemEntity.Item.ContainerEntity?.Position?.LevelEntity.Level;
+                        itemEntity.Item!.ContainerEntity?.Position?.LevelEntity.Level;
             if (level != null)
             {
                 UpdateEntityKnowledge(itemEntity, level.KnownItems, manager, level,
@@ -218,7 +215,7 @@ public class KnowledgeSystem :
 
                 attackerSensed |= SenseType.Touch;
 
-                UpdateKnowledge(message.ActivatorEntity.Position, attackerSensed, manager);
+                UpdateKnowledge(message.ActivatorEntity.Position!, attackerSensed, manager);
             }
         }
 

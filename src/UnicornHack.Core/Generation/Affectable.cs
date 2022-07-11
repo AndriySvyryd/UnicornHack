@@ -1,6 +1,4 @@
-﻿using UnicornHack.Primitives;
-
-namespace UnicornHack.Generation;
+﻿namespace UnicornHack.Generation;
 
 public class Affectable
 {
@@ -10,5 +8,12 @@ public class Affectable
         int abilityId,
         GameManager manager,
         ValueCombinationFunction? function = null)
-        => manager.EffectApplicationSystem.AddPropertyEffect(propertyName, value, abilityId, manager, function);
+    {
+        if (value == null)
+        {
+            return;
+        }
+        
+        manager.EffectApplicationSystem.AddPropertyEffect(propertyName, value.Value, abilityId, manager, function);
+    }
 }

@@ -9,7 +9,6 @@ public interface IPropertyValueChanges
 
     Component GetChangedComponent(int index);
     string GetChangedPropertyName(int index);
-    T GetChange<T>(int index);
     T GetValue<T>(int index, ValueType type);
 
     void EnqueuePropertyValueChangedMessage<TEntity>(int index, string messageName)

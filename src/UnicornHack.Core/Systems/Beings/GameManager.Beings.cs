@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Systems.Beings;
+﻿using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Utils.MessagingECS;
@@ -13,25 +12,25 @@ public partial class GameManager
     {
         get;
         private set;
-    }
+    } = null!;
 
     public EntityGroup<GameEntity> Races
     {
         get;
         private set;
-    }
+    } = null!;
 
     public CollectionEntityRelationship<GameEntity, HashSet<GameEntity>> RacesToBeingRelationship
     {
         get;
         private set;
-    }
+    } = null!;
 
     public LivingSystem LivingSystem
     {
         get;
         private set;
-    }
+    } = null!;
 
     private void InitializeBeings(SequentialMessageQueue<GameManager> queue)
     {
@@ -53,7 +52,7 @@ public partial class GameManager
                 component => ((EffectComponent)component).AffectedEntityId,
                 (int)EntityComponent.Effect),
             (raceEntity, _) => raceEntity.RemoveComponent((int)EntityComponent.Race),
-            beingEntity => (HashSet<GameEntity>)beingEntity.Being.Races);
+            beingEntity => (HashSet<GameEntity>)beingEntity.Being!.Races);
 
         LivingSystem = new LivingSystem();
         queue.Register<XPGainedMessage>(LivingSystem, XPGainedMessage.Name, 0);

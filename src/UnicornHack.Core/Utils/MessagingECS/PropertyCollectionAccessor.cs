@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 
 namespace UnicornHack.Utils.MessagingECS;
 
@@ -9,39 +7,39 @@ public class
     where TEntity : Entity, new()
     where TCollection : class, ICollection<TElement>
 {
-    private readonly Func<TEntity, TCollection> _getDependent;
-    private readonly Func<Component, TCollection> _componentGetDependent;
-    private readonly Action<TEntity, TCollection> _setDependent;
-    private readonly Func<TEntity, TEntity> _getPrincipal;
-    private readonly Func<Component, TEntity> _componentGetPrincipal;
-    private readonly Action<TEntity, TEntity> _setPrincipal;
-    private Func<TCollection> _factory;
+    private readonly Func<TEntity, TCollection?> _getDependent;
+    private readonly Func<Component, TCollection?> _componentGetDependent;
+    private readonly Action<TEntity, TCollection?>? _setDependent;
+    private readonly Func<TEntity, TEntity?>? _getPrincipal;
+    private readonly Func<Component, TEntity?>? _componentGetPrincipal;
+    private readonly Action<TEntity, TEntity?>? _setPrincipal;
+    private Func<TCollection>? _factory;
 
     public PropertyCollectionAccessor(
-        Expression<Func<TEntity, TCollection>> getDependent,
-        Expression<Func<TEntity, TEntity>> getPrincipal = null)
+        Expression<Func<TEntity, TCollection?>> getDependent,
+        Expression<Func<TEntity, TEntity?>>? getPrincipal = null)
     {
         var (get, componentGet, set) = getDependent.GetPropertyAccessors();
-        _getDependent = (Func<TEntity, TCollection>)get;
-        _componentGetDependent = (Func<Component, TCollection>)componentGet;
-        _setDependent = (Action<TEntity, TCollection>)set;
+        _getDependent = (Func<TEntity, TCollection?>)get;
+        _componentGetDependent = (Func<Component, TCollection?>)componentGet;
+        _setDependent = (Action<TEntity, TCollection?>?)set;
 
         if (getPrincipal != null)
         {
             (get, componentGet, set) = getPrincipal.GetPropertyAccessors();
-            _getPrincipal = (Func<TEntity, TEntity>)get;
-            _componentGetPrincipal = (Func<Component, TEntity>)componentGet;
-            _setPrincipal = (Action<TEntity, TEntity>)set;
+            _getPrincipal = (Func<TEntity, TEntity?>)get;
+            _componentGetPrincipal = (Func<Component, TEntity?>)componentGet;
+            _setPrincipal = (Action<TEntity, TEntity?>?)set;
         }
     }
 
     public PropertyCollectionAccessor(
-        Func<TEntity, TCollection> getDependent,
-        Action<TEntity, TCollection> setDependent,
-        Func<Component, TCollection> componentGetDependent,
-        Func<TEntity, TEntity> getPrincipal = null,
-        Action<TEntity, TEntity> setPrincipal = null,
-        Func<Component, TEntity> componentGetPrincipal = null)
+        Func<TEntity, TCollection?> getDependent,
+        Action<TEntity, TCollection?> setDependent,
+        Func<Component, TCollection?> componentGetDependent,
+        Func<TEntity, TEntity?>? getPrincipal = null,
+        Action<TEntity, TEntity?>? setPrincipal = null,
+        Func<Component, TEntity?>? componentGetPrincipal = null)
     {
         _getDependent = getDependent;
         _setDependent = setDependent;
@@ -51,7 +49,7 @@ public class
         _componentGetPrincipal = componentGetPrincipal;
     }
 
-    public TCollection GetDependents(TEntity principal, Component removedComponent = null)
+    public TCollection? GetDependents(TEntity principal, Component? removedComponent = null)
         => (removedComponent != null ? _componentGetDependent(removedComponent) : null)
            ?? _getDependent(principal);
 
@@ -68,7 +66,7 @@ public class
             throw new InvalidOperationException("null collection and no setter");
         }
 
-        value = _factory();
+        value = _factory!();
 
         _setDependent(principal, value);
         return value;
@@ -77,9 +75,10 @@ public class
     public void ResetDependents(TEntity principal)
         => GetDependents(principal)?.Clear();
 
-    public bool TryGetPrincipal(TEntity dependent, out TEntity principal, Component removedComponent = null)
+    public bool TryGetPrincipal(TEntity dependent, out TEntity? principal, Component? removedComponent = null)
     {
-        if (_getPrincipal == null)
+        if (_getPrincipal == null
+            || _componentGetPrincipal == null)
         {
             principal = null;
             return false;
@@ -94,11 +93,11 @@ public class
             }
         }
 
-        principal = _getPrincipal.Invoke(dependent);
+        principal = _getPrincipal(dependent);
         return true;
     }
 
-    public void SetPrincipal(TEntity dependent, TEntity principal)
+    public void SetPrincipal(TEntity dependent, TEntity? principal)
         => _setPrincipal?.Invoke(dependent, principal);
 
     public void SetDefaultFactory(Func<TCollection> factory)

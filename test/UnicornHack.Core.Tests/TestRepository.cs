@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnicornHack.Services;
 using UnicornHack.Utils.MessagingECS;
 
@@ -6,7 +5,7 @@ namespace UnicornHack;
 
 public class TestRepository : IRepository
 {
-    public T Find<T>(params object[] keyValues) where T : class
+    public T? Find<T>(params object[] keyValues) where T : class
         => default;
 
     public void Add<T>(T entity) where T : class
@@ -27,7 +26,7 @@ public class TestRepository : IRepository
         {
             if (entity is Component component)
             {
-                component.Entity = null;
+                component.Entity = null!;
             }
 
             trackable.StopTracking(this);

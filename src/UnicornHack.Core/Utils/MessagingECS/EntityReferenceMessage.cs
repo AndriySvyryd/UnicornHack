@@ -17,11 +17,11 @@ public class EntityReferenceMessage<TEntity> : IMessage
         manager.Enqueue(message, lowPriority: true);
     }
 
-    private TEntity _entity;
+    private TEntity? _entity;
 
     public TEntity Entity
     {
-        get => _entity;
+        get => _entity!;
         set
         {
             _entity?.RemoveReference(this);
@@ -34,7 +34,7 @@ public class EntityReferenceMessage<TEntity> : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
-    public void Clean() => Entity = default;
+    public void Clean() => Entity = default!;
 }

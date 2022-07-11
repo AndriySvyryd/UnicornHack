@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 
 namespace UnicornHack.Systems.Abilities;
 
@@ -15,11 +14,11 @@ public class AttackStats
     {
         get;
         set;
-    }
+    } = null!;
 
     public List<SubAttackStats> SubAttacks
     {
         get;
         set;
-    } = new List<SubAttackStats>();
+    } = new();
 }

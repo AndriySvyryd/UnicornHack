@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using CSharpScriptSerialization;
-using UnicornHack.Primitives;
+﻿using CSharpScriptSerialization;
 using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
 
 public class Activate : DurationEffect
 {
-    public string Projectile
+    public string? Projectile
     {
         get;
         set;
@@ -22,7 +19,7 @@ public class Activate : DurationEffect
 
         if (Projectile != null)
         {
-            var item = Item.Loader.Get(Projectile).AddToEntity(effect.Entity);
+            var item = Item.Loader.Get(Projectile).AddToEntity(effect.Entity!);
             effect.TargetEntityId = item.EntityId;
         }
     }
@@ -30,12 +27,12 @@ public class Activate : DurationEffect
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<Activate>(GetPropertyConditions<Activate>());
 
-    protected static new Dictionary<string, Func<TEffect, object, bool>>
+    protected static new Dictionary<string, Func<TEffect, object?, bool>>
         GetPropertyConditions<TEffect>() where TEffect : Effect
     {
         var propertyConditions = DurationEffect.GetPropertyConditions<TEffect>();
 
-        propertyConditions.Add(nameof(Projectile), (o, v) => v != default);
+        propertyConditions.Add(nameof(Projectile), (_, v) => v != default);
         return propertyConditions;
     }
 

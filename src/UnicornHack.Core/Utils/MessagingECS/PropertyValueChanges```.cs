@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace UnicornHack.Utils.MessagingECS;
+﻿namespace UnicornHack.Utils.MessagingECS;
 
 public class PropertyValueChanges<T1, T2, T3> : IPropertyValueChanges
 {
@@ -33,14 +31,6 @@ public class PropertyValueChanges<T1, T2, T3> : IPropertyValueChanges
         0 => _change0.ChangedPropertyName,
         1 => _change1.ChangedPropertyName,
         2 => _change2.ChangedPropertyName,
-        _ => throw new IndexOutOfRangeException(nameof(index))
-    };
-
-    public T GetChange<T>(int index) => index switch
-    {
-        0 => _change0 is T ? (T)(object)_change0 : default,
-        1 => _change1 is T ? (T)(object)_change1 : default,
-        2 => _change2 is T ? (T)(object)_change2 : default,
         _ => throw new IndexOutOfRangeException(nameof(index))
     };
 

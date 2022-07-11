@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Systems.Abilities;
+﻿using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Knowledge;
@@ -14,37 +13,37 @@ public partial class GameManager
     {
         get;
         private set;
-    }
+    } = null!;
 
     public EntityGroup<GameEntity> AffectableEntities
     {
         get;
         private set;
-    }
+    } = null!;
 
-    public UniqueEntityIndex<GameEntity, (int, string)> AffectableAbilitiesIndex
+    public UniqueEntityIndex<GameEntity, (int, string?)> AffectableAbilitiesIndex
     {
         get;
         private set;
-    }
+    } = null!;
 
     public CollectionEntityRelationship<GameEntity, HashSet<GameEntity>> AbilitiesToAffectableRelationship
     {
         get;
         private set;
-    }
+    } = null!;
 
     public AbilityActivationSystem AbilityActivationSystem
     {
         get;
         private set;
-    }
+    } = null!;
 
     public AbilitySlottingSystem AbilitySlottingSystem
     {
         get;
         private set;
-    }
+    } = null!;
 
     private void InitializeAbilities(SequentialMessageQueue<GameManager> queue)
     {
@@ -63,14 +62,14 @@ public partial class GameManager
         AffectableAbilitiesIndex = new(
             nameof(AffectableAbilitiesIndex),
             Abilities,
-            new KeyValueGetter<GameEntity, (int, string)>(
+            new KeyValueGetter<GameEntity, (int, string?)>(
                 (change, matcher, valueType) =>
                 {
                     if (!matcher.TryGetValue<int?>(
                             change, (int)EntityComponent.Ability, nameof(AbilityComponent.OwnerId),
                             valueType, out var ownerId)
                         || !ownerId.HasValue
-                        || !matcher.TryGetValue<string>(
+                        || !matcher.TryGetValue<string?>(
                             change, (int)EntityComponent.Ability, nameof(AbilityComponent.Name),
                             valueType, out var name)
                         || name == null)
@@ -93,10 +92,10 @@ public partial class GameManager
                 component => ((AbilityComponent)component).OwnerId,
                 (int)EntityComponent.Ability),
             (effectEntity, _) => effectEntity.RemoveComponent((int)EntityComponent.Ability),
-            containerEntity => (HashSet<GameEntity>)(containerEntity.Being.Abilities
-                                                     ?? containerEntity.Item.Abilities
-                                                     ?? containerEntity.Physical.Abilities
-                                                     ?? containerEntity.Sensor.Abilities),
+            containerEntity => (HashSet<GameEntity>)(containerEntity.Being!.Abilities
+                                                     ?? containerEntity.Item!.Abilities
+                                                     ?? containerEntity.Physical!.Abilities
+                                                     ?? containerEntity.Sensor!.Abilities),
             keepPrincipalAlive: false,
             keepDependentAlive: true);
 

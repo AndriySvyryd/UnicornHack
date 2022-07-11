@@ -1,6 +1,4 @@
-﻿using UnicornHack.Primitives;
-
-namespace UnicornHack.Services.LogEvents;
+﻿namespace UnicornHack.Services.LogEvents;
 
 public readonly struct ItemDropEvent
 {

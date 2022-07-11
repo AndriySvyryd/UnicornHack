@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using UnicornHack.Data;
 using UnicornHack.Services;
 
@@ -24,7 +22,7 @@ public class GameSnapshot
         get;
     } = new();
 
-    private Dictionary<int, List<object>> SerializedLevels
+    private Dictionary<int, List<object?>?> SerializedLevels
     {
         get;
     } = new();
@@ -46,7 +44,7 @@ public class GameSnapshot
         foreach (var playerEntity in manager.Players)
         {
             var context = new SerializationContext(dbContext, playerEntity, services);
-            var levelEntity = playerEntity.Position.LevelEntity;
+            var levelEntity = playerEntity.Position!.LevelEntity;
             if (!snapshotedLevels.Contains(levelEntity.Id))
             {
                 if (!LevelSnapshots.TryGetValue(levelEntity.Id, out var levelSnapshot))
@@ -91,11 +89,11 @@ public class GameSnapshot
         }
     }
 
-    public static List<object> Serialize(
-        GameEntity playerEntity, EntityState state, GameSnapshot snapshot, SerializationContext context)
+    public static List<object?> Serialize(
+        GameEntity playerEntity, EntityState state, GameSnapshot? snapshot, SerializationContext context)
     {
-        var levelEntity = playerEntity.Position.LevelEntity;
-        LevelSnapshot levelSnapshot = null;
+        var levelEntity = playerEntity.Position!.LevelEntity;
+        LevelSnapshot? levelSnapshot = null;
         if (snapshot != null
             && !snapshot.LevelSnapshots.TryGetValue(levelEntity.Id, out levelSnapshot))
         {
@@ -105,7 +103,7 @@ public class GameSnapshot
 
         if (state == EntityState.Added)
         {
-            PlayerSnapshot playerSnapshot = null;
+            PlayerSnapshot? playerSnapshot = null;
             if (snapshot != null)
             {
                 snapshot.SnapshotTick = context.Manager.Game.CurrentTick;
@@ -114,11 +112,11 @@ public class GameSnapshot
             }
 
             var serializedLevel = LevelSnapshot.Serialize(levelEntity, null, levelSnapshot, context);
-            return PlayerSnapshot.Serialize(playerEntity, state, playerSnapshot, serializedLevel, context);
+            return PlayerSnapshot.Serialize(playerEntity, state, playerSnapshot!, serializedLevel, context);
         }
         else
         {
-            snapshot.SnapshotTick = context.Manager.Game.CurrentTick;
+            snapshot!.SnapshotTick = context.Manager.Game.CurrentTick;
             if (!snapshot.SerializedLevels.TryGetValue(levelEntity.Id, out var serializedLevel))
             {
                 var position = playerEntity.Position;

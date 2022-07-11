@@ -1,10 +1,8 @@
-﻿using System.Collections.Generic;
+﻿namespace UnicornHack.Utils.DataStructures;
 
-namespace UnicornHack.Utils.DataStructures;
-
-public class ObservableSnapshotHashSet<T> : ObservableHashSet<T>, ISnapshotableCollection<T>
+public class ObservableSnapshotableHashSet<T> : ObservableHashSet<T>, ISnapshotableCollection<T>
 {
-    public HashSet<T> Snapshot
+    public HashSet<T>? Snapshot
     {
         get;
         private set;

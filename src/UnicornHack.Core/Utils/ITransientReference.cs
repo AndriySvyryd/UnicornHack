@@ -1,9 +1,7 @@
-﻿using System;
-
-namespace UnicornHack.Utils;
+﻿namespace UnicornHack.Utils;
 
 public interface ITransientReference<out T> : IDisposable
-    where T : class, IOwnerReferenceable
+    where T : class, IReferenceable
 {
     T Referenced
     {

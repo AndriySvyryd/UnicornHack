@@ -1,6 +1,6 @@
 ﻿using UnicornHack.Utils.MessagingECS;
 
-namespace UnicornHack.Systems.Senses;
+namespace UnicornHack.Systems.Knowledge;
 
 public class KnownTerrainChangedMessage : IMessage
 {
@@ -18,11 +18,11 @@ public class KnownTerrainChangedMessage : IMessage
         manager.Enqueue(terrainChanged);
     }
 
-    private GameEntity _levelEntity;
+    private GameEntity? _levelEntity;
 
     public GameEntity LevelEntity
     {
-        get => _levelEntity;
+        get => _levelEntity!;
         set
         {
             _levelEntity?.RemoveReference(this);
@@ -41,11 +41,11 @@ public class KnownTerrainChangedMessage : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
     public void Clean()
     {
-        LevelEntity = default;
+        LevelEntity = default!;
         TilesExplored = default;
     }
 }

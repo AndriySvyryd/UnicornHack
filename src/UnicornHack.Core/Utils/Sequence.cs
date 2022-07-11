@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace UnicornHack.Utils;
 
 public static class Sequence

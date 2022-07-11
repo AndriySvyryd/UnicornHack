@@ -1,26 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
+﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using UnicornHack.Utils.Caching;
 
 namespace UnicornHack.Utils.MessagingECS;
 
 public abstract class Component :
-    IOwnerReferenceable, ITrackable, IPoolable, INotifyPropertyChanged, INotifyPropertyChanging
+    IReferenceable, ITrackable, IPoolable, INotifyPropertyChanged, INotifyPropertyChanging
 {
     public static int NullId = int.MinValue;
-    public event PropertyChangedEventHandler PropertyChanged;
-    public event PropertyChangingEventHandler PropertyChanging;
+    public event PropertyChangedEventHandler? PropertyChanged;
+    public event PropertyChangingEventHandler? PropertyChanging;
 
 #if DEBUG
     private readonly List<object> _owners = new();
 #endif
     private int _referenceCount;
-    private IObjectPool _pool;
+    private IObjectPool? _pool;
     private bool _tracked;
-    private Entity _entity;
+    private Entity? _entity;
 
     public int ComponentId
     {
@@ -30,17 +27,17 @@ public abstract class Component :
 
     public Entity Entity
     {
-        get => _entity;
+        get => _entity!;
         set
         {
             if (_entity != value)
             {
-                Debug.Assert(_entity == null || value == null);
+                Debug.Assert(_entity == null || value == null!);
 
-                if (value != null)
+                if (value?.Manager != null)
                 {
                     // Done here because reference count is not persisted
-                    ((IOwnerReferenceable)this).AddReference(value);
+                    ((IReferenceable)this).AddReference(value);
 
                     Manager = value.Manager;
                 }
@@ -50,7 +47,7 @@ public abstract class Component :
         }
     }
 
-    protected IEntityManager Manager
+    protected IEntityManager? Manager
     {
         get;
         set;
@@ -58,8 +55,8 @@ public abstract class Component :
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected void SetWithNotify<T>(
-        T value,
-        ref T field,
+        T? value,
+        [NotNullIfNotNull("value")] ref T? field,
         [CallerMemberName] string propertyName = "")
     {
         if (NotifyChanging(value, ref field, propertyName, out var oldValue))
@@ -71,10 +68,10 @@ public abstract class Component :
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected bool NotifyChanging<T>(
-        T value,
-        ref T field,
+        T? value,
+        ref T? field,
         string propertyName,
-        out T oldValue)
+        out T? oldValue)
     {
         if (EqualityComparer<T>.Default.Equals(field, value))
         {
@@ -105,11 +102,11 @@ public abstract class Component :
         Debug.Assert(_tracked, $"Component {GetType().Name} is not tracked by {tracker}");
 
         _tracked = false;
-        ((IOwnerReferenceable)this).AddReference(tracker);
-        ((IOwnerReferenceable)this).RemoveReference(tracker);
+        ((IReferenceable)this).AddReference(tracker);
+        ((IReferenceable)this).RemoveReference(tracker);
     }
 
-    void IOwnerReferenceable.AddReference(object owner)
+    void IReferenceable.AddReference(object owner)
     {
 #if DEBUG
         _owners.Add(owner);
@@ -117,7 +114,7 @@ public abstract class Component :
         _referenceCount++;
     }
 
-    void IOwnerReferenceable.RemoveReference(object owner)
+    void IReferenceable.RemoveReference(object owner)
     {
 #if DEBUG
         _owners.Remove(owner);
@@ -131,7 +128,7 @@ public abstract class Component :
         {
             if (_tracked)
             {
-                Manager.RemoveFromSecondaryTracker(this);
+                Manager!.RemoveFromSecondaryTracker(this);
             }
             else
             {
@@ -152,7 +149,7 @@ public abstract class Component :
                      && PropertyChanged == null
                      && PropertyChanging == null);
 
-        Entity = null;
+        Entity = default!;
 
         _pool?.Return(this);
     }

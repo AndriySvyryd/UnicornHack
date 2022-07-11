@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Collections.Immutable;
 using System.Linq.Expressions;
 using System.Reflection;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
@@ -14,7 +8,6 @@ using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils;
-using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Abilities;
@@ -41,20 +34,20 @@ public class AbilityActivationSystem :
         new(new[] { AbilityParameter, ActivatorParameter });
 
     private static readonly MethodInfo _accuracyRequirementsModifierMethod = typeof(AbilityActivationSystem)
-        .GetMethod(nameof(GetAccuracyRequirementsModifierMethod), BindingFlags.NonPublic | BindingFlags.Static);
+        .GetMethod(nameof(GetAccuracyRequirementsModifierMethod), BindingFlags.NonPublic | BindingFlags.Static)!;
 
     private static readonly MethodInfo _accuracyModifierMethod = typeof(AbilityActivationSystem)
-        .GetMethod(nameof(GetAccuracyModifierMethod), BindingFlags.NonPublic | BindingFlags.Static);
+        .GetMethod(nameof(GetAccuracyModifierMethod), BindingFlags.NonPublic | BindingFlags.Static)!;
 
     private static readonly MethodInfo _delayRequirementModifierMethod = typeof(AbilityActivationSystem)
-        .GetMethod(nameof(GetDelayRequirementModifierMethod), BindingFlags.NonPublic | BindingFlags.Static);
+        .GetMethod(nameof(GetDelayRequirementModifierMethod), BindingFlags.NonPublic | BindingFlags.Static)!;
 
     private static readonly MethodInfo _speedModifierMethod = typeof(AbilityActivationSystem)
-        .GetMethod(nameof(GetSpeedModifierMethod), BindingFlags.NonPublic | BindingFlags.Static);
+        .GetMethod(nameof(GetSpeedModifierMethod), BindingFlags.NonPublic | BindingFlags.Static)!;
 
     public bool CanActivateAbility(ActivateAbilityMessage activateAbilityMessage, bool shouldThrow)
     {
-        var message = Activate(activateAbilityMessage, pretend: true, stats: null);
+        var message = Activate(activateAbilityMessage, pretend: true, stats: null)!;
 
         var hasError = !string.IsNullOrEmpty(message.ActivationError);
         if (hasError && shouldThrow)
@@ -98,8 +91,10 @@ public class AbilityActivationSystem :
         return MessageProcessingResult.ContinueProcessing;
     }
 
-    private AbilityActivatedMessage Activate(ActivateAbilityMessage activateMessage, bool pretend,
-        AttackStats stats)
+    private AbilityActivatedMessage? Activate(
+        ActivateAbilityMessage activateMessage,
+        bool pretend,
+        AttackStats? stats)
     {
         var manager = activateMessage.AbilityEntity.Manager;
         var targetEffectsMessage = AbilityActivatedMessage.Create(manager);
@@ -108,7 +103,7 @@ public class AbilityActivationSystem :
         targetEffectsMessage.TargetCell = activateMessage.TargetCell;
         targetEffectsMessage.TargetEntity = activateMessage.TargetEntity;
 
-        var ability = activateMessage.AbilityEntity.Ability;
+        var ability = activateMessage.AbilityEntity.Ability!;
         if (stats == null)
         {
             if (!ability.IsUsable)
@@ -120,7 +115,7 @@ public class AbilityActivationSystem :
 
             if (ability.Slot == null
                 && (ability.Activation & ActivationType.Slottable) != 0
-                && ability.OwnerEntity.Physical?.Capacity != 0)
+                && ability.OwnerEntity!.Physical?.Capacity != 0)
             {
                 targetEffectsMessage.ActivationError = $"Ability {ability.EntityId} is not slotted.";
                 return targetEffectsMessage;
@@ -140,13 +135,13 @@ public class AbilityActivationSystem :
             }
         }
 
-        if ((ability.Effects?.Count ?? 0) == 0)
+        if (ability.Effects.Count == 0)
         {
             targetEffectsMessage.ActivationError = $"The ability {ability.EntityId} has no effects.";
             return targetEffectsMessage;
         }
 
-        var being = ability.OwnerEntity.Being ?? targetEffectsMessage.ActivatorEntity.Being;
+        var being = ability.OwnerEntity!.Being ?? targetEffectsMessage.ActivatorEntity.Being;
         if (ability.EnergyCost > 0
             && being != null)
         {
@@ -190,7 +185,7 @@ public class AbilityActivationSystem :
             if (activatorPosition != null
                 && stats == null)
             {
-                var targetCell = activateMessage.TargetCell ?? activateMessage.TargetEntity?.Position.LevelCell;
+                var targetCell = activateMessage.TargetCell ?? activateMessage.TargetEntity?.Position!.LevelCell;
                 if (targetCell == null)
                 {
                     targetEffectsMessage.ActivationError = $"Speed too low to activate ability {ability.EntityId}.";
@@ -263,7 +258,7 @@ public class AbilityActivationSystem :
         }
         else
         {
-            stats.SelfEffects = selfEffectsMessage.EffectsToApply;
+            stats!.SelfEffects = selfEffectsMessage.EffectsToApply;
             manager.ReturnMessage(selfEffectsMessage);
         }
 
@@ -286,13 +281,13 @@ public class AbilityActivationSystem :
                     if (target == activateMessage.TargetEntity)
                     {
                         var subStats = new SubAttackStats();
-                        subStats.SuccessCondition = targetMessage.AbilityEntity.Ability.SuccessCondition;
+                        subStats.SuccessCondition = targetMessage.AbilityEntity.Ability!.SuccessCondition;
 
                         var accuracy = manager.AbilityActivationSystem.GetAccuracy(
                             ability, targetMessage.ActivatorEntity);
                         subStats.Accuracy = accuracy;
 
-                        var melee = activation.ActivationMessage.AbilityEntity.Ability.Range == 1;
+                        var melee = activation.ActivationMessage.AbilityEntity.Ability!.Range == 1;
                         subStats.HitProbability = DetermineOutcome(
                             targetMessage,
                             melee ? BeveledVisibilityCalculator.MaxVisibility : exposure,
@@ -301,7 +296,7 @@ public class AbilityActivationSystem :
 
                         subStats.Effects = targetMessage.EffectsToApply;
 
-                        stats.SubAttacks.Add(subStats);
+                        stats!.SubAttacks.Add(subStats);
 
                         manager.ReturnMessage(targetMessage);
                     }
@@ -350,16 +345,16 @@ public class AbilityActivationSystem :
         {
             case ActivationType.Manual:
             case ActivationType.WhileToggled:
-                return activatorPosition.Heading.Value;
+                return activatorPosition.Heading!.Value;
             case ActivationType.Targeted:
                 var targetDirection = activatorPosition.LevelCell.DifferenceTo(targetCell);
                 if (targetDirection.Length() == 0)
                 {
-                    return activatorPosition.Heading.Value;
+                    return activatorPosition.Heading!.Value;
                 }
 
                 var octantsToTurn = 0;
-                var targetOctantDifference = targetDirection.OctantsTo(activatorPosition.Heading.Value);
+                var targetOctantDifference = targetDirection.OctantsTo(activatorPosition.Heading!.Value);
                 var maxOctantDifference = ability.MaxHeadingDeviation;
                 if (targetOctantDifference > maxOctantDifference)
                 {
@@ -394,7 +389,7 @@ public class AbilityActivationSystem :
     {
         var activations = new List<AbilityActivation>();
 
-        activatedAbilities.Add(activationMessage.AbilityEntity.Ability);
+        activatedAbilities.Add(activationMessage.AbilityEntity.Ability!);
         GetActivations(activationMessage, null, selfEffectsMessage, null, activatedAbilities, activations);
 
         return activations;
@@ -402,9 +397,9 @@ public class AbilityActivationSystem :
 
     private void GetActivations(
         AbilityActivatedMessage activationMessage,
-        AbilityActivatedMessage targetMessage,
+        AbilityActivatedMessage? targetMessage,
         AbilityActivatedMessage selfEffectsMessage,
-        GameEntity activatingEffect,
+        GameEntity? activatingEffect,
         HashSet<AbilityComponent> activatedAbilities,
         List<AbilityActivation> activations)
     {
@@ -415,14 +410,14 @@ public class AbilityActivationSystem :
         {
             foreach (var subActivation in perAbilityActivations)
             {
-                activatedAbilities.Add(subActivation.ActivatedAbility.Ability);
+                activatedAbilities.Add(subActivation.ActivatedAbility.Ability!);
 
                 var subAbilityMessage = messageToProcess.Clone(manager);
                 subAbilityMessage.AbilityEntity = subActivation.ActivatedAbility;
 
                 AbilityActivatedMessage nextActivationMessage;
                 var nextTargetMessage = targetMessage;
-                if (subActivation.ActivatedAbility.Ability.Range != 0
+                if (subActivation.ActivatedAbility.Ability!.Range != 0
                     && nextTargetMessage == null)
                 {
                     nextActivationMessage = subAbilityMessage;
@@ -451,7 +446,7 @@ public class AbilityActivationSystem :
         }
         else
         {
-            Debug.Assert(activationMessage.AbilityEntity.Ability.Action != AbilityAction.Modifier);
+            Debug.Assert(activationMessage.AbilityEntity.Ability!.Action != AbilityAction.Modifier);
             if (activatingEffect != null)
             {
                 if (targetMessage == null)
@@ -471,20 +466,20 @@ public class AbilityActivationSystem :
         }
     }
 
-    private List<(GameEntity ActivatingEffect, GameEntity ActivatedAbility)> GetActivatedAbilities(
+    private List<(GameEntity ActivatingEffect, GameEntity ActivatedAbility)>? GetActivatedAbilities(
         AbilityActivatedMessage targetEffectsMessage,
         AbilityActivatedMessage selfEffectsMessage)
     {
         var manager = targetEffectsMessage.ActivatorEntity.Manager;
         var abilityTrigger = targetEffectsMessage.Trigger;
-        List<(GameEntity Effect, GameEntity Ability)> activatedAbilities = null;
+        List<(GameEntity Effect, GameEntity Ability)>? activatedAbilities = null;
 
-        foreach (var effectEntity in targetEffectsMessage.AbilityEntity.Ability.Effects)
+        foreach (var effectEntity in targetEffectsMessage.AbilityEntity.Ability!.Effects)
         {
-            var effect = effectEntity.Effect;
+            var effect = effectEntity.Effect!;
             if (effect.EffectType == EffectType.Activate)
             {
-                var activatableId = effect.TargetEntityId.Value;
+                var activatableId = effect.TargetEntityId!.Value;
                 var activatable = manager.FindEntity(activatableId);
                 if (activatable == null)
                 {
@@ -561,7 +556,7 @@ public class AbilityActivationSystem :
         {
             DeactivateAbilities(message.ItemEntity, ActivationType.WhileEquipped, message.ActorEntity, manager);
 
-            if (message.ItemEntity.Item.ContainerEntity == message.ActorEntity)
+            if (message.ItemEntity.Item!.ContainerEntity == message.ActorEntity)
             {
                 var activationTemplate = ActivateAbilityMessage.Create(manager);
                 activationTemplate.ActivatorEntity = message.ActorEntity;
@@ -592,7 +587,7 @@ public class AbilityActivationSystem :
         foreach (var abilityEntity in GetTriggeredAbilities(
                      message.Entity, ActivationType.WhileAboveLevel))
         {
-            var ability = abilityEntity.Ability;
+            var ability = abilityEntity.Ability!;
             if (ability.IsActive)
             {
                 continue;
@@ -606,7 +601,7 @@ public class AbilityActivationSystem :
             }
 
             var activation = ActivateAbilityMessage.Create(manager);
-            activation.ActivatorEntity = ability.OwnerEntity;
+            activation.ActivatorEntity = ability.OwnerEntity!;
             activation.TargetEntity = ability.OwnerEntity;
             activation.AbilityEntity = abilityEntity;
             manager.Process(activation);
@@ -615,10 +610,8 @@ public class AbilityActivationSystem :
         return MessageProcessingResult.ContinueProcessing;
     }
 
-    private RaceComponent GetSourceRace(GameEntity abilityEntity)
+    private RaceComponent? GetSourceRace(GameEntity abilityEntity)
     {
-        var manager = abilityEntity.Manager;
-
         while (true)
         {
             var race = abilityEntity.Race;
@@ -633,6 +626,10 @@ public class AbilityActivationSystem :
                 return null;
             }
 
+            if (effect.SourceAbility == null)
+            {
+                return null;
+            }
             abilityEntity = effect.SourceAbility;
         }
     }
@@ -642,7 +639,7 @@ public class AbilityActivationSystem :
         switch (message.Group.Name)
         {
             case nameof(GameManager.AbilitiesToAffectableRelationship):
-                var ability = message.Entity.Ability;
+                var ability = message.Entity.Ability!;
                 if ((ability.Activation & ActivationType.Always) != 0
                     && !ability.IsActive)
                 {
@@ -653,7 +650,7 @@ public class AbilityActivationSystem :
             case nameof(GameManager.EntityItemsToContainerRelationship):
                 if (message.PrincipalEntity != null
                     && message.PrincipalEntity.HasComponent(EntityComponent.Being)
-                    && message.Entity.Item.EquippedSlot == EquipmentSlot.None)
+                    && message.Entity.Item!.EquippedSlot == EquipmentSlot.None)
                 {
                     var activationTemplate = ActivateAbilityMessage.Create(manager);
                     activationTemplate.ActivatorEntity = message.PrincipalEntity;
@@ -665,19 +662,15 @@ public class AbilityActivationSystem :
 
                 break;
             case nameof(GameManager.Effects):
-                var effect = message.Entity.Effect;
-                var containingAbilityEntity = effect.ContainingAbility;
-                if (containingAbilityEntity != null)
+                var effect = message.Entity.Effect!;
+                var containingAbility = effect.ContainingAbility?.Ability;
+                if (containingAbility != null
+                    && (containingAbility.Activation & ActivationType.Always) != 0
+                    && !containingAbility.IsActive
+                    && containingAbility.Effects.Count == 1)
                 {
-                    var containingAbility = containingAbilityEntity.Ability;
-                    if (containingAbility != null
-                        && (containingAbility.Activation & ActivationType.Always) != 0
-                        && !containingAbility.IsActive
-                        && containingAbility.Effects.Count == 1)
-                    {
-                        // TODO: If ability contains other effects deactivate then reactivate
-                        SelfActivate(containingAbility, manager);
-                    }
+                    // TODO: If ability contains other effects deactivate then reactivate
+                    SelfActivate(containingAbility, manager);
                 }
 
                 break;
@@ -700,7 +693,7 @@ public class AbilityActivationSystem :
                     && (ability.Activation & ActivationType.Continuous) != 0
                     && ability.IsActive)
                 {
-                    Deactivate(ability, message.PrincipalEntity, manager);
+                    Deactivate(ability, message.PrincipalEntity!, manager);
                 }
 
                 break;
@@ -713,14 +706,14 @@ public class AbilityActivationSystem :
 
                 break;
             case nameof(GameManager.Effects):
-                var effect = (EffectComponent)message.RemovedComponent ?? message.Entity.Effect;
+                var effect = (EffectComponent?)message.RemovedComponent ?? message.Entity.Effect!;
                 var containingAbility = effect.ContainingAbility?.Ability;
                 if (containingAbility != null
                     && (containingAbility.Activation & ActivationType.Continuous) != 0
                     && containingAbility.IsActive
                     && containingAbility.Effects.Count == 0)
                 {
-                    Deactivate(containingAbility, message.PrincipalEntity, manager);
+                    Deactivate(containingAbility, message.PrincipalEntity!, manager);
                 }
 
                 break;
@@ -732,7 +725,7 @@ public class AbilityActivationSystem :
     }
 
     private void SelfActivate(AbilityComponent ability, GameManager manager)
-        => manager.Process(ActivateAbilityMessage.Create(ability.Entity, ability.OwnerEntity, ability.OwnerEntity));
+        => manager.Process(ActivateAbilityMessage.Create(ability.Entity, ability.OwnerEntity!, ability.OwnerEntity!));
 
     public bool ActivateAbilities(
         GameEntity activatableEntity,
@@ -761,7 +754,7 @@ public class AbilityActivationSystem :
     public static IEnumerable<GameEntity> GetTriggeredAbilities(GameEntity activatableEntity,
         ActivationType trigger)
         => activatableEntity.Physical?.Abilities
-               .Select(a => a.Ability)
+               .Select(a => a.Ability!)
                .Where(a => (a.Activation & trigger) != ActivationType.Default)
                .Select(a => a.Entity)
            ?? Enumerable.Empty<GameEntity>();
@@ -770,22 +763,19 @@ public class AbilityActivationSystem :
     {
         var triggeredAbilities = GetTriggeredAbilities(activatableEntity, trigger);
 
-        GameEntity triggeredAbility;
-        using (var abilityEnumerator = triggeredAbilities.GetEnumerator())
+        using var abilityEnumerator = triggeredAbilities.GetEnumerator();
+        if (!abilityEnumerator.MoveNext())
         {
-            if (!abilityEnumerator.MoveNext())
-            {
-                throw new InvalidOperationException(
-                    $"Item {activatableEntity.Id} has no abilities matching {trigger}");
-            }
+            throw new InvalidOperationException(
+                $"Item {activatableEntity.Id} has no abilities matching {trigger}");
+        }
 
-            triggeredAbility = abilityEnumerator.Current;
+        var triggeredAbility = abilityEnumerator.Current;
 
-            if (abilityEnumerator.MoveNext())
-            {
-                throw new InvalidOperationException(
-                    $"Item {activatableEntity.Id} has multiple abilities matching {trigger}");
-            }
+        if (abilityEnumerator.MoveNext())
+        {
+            throw new InvalidOperationException(
+                $"Item {activatableEntity.Id} has multiple abilities matching {trigger}");
         }
 
         return triggeredAbility;
@@ -800,11 +790,11 @@ public class AbilityActivationSystem :
         foreach (var abilityEntity in GetTriggeredAbilities(activatableEntity, trigger))
         {
             // TODO: Trigger non-modifier abilities as separate activations
-            Debug.Assert(abilityEntity.Ability.Action != AbilityAction.Modifier);
+            Debug.Assert(abilityEntity.Ability!.Action != AbilityAction.Modifier);
 
             foreach (var effectEntity in abilityEntity.Ability.Effects)
             {
-                if (effectEntity.Effect.ShouldTargetActivator)
+                if (effectEntity.Effect!.ShouldTargetActivator)
                 {
                     selfEffectsMessage.EffectsToApply =
                         selfEffectsMessage.EffectsToApply.Add(effectEntity);
@@ -823,20 +813,22 @@ public class AbilityActivationSystem :
         var activator = activationMessage.ActivatorEntity;
         var manager = activator.Manager;
         var targets = manager.GameEntityByteListArrayPool.Rent();
-        var ability = activationMessage.AbilityEntity.Ability;
+        var ability = activationMessage.AbilityEntity.Ability!;
+        var activatorPosition = activator.Position;
         if (activationMessage.TargetEntity != null
-            && ability.Activation != ActivationType.Targeted)
+            && (ability.Activation != ActivationType.Targeted
+                || activatorPosition == null))
         {
             targets.Add((activationMessage.TargetEntity, BeveledVisibilityCalculator.MaxVisibility));
             return targets;
         }
 
-        var level = activator.Position.LevelEntity.Level;
-        var targetCell = activationMessage.TargetCell ?? activationMessage.TargetEntity.Position.LevelCell;
+        var level = activatorPosition!.LevelEntity.Level!;
+        var targetCell = activationMessage.TargetCell ?? activationMessage.TargetEntity!.Position!.LevelCell;
         var cells = GetTargetedCells(
-            activator.Position.LevelCell,
+            activatorPosition.LevelCell,
             targetCell,
-            activator.Position.Heading.Value,
+            activatorPosition.Heading!.Value,
             ability.Range,
             ability.TargetingShape,
             ability.TargetingShapeSize,
@@ -963,7 +955,7 @@ public class AbilityActivationSystem :
             return 0;
         }
 
-        if (message.AbilityEntity.Ability.SuccessCondition == AbilitySuccessCondition.Always
+        if (message.AbilityEntity.Ability!.SuccessCondition == AbilitySuccessCondition.Always
             || !message.ActivatorEntity.HasComponent(EntityComponent.Being)
             || !message.TargetEntity.HasComponent(EntityComponent.Being))
         {
@@ -998,19 +990,19 @@ public class AbilityActivationSystem :
         GameEntity abilityEntity, GameEntity activatorEntity, GameEntity targetEntity, byte? exposure,
         int? accuracy)
     {
-        var ability = abilityEntity.Ability;
+        var ability = abilityEntity.Ability!;
         var attackRating = accuracy ?? GetAccuracy(ability, activatorEntity);
 
         if (exposure == null)
         {
-            var originPosition = activatorEntity.Position;
-            var targetPosition = targetEntity.Position;
+            var originPosition = activatorEntity.Position!;
+            var targetPosition = targetEntity.Position!;
             var targetCell = targetPosition.LevelCell;
-            var level = originPosition.LevelEntity.Level;
+            var level = originPosition.LevelEntity.Level!;
             var cells = GetTargetedCells(
                 originPosition.LevelCell,
                 targetCell,
-                originPosition.Heading.Value,
+                originPosition.Heading!.Value,
                 ability.Range,
                 TargetingShape.Square,
                 1,
@@ -1035,13 +1027,13 @@ public class AbilityActivationSystem :
         GameEntity abilityEntity, GameEntity activatorEntity, GameEntity targetEntity, byte? exposure,
         int? accuracy)
     {
-        switch (abilityEntity.Ability.SuccessCondition)
+        switch (abilityEntity.Ability!.SuccessCondition)
         {
             case AbilitySuccessCondition.NormalAttack:
             case AbilitySuccessCondition.UnavoidableAttack:
                 var attackRating =
                     GetAttackRating(abilityEntity, activatorEntity, targetEntity, exposure, accuracy);
-                return GetMissProbability(attackRating, targetEntity.Being.Deflection);
+                return GetMissProbability(attackRating, targetEntity.Being!.Deflection);
             case AbilitySuccessCondition.UnblockableAttack:
             case AbilitySuccessCondition.Always:
                 return 0;
@@ -1054,13 +1046,13 @@ public class AbilityActivationSystem :
         GameEntity abilityEntity, GameEntity activatorEntity, GameEntity targetEntity, byte? exposure,
         int? accuracy)
     {
-        switch (abilityEntity.Ability.SuccessCondition)
+        switch (abilityEntity.Ability!.SuccessCondition)
         {
             case AbilitySuccessCondition.NormalAttack:
             case AbilitySuccessCondition.UnblockableAttack:
                 var attackRating =
                     GetAttackRating(abilityEntity, activatorEntity, targetEntity, exposure, accuracy);
-                return GetMissProbability(attackRating, targetEntity.Being.Evasion);
+                return GetMissProbability(attackRating, targetEntity.Being!.Evasion);
             case AbilitySuccessCondition.UnavoidableAttack:
             case AbilitySuccessCondition.Always:
                 return 0;
@@ -1071,7 +1063,7 @@ public class AbilityActivationSystem :
 
     private bool DetermineSuccess(GameEntity victimEntity, int successProbability)
     {
-        var entropyState = victimEntity.Being.EntropyState;
+        var entropyState = victimEntity.Being!.EntropyState;
         var success = victimEntity.Game.Random.NextBool(successProbability, ref entropyState);
         victimEntity.Being.EntropyState = entropyState;
         return success;
@@ -1095,9 +1087,9 @@ public class AbilityActivationSystem :
     private void DeactivateAbilities(
         GameEntity activatableEntity, ActivationType activation, GameEntity activatorEntity, GameManager manager)
     {
-        foreach (var abilityEntity in activatableEntity.Physical.Abilities)
+        foreach (var abilityEntity in activatableEntity.Physical!.Abilities)
         {
-            var ability = abilityEntity.Ability;
+            var ability = abilityEntity.Ability!;
             if ((ability.Activation & activation) == 0 || !ability.IsActive)
             {
                 continue;
@@ -1110,7 +1102,7 @@ public class AbilityActivationSystem :
     MessageProcessingResult IMessageConsumer<DeactivateAbilityMessage, GameManager>.Process(
         DeactivateAbilityMessage message, GameManager manager)
     {
-        Deactivate(message.AbilityEntity.Ability, message.ActivatorEntity, manager);
+        Deactivate(message.AbilityEntity!.Ability!, message.ActivatorEntity, manager);
 
         return MessageProcessingResult.ContinueProcessing;
     }
@@ -1122,7 +1114,7 @@ public class AbilityActivationSystem :
         if (ability.EnergyCost > 0
             && (ability.Activation & ActivationType.Continuous) != 0)
         {
-            var being = ability.OwnerEntity.Being ?? activatorEntity.Being;
+            var being = ability.OwnerEntity!.Being ?? activatorEntity.Being;
             if (being != null)
             {
                 being.ReservedEnergyPoints -= ability.EnergyCost;
@@ -1153,7 +1145,7 @@ public class AbilityActivationSystem :
 
                 if (ability.XPCooldown > 0)
                 {
-                    ability.CooldownXpLeft = activatorEntity.Player.NextLevelXP * ability.XPCooldown / 100;
+                    ability.CooldownXpLeft = activatorEntity.Player!.NextLevelXP * ability.XPCooldown / 100;
                 }
             }
             else if (!ability.IsActive)
@@ -1175,7 +1167,7 @@ public class AbilityActivationSystem :
 
             if (ability.XPCooldown > 0)
             {
-                ability.CooldownXpLeft = activatorEntity.Player.NextLevelXP * ability.XPCooldown / 100;
+                ability.CooldownXpLeft = activatorEntity.Player!.NextLevelXP * ability.XPCooldown / 100;
             }
         }
     }
@@ -1184,13 +1176,10 @@ public class AbilityActivationSystem :
     {
         if (ability.Accuracy == null)
         {
-            return activatorEntity.Being.Accuracy;
+            return activatorEntity.Being!.Accuracy;
         }
 
-        if (ability.AccuracyFunction == null)
-        {
-            ability.AccuracyFunction = CreateAccuracyFunction(ability.Accuracy, ability.Name);
-        }
+        ability.AccuracyFunction ??= CreateAccuracyFunction(ability.Accuracy, ability.Name!);
 
         try
         {
@@ -1216,19 +1205,19 @@ public class AbilityActivationSystem :
 
     private static float GetAccuracyRequirementsModifierMethod(GameEntity abilityEntity, GameEntity activatorEntity)
     {
-        var item = abilityEntity.Ability.OwnerEntity.Item;
+        var item = abilityEntity.Ability!.OwnerEntity!.Item!;
         var template = Item.Loader.Get(item.TemplateName);
         var skillBonus =
             activatorEntity.Manager.SkillAbilitiesSystem.GetItemSkillBonus(template, activatorEntity.Player);
-        var requiredPerception = template?.RequiredPerception ?? 0;
-        var difference = activatorEntity.Being.Perception + skillBonus - requiredPerception;
+        var requiredPerception = template.RequiredPerception ?? 0;
+        var difference = activatorEntity.Being!.Perception + skillBonus - requiredPerception;
         var accuracyModifier = requiredPerception * (difference + Math.Min(0, difference));
 
         return activatorEntity.Being.Accuracy + accuracyModifier;
     }
 
     private static float GetAccuracyModifierMethod(GameEntity abilityEntity, GameEntity activatorEntity)
-        => activatorEntity.Being.Accuracy;
+        => activatorEntity.Being!.Accuracy;
 
     public int GetDelay(AbilityComponent ability, GameEntity activatorEntity)
     {
@@ -1239,7 +1228,7 @@ public class AbilityActivationSystem :
 
         if (ability.DelayFunction == null)
         {
-            ability.DelayFunction = CreateDelayFunction(ability.Delay, ability.Name);
+            ability.DelayFunction = CreateDelayFunction(ability.Delay, ability.Name!);
         }
 
         try
@@ -1266,12 +1255,12 @@ public class AbilityActivationSystem :
 
     private static float GetDelayRequirementModifierMethod(GameEntity abilityEntity, GameEntity activatorEntity)
     {
-        var item = abilityEntity.Ability.OwnerEntity.Item;
+        var item = abilityEntity.Ability!.OwnerEntity!.Item!;
         var template = Item.Loader.Get(item.TemplateName);
         var skillBonus =
             activatorEntity.Manager.SkillAbilitiesSystem.GetItemSkillBonus(template, activatorEntity.Player);
-        var requiredSpeed = template?.RequiredSpeed ?? 0;
-        var difference = activatorEntity.Being.Speed + skillBonus - requiredSpeed;
+        var requiredSpeed = template.RequiredSpeed ?? 0;
+        var difference = activatorEntity.Being!.Speed + skillBonus - requiredSpeed;
         var divisor = 100 + requiredSpeed * (difference + Math.Min(0, difference));
 
         if (divisor <= 0)
@@ -1284,7 +1273,7 @@ public class AbilityActivationSystem :
 
     private static float GetSpeedModifierMethod(GameEntity abilityEntity, GameEntity activatorEntity)
     {
-        var divisor = 100 + 10 * activatorEntity.Being.Speed;
+        var divisor = 100 + 10 * activatorEntity.Being!.Speed;
 
         return 100f / divisor;
     }
@@ -1358,13 +1347,13 @@ public class AbilityActivationSystem :
         public AbilityActivatedMessage ActivationMessage
         {
             get;
-            set;
-        }
+            init;
+        } = null!;
 
-        public AbilityActivatedMessage TargetMessage
+        public AbilityActivatedMessage? TargetMessage
         {
             get;
-            set;
+            init;
         }
     }
 }

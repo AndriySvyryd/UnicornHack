@@ -1,8 +1,6 @@
-﻿using System;
-using UnicornHack.Systems.Beings;
+﻿using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Senses;
-using Xunit;
 
 namespace UnicornHack.Utils.MessagingECS;
 
@@ -33,7 +31,7 @@ public class UniqueEntityRelationshipTest
                     manager.BeingToPrimaryNaturalWeaponRelationship.Dependents.FindEntity(beingEntity.Id));
                 Assert.Same(beingEntity, manager.BeingToPrimaryNaturalWeaponRelationship.GetDependent(weaponEntity));
 
-                beingEntity.Being.PrimaryNaturalWeaponId = null;
+                beingEntity.Being!.PrimaryNaturalWeaponId = null;
 
                 Assert.False(manager.BeingToPrimaryNaturalWeaponRelationship.Dependents.ContainsEntity(beingEntity.Id));
                 Assert.Null(manager.BeingToPrimaryNaturalWeaponRelationship.Dependents.FindEntity(beingEntity.Id));
@@ -81,49 +79,41 @@ public class UniqueEntityRelationshipTest
     public void Throws_on_conflict()
     {
         var manager = TestHelper.CreateGameManager();
-        using (var beingEntityReference = manager.CreateEntity())
-        {
-            var beingEntity = beingEntityReference.Referenced;
-            var being = beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
-            beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
-            beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
+        using var beingEntityReference = manager.CreateEntity();
+        var beingEntity = beingEntityReference.Referenced;
+        var being = beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+        beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
+        beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
 
-            using (var weaponEntityReference = manager.CreateEntity())
-            {
-                var weaponEntity = weaponEntityReference.Referenced;
-                weaponEntity.AddComponent<ItemComponent>((int)EntityComponent.Item);
-                weaponEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
+        using var weaponEntityReference = manager.CreateEntity();
+        var weaponEntity = weaponEntityReference.Referenced;
+        weaponEntity.AddComponent<ItemComponent>((int)EntityComponent.Item);
+        weaponEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
 
-                being.PrimaryNaturalWeaponId = weaponEntity.Id;
+        being.PrimaryNaturalWeaponId = weaponEntity.Id;
 
-                using (var conflictingBeingEntityReference = manager.CreateEntity())
-                {
-                    var conflictingBeingEntity = conflictingBeingEntityReference.Referenced;
-                    var conflictingBeing =
-                        conflictingBeingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
-                    conflictingBeingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
-                    conflictingBeingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
+        using var conflictingBeingEntityReference = manager.CreateEntity();
+        var conflictingBeingEntity = conflictingBeingEntityReference.Referenced;
+        var conflictingBeing =
+            conflictingBeingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+        conflictingBeingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
+        conflictingBeingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
 
-                    Assert.Throws<InvalidOperationException>(() => conflictingBeing.PrimaryNaturalWeaponId = 1);
-                }
-            }
-        }
+        Assert.Throws<InvalidOperationException>(() => conflictingBeing.PrimaryNaturalWeaponId = 1);
     }
 
     [Fact]
     public void Referenced_entity_not_present_throws()
     {
         var manager = TestHelper.CreateGameManager();
-        using (var beingEntityReference = manager.CreateEntity())
-        {
-            var beingEntity = beingEntityReference.Referenced;
-            var being = beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
-            beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
-            being.PrimaryNaturalWeaponId = 1;
+        using var beingEntityReference = manager.CreateEntity();
+        var beingEntity = beingEntityReference.Referenced;
+        var being = beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+        beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
+        being.PrimaryNaturalWeaponId = 1;
 
-            Assert.Throws<InvalidOperationException>(() =>
-                beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical));
-        }
+        Assert.Throws<InvalidOperationException>(() =>
+            beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical));
     }
 
     [Fact]

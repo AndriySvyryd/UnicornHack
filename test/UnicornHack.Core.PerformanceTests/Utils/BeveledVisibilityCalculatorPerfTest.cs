@@ -1,8 +1,5 @@
-﻿using System;
-using BenchmarkDotNet.Attributes;
-using UnicornHack.Primitives;
+﻿using BenchmarkDotNet.Attributes;
 using UnicornHack.Utils;
-using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.PerformanceTests.Utils;
 

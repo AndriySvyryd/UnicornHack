@@ -1,9 +1,5 @@
 ﻿using System.Buffers;
-using System.Collections.Generic;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
 using UnicornHack.Utils;
-using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Levels;
@@ -11,18 +7,18 @@ namespace UnicornHack.Systems.Levels;
 [Component(Id = (int)EntityComponent.Level)]
 public class LevelComponent : GameComponent, IKeepAliveComponent
 {
-    private string _branchName;
-    private GameBranch _branch;
+    private string? _branchName;
+    private GameBranch? _branch;
     private int _difficulty;
     private byte _depth;
     private byte _height;
     private byte _width;
-    private SimpleRandom _generationRandom;
-    private byte[] _visibleTerrain;
-    private byte[] _visibleNeighbors;
-    private byte[] _terrain;
-    private byte[] _knownTerrain;
-    private byte[] _wallNeighbors;
+    private SimpleRandom? _generationRandom;
+    private byte[]? _visibleTerrain;
+    private byte[]? _visibleNeighbors;
+    private byte[]? _terrain;
+    private byte[]? _knownTerrain;
+    private byte[]? _wallNeighbors;
 
     public LevelComponent()
     {
@@ -31,13 +27,13 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
 
     public string BranchName
     {
-        get => _branchName;
+        get => _branchName!;
         set => SetWithNotify(value, ref _branchName);
     }
 
     public GameBranch Branch
     {
-        get => _branch;
+        get => _branch!;
         set => SetWithNotify(value, ref _branch);
     }
 
@@ -69,23 +65,23 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
 
     public SimpleRandom GenerationRandom
     {
-        get => _generationRandom;
+        get => _generationRandom!;
         set => SetWithNotify(value, ref _generationRandom);
     }
 
     public byte[] VisibleTerrain
     {
-        get => _visibleTerrain;
+        get => _visibleTerrain!;
         set => SetWithNotify(value, ref _visibleTerrain);
     }
 
-    public byte[] VisibleTerrainSnapshot
+    public byte[]? VisibleTerrainSnapshot
     {
         get;
         set;
     }
 
-    public Dictionary<int, byte> VisibleTerrainChanges
+    public Dictionary<int, byte>? VisibleTerrainChanges
     {
         get;
         set;
@@ -93,7 +89,7 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
 
     public byte[] VisibleNeighbors
     {
-        get => _visibleNeighbors;
+        get => _visibleNeighbors!;
         set => SetWithNotify(value, ref _visibleNeighbors);
     }
 
@@ -105,11 +101,11 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
 
     public byte[] Terrain
     {
-        get => _terrain;
+        get => _terrain!;
         set => SetWithNotify(value, ref _terrain);
     }
 
-    public Dictionary<int, byte> TerrainChanges
+    public Dictionary<int, byte>? TerrainChanges
     {
         get;
         set;
@@ -117,11 +113,11 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
 
     public byte[] KnownTerrain
     {
-        get => _knownTerrain;
+        get => _knownTerrain!;
         set => SetWithNotify(value, ref _knownTerrain);
     }
 
-    public Dictionary<int, byte> KnownTerrainChanges
+    public Dictionary<int, byte>? KnownTerrainChanges
     {
         get;
         set;
@@ -130,11 +126,11 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
     // TODO: Track known neighbors as well
     public byte[] WallNeighbors
     {
-        get => _wallNeighbors;
+        get => _wallNeighbors!;
         set => SetWithNotify(value, ref _wallNeighbors);
     }
 
-    public Dictionary<int, byte> WallNeighborsChanges
+    public Dictionary<int, byte>? WallNeighborsChanges
     {
         get;
         set;
@@ -175,25 +171,25 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
         get;
     } = new Dictionary<Point, GameEntity>();
 
-    public BeveledVisibilityCalculator VisibilityCalculator
+    public BeveledVisibilityCalculator? VisibilityCalculator
     {
         get;
         private set;
     }
 
-    public PathFinder PathFinder
+    public PathFinder? PathFinder
     {
         get;
         private set;
     }
 
-    public int[,] PointToIndex
+    public int[,]? PointToIndex
     {
         get;
         private set;
     }
 
-    public Point[] IndexToPoint
+    public Point[]? IndexToPoint
     {
         get;
         private set;
@@ -201,6 +197,11 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
 
     public Rectangle BoundingRectangle => new(new Point(0, 0), Width, Height);
 
+#pragma warning disable CS8774
+    [MemberNotNull("PointToIndex")]
+    [MemberNotNull("IndexToPoint")]
+    [MemberNotNull("PathFinder")]
+    [MemberNotNull("VisibilityCalculator")]
     public void EnsureInitialized()
     {
         if (PointToIndex == null
@@ -211,9 +212,10 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
             VisibilityCalculator = new BeveledVisibilityCalculator(GetVisibleNeighbors, this);
         }
     }
+#pragma warning restore CS8774
 
     private DirectionFlags GetVisibleNeighbors(byte x, byte y) => x < Width && y < Height
-        ? (DirectionFlags)VisibleNeighbors[PointToIndex[x, y]]
+        ? (DirectionFlags)VisibleNeighbors[PointToIndex![x, y]]
         : DirectionFlags.None;
 
     public bool IsValid(Point point)
@@ -246,13 +248,13 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
             ArrayPool<byte>.Shared.Return(_wallNeighbors);
         }
 
-        ((Dictionary<Point, GameEntity>)Actors)?.Clear();
-        ((Dictionary<Point, GameEntity>)Items)?.Clear();
-        ((Dictionary<Point, GameEntity>)Connections)?.Clear();
-        ((HashSet<GameEntity>)IncomingConnections)?.Clear();
-        ((Dictionary<Point, GameEntity>)KnownActors)?.Clear();
-        ((Dictionary<Point, GameEntity>)KnownItems)?.Clear();
-        ((Dictionary<Point, GameEntity>)KnownConnections)?.Clear();
+        ((Dictionary<Point, GameEntity>?)Actors)?.Clear();
+        ((Dictionary<Point, GameEntity>?)Items)?.Clear();
+        ((Dictionary<Point, GameEntity>?)Connections)?.Clear();
+        ((HashSet<GameEntity>?)IncomingConnections)?.Clear();
+        ((Dictionary<Point, GameEntity>?)KnownActors)?.Clear();
+        ((Dictionary<Point, GameEntity>?)KnownItems)?.Clear();
+        ((Dictionary<Point, GameEntity>?)KnownConnections)?.Clear();
 
         _branchName = default;
         _branch = default;

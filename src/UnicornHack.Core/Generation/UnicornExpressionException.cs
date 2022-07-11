@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace UnicornHack.Generation;
+﻿namespace UnicornHack.Generation;
 
 public class UnicornExpressionException : Exception
 {

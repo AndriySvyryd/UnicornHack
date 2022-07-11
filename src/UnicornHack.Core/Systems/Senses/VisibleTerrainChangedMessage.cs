@@ -17,11 +17,11 @@ public class VisibleTerrainChangedMessage : IMessage
         manager.Enqueue(terrainChanged);
     }
 
-    private GameEntity _levelEntity;
+    private GameEntity? _levelEntity;
 
     public GameEntity LevelEntity
     {
-        get => _levelEntity;
+        get => _levelEntity!;
         set
         {
             _levelEntity?.RemoveReference(this);
@@ -34,7 +34,8 @@ public class VisibleTerrainChangedMessage : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
-    public void Clean() => LevelEntity = default;
+    public void Clean()
+        => LevelEntity = default!;
 }

@@ -1,5 +1,3 @@
-using System;
-
 namespace UnicornHack.Utils.DataStructures;
 
 /// <summary>
@@ -12,7 +10,7 @@ public class AATreeStrict<TKey, TValue> : AATree<TKey, TValue> where TKey : ICom
 {
     public bool Remove(TKey key) => Remove(ref Root, key);
 
-    public bool TryGetValue(TKey key, out TValue value)
+    public bool TryGetValue(TKey key, [NotNullWhen(true)] out TValue? value)
     {
         var node = Search(Root, key);
         if (node == null)
@@ -21,7 +19,7 @@ public class AATreeStrict<TKey, TValue> : AATree<TKey, TValue> where TKey : ICom
             return false;
         }
 
-        value = node.Value;
+        value = node.Value!;
         return true;
     }
 
@@ -112,7 +110,7 @@ public class AATreeStrict<TKey, TValue> : AATree<TKey, TValue> where TKey : ICom
         return (next.Key, next.Value);
     }
 
-    private Node Search(Node node, TKey key)
+    private Node? Search(Node node, TKey key)
     {
         while (true)
         {

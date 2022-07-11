@@ -1,5 +1,4 @@
 ﻿using UnicornHack.Systems.Items;
-using Xunit;
 
 namespace UnicornHack.Utils.MessagingECS;
 
@@ -26,7 +25,7 @@ public class ComponentTest
             propertyChangingCalled = true;
 
             Assert.Equal(nameof(ItemComponent.Name), e.PropertyName);
-            Assert.Null(((ItemComponent)s).Name);
+            Assert.Null(((ItemComponent)s!).Name);
         };
 
         var propertyChangedCalled = false;
@@ -35,7 +34,7 @@ public class ComponentTest
             propertyChangedCalled = true;
 
             Assert.Equal(nameof(ItemComponent.Name), e.PropertyName);
-            Assert.Equal("foo", ((ItemComponent)s).Name);
+            Assert.Equal("foo", ((ItemComponent)s!).Name);
         };
 
         component.Name = null;
@@ -59,7 +58,7 @@ public class ComponentTest
 
         Assert.Same(entity, component.Entity);
 
-        ((IOwnerReferenceable)component).RemoveReference(entity);
+        ((IReferenceable)component).RemoveReference(entity);
 
         Assert.Null(component.Entity);
 
@@ -77,10 +76,10 @@ public class ComponentTest
         component.Count = 1;
 
         var entity = manager.CreateEntity().Referenced;
-        ((IOwnerReferenceable)component).AddReference(manager);
+        ((IReferenceable)component).AddReference(manager);
         ((Component)component).Entity = entity;
-        ((IOwnerReferenceable)component).RemoveReference(entity);
-        ((IOwnerReferenceable)component).RemoveReference(manager);
+        ((IReferenceable)component).RemoveReference(entity);
+        ((IReferenceable)component).RemoveReference(manager);
 
         Assert.Null(component.Count);
 
@@ -103,7 +102,7 @@ public class ComponentTest
 
         Assert.NotSame(component, anotherComponent);
 
-        ((IOwnerReferenceable)component).RemoveReference(entity);
+        ((IReferenceable)component).RemoveReference(entity);
 
         anotherComponent = manager.CreateComponent<ItemComponent>(EntityComponent.Item);
 

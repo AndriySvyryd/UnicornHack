@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
@@ -26,9 +25,9 @@ public class GameEntity : Entity
     public Game Game => Manager.Game;
     public new GameManager Manager => (GameManager)base.Manager;
 
-    public AIComponent AI
+    public AIComponent? AI
     {
-        get => (AIComponent)FindComponent((int)EntityComponent.AI);
+        get => (AIComponent?)FindComponent((int)EntityComponent.AI);
         set
         {
             if (value == null)
@@ -42,9 +41,9 @@ public class GameEntity : Entity
         }
     }
 
-    public PlayerComponent Player
+    public PlayerComponent? Player
     {
-        get => (PlayerComponent)FindComponent((int)EntityComponent.Player);
+        get => (PlayerComponent?)FindComponent((int)EntityComponent.Player);
         set
         {
             if (value == null)
@@ -58,9 +57,9 @@ public class GameEntity : Entity
         }
     }
 
-    public EffectComponent Effect
+    public EffectComponent? Effect
     {
-        get => (EffectComponent)FindComponent((int)EntityComponent.Effect);
+        get => (EffectComponent?)FindComponent((int)EntityComponent.Effect);
         set
         {
             if (value == null)
@@ -74,9 +73,9 @@ public class GameEntity : Entity
         }
     }
 
-    public AbilityComponent Ability
+    public AbilityComponent? Ability
     {
-        get => (AbilityComponent)FindComponent((int)EntityComponent.Ability);
+        get => (AbilityComponent?)FindComponent((int)EntityComponent.Ability);
         set
         {
             if (value == null)
@@ -90,9 +89,9 @@ public class GameEntity : Entity
         }
     }
 
-    public BeingComponent Being
+    public BeingComponent? Being
     {
-        get => (BeingComponent)FindComponent((int)EntityComponent.Being);
+        get => (BeingComponent?)FindComponent((int)EntityComponent.Being);
         set
         {
             if (value == null)
@@ -106,9 +105,9 @@ public class GameEntity : Entity
         }
     }
 
-    public PhysicalComponent Physical
+    public PhysicalComponent? Physical
     {
-        get => (PhysicalComponent)FindComponent((int)EntityComponent.Physical);
+        get => (PhysicalComponent?)FindComponent((int)EntityComponent.Physical);
         set
         {
             if (value == null)
@@ -122,9 +121,9 @@ public class GameEntity : Entity
         }
     }
 
-    public RaceComponent Race
+    public RaceComponent? Race
     {
-        get => (RaceComponent)FindComponent((int)EntityComponent.Race);
+        get => (RaceComponent?)FindComponent((int)EntityComponent.Race);
         set
         {
             if (value == null)
@@ -138,9 +137,9 @@ public class GameEntity : Entity
         }
     }
 
-    public ItemComponent Item
+    public ItemComponent? Item
     {
-        get => (ItemComponent)FindComponent((int)EntityComponent.Item);
+        get => (ItemComponent?)FindComponent((int)EntityComponent.Item);
         set
         {
             if (value == null)
@@ -154,9 +153,9 @@ public class GameEntity : Entity
         }
     }
 
-    public LevelComponent Level
+    public LevelComponent? Level
     {
-        get => (LevelComponent)FindComponent((int)EntityComponent.Level);
+        get => (LevelComponent?)FindComponent((int)EntityComponent.Level);
         set
         {
             if (value == null)
@@ -170,9 +169,9 @@ public class GameEntity : Entity
         }
     }
 
-    public ConnectionComponent Connection
+    public ConnectionComponent? Connection
     {
-        get => (ConnectionComponent)FindComponent((int)EntityComponent.Connection);
+        get => (ConnectionComponent?)FindComponent((int)EntityComponent.Connection);
         set
         {
             if (value == null)
@@ -186,9 +185,9 @@ public class GameEntity : Entity
         }
     }
 
-    public PositionComponent Position
+    public PositionComponent? Position
     {
-        get => (PositionComponent)FindComponent((int)EntityComponent.Position);
+        get => (PositionComponent?)FindComponent((int)EntityComponent.Position);
         set
         {
             if (value == null)
@@ -202,9 +201,9 @@ public class GameEntity : Entity
         }
     }
 
-    public SensorComponent Sensor
+    public SensorComponent? Sensor
     {
-        get => (SensorComponent)FindComponent((int)EntityComponent.Sensor);
+        get => (SensorComponent?)FindComponent((int)EntityComponent.Sensor);
         set
         {
             if (value == null)
@@ -218,9 +217,9 @@ public class GameEntity : Entity
         }
     }
 
-    public KnowledgeComponent Knowledge
+    public KnowledgeComponent? Knowledge
     {
-        get => (KnowledgeComponent)FindComponent((int)EntityComponent.Knowledge);
+        get => (KnowledgeComponent?)FindComponent((int)EntityComponent.Knowledge);
         set
         {
             if (value == null)
@@ -252,7 +251,7 @@ public class GameEntity : Entity
 
     protected override string GetComponentPropertyName(int componentId)
     {
-        var name = Manager.GetComponentPropertyName(componentId);
+        var name = Manager?.GetComponentPropertyName(componentId);
         Debug.Assert(name != null);
 
         return name;
@@ -268,6 +267,7 @@ public class GameEntity : Entity
     public bool HasComponent(EntityComponent componentId)
         => HasComponent((int)componentId);
 
-    public new OwnerTransientReference<GameEntity, TOwner> AddReference<TOwner>(TOwner owner)
+    public new TransientReference<GameEntity, TOwner> AddReference<TOwner>(TOwner owner)
+        where TOwner : notnull
         => new(this, owner);
 }

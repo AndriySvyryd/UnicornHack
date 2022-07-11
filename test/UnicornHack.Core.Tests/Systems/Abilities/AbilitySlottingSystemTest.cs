@@ -1,16 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnicornHack.Data.Abilities;
+﻿using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Items;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Utils.DataStructures;
-using Xunit;
 
 namespace UnicornHack.Systems.Abilities;
 
@@ -56,7 +49,7 @@ public class AbilitySlottingSystemTest
 
         Assert.Equal(2, toggledAbility.Ability.Slot);
         Assert.True(toggledAbility.Ability.IsActive);
-        Assert.Same(toggledAbility, playerEntity.Being.SlottedAbilities[2]);
+        Assert.Same(toggledAbility, playerEntity.Being!.SlottedAbilities[2]);
         Assert.Equal(10, playerEntity.Being.BleedingResistance);
 
         GameEntity targetedAbility;
@@ -139,16 +132,16 @@ public class AbilitySlottingSystemTest
         Assert.Null(targetedAbility.Ability.Slot);
 
         var alwaysAbility = playerEntity.Being.Abilities
-            .First(a => (a.Ability.Activation & ActivationType.Always) != 0);
+            .First(a => (a.Ability!.Activation & ActivationType.Always) != 0);
         setSlotMessage = SetAbilitySlotMessage.Create(manager);
         setSlotMessage.AbilityEntity = alwaysAbility;
         setSlotMessage.Slot = 2;
         Assert.Throws<InvalidOperationException>(() => manager.AbilitySlottingSystem.Process(setSlotMessage, manager));
-        Assert.Null(alwaysAbility.Ability.Slot);
+        Assert.Null(alwaysAbility.Ability!.Slot);
 
         setSlotMessage = SetAbilitySlotMessage.Create(manager);
         setSlotMessage.AbilityEntity = targetedAbility;
-        setSlotMessage.Slot = playerEntity.Physical.Capacity - 1;
+        setSlotMessage.Slot = playerEntity.Physical!.Capacity - 1;
         manager.Enqueue(setSlotMessage);
         manager.Queue.ProcessQueue(manager);
         Assert.True(playerEntity.Physical.Capacity > 1);
@@ -173,7 +166,7 @@ public class AbilitySlottingSystemTest
 
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Null(playerEntity.Being.SlottedAbilities.GetValueOrDefault(2));
+        Assert.Null(playerEntity.Being!.SlottedAbilities.GetValueOrDefault(2));
 
         var travelMessage = TravelMessage.Create(manager);
         travelMessage.ActorEntity = playerEntity;
@@ -183,7 +176,7 @@ public class AbilitySlottingSystemTest
 
         manager.Queue.ProcessQueue(manager);
 
-        var coinItem = playerEntity.Being.Items.Single().Item;
+        var coinItem = playerEntity.Being.Items.Single().Item!;
         var dropCoinAbilityEntity = playerEntity.Being.SlottedAbilities.GetValueOrDefault(2);
 
         var setSlotMessage = SetAbilitySlotMessage.Create(manager);
@@ -193,7 +186,7 @@ public class AbilitySlottingSystemTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Null(coinItem.ContainerId);
-        Assert.Equal(new Point(1, 0), coinItem.Entity.Position.LevelCell);
+        Assert.Equal(new Point(1, 0), coinItem.Entity.Position!.LevelCell);
         Assert.Null(playerEntity.Being.SlottedAbilities.GetValueOrDefault(2));
 
         var moveItemMessage = MoveItemMessage.Create(manager);
@@ -205,7 +198,7 @@ public class AbilitySlottingSystemTest
 
         Assert.Equal(playerEntity.Id, coinItem.ContainerId);
 
-        dropCoinAbilityEntity = playerEntity.Being.SlottedAbilities.GetValueOrDefault(2);
+        dropCoinAbilityEntity = playerEntity.Being.SlottedAbilities.GetValueOrDefault(2)!;
         TestHelper.ActivateAbility(dropCoinAbilityEntity, playerEntity, manager);
 
         manager.Queue.ProcessQueue(manager);
@@ -220,7 +213,7 @@ public class AbilitySlottingSystemTest
 
         manager.Queue.ProcessQueue(manager);
 
-        playerEntity.Physical.Capacity = 2;
+        playerEntity.Physical!.Capacity = 2;
         manager.Queue.ProcessQueue(manager);
 
         Assert.Null(coinItem.ContainerId);

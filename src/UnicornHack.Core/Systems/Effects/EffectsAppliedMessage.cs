@@ -1,5 +1,4 @@
-﻿using UnicornHack.Primitives;
-using UnicornHack.Utils;
+﻿using UnicornHack.Utils;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Effects;
@@ -11,13 +10,13 @@ public class EffectsAppliedMessage : IMessage
     public static EffectsAppliedMessage Create(GameManager manager)
         => manager.Queue.CreateMessage<EffectsAppliedMessage>(Name);
 
-    private GameEntity _activatorEntity;
-    private GameEntity _abilityEntity;
-    private GameEntity _targetEntity;
+    private GameEntity? _activatorEntity;
+    private GameEntity? _abilityEntity;
+    private GameEntity? _targetEntity;
 
     public GameEntity ActivatorEntity
     {
-        get => _activatorEntity;
+        get => _activatorEntity!;
         set
         {
             _activatorEntity?.RemoveReference(this);
@@ -28,7 +27,7 @@ public class EffectsAppliedMessage : IMessage
 
     public GameEntity AbilityEntity
     {
-        get => _abilityEntity;
+        get => _abilityEntity!;
         set
         {
             _abilityEntity?.RemoveReference(this);
@@ -37,7 +36,7 @@ public class EffectsAppliedMessage : IMessage
         }
     }
 
-    public GameEntity TargetEntity
+    public GameEntity? TargetEntity
     {
         get => _targetEntity;
         set
@@ -69,12 +68,12 @@ public class EffectsAppliedMessage : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
     public void Clean()
     {
-        ActivatorEntity = default;
-        AbilityEntity = default;
+        ActivatorEntity = default!;
+        AbilityEntity = default!;
         TargetEntity = default;
         AppliedEffects.Clear();
         AbilityTrigger = default;

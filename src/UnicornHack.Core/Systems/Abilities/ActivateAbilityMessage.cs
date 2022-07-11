@@ -1,5 +1,4 @@
-﻿using UnicornHack.Utils.DataStructures;
-using UnicornHack.Utils.MessagingECS;
+﻿using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Abilities;
 
@@ -22,13 +21,13 @@ public class ActivateAbilityMessage : IMessage
         return activationMessage;
     }
 
-    private GameEntity _activatorEntity;
-    private GameEntity _abilityEntity;
-    private GameEntity _targetEntity;
+    private GameEntity? _activatorEntity;
+    private GameEntity? _abilityEntity;
+    private GameEntity? _targetEntity;
 
     public GameEntity ActivatorEntity
     {
-        get => _activatorEntity;
+        get => _activatorEntity!;
         set
         {
             _activatorEntity?.RemoveReference(this);
@@ -39,7 +38,7 @@ public class ActivateAbilityMessage : IMessage
 
     public GameEntity AbilityEntity
     {
-        get => _abilityEntity;
+        get => _abilityEntity!;
         set
         {
             _abilityEntity?.RemoveReference(this);
@@ -48,7 +47,7 @@ public class ActivateAbilityMessage : IMessage
         }
     }
 
-    public GameEntity TargetEntity
+    public GameEntity? TargetEntity
     {
         get => _targetEntity;
         set
@@ -82,13 +81,13 @@ public class ActivateAbilityMessage : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
     public void Clean()
     {
-        ActivatorEntity = default;
-        AbilityEntity = default;
-        TargetEntity = default;
+        ActivatorEntity = default!;
+        AbilityEntity = default!;
+        TargetEntity = default!;
         TargetCell = default;
     }
 }

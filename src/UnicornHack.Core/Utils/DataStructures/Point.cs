@@ -1,6 +1,3 @@
-using System;
-using System.Diagnostics;
-
 // ReSharper disable ImpureMethodCallOnReadonlyValueField
 namespace UnicornHack.Utils.DataStructures;
 
@@ -45,17 +42,11 @@ public readonly struct Point : IEquatable<Point>
 
     public override string ToString() => $"({X}, {Y})";
 
-    public override bool Equals(object obj)
-    {
-        if (obj is Point otherPoint)
-        {
-            return Equals(otherPoint);
-        }
+    public override bool Equals(object? obj)
+        => obj is Point otherPoint && Equals(otherPoint);
 
-        return false;
-    }
-
-    public bool Equals(Point other) => X == other.X && Y == other.Y;
+    public bool Equals(Point other)
+        => X == other.X && Y == other.Y;
 
     public override int GetHashCode()
         => HashCode.Combine(X, Y);

@@ -1,12 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-
-namespace UnicornHack.Utils.MessagingECS;
+﻿namespace UnicornHack.Utils.MessagingECS;
 
 // TODO: Add tests
 public class SortedLookupEntityIndex<TEntity, TKey, TSortKey> : EntityIndexBase<TEntity, TKey>
     where TEntity : Entity, new()
+    where TKey : notnull
+    where TSortKey : notnull
 {
     private readonly IKeyValueGetter<TEntity, TSortKey> _sortValueGetter;
     private readonly IComparer<TSortKey> _comparer;
@@ -19,7 +17,7 @@ public class SortedLookupEntityIndex<TEntity, TKey, TSortKey> : EntityIndexBase<
         IEntityGroup<TEntity> group,
         IKeyValueGetter<TEntity, TKey> keyValueGetter,
         IKeyValueGetter<TEntity, TSortKey> sortValueGetter,
-        IComparer<TSortKey> comparer = null)
+        IComparer<TSortKey>? comparer = null)
         : base(name, group, keyValueGetter)
     {
         _sortValueGetter = sortValueGetter;
@@ -33,7 +31,7 @@ public class SortedLookupEntityIndex<TEntity, TKey, TSortKey> : EntityIndexBase<
         IKeyValueGetter<TEntity, TKey> keyValueGetter,
         IKeyValueGetter<TEntity, TSortKey> sortValueGetter,
         IEqualityComparer<TKey> equalityComparer,
-        IComparer<TSortKey> comparer = null)
+        IComparer<TSortKey>? comparer = null)
         : base(name, group, keyValueGetter)
     {
         _sortValueGetter = sortValueGetter;
@@ -109,7 +107,7 @@ public class SortedLookupEntityIndex<TEntity, TKey, TSortKey> : EntityIndexBase<
             return false;
         }
 
-        Component componentUsed = null;
+        Component? componentUsed = null;
         var changes = entityChange.PropertyChanges;
         for (var i = 0; i < changes.Count; i++)
         {

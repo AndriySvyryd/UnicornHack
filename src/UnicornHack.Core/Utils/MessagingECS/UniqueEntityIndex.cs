@@ -1,18 +1,16 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Collections;
 
 namespace UnicornHack.Utils.MessagingECS;
 
 public class UniqueEntityIndex<TEntity, TKey> : EntityIndexBase<TEntity, TKey>, IEnumerable<TEntity>
     where TEntity : Entity, new()
+    where TKey : notnull
 {
     public UniqueEntityIndex(
         string name,
         IEntityGroup<TEntity> group,
         IKeyValueGetter<TEntity, TKey> keyValueGetter,
-        IEqualityComparer<TKey> comparer = null)
+        IEqualityComparer<TKey>? comparer = null)
         : base(name, group, keyValueGetter)
     {
         Index = new Dictionary<TKey, TEntity>(comparer ?? EqualityComparer<TKey>.Default);
@@ -23,7 +21,7 @@ public class UniqueEntityIndex<TEntity, TKey> : EntityIndexBase<TEntity, TKey>, 
         get;
     }
 
-    public TEntity this[TKey key] => Index.TryGetValue(key, out var entity) ? entity : null;
+    public TEntity? this[TKey key] => Index.TryGetValue(key, out var entity) ? entity : null;
 
     protected override bool TryAddEntity(TKey key, in EntityChange<TEntity> entityChange)
     {

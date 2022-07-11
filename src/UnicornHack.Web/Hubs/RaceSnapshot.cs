@@ -1,24 +1,23 @@
-﻿using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using UnicornHack.Systems.Beings;
 
 namespace UnicornHack.Hubs;
 
 public static class RaceSnapshot
 {
-    public static List<object> Serialize(
+    public static List<object?>? Serialize(
         GameEntity raceEntity, EntityState? state, SerializationContext context)
     {
-        List<object> properties;
+        List<object?> properties;
         switch (state)
         {
             case null:
             case EntityState.Added:
             {
-                var race = raceEntity.Race;
+                var race = raceEntity.Race!;
                 properties = state == null
-                    ? new List<object>(4)
-                    : new List<object>(5) { (int)state };
+                    ? new List<object?>(4)
+                    : new List<object?>(5) { (int)state };
                 properties.Add(raceEntity.Id);
                 properties.Add(context.Services.Language.GetString(race, abbreviate: false));
                 properties.Add(context.Services.Language.GetString(race, abbreviate: true));
@@ -26,11 +25,11 @@ public static class RaceSnapshot
                 return properties;
             }
             case EntityState.Deleted:
-                return new List<object> { (int)state, raceEntity.Id };
+                return new List<object?> { (int)state, raceEntity.Id };
             default:
             {
-                var race = raceEntity.Race;
-                properties = new List<object> { (int)state, raceEntity.Id };
+                var race = raceEntity.Race!;
+                properties = new List<object?> { (int)state, raceEntity.Id };
 
                 var raceEntry = context.DbContext.Entry(race);
                 var i = 1;

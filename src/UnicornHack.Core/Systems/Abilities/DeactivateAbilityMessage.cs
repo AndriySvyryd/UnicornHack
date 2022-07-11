@@ -9,12 +9,12 @@ public class DeactivateAbilityMessage : IMessage
     public static DeactivateAbilityMessage Create(GameManager manager)
         => manager.Queue.CreateMessage<DeactivateAbilityMessage>(Name);
 
-    private GameEntity _activatorEntity;
-    private GameEntity _abilityEntity;
+    private GameEntity? _activatorEntity;
+    private GameEntity? _abilityEntity;
 
     public GameEntity ActivatorEntity
     {
-        get => _activatorEntity;
+        get => _activatorEntity!;
         set
         {
             _activatorEntity?.RemoveReference(this);
@@ -25,7 +25,7 @@ public class DeactivateAbilityMessage : IMessage
 
     public GameEntity AbilityEntity
     {
-        get => _abilityEntity;
+        get => _abilityEntity!;
         set
         {
             _abilityEntity?.RemoveReference(this);
@@ -38,11 +38,11 @@ public class DeactivateAbilityMessage : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
     public void Clean()
     {
-        ActivatorEntity = default;
-        AbilityEntity = default;
+        ActivatorEntity = default!;
+        AbilityEntity = default!;
     }
 }

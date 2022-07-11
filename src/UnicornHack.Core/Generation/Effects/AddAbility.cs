@@ -1,14 +1,11 @@
-using System;
-using System.Collections.Generic;
 using CSharpScriptSerialization;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
 
 public class AddAbility : DurationEffect
 {
-    public Ability Ability
+    public Ability? Ability
     {
         get;
         set;
@@ -18,7 +15,7 @@ public class AddAbility : DurationEffect
     {
         get;
         set;
-    }
+    } = null!;
 
     public int Level
     {
@@ -53,15 +50,15 @@ public class AddAbility : DurationEffect
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<AddAbility>(GetPropertyConditions<AddAbility>());
 
-    protected static new Dictionary<string, Func<TEffect, object, bool>>
+    protected static new Dictionary<string, Func<TEffect, object?, bool>>
         GetPropertyConditions<TEffect>() where TEffect : Effect
     {
         var propertyConditions = DurationEffect.GetPropertyConditions<TEffect>();
 
-        propertyConditions.Add(nameof(Ability), (o, v) => v != default);
-        propertyConditions.Add(nameof(Name), (o, v) => v != default);
-        propertyConditions.Add(nameof(Level), (o, v) => (int)v != default);
-        propertyConditions.Add(nameof(Function), (o, v) => (ValueCombinationFunction)v != default);
+        propertyConditions.Add(nameof(Ability), (_, v) => v != default);
+        propertyConditions.Add(nameof(Name), (_, v) => v != default);
+        propertyConditions.Add(nameof(Level), (_, v) => (int)v! != default);
+        propertyConditions.Add(nameof(Function), (_, v) => (ValueCombinationFunction)v! != default);
         return propertyConditions;
     }
 

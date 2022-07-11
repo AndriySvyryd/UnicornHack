@@ -1,12 +1,9 @@
-﻿using UnicornHack.Generation;
-using UnicornHack.Primitives;
-
-namespace UnicornHack.Systems.Knowledge;
+﻿namespace UnicornHack.Systems.Knowledge;
 
 [Component(Id = (int)EntityComponent.Knowledge)]
 public class KnowledgeComponent : GameComponent
 {
-    private GameEntity _knownEntity;
+    private GameEntity? _knownEntity;
     private int _knownEntityId;
     private SenseType _sensedType;
 
@@ -35,7 +32,7 @@ public class KnowledgeComponent : GameComponent
 
     public GameEntity KnownEntity
     {
-        get => _knownEntity ?? (_knownEntity = Entity.Manager.FindEntity(_knownEntityId));
+        get => _knownEntity ??= Entity.Manager.FindEntity(_knownEntityId)!;
         set
         {
             KnownEntityId = value.Id;

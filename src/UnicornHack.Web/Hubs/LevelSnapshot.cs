@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Microsoft.EntityFrameworkCore;
-using UnicornHack.Primitives;
-using UnicornHack.Utils;
+﻿using Microsoft.EntityFrameworkCore;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Hubs;
@@ -53,7 +49,7 @@ public class LevelSnapshot
 
     private static void CaptureVisibleTerrain(GameEntity levelEntity)
     {
-        var level = levelEntity.Level;
+        var level = levelEntity.Level!;
         if (level.VisibleTerrainSnapshot == null)
         {
             level.VisibleTerrainSnapshot = (byte[])level.VisibleTerrain.Clone();
@@ -64,11 +60,11 @@ public class LevelSnapshot
         }
     }
 
-    public static List<object> Serialize(
-        GameEntity levelEntity, EntityState? state, LevelSnapshot snapshot, SerializationContext context)
+    public static List<object?>? Serialize(
+        GameEntity levelEntity, EntityState? state, LevelSnapshot? snapshot, SerializationContext context)
     {
-        var level = levelEntity.Level;
-        List<object> properties;
+        var level = levelEntity.Level!;
+        List<object?> properties;
         var tileCount = level.TileCount;
         switch (state)
         {
@@ -118,13 +114,13 @@ public class LevelSnapshot
                 }
 
                 properties = state == null
-                    ? new List<object>(10)
-                    : new List<object>(11) { (int)state };
+                    ? new List<object?>(10)
+                    : new List<object?>(11) { (int)state };
 
-                var actors = new List<object>();
+                var actors = new List<object?>();
                 foreach (var actor in GetActors(levelEntity))
                 {
-                    LevelActorSnapshot actorSnapshot = null;
+                    LevelActorSnapshot? actorSnapshot = null;
                     if (snapshot != null
                         && !snapshot.ActorsSnapshot.TryGetValue(actor, out actorSnapshot))
                     {
@@ -132,15 +128,15 @@ public class LevelSnapshot
                         snapshot.ActorsSnapshot[actor] = actorSnapshot;
                     }
 
-                    actors.Add(LevelActorSnapshot.Serialize(actor, null, actorSnapshot, context));
+                    actors.Add(LevelActorSnapshot.Serialize(actor, null, actorSnapshot!, context));
                 }
 
                 properties.Add(actors);
 
-                var items = new List<object>();
+                var items = new List<object?>();
                 foreach (var item in GetItems(levelEntity))
                 {
-                    LevelItemSnapshot itemSnapshot = null;
+                    LevelItemSnapshot? itemSnapshot = null;
                     if (snapshot != null
                         && !snapshot.ItemsSnapshot.TryGetValue(item, out itemSnapshot))
                     {
@@ -148,12 +144,12 @@ public class LevelSnapshot
                         snapshot.ItemsSnapshot[item] = itemSnapshot;
                     }
 
-                    items.Add(LevelItemSnapshot.Serialize(item, null, itemSnapshot, context));
+                    items.Add(LevelItemSnapshot.Serialize(item, null, itemSnapshot!, context));
                 }
 
                 properties.Add(items);
 
-                var connections = new List<object>();
+                var connections = new List<object?>();
                 foreach (var connection in GetConnections(levelEntity))
                 {
                     snapshot?.ConnectionsSnapshot.Add(connection);
@@ -174,12 +170,12 @@ public class LevelSnapshot
                 return properties;
             default:
                 var levelEntry = context.DbContext.Entry(level);
-                properties = new List<object> { (int)state };
+                properties = new List<object?> { (int)state };
 
                 var i = 2;
                 var serializedActors = GameTransmissionProtocol.Serialize(
                     GetActors(levelEntity),
-                    snapshot.ActorsSnapshot,
+                    snapshot!.ActorsSnapshot,
                     LevelActorSnapshot.Serialize,
                     snapshot._tempActors,
                     context);
@@ -219,7 +215,7 @@ public class LevelSnapshot
                 {
                     i++;
                     var wallNeighborsChanges = new List<object>();
-                    var knownTerrainChanges = new List<object>(level.KnownTerrainChanges.Count * 2);
+                    var knownTerrainChanges = new List<object>(level.KnownTerrainChanges!.Count * 2);
                     if (level.KnownTerrainChanges.Count > 0)
                     {
                         foreach (var terrainChange in level.KnownTerrainChanges)
@@ -233,7 +229,7 @@ public class LevelSnapshot
                         }
                     }
 
-                    if (level.TerrainChanges.Count > 0)
+                    if (level.TerrainChanges!.Count > 0)
                     {
                         foreach (var terrainChange in level.TerrainChanges)
                         {
@@ -254,7 +250,7 @@ public class LevelSnapshot
                     }
 
                     i++;
-                    if (level.WallNeighborsChanges.Count > 0)
+                    if (level.WallNeighborsChanges!.Count > 0)
                     {
                         foreach (var wallNeighborsChange in level.WallNeighborsChanges)
                         {
@@ -275,7 +271,7 @@ public class LevelSnapshot
                     }
 
                     i++;
-                    if (level.VisibleTerrainChanges.Count > 0)
+                    if (level.VisibleTerrainChanges!.Count > 0)
                     {
                         properties.Add(i);
                         var changes = new object[level.VisibleTerrainChanges.Count * 2];
@@ -297,19 +293,19 @@ public class LevelSnapshot
     }
 
     private static IEnumerable<GameEntity> GetConnections(GameEntity levelEntity)
-        => levelEntity.Level.KnownConnections.Values
-            .Select(c => c.Knowledge)
-            .Where(c => c.KnownEntity.Connection.Direction == null
+        => levelEntity.Level!.KnownConnections.Values
+            .Select(c => c.Knowledge!)
+            .Where(c => c.KnownEntity.Connection!.Direction == null
                         || (c.KnownEntity.Connection.Direction & ConnectionDirection.Source) != 0)
             .Select(c => c.Entity);
 
     private static IEnumerable<GameEntity> GetItems(GameEntity levelEntity)
-        => levelEntity.Level.KnownItems.Values
-            .Select(t => t.Knowledge)
+        => levelEntity.Level!.KnownItems.Values
+            .Select(t => t.Knowledge!)
             .Select(t => t.Entity);
 
     private static IEnumerable<GameEntity> GetActors(GameEntity levelEntity)
-        => levelEntity.Level.KnownActors.Values
-            .Select(a => a.Knowledge)
+        => levelEntity.Level!.KnownActors.Values
+            .Select(a => a.Knowledge!)
             .Select(a => a.Entity);
 }

@@ -1,7 +1,5 @@
-﻿using System;
-using BenchmarkDotNet.Attributes;
+﻿using BenchmarkDotNet.Attributes;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.PerformanceTests.Utils.MessagingECS;
@@ -10,8 +8,8 @@ public class EntityRelationshipPerfTest
 {
     public int EntityCount = 10000;
 
-    private GameEntity _levelEntity;
-    private ConnectionComponent[] _connections;
+    private GameEntity _levelEntity = null!;
+    private ConnectionComponent[] _connections = null!;
 
     [GlobalSetup(Target = nameof(CollectionAdd))]
     public void CollectionSetup()

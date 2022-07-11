@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 
 namespace UnicornHack.Utils.MessagingECS;
 
@@ -9,7 +6,7 @@ public class CollectionEntityRelationship<TEntity, TCollection> : EntityRelation
     where TEntity : Entity, new()
     where TCollection : class, ICollection<TEntity>, new()
 {
-    private DependentsGroup _dependents;
+    private DependentsGroup? _dependents;
 
     public CollectionEntityRelationship(
         string name,
@@ -17,9 +14,9 @@ public class CollectionEntityRelationship<TEntity, TCollection> : EntityRelation
         IEntityGroup<TEntity> principalGroup,
         IKeyValueGetter<TEntity, int> keyValueGetter,
         Action<TEntity, EntityChange<TEntity>> handlePrincipalDeleted,
-        Expression<Func<TEntity, TCollection>> getDependent = null,
-        Expression<Func<TEntity, TEntity>> getPrincipal = null,
-        Func<TCollection> factory = null,
+        Expression<Func<TEntity, TCollection?>>? getDependent = null,
+        Expression<Func<TEntity, TEntity?>>? getPrincipal = null,
+        Func<TCollection>? factory = null,
         bool keepPrincipalAlive = false,
         bool keepDependentAlive = false)
         : this(
@@ -47,13 +44,13 @@ public class CollectionEntityRelationship<TEntity, TCollection> : EntityRelation
         IEntityGroup<TEntity> principalGroup,
         IKeyValueGetter<TEntity, int> keyValueGetter,
         Action<TEntity, EntityChange<TEntity>> handlePrincipalDeleted,
-        Func<TEntity, TCollection> getDependent,
-        Action<TEntity, TCollection> setDependent,
-        Func<Component, TCollection> componentGetDependent,
-        Func<TEntity, TEntity> getPrincipal = null,
-        Action<TEntity, TEntity> setPrincipal = null,
-        Func<Component, TEntity> componentGetPrincipal = null,
-        Func<TCollection> factory = null,
+        Func<TEntity, TCollection?> getDependent,
+        Action<TEntity, TCollection?> setDependent,
+        Func<Component, TCollection?> componentGetDependent,
+        Func<TEntity, TEntity?>? getPrincipal = null,
+        Action<TEntity, TEntity?>? setPrincipal = null,
+        Func<Component, TEntity?>? componentGetPrincipal = null,
+        Func<TCollection>? factory = null,
         bool keepPrincipalAlive = false,
         bool keepDependentAlive = false)
         : this(
@@ -92,6 +89,7 @@ public class CollectionEntityRelationship<TEntity, TCollection> : EntityRelation
             keepDependentAlive)
     {
         principalGroup.AddListener(new PrincipalGroupListener(this));
+        Accessor = null!;
     }
 
     protected ICollectionAccessor<TEntity, TCollection, TEntity> Accessor
@@ -107,11 +105,11 @@ public class CollectionEntityRelationship<TEntity, TCollection> : EntityRelation
     public IEntityGroup<TEntity> Dependents
         => _dependents ??= new DependentsGroup(this);
 
-    public IReadOnlyCollection<TEntity> GetDependents(TEntity principal, Component removedComponent = null)
-        => (IReadOnlyCollection<TEntity>)Accessor.GetDependents(principal, removedComponent) ??
+    public IReadOnlyCollection<TEntity> GetDependents(TEntity principal, Component? removedComponent = null)
+        => (IReadOnlyCollection<TEntity>?)Accessor.GetDependents(principal, removedComponent) ??
            Array.Empty<TEntity>();
 
-    public TEntity GetPrincipal(TEntity dependent, Component removedComponent = null)
+    public TEntity? GetPrincipal(TEntity dependent, Component? removedComponent = null)
         => Accessor.TryGetPrincipal(dependent, out var principal, removedComponent)
             ? principal
             : KeyValueGetter.TryGetKey(new EntityChange<TEntity>(dependent), ValueType.Current, out var key)
@@ -197,7 +195,7 @@ public class CollectionEntityRelationship<TEntity, TCollection> : EntityRelation
             _relationship = relationship;
         }
 
-        public override TEntity FindEntity(int id) => _relationship.FindEntity(id);
+        public override TEntity? FindEntity(int id) => _relationship.FindEntity(id);
 
         public override bool ContainsEntity(int id) => _relationship.ContainsEntity(id);
 

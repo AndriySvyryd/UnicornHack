@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
 using CSharpScriptSerialization;
 using UnicornHack.Data.Abilities;
-using UnicornHack.Generation.Effects;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Utils.DataLoading;
 
@@ -11,17 +7,18 @@ namespace UnicornHack.Generation;
 
 public class Ability : ILoadable, ICSScriptSerializable
 {
-    private Func<GameEntity, GameEntity, float> _accuracyFunction;
-    private Func<GameEntity, GameEntity, float> _delayFunction;
-    private IReadOnlyList<Effect> _effects;
+    private Func<GameEntity, GameEntity, float>? _accuracyFunction;
+    private Func<GameEntity, GameEntity, float>? _delayFunction;
+    private IReadOnlyList<Effect>? _effects;
 
     public string Name
     {
         get;
         set;
-    }
+    } = null!;
 
-    public string EnglishDescription
+    // TODO: Move to LanguageService
+    public string? EnglishDescription
     {
         get;
         set;
@@ -105,7 +102,7 @@ public class Ability : ILoadable, ICSScriptSerializable
         set;
     }
 
-    public string Accuracy
+    public string? Accuracy
     {
         get;
         set;
@@ -130,7 +127,7 @@ public class Ability : ILoadable, ICSScriptSerializable
         set;
     }
 
-    public string Delay
+    public string? Delay
     {
         get;
         set;
@@ -141,7 +138,8 @@ public class Ability : ILoadable, ICSScriptSerializable
         get;
         set;
     }
-
+    
+    [MaybeNull]
     public IReadOnlyList<Effect> Effects
     {
         get => _effects;
@@ -181,20 +179,14 @@ public class Ability : ILoadable, ICSScriptSerializable
 
         if (Accuracy != null)
         {
-            if (_accuracyFunction == null)
-            {
-                _accuracyFunction = AbilityActivationSystem.CreateAccuracyFunction(Accuracy, Name);
-            }
+            _accuracyFunction ??= AbilityActivationSystem.CreateAccuracyFunction(Accuracy, Name);
 
             ability.AccuracyFunction = _accuracyFunction;
         }
 
         if (Delay != null)
         {
-            if (_delayFunction == null)
-            {
-                _delayFunction = AbilityActivationSystem.CreateDelayFunction(Delay, Name);
-            }
+            _delayFunction ??= AbilityActivationSystem.CreateDelayFunction(Delay, Name);
 
             ability.DelayFunction = _delayFunction;
         }
@@ -205,7 +197,7 @@ public class Ability : ILoadable, ICSScriptSerializable
         return ability;
     }
 
-    protected void AddEffects(IReadOnlyList<Effect> effects, AbilityComponent ability, GameManager manager)
+    protected static void AddEffects(IReadOnlyList<Effect>? effects, AbilityComponent ability, GameManager manager)
     {
         if (effects != null)
         {
@@ -219,46 +211,43 @@ public class Ability : ILoadable, ICSScriptSerializable
     public AbilityComponent AddToAffectable(GameEntity affectableEntity, int level = 0)
     {
         var manager = affectableEntity.Manager;
-        using (var abilityEntityReference = manager.CreateEntity())
-        {
-            var ability = AddToEffect(abilityEntityReference.Referenced, level);
-            ability.OwnerId = affectableEntity.Id;
+        using var abilityEntityReference = manager.CreateEntity();
+        var ability = AddToEffect(abilityEntityReference.Referenced, level);
+        ability.OwnerId = affectableEntity.Id;
 
-            return ability;
-        }
+        return ability;
     }
 
     public static readonly GroupedCSScriptLoader<AbilityType, Ability> Loader =
-        new GroupedCSScriptLoader<AbilityType, Ability>(@"Data\Abilities\", c => c.Type,
-            typeof(AbilityData));
+        new(@"Data\Abilities\", c => c.Type, typeof(AbilityData));
 
-    private static readonly CSScriptSerializer Serializer =
-        new PropertyCSScriptSerializer<Ability>(GetPropertyConditions<Ability>());
+    private static readonly PropertyCSScriptSerializer<Ability> Serializer =
+        new(GetPropertyConditions<Ability>());
 
-    protected static Dictionary<string, Func<TAbility, object, bool>> GetPropertyConditions<TAbility>()
-        where TAbility : Ability => new Dictionary<string, Func<TAbility, object, bool>>
+    protected static Dictionary<string, Func<TAbility, object?, bool>> GetPropertyConditions<TAbility>()
+        where TAbility : Ability => new()
     {
-        { nameof(Name), (o, v) => v != default },
-        { nameof(EnglishDescription), (o, v) => v != default },
-        { nameof(Type), (o, v) => (AbilityType)v != default },
-        { nameof(Cost), (o, v) => (int)v != default },
-        { nameof(Activation), (o, v) => (ActivationType)v != default },
-        { nameof(ActivationCondition), (o, v) => v != default },
-        { nameof(ItemCondition), (o, v) => (ActivationType)v != default },
-        { nameof(Trigger), (o, v) => (ActivationType)v != default },
-        { nameof(MinHeadingDeviation), (o, v) => (int)v != default },
-        { nameof(MaxHeadingDeviation), (o, v) => (int)v != default },
-        { nameof(Range), (o, v) => (int)v != default },
-        { nameof(TargetingShapeSize), (o, v) => (int)v != 1 },
-        { nameof(TargetingShape), (o, v) => (TargetingShape)v != default },
-        { nameof(Action), (o, v) => (AbilityAction)v != default },
-        { nameof(SuccessCondition), (o, v) => (AbilitySuccessCondition)v != default },
-        { nameof(Accuracy), (o, v) => v != default },
-        { nameof(Cooldown), (o, v) => (int)v != default },
-        { nameof(XPCooldown), (o, v) => (int)v != default },
-        { nameof(Delay), (o, v) => (string)v != default },
-        { nameof(EnergyPointCost), (o, v) => (int)v != default },
-        { nameof(Effects), (o, v) => (((IReadOnlyList<Effect>)v)?.Count ?? 0) != 0 }
+        { nameof(Name), (_, v) => v != default },
+        { nameof(EnglishDescription), (_, v) => v != default },
+        { nameof(Type), (_, v) => (AbilityType)v! != default },
+        { nameof(Cost), (_, v) => (int)v! != default },
+        { nameof(Activation), (_, v) => (ActivationType)v! != default },
+        { nameof(ActivationCondition), (_, v) => v != default },
+        { nameof(ItemCondition), (_, v) => (ActivationType)v! != default },
+        { nameof(Trigger), (_, v) => (ActivationType)v! != default },
+        { nameof(MinHeadingDeviation), (_, v) => (int)v! != default },
+        { nameof(MaxHeadingDeviation), (_, v) => (int)v! != default },
+        { nameof(Range), (_, v) => (int)v! != default },
+        { nameof(TargetingShapeSize), (_, v) => (int)v! != 1 },
+        { nameof(TargetingShape), (_, v) => (TargetingShape)v! != default },
+        { nameof(Action), (_, v) => (AbilityAction)v! != default },
+        { nameof(SuccessCondition), (_, v) => (AbilitySuccessCondition)v! != default },
+        { nameof(Accuracy), (_, v) => v != default },
+        { nameof(Cooldown), (_, v) => (int)v! != default },
+        { nameof(XPCooldown), (_, v) => (int)v! != default },
+        { nameof(Delay), (_, v) => (string)v! != default },
+        { nameof(EnergyPointCost), (_, v) => (int)v! != default },
+        { nameof(Effects), (_, v) => (((IReadOnlyList<Effect>)v!)?.Count ?? 0) != 0 }
     };
 
     public virtual ICSScriptSerializer GetSerializer() => Serializer;

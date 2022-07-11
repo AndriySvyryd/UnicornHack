@@ -1,26 +1,25 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils;
-using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Generation.Map;
 
 public abstract class Layout
 {
+    protected static float DefaultCoverage = 0.33f;
+    
     public float Coverage
     {
         get;
         set;
-    } = 0.33f;
+    } = DefaultCoverage;
 
+    protected static byte DefaultMaxRoomCount = 16;
+    
     public byte MaxRoomCount
     {
         get;
         set;
-    } = 16;
+    } = DefaultMaxRoomCount;
 
     public virtual List<Room> Fill(LevelComponent level, DefiningMapFragment fragment)
     {
@@ -34,6 +33,7 @@ public abstract class Layout
     protected void InitializeTerrain(LevelComponent level, DefiningMapFragment fragment)
     {
         level.TerrainChanges = null;
+        level.KnownTerrainChanges = null;
         level.WallNeighborsChanges = null;
         if (fragment.DefaultTerrain != MapFeature.Default)
         {
@@ -84,16 +84,17 @@ public abstract class Layout
             // Then generate up to 3 source fragments, depending on the number of incoming connections
             //     At least 2 to the next branch level if not final
             var danglingConnection = level.IncomingConnections
-                .Select(c => c.Connection).FirstOrDefault(c => c.TargetLevelX == null);
+                .Select(c => c.Connection!).FirstOrDefault(c => c.TargetLevelX == null);
             placingConnections = placingConnections
                                  && (danglingConnection != null
                                      || level.Connections.Values
-                                         .Count(c => c.Connection.TargetLevelX == null) < 3
+                                         .Count(c => c.Connection!.TargetLevelX == null) < 3
                                      || (level.Branch.Length > level.Depth
                                          && level.Connections.Values
-                                             .Select(c => manager.FindEntity(c.Connection.TargetLevelId).Level)
+                                             .Select(c => manager.FindEntity(c.Connection!.TargetLevelId)?.Level)
                                              .Count(l =>
-                                                 l.BranchName == level.BranchName
+                                                 l != null
+                                                 && l.BranchName == level.BranchName
                                                  && l.Depth == level.Depth + 1) < 2));
             var sortedFragments = placingConnections
                 ? level.GenerationRandom.WeightedOrder(
@@ -130,8 +131,8 @@ public abstract class Layout
             while (unconnectedRooms.Count > 0)
             {
                 var randomConnectedRoom = level.GenerationRandom.Pick(connectedRooms);
-                var unconnectedRoom = randomConnectedRoom.GetOrthogonallyClosest(unconnectedRooms);
-                var closestConnectedRoom = unconnectedRoom.GetOrthogonallyClosest(connectedRooms);
+                var unconnectedRoom = randomConnectedRoom.GetOrthogonallyClosest(unconnectedRooms)!;
+                var closestConnectedRoom = unconnectedRoom.GetOrthogonallyClosest(connectedRooms)!;
                 if (!Connect(unconnectedRoom, closestConnectedRoom))
                 {
                     throw new InvalidOperationException("Couldn't connect all rooms");
@@ -143,7 +144,7 @@ public abstract class Layout
         }
     }
 
-    private Room TryPlace(LevelComponent level, Rectangle nextLot, IEnumerable<MapFragment> sortedFragments)
+    private Room? TryPlace(LevelComponent level, Rectangle nextLot, IEnumerable<MapFragment> sortedFragments)
     {
         foreach (var nextFragment in sortedFragments)
         {
@@ -290,7 +291,7 @@ public abstract class Layout
 
     public static bool CanPlaceCorridor(Point location, LevelComponent levelComponent)
     {
-        switch ((MapFeature)levelComponent.Terrain[levelComponent.PointToIndex[location.X, location.Y]])
+        switch ((MapFeature)levelComponent.Terrain[levelComponent.PointToIndex![location.X, location.Y]])
         {
             case MapFeature.Default:
             case MapFeature.RockFloor:
@@ -307,7 +308,7 @@ public abstract class Layout
         // TODO: Try to place connecting fragments instead of plain corridors
         foreach (var point in path)
         {
-            var currentFeature = (MapFeature)level.Terrain[level.PointToIndex[point.X, point.Y]];
+            var currentFeature = (MapFeature)level.Terrain[level.PointToIndex![point.X, point.Y]];
             if (currentFeature != MapFeature.RockFloor && currentFeature != MapFeature.StoneFloor)
             {
                 var index = level.PointToIndex[point.X, point.Y];

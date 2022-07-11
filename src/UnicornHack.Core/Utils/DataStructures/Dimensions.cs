@@ -1,5 +1,3 @@
-using System;
-
 namespace UnicornHack.Utils.DataStructures;
 
 public readonly struct Dimensions : IEquatable<Dimensions>
@@ -27,7 +25,7 @@ public readonly struct Dimensions : IEquatable<Dimensions>
     public bool Equals(Dimensions other)
         => Width == other.Width && Height == other.Height;
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
         => obj is Dimensions other && Equals(other);
 
     public override int GetHashCode()

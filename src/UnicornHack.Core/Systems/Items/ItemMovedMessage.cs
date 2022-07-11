@@ -1,5 +1,4 @@
-﻿using UnicornHack.Utils.DataStructures;
-using UnicornHack.Utils.MessagingECS;
+﻿using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Items;
 
@@ -10,12 +9,12 @@ public class ItemMovedMessage : IMessage
     public static ItemMovedMessage Create(GameManager manager)
         => manager.Queue.CreateMessage<ItemMovedMessage>(Name);
 
-    private GameEntity _itemEntity;
-    private GameEntity _initialContainer;
+    private GameEntity? _itemEntity;
+    private GameEntity? _initialContainer;
 
     public GameEntity ItemEntity
     {
-        get => _itemEntity;
+        get => _itemEntity!;
         set
         {
             _itemEntity?.RemoveReference(this);
@@ -24,7 +23,7 @@ public class ItemMovedMessage : IMessage
         }
     }
 
-    public GameEntity InitialContainer
+    public GameEntity? InitialContainer
     {
         get => _initialContainer;
         set
@@ -63,11 +62,11 @@ public class ItemMovedMessage : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
     public void Clean()
     {
-        ItemEntity = default;
+        ItemEntity = default!;
         InitialContainer = default;
         InitialLevelCell = default;
         InitialCount = default;

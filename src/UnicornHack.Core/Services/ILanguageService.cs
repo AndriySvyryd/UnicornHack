@@ -1,4 +1,3 @@
-using UnicornHack.Primitives;
 using UnicornHack.Services.LogEvents;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
@@ -9,7 +8,9 @@ namespace UnicornHack.Services;
 public interface ILanguageService
 {
     string GetPropertyName(string propertyName, bool abbreviate);
-    string GetActorName(GameEntity actorEntity, SenseType sense);
+    
+    [return: NotNullIfNotNull("actorEntity")]
+    string? GetActorName(GameEntity? actorEntity, SenseType sense);
     string GetDescription(string id, DescriptionCategory category);
     string GetString(ItemComponent item, int quantity, SenseType sense);
     string GetString(RaceComponent race, bool abbreviate);
@@ -20,7 +21,7 @@ public interface ILanguageService
     string GetString(in ItemDropEvent @event);
     string GetString(in ItemEquipmentEvent @event);
     string GetString(in ItemActivationEvent @event);
-    string GetString(in AttackEvent @event);
+    string? GetString(in AttackEvent @event);
     string GetString(in DeathEvent @event);
     string GetString(in LeveledUpEvent @event);
     string NoDefaultAttack(bool melee);

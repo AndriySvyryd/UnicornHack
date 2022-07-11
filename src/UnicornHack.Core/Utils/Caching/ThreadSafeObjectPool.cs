@@ -1,13 +1,9 @@
-﻿using System;
-using System.Diagnostics;
-using System.Threading;
-
-namespace UnicornHack.Utils.Caching;
+﻿namespace UnicornHack.Utils.Caching;
 
 public class ThreadSafeObjectPool<T> : IObjectPool
     where T : class
 {
-    private readonly T[] _items;
+    private readonly T?[] _items;
     private readonly Func<T> _factory;
     private readonly int _preallocatedCount;
 

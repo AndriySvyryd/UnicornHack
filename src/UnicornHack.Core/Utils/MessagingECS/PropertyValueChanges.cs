@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace UnicornHack.Utils.MessagingECS;
+﻿namespace UnicornHack.Utils.MessagingECS;
 
 public class PropertyValueChanges : IPropertyValueChanges
 {

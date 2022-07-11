@@ -1,11 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CSharpScriptSerialization;
@@ -26,8 +21,8 @@ namespace UnicornHack.Editor;
 
 public class CSClassSerializer : CSScriptSerializer
 {
-    private Solution _solution;
-    private string _directory;
+    private Solution _solution = null!;
+    private string _directory = null!;
     private (ImmutableArray<DiagnosticAnalyzer>, ImmutableArray<CodeFixProvider>) _analyzersAndFixers;
 
     public CSClassSerializer() : base(typeof(object))
@@ -71,11 +66,18 @@ public class CSClassSerializer : CSScriptSerializer
                 VersionStamp.Create(),
                 projectName, projectName,
                 LanguageNames.CSharp,
-                compilationOptions: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary),
+                compilationOptions: new CSharpCompilationOptions(
+                    OutputKind.DynamicallyLinkedLibrary,
+                    nullableContextOptions: NullableContextOptions.Enable),
                 metadataReferences: analyzerProject.MetadataReferences.Concat(
                     new[] { MetadataReference.CreateFromFile(referencedAssembly.Location) }),
                 analyzerReferences: analyzerProject.AnalyzerReferences)
             .WithAnalyzerConfigDocuments(ImmutableArray.Create(editorConfigDocument)));
+
+        project = project.AddDocument("GlobalUsings",
+            string.Join('\n',
+                CSScriptLoaderHelpers.GlobalNamespaces.Select(n => "global using " + n + ";"))).Project;
+
         _solution = project.Solution;
 
         _analyzersAndFixers = LoadAnalyzersAndFixers(project.AnalyzerReferences);
@@ -133,13 +135,13 @@ public class CSClassSerializer : CSScriptSerializer
 
         var codeFixProviders = types
             .Where(t => typeof(CodeFixProvider).IsAssignableFrom(t))
-            .Select(type => type.TryCreateInstance<CodeFixProvider>(out var instance) ? instance : null)
+            .Select(type => type.TryCreateInstance<CodeFixProvider>(out var instance) ? instance : null!)
             .Where(p => p != null)
             .ToImmutableArray();
 
         var diagnosticAnalyzers = types
             .Where(t => typeof(DiagnosticAnalyzer).IsAssignableFrom(t))
-            .Select(type => type.TryCreateInstance<DiagnosticAnalyzer>(out var instance) ? instance : null)
+            .Select(type => type.TryCreateInstance<DiagnosticAnalyzer>(out var instance) ? instance : null!)
             .Where(d => d != null)
             .ToImmutableArray();
 
@@ -153,7 +155,7 @@ public class CSClassSerializer : CSScriptSerializer
         string targetClassName)
     {
         var expression = CompilationUnit()
-            .WithUsings(List(CSScriptLoaderHelpers.Namespaces.Select(n => UsingDirective(ParseName(n)))))
+            .WithUsings(List(CSScriptLoaderHelpers.GlobalNamespaces.Select(n => UsingDirective(ParseName(n)))))
             .WithMembers(
                 SingletonList<MemberDeclarationSyntax>(
                     FileScopedNamespaceDeclaration(ParseName(targetNamespace))
@@ -190,7 +192,7 @@ public class CSClassSerializer : CSScriptSerializer
         var sourceText = await EnsureEndingEmptyLine(document);
 
         solution = solution.WithDocumentText(document.Id, sourceText, PreservationMode.PreserveIdentity);
-        var result = await ApplyCodeFixes(solution.GetProject(project.Id)!.GetDocument(document.Id));
+        var result = await ApplyCodeFixes(solution.GetProject(project.Id)!.GetDocument(document.Id)!);
 
         _solution = _solution.RemoveDocument(document!.Id);
         return result.ToString();
@@ -216,7 +218,7 @@ public class CSClassSerializer : CSScriptSerializer
         var project = document.Project;
         var solution = project.Solution;
 
-        var diagnostics = await GetDiagnostics(project, document.FilePath, _analyzersAndFixers.Item1);
+        var diagnostics = await GetDiagnostics(project, document.FilePath!, _analyzersAndFixers.Item1);
 
         var fixersById = diagnostics.Select(d => d.Id).Distinct().ToDictionary(
             id => id,
@@ -235,7 +237,7 @@ public class CSClassSerializer : CSScriptSerializer
                     continue;
                 }
 
-                var diagnosticsList = (await GetDiagnostics(project, document!.FilePath, _analyzersAndFixers.Item1))
+                var diagnosticsList = (await GetDiagnostics(project, document.FilePath!, _analyzersAndFixers.Item1))
                     .Where(diagnostic => diagnostic.Id == diagnosticId)
                     .ToList();
 
@@ -244,7 +246,7 @@ public class CSClassSerializer : CSScriptSerializer
                     continue;
                 }
 
-                CodeAction action = null;
+                CodeAction? action = null;
                 var context = new CodeFixContext(document, diagnosticsList[0],
                     (a, _) => action ??= a,
                     CancellationToken.None);
@@ -280,13 +282,13 @@ public class CSClassSerializer : CSScriptSerializer
                 {
                     solution = changedSolution;
                     project = solution.GetProject(project.Id);
-                    document = project!.GetDocument(document.Id);
+                    document = project!.GetDocument(document.Id)!;
                 }
             }
         }
 
         _solution = solution;
-        return await document!.GetTextAsync();
+        return await document.GetTextAsync();
     }
 
     private static async Task<IEnumerable<Diagnostic>> GetDiagnostics(

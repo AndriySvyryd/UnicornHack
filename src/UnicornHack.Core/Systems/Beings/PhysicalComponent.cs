@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
-using UnicornHack.Utils.MessagingECS;
+﻿using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Beings;
 
@@ -13,9 +10,9 @@ public class PhysicalComponent : GameComponent
     private int _size;
     private int _capacity;
     private bool _infravisible;
-    private IReadOnlyCollection<GameEntity> _abilities;
-    private IReadOnlyCollection<GameEntity> _appliedEffects;
-    private IReadOnlyCollection<GameEntity> _items;
+    private IReadOnlyCollection<GameEntity>? _abilities;
+    private IReadOnlyCollection<GameEntity>? _appliedEffects;
+    private IReadOnlyCollection<GameEntity>? _items;
 
     public PhysicalComponent()
     {

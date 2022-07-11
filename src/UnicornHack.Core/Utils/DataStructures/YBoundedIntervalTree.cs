@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace UnicornHack.Utils.DataStructures;
 
 /// <summary>
@@ -16,7 +12,7 @@ public class YBoundedIntervalTree : IntervalTreeBase
     public override bool Insert(Rectangle rectangle) => Insert(rectangle.XProjection, rectangle);
     public override bool Remove(Rectangle rectangle) => Remove(rectangle.XProjection, rectangle);
 
-    protected override NodeBase NewNode(byte key) => new Node(key);
+    protected override NodeBase CreateNode(byte key) => new Node(key);
 
     protected override bool SubtreeInsert(Rectangle rectangle, NodeBase node) =>
         ((Node)node).IntersectingRectangles.Insert(rectangle);
@@ -30,7 +26,7 @@ public class YBoundedIntervalTree : IntervalTreeBase
         var otherProjection = rectangle.YProjection;
         if (!BoundingSegment.Contains(projection))
         {
-            throw new ArgumentOutOfRangeException();
+            throw new ArgumentOutOfRangeException($"Rectangle {rectangle} outside of the X bounding segment {BoundingSegment}");
         }
 
         if (projection.Beginning == BoundingSegment.Beginning || projection.End == BoundingSegment.End)
@@ -47,13 +43,13 @@ public class YBoundedIntervalTree : IntervalTreeBase
                 results.AddRange(node.IntersectingRectangles.GetOverlappingCorners(
                     new Rectangle(new Segment(BoundingSegment.Beginning, (byte)(projection.Beginning - 1)),
                         otherProjection)));
-                node = (Node)node.Left;
+                node = (Node?)node.Left;
             }
             else if (projection.Beginning > node.Key)
             {
                 results.AddRange(node.IntersectingRectangles.GetOverlappingCorners(
                     new Rectangle(new Segment((byte)(projection.End + 1), BoundingSegment.End), otherProjection)));
-                node = (Node)node.Right;
+                node = (Node?)node.Right;
             }
             else
             {

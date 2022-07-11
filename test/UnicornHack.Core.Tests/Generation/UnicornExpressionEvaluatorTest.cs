@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using Xunit;
+﻿using System.Linq.Expressions;
 
 namespace UnicornHack.Generation;
 
@@ -88,6 +84,6 @@ public class UnicornExpressionEvaluatorTest
 
         var compiledLambda = (Delegate)translator.Translate<T, TResult>(expression);
 
-        return (TResult)compiledLambda.DynamicInvoke(parameters.Select(v => v.Value).ToArray());
+        return (TResult)compiledLambda.DynamicInvoke(parameters.Select(v => v.Value).ToArray())!;
     }
 }

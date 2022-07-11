@@ -1,12 +1,9 @@
-﻿using UnicornHack.Generation;
-using UnicornHack.Primitives;
-
-namespace UnicornHack.Systems.Beings;
+﻿namespace UnicornHack.Systems.Beings;
 
 [Component(Id = (int)EntityComponent.Race)]
 public class RaceComponent : GameComponent
 {
-    private string _templateName;
+    private string _templateName = null!;
     private Species _species;
     private SpeciesClass _speciesClass;
     private int _level;
@@ -42,7 +39,7 @@ public class RaceComponent : GameComponent
 
     protected override void Clean()
     {
-        _templateName = default;
+        _templateName = default!;
         _species = default;
         _speciesClass = default;
         _level = default;

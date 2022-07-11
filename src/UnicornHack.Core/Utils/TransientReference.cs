@@ -1,13 +1,14 @@
-using System;
-
 namespace UnicornHack.Utils;
 
-public struct TransientReference<T> : IDisposable where T : IReferenceable
+public struct TransientReference<T, TOwner> : ITransientReference<T>
+    where T : class, IReferenceable
+    where TOwner : notnull
 {
-    public TransientReference(T referenced)
+    public TransientReference(T referenced, TOwner owner)
     {
-        referenced.AddReference();
+        referenced.AddReference(owner);
         Referenced = referenced;
+        Owner = owner;
     }
 
     public T Referenced
@@ -16,9 +17,19 @@ public struct TransientReference<T> : IDisposable where T : IReferenceable
         private set;
     }
 
+    private TOwner Owner
+    {
+        get;
+        set;
+    }
+
     public void Dispose()
     {
-        Referenced?.RemoveReference();
-        Referenced = default;
+        if (Referenced != default)
+        {
+            Referenced.RemoveReference(Owner);
+            Referenced = default!;
+            Owner = default!;
+        }
     }
 }

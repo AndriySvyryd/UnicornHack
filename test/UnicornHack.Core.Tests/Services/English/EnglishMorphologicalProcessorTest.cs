@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace UnicornHack.Services.English;
 
 public class EnglishMorphologicalProcessorTest : IClassFixture<EnglishMorphologicalProcessorTest.TestFixture>

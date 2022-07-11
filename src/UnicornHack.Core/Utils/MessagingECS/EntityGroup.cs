@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 
 // ReSharper disable StaticMemberInGenericType
 namespace UnicornHack.Utils.MessagingECS;
@@ -22,10 +21,10 @@ public class EntityGroup<TEntity> : EntityGroupBase<TEntity>, IEnumerable<TEntit
 
     public int Count => _entities.Count;
 
-    public override TEntity FindEntity(int id) => _entities.TryGetValue(id, out var entity) ? entity : null;
+    public override TEntity? FindEntity(int id) => _entities.TryGetValue(id, out var entity) ? entity : null;
     public override bool ContainsEntity(int id) => _entities.ContainsKey(id);
 
-    public void HandleEntityComponentChanged(TEntity entity, Component removedComponent)
+    public void HandleEntityComponentChanged(TEntity entity, Component? removedComponent)
     {
         if (!Matcher.Matches(entity))
         {

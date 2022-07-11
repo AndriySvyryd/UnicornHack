@@ -9,10 +9,10 @@ public class SetAbilitySlotMessage : IMessage
     public static SetAbilitySlotMessage Create(GameManager manager)
         => manager.Queue.CreateMessage<SetAbilitySlotMessage>(Name);
 
-    private GameEntity _abilityEntity;
-    private GameEntity _ownerEntity;
+    private GameEntity? _abilityEntity;
+    private GameEntity? _ownerEntity;
 
-    public GameEntity AbilityEntity
+    public GameEntity? AbilityEntity
     {
         get => _abilityEntity;
         set
@@ -25,7 +25,7 @@ public class SetAbilitySlotMessage : IMessage
 
     public GameEntity OwnerEntity
     {
-        get => _ownerEntity;
+        get => _ownerEntity!;
         set
         {
             _ownerEntity?.RemoveReference(this);
@@ -44,18 +44,19 @@ public class SetAbilitySlotMessage : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
     string IMessage.MessageName
     {
         get;
         set;
-    }
+    } = null!;
 
     public void Clean()
     {
         AbilityEntity = default;
-        AbilityName = default;
+        AbilityName = default!;
+        OwnerEntity = default!;
         Slot = default;
     }
 }

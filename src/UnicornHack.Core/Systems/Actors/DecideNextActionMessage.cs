@@ -13,11 +13,11 @@ public class DecideNextActionMessage : IMessage
         manager.Enqueue(message, lowPriority: true);
     }
 
-    private GameEntity _actor;
+    private GameEntity? _actor;
 
     public GameEntity Actor
     {
-        get => _actor;
+        get => _actor!;
         set
         {
             _actor?.RemoveReference(this);
@@ -30,7 +30,8 @@ public class DecideNextActionMessage : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
-    public void Clean() => Actor = null;
+    public void Clean()
+        => Actor = null!;
 }

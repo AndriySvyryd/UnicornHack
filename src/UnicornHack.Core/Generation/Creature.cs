@@ -1,10 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using CSharpScriptSerialization;
 using UnicornHack.Data.Creatures;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
@@ -12,7 +8,6 @@ using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Senses;
 using UnicornHack.Utils.DataLoading;
-using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Generation;
 
@@ -21,7 +16,7 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
     private ActorNoiseType? _noise;
     private Species? _species;
     private SpeciesClass? _speciesClass;
-    private string _englishDescription;
+    private string? _englishDescription;
     private int? _movementDelay;
     private int? _turningDelay;
     private Material? _material;
@@ -77,26 +72,26 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
     private bool? _clairvoyant;
     private bool? _clingy;
     private bool? _displaced;
-    private string _lycanthropy;
+    private string? _lycanthropy;
     private bool? _mindless;
     private bool? _nonAnimal;
     private bool? _reanimation;
 
-    public string BaseName
+    public string? BaseName
     {
         get;
         set;
     }
 
-    public Creature BaseCreature => BaseName == null ? null : Loader.Find(BaseName);
+    public Creature? BaseCreature => BaseName == null ? null : Loader.Find(BaseName);
 
-    public string PreviousStageName
+    public string? PreviousStageName
     {
         get;
         set;
     }
 
-    public string NextStageName
+    public string? NextStageName
     {
         get;
         set;
@@ -114,9 +109,9 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
         set;
     }
 
-    private string _generationWeight;
+    private string? _generationWeight;
 
-    public string GenerationWeight
+    public string? GenerationWeight
     {
         get => _generationWeight;
         set
@@ -162,7 +157,8 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
         set => _speciesClass = value;
     }
 
-    public string EnglishDescription
+    // TODO: Move to LanguageService
+    public string? EnglishDescription
     {
         get => _englishDescription ?? BaseCreature?.EnglishDescription;
         set => _englishDescription = value;
@@ -492,7 +488,7 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
         set => _displaced = value;
     }
 
-    public string Lycanthropy
+    public string? Lycanthropy
     {
         get => _lycanthropy ?? BaseCreature?.Lycanthropy;
         set => _lycanthropy = value;
@@ -546,6 +542,7 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
         var physical = manager.CreateComponent<PhysicalComponent>(EntityComponent.Physical);
         creatureEntity.Physical = physical;
 
+        // TODO: return null or try a different cell if cell occupied
         var position = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
         position.LevelId = level.EntityId;
         position.LevelCell = cell;
@@ -637,7 +634,7 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
         return creatureEntity;
     }
 
-    private Func<string, int, int, float> _weightFunction;
+    private Func<string, int, int, float>? _weightFunction;
 
     protected static readonly string DefaultWeight = "1.0";
 
@@ -681,8 +678,7 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
     }
 
     public static readonly GroupedCSScriptLoader<byte, Creature> Loader =
-        new GroupedCSScriptLoader<byte, Creature>(@"Data\Creatures\", c => c.InitialLevel,
-            typeof(CreatureData));
+        new(@"Data\Creatures\", c => c.InitialLevel, typeof(CreatureData));
 
     private static byte? _maxLevel;
 
@@ -690,11 +686,7 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
     {
         get
         {
-            if (_maxLevel == null)
-            {
-                _maxLevel = Loader.GetAllKeys().Max();
-            }
-
+            _maxLevel ??= Loader.GetAllKeys().Max();
             return _maxLevel.Value;
         }
     }
@@ -702,24 +694,24 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<Creature>(GetPropertyConditions<Creature>());
 
-    protected static Dictionary<string, Func<TCreatureVariant, object, bool>>
+    protected static Dictionary<string, Func<TCreatureVariant, object?, bool>>
         GetPropertyConditions<TCreatureVariant>() where TCreatureVariant : Creature =>
         new()
         {
-            { nameof(Name), (o, v) => v != null },
-            { nameof(BaseName), (o, v) => v != null },
+            { nameof(Name), (_, v) => v != null },
+            { nameof(BaseName), (_, v) => v != null },
             { nameof(Species), (o, v) => (Species?)v != o.BaseCreature?.Species },
             { nameof(SpeciesClass), (o, v) => (SpeciesClass?)v != o.BaseCreature?.SpeciesClass },
-            { nameof(EnglishDescription), (o, v) => (string)v != o.BaseCreature?.EnglishDescription },
-            { nameof(Abilities), (o, v) => ((ICollection<Ability>)v).Count != 0 },
-            { nameof(InitialLevel), (o, v) => (byte)v != 0 },
+            { nameof(EnglishDescription), (o, v) => (string?)v != o.BaseCreature?.EnglishDescription },
+            { nameof(Abilities), (_, v) => ((ICollection<Ability>)v!).Count != 0 },
+            { nameof(InitialLevel), (_, v) => (byte)v! != 0 },
             // ReSharper disable once CompareOfFloatsByEqualityOperator
-            { nameof(GenerationWeight), (o, v) => v != null && (string)v != DefaultWeight },
-            { nameof(PreviousStageName), (o, v) => v != null },
-            { nameof(NextStageName), (o, v) => v != null },
-            { nameof(GenerationFlags), (o, v) => (GenerationFlags)v != GenerationFlags.None },
-            { nameof(Behavior), (o, v) => (AIBehavior)v != AIBehavior.None },
-            { nameof(Noise), (o, v) => (ActorNoiseType)v != (o.BaseCreature?.Noise ?? ActorNoiseType.Silent) },
+            { nameof(GenerationWeight), (_, v) => v != null && (string)v != DefaultWeight },
+            { nameof(PreviousStageName), (_, v) => v != null },
+            { nameof(NextStageName), (_, v) => v != null },
+            { nameof(GenerationFlags), (_, v) => (GenerationFlags)v! != GenerationFlags.None },
+            { nameof(Behavior), (_, v) => (AIBehavior)v! != AIBehavior.None },
+            { nameof(Noise), (o, v) => (ActorNoiseType)v! != (o.BaseCreature?.Noise ?? ActorNoiseType.Silent) },
             { nameof(Sex), (o, v) => (Sex?)v != o.BaseCreature?.Sex },
             { nameof(Size), (o, v) => (int?)v != o.BaseCreature?.Size },
             { nameof(Weight), (o, v) => (int?)v != o.BaseCreature?.Weight },
@@ -775,7 +767,7 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
             { nameof(Clairvoyant), (o, v) => (bool?)v != o.BaseCreature?.Clairvoyant },
             { nameof(Clingy), (o, v) => (bool?)v != o.BaseCreature?.Clingy },
             { nameof(Displaced), (o, v) => (bool?)v != o.BaseCreature?.Displaced },
-            { nameof(Lycanthropy), (o, v) => (string)v != o.BaseCreature?.Lycanthropy },
+            { nameof(Lycanthropy), (o, v) => (string?)v != o.BaseCreature?.Lycanthropy },
             { nameof(Mindless), (o, v) => (bool?)v != o.BaseCreature?.Mindless },
             { nameof(NonAnimal), (o, v) => (bool?)v != o.BaseCreature?.NonAnimal },
             { nameof(Reanimation), (o, v) => (bool?)v != o.BaseCreature?.Reanimation }

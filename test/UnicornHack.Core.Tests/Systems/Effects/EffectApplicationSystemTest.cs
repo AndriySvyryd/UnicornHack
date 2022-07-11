@@ -1,10 +1,6 @@
 ﻿using UnicornHack.Data.Items;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
-using UnicornHack.Utils.DataStructures;
-using Xunit;
 
 namespace UnicornHack.Systems.Effects;
 
@@ -33,7 +29,7 @@ public class EffectApplicationSystemTest
 
         Assert.Null(toggledAbility.Ability.Slot);
         Assert.False(toggledAbility.Ability.IsActive);
-        Assert.False(playerEntity.Being.SlottedAbilities.ContainsKey(2));
+        Assert.False(playerEntity.Being!.SlottedAbilities.ContainsKey(2));
         Assert.Equal(0, playerEntity.Being.AcidResistance);
         Assert.Equal(0, playerEntity.Being.ColdResistance);
 
@@ -117,9 +113,9 @@ public class EffectApplicationSystemTest
 
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(6, playerEntity.Physical.Size);
+        Assert.Equal(6, playerEntity.Physical!.Size);
         //Assert.Equal(1000, playerEntity.Physical.Weight);
-        Assert.Equal(10, playerEntity.Being.Speed);
+        Assert.Equal(10, playerEntity.Being!.Speed);
         Assert.Equal(10, playerEntity.Being.Might);
         Assert.Equal(10, playerEntity.Being.Perception);
         Assert.Equal(10, playerEntity.Being.Focus);

@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 
 namespace UnicornHack.Utils.MessagingECS;
 
 public class UniqueEntityRelationship<TEntity> : EntityRelationshipBase<TEntity>
     where TEntity : Entity, new()
 {
-    private DependentsGroup _dependents;
+    private DependentsGroup? _dependents;
 
     public UniqueEntityRelationship(
         string name,
@@ -16,8 +13,8 @@ public class UniqueEntityRelationship<TEntity> : EntityRelationshipBase<TEntity>
         IEntityGroup<TEntity> principalGroup,
         IKeyValueGetter<TEntity, int> keyValueGetter,
         Action<TEntity, EntityChange<TEntity>> handlePrincipalDeleted,
-        Expression<Func<TEntity, TEntity>> getDependent = null,
-        Expression<Func<TEntity, TEntity>> getPrincipal = null,
+        Expression<Func<TEntity, TEntity?>>? getDependent = null,
+        Expression<Func<TEntity, TEntity?>>? getPrincipal = null,
         bool keepPrincipalAlive = false,
         bool keepDependentAlive = false)
         : this(
@@ -40,12 +37,12 @@ public class UniqueEntityRelationship<TEntity> : EntityRelationshipBase<TEntity>
         IEntityGroup<TEntity> principalGroup,
         IKeyValueGetter<TEntity, int> keyValueGetter,
         Action<TEntity, EntityChange<TEntity>> handlePrincipalDeleted,
-        Func<TEntity, TEntity> getDependent,
-        Action<TEntity, TEntity> setDependent,
-        Func<Component, TEntity> componentGetDependent,
-        Func<TEntity, TEntity> getPrincipal = null,
-        Action<TEntity, TEntity> setPrincipal = null,
-        Func<Component, TEntity> componentGetPrincipal = null,
+        Func<TEntity, TEntity?> getDependent,
+        Action<TEntity, TEntity?> setDependent,
+        Func<Component, TEntity?> componentGetDependent,
+        Func<TEntity, TEntity?>? getPrincipal = null,
+        Action<TEntity, TEntity?>? setPrincipal = null,
+        Func<Component, TEntity?>? componentGetPrincipal = null,
         bool keepPrincipalAlive = false,
         bool keepDependentAlive = false)
         : this(
@@ -79,6 +76,7 @@ public class UniqueEntityRelationship<TEntity> : EntityRelationshipBase<TEntity>
             keepDependentAlive)
     {
         principalGroup.AddListener(new PrincipalGroupListener(this));
+        Accessor = null!;
     }
 
     protected IReferenceAccessor<TEntity> Accessor
@@ -94,10 +92,10 @@ public class UniqueEntityRelationship<TEntity> : EntityRelationshipBase<TEntity>
     public IEntityGroup<TEntity> Dependents
         => _dependents ??= new DependentsGroup(this);
 
-    public TEntity GetDependent(TEntity principal, Component removedComponent = null)
+    public TEntity? GetDependent(TEntity principal, Component? removedComponent = null)
         => Accessor.GetDependent(principal, removedComponent);
 
-    public TEntity GetPrincipal(TEntity dependent, Component removedComponent = null)
+    public TEntity? GetPrincipal(TEntity dependent, Component? removedComponent = null)
         => Accessor.TryGetPrincipal(dependent, out var principal, removedComponent)
             ? principal
             : KeyValueGetter.TryGetKey(new EntityChange<TEntity>(dependent), ValueType.Current, out var key)
@@ -182,7 +180,7 @@ public class UniqueEntityRelationship<TEntity> : EntityRelationshipBase<TEntity>
             _relationship = relationship;
         }
 
-        public override TEntity FindEntity(int id) => _relationship.FindEntity(id);
+        public override TEntity? FindEntity(int id) => _relationship.FindEntity(id);
 
         public override bool ContainsEntity(int id) => _relationship.ContainsEntity(id);
 

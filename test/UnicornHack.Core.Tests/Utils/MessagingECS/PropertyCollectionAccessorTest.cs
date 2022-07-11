@@ -1,9 +1,4 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Data.Creatures;
-using UnicornHack.Utils.DataStructures;
-using Xunit;
-
-namespace UnicornHack.Utils.MessagingECS;
+﻿namespace UnicornHack.Utils.MessagingECS;
 
 public class PropertyCollectionAccessorTest
 {
@@ -13,19 +8,17 @@ public class PropertyCollectionAccessorTest
         var level = TestHelper.BuildLevel(".");
         var manager = level.Entity.Manager;
 
-        var creature = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
-
         manager.Queue.ProcessQueue(manager);
 
         var accessor =
-            new PropertyCollectionAccessor<GameEntity, Dictionary<int, GameEntity>, KeyValuePair<int, GameEntity>>(e
-                => (Dictionary<int, GameEntity>)e.Being.SlottedAbilities);
-        accessor.SetDefaultFactory(() => new Dictionary<int, GameEntity>());
+            new PropertyCollectionAccessor<GameEntity, Dictionary<int, byte>, KeyValuePair<int, byte>>(e
+                => e.Level!.WallNeighborsChanges);
+        accessor.SetDefaultFactory(() => new Dictionary<int, byte>());
+        
+        Assert.Null(accessor.GetDependents(level.Entity));
+        Assert.Null(level.WallNeighborsChanges);
 
-        Assert.Null(accessor.GetDependents(creature));
-        Assert.Null(creature.Being.SlottedAbilities);
-
-        Assert.Empty(accessor.GetOrCreateDependents(creature));
-        Assert.Empty(creature.Being.SlottedAbilities!);
+        Assert.Empty(accessor.GetOrCreateDependents(level.Entity));
+        Assert.Empty(level.WallNeighborsChanges!);
     }
 }

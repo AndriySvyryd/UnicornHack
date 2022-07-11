@@ -1,17 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
-namespace UnicornHack.Utils;
+// ReSharper disable once CheckNamespace
+namespace UnicornHack;
 
 public static class Extensions
 {
     public static IReadOnlyCollection<T> GetFlags<T>(this T flags)
+        where T : Enum
     {
         var values = new List<T>();
         var defaultValue = Enum.ToObject(typeof(T), value: 0);
@@ -22,9 +19,9 @@ public static class Extensions
                 continue;
             }
 
-            if (((Enum)(object)flags).HasFlag(enumValue))
+            if (flags.HasFlag(enumValue))
             {
-                values.Add((T)(object)enumValue);
+                values.Add((T)enumValue);
             }
         }
 
@@ -32,6 +29,7 @@ public static class Extensions
     }
 
     public static IReadOnlyCollection<T> GetNonRedundantFlags<T>(this T flags, bool removeComposites)
+        where T : Enum
     {
         var values = new HashSet<T>(flags.GetFlags());
         foreach (var currentValue in values.ToList())
@@ -72,6 +70,7 @@ public static class Extensions
 
     public static Dictionary<TKey, TValue> AddRange<TKey, TValue>(
         this Dictionary<TKey, TValue> dictionary, IEnumerable<TKey> items, Func<TKey, TValue> selector)
+        where TKey : notnull
     {
         foreach (var item in items)
         {
@@ -93,15 +92,13 @@ public static class Extensions
 
     public static IEnumerable<Point> AsPoints(this IEnumerable<byte> bytes)
     {
-        using (var enumerable = bytes.GetEnumerator())
+        using var enumerable = bytes.GetEnumerator();
+        while (enumerable.MoveNext())
         {
-            while (enumerable.MoveNext())
-            {
-                var x = enumerable.Current;
-                enumerable.MoveNext();
-                var y = enumerable.Current;
-                yield return new Point(x, y);
-            }
+            var x = enumerable.Current;
+            enumerable.MoveNext();
+            var y = enumerable.Current;
+            yield return new Point(x, y);
         }
     }
 
@@ -120,16 +117,15 @@ public static class Extensions
 
         var parameterExpression = propertyAccessExpression.Parameters.Single();
         var propertyInfo = parameterExpression.MatchSimplePropertyAccess(propertyAccessExpression.Body);
-
         if (propertyInfo == null)
         {
-            throw new ArgumentException(nameof(propertyAccessExpression));
+            throw new InvalidOperationException($"Invalid property access expression {propertyAccessExpression}");
         }
 
         return BindRuntimeProperty(propertyInfo, parameterExpression.Type);
     }
 
-    private static PropertyInfo MatchSimplePropertyAccess(
+    private static PropertyInfo? MatchSimplePropertyAccess(
         this Expression parameterExpression, Expression propertyAccessExpression)
     {
         var propertyInfos = MatchPropertyAccess(parameterExpression, propertyAccessExpression);
@@ -137,19 +133,18 @@ public static class Extensions
         return propertyInfos?.Count == 1 ? propertyInfos[0] : null;
     }
 
-    private static IReadOnlyList<PropertyInfo> MatchPropertyAccess(
-        this Expression parameterExpression, Expression propertyAccessExpression)
+    private static IReadOnlyList<PropertyInfo>? MatchPropertyAccess(
+        this Expression parameterExpression, Expression? propertyAccessExpression)
     {
         var propertyInfos = new List<PropertyInfo>();
 
-        MemberExpression memberExpression;
+        MemberExpression? memberExpression;
 
         do
         {
             memberExpression = RemoveTypeAs(RemoveConvert(propertyAccessExpression)) as MemberExpression;
 
             var propertyInfo = memberExpression?.Member as PropertyInfo;
-
             if (propertyInfo == null)
             {
                 return null;
@@ -157,13 +152,13 @@ public static class Extensions
 
             propertyInfos.Insert(0, propertyInfo);
 
-            propertyAccessExpression = memberExpression.Expression;
+            propertyAccessExpression = memberExpression!.Expression;
         } while (RemoveTypeAs(RemoveConvert(memberExpression.Expression)) != parameterExpression);
 
         return propertyInfos;
     }
 
-    public static Expression RemoveConvert(this Expression expression)
+    public static Expression? RemoveConvert(this Expression? expression)
     {
         while (expression != null
                && (expression.NodeType == ExpressionType.Convert
@@ -175,7 +170,7 @@ public static class Extensions
         return expression;
     }
 
-    public static Expression RemoveTypeAs(this Expression expression)
+    public static Expression? RemoveTypeAs(this Expression? expression)
     {
         while (expression?.NodeType == ExpressionType.TypeAs)
         {
@@ -187,8 +182,7 @@ public static class Extensions
 
     private static PropertyInfo BindRuntimeProperty(PropertyInfo propertyInfo, Type parameterType)
     {
-        var declaringType = propertyInfo?.DeclaringType;
-
+        var declaringType = propertyInfo.DeclaringType;
         if (declaringType == null
             || declaringType == parameterType
             || !declaringType.GetTypeInfo().IsInterface
@@ -200,7 +194,7 @@ public static class Extensions
         var propertyGetter = propertyInfo.GetMethod;
         if (propertyGetter == null)
         {
-            return null;
+            throw new InvalidOperationException($"Property {propertyInfo.Name} has no getter.");
         }
 
         var interfaceMapping = parameterType.GetTypeInfo().GetRuntimeInterfaceMap(declaringType);
@@ -217,21 +211,21 @@ public static class Extensions
         return propertyInfo;
     }
 
-    public static (Delegate Get, Delegate ComponentGet, Delegate Set) GetPropertyAccessors(
+    public static (Delegate Get, Delegate ComponentGet, Delegate? Set) GetPropertyAccessors(
         this LambdaExpression propertyAccessExpression)
         => new PropertyAccessorExpressionVisitor().GetPropertyAccessors(propertyAccessExpression);
 
     private class PropertyAccessorExpressionVisitor : ExpressionVisitor
     {
-        private ParameterExpression _rootParameter;
-        private Type _resultType;
-        private ParameterExpression _valueParameter;
-        private ParameterExpression _componentParameter;
-        private Expression _componentGetExpression;
-        private Expression _setExpression;
+        private ParameterExpression _rootParameter = null!;
+        private Type _resultType = null!;
+        private ParameterExpression _valueParameter = null!;
+        private ParameterExpression _componentParameter = null!;
+        private Expression _componentGetExpression = null!;
+        private Expression? _setExpression;
         private bool _isLastMember;
 
-        public (Delegate Get, Delegate ComponentGet, Delegate Set) GetPropertyAccessors(
+        public (Delegate Get, Delegate ComponentGet, Delegate? Set) GetPropertyAccessors(
             LambdaExpression propertyAccessExpression)
         {
             if (propertyAccessExpression.Parameters.Count != 1)
@@ -250,9 +244,7 @@ public static class Extensions
             var getExpression = Visit(propertyAccessExpression.Body);
 
             var get = Expression.Lambda(getExpression, _rootParameter).Compile();
-            var componentGet = _componentGetExpression == null
-                ? null
-                : Expression.Lambda(_componentGetExpression, _componentParameter).Compile();
+            var componentGet = Expression.Lambda(_componentGetExpression, _componentParameter).Compile();
             var set = _setExpression == null
                 ? null
                 : Expression.Lambda(_setExpression, _rootParameter, _valueParameter).Compile();
@@ -261,7 +253,6 @@ public static class Extensions
 
         protected override Expression VisitParameter(ParameterExpression node)
         {
-            _componentGetExpression = null;
             _setExpression = _rootParameter;
             return _rootParameter;
         }
@@ -329,22 +320,21 @@ public static class Extensions
 
             var isLastMember = _isLastMember;
             _isLastMember = false;
-            var getExpression = base.Visit(node.Expression);
+            var getExpression = base.Visit(node.Expression)!;
 
             var runtimeProperty = BindRuntimeProperty(propertyInfo, getExpression.Type);
-            var type = runtimeProperty.PropertyType;
-
             if (runtimeProperty == null)
             {
                 throw new InvalidOperationException(
                     $"Property {propertyInfo.Name} is not present on {node.Expression?.Type.Name}");
             }
 
+            var type = runtimeProperty.PropertyType;
             if (type.IsAssignableTo(typeof(Component)))
             {
                 _componentGetExpression = Expression.TypeAs(_componentParameter, type);
             }
-            else if (_componentGetExpression != null)
+            else
             {
                 var componentCondition = Expression.Equal(_componentGetExpression,
                     Expression.Constant(null, _componentGetExpression.Type));
@@ -392,8 +382,7 @@ public static class Extensions
                     getExpression = Expression.Convert(getExpression, _resultType);
                 }
 
-                if (_componentGetExpression != null
-                    && _componentGetExpression.Type != _resultType)
+                if (_componentGetExpression.Type != _resultType)
                 {
                     _componentGetExpression = Expression.Convert(_componentGetExpression, _resultType);
                 }
@@ -414,11 +403,11 @@ public static class Extensions
         return method;
     }
 
-    public static Type TryGetSequenceType(this Type type)
+    public static Type? TryGetSequenceType(this Type type)
         => type.TryGetElementType(typeof(IEnumerable<>))
            ?? type.TryGetElementType(typeof(IAsyncEnumerable<>));
 
-    public static Type TryGetElementType(this Type type, Type interfaceOrBaseType)
+    public static Type? TryGetElementType(this Type type, Type interfaceOrBaseType)
     {
         if (type.IsGenericTypeDefinition)
         {
@@ -427,7 +416,7 @@ public static class Extensions
 
         var types = GetGenericTypeImplementations(type, interfaceOrBaseType);
 
-        Type singleImplementation = null;
+        Type? singleImplementation = null;
         foreach (var implementation in types)
         {
             if (singleImplementation == null)

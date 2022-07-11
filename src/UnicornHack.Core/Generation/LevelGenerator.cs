@@ -1,9 +1,4 @@
-﻿using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.Linq;
-using UnicornHack.Generation.Map;
-using UnicornHack.Primitives;
+﻿using System.Buffers;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils;
 
@@ -20,31 +15,29 @@ public static class LevelGenerator
             throw new InvalidOperationException("Level created beyond branch length");
         }
 
-        using (var levelEntityReference = manager.CreateEntity())
+        using var levelEntityReference = manager.CreateEntity();
+        var level = manager.CreateComponent<LevelComponent>(EntityComponent.Level);
+        level.BranchName = branch.Name;
+        level.Depth = depth;
+        level.Terrain = Array.Empty<byte>();
+        level.KnownTerrain = Array.Empty<byte>();
+        level.WallNeighbors = Array.Empty<byte>();
+        level.VisibleTerrain = Array.Empty<byte>();
+        level.VisibleNeighbors = Array.Empty<byte>();
+        level.VisibleTerrain = Array.Empty<byte>();
+        level.Difficulty = branch.Difficulty + depth;
+        if (level.Difficulty > MaxDifficulty)
         {
-            var level = manager.CreateComponent<LevelComponent>(EntityComponent.Level);
-            level.BranchName = branch.Name;
-            level.Depth = depth;
-            level.Terrain = new byte[0];
-            level.KnownTerrain = new byte[0];
-            level.WallNeighbors = new byte[0];
-            level.VisibleTerrain = new byte[0];
-            level.VisibleNeighbors = new byte[0];
-            level.VisibleTerrain = new byte[0];
-            level.Difficulty = branch.Difficulty + depth;
-            if (level.Difficulty > MaxDifficulty)
-            {
-                throw new InvalidOperationException(
-                    $"Difficulty {level.Difficulty} greater than max {MaxDifficulty}");
-            }
-
-            levelEntityReference.Referenced.Level = level;
-            level.GenerationRandom = new SimpleRandom { Seed = seed };
-            branch.Levels.Add(level);
-            level.Branch = branch;
-
-            return level;
+            throw new InvalidOperationException(
+                $"Difficulty {level.Difficulty} greater than max {MaxDifficulty}");
         }
+
+        levelEntityReference.Referenced.Level = level;
+        level.GenerationRandom = new SimpleRandom { Seed = seed };
+        branch.Levels.Add(level);
+        level.Branch = branch;
+
+        return level;
     }
 
     public static bool EnsureGenerated(LevelComponent levelComponent)
@@ -60,7 +53,8 @@ public static class LevelGenerator
             var fragment = levelComponent.GenerationRandom.Pick(DefiningMapFragment.Loader.GetAsList(),
                 f => f.GetWeight(levelComponent.BranchName, levelComponent.Depth, 0, 0));
 
-            return Generate(levelComponent, fragment) != null;
+            Generate(levelComponent, fragment);
+            return true;
         }
         catch (Exception e)
         {
@@ -100,7 +94,7 @@ public static class LevelGenerator
 
         var rooms = fragment.Layout.Fill(levelComponent, fragment);
         fragment.CreatureGenerator.Fill(levelComponent,
-            rooms.Where(r => !(r.Fragment is ConnectingMapFragment)).ToList());
+            rooms.Where(r => r.Fragment is not ConnectingMapFragment).ToList());
         fragment.ItemGenerator.Fill(levelComponent, rooms);
 
         return rooms;

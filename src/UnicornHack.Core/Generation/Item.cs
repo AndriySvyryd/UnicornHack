@@ -1,9 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
 using CSharpScriptSerialization;
 using UnicornHack.Data.Items;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
@@ -11,7 +8,6 @@ using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils;
 using UnicornHack.Utils.DataLoading;
-using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Generation;
 
@@ -36,19 +32,19 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
     {
         get;
         set;
-    }
+    } = null!;
 
-    public string BaseName
+    public string? BaseName
     {
         get;
         set;
     }
 
-    public Item BaseItem => BaseName == null ? null : Loader.Get(BaseName);
+    public Item? BaseItem => BaseName == null ? null : Loader.Get(BaseName);
 
-    private string _generationWeight;
+    private string? _generationWeight;
 
-    public string GenerationWeight
+    public string? GenerationWeight
     {
         get => _generationWeight;
         set
@@ -158,7 +154,7 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
             var itemEntityReference = Instantiate(manager);
             if (countable)
             {
-                itemEntityReference.Referenced.Item.Count = quantity;
+                itemEntityReference.Referenced.Item!.Count = quantity;
             }
 
             var moveMessage = MoveItemMessage.Create(manager);
@@ -204,7 +200,7 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
             var itemEntityReference = Instantiate(manager);
             if (countable)
             {
-                itemEntityReference.Referenced.Item.Count = quantity;
+                itemEntityReference.Referenced.Item!.Count = quantity;
             }
 
             var moveMessage = MoveItemMessage.Create(manager);
@@ -335,7 +331,7 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
     }
 
     private void AddPossessedAbility(
-        AbilityComponent itemAbility, ActivationType itemCondition, ItemComponent item, GameManager manager)
+        AbilityComponent? itemAbility, ActivationType itemCondition, ItemComponent item, GameManager manager)
     {
         using var abilityEntityReference = manager.CreateEntity();
         var possessedAbilityEntity = abilityEntityReference.Referenced;
@@ -411,7 +407,7 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
         possessedEffect.AffectedEntity = item.Entity;
     }
 
-    private Func<string, int, int, float> _weightFunction;
+    private Func<string, int, int, float>? _weightFunction;
 
     protected static readonly string DefaultGenerationWeight = "1.0";
 
@@ -455,21 +451,20 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
     }
 
     public static readonly GroupedCSScriptLoader<ItemGroup, Item> Loader =
-        new GroupedCSScriptLoader<ItemGroup, Item>(@"Data\Items\", i => ItemGroup.Loader.Object.GetGroups(i),
-            typeof(ItemData));
+        new(@"Data\Items\", i => ItemGroup.Loader.Object.GetGroups(i), typeof(ItemData));
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<Item>(GetPropertyConditions<Item>());
 
-    protected static Dictionary<string, Func<TItemVariant, object, bool>> GetPropertyConditions<TItemVariant>()
+    protected static Dictionary<string, Func<TItemVariant, object?, bool>> GetPropertyConditions<TItemVariant>()
         where TItemVariant : Item => new()
     {
-        { nameof(Name), (o, v) => v != null },
-        { nameof(BaseName), (o, v) => v != null },
-        { nameof(Abilities), (o, v) => ((ICollection<Ability>)v).Count != 0 },
+        { nameof(Name), (_, v) => v != null },
+        { nameof(BaseName), (_, v) => v != null },
+        { nameof(Abilities), (_, v) => ((ICollection<Ability>)v!).Count != 0 },
         { nameof(Type), (o, v) => (ItemType?)v != (o.BaseItem?.Type ?? ItemType.None) },
         { nameof(Complexity), (o, v) => (ItemComplexity?)v != o.BaseItem?.Complexity },
-        { nameof(GenerationWeight), (o, v) => v != null && (string)v != DefaultGenerationWeight },
+        { nameof(GenerationWeight), (_, v) => v != null && (string)v != DefaultGenerationWeight },
         { nameof(Material), (o, v) => (Material?)v != o.BaseItem?.Material },
         { nameof(Weight), (o, v) => (int?)v != o.BaseItem?.Weight },
         { nameof(StackSize), (o, v) => (int?)v != (o.BaseItem?.StackSize ?? 1) },

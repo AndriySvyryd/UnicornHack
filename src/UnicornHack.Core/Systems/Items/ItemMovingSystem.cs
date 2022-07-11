@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
-using UnicornHack.Systems.Actors;
+﻿using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
 using UnicornHack.Utils;
-using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Items;
@@ -37,14 +31,14 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
 
     public MessageProcessingResult Process(TraveledMessage message, GameManager manager)
     {
-        var position = message.Entity.Position;
-        if (message.Entity.Physical.Capacity == 0)
+        var position = message.Entity.Position!;
+        if (message.Entity.Physical!.Capacity == 0)
         {
             return MessageProcessingResult.ContinueProcessing;
         }
 
         var levelItem =
-            position.LevelEntity.Level.Items.GetValueOrDefault(new Point(position.LevelX, position.LevelY));
+            position.LevelEntity.Level!.Items.GetValueOrDefault(new Point(position.LevelX, position.LevelY));
         if (levelItem != null)
         {
             // Pickup item on move over
@@ -62,8 +56,8 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
 
     public MessageProcessingResult Process(DiedMessage message, GameManager manager)
     {
-        var position = message.BeingEntity.Position;
-        foreach (var item in message.BeingEntity.Being.Items)
+        var position = message.BeingEntity.Position!;
+        foreach (var item in message.BeingEntity.Being!.Items)
         {
             var moveItemMessage = MoveItemMessage.Create(manager);
             moveItemMessage.ItemEntity = item;
@@ -81,8 +75,8 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
     private static ItemMovedMessage TryMove(MoveItemMessage message, GameManager manager, bool pretend = false)
     {
         var itemEntity = message.ItemEntity;
-        var item = itemEntity.Item;
-        var position = itemEntity.Position;
+        var item = itemEntity.Item!;
+        var position = itemEntity.Position!;
         var itemMovedMessage = ItemMovedMessage.Create(manager);
         itemMovedMessage.ItemEntity = itemEntity;
         itemMovedMessage.InitialLevelCell = position?.LevelCell;
@@ -106,7 +100,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
                 && item.EquippedSlot != EquipmentSlot.None)
             {
                 var equipMessage = EquipItemMessage.Create(manager);
-                equipMessage.ActorEntity = manager.FindEntity(item.ContainerId.Value);
+                equipMessage.ActorEntity = manager.FindEntity(item.ContainerId.Value)!;
                 equipMessage.ItemEntity = itemEntity;
                 equipMessage.SuppressLog = true;
                 equipMessage.Force = message.Force;
@@ -121,7 +115,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
                 manager.Queue.ReturnMessage(equipMessage);
             }
 
-            GameEntity initialTopContainer = null;
+            GameEntity? initialTopContainer = null;
             var initialPosition = itemMovedMessage.InitialLevelCell;
             if (initialPosition == null)
             {
@@ -133,23 +127,23 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
 
             var spilloverDirection = Direction.South;
             if (initialPosition != null
-                && initialPosition != message.TargetCell.Value)
+                && initialPosition != message.TargetCell!.Value)
             {
                 spilloverDirection = message.TargetCell.Value.DifferenceTo(initialPosition.Value).GetUnit()
                     .AsDirection();
             }
 
-            ItemComponent leftover = null;
+            ItemComponent? leftover = null;
             foreach (var targetPoint in TerrainSystem.GetAdjacentPoints(
-                         message.TargetLevelEntity.Level, message.TargetCell.Value, spilloverDirection,
+                         message.TargetLevelEntity.Level!, message.TargetCell!.Value, spilloverDirection,
                          includeInitial: true))
             {
-                if (!manager.TravelSystem.CanMoveTo(targetPoint, message.TargetLevelEntity.Level))
+                if (!manager.TravelSystem.CanMoveTo(targetPoint, message.TargetLevelEntity.Level!))
                 {
                     continue;
                 }
 
-                var existingItem = message.TargetLevelEntity.Level.Items.GetValueOrDefault(targetPoint);
+                var existingItem = message.TargetLevelEntity.Level!.Items.GetValueOrDefault(targetPoint);
                 if (existingItem == null)
                 {
                     itemMovedMessage.Successful = true;
@@ -169,7 +163,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
                     break;
                 }
 
-                leftover = TryStackWith(itemMovedMessage, existingItem.Item, pretend);
+                leftover = TryStackWith(itemMovedMessage, existingItem.Item!, pretend);
                 if (leftover == null)
                 {
                     break;
@@ -208,9 +202,9 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
             if (leftover.MaxStackSize > 1
                 || leftover.Count != null)
             {
-                foreach (var existingItem in targetContainer.Items)
+                foreach (var existingItem in targetContainer!.Items)
                 {
-                    leftover = TryStackWith(itemMovedMessage, existingItem.Item, pretend);
+                    leftover = TryStackWith(itemMovedMessage, existingItem.Item!, pretend);
                     if (leftover == null)
                     {
                         break;
@@ -222,7 +216,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
 
             if (leftover != null)
             {
-                if (targetContainer.Capacity
+                if (targetContainer!.Capacity
                     <= targetContainer.Items.Count
                     || targetContainer.Capacity
                     <= (targetContainer.Entity.Being?.SlottedAbilities?.Count ?? 0))
@@ -252,10 +246,10 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
         }
     }
 
-    private static ItemComponent TryStackWith(
+    private static ItemComponent? TryStackWith(
         ItemMovedMessage itemMovedMessage, ItemComponent existingItem, bool pretend)
     {
-        var item = itemMovedMessage.ItemEntity.Item;
+        var item = itemMovedMessage.ItemEntity.Item!;
         if (item.TemplateName != existingItem.TemplateName
             || (item.MaxStackSize <= 1
                 && item.Count == null))
@@ -293,7 +287,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
 
                 if (!pretend)
                 {
-                    stackedItem.Item.ContainerId = existingItem.EntityId;
+                    stackedItem.Item!.ContainerId = existingItem.EntityId;
                 }
 
                 existingStackSize++;
@@ -329,7 +323,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
 
             var newItemEntityReference = Item.Loader.Get(item.TemplateName).Instantiate(manager);
 
-            newItemEntityReference.Referenced.Item.Count = quantity;
+            newItemEntityReference.Referenced.Item!.Count = quantity;
             item.Count -= quantity;
 
             return newItemEntityReference;
@@ -356,7 +350,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
         var itemReference = item.Entity.AddReference(manager);
         using (newStack.AddReference(manager))
         {
-            newStack.Item.ContainerId = item.ContainerId;
+            newStack.Item!.ContainerId = item.ContainerId;
             item.ContainerId = null;
 
             foreach (var stackedItem in stackedItems)
@@ -368,7 +362,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
 
                 using (stackedItem.AddReference(manager))
                 {
-                    stackedItem.Item.ContainerId = newStack.Id;
+                    stackedItem.Item!.ContainerId = newStack.Id;
                 }
 
                 stackSize--;
@@ -383,7 +377,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
         var containerId = target.Item?.ContainerId;
         while (containerId != null)
         {
-            target = manager.FindEntity(containerId.Value);
+            target = manager.FindEntity(containerId.Value)!;
             containerId = target.Item?.ContainerId;
         }
 

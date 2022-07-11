@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using UnicornHack.Primitives;
-using UnicornHack.Systems.Levels;
-using UnicornHack.Utils.DataStructures;
+﻿using UnicornHack.Systems.Levels;
 
 namespace UnicornHack.Utils;
 
@@ -14,7 +9,7 @@ namespace UnicornHack.Utils;
 /// </summary>
 public class BeveledVisibilityCalculator
 {
-    private readonly Func<byte, byte, DirectionFlags> _getUnconnectedNeighbours;
+    private readonly Func<byte, byte, DirectionFlags> _getUnconnectedNeighbors;
     private readonly LevelComponent _level;
     private const byte MinVisibility = 0;
     public const byte MaxVisibility = 254;
@@ -23,17 +18,18 @@ public class BeveledVisibilityCalculator
     /// <summary>
     ///     Creates a new instance of <see cref="BeveledVisibilityCalculator" />
     /// </summary>
-    /// <param name="getUnconnectedNeighbours">
+    /// <param name="getUnconnectedNeighbors">
     ///     A function that returns which neighbours the opaque tile at the given X and Y coordinates is not connected to.
     ///     The function also returns the index of the tile if it's within valid range.
     /// </param>
     /// <remarks>
     ///     Functions take coordinates instead of <see cref="Point" /> for perf
     /// </remarks>
-    public BeveledVisibilityCalculator(Func<byte, byte, DirectionFlags> getUnconnectedNeighbours,
+    public BeveledVisibilityCalculator(
+        Func<byte, byte, DirectionFlags> getUnconnectedNeighbors,
         LevelComponent level)
     {
-        _getUnconnectedNeighbours = getUnconnectedNeighbours;
+        _getUnconnectedNeighbors = getUnconnectedNeighbors;
         _level = level;
     }
 
@@ -290,7 +286,7 @@ public class BeveledVisibilityCalculator
         for (var i = 0; i < visibleTerrainList.Count; i++)
         {
             var (index, visibility) = visibleTerrainList[i];
-            visibleCells.Add((_level.IndexToPoint[index], visibility));
+            visibleCells.Add((_level.IndexToPoint![index], visibility));
         }
 
         visibleTerrainList.Clear();
@@ -317,7 +313,7 @@ public class BeveledVisibilityCalculator
         }
 
         var newLength = maxLength + minLength - (minLength >> 1);
-        var manager = _level.Entity.Manager;
+        var manager = _level.Entity.Manager!;
         var visibleTerrainCells = manager.PointByteListArrayPool.Rent();
         if (visibleTerrainCells.Capacity < newLength)
         {
@@ -344,7 +340,7 @@ public class BeveledVisibilityCalculator
                 }
 
                 // Combine diagonal tiles
-                visibleTerrainCells.Add((_level.IndexToPoint[firstIndex],
+                visibleTerrainCells.Add((_level.IndexToPoint![firstIndex],
                     (byte)(firstVisibility + secondVisibility)));
                 m++;
                 n++;
@@ -360,14 +356,14 @@ public class BeveledVisibilityCalculator
 
             if (firstIndex != -1)
             {
-                firstPoint = _level.IndexToPoint[firstIndex];
+                firstPoint = _level.IndexToPoint![firstIndex];
                 firstVector = origin.DifferenceTo(firstPoint);
                 firstDistance = firstVector.Length();
             }
 
             if (secondIndex != -1)
             {
-                secondPoint = _level.IndexToPoint[secondIndex];
+                secondPoint = _level.IndexToPoint![secondIndex];
                 secondVector = origin.DifferenceTo(secondPoint);
                 secondDistance = secondVector.Length();
             }
@@ -430,8 +426,8 @@ public class BeveledVisibilityCalculator
         int range, byte linearFalloff, DirectionFlags marginalCellsToDouble,
         int x, Slope top, Slope bottom,
         Func<byte, byte, LevelComponent, (bool, int)> blocksVisibility,
-        byte[] visibleTerrain,
-        List<(int, byte)> visibleTerrainList)
+        byte[]? visibleTerrain,
+        List<(int, byte)>? visibleTerrainList)
     {
         // Throughout this function there are references to various parts of tiles. A tile's coordinates refer to its center,
         // and the following diagram shows the parts of the tile and the vectors from the origin that pass through those parts.
@@ -568,7 +564,7 @@ public class BeveledVisibilityCalculator
                         }
                         else
                         {
-                            visibleTerrainList.Add((index, visibility));
+                            visibleTerrainList!.Add((index, visibility));
                         }
 
                         if (wasOpaque == 0)
@@ -829,7 +825,7 @@ public class BeveledVisibilityCalculator
                         }
                         else
                         {
-                            visibleTerrainList.Add((index, visibility));
+                            visibleTerrainList!.Add((index, visibility));
                         }
                     }
                 }
@@ -937,7 +933,7 @@ public class BeveledVisibilityCalculator
                 break;
         }
 
-        return (_getUnconnectedNeighbours((byte)nx, (byte)ny) & directionsToCheck) == directionsToCheck;
+        return (_getUnconnectedNeighbors((byte)nx, (byte)ny) & directionsToCheck) == directionsToCheck;
     }
 
     private bool BottomRightBeveled(int x, int y, int octant, Point origin)
@@ -986,7 +982,7 @@ public class BeveledVisibilityCalculator
                 break;
         }
 
-        return (_getUnconnectedNeighbours((byte)nx, (byte)ny) & directionsToCheck) == directionsToCheck;
+        return (_getUnconnectedNeighbors((byte)nx, (byte)ny) & directionsToCheck) == directionsToCheck;
     }
 
     private int GetCardinallyAdjacentOctant(int octant)

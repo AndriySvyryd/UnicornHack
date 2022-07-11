@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using CSharpScriptSerialization;
-using UnicornHack.Primitives;
+﻿using CSharpScriptSerialization;
 using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
 
 public abstract class DurationEffect : Effect
 {
-    private Func<GameEntity, GameEntity, float> _durationFunction;
+    private Func<GameEntity, GameEntity, float>? _durationFunction;
 
     public EffectDuration Duration
     {
@@ -17,7 +13,7 @@ public abstract class DurationEffect : Effect
         set;
     }
 
-    public string DurationAmount
+    public string? DurationAmount
     {
         get;
         set;
@@ -47,13 +43,13 @@ public abstract class DurationEffect : Effect
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<DurationEffect>(GetPropertyConditions<DurationEffect>());
 
-    protected static new Dictionary<string, Func<TEffect, object, bool>>
+    protected static new Dictionary<string, Func<TEffect, object?, bool>>
         GetPropertyConditions<TEffect>() where TEffect : Effect
     {
         var propertyConditions = Effect.GetPropertyConditions<TEffect>();
 
-        propertyConditions.Add(nameof(Duration), (o, v) => (EffectDuration)v != default);
-        propertyConditions.Add(nameof(DurationAmount), (o, v) => v != default);
+        propertyConditions.Add(nameof(Duration), (_, v) => (EffectDuration)v! != default);
+        propertyConditions.Add(nameof(DurationAmount), (_, v) => v != default);
         return propertyConditions;
     }
 

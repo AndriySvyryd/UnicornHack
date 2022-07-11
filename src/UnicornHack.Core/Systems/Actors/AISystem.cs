@@ -1,8 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-using System.Linq;
-using UnicornHack.Primitives;
-using UnicornHack.Systems.Abilities;
+﻿using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
@@ -23,9 +19,9 @@ public class AISystem :
     public MessageProcessingResult Process(PerformActionMessage message, GameManager manager)
     {
         var actorEntity = message.Actor;
-        var ai = actorEntity.AI;
+        var ai = actorEntity.AI!;
 
-        Debug.Assert(actorEntity.Being.IsAlive);
+        Debug.Assert(actorEntity.Being!.IsAlive);
 
         var action = ai.NextAction;
         var target = ai.NextActionTarget;
@@ -41,7 +37,7 @@ public class AISystem :
 
         // TODO: If can't act - wait till player turn
 
-        var position = actorEntity.Position;
+        var position = actorEntity.Position!;
         switch (action)
         {
             case ActorAction.Wait:
@@ -49,18 +45,13 @@ public class AISystem :
                 break;
             case ActorAction.ChangeHeading:
             case ActorAction.MoveOneCell:
-                var moveDirection = (Direction)target.Value;
+                var moveDirection = (Direction)target!.Value;
                 Move(moveDirection, actorEntity, manager,
                     onlyChangeHeading: action == ActorAction.ChangeHeading);
 
                 break;
             case ActorAction.DropItem:
-                var itemToDrop = GetItem(target.Value, actorEntity, manager);
-                if (itemToDrop == null)
-                {
-                    return MessageProcessingResult.ContinueProcessing;
-                }
-
+                var itemToDrop = GetItem(target!.Value, actorEntity, manager);
                 var dropMessage = MoveItemMessage.Create(manager);
                 dropMessage.ItemEntity = itemToDrop;
                 dropMessage.TargetLevelEntity = position.LevelEntity;
@@ -69,8 +60,8 @@ public class AISystem :
                 manager.Enqueue(dropMessage);
                 break;
             case ActorAction.EquipItem:
-                var itemToEquip = GetItem(target.Value, actorEntity, manager);
-                var slot = (EquipmentSlot)target2.Value;
+                var itemToEquip = GetItem(target!.Value, actorEntity, manager);
+                var slot = (EquipmentSlot)target2!.Value;
                 if (itemToEquip == null)
                 {
                     return MessageProcessingResult.ContinueProcessing;
@@ -84,7 +75,7 @@ public class AISystem :
                 manager.Enqueue(equipMessage);
                 break;
             case ActorAction.UnequipItem:
-                var itemToUnequip = GetItem(target.Value, actorEntity, manager);
+                var itemToUnequip = GetItem(target!.Value, actorEntity, manager);
                 if (itemToUnequip == null)
                 {
                     return MessageProcessingResult.ContinueProcessing;
@@ -124,7 +115,7 @@ public class AISystem :
             return;
         }
 
-        var position = actorEntity.Position;
+        var position = actorEntity.Position!;
         if (position.MovementDelay == 0)
         {
             return;
@@ -147,13 +138,13 @@ public class AISystem :
 
     private bool TryAttackPlayerCharacter(GameEntity aiEntity, GameManager manager)
     {
-        var aiPosition = aiEntity.Position;
+        var aiPosition = aiEntity.Position!;
         foreach (var playerEntity in manager.Players)
         {
-            var playerPosition = playerEntity.Position;
+            var playerPosition = playerEntity.Position!;
             if (playerPosition.LevelId != aiPosition.LevelId
                 || playerPosition.LevelCell.DistanceTo(aiPosition.LevelCell) > 1
-                || !playerEntity.Being.IsAlive)
+                || !playerEntity.Being!.IsAlive)
             {
                 continue;
             }
@@ -175,20 +166,20 @@ public class AISystem :
             return false;
         }
 
-        var ai = aiEntity.AI;
+        var ai = aiEntity.AI!;
         ai.NextAction = ActorAction.UseAbilitySlot;
-        ai.NextActionTarget = abilityEntity.Ability.Slot;
-        ai.NextActionTarget2 = targetEntity.Position.LevelCell.ToInt32();
+        ai.NextActionTarget = abilityEntity.Ability!.Slot;
+        ai.NextActionTarget2 = targetEntity.Position!.LevelCell.ToInt32();
 
         return true;
     }
 
-    public GameEntity GetDefaultAttack(GameEntity aiEntity, GameEntity targetEntity, bool? melee,
+    public GameEntity? GetDefaultAttack(GameEntity aiEntity, GameEntity targetEntity, bool? melee,
         GameManager manager)
     {
-        foreach (var abilityEntity in aiEntity.Physical.Abilities)
+        foreach (var abilityEntity in aiEntity.Physical!.Abilities)
         {
-            var ability = abilityEntity.Ability;
+            var ability = abilityEntity.Ability!;
             if (ability.Activation != ActivationType.Targeted
                 || !ability.IsUsable
                 || melee == (ability.Range != 1))
@@ -215,18 +206,18 @@ public class AISystem :
 
     private bool TryMoveToPlayer(GameEntity actorEntity, PositionComponent position, GameManager manager)
     {
-        var aiPosition = actorEntity.Position;
+        var aiPosition = actorEntity.Position!;
         foreach (var playerEntity in manager.Players)
         {
-            var playerPosition = playerEntity.Position;
+            var playerPosition = playerEntity.Position!;
             if (playerPosition.LevelId != aiPosition.LevelId
                 || playerPosition.LevelCell.DistanceTo(aiPosition.LevelCell) > 8
-                || !playerEntity.Being.IsAlive)
+                || !playerEntity.Being!.IsAlive)
             {
                 continue;
             }
 
-            var level = aiPosition.LevelEntity.Level;
+            var level = aiPosition.LevelEntity.Level!;
 
             // TODO: Check memory and senses
             //if (manager.SensorySystem.GetVisibility(aiEntity, playerPosition.LevelCell, level) == 0)
@@ -236,7 +227,7 @@ public class AISystem :
 
             // TODO: Avoid connections and creatures
             var directionToMove = manager.TravelSystem.GetFirstStepFromShortestPath(
-                level, aiPosition.LevelCell, playerPosition.LevelCell, aiPosition.Heading.Value);
+                level, aiPosition.LevelCell, playerPosition.LevelCell, aiPosition.Heading!.Value);
 
             if (directionToMove != null)
             {
@@ -258,7 +249,7 @@ public class AISystem :
 
                 if (manager.TravelSystem.CanTravel(travelMessage, manager))
                 {
-                    var ai = actorEntity.AI;
+                    var ai = actorEntity.AI!;
                     ai.NextAction = changeHeading ? ActorAction.ChangeHeading : ActorAction.MoveOneCell;
                     ai.NextActionTarget = (int)directionToMove.Value;
                     manager.Queue.ReturnMessage(travelMessage);
@@ -282,7 +273,7 @@ public class AISystem :
         }
 
         Direction? directionToMove;
-        if (possibleDirectionsToMove.Contains(position.Heading.Value)
+        if (possibleDirectionsToMove.Contains(position.Heading!.Value)
             && manager.Game.Random.NextBool())
         {
             directionToMove = position.Heading.Value;
@@ -294,7 +285,7 @@ public class AISystem :
         }
 
         var changeHeading = position.Heading != directionToMove;
-        var ai = actorEntity.AI;
+        var ai = actorEntity.AI!;
         ai.NextAction = changeHeading ? ActorAction.ChangeHeading : ActorAction.MoveOneCell;
         ai.NextActionTarget = (int)directionToMove.Value;
     }
@@ -323,7 +314,7 @@ public class AISystem :
 
     public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager manager)
     {
-        TrySlot(message.Entity.Ability, manager);
+        TrySlot(message.Entity.Ability!, manager);
 
         return MessageProcessingResult.ContinueProcessing;
     }
@@ -340,7 +331,7 @@ public class AISystem :
 
     private static void TrySlot(AbilityComponent ability, GameManager manager)
     {
-        var owner = ability.OwnerEntity;
+        var owner = ability.OwnerEntity!;
         if (owner.AI == null
             || (ability.Activation & ActivationType.Slottable) == 0
             || ability.Slot != null
@@ -351,7 +342,7 @@ public class AISystem :
         }
 
         var i = manager.AbilitySlottingSystem.GetFirstFreeSlot(owner);
-        if (i == null || !(i < owner.Physical.Capacity - 1))
+        if (i == null || !(i < owner.Physical!.Capacity - 1))
         {
             // leave a slot for items
             return;

@@ -1,6 +1,3 @@
-using System;
-using UnicornHack.Primitives;
-
 namespace UnicornHack.Utils.DataStructures;
 
 public readonly struct Vector : IEquatable<Vector>
@@ -18,8 +15,7 @@ public readonly struct Vector : IEquatable<Vector>
 
     public static readonly Vector[] MovementDirections =
     {
-        new Vector(1, 0), new Vector(1, -1), new Vector(0, -1), new Vector(-1, -1), new Vector(-1, 0),
-        new Vector(-1, 1), new Vector(0, 1), new Vector(1, 1)
+        new(1, 0), new(1, -1), new(0, -1), new(-1, -1), new(-1, 0), new(-1, 1), new(0, 1), new(1, 1)
     };
 
     public static readonly byte[] OppositeDirectionIndexes = { 4, 5, 6, 7, 0, 1, 2, 3 };
@@ -28,9 +24,9 @@ public readonly struct Vector : IEquatable<Vector>
 
     public bool IsIntercardinalAligned() => X == Y || X == -Y;
 
-    public Vector GetOrthogonal() => new Vector((sbyte)-Y, X);
+    public Vector GetOrthogonal() => new((sbyte)-Y, X);
 
-    public Vector GetInverse() => new Vector((sbyte)-X, (sbyte)-Y);
+    public Vector GetInverse() => new((sbyte)-X, (sbyte)-Y);
 
     /// <summary>
     ///     Gets the closest grid vector of length 1
@@ -281,13 +277,14 @@ public readonly struct Vector : IEquatable<Vector>
         }
 
         var difference = targetOctant - octant;
-        if (difference > 4)
+        switch (difference)
         {
-            difference -= 8;
-        }
-        else if (difference < -4)
-        {
-            difference += 8;
+            case > 4:
+                difference -= 8;
+                break;
+            case < -4:
+                difference += 8;
+                break;
         }
 
         return difference;
@@ -309,15 +306,8 @@ public readonly struct Vector : IEquatable<Vector>
 
     public override string ToString() => $"<{X}, {Y}>";
 
-    public override bool Equals(object obj)
-    {
-        if (obj is Vector otherVector)
-        {
-            return Equals(otherVector);
-        }
-
-        return false;
-    }
+    public override bool Equals(object? obj)
+        => obj is Vector otherVector && Equals(otherVector);
 
     public bool Equals(Vector other) => X == other.X && Y == other.Y;
 

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace UnicornHack.Utils.MessagingECS;
+﻿namespace UnicornHack.Utils.MessagingECS;
 
 public class KeyValueGetter<TEntity, TKey> : IKeyValueGetter<TEntity, TKey>
     where TEntity : Entity, new()
@@ -18,8 +16,7 @@ public class KeyValueGetter<TEntity, TKey> : IKeyValueGetter<TEntity, TKey>
 
     public bool TryGetKey(in EntityChange<TEntity> entityChange, ValueType type, out TKey keyValue)
     {
-        bool hasKey;
-        (keyValue, hasKey) = _getKey(entityChange, _matcher, type);
+        (keyValue, var hasKey) = _getKey(entityChange, _matcher, type);
         return hasKey;
     }
 

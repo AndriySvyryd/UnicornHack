@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Text;
-using UnicornHack.Primitives;
-
-namespace UnicornHack.Services;
+﻿namespace UnicornHack.Services;
 
 public class TaggingService
 {
@@ -14,7 +10,7 @@ public class TaggingService
         builder.Append("<damage");
         foreach (var effectEntity in effects)
         {
-            var effect = effectEntity.Effect;
+            var effect = effectEntity.Effect!;
             switch (effect.EffectType)
             {
                 case EffectType.PhysicalDamage:
@@ -86,7 +82,7 @@ public class TaggingService
                     continue;
             }
 
-            totalDamage += effect.AppliedAmount.Value;
+            totalDamage += effect.AppliedAmount!.Value;
             if (totalDamage != 0)
             {
                 damageTaken = true;

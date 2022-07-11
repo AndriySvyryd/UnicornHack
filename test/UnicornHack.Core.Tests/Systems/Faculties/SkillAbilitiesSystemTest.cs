@@ -1,12 +1,7 @@
-﻿using System.Linq;
-using UnicornHack.Data.Abilities;
+﻿using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Items;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Items;
-using UnicornHack.Utils.DataStructures;
-using Xunit;
 
 namespace UnicornHack.Systems.Faculties;
 
@@ -29,39 +24,39 @@ public class SkillAbilitiesSystemTest
 
         var firstWaterBookAbility =
             manager.AffectableAbilitiesIndex[
-                (playerEntity.Id, ItemData.SkillbookOfWaterSourcery.Name + ": Consult")];
-        var firstWaterBook = playerEntity.Being.Items.Single();
+                (playerEntity.Id, ItemData.SkillbookOfWaterSourcery.Name + ": Consult")]!;
+        var firstWaterBook = playerEntity.Being!.Items.Single();
         ItemData.SkillbookOfWaterSourcery.Instantiate(playerEntity);
         ItemData.SkillbookOfConjuration.Instantiate(playerEntity);
         TestHelper.ActivateAbility(firstWaterBookAbility, playerEntity, manager, 2);
 
         manager.Queue.ProcessQueue(manager);
 
-        Assert.True(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)].Ability
+        Assert.True(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)]!.Ability!
             .IsUsable);
 
         var conjurationBookAbility = playerEntity.Being.Abilities
-            .First(a => a.Ability.Name == ItemData.SkillbookOfConjuration.Name + ": Consult");
+            .First(a => a.Ability!.Name == ItemData.SkillbookOfConjuration.Name + ": Consult");
         TestHelper.ActivateAbility(conjurationBookAbility, playerEntity, manager, 3);
 
         manager.Queue.ProcessQueue(manager);
 
-        Assert.True(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)].Ability
+        Assert.True(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)]!.Ability!
             .IsUsable);
 
         Assert.Equal(1,
-            manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)].Ability.Level);
+            manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)]!.Ability!.Level);
 
-        playerEntity.Player.SkillPoints = 5;
+        playerEntity.Player!.SkillPoints = 5;
         manager.SkillAbilitiesSystem.BuyAbilityLevel(AbilityData.WaterSourcery, playerEntity);
 
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(2,
-            manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)].Ability.Level);
+            manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)]!.Ability!.Level);
         Assert.Equal(1,
-            manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.Conjuration.Name)].Ability.Level);
-        Assert.True(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)].Ability
+            manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.Conjuration.Name)]!.Ability!.Level);
+        Assert.True(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)]!.Ability!
             .IsUsable);
 
         TestHelper.DeactivateAbility(conjurationBookAbility, playerEntity, manager);
@@ -76,20 +71,20 @@ public class SkillAbilitiesSystemTest
 
         Assert.Null(firstWaterBookAbility.Manager);
         Assert.Equal(1,
-            manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)].Ability.Level);
+            manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)]!.Ability!.Level);
         Assert.Null(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.Conjuration.Name)]);
-        Assert.True(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)].Ability
+        Assert.True(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)]!.Ability!
             .IsUsable);
 
         var deactivateMessage = DeactivateAbilityMessage.Create(manager);
         deactivateMessage.AbilityEntity =
-            manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)];
+            manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)]!;
         deactivateMessage.ActivatorEntity = playerEntity;
         manager.Enqueue(deactivateMessage);
 
         manager.Queue.ProcessQueue(manager);
 
-        manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)].Ability = null;
+        manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)]!.Ability = null;
 
         manager.Queue.ProcessQueue(manager);
 
@@ -114,14 +109,14 @@ public class SkillAbilitiesSystemTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Same(AbilityData.DoubleMeleeAttack.Name,
-            playerEntity.Being.SlottedAbilities[AbilitySlottingSystem.DefaultMeleeAttackSlot].Ability.Name);
+            playerEntity.Being!.SlottedAbilities[AbilitySlottingSystem.DefaultMeleeAttackSlot].Ability!.Name);
         Assert.False(
             playerEntity.Being.SlottedAbilities.ContainsKey(AbilitySlottingSystem.DefaultRangedAttackSlot));
-        Assert.Equal(3, playerEntity.Being.Abilities.Select(a => a.Ability)
+        Assert.Equal(3, playerEntity.Being.Abilities.Select(a => a.Ability!)
             .Count(a => a.IsUsable && (a.Activation & ActivationType.Slottable) != 0));
 
         var swordEntity = playerEntity.Being.Items
-            .Single(e => e.Item.TemplateName == ItemData.LongSword.Name);
+            .Single(e => e.Item!.TemplateName == ItemData.LongSword.Name);
         var equipMessage = EquipItemMessage.Create(manager);
         equipMessage.ActorEntity = playerEntity;
         equipMessage.ItemEntity = swordEntity;
@@ -130,7 +125,7 @@ public class SkillAbilitiesSystemTest
         manager.Enqueue(equipMessage);
 
         var staffEntity = playerEntity.Being.Items
-            .Single(e => e.Item.TemplateName == ItemData.FireStaff.Name);
+            .Single(e => e.Item!.TemplateName == ItemData.FireStaff.Name);
         equipMessage = EquipItemMessage.Create(manager);
         equipMessage.ActorEntity = playerEntity;
         equipMessage.ItemEntity = staffEntity;
@@ -141,10 +136,10 @@ public class SkillAbilitiesSystemTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Same(AbilityData.TwoHandedMeleeAttack.Name,
-            playerEntity.Being.SlottedAbilities[AbilitySlottingSystem.DefaultMeleeAttackSlot].Ability.Name);
+            playerEntity.Being.SlottedAbilities[AbilitySlottingSystem.DefaultMeleeAttackSlot]!.Ability!.Name);
         Assert.Same(AbilityData.TwoHandedRangedAttack.Name,
-            playerEntity.Being.SlottedAbilities[AbilitySlottingSystem.DefaultRangedAttackSlot].Ability.Name);
-        Assert.Equal(2, playerEntity.Being.Abilities.Select(a => a.Ability)
+            playerEntity.Being.SlottedAbilities[AbilitySlottingSystem.DefaultRangedAttackSlot]!.Ability!.Name);
+        Assert.Equal(2, playerEntity.Being.Abilities.Select(a => a.Ability!)
             .Count(a => a.IsUsable && (a.Activation & ActivationType.Slottable) != 0));
     }
 }

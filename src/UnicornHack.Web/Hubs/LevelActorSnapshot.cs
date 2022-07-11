@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.EntityFrameworkCore;
-using UnicornHack.Primitives;
+﻿using Microsoft.EntityFrameworkCore;
 using UnicornHack.Services;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
@@ -22,19 +18,19 @@ public class LevelActorSnapshot
 
     public LevelActorSnapshot CaptureState(GameEntity knowledgeEntity, SerializationContext context)
     {
-        var actorKnowledge = knowledgeEntity.Knowledge;
+        var actorKnowledge = knowledgeEntity.Knowledge!;
         var knownEntity = actorKnowledge.KnownEntity;
-        var position = knowledgeEntity.Position;
+        var position = knowledgeEntity.Position!;
         var manager = context.Manager;
         CurrentlyPerceived = manager.SensorySystem.SensedByPlayer(knownEntity, position.LevelCell).CanIdentify();
 
         return this;
     }
 
-    public static List<object> Serialize(
-        GameEntity knowledgeEntity, EntityState? state, LevelActorSnapshot snapshot, SerializationContext context)
+    public static List<object?>? Serialize(
+        GameEntity knowledgeEntity, EntityState? state, LevelActorSnapshot? snapshot, SerializationContext context)
     {
-        List<object> properties;
+        List<object?> properties;
         var actorKnowledge = knowledgeEntity.Knowledge;
         var knownEntity = actorKnowledge?.KnownEntity;
         var ai = knownEntity?.AI;
@@ -46,14 +42,17 @@ public class LevelActorSnapshot
             case null:
             case EntityState.Added:
                 properties = state == null
-                    ? new List<object>(6)
-                    : new List<object>(7) { (int)state };
-                properties.Add(actorKnowledge.EntityId);
+                    ? new List<object?>(6)
+                    : new List<object?>(7) { (int)state };
+                properties.Add(actorKnowledge!.EntityId);
 
+                Debug.Assert(knownEntity != null, nameof(knownEntity));
+                Debug.Assert(position != null, nameof(position));
+                Debug.Assert(being != null, nameof(being));
                 if (actorKnowledge.SensedType.CanIdentify())
                 {
                     properties.Add(ai != null
-                        ? actorKnowledge.KnownEntity.Being.Races.First().Race.TemplateName
+                        ? actorKnowledge.KnownEntity.Being!.Races.First().Race!.TemplateName
                         : "player");
                     properties.Add(context.Services.Language.GetActorName(knownEntity, actorKnowledge.SensedType));
                 }
@@ -65,7 +64,7 @@ public class LevelActorSnapshot
 
                 properties.Add(position.LevelX);
                 properties.Add(position.LevelY);
-                properties.Add((byte)position.Heading);
+                properties.Add((byte)position.Heading!);
 
                 if (actorKnowledge.SensedType.CanIdentify()
                     && ai != null)
@@ -121,10 +120,13 @@ public class LevelActorSnapshot
 
                 return properties;
             case EntityState.Deleted:
-                return new List<object> { (int)state, knowledgeEntity.Id };
+                return new List<object?> { (int)state, knowledgeEntity.Id };
             default:
-                properties = new List<object>(2) { (int)state, actorKnowledge.EntityId };
+                properties = new List<object?>(2) { (int)state, actorKnowledge!.EntityId };
 
+                Debug.Assert(knownEntity != null, nameof(knownEntity));
+                Debug.Assert(position != null, nameof(position));
+                Debug.Assert(being != null, nameof(being));
                 var knowledgeEntry = context.DbContext.Entry(actorKnowledge);
                 int? i = 1;
                 var sensedType = knowledgeEntry.Property(nameof(KnowledgeComponent.SensedType));
@@ -135,7 +137,7 @@ public class LevelActorSnapshot
                     properties.Add(!canIdentify
                         ? null
                         : ai != null
-                            ? actorKnowledge.KnownEntity.Being.Races.First().Race.TemplateName
+                            ? actorKnowledge.KnownEntity.Being!.Races.First().Race!.TemplateName
                             : "player");
 
                     i++;
@@ -173,7 +175,7 @@ public class LevelActorSnapshot
                     if (heading.IsModified)
                     {
                         properties.Add(i);
-                        properties.Add((byte)position.Heading);
+                        properties.Add((byte)position.Heading!);
                     }
                 }
                 else
@@ -186,7 +188,7 @@ public class LevelActorSnapshot
                     i++;
                     var currentlyPerceived = manager.SensorySystem.SensedByPlayer(knownEntity, position.LevelCell)
                         .CanIdentify();
-                    var currentPerceptionChanged = snapshot.CurrentlyPerceived != currentlyPerceived;
+                    var currentPerceptionChanged = snapshot!.CurrentlyPerceived != currentlyPerceived;
                     if (currentPerceptionChanged)
                     {
                         properties.Add(i);
@@ -313,9 +315,9 @@ public class LevelActorSnapshot
         }
     }
 
-    private static List<object> SerializeNextAction(AIComponent ai, SerializationContext context)
+    private static List<object?>? SerializeNextAction(AIComponent ai, SerializationContext context)
     {
-        var result = new List<object>(2);
+        var result = new List<object?>(2);
 
         var manager = context.Manager;
         result.Add(ai.NextAction);
@@ -336,7 +338,7 @@ public class LevelActorSnapshot
                     return null;
                 }
 
-                var ability = abilityEntity.Ability;
+                var ability = abilityEntity.Ability!;
                 result.Add(context.Services.Language.GetString(ability));
                 result.Add(ai.NextActionTarget2);
                 result.Add(ability.TargetingShape);
@@ -345,10 +347,10 @@ public class LevelActorSnapshot
                 return result;
             case ActorAction.MoveOneCell:
             case ActorAction.ChangeHeading:
-                var direction = (Direction)ai.NextActionTarget;
+                var direction = (Direction)ai.NextActionTarget!;
                 var action = ai.NextAction == ActorAction.MoveOneCell ? "Move " : "Turn ";
                 result.Add(action + context.Services.Language.GetString(direction, abbreviate: true));
-                result.Add(ai.Entity.Position.LevelCell.Translate(direction.AsVector()).ToInt32());
+                result.Add(ai.Entity.Position!.LevelCell.Translate(direction.AsVector()).ToInt32());
 
                 return result;
             default:
@@ -359,14 +361,14 @@ public class LevelActorSnapshot
         }
     }
 
-    private static List<object> SerializeAttackSummary(
-        GameEntity attackEntity,
+    private static List<object?>? SerializeAttackSummary(
+        GameEntity? attackEntity,
         GameEntity attackerEntity,
         GameEntity victimEntity,
         GameManager manager)
     {
-        var result = new List<object>(4);
-        AttackStats stats = null;
+        var result = new List<object?>(4);
+        AttackStats? stats = null;
         if (attackEntity != null)
         {
             var activateMessage = ActivateAbilityMessage.Create(manager);
@@ -400,14 +402,14 @@ public class LevelActorSnapshot
 
         var ticksToKill = expectedDamage <= 0
             ? 0
-            : Math.Ceiling(victimEntity.Being.HitPoints * 100f / expectedDamage) * stats.Delay;
+            : Math.Ceiling(victimEntity.Being!.HitPoints * 100f / expectedDamage) * stats.Delay;
         result.Add(ticksToKill);
 
         return result;
     }
 
     public static List<object> SerializeAttributes(
-        GameEntity actorEntity, SenseType sense, SerializationContext context)
+        GameEntity? actorEntity, SenseType sense, SerializationContext context)
     {
         var canIdentify = actorEntity != null && sense.CanIdentify();
         if (!canIdentify)
@@ -415,20 +417,20 @@ public class LevelActorSnapshot
             return new List<object>();
         }
 
-        var being = actorEntity.Being;
-        var sensor = actorEntity.Sensor;
-        var physical = actorEntity.Physical;
+        var being = actorEntity!.Being!;
+        var sensor = actorEntity.Sensor!;
+        var physical = actorEntity.Physical!;
         var description = actorEntity.HasComponent(EntityComponent.Player)
             ? ""
             : context.Services.Language.GetDescription(
-                actorEntity.Being.Races.First().Race.TemplateName,
+                actorEntity.Being!.Races.First().Race!.TemplateName,
                 DescriptionCategory.Creature);
         var result = new List<object>(42)
         {
             context.Services.Language.GetActorName(actorEntity, sense),
             description,
             actorEntity.Manager.XPSystem.GetXPLevel(actorEntity),
-            actorEntity.Position.MovementDelay,
+            actorEntity.Position!.MovementDelay,
             physical.Size,
             physical.Weight,
             sensor.PrimaryFOVQuadrants,
@@ -472,8 +474,8 @@ public class LevelActorSnapshot
 
         var isPlayer = actorEntity.HasComponent(EntityComponent.Player);
 
-        result.Add(actorEntity.Being.Abilities
-            .Where(a => a.Ability.IsUsable
+        result.Add(actorEntity.Being!.Abilities
+            .Where(a => a.Ability!.IsUsable
                         && ((!isPlayer
                              && a.Ability.Activation != ActivationType.Default
                              && a.Ability.Activation != ActivationType.Always

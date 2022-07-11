@@ -1,23 +1,19 @@
-using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
 using CSharpScriptSerialization;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.DataLoading;
-using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Generation.Map;
 
 public abstract class MapFragment : ICSScriptSerializable, ILoadable
 {
-    private string _generationWeight;
+    private string? _generationWeight;
 
     public string Name
     {
         get;
         set;
-    }
+    } = null!;
 
     public string Map
     {
@@ -25,13 +21,13 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         set;
     } = "";
 
-    public DynamicMap DynamicMap
+    public DynamicMap? DynamicMap
     {
         get;
         set;
     }
 
-    public byte[] ByteMap
+    public byte[]? ByteMap
     {
         get;
         set;
@@ -55,7 +51,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         set;
     }
 
-    public string GenerationWeight
+    public string? GenerationWeight
     {
         get => _generationWeight;
         set
@@ -65,7 +61,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         }
     }
 
-    public ICollection<string> Tags
+    public ICollection<string>? Tags
     {
         get;
         set;
@@ -105,13 +101,13 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         set;
     }
 
-    public int[,] PointToIndex
+    public int[,]? PointToIndex
     {
         get;
         private set;
     }
 
-    public Point[] IndexToPoint
+    public Point[]? IndexToPoint
     {
         get;
         private set;
@@ -141,6 +137,9 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     // X - should be outside the level
     // # - wall or other unpassable terrain
     // . - floor or other passable terrain
+    [MemberNotNull(nameof(ByteMap))]
+    [MemberNotNull(nameof(PointToIndex))]
+    [MemberNotNull(nameof(IndexToPoint))]
     public void EnsureInitialized(Game game)
     {
         if (ByteMap == null)
@@ -188,7 +187,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                 Height = y;
             }
 
-            (PointToIndex, IndexToPoint) = Rectangle.GetPointIndex(game.Services.SharedCache, Width, Height);
+            (PointToIndex, IndexToPoint) = Rectangle.GetPointIndex(game.Services!.SharedCache, Width, Height);
 
             x = 0;
             y = 0;
@@ -271,13 +270,14 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                 (byte)(Height - payloadOrigin.Y - (ConditionalLastRow ? 1 : 0)));
         }
 
-        if (PointToIndex == null)
+        if (PointToIndex == null
+            || IndexToPoint == null)
         {
-            (PointToIndex, IndexToPoint) = Rectangle.GetPointIndex(game.Services.SharedCache, Width, Height);
+            (PointToIndex, IndexToPoint) = Rectangle.GetPointIndex(game.Services!.SharedCache, Width, Height);
         }
     }
 
-    public Room TryPlace(LevelComponent level, Rectangle boundingRectangle)
+    public Room? TryPlace(LevelComponent level, Rectangle boundingRectangle)
     {
         try
         {
@@ -387,7 +387,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     {
     }
 
-    protected Room TryPlace(LevelComponent level, Rectangle boundingRectangle, DynamicMap map)
+    protected Room? TryPlace(LevelComponent level, Rectangle boundingRectangle, DynamicMap? map)
     {
         if (map == null || !boundingRectangle.Contains(map.MinSize))
         {
@@ -398,14 +398,14 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         return BuildRoom(level, map.GetRoomPoints(level, boundingRectangle),
             p => TerrainSystem.SetTerrain(MapFeature.StoneFloor, p, level),
             p => TerrainSystem.SetTerrain(MapFeature.StoneWall, p, level),
-            _ =>
-            {
-            });
+            _ => { });
     }
 
     public void WriteMap<TState>(Point target, LevelComponent level,
         Action<char, Point, LevelComponent, TState> write, TState state)
     {
+        EnsureInitialized(level.Game);
+        
         var map = ByteMap;
         var x = target.X;
         var y = target.Y;
@@ -426,18 +426,11 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         }
     }
 
-    public virtual Room BuildRoom(LevelComponent level, IEnumerable<Point> points, Action<Point> insideAction,
+    public virtual Room? BuildRoom(LevelComponent level, IEnumerable<Point> points, Action<Point> insideAction,
         Action<Point> perimeterAction, Action<Point> outsideAction)
     {
-        static void Noop(Point _)
-        {
-        }
-
         var insidePoints = new List<Point>();
-        insideAction ??= Noop;
-        perimeterAction ??= Noop;
-        outsideAction ??= Noop;
-        var neighbours = new byte[level.TileCount];
+        var neighbors = new byte[level.TileCount];
         var firstPoint = new Point();
         var lastPoint = new Point();
         var left = byte.MaxValue;
@@ -470,18 +463,18 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                     continue;
                 }
 
-                var newLocationIndex = level.PointToIndex[newLocationX, newLocationY];
-                var newNeighbours = (byte)(neighbours[newLocationIndex] |
+                var newLocationIndex = level.PointToIndex![newLocationX, newLocationY];
+                var newNeighbors = (byte)(neighbors[newLocationIndex] |
                                            1 << Vector.OppositeDirectionIndexes[directionIndex]);
-                if (newNeighbours == (byte)DirectionFlags.All &&
-                    (neighbours[level.PointToIndex[roomPoint.X, roomPoint.Y]] & 1 << directionIndex) != 0)
+                if (newNeighbors == (byte)DirectionFlags.All &&
+                    (neighbors[level.PointToIndex[roomPoint.X, roomPoint.Y]] & 1 << directionIndex) != 0)
                 {
                     var insidePoint = new Point(newLocationX, newLocationY);
                     insideAction.Invoke(insidePoint);
                     insidePoints.Add(insidePoint);
                 }
 
-                neighbours[newLocationIndex] = newNeighbours;
+                neighbors[newLocationIndex] = newNeighbors;
             }
 
             occupiedPointCount++;
@@ -492,7 +485,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             return null;
         }
 
-        var perimeter = WalkPerimeter(firstPoint, neighbours, level.PointToIndex, perimeterAction, outsideAction);
+        var perimeter = WalkPerimeter(firstPoint, neighbors, level.PointToIndex!, perimeterAction, outsideAction);
 
         var doorwayPoints = perimeter.Count > 7 ? FindDoorwayPoints(perimeter, level) : null;
 
@@ -551,30 +544,30 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         return doorwayPoints;
     }
 
-    private static IReadOnlyList<Point> WalkPerimeter(Point firstPoint, byte[] neighbours, int[,] pointToIndex,
+    private static IReadOnlyList<Point> WalkPerimeter(Point firstPoint, byte[] neighbors, int[,] pointToIndex,
         Action<Point> perimeterAction, Action<Point> outsideAction) =>
         WalkPerimeter(new Point(firstPoint.X, (byte)(firstPoint.Y - 1)), DirectionFlags.South, Direction.North,
-            new Dictionary<Point, int>(), neighbours, pointToIndex, perimeterAction, outsideAction) ??
+            new Dictionary<Point, int>(), neighbors, pointToIndex, perimeterAction, outsideAction) ??
         new List<Point>();
 
-    private static List<Point> WalkPerimeter(Point firstPoint, DirectionFlags currentNeighbourMap,
-        Direction previousPointDirection, Dictionary<Point, int> visitedIntersections, byte[] neighbours,
+    private static List<Point>? WalkPerimeter(Point firstPoint, DirectionFlags currentNeighborMap,
+        Direction previousPointDirection, Dictionary<Point, int> visitedIntersections, byte[] neighbors,
         int[,] pointToIndex, Action<Point> perimeterAction, Action<Point> outsideAction)
     {
-        // Assuming both the perimeter and the inner area are contiguos
-        List<Point> perimeter = null;
+        // Assuming both the perimeter and the inner area are contiguous
+        List<Point>? perimeter = null;
         var currentPoint = firstPoint;
         var previousPointDirectionIndex = (int)previousPointDirection;
         var perimeterLooped = false;
 
-        for (var j = 0; j < neighbours.Length + 2; j++)
+        for (var j = 0; j < neighbors.Length + 2; j++)
         {
             var perimeterPointFound = false;
             for (var i = 3; i > 0; i--)
             {
                 var directionIndexToCheck = (previousPointDirectionIndex + i * 2) % 8;
-                var neighbourDirection = (DirectionFlags)(1 << directionIndexToCheck);
-                if ((currentNeighbourMap & neighbourDirection) == neighbourDirection)
+                var neighborDirection = (DirectionFlags)(1 << directionIndexToCheck);
+                if ((currentNeighborMap & neighborDirection) == neighborDirection)
                 {
                     var directionToCheck = Vector.MovementDirections[directionIndexToCheck];
                     var newLocationX = (byte)(currentPoint.X + directionToCheck.X);
@@ -585,8 +578,8 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                         break;
                     }
 
-                    var nextNeighbourMap = (DirectionFlags)neighbours[pointToIndex[newLocationX, newLocationY]];
-                    var nextIsPerimeter = IsPerimeter(nextNeighbourMap);
+                    var nextNeighborMap = (DirectionFlags)neighbors[pointToIndex[newLocationX, newLocationY]];
+                    var nextIsPerimeter = IsPerimeter(nextNeighborMap);
                     if (nextIsPerimeter)
                     {
                         if (perimeterLooped)
@@ -610,7 +603,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                         }
 
                         currentPoint = nextPoint;
-                        currentNeighbourMap = nextNeighbourMap;
+                        currentNeighborMap = nextNeighborMap;
                         previousPointDirectionIndex = Vector.OppositeDirectionIndexes[directionIndexToCheck];
                         perimeterPointFound = true;
                         break;
@@ -625,9 +618,9 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
 
                     outsideAction.Invoke(nextPoint);
 
-                    var subPerimeter = WalkPerimeter(nextPoint, nextNeighbourMap,
+                    var subPerimeter = WalkPerimeter(nextPoint, nextNeighborMap,
                         (Direction)Vector.OppositeDirectionIndexes[directionIndexToCheck], visitedIntersections,
-                        neighbours, pointToIndex, perimeterAction, outsideAction);
+                        neighbors, pointToIndex, perimeterAction, outsideAction);
 
                     if (subPerimeter != null)
                     {
@@ -647,30 +640,30 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             }
         }
 
-        throw new InvalidOperationException("Infinite loop finding the reoom perimeter");
+        throw new InvalidOperationException("Infinite loop finding the room perimeter");
     }
 
-    private static bool IsPerimeter(DirectionFlags neighbourMap) =>
-        (neighbourMap & DirectionFlags.NorthwestCorner) == DirectionFlags.NorthwestCorner ||
-        (neighbourMap & DirectionFlags.NortheastCorner) == DirectionFlags.NortheastCorner ||
-        (neighbourMap & DirectionFlags.SoutheastCorner) == DirectionFlags.SoutheastCorner ||
-        (neighbourMap & DirectionFlags.SouthwestCorner) == DirectionFlags.SouthwestCorner;
+    private static bool IsPerimeter(DirectionFlags neighborMap) =>
+        (neighborMap & DirectionFlags.NorthwestCorner) == DirectionFlags.NorthwestCorner
+        || (neighborMap & DirectionFlags.NortheastCorner) == DirectionFlags.NortheastCorner
+        || (neighborMap & DirectionFlags.SoutheastCorner) == DirectionFlags.SoutheastCorner
+        || (neighborMap & DirectionFlags.SouthwestCorner) == DirectionFlags.SouthwestCorner;
 
-    protected static Dictionary<string, Func<TMapFragment, object, bool>> GetPropertyConditions<TMapFragment>()
-        where TMapFragment : MapFragment => new Dictionary<string, Func<TMapFragment, object, bool>>
+    protected static Dictionary<string, Func<TMapFragment, object?, bool>> GetPropertyConditions<TMapFragment>()
+        where TMapFragment : MapFragment => new()
     {
-        { nameof(Name), (o, v) => v != null },
+        { nameof(Name), (_, v) => v != null },
         // ReSharper disable once CompareOfFloatsByEqualityOperator
-        { nameof(GenerationWeight), (o, v) => v != null && (string)v != DefaultWeight },
-        { nameof(Map), (o, v) => !string.IsNullOrEmpty((string)v) },
-        { nameof(ByteMap), (o, v) => false },
-        { nameof(PayloadArea), (o, v) => false },
-        { nameof(Width), (o, v) => false },
-        { nameof(Height), (o, v) => false },
-        { nameof(ConditionalFirstColumn), (o, v) => false },
-        { nameof(ConditionalFirstRow), (o, v) => false },
-        { nameof(ConditionalLastColumn), (o, v) => false },
-        { nameof(ConditionalLastRow), (o, v) => false }
+        { nameof(GenerationWeight), (_, v) => v != null && (string)v != DefaultWeight },
+        { nameof(Map), (_, v) => !string.IsNullOrEmpty((string)v!) },
+        { nameof(ByteMap), (_, v) => false },
+        { nameof(PayloadArea), (_, v) => false },
+        { nameof(Width), (_, v) => false },
+        { nameof(Height), (_, v) => false },
+        { nameof(ConditionalFirstColumn), (_, v) => false },
+        { nameof(ConditionalFirstRow), (_, v) => false },
+        { nameof(ConditionalLastColumn), (_, v) => false },
+        { nameof(ConditionalLastRow), (_, v) => false }
     };
 
     public abstract ICSScriptSerializer GetSerializer();

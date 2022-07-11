@@ -13,19 +13,19 @@ public partial class GameManager
     {
         get;
         private set;
-    }
+    } = null!;
 
     public SortedUniqueEntityIndex<GameEntity, (int Tick, int Id)> TemporalEntitiesIndex
     {
         get;
         private set;
-    }
+    } = null!;
 
     public TimeSystem TimeSystem
     {
         get;
         private set;
-    }
+    } = null!;
 
     private void InitializeTime(SequentialMessageQueue<GameManager> queue)
     {

@@ -1,14 +1,11 @@
-﻿using UnicornHack.Generation;
-using UnicornHack.Primitives;
-using UnicornHack.Utils.DataStructures;
-using UnicornHack.Utils.MessagingECS;
+﻿using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Levels;
 
 [Component(Id = (int)EntityComponent.Connection)]
 public class ConnectionComponent : GameComponent
 {
-    private GameEntity _targetLevelEntity;
+    private GameEntity? _targetLevelEntity;
     private int _targetLevelId;
     private byte? _targetLevelX;
     private byte? _targetLevelY;
@@ -31,7 +28,7 @@ public class ConnectionComponent : GameComponent
 
     public GameEntity TargetLevelEntity
     {
-        get => _targetLevelEntity ??= Entity.Manager.FindEntity(_targetLevelId);
+        get => _targetLevelEntity ??= Entity.Manager.FindEntity(_targetLevelId)!;
         set
         {
             _targetLevelId = value.Id;

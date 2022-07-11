@@ -1,17 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
-
-namespace UnicornHack.Systems.Abilities;
+﻿namespace UnicornHack.Systems.Abilities;
 
 [Component(Id = (int)EntityComponent.Ability)]
 public class AbilityComponent : GameComponent
 {
-    private string _name;
+    private string? _name;
     private AbilityType _type;
     private int _level;
-    private GameEntity _ownerEntity;
+    private GameEntity? _ownerEntity;
     private int? _ownerId;
     private ActivationType _activation;
     private int? _activationCondition;
@@ -23,17 +18,17 @@ public class AbilityComponent : GameComponent
     private TargetingShape _targetingShape;
     private AbilityAction _action;
     private AbilitySuccessCondition _successCondition;
-    private string _accuracy;
+    private string? _accuracy;
     private int _cooldown;
     private int _xpCooldown;
     private int? _cooldownTick;
     private int? _cooldownXpLeft;
     private int _energyCost;
-    private string _delay;
+    private string? _delay;
     private bool _isActive;
     private bool _isUsable = true;
     private int? _slot;
-    private Ability _template;
+    private Ability? _template;
     private bool _templateLoaded;
 
     public AbilityComponent()
@@ -41,13 +36,13 @@ public class AbilityComponent : GameComponent
         ComponentId = (int)EntityComponent.Ability;
     }
 
-    public string Name
+    public string? Name
     {
         get => _name;
         set => SetWithNotify(value, ref _name);
     }
 
-    public Ability Template
+    public Ability? Template
     {
         get
         {
@@ -81,7 +76,7 @@ public class AbilityComponent : GameComponent
         set => SetWithNotify(value, ref _level);
     }
 
-    public GameEntity OwnerEntity
+    public GameEntity? OwnerEntity
     {
         get => _ownerEntity ??= Entity.Manager.FindEntity(_ownerId);
         set
@@ -167,13 +162,13 @@ public class AbilityComponent : GameComponent
         set => SetWithNotify(value, ref _successCondition);
     }
 
-    public Func<GameEntity, GameEntity, float> AccuracyFunction
+    public Func<GameEntity, GameEntity, float>? AccuracyFunction
     {
         get;
         set;
     }
 
-    public string Accuracy
+    public string? Accuracy
     {
         get => _accuracy;
         set
@@ -213,13 +208,13 @@ public class AbilityComponent : GameComponent
         set => SetWithNotify(value, ref _energyCost);
     }
 
-    public Func<GameEntity, GameEntity, float> DelayFunction
+    public Func<GameEntity, GameEntity, float>? DelayFunction
     {
         get;
         set;
     }
 
-    public string Delay
+    public string? Delay
     {
         get => _delay;
         set
@@ -282,7 +277,7 @@ public class AbilityComponent : GameComponent
         {
             foreach (var effectEntity in Effects)
             {
-                effectEntity.Effect.AddToAbility(abilityEffectEntity);
+                effectEntity.Effect!.AddToAbility(abilityEffectEntity);
             }
         }
 

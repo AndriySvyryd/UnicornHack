@@ -21,11 +21,11 @@ public class PerformActionMessage : IMessage
         manager.Enqueue(message);
     }
 
-    private GameEntity _actor;
+    private GameEntity? _actor;
 
     public GameEntity Actor
     {
-        get => _actor;
+        get => _actor!;
         set
         {
             _actor?.RemoveReference(this);
@@ -38,7 +38,8 @@ public class PerformActionMessage : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
-    public void Clean() => Actor = null;
+    public void Clean()
+        => Actor = null!;
 }

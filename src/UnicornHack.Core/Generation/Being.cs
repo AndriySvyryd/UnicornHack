@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Primitives;
-using UnicornHack.Systems.Abilities;
+﻿using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 
@@ -12,7 +10,7 @@ public abstract class Being : Affectable
     {
         get;
         set;
-    }
+    } = null!;
 
     public virtual Species? Species
     {

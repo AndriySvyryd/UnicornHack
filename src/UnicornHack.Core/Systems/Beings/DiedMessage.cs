@@ -13,11 +13,11 @@ public class DiedMessage : IMessage
         manager.Enqueue(died);
     }
 
-    private GameEntity _beingEntity;
+    private GameEntity? _beingEntity;
 
     public GameEntity BeingEntity
     {
-        get => _beingEntity;
+        get => _beingEntity!;
         set
         {
             _beingEntity?.RemoveReference(this);
@@ -30,7 +30,8 @@ public class DiedMessage : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
-    public void Clean() => BeingEntity = default;
+    public void Clean()
+        => BeingEntity = default!;
 }

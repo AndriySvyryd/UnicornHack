@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
-using UnicornHack.Utils.MessagingECS;
+﻿using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Beings;
 
@@ -51,9 +48,9 @@ public class BeingComponent : GameComponent
     private int? _primaryNaturalWeaponId;
     private int? _secondaryNaturalWeaponId;
     private int _entropyState;
-    private IReadOnlyCollection<GameEntity> _abilities;
-    private IReadOnlyCollection<GameEntity> _appliedEffects;
-    private IReadOnlyCollection<GameEntity> _items;
+    private IReadOnlyCollection<GameEntity>? _abilities;
+    private IReadOnlyCollection<GameEntity>? _appliedEffects;
+    private IReadOnlyCollection<GameEntity>? _items;
 
     public BeingComponent()
     {
@@ -440,14 +437,12 @@ public class BeingComponent : GameComponent
     public IReadOnlyDictionary<int, GameEntity> SlottedAbilities
     {
         get;
-        private set;
-    }
+    } = new Dictionary<int, GameEntity>();
 
     public IReadOnlyCollection<GameEntity> Races
     {
         get;
-        private set;
-    }
+    } = new HashSet<GameEntity>();
 
     public IReadOnlyCollection<GameEntity> Items
     {
@@ -512,11 +507,11 @@ public class BeingComponent : GameComponent
         _primaryNaturalWeaponId = default;
         _secondaryNaturalWeaponId = default;
         _entropyState = default;
-        ((Dictionary<int, GameEntity>)SlottedAbilities)?.Clear();
-        ((HashSet<GameEntity>)Races)?.Clear();
-        _abilities = default;
-        _appliedEffects = default;
-        _items = default;
+        ((Dictionary<int, GameEntity>)SlottedAbilities).Clear();
+        ((HashSet<GameEntity>)Races).Clear();
+        _abilities = default!;
+        _appliedEffects = default!;
+        _items = default!;
 
         base.Clean();
     }

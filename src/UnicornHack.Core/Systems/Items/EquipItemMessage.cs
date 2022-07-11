@@ -1,5 +1,4 @@
-﻿using UnicornHack.Primitives;
-using UnicornHack.Utils.MessagingECS;
+﻿using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Items;
 
@@ -10,12 +9,12 @@ public class EquipItemMessage : IMessage
     public static EquipItemMessage Create(GameManager manager)
         => manager.Queue.CreateMessage<EquipItemMessage>(Name);
 
-    private GameEntity _itemEntity;
-    private GameEntity _actorEntity;
+    private GameEntity? _itemEntity;
+    private GameEntity? _actorEntity;
 
     public GameEntity ItemEntity
     {
-        get => _itemEntity;
+        get => _itemEntity!;
         set
         {
             _itemEntity?.RemoveReference(this);
@@ -26,7 +25,7 @@ public class EquipItemMessage : IMessage
 
     public GameEntity ActorEntity
     {
-        get => _actorEntity;
+        get => _actorEntity!;
         set
         {
             _actorEntity?.RemoveReference(this);
@@ -57,12 +56,12 @@ public class EquipItemMessage : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
     public void Clean()
     {
-        ItemEntity = default;
-        ActorEntity = default;
+        ItemEntity = default!;
+        ActorEntity = default!;
         Slot = default;
         SuppressLog = default;
         Force = default;

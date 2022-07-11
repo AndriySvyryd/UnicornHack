@@ -1,5 +1,4 @@
-﻿using System;
-using UnicornHack.Systems.Effects;
+﻿using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation;
 
@@ -15,19 +14,19 @@ public sealed class PropertyAttribute : Attribute
         set;
     } = true;
 
-    public object MinValue
+    public object? MinValue
     {
         get;
         set;
     }
 
-    public object MaxValue
+    public object? MaxValue
     {
         get;
         set;
     }
 
-    public object DefaultValue
+    public object? DefaultValue
     {
         get;
         set;

@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
-using UnicornHack.Primitives;
+﻿using Microsoft.EntityFrameworkCore;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 
@@ -14,7 +12,7 @@ public class LevelItemSnapshot
         set;
     }
 
-    private string NameSnapshot
+    private string? NameSnapshot
     {
         get;
         set;
@@ -22,10 +20,10 @@ public class LevelItemSnapshot
 
     public LevelItemSnapshot CaptureState(GameEntity knowledgeEntity, SerializationContext context)
     {
-        var itemKnowledge = knowledgeEntity.Knowledge;
+        var itemKnowledge = knowledgeEntity.Knowledge!;
         var knownEntity = itemKnowledge.KnownEntity;
-        var position = knowledgeEntity.Position;
-        var item = knownEntity.Item;
+        var position = knowledgeEntity.Position!;
+        var item = knownEntity.Item!;
         var manager = context.Manager;
         CurrentlyPerceived = manager.SensorySystem.SensedByPlayer(knownEntity, position.LevelCell).CanIdentify();
         NameSnapshot = itemKnowledge.SensedType.CanIdentify()
@@ -35,10 +33,10 @@ public class LevelItemSnapshot
         return this;
     }
 
-    public static List<object> Serialize(
-        GameEntity knowledgeEntity, EntityState? state, LevelItemSnapshot snapshot, SerializationContext context)
+    public static List<object?>? Serialize(
+        GameEntity knowledgeEntity, EntityState? state, LevelItemSnapshot? snapshot, SerializationContext context)
     {
-        List<object> properties;
+        List<object?> properties;
         var manager = context.Manager;
         var itemKnowledge = knowledgeEntity.Knowledge;
         var knownEntity = itemKnowledge?.KnownEntity;
@@ -49,11 +47,15 @@ public class LevelItemSnapshot
             case null:
             case EntityState.Added:
                 properties = state == null
-                    ? new List<object>(7)
-                    : new List<object>(8) { (int)state };
+                    ? new List<object?>(7)
+                    : new List<object?>(8) { (int)state };
                 properties.Add(knowledgeEntity.Id);
 
-                string name = null;
+                Debug.Assert(itemKnowledge != null, nameof(itemKnowledge));
+                Debug.Assert(knownEntity != null, nameof(knownEntity));
+                Debug.Assert(position != null, nameof(position));
+                Debug.Assert(item != null, nameof(item));
+                string? name = null;
                 if (itemKnowledge.SensedType.CanIdentify())
                 {
                     properties.Add((int)item.Type);
@@ -90,12 +92,16 @@ public class LevelItemSnapshot
 
                 return properties;
             case EntityState.Deleted:
-                return new List<object> { (int)state, knowledgeEntity.Id };
+                return new List<object?> { (int)state, knowledgeEntity.Id };
             default:
-                properties = new List<object>(2) { (int)state, knowledgeEntity.Id };
+                properties = new List<object?>(2) { (int)state, knowledgeEntity.Id };
 
                 var i = 1;
 
+                Debug.Assert(itemKnowledge != null, nameof(itemKnowledge));
+                Debug.Assert(knownEntity != null, nameof(knownEntity));
+                Debug.Assert(position != null, nameof(position));
+                Debug.Assert(item != null, nameof(item));
                 var knowledgeEntry = context.DbContext.Entry(itemKnowledge);
                 var sensedType = knowledgeEntry.Property(nameof(KnowledgeComponent.SensedType));
                 if (sensedType.IsModified)
@@ -121,7 +127,7 @@ public class LevelItemSnapshot
                 var newName = itemKnowledge.SensedType.CanIdentify()
                     ? context.Services.Language.GetString(item, item.GetQuantity(), itemKnowledge.SensedType)
                     : null;
-                if (snapshot.NameSnapshot != newName)
+                if (snapshot!.NameSnapshot != newName)
                 {
                     properties.Add(i);
                     properties.Add(newName);

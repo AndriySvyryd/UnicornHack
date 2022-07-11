@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using UnicornHack.Primitives;
 
 namespace UnicornHack.Systems.Abilities;
 
@@ -27,5 +26,5 @@ public class SubAttackStats
     {
         get;
         set;
-    }
+    } = null!;
 }

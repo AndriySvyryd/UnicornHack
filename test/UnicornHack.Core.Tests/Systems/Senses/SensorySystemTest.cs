@@ -1,11 +1,6 @@
-﻿using System.Linq;
-using UnicornHack.Data.Creatures;
+﻿using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Utils.DataStructures;
-using Xunit;
 
 namespace UnicornHack.Systems.Senses;
 
@@ -22,7 +17,7 @@ public class SensorySystemTest
         var level = TestHelper.BuildLevel(TestMap);
         var undine = CreatureData.Undine.Instantiate(level, new Point(0, 1));
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
-        player.Position.Heading = Direction.West;
+        player.Position!.Heading = Direction.West;
         var manager = player.Manager;
 
         manager.Queue.ProcessQueue(manager);
@@ -31,9 +26,9 @@ public class SensorySystemTest
 
         manager.Queue.ProcessQueue(manager);
 
-        var dagger = undine.Being.Items.Single();
+        var dagger = undine.Being!.Items.Single();
         Assert.Equal(SenseType.Sight, manager.SensorySystem.CanSense(player, undine));
-        Assert.Equal(SenseType.Sight, manager.SensorySystem.SensedByPlayer(undine, undine.Position.LevelCell));
+        Assert.Equal(SenseType.Sight, manager.SensorySystem.SensedByPlayer(undine, undine.Position!.LevelCell));
         Assert.Equal(SenseType.Sight | SenseType.Touch | SenseType.Telepathy,
             manager.SensorySystem.CanSense(player, player));
         Assert.Equal(SenseType.Sight | SenseType.Touch | SenseType.Telepathy,

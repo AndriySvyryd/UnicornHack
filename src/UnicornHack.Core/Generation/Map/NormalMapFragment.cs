@@ -1,15 +1,13 @@
-using System;
 using CSharpScriptSerialization;
 using UnicornHack.Data.Fragments;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.DataLoading;
-using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Generation.Map;
 
 public class NormalMapFragment : MapFragment
 {
-    private Func<string, int, int, int, float> _weightFunction;
+    private Func<string, int, int, int, float>? _weightFunction;
 
     private static readonly UnicornExpressionVisitor _translator =
         new(new[] { BranchParameter, DepthParameter, InstancesParameter, TagInstancesParameter });
@@ -50,7 +48,7 @@ public class NormalMapFragment : MapFragment
     }
 
     public static readonly CSScriptLoader<NormalMapFragment> Loader =
-        new CSScriptLoader<NormalMapFragment>(@"Data\Fragments\Normal\", typeof(NormalMapFragmentData));
+        new(@"Data\Fragments\Normal\", typeof(NormalMapFragmentData));
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<NormalMapFragment>(GetPropertyConditions<NormalMapFragment>());

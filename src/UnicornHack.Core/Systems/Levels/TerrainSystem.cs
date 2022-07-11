@@ -1,14 +1,10 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Primitives;
-using UnicornHack.Utils.DataStructures;
-
-namespace UnicornHack.Systems.Levels;
+﻿namespace UnicornHack.Systems.Levels;
 
 public static class TerrainSystem
 {
     public static void SetTerrain(MapFeature feature, Point point, LevelComponent level)
     {
-        var index = level.PointToIndex[point.X, point.Y];
+        var index = level.PointToIndex![point.X, point.Y];
         level.Terrain[index] = (byte)feature;
         if (level.TerrainChanges != null)
         {
@@ -16,7 +12,10 @@ public static class TerrainSystem
             if (level.VisibleTerrain[index] != 0)
             {
                 level.KnownTerrain[index] = (byte)feature;
-                level.KnownTerrainChanges[index] = (byte)feature;
+                if (level.KnownTerrainChanges != null)
+                {
+                    level.KnownTerrainChanges[index] = (byte)feature;
+                }
             }
         }
 
@@ -52,8 +51,8 @@ public static class TerrainSystem
         }
     }
 
-    private static bool ModifyNeighbors(LevelComponent level, byte[] neighbors, Dictionary<int, byte> changes,
-        Point point, bool add)
+    private static bool ModifyNeighbors(
+        LevelComponent level, byte[] neighbors, Dictionary<int, byte>? changes, Point point, bool add)
     {
         var changed = false;
         for (var directionIndex = 0; directionIndex < 8; directionIndex++)
@@ -66,7 +65,7 @@ public static class TerrainSystem
                 continue;
             }
 
-            var newLocationIndex = level.PointToIndex[newLocation.X, newLocation.Y];
+            var newLocationIndex = level.PointToIndex![newLocation.X, newLocation.Y];
             var neighborBit = (byte)(1 << Vector.OppositeDirectionIndexes[directionIndex]);
             var oldValue = neighbors[newLocationIndex];
             var newValue = add

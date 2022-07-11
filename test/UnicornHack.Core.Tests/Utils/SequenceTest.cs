@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace UnicornHack.Utils;
 
 public class SequenceTest

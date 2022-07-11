@@ -1,14 +1,11 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Primitives;
-
-namespace UnicornHack.Services.LogEvents;
+﻿namespace UnicornHack.Services.LogEvents;
 
 public readonly struct AttackEvent
 {
     public AttackEvent(
-        GameEntity sensorEntity, GameEntity attackerEntity, GameEntity victimEntity,
+        GameEntity sensorEntity, GameEntity attackerEntity, GameEntity? victimEntity,
         SenseType attackerSensed, SenseType victimSensed, IReadOnlyList<GameEntity> appliedEffects,
-        AbilityAction abilityAction, GameEntity weaponEntity, bool ranged, bool hit)
+        AbilityAction abilityAction, GameEntity? weaponEntity, bool ranged, bool hit)
     {
         SensorEntity = sensorEntity;
         AttackerEntity = attackerEntity;
@@ -32,7 +29,7 @@ public readonly struct AttackEvent
         get;
     }
 
-    public GameEntity VictimEntity
+    public GameEntity? VictimEntity
     {
         get;
     }
@@ -57,7 +54,7 @@ public readonly struct AttackEvent
         get;
     }
 
-    public GameEntity WeaponEntity
+    public GameEntity? WeaponEntity
     {
         get;
     }

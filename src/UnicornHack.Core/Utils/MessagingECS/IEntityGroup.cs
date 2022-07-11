@@ -12,6 +12,6 @@ public interface IEntityGroup<TEntity>
     string GetEntityRemovedMessageName();
     string GetPropertyValueChangedMessageName(string propertyName);
     void AddListener(IEntityChangeListener<TEntity> index);
-    TEntity FindEntity(int id);
+    TEntity? FindEntity(int id);
     bool ContainsEntity(int id);
 }

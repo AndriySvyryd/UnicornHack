@@ -1,11 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnicornHack.Generation.Map;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Utils.DataStructures;
-using Xunit;
 
 namespace UnicornHack.Utils;
 
@@ -54,13 +47,13 @@ public class PathFinderTest
         expectedFragment.WriteMap(
             new Point(0, 0),
             level,
-            (c, point, l, _) => expectedPathArray[l.PointToIndex[point.X, point.Y]] = c == '*' ? (byte)1 : (byte)0,
-            (object)null);
+            (c, point, l, _) => expectedPathArray[l.PointToIndex![point.X, point.Y]] = c == '*' ? (byte)1 : (byte)0,
+            (object?)null);
 
         var manager = level.Entity.Manager;
         var expectedPath = ExtractPath(level, expectedPathArray, 1);
         var actualPath = manager.TravelSystem.GetShortestPath(
-            level, new Point(0, 0), expectedPath.Last(), initialDirection);
+            level, new Point(0, 0), expectedPath.Last(), initialDirection)!;
         actualPath.Reverse();
 
         var actualPathArray = new byte[level.TileCount];
@@ -74,7 +67,7 @@ public class PathFinderTest
                 pathMatches = pathMatches && point.Equals(expectedPath[i]);
             }
 
-            actualPathArray[level.PointToIndex[point.X, point.Y]] = 1;
+            actualPathArray[level.PointToIndex![point.X, point.Y]] = 1;
         }
 
         Assert.True(pathMatches, @"Expected:
@@ -109,7 +102,7 @@ Seed: " + seed);
                     continue;
                 }
 
-                var newLocationIndex = level.PointToIndex[newLocationX, newLocationY];
+                var newLocationIndex = level.PointToIndex![newLocationX, newLocationY];
                 if (expectedPathArray[newLocationIndex] != pathValue)
                 {
                     continue;

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using UnicornHack.Primitives;
-using UnicornHack.Systems.Items;
+﻿using UnicornHack.Systems.Items;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Abilities;
@@ -24,8 +20,8 @@ public class AbilitySlottingSystem :
 
         if (message.Slot != null)
         {
-            var conflictingAbility = (ability?.OwnerEntity ?? message.OwnerEntity).Being.SlottedAbilities
-                ?.GetValueOrDefault(message.Slot.Value);
+            var conflictingAbility = (ability?.OwnerEntity ?? message.OwnerEntity).Being!.SlottedAbilities
+                .GetValueOrDefault(message.Slot.Value);
             if (conflictingAbility != null)
             {
                 if (conflictingAbility == message.AbilityEntity)
@@ -35,7 +31,7 @@ public class AbilitySlottingSystem :
 
                 ResetSlot(conflictingAbility, manager);
 
-                if (conflictingAbility.Ability.Slot != null)
+                if (conflictingAbility.Ability!.Slot != null)
                 {
                     return MessageProcessingResult.ContinueProcessing;
                 }
@@ -49,7 +45,7 @@ public class AbilitySlottingSystem :
             Debug.Assert(ability.CooldownTick == null && ability.CooldownXpLeft == null);
 
             if (message.Slot.Value < 0
-                || message.Slot.Value >= ability.OwnerEntity.Physical.Capacity)
+                || message.Slot.Value >= ability.OwnerEntity!.Physical!.Capacity)
             {
                 throw new InvalidOperationException("Invalid slot " + message.Slot.Value);
             }
@@ -89,8 +85,8 @@ public class AbilitySlottingSystem :
             {
                 var deactivateMessage =
                     DeactivateAbilityMessage.Create(manager);
-                deactivateMessage.AbilityEntity = message.AbilityEntity;
-                deactivateMessage.ActivatorEntity = ability.OwnerEntity;
+                deactivateMessage.AbilityEntity = ability.Entity;
+                deactivateMessage.ActivatorEntity = ability.OwnerEntity!;
 
                 manager.Process(deactivateMessage);
             }
@@ -108,11 +104,11 @@ public class AbilitySlottingSystem :
             {
                 var itemId = GetTargetItemId(ability.Entity, manager);
 
-                if (manager.FindEntity(itemId).Item.EquippedSlot == EquipmentSlot.None)
+                if (manager.FindEntity(itemId)!.Item!.EquippedSlot == EquipmentSlot.None)
                 {
-                    var position = ability.OwnerEntity.Position;
+                    var position = ability.OwnerEntity!.Position!;
                     var dropMessage = MoveItemMessage.Create(manager);
-                    dropMessage.ItemEntity = manager.FindEntity(itemId);
+                    dropMessage.ItemEntity = manager.FindEntity(itemId)!;
                     dropMessage.TargetLevelEntity = position.LevelEntity;
                     dropMessage.TargetCell = position.LevelCell;
 
@@ -133,7 +129,7 @@ public class AbilitySlottingSystem :
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        var ability = message.Entity.Ability;
+        var ability = message.Entity.Ability!;
         if ((ability.Activation & ActivationType.Slottable) != 0
             && ability.Type == AbilityType.Item)
         {
@@ -154,9 +150,9 @@ public class AbilitySlottingSystem :
 
             var itemId = GetTargetItemId(message.Entity, manager);
 
-            var position = message.PrincipalEntity.Position;
+            var position = message.PrincipalEntity.Position!;
             var dropMessage = MoveItemMessage.Create(manager);
-            dropMessage.ItemEntity = manager.FindEntity(itemId);
+            dropMessage.ItemEntity = manager.FindEntity(itemId)!;
             dropMessage.TargetLevelEntity = position.LevelEntity;
             dropMessage.TargetCell = position.LevelCell;
             dropMessage.SuppressLog = true;
@@ -170,13 +166,13 @@ public class AbilitySlottingSystem :
     private static int GetTargetItemId(GameEntity abilityEntity, GameManager manager)
     {
         var itemId = 0;
-        foreach (var effectEntity in abilityEntity.Ability.Effects)
+        foreach (var effectEntity in abilityEntity.Ability!.Effects)
         {
-            var effect = effectEntity.Effect;
+            var effect = effectEntity.Effect!;
             switch (effect.EffectType)
             {
                 case EffectType.Activate:
-                    itemId = manager.FindEntity(effect.TargetEntityId).Ability.OwnerId!.Value;
+                    itemId = manager.FindEntity(effect.TargetEntityId)!.Ability!.OwnerId!.Value;
                     break;
                 case EffectType.EquipItem:
                 case EffectType.Move:
@@ -193,7 +189,7 @@ public class AbilitySlottingSystem :
     public MessageProcessingResult Process(
         PropertyValueChangedMessage<GameEntity, bool> message, GameManager manager)
     {
-        var ability = message.Entity.Ability;
+        var ability = message.Entity.Ability!;
         Debug.Assert(ability.CooldownXpLeft == null && ability.CooldownTick == null);
         if (!ability.IsUsable
             && ability.Slot != null)
@@ -210,9 +206,9 @@ public class AbilitySlottingSystem :
         // Physical.Capacity
         if (message.NewValue < message.OldValue)
         {
-            foreach (var abilityEntity in message.Entity.Physical.Abilities)
+            foreach (var abilityEntity in message.Entity.Physical!.Abilities)
             {
-                var abilitySlot = abilityEntity.Ability.Slot;
+                var abilitySlot = abilityEntity.Ability!.Slot;
                 if (abilitySlot.HasValue
                     && abilitySlot != DefaultMeleeAttackSlot
                     && abilitySlot != DefaultRangedAttackSlot
@@ -236,23 +232,20 @@ public class AbilitySlottingSystem :
         manager.Queue.ReturnMessage(resetMessage);
     }
 
-    public GameEntity GetAbility(GameEntity ownerEntity, int slot)
-        => ownerEntity.Being.SlottedAbilities?.GetValueOrDefault(slot);
+    public GameEntity? GetAbility(GameEntity ownerEntity, int slot)
+        => ownerEntity.Being!.SlottedAbilities.GetValueOrDefault(slot);
 
     private readonly int FirstPotentialSlot = Math.Max(DefaultMeleeAttackSlot, DefaultRangedAttackSlot) + 1;
 
     public int? GetFirstFreeSlot(GameEntity owner)
     {
-        var abilities = owner.Being.SlottedAbilities;
+        var abilities = owner.Being!.SlottedAbilities;
         var i = FirstPotentialSlot;
-        if (abilities != null)
+        for (; i < owner.Physical!.Capacity; i++)
         {
-            for (; i < owner.Physical.Capacity; i++)
+            if (!abilities.ContainsKey(i))
             {
-                if (!abilities.ContainsKey(i))
-                {
-                    break;
-                }
+                break;
             }
         }
 

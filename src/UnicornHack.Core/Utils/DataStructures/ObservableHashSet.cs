@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Linq;
 
 namespace UnicornHack.Utils.DataStructures;
 
@@ -31,9 +28,9 @@ public class ObservableHashSet<T> :
         Set = new HashSet<T>(collection, comparer);
     }
 
-    public event PropertyChangedEventHandler PropertyChanged;
-    public event PropertyChangingEventHandler PropertyChanging;
-    public event NotifyCollectionChangedEventHandler CollectionChanged;
+    public event PropertyChangedEventHandler? PropertyChanged;
+    public event PropertyChangingEventHandler? PropertyChanging;
+    public event NotifyCollectionChangedEventHandler? CollectionChanged;
 
     public int Count => Set.Count;
     public bool IsReadOnly => ((ICollection<T>)Set).IsReadOnly;
@@ -244,7 +241,7 @@ public class ObservableHashSet<T> :
 
     private void OnCountPropertyChanging() => OnPropertyChanging(NotificationEntity.CountPropertyChanging);
 
-    private void OnCollectionChanged(NotifyCollectionChangedAction action, object item)
+    private void OnCollectionChanged(NotifyCollectionChangedAction action, object? item)
         => OnCollectionChanged(new NotifyCollectionChangedEventArgs(action, item));
 
     private void OnCollectionChanged(IList newItems, IList oldItems)
@@ -261,5 +258,5 @@ public class ObservableHashSet<T> :
 
 public class ObservableHashSet
 {
-    protected static readonly object[] Empty = new object[0];
+    protected static readonly object[] Empty = Array.Empty<object>();
 }

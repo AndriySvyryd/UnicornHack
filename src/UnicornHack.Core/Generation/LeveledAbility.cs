@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
 using CSharpScriptSerialization;
-using UnicornHack.Generation.Effects;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 
 namespace UnicornHack.Generation;
@@ -19,7 +15,7 @@ public class LeveledAbility : Ability
     {
         get;
         set;
-    }
+    } = null!;
 
     public override AbilityComponent AddToEffect(GameEntity effectEntity, int level = 0)
     {
@@ -52,15 +48,15 @@ public class LeveledAbility : Ability
         return ability;
     }
 
-    private static readonly CSScriptSerializer Serializer =
-        new PropertyCSScriptSerializer<LeveledAbility>(GetPropertyConditions<LeveledAbility>());
+    private static readonly PropertyCSScriptSerializer<LeveledAbility> Serializer =
+        new(GetPropertyConditions<LeveledAbility>());
 
-    protected static new Dictionary<string, Func<TAbility, object, bool>>
+    protected static new Dictionary<string, Func<TAbility, object?, bool>>
         GetPropertyConditions<TAbility>() where TAbility : Ability
     {
         var propertyConditions = Ability.GetPropertyConditions<TAbility>();
 
-        propertyConditions.Add(nameof(Cumulative), (o, v) => (bool)v != default);
+        propertyConditions.Add(nameof(Cumulative), (_, v) => (bool)v! != default);
         propertyConditions.Add(nameof(LeveledEffects),
             (o, v) => v != null && ((IReadOnlyDictionary<int, IReadOnlyList<Effect>>)v).Count != 0);
         return propertyConditions;

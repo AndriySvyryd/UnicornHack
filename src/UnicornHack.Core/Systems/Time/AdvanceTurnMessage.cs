@@ -13,7 +13,7 @@ public class AdvanceTurnMessage : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
     public void Clean()
     {

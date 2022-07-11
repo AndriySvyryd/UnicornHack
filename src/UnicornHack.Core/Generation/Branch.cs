@@ -10,7 +10,7 @@ public class Branch : ILoadable
     {
         get;
         set;
-    }
+    } = null!;
 
     public byte Length
     {
@@ -24,10 +24,16 @@ public class Branch : ILoadable
         set;
     }
 
-    public string GenerationWeight
+    private string? _generationWeight;
+    
+    public string? GenerationWeight
     {
-        get;
-        set;
+        get => _generationWeight;
+        set
+        {
+            _generationWeight = value;
+            //_weightFunction = null;
+        }
     }
 
     // TODO: default terrain type for floor/wall/empty space

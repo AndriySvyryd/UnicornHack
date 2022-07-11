@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 
 namespace UnicornHack.Utils.DataLoading;
@@ -30,7 +26,7 @@ public abstract class CSScriptLoaderBase<T> : Loader<T>
         set;
     } = "*" + CSScriptLoaderHelpers.ScriptExtension;
 
-    private readonly object _lockRoot = new object();
+    private readonly object _lockRoot = new();
 
     // Loader shouldn't be declared on dataType to allow it to be loaded lazily
     protected CSScriptLoaderBase(string relativePath, Type dataType)
@@ -40,20 +36,10 @@ public abstract class CSScriptLoaderBase<T> : Loader<T>
         DataType = dataType;
     }
 
-    protected override void EnsureLoaded()
+    protected override Dictionary<string, T> Load()
     {
-        if (NameLookup != null)
-        {
-            return;
-        }
-
         lock (_lockRoot)
         {
-            if (NameLookup != null)
-            {
-                return;
-            }
-
             var lookup = new Dictionary<string, T>(StringComparer.OrdinalIgnoreCase);
 
             if (CSScriptLoaderHelpers.LoadScripts && Directory.Exists(BasePath))
@@ -78,12 +64,17 @@ public abstract class CSScriptLoaderBase<T> : Loader<T>
                 foreach (var field in DataType.GetFields(BindingFlags.Public | BindingFlags.Static)
                              .Where(f => typeof(T).GetTypeInfo().IsAssignableFrom(f.FieldType)))
                 {
-                    var instance = (T)field.GetValue(null);
+                    var instance = (T?)field.GetValue(null);
+                    if (instance == null)
+                    {
+                        throw new InvalidOperationException($"{DataType.Name}.{field.Name} is null");
+                    }
+
                     lookup[instance.Name] = instance;
                 }
             }
 
-            NameLookup = lookup;
+            return lookup;
         }
     }
 }

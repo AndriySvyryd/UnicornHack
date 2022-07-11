@@ -1,11 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using CSharpScriptSerialization;
 using UnicornHack.Data.Fragments;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.DataLoading;
-using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Generation.Map;
 
@@ -17,17 +13,17 @@ public class ConnectingMapFragment : MapFragment
         set;
     } = new HashSet<LevelConnection>();
 
-    private Func<string, int, int, int, ConnectionComponent, float> _weightFunction;
+    private Func<string, int, int, int, ConnectionComponent?, float>? _weightFunction;
 
     private static readonly UnicornExpressionVisitor _translator =
         new(new[] { BranchParameter, DepthParameter, InstancesParameter, TagInstancesParameter, ConnectionParameter });
 
     protected override void ResetWeightFunction() => _weightFunction = null;
 
-    public static Func<string, int, int, int, ConnectionComponent, float> CreateWeightFunction(string expression)
-        => _translator.Translate<Func<string, int, int, int, ConnectionComponent, float>, float>(expression);
+    public static Func<string, int, int, int, ConnectionComponent?, float> CreateWeightFunction(string expression)
+        => _translator.Translate<Func<string, int, int, int, ConnectionComponent?, float>, float>(expression);
 
-    public float GetWeight(LevelComponent level, Rectangle boundingRectangle, ConnectionComponent target)
+    public float GetWeight(LevelComponent level, Rectangle boundingRectangle, ConnectionComponent? target)
     {
         // TODO: take transformations into account
         if (PayloadArea.Width > boundingRectangle.Width || PayloadArea.Height > boundingRectangle.Height)
@@ -57,7 +53,7 @@ public class ConnectingMapFragment : MapFragment
         }
     }
 
-    public override Room BuildRoom(LevelComponent level, IEnumerable<Point> points, Action<Point> insideAction,
+    public override Room? BuildRoom(LevelComponent level, IEnumerable<Point> points, Action<Point> insideAction,
         Action<Point> perimeterAction, Action<Point> outsideAction)
     {
         var room = base.BuildRoom(level, points, insideAction, perimeterAction, outsideAction);
@@ -87,16 +83,14 @@ public class ConnectingMapFragment : MapFragment
         => CreateConnection(level, point, Connections.FirstOrDefault(c => c.Glyph == glyph));
 
     protected virtual void CreateConnection(
-        LevelComponent level, Point point, LevelConnection connectionDefinition)
+        LevelComponent level, Point point, LevelConnection? connectionDefinition)
     {
-        var manager = level.Entity.Manager;
-
         foreach (var connectionEntity in level.IncomingConnections)
         {
-            var connection = connectionEntity.Connection;
+            var connection = connectionEntity.Connection!;
             if (connection.TargetLevelX == null)
             {
-                var target = manager.FindEntity(connection.TargetLevelId).Level;
+                var target = connection.TargetLevelEntity.Level!;
                 if ((connectionDefinition?.BranchName == null
                      || connectionDefinition.BranchName == target.BranchName)
                     && (connectionDefinition?.Depth == null
@@ -114,12 +108,12 @@ public class ConnectingMapFragment : MapFragment
     }
 
     public static readonly CSScriptLoader<ConnectingMapFragment> Loader =
-        new CSScriptLoader<ConnectingMapFragment>(@"Data\Fragments\Connecting\", typeof(ConnectingMapFragmentData));
+        new(@"Data\Fragments\Connecting\", typeof(ConnectingMapFragmentData));
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<ConnectingMapFragment>(GetPropertyConditions<ConnectingMapFragment>());
 
-    protected static new Dictionary<string, Func<TConnectingMapFragment, object, bool>>
+    protected static new Dictionary<string, Func<TConnectingMapFragment, object?, bool>>
         GetPropertyConditions<TConnectingMapFragment>() where TConnectingMapFragment : ConnectingMapFragment
     {
         var propertyConditions = MapFragment.GetPropertyConditions<TConnectingMapFragment>();

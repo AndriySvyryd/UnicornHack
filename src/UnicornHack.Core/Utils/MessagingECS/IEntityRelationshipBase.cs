@@ -16,7 +16,7 @@ public interface IEntityRelationshipBase<TEntity>
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>
-    TEntity FindEntity(int id);
+    TEntity? FindEntity(int id);
 
     /// <summary>
     ///     Returns <c>true</c> if there is a referencing entity with the given <paramref name="id" />.

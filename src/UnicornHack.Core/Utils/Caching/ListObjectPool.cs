@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-
-namespace UnicornHack.Utils.Caching;
+﻿namespace UnicornHack.Utils.Caching;
 
 public class ListObjectPool<T> : IObjectPool
     where T : class

@@ -1,7 +1,4 @@
-﻿using UnicornHack.Generation.Map;
-using Xunit;
-
-namespace UnicornHack.Generation;
+﻿namespace UnicornHack.Generation;
 
 public class DefiningMapFragmentTest
 {

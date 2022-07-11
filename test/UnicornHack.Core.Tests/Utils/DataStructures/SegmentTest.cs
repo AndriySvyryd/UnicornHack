@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace UnicornHack.Utils.DataStructures;
+﻿namespace UnicornHack.Utils.DataStructures;
 
 public class SegmentTest
 {

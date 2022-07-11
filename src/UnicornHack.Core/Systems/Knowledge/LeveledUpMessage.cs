@@ -11,12 +11,12 @@ public class LeveledUpMessage : IMessage
     public static LeveledUpMessage Create(GameManager manager)
         => manager.Queue.CreateMessage<LeveledUpMessage>(Name);
 
-    private GameEntity _entity;
-    private RaceComponent _race;
+    private GameEntity? _entity;
+    private RaceComponent? _race;
 
     public GameEntity Entity
     {
-        get => _entity;
+        get => _entity!;
         set
         {
             _entity?.RemoveReference(this);
@@ -27,12 +27,12 @@ public class LeveledUpMessage : IMessage
 
     public RaceComponent Race
     {
-        get => _race;
+        get => _race!;
         set
         {
-            (_race as IOwnerReferenceable)?.RemoveReference(this);
+            (_race as IReferenceable)?.RemoveReference(this);
             _race = value;
-            (_race as IOwnerReferenceable)?.AddReference(this);
+            (_race as IReferenceable)?.AddReference(this);
         }
     }
 
@@ -58,12 +58,12 @@ public class LeveledUpMessage : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
     public void Clean()
     {
-        Entity = default;
-        Race = default;
+        Entity = default!;
+        Race = default!;
         SkillPointsGained = default;
         TraitPointsGained = default;
         MutationPointsGained = default;

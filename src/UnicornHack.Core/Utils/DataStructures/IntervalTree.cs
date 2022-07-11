@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace UnicornHack.Utils.DataStructures;
 
 /// <summary>
@@ -16,7 +12,7 @@ public class IntervalTree : IntervalTreeBase
     public override bool Insert(Rectangle rectangle) => Insert(rectangle.YProjection, rectangle);
     public override bool Remove(Rectangle rectangle) => Remove(rectangle.YProjection, rectangle);
 
-    protected override NodeBase NewNode(byte key) => new Node(key);
+    protected override NodeBase CreateNode(byte key) => new Node(key);
 
     protected override bool SubtreeInsert(Rectangle rectangle, NodeBase node) =>
         ((Node)node).Beginnings.Insert(rectangle.TopLeft.Y, rectangle) &&
@@ -32,7 +28,7 @@ public class IntervalTree : IntervalTreeBase
         var otherProjection = rectangle.XProjection;
         if (!BoundingSegment.Contains(projection))
         {
-            throw new ArgumentOutOfRangeException();
+            throw new ArgumentOutOfRangeException($"Rectangle {rectangle} outside of the Y bounding segment {BoundingSegment}");
         }
 
         if (projection.Beginning == BoundingSegment.Beginning || projection.End == BoundingSegment.End)
@@ -41,26 +37,26 @@ public class IntervalTree : IntervalTreeBase
         }
 
         var results = new List<Rectangle>();
-        var node = (Node)Root;
+        var node = (Node?)Root;
         while (node != null)
         {
             if (projection.End < node.Key)
             {
                 results.AddRange(node.Beginnings
-                    .GetRange(BoundingSegment.Beginning, (byte)(projection.Beginning - 1), (p, r) => r)
+                    .GetRange(BoundingSegment.Beginning, (byte)(projection.Beginning - 1), (_, r) => r)
                     .Where(r => r.XProjection.Overlaps(otherProjection)));
-                node = (Node)node.Left;
+                node = (Node?)node.Left;
             }
             else if (projection.Beginning > node.Key)
             {
-                results.AddRange(node.Ends.GetRange((byte)(projection.End + 1), BoundingSegment.End, (p, r) => r)
+                results.AddRange(node.Ends.GetRange((byte)(projection.End + 1), BoundingSegment.End, (_, r) => r)
                     .Where(r => r.XProjection.Overlaps(otherProjection)));
-                node = (Node)node.Right;
+                node = (Node?)node.Right;
             }
             else
             {
                 results.AddRange(node.Beginnings
-                    .GetRange(BoundingSegment.Beginning, (byte)(projection.Beginning - 1), (p, r) => r).Where(r =>
+                    .GetRange(BoundingSegment.Beginning, (byte)(projection.Beginning - 1), (_, r) => r).Where(r =>
                         r.BottomRight.Y > projection.End && r.XProjection.Overlaps(otherProjection)));
                 break;
             }

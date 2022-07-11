@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Generation;
-using UnicornHack.Systems.Knowledge;
-using UnicornHack.Utils.DataStructures;
+﻿using UnicornHack.Systems.Knowledge;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Actors;
@@ -9,7 +6,7 @@ namespace UnicornHack.Systems.Actors;
 [Component(Id = (int)EntityComponent.Player)]
 public class PlayerComponent : GameComponent, IKeepAliveComponent
 {
-    private string _properName;
+    private string _properName = null!;
     private ActorAction? _nextAction;
     private int? _nextActionTarget;
     private int? _nextActionTarget2;
@@ -40,7 +37,7 @@ public class PlayerComponent : GameComponent, IKeepAliveComponent
     public ObservableHashSet<LogEntry> LogEntries
     {
         get;
-    } = new ObservableHashSet<LogEntry>();
+    } = new();
 
     public ICollection<PlayerCommand> CommandHistory
     {
@@ -195,7 +192,7 @@ public class PlayerComponent : GameComponent, IKeepAliveComponent
 
     protected override void Clean()
     {
-        _properName = default;
+        _properName = default!;
         _nextAction = default;
         _nextActionTarget = default;
         _nextActionTarget2 = default;

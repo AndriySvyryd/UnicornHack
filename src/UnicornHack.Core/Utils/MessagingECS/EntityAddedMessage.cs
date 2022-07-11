@@ -3,14 +3,13 @@
 public class EntityAddedMessage<TEntity> : IMessage
     where TEntity : Entity, new()
 {
-    private TEntity _entity;
-    private Component _removedComponent;
-    private IPropertyValueChanges _propertyChanges;
-    private TEntity _principalEntity;
+    private TEntity? _entity;
+    private Component? _removedComponent;
+    private TEntity? _principalEntity;
 
     public TEntity Entity
     {
-        get => _entity;
+        get => _entity!;
         set
         {
             _entity?.RemoveReference(this);
@@ -19,43 +18,24 @@ public class EntityAddedMessage<TEntity> : IMessage
         }
     }
 
-    public Component RemovedComponent
+    public Component? RemovedComponent
     {
         get => _removedComponent;
         set
         {
-            (_removedComponent as IOwnerReferenceable)?.RemoveReference(this);
+            (_removedComponent as IReferenceable)?.RemoveReference(this);
             _removedComponent = value;
-            (_removedComponent as IOwnerReferenceable)?.AddReference(this);
+            (_removedComponent as IReferenceable)?.AddReference(this);
         }
     }
 
     public IPropertyValueChanges PropertyChanges
     {
-        get => _propertyChanges;
-        set
-        {
-            if (_propertyChanges != null)
-            {
-                for (var i = 0; i < _propertyChanges.Count; i++)
-                {
-                    _propertyChanges.GetChange<IOwnerReferenceable>(i)?.RemoveReference(this);
-                }
-            }
+        get;
+        set;
+    } = null!;
 
-            _propertyChanges = value;
-
-            if (_propertyChanges != null)
-            {
-                for (var i = 0; i < _propertyChanges.Count; i++)
-                {
-                    _propertyChanges.GetChange<IOwnerReferenceable>(i)?.AddReference(this);
-                }
-            }
-        }
-    }
-
-    public TEntity PrincipalEntity
+    public TEntity? PrincipalEntity
     {
         get => _principalEntity;
         set
@@ -70,20 +50,20 @@ public class EntityAddedMessage<TEntity> : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
     string IMessage.MessageName
     {
         get;
         set;
-    }
+    } = null!;
 
     public void Clean()
     {
         RemovedComponent = default;
-        PropertyChanges = default;
-        Entity = default;
-        Group = default;
+        PropertyChanges = default!;
+        Entity = default!;
+        Group = default!;
         PrincipalEntity = default;
     }
 }

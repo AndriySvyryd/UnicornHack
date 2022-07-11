@@ -1,21 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
+﻿namespace UnicornHack.Utils.MessagingECS;
 
-namespace UnicornHack.Utils.MessagingECS;
-
-public class
-    ExternalCollectionAccessor<TEntity, TCollection, TElement> : ICollectionAccessor<TEntity, TCollection, TElement>
+public class ExternalCollectionAccessor<TEntity, TCollection, TElement> : ICollectionAccessor<TEntity, TCollection, TElement>
     where TEntity : Entity, new()
     where TCollection : class, ICollection<TElement>
 {
-    private Func<TCollection> _factory;
+    private Func<TCollection>? _factory;
 
     protected Dictionary<int, TCollection> Index
     {
         get;
     } = new();
 
-    public TCollection GetDependents(TEntity principal, Component removedComponent = null)
+    public TCollection? GetDependents(TEntity principal, Component? removedComponent = null)
         => Index.TryGetValue(principal.Id, out var entities)
             ? entities
             : null;
@@ -28,7 +24,7 @@ public class
             return value;
         }
 
-        value = _factory();
+        value = _factory!();
         Index[key] = value;
         return value;
     }
@@ -36,11 +32,11 @@ public class
     public void ResetDependents(TEntity principal)
         => Index.Remove(principal.Id);
 
-    public void SetPrincipal(TEntity dependent, TEntity principal)
+    public void SetPrincipal(TEntity dependent, TEntity? principal)
     {
     }
 
-    public bool TryGetPrincipal(TEntity dependent, out TEntity principal, Component removedComponent = null)
+    public bool TryGetPrincipal(TEntity dependent, out TEntity? principal, Component? removedComponent = null)
     {
         principal = null;
         return false;

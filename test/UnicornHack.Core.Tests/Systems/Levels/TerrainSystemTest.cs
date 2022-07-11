@@ -1,8 +1,4 @@
-﻿using UnicornHack.Primitives;
-using UnicornHack.Utils.DataStructures;
-using Xunit;
-
-namespace UnicornHack.Systems.Levels;
+﻿namespace UnicornHack.Systems.Levels;
 
 public class TerrainSystemTest
 {

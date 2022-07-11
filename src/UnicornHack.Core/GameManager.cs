@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Utils.Caching;
-using UnicornHack.Utils.DataStructures;
+﻿using UnicornHack.Utils.Caching;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack;
@@ -23,33 +21,30 @@ public partial class GameManager :
     {
         get;
         set;
-    }
+    } = null!;
 
     public new SequentialMessageQueue<GameManager> Queue => (SequentialMessageQueue<GameManager>)base.Queue;
 
     public ListObjectPool<List<(Point, byte)>> PointByteListArrayPool
     {
         get;
-    }
-        = new(() => new List<(Point, byte)>(), 4, 16, 0);
+    } = new(() => new List<(Point, byte)>(), initialSize: 4, maxSize: 16, preallocatedCount: 0);
 
     public ListObjectPool<List<(int, byte)>> IntByteListArrayPool
     {
         get;
-    }
-        = new(() => new List<(int, byte)>(), 4, 16, 0);
+    } = new(() => new List<(int, byte)>(), initialSize: 4, maxSize: 16, preallocatedCount: 0);
 
     public ListObjectPool<List<(GameEntity, byte)>> GameEntityByteListArrayPool
     {
         get;
-    }
-        = new(() => new List<(GameEntity, byte)>(), 4, 16, 0);
+    } = new(() => new List<(GameEntity, byte)>(), initialSize: 4, maxSize: 16, preallocatedCount: 0);
 
     protected override void InitializeSystems(IMessageQueue queue)
     {
         var gameQueue = (SequentialMessageQueue<GameManager>)queue;
-        gameQueue.Register<RemoveComponentMessage>(this, RemoveComponentMessage.Name, 0);
-        gameQueue.Register<EntityReferenceMessage<GameEntity>>(this, EntityReferenceMessage<GameEntity>.Name, 0);
+        gameQueue.Register<RemoveComponentMessage>(this, RemoveComponentMessage.Name, order: 0);
+        gameQueue.Register<EntityReferenceMessage<GameEntity>>(this, EntityReferenceMessage<GameEntity>.Name, order: 0);
 
         InitializeLevels(gameQueue);
         InitializeBeings(gameQueue);
@@ -89,8 +84,8 @@ public partial class GameManager :
     public string GetComponentPropertyName(int componentId)
         => _componentPropertyNames[componentId];
 
-    public GameEntity FindEntity(int? id) => id.HasValue ? base.FindEntity(id.Value) : null;
-    public override Entity LoadEntity(int id) => Game.Repository.Find<GameEntity>(Game.Id, id);
+    public GameEntity? FindEntity(int? id) => id.HasValue ? base.FindEntity(id.Value) : null;
+    public override Entity? LoadEntity(int id) => Game.Repository.Find<GameEntity>(Game.Id, id);
 
     public override void RemoveFromSecondaryTracker(ITrackable trackable)
         => Game.Repository.RemoveTracked(trackable);

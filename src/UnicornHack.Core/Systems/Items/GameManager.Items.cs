@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Systems.Beings;
+﻿using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 // ReSharper disable once CheckNamespace
@@ -14,38 +12,38 @@ public partial class GameManager
     {
         get;
         private set;
-    }
+    } = null!;
 
     public EntityGroup<GameEntity> ContainedItems
     {
         get;
         private set;
-    }
+    } = null!;
 
     public LookupEntityRelationship<GameEntity, Point, Dictionary<Point, GameEntity>>
         LevelItemsToLevelCellRelationship
     {
         get;
         private set;
-    }
+    } = null!;
 
     public CollectionEntityRelationship<GameEntity, HashSet<GameEntity>> EntityItemsToContainerRelationship
     {
         get;
         private set;
-    }
+    } = null!;
 
     public ItemMovingSystem ItemMovingSystem
     {
         get;
         private set;
-    }
+    } = null!;
 
     public ItemUsageSystem ItemUsageSystem
     {
         get;
         private set;
-    }
+    } = null!;
 
     private void InitializeItems(SequentialMessageQueue<GameManager> queue)
     {
@@ -87,7 +85,7 @@ public partial class GameManager
                     .With(component => ((PositionComponent)component).LevelY, (int)EntityComponent.Position)
             ),
             (itemEntity, _) => itemEntity.RemoveComponent(EntityComponent.Position),
-            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level.Items);
+            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level!.Items);
 
         EntityItemsToContainerRelationship = new(
             nameof(EntityItemsToContainerRelationship),
@@ -97,10 +95,10 @@ public partial class GameManager
                 component => ((ItemComponent)component).ContainerId,
                 (int)EntityComponent.Item),
             (effectEntity, _) => effectEntity.RemoveComponent((int)EntityComponent.Item),
-            containerEntity => (HashSet<GameEntity>)(containerEntity.Being.Items
-                                                     ?? containerEntity.Item.Items
-                                                     ?? containerEntity.Physical.Items
-                                                     ?? containerEntity.Sensor.Items),
+            containerEntity => (HashSet<GameEntity>)(containerEntity.Being!.Items
+                                                     ?? containerEntity.Item!.Items
+                                                     ?? containerEntity.Physical!.Items
+                                                     ?? containerEntity.Sensor!.Items),
             keepPrincipalAlive: false,
             keepDependentAlive: true);
 

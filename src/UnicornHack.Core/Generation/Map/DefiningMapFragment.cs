@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using CSharpScriptSerialization;
+﻿using CSharpScriptSerialization;
 using UnicornHack.Data.Fragments;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.DataLoading;
 
@@ -32,13 +29,13 @@ public class DefiningMapFragment : ConnectingMapFragment
     {
         get;
         set;
-    } = new CreatureGenerator();
+    } = new();
 
     public ItemGenerator ItemGenerator
     {
         get;
         set;
-    } = new ItemGenerator();
+    } = new();
 
     public MapFeature DefaultTerrain
     {
@@ -52,16 +49,16 @@ public class DefiningMapFragment : ConnectingMapFragment
         set;
     }
 
-    private Func<string, int, int, int, ConnectionComponent, float> _weightFunction;
+    private Func<string, int, int, int, ConnectionComponent?, float>? _weightFunction;
 
     private static readonly UnicornExpressionVisitor _translator =
         new(new[] { BranchParameter, DepthParameter, InstancesParameter, TagInstancesParameter, ConnectionParameter });
 
     protected override void ResetWeightFunction() => _weightFunction = null;
 
-    public static new Func<string, int, int, int, ConnectionComponent, float> CreateWeightFunction(
+    public static new Func<string, int, int, int, ConnectionComponent?, float> CreateWeightFunction(
         string expression)
-        => _translator.Translate<Func<string, int, int, int, ConnectionComponent, float>, float>(expression);
+        => _translator.Translate<Func<string, int, int, int, ConnectionComponent?, float>, float>(expression);
 
     public float GetWeight(string branchName, byte depth, int instances, int tagInstances)
     {
@@ -88,30 +85,30 @@ public class DefiningMapFragment : ConnectingMapFragment
     }
 
     public static new readonly CSScriptLoader<DefiningMapFragment> Loader =
-        new CSScriptLoader<DefiningMapFragment>(@"Data\Fragments\Defining\", typeof(DefiningMapFragmentData));
+        new(@"Data\Fragments\Defining\", typeof(DefiningMapFragmentData));
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<DefiningMapFragment>(GetPropertyConditions<DefiningMapFragment>());
 
-    protected static new Dictionary<string, Func<TDefiningMapFragment, object, bool>>
+    protected static new Dictionary<string, Func<TDefiningMapFragment, object?, bool>>
         GetPropertyConditions<TDefiningMapFragment>() where TDefiningMapFragment : DefiningMapFragment
     {
         var propertyConditions = ConnectingMapFragment.GetPropertyConditions<TDefiningMapFragment>();
         var mapCondition = propertyConditions[nameof(Map)];
         propertyConditions.Remove(nameof(Map));
 
-        propertyConditions.Add(nameof(NoRandomDoorways), (o, v) => (bool)v);
-        propertyConditions.Add(nameof(LevelHeight), (o, v) => (byte)v != 40);
-        propertyConditions.Add(nameof(LevelWidth), (o, v) => (byte)v != 80);
-        propertyConditions.Add(nameof(Layout), (o, v) => v != null && !(v is EmptyLayout));
+        propertyConditions.Add(nameof(NoRandomDoorways), (_, v) => (bool)v!);
+        propertyConditions.Add(nameof(LevelHeight), (_, v) => (byte)v! != 40);
+        propertyConditions.Add(nameof(LevelWidth), (_, v) => (byte)v! != 80);
+        propertyConditions.Add(nameof(Layout), (_, v) => v != null && v is not EmptyLayout);
         propertyConditions.Add(nameof(CreatureGenerator),
-            (o, v) => v != null && ((CreatureGenerator)v).ExpectedInitialCount !=
+            (_, v) => v != null && ((CreatureGenerator)v).ExpectedInitialCount !=
                 new CreatureGenerator().ExpectedInitialCount);
         propertyConditions.Add(nameof(ItemGenerator),
-            (o, v) => v != null &&
+            (_, v) => v != null &&
                       ((ItemGenerator)v).ExpectedInitialCount != new ItemGenerator().ExpectedInitialCount);
-        propertyConditions.Add(nameof(DefaultTerrain), (o, v) => (MapFeature)v != MapFeature.Default);
-        propertyConditions.Add(nameof(DefaultPathTerrain), (o, v) => (MapFeature)v != MapFeature.Default);
+        propertyConditions.Add(nameof(DefaultTerrain), (_, v) => (MapFeature)v! != MapFeature.Default);
+        propertyConditions.Add(nameof(DefaultPathTerrain), (_, v) => (MapFeature)v! != MapFeature.Default);
         propertyConditions.Add(nameof(Map), mapCondition);
         return propertyConditions;
     }

@@ -1,12 +1,9 @@
-﻿using UnicornHack.Generation;
-using UnicornHack.Primitives;
-
-namespace UnicornHack.Systems.Actors;
+﻿namespace UnicornHack.Systems.Actors;
 
 [Component(Id = (int)EntityComponent.AI)]
 public class AIComponent : GameComponent
 {
-    private string _properName;
+    private string? _properName;
     private ActorAction? _nextAction;
     private int? _nextActionTarget;
     private int? _nextActionTarget2;
@@ -19,7 +16,7 @@ public class AIComponent : GameComponent
         ComponentId = (int)EntityComponent.AI;
     }
 
-    public string ProperName
+    public string? ProperName
     {
         get => _properName;
         set => SetWithNotify(value, ref _properName);

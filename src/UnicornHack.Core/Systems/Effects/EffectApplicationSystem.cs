@@ -1,15 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using System.Reflection;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Items;
 using UnicornHack.Utils;
-using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Effects;
@@ -34,13 +27,13 @@ public class EffectApplicationSystem :
         new(new[] { EffectParameter, ActivatorParameter });
 
     private static readonly MethodInfo _requirementsModifierMethod = typeof(EffectApplicationSystem)
-        .GetMethod(nameof(GetRequirementsModifier), BindingFlags.NonPublic | BindingFlags.Static);
+        .GetMethod(nameof(GetRequirementsModifier), BindingFlags.NonPublic | BindingFlags.Static)!;
 
     private static readonly MethodInfo _mightModifierMethod = typeof(EffectApplicationSystem)
-        .GetMethod(nameof(GetMightModifier), BindingFlags.NonPublic | BindingFlags.Static);
+        .GetMethod(nameof(GetMightModifier), BindingFlags.NonPublic | BindingFlags.Static)!;
 
     private static readonly MethodInfo _focusModifierMethod = typeof(EffectApplicationSystem)
-        .GetMethod(nameof(GetFocusModifier), BindingFlags.NonPublic | BindingFlags.Static);
+        .GetMethod(nameof(GetFocusModifier), BindingFlags.NonPublic | BindingFlags.Static)!;
 
     public MessageProcessingResult Process(AbilityActivatedMessage message, GameManager manager)
     {
@@ -53,7 +46,7 @@ public class EffectApplicationSystem :
         return MessageProcessingResult.ContinueProcessing;
     }
 
-    private EffectsAppliedMessage ApplyEffects(AbilityActivatedMessage message, bool pretend)
+    private EffectsAppliedMessage? ApplyEffects(AbilityActivatedMessage message, bool pretend)
     {
         if (message.TargetEntity == null
             || message.TargetEntity.Being?.IsAlive == false)
@@ -71,10 +64,10 @@ public class EffectApplicationSystem :
 
         // TODO: Group effects by duration so they can be applied in proper order
         // TODO: Fire a message for effects that are DuringApplication, so they get unapplied as soon as the previous messages are processed
-        Dictionary<EffectType, (int Damage, GameEntity EffectEntity)> damageEffects = null;
+        Dictionary<EffectType, (int Damage, GameEntity? EffectEntity)>? damageEffects = null;
         foreach (var effectEntity in message.EffectsToApply)
         {
-            var effect = effectEntity.Effect;
+            var effect = effectEntity.Effect!;
             if (!effectsAppliedMessage.SuccessfulApplication
                 && effect.EffectType != EffectType.Activate
                 && effect.EffectType != EffectType.Move)
@@ -100,10 +93,7 @@ public class EffectApplicationSystem :
                 case EffectType.DrainLife:
                     Debug.Assert(effect.Duration == EffectDuration.Instant);
 
-                    if (damageEffects == null)
-                    {
-                        damageEffects = new Dictionary<EffectType, (int Damage, GameEntity EffectEntity)>();
-                    }
+                    damageEffects ??= new Dictionary<EffectType, (int Damage, GameEntity? EffectEntity)>();
 
                     var key = effect.EffectType;
                     if (!damageEffects.TryGetValue(key, out var previousDamage))
@@ -126,7 +116,7 @@ public class EffectApplicationSystem :
         {
             foreach (var damageEffect in damageEffects)
             {
-                ApplyEffect(damageEffect.Value.EffectEntity, message.TargetEntity, message.TargetCell,
+                ApplyEffect(damageEffect!.Value.EffectEntity!, message.TargetEntity, message.TargetCell,
                     message.ActivatorEntity, damageEffect.Value.Damage, effectsAppliedMessage.AppliedEffects,
                     manager, pretend);
             }
@@ -142,34 +132,33 @@ public class EffectApplicationSystem :
         return MessageProcessingResult.ContinueProcessing;
     }
 
-    private GameEntity ApplyEffect(
+    private GameEntity? ApplyEffect(
         GameEntity effectEntity,
-        GameEntity targetEntity,
+        GameEntity? targetEntity,
         Point? targetCell,
         GameEntity activatorEntity,
         int? amountOverride,
-        ReferencingList<GameEntity> appliedEffects,
+        ReferencingList<GameEntity>? appliedEffects,
         GameManager manager,
         bool pretend)
     {
-        var effect = effectEntity.Effect;
+        var effect = effectEntity.Effect!;
         var being = targetEntity?.Being;
         switch (effect.EffectType)
         {
             case EffectType.ChangeProperty:
-                var propertyDescription = PropertyDescription.Loader.Find(effect.TargetName);
+                var propertyDescription = PropertyDescription.Loader.Find(effect.TargetName!)!;
                 Debug.Assert(propertyDescription.IsCalculated == (effect.Duration != EffectDuration.Instant));
 
-                ApplyEffect(effect, targetEntity, activatorEntity, amountOverride, appliedEffects, manager,
-                    pretend);
+                ApplyEffect(effect, targetEntity!, activatorEntity, amountOverride, appliedEffects, manager, pretend);
 
                 break;
             case EffectType.AddAbility:
-                var abilityAddedEntity = (targetEntity.Physical?.AppliedEffects
+                var abilityAddedEntity = (targetEntity!.Physical?.AppliedEffects
                                           ?? targetEntity.Item?.AppliedEffects
                                           ?? targetEntity.Sensor?.AppliedEffects
-                                          ?? being?.AppliedEffects)
-                                         .FirstOrDefault(e => e.Effect.SourceEffectId == effect.EntityId)
+                                          ?? being!.AppliedEffects)
+                                         .FirstOrDefault(e => e.Effect!.SourceEffectId == effect.EntityId)
                                          ?? ApplyEffect(
                                              effect, targetEntity, activatorEntity, amountOverride,
                                              appliedEffects, manager, pretend);
@@ -184,10 +173,10 @@ public class EffectApplicationSystem :
                     else
                     {
                         var level = 0;
-                        var template = Ability.Loader.Get(effect.TargetName);
+                        var template = Ability.Loader.Get(effect.TargetName!); // TODO: use effectEntity.Ability?.Name ?
                         if (template is LeveledAbility)
                         {
-                            level = CalculateAbilityLevel(abilityAddedEntity.Effect, manager);
+                            level = CalculateAbilityLevel(abilityAddedEntity.Effect!);
                         }
 
                         var ability = template.AddToEffect(abilityAddedEntity, level);
@@ -197,40 +186,40 @@ public class EffectApplicationSystem :
                 }
                 else
                 {
-                    abilityAddedEntity.Effect.EffectType = EffectType.AddDuplicateAbility;
+                    abilityAddedEntity.Effect!.EffectType = EffectType.AddDuplicateAbility;
                 }
 
                 return abilityAddedEntity;
             case EffectType.ChangeRace:
                 var remove = effect.AppliedAmount == -1;
-                var raceName = effect.TargetName;
+                var raceName = effect.TargetName!;
                 if (remove)
                 {
                     Debug.Assert(effect.Duration == EffectDuration.Instant);
 
-                    var raceEntity = targetEntity.Being.Races
-                        .SingleOrDefault(r => r.Race.TemplateName == raceName);
+                    var raceEntity = targetEntity!.Being!.Races
+                        .SingleOrDefault(r => r.Race!.TemplateName == raceName);
                     raceEntity?.RemoveComponent(EntityComponent.Effect);
                 }
                 else
                 {
                     Debug.Assert(effect.Duration != EffectDuration.Instant);
 
-                    if (!targetEntity.HasComponent(EntityComponent.Player))
+                    if (!targetEntity!.HasComponent(EntityComponent.Player))
                     {
                         return null;
                     }
 
-                    var raceDefinition = PlayerRace.Loader.Find(raceName);
+                    var raceDefinition = PlayerRace.Loader.Find(raceName)!;
 
-                    var existingRace = targetEntity.Being.Races
-                        ?.SingleOrDefault(r => r.Race.Species == raceDefinition.Species);
+                    var existingRace = targetEntity.Being!.Races
+                        .SingleOrDefault(r => r.Race!.Species == raceDefinition.Species);
                     if (existingRace == null)
                     {
                         var addedRaceEntity = ApplyEffect(
                             effect, targetEntity, activatorEntity, amountOverride, appliedEffects, manager,
                             pretend);
-                        addedRaceEntity.Effect.AppliedAmount = null;
+                        addedRaceEntity.Effect!.AppliedAmount = null;
 
                         raceDefinition.AddToAppliedEffect(addedRaceEntity, targetEntity);
                         return addedRaceEntity;
@@ -261,10 +250,10 @@ public class EffectApplicationSystem :
                     return null;
                 }
 
-                var damage = GetDamage(effect, activatorEntity, targetEntity, amountOverride);
+                var damage = GetDamage(effect, activatorEntity, targetEntity!, amountOverride);
                 if (damage != 0)
                 {
-                    return ApplyEffect(effect, targetEntity, activatorEntity, damage, appliedEffects, manager,
+                    return ApplyEffect(effect, targetEntity!, activatorEntity, damage, appliedEffects, manager,
                         pretend);
                 }
 
@@ -275,14 +264,14 @@ public class EffectApplicationSystem :
                     return null;
                 }
 
-                var energyDamage = GetDamage(effect, activatorEntity, targetEntity, amountOverride);
+                var energyDamage = GetDamage(effect, activatorEntity, targetEntity!, amountOverride);
                 if (energyDamage != 0)
                 {
                     var selfEffectEntity = ApplyEffect(
                         effect, activatorEntity, activatorEntity, energyDamage, null, manager, pretend);
-                    selfEffectEntity.Effect.EffectType = EffectType.Recharge;
+                    selfEffectEntity.Effect!.EffectType = EffectType.Recharge;
                     return ApplyEffect(
-                        effect, targetEntity, activatorEntity, energyDamage, appliedEffects, manager, pretend);
+                        effect, targetEntity!, activatorEntity, energyDamage, appliedEffects, manager, pretend);
                 }
 
                 break;
@@ -292,19 +281,19 @@ public class EffectApplicationSystem :
                     return null;
                 }
 
-                var drainDamage = GetDamage(effect, activatorEntity, targetEntity, amountOverride);
+                var drainDamage = GetDamage(effect, activatorEntity, targetEntity!, amountOverride);
                 if (drainDamage != 0)
                 {
                     var selfEffectEntity = ApplyEffect(
                         effect, activatorEntity, activatorEntity, drainDamage, null, manager, pretend);
-                    selfEffectEntity.Effect.EffectType = EffectType.Heal;
+                    selfEffectEntity.Effect!.EffectType = EffectType.Heal;
                     return ApplyEffect(
-                        effect, targetEntity, activatorEntity, drainDamage, appliedEffects, manager, pretend);
+                        effect, targetEntity!, activatorEntity, drainDamage, appliedEffects, manager, pretend);
                 }
 
                 break;
             case EffectType.Move:
-                var movee = manager.FindEntity(effect.TargetEntityId.Value);
+                var movee = manager.FindEntity(effect.TargetEntityId!.Value)!;
                 if (movee.HasComponent(EntityComponent.Item))
                 {
                     var moveItemMessage = MoveItemMessage.Create(manager);
@@ -315,14 +304,14 @@ public class EffectApplicationSystem :
                     if (targetEntity != null)
                     {
                         var position = targetEntity.Position;
-                        moveItemMessage.TargetLevelEntity = position.LevelEntity;
+                        moveItemMessage.TargetLevelEntity = position!.LevelEntity;
                         moveItemMessage.TargetCell = position.LevelCell;
                     }
                     else
                     {
                         Debug.Assert(targetCell != null);
 
-                        moveItemMessage.TargetLevelEntity = activatorEntity.Position.LevelEntity;
+                        moveItemMessage.TargetLevelEntity = activatorEntity.Position!.LevelEntity;
                         moveItemMessage.TargetCell = targetCell;
                     }
 
@@ -330,13 +319,13 @@ public class EffectApplicationSystem :
                 }
 
                 return ApplyEffect(
-                    effect, targetEntity, activatorEntity, amountOverride, appliedEffects, manager, pretend);
+                    effect, targetEntity!, activatorEntity, amountOverride, appliedEffects, manager, pretend);
             case EffectType.RemoveItem:
                 var itemToRemove = manager.FindEntity(effect.TargetEntityId);
                 var containingAbilityEntity = effect.ContainingAbility;
                 while (containingAbilityEntity != null)
                 {
-                    itemToRemove = containingAbilityEntity.Ability.OwnerEntity;
+                    itemToRemove = containingAbilityEntity.Ability!.OwnerEntity;
                     if (itemToRemove?.HasComponent(EntityComponent.Item) != true)
                     {
                         containingAbilityEntity = containingAbilityEntity.Effect?.ContainingAbility;
@@ -352,23 +341,23 @@ public class EffectApplicationSystem :
                     throw new InvalidOperationException("Couldn't find item to remove");
                 }
 
-                using (var itemReference = manager.ItemMovingSystem.Split(itemToRemove.Item, 1))
+                using (var itemReference = manager.ItemMovingSystem.Split(itemToRemove.Item!, 1))
                 {
                     EntityReferenceMessage<GameEntity>.Enqueue(itemReference.Referenced, manager);
 
                     var appliedEffectEntity = ApplyEffect(
-                        effect, targetEntity, activatorEntity, amountOverride, appliedEffects, manager, pretend);
-                    appliedEffectEntity.Effect.TargetEntityId = itemReference.Referenced.Id;
+                        effect, targetEntity!, activatorEntity, amountOverride, appliedEffects, manager, pretend);
+                    appliedEffectEntity.Effect!.TargetEntityId = itemReference.Referenced.Id;
 
                     return appliedEffectEntity;
                 }
             case EffectType.EquipItem:
-                var itemEntity = manager.FindEntity(effect.TargetEntityId.Value);
+                var itemEntity = manager.FindEntity(effect.TargetEntityId!.Value)!;
 
                 var equipped = false;
-                foreach (var slot in manager.ItemUsageSystem.GetEquipableSlots(itemEntity.Item, targetEntity))
+                foreach (var slot in manager.ItemUsageSystem.GetEquipableSlots(itemEntity.Item!, targetEntity!))
                 {
-                    if (!manager.ItemUsageSystem.TryEquip(itemEntity, slot, targetEntity, force: false))
+                    if (!manager.ItemUsageSystem.TryEquip(itemEntity, slot, targetEntity!, force: false))
                     {
                         equipped = true;
                         break;
@@ -377,9 +366,9 @@ public class EffectApplicationSystem :
 
                 if (!equipped)
                 {
-                    foreach (var slot in manager.ItemUsageSystem.GetEquipableSlots(itemEntity.Item, targetEntity))
+                    foreach (var slot in manager.ItemUsageSystem.GetEquipableSlots(itemEntity.Item!, targetEntity!))
                     {
-                        if (!manager.ItemUsageSystem.TryEquip(itemEntity, slot, targetEntity, force: true))
+                        if (!manager.ItemUsageSystem.TryEquip(itemEntity, slot, targetEntity!, force: true))
                         {
                             break;
                         }
@@ -392,10 +381,10 @@ public class EffectApplicationSystem :
             case EffectType.GainXP:
             case EffectType.Activate:
                 Debug.Assert(effect.Duration != EffectDuration.Infinite
-                             || manager.FindEntity(effect.TargetEntityId).Ability.IsActive);
+                             || manager.FindEntity(effect.TargetEntityId)!.Ability!.IsActive);
 
                 return ApplyEffect(
-                    effect, targetEntity, activatorEntity, amountOverride, appliedEffects, manager, pretend);
+                    effect, targetEntity!, activatorEntity, amountOverride, appliedEffects, manager, pretend);
             case EffectType.Bind:
             case EffectType.Blind:
             case EffectType.ConferLycanthropy:
@@ -430,67 +419,65 @@ public class EffectApplicationSystem :
         GameEntity affectedEntity,
         GameEntity activatorEntity,
         int? amountOverride,
-        ReferencingList<GameEntity> appliedEffects,
+        ReferencingList<GameEntity>? appliedEffects,
         GameManager manager,
         bool pretend)
     {
-        using (var appliedEffectEntity = manager.CreateEntity())
+        using var appliedEffectEntity = manager.CreateEntity();
+        var entity = appliedEffectEntity.Referenced;
+
+        var appliedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+        appliedEffect.SourceEffectId = effect.EntityId;
+        appliedEffect.SourceAbility = effect.ContainingAbility;
+        appliedEffect.AppliedAmount = amountOverride
+                                      ?? (effect.AppliedAmount != null || effect.Amount != null
+                                          ? GetAmount(effect, activatorEntity)
+                                          : null);
+        appliedEffect.Duration = effect.Duration;
+        appliedEffect.EffectType = effect.EffectType;
+        appliedEffect.CombinationFunction = effect.CombinationFunction;
+        appliedEffect.TargetName = effect.TargetName;
+        appliedEffect.TargetEntityId = effect.TargetEntityId;
+        if (!pretend)
         {
-            var entity = appliedEffectEntity.Referenced;
-
-            var appliedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-            appliedEffect.SourceEffectId = effect.EntityId;
-            appliedEffect.SourceAbility = effect.ContainingAbility;
-            appliedEffect.AppliedAmount = amountOverride
-                                          ?? (effect.AppliedAmount != null || effect.Amount != null
-                                              ? GetAmount(effect, activatorEntity)
-                                              : null);
-            appliedEffect.Duration = effect.Duration;
-            appliedEffect.EffectType = effect.EffectType;
-            appliedEffect.CombinationFunction = effect.CombinationFunction;
-            appliedEffect.TargetName = effect.TargetName;
-            appliedEffect.TargetEntityId = effect.TargetEntityId;
-            if (!pretend)
-            {
-                appliedEffect.AffectedEntity = affectedEntity;
-            }
-
-            switch (effect.Duration)
-            {
-                case EffectDuration.Infinite:
-                case EffectDuration.Instant:
-                case EffectDuration.DuringApplication:
-                    Debug.Assert(effect.DurationAmount == null);
-                    break;
-                case EffectDuration.UntilTimeout:
-                    appliedEffect.ExpirationTick =
-                        manager.Game.CurrentTick + GetDurationAmount(effect, activatorEntity);
-                    break;
-                case EffectDuration.UntilXPGained:
-                    var player = affectedEntity.Player;
-                    if (player != null)
-                    {
-                        appliedEffect.ExpirationXp =
-                            affectedEntity.Position.LevelEntity.Level.Difficulty *
-                            GetDurationAmount(effect, activatorEntity);
-                    }
-                    else
-                    {
-                        appliedEffect.ExpirationTick =
-                            manager.Game.CurrentTick + 20 * GetDurationAmount(effect, activatorEntity);
-                    }
-
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-
-            entity.Effect = appliedEffect;
-
-            appliedEffects?.Add(entity);
-
-            return appliedEffectEntity.Referenced;
+            appliedEffect.AffectedEntity = affectedEntity;
         }
+
+        switch (effect.Duration)
+        {
+            case EffectDuration.Infinite:
+            case EffectDuration.Instant:
+            case EffectDuration.DuringApplication:
+                Debug.Assert(effect.DurationAmount == null);
+                break;
+            case EffectDuration.UntilTimeout:
+                appliedEffect.ExpirationTick =
+                    manager.Game.CurrentTick + GetDurationAmount(effect, activatorEntity);
+                break;
+            case EffectDuration.UntilXPGained:
+                var player = affectedEntity.Player;
+                if (player != null)
+                {
+                    appliedEffect.ExpirationXp =
+                        affectedEntity.Position!.LevelEntity.Level!.Difficulty *
+                        GetDurationAmount(effect, activatorEntity);
+                }
+                else
+                {
+                    appliedEffect.ExpirationTick =
+                        manager.Game.CurrentTick + 20 * GetDurationAmount(effect, activatorEntity);
+                }
+
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+
+        entity.Effect = appliedEffect;
+
+        appliedEffects?.Add(entity);
+
+        return appliedEffectEntity.Referenced;
     }
 
     private int GetDamage(
@@ -499,7 +486,7 @@ public class EffectApplicationSystem :
         GameEntity targetEntity,
         int? amountOverride)
     {
-        var being = targetEntity.Being;
+        var being = targetEntity.Being!;
         var absorption = 0;
         var resistance = 0;
         switch (effect.EffectType)
@@ -569,10 +556,10 @@ public class EffectApplicationSystem :
         GameEntity targetEntity)
     {
         var totalDamage = 0;
-        var damageEffects = new Dictionary<EffectType, (int Damage, GameEntity EffectEntity)>();
+        var damageEffects = new Dictionary<EffectType, (int Damage, GameEntity? EffectEntity)>();
         foreach (var effectEntity in effects)
         {
-            var effect = effectEntity.Effect;
+            var effect = effectEntity.Effect!;
             switch (effect.EffectType)
             {
                 case EffectType.PhysicalDamage:
@@ -606,7 +593,7 @@ public class EffectApplicationSystem :
         foreach (var damageEffect in damageEffects)
         {
             totalDamage += GetDamage(
-                damageEffect.Value.EffectEntity.Effect, activatorEntity, targetEntity, damageEffect.Value.Damage);
+                damageEffect!.Value.EffectEntity!.Effect!, activatorEntity, targetEntity, damageEffect.Value.Damage);
         }
 
         return totalDamage;
@@ -616,7 +603,7 @@ public class EffectApplicationSystem :
     {
         if (message.Group.Name == nameof(manager.Effects))
         {
-            return ProcessEffectChanges(message.Entity, message.Entity.Effect, manager, State.Added);
+            return ProcessEffectChanges(message.Entity, message.Entity.Effect!, manager, State.Added);
         }
 
         InitializeProperties(message.Entity);
@@ -626,7 +613,7 @@ public class EffectApplicationSystem :
 
     public MessageProcessingResult Process(EntityRemovedMessage<GameEntity> message, GameManager manager)
         => ProcessEffectChanges(
-            message.Entity, (EffectComponent)message.RemovedComponent ?? message.Entity.Effect, manager,
+            message.Entity, (EffectComponent?)message.RemovedComponent ?? message.Entity.Effect!, manager,
             State.Removed);
 
     public MessageProcessingResult Process(
@@ -666,7 +653,7 @@ public class EffectApplicationSystem :
                 return MessageProcessingResult.ContinueProcessing;
             }
 
-            var activator = containingAbility.OwnerEntity;
+            var activator = containingAbility.OwnerEntity!;
 
             var appliedEffects =
                 manager.AppliedEffectsToSourceAbilityRelationship.GetDependents(containingAbility.Entity);
@@ -674,7 +661,7 @@ public class EffectApplicationSystem :
             {
                 if (appliedEffects.Count != 0)
                 {
-                    var affectedEntity = appliedEffects.First().Effect.AffectedEntity;
+                    var affectedEntity = appliedEffects.First().Effect!.AffectedEntity;
 
                     // Handle the effect added to an ability that's already active
                     ApplyEffect(effectEntity, affectedEntity, targetCell: null, activatorEntity: activator,
@@ -685,7 +672,7 @@ public class EffectApplicationSystem :
             }
             else
             {
-                var appliedEffect = appliedEffects.Select(e => e.Effect)
+                var appliedEffect = appliedEffects.Select(e => e.Effect!)
                     .FirstOrDefault(e => e.SourceEffectId == effect.EntityId);
                 if (appliedEffect == null)
                 {
@@ -720,7 +707,7 @@ public class EffectApplicationSystem :
                     break;
                 }
 
-                var propertyDescription = PropertyDescription.Loader.Find(effect.TargetName);
+                var propertyDescription = PropertyDescription.Loader.Find(effect.TargetName!)!;
                 UpdateProperty(propertyDescription, targetEntity, effect);
 
                 break;
@@ -746,10 +733,10 @@ public class EffectApplicationSystem :
                     var appliedEffects = targetEntity.Physical?.AppliedEffects
                                          ?? targetEntity.Item?.AppliedEffects
                                          ?? targetEntity.Sensor?.AppliedEffects
-                                         ?? targetEntity.Being.AppliedEffects;
+                                         ?? targetEntity.Being!.AppliedEffects;
                     foreach (var duplicateEffectEntity in appliedEffects)
                     {
-                        var duplicateEffect = duplicateEffectEntity.Effect;
+                        var duplicateEffect = duplicateEffectEntity.Effect!;
                         if (duplicateEffect.EffectType != EffectType.AddDuplicateAbility)
                         {
                             continue;
@@ -763,7 +750,7 @@ public class EffectApplicationSystem :
                             continue;
                         }
 
-                        duplicateEffectEntity.Effect.EffectType = EffectType.AddAbility;
+                        duplicateEffectEntity.Effect!.EffectType = EffectType.AddAbility;
 
                         EnqueueApplyEffect(targetEntity, sourceEffectEntity, manager);
 
@@ -794,7 +781,7 @@ public class EffectApplicationSystem :
                 if (sourceEffectEntity?.Effect != null)
                 {
                     var abilityName = sourceEffectEntity.Ability?.Name ?? sourceEffectEntity.Effect.TargetName;
-                    var currentAbilityEntity = manager.AffectableAbilitiesIndex[(targetEntity.Id, abilityName)];
+                    var currentAbilityEntity = manager.AffectableAbilitiesIndex[(targetEntity.Id, abilityName)]!;
 
                     RecalculateAbilityLevel(currentAbilityEntity, targetEntity, manager);
                 }
@@ -805,7 +792,7 @@ public class EffectApplicationSystem :
                 if (state == State.Removed)
                 {
                     effectEntity.RemoveComponent(EntityComponent.Race);
-                    if (targetEntity.Being.Races.Count == 0)
+                    if (targetEntity.Being!.Races.Count == 0)
                     {
                         var being = targetEntity.Being;
                         if (being != null)
@@ -831,47 +818,47 @@ public class EffectApplicationSystem :
             case EffectType.PhysicalDamage:
                 if (state == State.Added)
                 {
-                    var being = targetEntity.Being;
-                    being.HitPoints -= effect.AppliedAmount.Value;
+                    var being = targetEntity.Being!;
+                    being.HitPoints -= effect.AppliedAmount!.Value;
                 }
 
                 break;
             case EffectType.DrainEnergy:
                 if (state == State.Added)
                 {
-                    var being = targetEntity.Being;
-                    being.EnergyPoints -= effect.AppliedAmount.Value;
+                    var being = targetEntity.Being!;
+                    being.EnergyPoints -= effect.AppliedAmount!.Value;
                 }
 
                 break;
             case EffectType.DrainLife:
                 if (state == State.Added)
                 {
-                    var being = targetEntity.Being;
-                    being.HitPoints -= effect.AppliedAmount.Value;
+                    var being = targetEntity.Being!;
+                    being.HitPoints -= effect.AppliedAmount!.Value;
                 }
 
                 break;
             case EffectType.Heal:
                 if (state == State.Added)
                 {
-                    var being = targetEntity.Being;
-                    being.HitPoints += effect.AppliedAmount.Value;
+                    var being = targetEntity.Being!;
+                    being.HitPoints += effect.AppliedAmount!.Value;
                 }
 
                 break;
             case EffectType.Recharge:
                 if (state == State.Added)
                 {
-                    var being = targetEntity.Being;
-                    being.EnergyPoints += effect.AppliedAmount.Value;
+                    var being = targetEntity.Being!;
+                    being.EnergyPoints += effect.AppliedAmount!.Value;
                 }
 
                 break;
             case EffectType.GainXP:
                 if (state == State.Added)
                 {
-                    manager.XPSystem.AddPlayerXP(effect.AppliedAmount.Value, manager);
+                    manager.XPSystem.AddPlayerXP(effect.AppliedAmount!.Value, manager);
                 }
 
                 break;
@@ -939,14 +926,14 @@ public class EffectApplicationSystem :
 
     private void RecalculateAbilityLevel(GameEntity abilityEntity, GameEntity targetEntity, GameManager manager)
     {
-        if (abilityEntity?.Ability.Template is LeveledAbility)
+        if (abilityEntity.Ability!.Template is LeveledAbility)
         {
-            var level = CalculateAbilityLevel(abilityEntity.Effect, manager);
+            var level = CalculateAbilityLevel(abilityEntity.Effect!);
             if (level != abilityEntity.Ability.Level)
             {
                 // TODO: If cumulative and leveling up just add the extra effects to the existing ability
 
-                var sourceEffectEntity = abilityEntity.Effect.SourceEffect;
+                var sourceEffectEntity = abilityEntity.Effect!.SourceEffect;
                 if (sourceEffectEntity != null)
                 {
                     abilityEntity.Ability = null;
@@ -958,27 +945,28 @@ public class EffectApplicationSystem :
 
     private static void EnqueueApplyEffect(GameEntity targetEntity, GameEntity effectEntity, GameManager manager)
     {
-        var sourceAbilityEntity = effectEntity.Effect.ContainingAbility;
+        var sourceAbilityEntity = effectEntity.Effect!.ContainingAbility!;
         var applyEffectMessage = ApplyEffectMessage.Create(manager);
-        applyEffectMessage.ActivatorEntity = sourceAbilityEntity.Ability.OwnerEntity;
+        applyEffectMessage.ActivatorEntity = sourceAbilityEntity.Ability!.OwnerEntity!;
         applyEffectMessage.TargetEntity = targetEntity;
         applyEffectMessage.EffectEntity = effectEntity;
 
         manager.Enqueue(applyEffectMessage, lowPriority: true);
     }
 
-    private int CalculateAbilityLevel(EffectComponent abilityEffect, GameManager manager)
+    private int CalculateAbilityLevel(EffectComponent abilityEffect)
     {
         var abilityName = abilityEffect.TargetName;
         var level = 0;
         var activeEffects = new List<EffectComponent> { abilityEffect };
-        var appliedEffects = abilityEffect.AffectedEntity.Physical?.AppliedEffects
-                             ?? abilityEffect.AffectedEntity.Item?.AppliedEffects
-                             ?? abilityEffect.AffectedEntity.Sensor?.AppliedEffects
-                             ?? abilityEffect.AffectedEntity.Being.AppliedEffects;
+        var affectedEntity = abilityEffect.AffectedEntity!;
+        var appliedEffects = affectedEntity.Physical?.AppliedEffects
+                             ?? affectedEntity.Item?.AppliedEffects
+                             ?? affectedEntity.Sensor?.AppliedEffects
+                             ?? affectedEntity.Being!.AppliedEffects;
         foreach (var duplicateEffectEntity in appliedEffects)
         {
-            var effect = duplicateEffectEntity.Effect;
+            var effect = duplicateEffectEntity.Effect!;
             if (effect.EffectType != EffectType.AddDuplicateAbility)
             {
                 continue;
@@ -1000,7 +988,7 @@ public class EffectApplicationSystem :
         {
             var activeEffect = activeEffects[index];
 
-            ApplyOperation(activeEffect.AppliedAmount.Value, activeEffect.CombinationFunction, ref level,
+            ApplyOperation(activeEffect.AppliedAmount!.Value, activeEffect.CombinationFunction, ref level,
                 ref runningSum,
                 ref summandCount);
         }
@@ -1015,8 +1003,8 @@ public class EffectApplicationSystem :
             return 0;
         }
 
-        var ability = effect.ContainingAbility.Ability;
-        effect.DurationAmountFunction ??= CreateAmountFunction(effect.DurationAmount, ability.Name);
+        var ability = effect.ContainingAbility!.Ability!;
+        effect.DurationAmountFunction ??= CreateAmountFunction(effect.DurationAmount, ability.Name!);
 
         try
         {
@@ -1044,11 +1032,11 @@ public class EffectApplicationSystem :
     {
         if (effect.Amount == null)
         {
-            return effect.AppliedAmount.Value;
+            return effect.AppliedAmount!.Value;
         }
 
-        var ability = effect.ContainingAbility.Ability;
-        effect.AmountFunction ??= CreateAmountFunction(effect.Amount, ability.Name);
+        var ability = effect.ContainingAbility!.Ability!;
+        effect.AmountFunction ??= CreateAmountFunction(effect.Amount, ability.Name!);
 
         try
         {
@@ -1067,8 +1055,8 @@ public class EffectApplicationSystem :
             return 0;
         }
 
-        var ability = effect.ContainingAbility.Ability;
-        effect.SecondaryAmountFunction ??= CreateAmountFunction(effect.SecondaryAmount, ability.Name);
+        var ability = effect.ContainingAbility!.Ability!;
+        effect.SecondaryAmountFunction ??= CreateAmountFunction(effect.SecondaryAmount, ability.Name!);
 
         try
         {
@@ -1096,7 +1084,7 @@ public class EffectApplicationSystem :
     private static float GetRequirementsModifier(GameEntity effectEntity, GameEntity activatorEntity)
     {
         var manager = effectEntity.Manager;
-        var item = effectEntity.Effect.ContainingAbility.Ability.OwnerEntity.Item;
+        var item = effectEntity.Effect!.ContainingAbility!.Ability!.OwnerEntity!.Item!;
 
         //TODO: Show stats for each equipable slot
         var slot = item.EquippedSlot == EquipmentSlot.None
@@ -1113,10 +1101,10 @@ public class EffectApplicationSystem :
         var template = Item.Loader.Get(item.TemplateName);
         var skillBonus = manager.SkillAbilitiesSystem.GetItemSkillBonus(template, activatorEntity.Player);
 
-        var requiredMight = template?.RequiredMight ?? 0;
-        var mightDifference = activatorEntity.Being.Might * handnessMultiplier +
+        var requiredMight = template.RequiredMight ?? 0;
+        var mightDifference = activatorEntity.Being!.Might * handnessMultiplier +
                               (skillBonus - requiredMight) * baseMultiplier;
-        var requiredFocus = template?.RequiredFocus ?? 0;
+        var requiredFocus = template.RequiredFocus ?? 0;
         var focusDifference = activatorEntity.Being.Focus * handnessMultiplier +
                               (skillBonus - requiredFocus) * baseMultiplier;
         var scale = 100
@@ -1133,23 +1121,23 @@ public class EffectApplicationSystem :
     }
 
     private static float GetMightModifier(GameEntity effectEntity, GameEntity activatorEntity)
-        => (10 + activatorEntity.Being.Might) / 10f;
+        => (10 + activatorEntity.Being!.Might) / 10f;
 
     private static float GetFocusModifier(GameEntity effectEntity, GameEntity activatorEntity)
-        => (10 + activatorEntity.Being.Focus) / 10f;
+        => (10 + activatorEntity.Being!.Focus) / 10f;
 
     /// <summary>
     ///     Returns a permanently applied effect that affects the specified property.
     ///     The effect amount can be changed without having to reapply it.
     /// </summary>
     public EffectComponent UpdateOrAddPropertyEffect(
-        int? amount, string propertyName, string abilityName, GameEntity entity,
+        int amount, string propertyName, string abilityName, GameEntity entity,
         ValueCombinationFunction? function = null)
     {
         var manager = entity.Manager;
         var abilityEntity = GetOrAddPermanentAbility(entity, abilityName, manager);
 
-        var effect = abilityEntity.Ability.Effects.Select(e => e.Effect)
+        var effect = abilityEntity.Ability!.Effects.Select(e => e.Effect!)
             .FirstOrDefault(e => e.EffectType == EffectType.ChangeProperty && e.TargetName == propertyName);
         if (effect != null)
         {
@@ -1170,7 +1158,7 @@ public class EffectApplicationSystem :
         var manager = entity.Manager;
         var abilityEntity = GetOrAddPermanentAbility(entity, containingAbilityName, manager);
 
-        return abilityEntity.Ability.Effects.Select(e => e.Effect)
+        return abilityEntity.Ability!.Effects.Select(e => e.Effect!)
                    .FirstOrDefault(e => e.EffectType == EffectType.ChangeProperty
                                         && e.TargetName == abilityName)
                ?? AddAbilityEffect(abilityEntity.Id, abilityName, manager);
@@ -1198,48 +1186,39 @@ public class EffectApplicationSystem :
     }
 
     public EffectComponent AddPropertyEffect(
-        string propertyName, int? value, int abilityId, GameManager manager,
+        string propertyName, int value, int abilityId, GameManager manager,
         ValueCombinationFunction? function = null)
     {
-        if (value == null)
-        {
-            return null;
-        }
+        using var effectEntityReference = manager.CreateEntity();
+        var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
 
-        using (var effectEntityReference = manager.CreateEntity())
-        {
-            var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+        effect.EffectType = EffectType.ChangeProperty;
+        effect.Duration = EffectDuration.Infinite;
+        effect.TargetName = propertyName;
+        effect.AppliedAmount = value;
+        effect.CombinationFunction = function ?? ValueCombinationFunction.Sum;
+        effect.ContainingAbilityId = abilityId;
 
-            effect.EffectType = EffectType.ChangeProperty;
-            effect.Duration = EffectDuration.Infinite;
-            effect.TargetName = propertyName;
-            effect.AppliedAmount = value;
-            effect.CombinationFunction = function ?? ValueCombinationFunction.Sum;
-            effect.ContainingAbilityId = abilityId;
+        effectEntityReference.Referenced.Effect = effect;
 
-            effectEntityReference.Referenced.Effect = effect;
-
-            return effect;
-        }
+        return effect;
     }
 
     private EffectComponent AddAbilityEffect(int abilityId, string abilityName, GameManager manager)
     {
-        using (var effectReference = manager.CreateEntity())
-        {
-            var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+        using var effectReference = manager.CreateEntity();
+        var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
 
-            effect.ContainingAbilityId = abilityId;
-            effect.EffectType = EffectType.AddAbility;
-            effect.Duration = EffectDuration.Infinite;
-            effect.CombinationFunction = ValueCombinationFunction.Sum;
-            effect.TargetName = abilityName;
-            effect.AppliedAmount = 0;
+        effect.ContainingAbilityId = abilityId;
+        effect.EffectType = EffectType.AddAbility;
+        effect.Duration = EffectDuration.Infinite;
+        effect.CombinationFunction = ValueCombinationFunction.Sum;
+        effect.TargetName = abilityName;
+        effect.AppliedAmount = 0;
 
-            effectReference.Referenced.Effect = effect;
+        effectReference.Referenced.Effect = effect;
 
-            return effect;
-        }
+        return effect;
     }
 
     private void InitializeProperties(GameEntity entity)
@@ -1257,7 +1236,7 @@ public class EffectApplicationSystem :
     private void UpdateProperty(
         PropertyDescription propertyDescription,
         GameEntity targetEntity,
-        EffectComponent appliedEffectComponent)
+        EffectComponent? appliedEffectComponent)
     {
         if (propertyDescription.PropertyType == typeof(bool))
         {
@@ -1278,7 +1257,7 @@ public class EffectApplicationSystem :
     private void UpdatePropertyValue(
         PropertyDescription<int> propertyDescription,
         GameEntity targetEntity,
-        EffectComponent effect)
+        EffectComponent? effect)
     {
         var targetComponent = targetEntity.FindComponent(propertyDescription.ComponentId);
         if (targetComponent == null)
@@ -1300,13 +1279,13 @@ public class EffectApplicationSystem :
                 {
                     var activeEffect = activeEffects[index];
 
-                    ApplyOperation(activeEffect.AppliedAmount.Value, activeEffect.CombinationFunction,
+                    ApplyOperation(activeEffect.AppliedAmount!.Value, activeEffect.CombinationFunction,
                         ref newValue, ref runningSum, ref summandCount);
                 }
             }
             else if (effect?.Entity?.Effect?.AffectedEntityId != null)
             {
-                ApplyOperation(effect.AppliedAmount.Value, effect.CombinationFunction,
+                ApplyOperation(effect.AppliedAmount!.Value, effect.CombinationFunction,
                     ref newValue, ref runningSum, ref summandCount);
             }
 
@@ -1315,7 +1294,7 @@ public class EffectApplicationSystem :
         else
         {
             newValue = propertyDescription.GetValue(targetComponent);
-            ApplyOperation(effect.AppliedAmount.Value, effect.CombinationFunction, ref newValue, ref runningSum,
+            ApplyOperation(effect!.AppliedAmount!.Value, effect.CombinationFunction, ref newValue, ref runningSum,
                 ref summandCount);
             propertyDescription.SetValue(newValue, targetComponent);
         }
@@ -1324,7 +1303,7 @@ public class EffectApplicationSystem :
     private void UpdatePropertyValue(
         PropertyDescription<bool> propertyDescription,
         GameEntity targetEntity,
-        EffectComponent effect)
+        EffectComponent? effect)
     {
         var targetComponent = targetEntity.FindComponent(propertyDescription.ComponentId);
         if (targetComponent == null)
@@ -1346,13 +1325,13 @@ public class EffectApplicationSystem :
                 {
                     var activeEffect = activeEffects[index];
 
-                    Apply(activeEffect.AppliedAmount.Value != 0, activeEffect.CombinationFunction,
+                    Apply(activeEffect.AppliedAmount!.Value != 0, activeEffect.CombinationFunction,
                         ref newValue, ref runningSum, ref summandCount);
                 }
             }
             else if (effect?.Entity?.Effect?.AffectedEntityId != null)
             {
-                Apply(effect.AppliedAmount.Value != 0, effect.CombinationFunction,
+                Apply(effect.AppliedAmount!.Value != 0, effect.CombinationFunction,
                     ref newValue, ref runningSum, ref summandCount);
             }
 
@@ -1361,7 +1340,7 @@ public class EffectApplicationSystem :
         else
         {
             newValue = propertyDescription.GetValue(targetComponent);
-            Apply(effect.AppliedAmount.Value != 0, effect.CombinationFunction, ref newValue, ref runningSum,
+            Apply(effect!.AppliedAmount!.Value != 0, effect.CombinationFunction, ref newValue, ref runningSum,
                 ref summandCount);
             propertyDescription.SetValue(newValue, targetComponent);
         }
@@ -1477,20 +1456,20 @@ public class EffectApplicationSystem :
         summandCount = 1;
     }
 
-    private List<EffectComponent> GetSortedAppliedEffects(GameEntity targetEntity,
-        PropertyDescription propertyDescription, EffectComponent effect)
+    private List<EffectComponent>? GetSortedAppliedEffects(GameEntity targetEntity,
+        PropertyDescription propertyDescription, EffectComponent? effect)
     {
-        List<EffectComponent> activeEffects = null;
+        List<EffectComponent>? activeEffects = null;
         var appliedEffects = targetEntity.Physical?.AppliedEffects
                              ?? targetEntity.Item?.AppliedEffects
                              ?? targetEntity.Sensor?.AppliedEffects
-                             ?? targetEntity.Being.AppliedEffects;
+                             ?? targetEntity.Being!.AppliedEffects;
         foreach (var otherEffectEntity in appliedEffects)
         {
-            var otherEffect = otherEffectEntity.Effect;
+            var otherEffect = otherEffectEntity.Effect!;
             if (otherEffect != effect
                 && otherEffect.EffectType == EffectType.ChangeProperty
-                && otherEffect.TargetName.Equals(propertyDescription.Name))
+                && otherEffect.TargetName!.Equals(propertyDescription.Name))
             {
                 activeEffects = new List<EffectComponent> { otherEffect };
             }
@@ -1553,8 +1532,18 @@ public class EffectApplicationSystem :
         {
         }
 
-        public int Compare(EffectComponent x, EffectComponent y)
+        public int Compare(EffectComponent? x, EffectComponent? y)
         {
+            if (x == null)
+            {
+                return y == null ? 0 : - 1;
+            }
+
+            if (y == null)
+            {
+                return 1;
+            }
+
             var xAbility = x.SourceAbility?.Ability;
             var yAbility = y.SourceAbility?.Ability;
 

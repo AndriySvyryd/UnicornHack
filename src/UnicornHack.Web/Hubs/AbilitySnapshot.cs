@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Microsoft.EntityFrameworkCore;
-using UnicornHack.Primitives;
+﻿using Microsoft.EntityFrameworkCore;
 using UnicornHack.Services;
 using UnicornHack.Systems.Abilities;
 
@@ -9,37 +6,37 @@ namespace UnicornHack.Hubs;
 
 public static class AbilitySnapshot
 {
-    public static List<object> Serialize(GameEntity abilityEntity, EntityState? state, SerializationContext context)
+    public static List<object?>? Serialize(GameEntity abilityEntity, EntityState? state, SerializationContext context)
     {
-        List<object> properties;
+        List<object?> properties;
         switch (state)
         {
             case null:
             case EntityState.Added:
             {
-                var ability = abilityEntity.Ability;
+                var ability = abilityEntity.Ability!;
 
                 properties = state == null
-                    ? new List<object>(6)
-                    : new List<object>(7) { (int)state };
+                    ? new List<object?>(6)
+                    : new List<object?>(7) { (int)state };
 
                 properties.Add(abilityEntity.Id);
                 properties.Add(context.Services.Language.GetString(ability));
-                properties.Add(abilityEntity.Ability.Activation);
-                properties.Add(abilityEntity.Ability.Slot);
-                properties.Add(abilityEntity.Ability.CooldownTick);
-                properties.Add(abilityEntity.Ability.CooldownXpLeft);
-                properties.Add(abilityEntity.Ability.TargetingShape);
-                properties.Add(abilityEntity.Ability.TargetingShapeSize);
+                properties.Add(ability.Activation);
+                properties.Add(ability.Slot);
+                properties.Add(ability.CooldownTick);
+                properties.Add(ability.CooldownXpLeft);
+                properties.Add(ability.TargetingShape);
+                properties.Add(ability.TargetingShapeSize);
 
                 return properties;
             }
             case EntityState.Deleted:
-                return new List<object> { (int)state, abilityEntity.Id };
+                return new List<object?> { (int)state, abilityEntity.Id };
             default:
             {
-                var ability = abilityEntity.Ability;
-                properties = new List<object> { (int)state, abilityEntity.Id };
+                var ability = abilityEntity.Ability!;
+                properties = new List<object?> { (int)state, abilityEntity.Id };
                 var abilityEntry = context.DbContext.Entry(ability);
                 var i = 1;
                 var name = abilityEntry.Property(nameof(AbilityComponent.Name));
@@ -54,7 +51,7 @@ public static class AbilitySnapshot
                 if (activation.IsModified)
                 {
                     properties.Add(i);
-                    properties.Add(abilityEntity.Ability.Activation);
+                    properties.Add(ability.Activation);
                 }
 
                 i++;
@@ -62,7 +59,7 @@ public static class AbilitySnapshot
                 if (slot.IsModified)
                 {
                     properties.Add(i);
-                    properties.Add(abilityEntity.Ability.Slot);
+                    properties.Add(ability.Slot);
                 }
 
                 i++;
@@ -70,7 +67,7 @@ public static class AbilitySnapshot
                 if (cooldownTick.IsModified)
                 {
                     properties.Add(i);
-                    properties.Add(abilityEntity.Ability.CooldownTick);
+                    properties.Add(ability.CooldownTick);
                 }
 
                 i++;
@@ -78,7 +75,7 @@ public static class AbilitySnapshot
                 if (cooldownXpLeft.IsModified)
                 {
                     properties.Add(i);
-                    properties.Add(abilityEntity.Ability.CooldownXpLeft);
+                    properties.Add(ability.CooldownXpLeft);
                 }
 
                 i++;
@@ -86,7 +83,7 @@ public static class AbilitySnapshot
                 if (targetingShape.IsModified)
                 {
                     properties.Add(i);
-                    properties.Add(abilityEntity.Ability.TargetingShape);
+                    properties.Add(ability.TargetingShape);
                 }
 
                 i++;
@@ -94,7 +91,7 @@ public static class AbilitySnapshot
                 if (targetingType.IsModified)
                 {
                     properties.Add(i);
-                    properties.Add(abilityEntity.Ability.TargetingShapeSize);
+                    properties.Add(ability.TargetingShapeSize);
                 }
 
                 return properties.Count > 2 ? properties : null;
@@ -102,11 +99,11 @@ public static class AbilitySnapshot
         }
     }
 
-    public static List<object> SerializeAttributes(
+    public static List<object?> SerializeAttributes(
         GameEntity abilityEntity, GameEntity activator, SerializationContext context)
     {
         var manager = context.Manager;
-        var ability = abilityEntity.Ability;
+        var ability = abilityEntity.Ability!;
 
         var activateMessage = ActivateAbilityMessage.Create(manager);
         activateMessage.AbilityEntity = abilityEntity;
@@ -116,7 +113,7 @@ public static class AbilitySnapshot
         var stats = manager.AbilityActivationSystem.GetAttackStats(activateMessage);
         manager.ReturnMessage(activateMessage);
 
-        var result = new List<object>(ability.Template == null ? 21 : 22)
+        var result = new List<object?>(ability.Template == null ? 21 : 22)
         {
             ability.EntityId,
             context.Services.Language.GetString(ability),
@@ -140,7 +137,7 @@ public static class AbilitySnapshot
 
         if (ability.Template != null)
         {
-            result.Add(context.Services.Language.GetDescription(ability.Name, DescriptionCategory.Ability));
+            result.Add(context.Services.Language.GetDescription(ability.Name!, DescriptionCategory.Ability));
             //result.Add(ability.Template.Type);
             //result.Add(ability.Template.Cost);
         }
@@ -148,11 +145,11 @@ public static class AbilitySnapshot
         return result;
     }
 
-    private static List<object> SerializeEffectAttributes(
+    private static List<object?> SerializeEffectAttributes(
         GameEntity effectEntity, GameEntity activator, SerializationContext context)
     {
-        var effect = effectEntity.Effect;
-        return new List<object>(9)
+        var effect = effectEntity.Effect!;
+        return new List<object?>(9)
         {
             effect.EntityId,
             effect.EffectType,
@@ -177,7 +174,7 @@ public static class AbilitySnapshot
         {
             stats.SuccessCondition,
             stats.Accuracy,
-            stats.Effects.Where(e => e.Effect.EffectType != EffectType.Activate)
+            stats.Effects.Where(e => e.Effect!.EffectType != EffectType.Activate)
                 .Select(e => SerializeEffectAttributes(e, activator, context)).ToList()
         };
 }

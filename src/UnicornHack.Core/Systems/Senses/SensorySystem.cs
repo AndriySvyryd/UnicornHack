@@ -1,9 +1,6 @@
-﻿using System;
-using System.Buffers;
-using System.Collections.Generic;
-using UnicornHack.Primitives;
+﻿using System.Buffers;
+using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Senses;
@@ -30,7 +27,7 @@ public class SensorySystem : IGameSystem<TraveledMessage>, IGameSystem<EntityAdd
 
     public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager manager)
     {
-        ResetVisibility(manager, message.Entity.Sensor);
+        ResetVisibility(manager, message.Entity.Sensor!);
 
         return MessageProcessingResult.ContinueProcessing;
     }
@@ -41,18 +38,18 @@ public class SensorySystem : IGameSystem<TraveledMessage>, IGameSystem<EntityAdd
 
         if (sensor.Entity.HasComponent(EntityComponent.Player))
         {
-            UpdateVisibleTerrain(sensor.Entity.Position.LevelEntity.Level, manager);
+            UpdateVisibleTerrain(sensor.Entity.Position!.LevelEntity.Level!, manager);
         }
     }
 
     public byte GetVisibility(GameEntity sensorEntity, Point p)
-        => GetVisibleTiles(sensorEntity)[sensorEntity.Position.LevelEntity.Level.PointToIndex[p.X, p.Y]];
+        => GetVisibleTiles(sensorEntity)[sensorEntity.Position!.LevelEntity.Level!.PointToIndex![p.X, p.Y]];
 
     public byte[] GetVisibleTiles(GameEntity sensorEntity)
     {
-        var position = sensorEntity.Position;
-        var sensor = sensorEntity.Sensor;
-        var level = position.LevelEntity.Level;
+        var position = sensorEntity.Position!;
+        var sensor = sensorEntity.Sensor!;
+        var level = position.LevelEntity.Level!;
 
         var tileCount = level.TileCount;
         if (sensor.VisibleTerrain == null
@@ -76,9 +73,9 @@ public class SensorySystem : IGameSystem<TraveledMessage>, IGameSystem<EntityAdd
 
         Array.Clear(sensor.VisibleTerrain, 0, tileCount);
 
-        level.VisibilityCalculator.ComputeDirected(
+        level.VisibilityCalculator!.ComputeDirected(
             position.LevelCell,
-            position.Heading.Value,
+            position.Heading!.Value,
             sensor.PrimaryFOVQuadrants,
             sensor.PrimaryVisionRange,
             sensor.TotalFOVQuadrants,
@@ -93,7 +90,7 @@ public class SensorySystem : IGameSystem<TraveledMessage>, IGameSystem<EntityAdd
     }
 
     public IReadOnlyList<(Point, byte)> GetLOS(Point origin, Point target, LevelComponent level)
-        => level.VisibilityCalculator.ComputeLOS(
+        => level.VisibilityCalculator!.ComputeLOS(
             origin,
             target,
             TileBlocksVisibility,
@@ -104,7 +101,7 @@ public class SensorySystem : IGameSystem<TraveledMessage>, IGameSystem<EntityAdd
         Vector targetVector,
         int range,
         LevelComponent level)
-        => level.VisibilityCalculator.ComputeLOS(
+        => level.VisibilityCalculator!.ComputeLOS(
             origin,
             targetVector,
             range,
@@ -115,7 +112,7 @@ public class SensorySystem : IGameSystem<TraveledMessage>, IGameSystem<EntityAdd
     {
         if (x < level.Width && y < level.Height)
         {
-            var index = level.PointToIndex[x, y];
+            var index = level.PointToIndex![x, y];
             var blocking = false;
             switch ((MapFeature)level.Terrain[index])
             {
@@ -141,7 +138,7 @@ public class SensorySystem : IGameSystem<TraveledMessage>, IGameSystem<EntityAdd
         var tilesExplored = 0;
         foreach (var playerEntity in manager.Players)
         {
-            if (playerEntity.Position.LevelId != level.EntityId)
+            if (playerEntity.Position!.LevelId != level.EntityId)
             {
                 continue;
             }
@@ -177,8 +174,8 @@ public class SensorySystem : IGameSystem<TraveledMessage>, IGameSystem<EntityAdd
         }
 
         var manager = target.Manager;
-        var level = manager.ItemMovingSystem.GetTopContainer(target, manager).Position.LevelEntity.Level;
-        if (level.VisibleTerrain[level.PointToIndex[targetPosition.X, targetPosition.Y]] != 0)
+        var level = manager.ItemMovingSystem.GetTopContainer(target, manager).Position!.LevelEntity.Level!;
+        if (level.VisibleTerrain[level.PointToIndex![targetPosition.X, targetPosition.Y]] != 0)
         {
             sensed |= SenseType.Sight;
         }
@@ -189,11 +186,6 @@ public class SensorySystem : IGameSystem<TraveledMessage>, IGameSystem<EntityAdd
     public SenseType? CanSense(GameEntity sensor, GameEntity target)
     {
         var sense = SenseType.None;
-        if (target == null)
-        {
-            return sense;
-        }
-
         var manager = sensor.Manager;
         target = manager.ItemMovingSystem.GetTopContainer(target, manager);
         if (target.Position == null

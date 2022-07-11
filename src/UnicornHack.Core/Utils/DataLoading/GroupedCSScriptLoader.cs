@@ -1,59 +1,47 @@
-using System;
-using System.Collections.Generic;
-
 namespace UnicornHack.Utils.DataLoading;
 
 public class GroupedCSScriptLoader<TKey, T> : CSScriptLoaderBase<T> where T : class, ILoadable
+    where TKey : notnull
 {
-    private Dictionary<TKey, List<T>> _objects;
+    private Dictionary<TKey, List<T>>? _objects;
+    protected Dictionary<TKey, List<T>> Objects => _objects ??= Group();
     private readonly Func<T, IEnumerable<TKey>> _keySelector;
 
-    public GroupedCSScriptLoader(string relativePath, Func<T, TKey> keySelector, Type dataType = null)
+    public GroupedCSScriptLoader(string relativePath, Func<T, TKey> keySelector, Type dataType)
         : base(relativePath, dataType)
     {
         _keySelector = i => Sequence.Single(keySelector(i));
     }
 
-    public GroupedCSScriptLoader(string relativePath, Func<T, IEnumerable<TKey>> keySelector, Type dataType = null)
+    public GroupedCSScriptLoader(string relativePath, Func<T, IEnumerable<TKey>> keySelector, Type dataType)
         : base(relativePath, dataType)
     {
         _keySelector = keySelector;
     }
 
-    protected override void EnsureLoaded()
+    protected Dictionary<TKey, List<T>> Group()
     {
-        base.EnsureLoaded();
-
-        if (_objects == null)
+        var objects = new Dictionary<TKey, List<T>>();
+        foreach (var value in NameLookup.Values)
         {
-            var objects = new Dictionary<TKey, List<T>>();
-            foreach (var value in NameLookup.Values)
+            foreach (var key in _keySelector(value))
             {
-                foreach (var key in _keySelector(value))
+                if (!objects.TryGetValue(key, out var list))
                 {
-                    if (!objects.TryGetValue(key, out var list))
-                    {
-                        list = new List<T>();
-                        objects[key] = list;
-                    }
-
-                    list.Add(value);
+                    list = new List<T>();
+                    objects[key] = list;
                 }
-            }
 
-            _objects = objects;
+                list.Add(value);
+            }
         }
+
+        return objects;
     }
 
     public IReadOnlyList<T> GetAllValues(TKey key)
-    {
-        EnsureLoaded();
-        return _objects.TryGetValue(key, out var list) ? list : new List<T>();
-    }
+        => Objects.TryGetValue(key, out var list) ? list : new List<T>();
 
     public IEnumerable<TKey> GetAllKeys()
-    {
-        EnsureLoaded();
-        return _objects.Keys;
-    }
+        => Objects.Keys;
 }

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections;
 
 namespace UnicornHack.Utils.DataStructures;
 
@@ -10,7 +8,7 @@ public abstract class AATree<TKey, TValue> : IEnumerable<(TKey, TValue)> where T
     protected static readonly Node Sentinel = new();
 
     protected Node Root;
-    protected Node Deleted;
+    protected Node? Deleted;
 
     protected AATree()
     {
@@ -27,7 +25,9 @@ public abstract class AATree<TKey, TValue> : IEnumerable<(TKey, TValue)> where T
     public IEnumerable<TResult> GetAll<TResult>(Func<TKey, TValue, TResult> selector) =>
         GetAll(Root, selector, new List<TResult>());
 
-    private IEnumerable<TResult> GetAll<TResult>(Node node, Func<TKey, TValue, TResult> selector,
+    private IEnumerable<TResult> GetAll<TResult>(
+        Node node,
+        Func<TKey, TValue, TResult> selector,
         List<TResult> result)
     {
         while (true)
@@ -83,11 +83,11 @@ public abstract class AATree<TKey, TValue> : IEnumerable<(TKey, TValue)> where T
 
     public abstract (TKey, TValue) GetNextLarger(TKey key);
 
-    public IEnumerable<ValueTuple<TKey, TValue>> GetRange(TKey minKey, TKey maxKey) => GetRange(Root, minKey,
-        maxKey, true, true, (k, v) => (k, v), new List<ValueTuple<TKey, TValue>>());
+    public IEnumerable<ValueTuple<TKey, TValue>> GetRange(TKey minKey, TKey maxKey)
+        => GetRange(Root, minKey, maxKey, true, true, (k, v) => (k, v), new List<ValueTuple<TKey, TValue>>());
 
-    public IEnumerable<TResult> GetRange<TResult>(TKey minKey, TKey maxKey, Func<TKey, TValue, TResult> selector) =>
-        GetRange(Root, minKey, maxKey, true, true, selector, new List<TResult>());
+    public IEnumerable<TResult> GetRange<TResult>(TKey minKey, TKey maxKey, Func<TKey, TValue, TResult> selector)
+        => GetRange(Root, minKey, maxKey, true, true, selector, new List<TResult>());
 
     protected IEnumerable<TResult> GetRange<TResult>(Node node, TKey minKey, TKey maxKey, bool compareMin,
         bool compareMax, Func<TKey, TValue, TResult> selector, List<TResult> result)
@@ -215,6 +215,8 @@ public abstract class AATree<TKey, TValue> : IEnumerable<(TKey, TValue)> where T
             Level = 0;
             Left = this;
             Right = this;
+            Key = default!;
+            Value = default!;
         }
 
         public Node(TKey key, TValue value, Node sentinel)

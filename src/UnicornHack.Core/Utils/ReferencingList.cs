@@ -1,10 +1,9 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 
 namespace UnicornHack.Utils;
 
 public class ReferencingList<T> : IList<T>, IReadOnlyList<T>
-    where T : IOwnerReferenceable
+    where T : IReferenceable
 {
     private readonly List<T> _list;
 

@@ -1,26 +1,23 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
-using UnicornHack.Utils.MessagingECS;
+﻿using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Items;
 
 [Component(Id = (int)EntityComponent.Item)]
 public class ItemComponent : GameComponent
 {
-    private GameEntity _containerEntity;
+    private GameEntity? _containerEntity;
     private int? _containerId;
     private ItemType _type;
-    private string _templateName;
-    private string _name;
+    private string? _templateName;
+    private string? _name;
     private SizeCategory _equipableSizes;
     private EquipmentSlot _equipableSlots;
     private EquipmentSlot _equippedSlot;
     private int _maxStackSize;
     private int? _count;
-    private IReadOnlyCollection<GameEntity> _abilities;
-    private IReadOnlyCollection<GameEntity> _appliedEffects;
-    private IReadOnlyCollection<GameEntity> _items;
+    private IReadOnlyCollection<GameEntity>? _abilities;
+    private IReadOnlyCollection<GameEntity>? _appliedEffects;
+    private IReadOnlyCollection<GameEntity>? _items;
 
     public ItemComponent()
     {
@@ -45,11 +42,11 @@ public class ItemComponent : GameComponent
 
     public string TemplateName
     {
-        get => _templateName;
+        get => _templateName!;
         set => SetWithNotify(value, ref _templateName);
     }
 
-    public string Name
+    public string? Name
     {
         get => _name;
         set => SetWithNotify(value, ref _name);
@@ -85,7 +82,7 @@ public class ItemComponent : GameComponent
         set => SetWithNotify(value, ref _count);
     }
 
-    public GameEntity ContainerEntity
+    public GameEntity? ContainerEntity
     {
         get => _containerEntity ??= Entity.Manager.FindEntity(_containerId);
         set
@@ -180,7 +177,7 @@ public class ItemComponent : GameComponent
     public int GetQuantity()
         => Count ?? ((Entity.Physical?.Capacity ?? 0) == 0
             ? 1
-            : Entity.Physical.Items.Count + 1);
+            : Entity.Physical!.Items.Count + 1);
 
     protected override void Clean()
     {

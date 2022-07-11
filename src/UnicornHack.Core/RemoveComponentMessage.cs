@@ -15,11 +15,11 @@ public class RemoveComponentMessage : IMessage
         manager.Enqueue(message, lowPriority: true);
     }
 
-    private GameEntity _entity;
+    private GameEntity? _entity;
 
     public GameEntity Entity
     {
-        get => _entity;
+        get => _entity!;
         set
         {
             _entity?.RemoveReference(this);
@@ -38,11 +38,11 @@ public class RemoveComponentMessage : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
     public void Clean()
     {
-        Entity = default;
+        Entity = default!;
         Component = default;
     }
 }

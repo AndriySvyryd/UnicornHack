@@ -1,8 +1,5 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using Microsoft.Extensions.Caching.Memory;
-using UnicornHack.Primitives;
 
 namespace UnicornHack.Utils.DataStructures;
 
@@ -81,13 +78,13 @@ public readonly struct Rectangle : IEnumerable<Point>, IEquatable<Rectangle>
 
     public bool Contains(Dimensions d) => Dimensions.Contains(d);
 
-    public byte DistanceTo(Rectangle r) =>
-        Math.Max(XProjection.DistanceTo(r.XProjection), YProjection.DistanceTo(YProjection));
+    public byte DistanceTo(Rectangle r)
+        => Math.Max(XProjection.DistanceTo(r.XProjection), YProjection.DistanceTo(YProjection));
 
     public byte DistanceTo(Point p) => Math.Max(XProjection.DistanceTo(p.X), YProjection.DistanceTo(p.Y));
 
-    public byte OrthogonalDistanceTo(Rectangle r) =>
-        (byte)(XProjection.DistanceTo(r.XProjection) + YProjection.DistanceTo(r.YProjection));
+    public byte OrthogonalDistanceTo(Rectangle r)
+        => (byte)(XProjection.DistanceTo(r.XProjection) + YProjection.DistanceTo(r.YProjection));
 
     public byte OrthogonalDistanceTo(Point p) => (byte)(XProjection.DistanceTo(p.X) + YProjection.DistanceTo(p.Y));
 
@@ -134,6 +131,7 @@ public readonly struct Rectangle : IEnumerable<Point>, IEquatable<Rectangle>
                     {
                         if (currentY == BottomRight.Y)
                         {
+                            // 1-height rectangle
                             yield return new Point(currentX, currentY);
                             yield break;
                         }
@@ -237,7 +235,7 @@ public readonly struct Rectangle : IEnumerable<Point>, IEquatable<Rectangle>
     public bool Equals(Rectangle other)
         => TopLeft.Equals(other.TopLeft) && BottomRight.Equals(other.BottomRight);
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
         => obj is Rectangle other && Equals(other);
 
     public override int GetHashCode()

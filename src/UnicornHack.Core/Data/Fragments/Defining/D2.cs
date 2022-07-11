@@ -1,5 +1,3 @@
-using UnicornHack.Generation.Map;
-
 namespace UnicornHack.Data.Fragments;
 
 public static partial class DefiningMapFragmentData

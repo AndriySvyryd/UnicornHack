@@ -1,19 +1,15 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using UnicornHack.Utils.Caching;
-using UnicornHack.Utils.DataStructures;
+﻿using UnicornHack.Utils.Caching;
 
 namespace UnicornHack.Utils.MessagingECS;
 
 public abstract class EntityManager<TEntity> : IEntityManager
     where TEntity : Entity, new()
 {
-    private readonly DictionaryAdapter<int, TEntity> _entities = new(new Dictionary<int, TEntity>(), e => e.Id);
+    private readonly SnapshotableDictionary<int, TEntity> _entities = new(new Dictionary<int, TEntity>(), e => e.Id);
 
-    private readonly List<EntityGroup<TEntity>>[] _groupsByComponentId;
+    private readonly List<EntityGroup<TEntity>>?[] _groupsByComponentId;
     private readonly ListObjectPool<TEntity> _entityPool;
-    private readonly IObjectPool[] _componentPools;
+    private readonly IObjectPool?[] _componentPools;
 
     protected EntityManager(int componentCount, int entityPoolSize)
     {
@@ -23,7 +19,9 @@ public abstract class EntityManager<TEntity> : IEntityManager
             new ListObjectPool<TEntity>(() => new TEntity(), entityPoolSize, entityPoolSize, entityPoolSize);
         _componentPools = new IObjectPool[ComponentCount];
 
-        _groupsByComponentId = new List<EntityGroup<TEntity>>[ComponentCount];
+        _groupsByComponentId = new List<EntityGroup<TEntity>>?[ComponentCount];
+
+        Queue = null!;
     }
 
     public int ComponentCount
@@ -84,7 +82,7 @@ public abstract class EntityManager<TEntity> : IEntityManager
 
     ITransientReference<Entity> IEntityManager.CreateEntity() => CreateEntity();
 
-    public OwnerTransientReference<TEntity, EntityManager<TEntity>> CreateEntity()
+    public TransientReference<TEntity, EntityManager<TEntity>> CreateEntity()
         => new(CreateEntityNoReference(), this);
 
     protected virtual TEntity CreateEntityNoReference()
@@ -119,13 +117,13 @@ public abstract class EntityManager<TEntity> : IEntityManager
 
     public IEnumerable<TEntity> GetEntities() => _entities;
 
-    public TEntity FindEntity(int id) => _entities.Dictionary.TryGetValue(id, out var entity) ? entity : null;
-    public virtual Entity LoadEntity(int id) => null;
+    public TEntity? FindEntity(int id) => _entities.Dictionary.TryGetValue(id, out var entity) ? entity : null;
+    public virtual Entity? LoadEntity(int id) => null;
 
-    Entity IEntityManager.FindEntity(int id) => FindEntity(id);
+    Entity? IEntityManager.FindEntity(int id) => FindEntity(id);
 
     public TComponent CreateComponent<TComponent>(int componentId)
-        where TComponent : Component, new() => ((ListObjectPool<TComponent>)_componentPools[componentId]).Rent();
+        where TComponent : Component, new() => ((ListObjectPool<TComponent>)_componentPools[componentId]!).Rent();
 
     public void OnComponentAdded(Component component)
         => OnComponentAddedOrRemoved(component, removed: false);
@@ -135,7 +133,7 @@ public abstract class EntityManager<TEntity> : IEntityManager
 
     private void OnComponentAddedOrRemoved(Component component, bool removed)
     {
-        var entity = (TEntity)component.Entity;
+        var entity = (TEntity)component.Entity!;
         var groups = _groupsByComponentId[component.ComponentId];
         if (groups != null)
         {
@@ -152,7 +150,7 @@ public abstract class EntityManager<TEntity> : IEntityManager
         var groups = _groupsByComponentId[componentId];
         if (groups != null)
         {
-            var entityChange = new EntityChange<TEntity>((TEntity)component.Entity,
+            var entityChange = new EntityChange<TEntity>((TEntity)component.Entity!,
                 IPropertyValueChanges.Create(
                     new PropertyValueChange<T>(component, propertyName, oldValue, newValue)));
             foreach (var group in groups)
@@ -166,7 +164,7 @@ public abstract class EntityManager<TEntity> : IEntityManager
     {
         var entityChange = new EntityChange<TEntity>((TEntity)entity, changes);
         var propertyChanges = entityChange.PropertyChanges;
-        HashSet<string> handledGroups = null;
+        HashSet<string>? handledGroups = null;
         for (var i = 0; i < propertyChanges.Count; i++)
         {
             var groups = _groupsByComponentId[propertyChanges.GetChangedComponent(i).ComponentId];

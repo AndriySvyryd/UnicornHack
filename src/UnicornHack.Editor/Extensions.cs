@@ -1,12 +1,10 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
+﻿using System.Reflection;
 
 namespace UnicornHack.Editor;
 
 public static class Extensions
 {
-    public static bool TryCreateInstance<T>(this Type type, [NotNullWhen(returnValue: true)] out T instance)
+    public static bool TryCreateInstance<T>(this Type type, [NotNullWhen(returnValue: true)] out T? instance)
         where T : class
     {
         try

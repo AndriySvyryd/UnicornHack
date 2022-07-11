@@ -1,17 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Threading.Tasks;
+﻿using System.Security.Cryptography;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.Caching.Memory;
 using UnicornHack.Data;
 using UnicornHack.Data.Items;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
 using UnicornHack.Services;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
@@ -34,9 +27,9 @@ public class GameHub : Hub
     }
 
     public Task SendMessage(string message)
-        => Clients.All.SendAsync("ReceiveMessage", Context.User.Identity.Name, message);
+        => Clients.All.SendAsync("ReceiveMessage", Context.User!.Identity!.Name, message);
 
-    public List<object> GetState(string playerName)
+    public List<object?> GetState(string playerName)
     {
         // TODO: Avoid using a DbContext
         var player = FindPlayer(playerName) ?? CreatePlayer(playerName);
@@ -53,20 +46,20 @@ public class GameHub : Hub
     public Task ShowDialog(string playerName, int intQueryType, int[] arguments)
     {
         var results = (GameQueryType)intQueryType == GameQueryType.Clear
-            ? new List<object> { intQueryType }
+            ? new List<object?> { intQueryType }
             : QueryGame(playerName, intQueryType, arguments);
 
         // TODO: only send to clients watching this player
         return Clients.All.SendAsync("ReceiveUIRequest", results);
     }
 
-    public List<object> QueryGame(string playerName, int intQueryType, int[] arguments)
+    public List<object?> QueryGame(string playerName, int intQueryType, int[] arguments)
     {
         var queryType = (GameQueryType)intQueryType;
-        var result = new List<object> { intQueryType };
+        var result = new List<object?> { intQueryType };
 
         var player = FindPlayer(playerName);
-        if (player?.Entity.Being.IsAlive != true)
+        if (player?.Entity.Being!.IsAlive != true)
         {
             return result;
         }
@@ -78,13 +71,13 @@ public class GameHub : Hub
             case GameQueryType.SlottableAbilities:
                 var slot = arguments[0];
                 result.Add(slot);
-                var abilities = new List<object>();
+                var abilities = new List<object?>();
                 result.Add(abilities);
 
                 foreach (var slottableAbilityEntity in manager.AbilitiesToAffectableRelationship.GetDependents(
                              player.Entity))
                 {
-                    var ability = slottableAbilityEntity.Ability;
+                    var ability = slottableAbilityEntity.Ability!;
                     if (!ability.IsUsable)
                     {
                         continue;
@@ -93,7 +86,7 @@ public class GameHub : Hub
                     if (slot == AbilitySlottingSystem.DefaultMeleeAttackSlot)
                     {
                         if (ability.Type == AbilityType.DefaultAttack
-                            && ((WieldingAbility)ability.Template).ItemType == ItemType.WeaponMelee)
+                            && ((WieldingAbility)ability.Template!).ItemType == ItemType.WeaponMelee)
                         {
                             abilities.Add(AbilitySnapshot.Serialize(slottableAbilityEntity, null, context));
                         }
@@ -101,7 +94,7 @@ public class GameHub : Hub
                     else if (slot == AbilitySlottingSystem.DefaultRangedAttackSlot)
                     {
                         if (ability.Type == AbilityType.DefaultAttack
-                            && ((WieldingAbility)ability.Template).ItemType == ItemType.WeaponRanged)
+                            && ((WieldingAbility)ability.Template!).ItemType == ItemType.WeaponRanged)
                         {
                             abilities.Add(AbilitySnapshot.Serialize(slottableAbilityEntity, null, context));
                         }
@@ -151,11 +144,11 @@ public class GameHub : Hub
 
                 break;
             case GameQueryType.AbilityAttributes:
-                var abilityEntity = manager.FindEntity(arguments[0]);
+                var abilityEntity = manager.FindEntity(arguments[0])!;
 
-                var ownerEntity = abilityEntity.Ability.OwnerEntity;
-                var activatorEntity = abilityEntity.Ability.OwnerEntity.HasComponent(EntityComponent.Item)
-                    ? player.Entity
+                var ownerEntity = abilityEntity.Ability!.OwnerEntity!;
+                var activatorEntity = abilityEntity.Ability!.OwnerEntity!.HasComponent(EntityComponent.Item)
+                    ? player.Entity!
                     : ownerEntity;
 
                 result.Add(AbilitySnapshot.SerializeAttributes(abilityEntity, activatorEntity, context));
@@ -218,7 +211,7 @@ public class GameHub : Hub
             // TODO: only send to clients watching this player
             await Clients.All.SendAsync("ReceiveState", serializedPlayer).ConfigureAwait(false);
 
-            if (!playerEntity.Being.IsAlive)
+            if (!playerEntity.Being!.IsAlive)
             {
                 var results = new List<object> { GameQueryType.PostGameStatistics, new List<object>() };
 
@@ -237,7 +230,7 @@ public class GameHub : Hub
         var manager = currentPlayer.Game.Manager;
         foreach (var levelEntity in manager.Levels)
         {
-            var level = levelEntity.Level;
+            var level = levelEntity.Level!;
             if (level.TerrainChanges != null)
             {
                 level.TerrainChanges.Clear();
@@ -282,7 +275,7 @@ public class GameHub : Hub
         _dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
         foreach (var levelEntity in manager.Levels)
         {
-            var level = levelEntity.Level;
+            var level = levelEntity.Level!;
 
             var levelEntry = _dbContext.Entry(level);
             if (levelEntry.State == EntityState.Added
@@ -366,17 +359,17 @@ public class GameHub : Hub
         _dbContext.SaveChanges();
 
         var manager = game.Manager;
-        var surfaceBranch = Branch.Loader.Find("surface").Instantiate(game);
+        var surfaceBranch = Branch.Loader.Find("surface")!.Instantiate(game);
         var surfaceLevel = LevelGenerator.CreateEmpty(surfaceBranch, depth: 1, seed, manager);
         LevelGenerator.EnsureGenerated(surfaceLevel);
 
-        var initialLevelConnection = surfaceLevel.Connections.Single().Value.Connection;
+        var initialLevelConnection = surfaceLevel.Connections.Single().Value.Connection!;
         var initialLevelEntity = initialLevelConnection.TargetLevelEntity;
-        LevelGenerator.EnsureGenerated(initialLevelEntity.Level);
+        LevelGenerator.EnsureGenerated(initialLevelEntity.Level!);
 
         // TODO: Set correct sex
         var playerEntity = PlayerRace.InstantiatePlayer(
-            name, Sex.Male, initialLevelEntity.Level, initialLevelConnection.TargetLevelCell.Value);
+            name, Sex.Male, initialLevelEntity.Level!, initialLevelConnection.TargetLevelCell!.Value);
 
         manager.Queue.ProcessQueue(manager);
 
@@ -397,16 +390,16 @@ public class GameHub : Hub
         manager.LoggingSystem.WriteLog(game.Services.Language.Welcome(playerEntity), playerEntity, manager);
 
         manager.Queue.ProcessQueue(manager);
-        Turn(playerEntity.Player);
+        Turn(playerEntity.Player!);
         _dbContext.ChangeTracker.AcceptAllChanges();
 
         _gameServices.SharedCache.Set(game, game,
             new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
 
-        return playerEntity.Player;
+        return playerEntity.Player!;
     }
 
-    private PlayerComponent FindPlayer(string name)
+    private PlayerComponent? FindPlayer(string name)
     {
         var loadedGame = _dbContext.PlayerComponents.Where(playerComponent => playerComponent.ProperName == name)
             .Join(_dbContext.Games,
@@ -446,7 +439,7 @@ public class GameHub : Hub
         }
 
         // TODO: Preserve old games
-        if (!_dbContext.PlayerComponents.Local.Any(pc => pc.Entity.Being.IsAlive))
+        if (!_dbContext.PlayerComponents.Local.Any(pc => pc.Entity.Being!.IsAlive))
         {
             _dbContext.Clean(loadedGame);
             _dbContext.ChangeTracker.Tracked -= OnTracked;
@@ -464,7 +457,7 @@ public class GameHub : Hub
     {
         game.Services = _gameServices;
         game.Repository = _dbContext;
-        if (game.Manager == null)
+        if (game.Manager == null!)
         {
             var queue = new SequentialMessageQueue<GameManager>();
             var gameManager = new GameManager { Game = game };
@@ -483,13 +476,13 @@ public class GameHub : Hub
         _dbContext.ChangeTracker.StateChanged += OnStateChanged;
     }
 
-    private void OnTracked(object sender, EntityTrackedEventArgs args)
+    private void OnTracked(object? sender, EntityTrackedEventArgs args)
     {
         var entry = args.Entry;
         if (entry.State == EntityState.Added
             && entry.Entity is ITrackable trackable)
         {
-            trackable.StartTracking(sender);
+            trackable.StartTracking(sender!);
         }
 
         if (args.FromQuery
@@ -499,11 +492,11 @@ public class GameHub : Hub
         }
     }
 
-    private void OnStateChanged(object sender, EntityStateChangedEventArgs args)
+    private void OnStateChanged(object? sender, EntityStateChangedEventArgs args)
     {
         if (args.NewState == EntityState.Detached && args.Entry.Entity is ITrackable trackable)
         {
-            trackable.StopTracking(sender);
+            trackable.StopTracking(sender!);
         }
     }
 }

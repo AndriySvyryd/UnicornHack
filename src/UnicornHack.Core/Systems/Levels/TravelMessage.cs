@@ -1,6 +1,4 @@
-﻿using UnicornHack.Primitives;
-using UnicornHack.Utils.DataStructures;
-using UnicornHack.Utils.MessagingECS;
+﻿using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Levels;
 
@@ -11,11 +9,11 @@ public class TravelMessage : IMessage
     public static TravelMessage Create(GameManager manager)
         => manager.Queue.CreateMessage<TravelMessage>(Name);
 
-    private GameEntity _entity;
+    private GameEntity? _entity;
 
     public GameEntity ActorEntity
     {
-        get => _entity;
+        get => _entity!;
         set
         {
             _entity?.RemoveReference(this);
@@ -46,11 +44,11 @@ public class TravelMessage : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
     public void Clean()
     {
-        ActorEntity = default;
+        ActorEntity = default!;
         TargetHeading = default;
         TargetCell = default;
         MoveOffConflicting = default;

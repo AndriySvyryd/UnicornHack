@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using UnicornHack.Generation.Map;
-using UnicornHack.Systems.Levels;
+﻿using UnicornHack.Systems.Levels;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Generation;

@@ -1,7 +1,4 @@
-using System.Collections.Generic;
-using System.Linq;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Generation.Map;
 
@@ -15,8 +12,8 @@ public class Room
     public Room(
         LevelComponent level,
         Rectangle boundingRectangle,
-        IReadOnlyList<Point> doorwayPoints,
-        IReadOnlyList<Point> insidePoints,
+        IReadOnlyList<Point>? doorwayPoints,
+        IReadOnlyList<Point>? insidePoints,
         IReadOnlyList<(Point, char)> predefinedPoints,
         MapFragment fragment)
     {
@@ -67,10 +64,10 @@ public class Room
         get;
     }
 
-    public Room GetClosest(IEnumerable<Room> rooms)
+    public Room? GetClosest(IEnumerable<Room> rooms)
     {
-        Room closest = null;
-        var distance = 0;
+        Room? closest = null;
+        var distance = int.MaxValue;
         foreach (var room in rooms)
         {
             var nextDistance = BoundingRectangle.DistanceTo(room.BoundingRectangle);
@@ -84,9 +81,9 @@ public class Room
         return closest;
     }
 
-    public Room GetOrthogonallyClosest(IEnumerable<Room> rooms)
+    public Room? GetOrthogonallyClosest(IEnumerable<Room> rooms)
     {
-        Room closest = null;
+        Room? closest = null;
         var distance = int.MaxValue;
         foreach (var room in rooms)
         {

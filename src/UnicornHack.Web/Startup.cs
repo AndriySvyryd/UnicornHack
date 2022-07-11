@@ -1,11 +1,6 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using UnicornHack.Data;
 using UnicornHack.Hubs;
 using UnicornHack.Services;
@@ -79,14 +74,10 @@ public class Startup
             app.UseDeveloperExceptionPage();
             app.UseMigrationsEndPoint();
 
-            using (var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>()
-                       .CreateScope())
-            {
-                using (var context = serviceScope.ServiceProvider.GetService<GameDbContext>())
-                {
-                    new DatabaseCleaner().Clean(context.Database);
-                }
-            }
+            using var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>()
+                .CreateScope();
+            using var context = serviceScope.ServiceProvider.GetService<GameDbContext>()!;
+            new DatabaseCleaner().Clean(context.Database);
         }
         else
         {

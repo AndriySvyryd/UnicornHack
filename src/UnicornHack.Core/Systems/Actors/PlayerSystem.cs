@@ -1,12 +1,8 @@
-﻿using System;
-using System.Diagnostics;
-using UnicornHack.Primitives;
-using UnicornHack.Systems.Abilities;
+﻿using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
-using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Actors;
@@ -31,9 +27,9 @@ public class PlayerSystem :
     private bool ProcessTurn(PerformActionMessage message, GameManager manager)
     {
         var playerEntity = message.Actor;
-        var player = playerEntity.Player;
+        var player = playerEntity.Player!;
 
-        Debug.Assert(playerEntity.Being.IsAlive);
+        Debug.Assert(playerEntity.Being!.IsAlive);
 
         // TODO: add an option to stop here and display current state while performing multi-action commands (every x actions)
 
@@ -61,7 +57,7 @@ public class PlayerSystem :
 
         ResetNextAction(player);
 
-        var position = playerEntity.Position;
+        var position = playerEntity.Position!;
         switch (action)
         {
             case ActorAction.Wait:
@@ -69,7 +65,7 @@ public class PlayerSystem :
                 break;
             case ActorAction.ChangeHeading:
             case ActorAction.MoveOneCell:
-                var moveDirection = (Direction)target.Value;
+                var moveDirection = (Direction)target!.Value;
                 switch (moveDirection)
                 {
                     case Direction.Down:
@@ -85,34 +81,28 @@ public class PlayerSystem :
 
                 break;
             case ActorAction.MoveToCell:
-                var targetCell = Point.Unpack(target).Value;
+                var targetCell = Point.Unpack(target)!.Value;
 
                 if (position.LevelCell.DistanceTo(targetCell) == 1)
                 {
                     return Move(position.LevelCell.DifferenceTo(targetCell).AsDirection(), playerEntity, manager);
                 }
-                else
-                {
-                    if (!Move(targetCell, playerEntity, manager))
-                    {
-                        return false;
-                    }
 
-                    if (position.LevelCell != targetCell)
-                    {
-                        player.NextAction = ActorAction.MoveToCell;
-                        player.NextActionTarget = target;
-                        player.QueuedAction = true;
-                    }
+                if (!Move(targetCell, playerEntity, manager))
+                {
+                    return false;
+                }
+
+                if (position.LevelCell != targetCell)
+                {
+                    player.NextAction = ActorAction.MoveToCell;
+                    player.NextActionTarget = target;
+                    player.QueuedAction = true;
                 }
 
                 break;
             case ActorAction.DropItem:
-                var itemToDrop = GetItem(target.Value, playerEntity, manager);
-                if (itemToDrop == null)
-                {
-                    return false;
-                }
+                var itemToDrop = GetItem(target!.Value, playerEntity, manager);
 
                 var dropMessage = MoveItemMessage.Create(manager);
                 dropMessage.ItemEntity = itemToDrop;
@@ -122,8 +112,8 @@ public class PlayerSystem :
                 manager.Enqueue(dropMessage);
                 break;
             case ActorAction.EquipItem:
-                var itemToEquip = GetItem(target.Value, playerEntity, manager);
-                var slot = (EquipmentSlot)target2.Value;
+                var itemToEquip = GetItem(target!.Value, playerEntity, manager);
+                var slot = (EquipmentSlot)target2!.Value;
                 if (itemToEquip == null)
                 {
                     return false;
@@ -138,11 +128,7 @@ public class PlayerSystem :
                 manager.Enqueue(equipMessage);
                 break;
             case ActorAction.UnequipItem:
-                var itemToUnequip = GetItem(target.Value, playerEntity, manager);
-                if (itemToUnequip == null)
-                {
-                    return false;
-                }
+                var itemToUnequip = GetItem(target!.Value, playerEntity, manager);
 
                 var unequipMessage = EquipItemMessage.Create(manager);
                 unequipMessage.ActorEntity = playerEntity;
@@ -164,7 +150,7 @@ public class PlayerSystem :
                 break;
             default:
                 throw new InvalidOperationException(
-                    $"Action {action} on character {playerEntity.Player.ProperName} is invalid.");
+                    $"Action {action} on character {playerEntity.Player!.ProperName} is invalid.");
         }
 
         return true;
@@ -179,11 +165,11 @@ public class PlayerSystem :
     }
 
     protected override bool ActivateAbility(
-        GameEntity abilityEntity, GameEntity actorEntity, Point targetCell, GameEntity targetEntity,
+        GameEntity abilityEntity, GameEntity actorEntity, Point targetCell, GameEntity? targetEntity,
         GameManager manager)
     {
-        var ability = abilityEntity.Ability;
-        var position = actorEntity.Position;
+        var ability = abilityEntity.Ability!;
+        var position = actorEntity.Position!;
         if ((ability.Activation & ActivationType.Manual) == 0)
         {
             // TODO: Also check LOS and move closer if none
@@ -194,7 +180,7 @@ public class PlayerSystem :
                     return false;
                 }
 
-                var player = actorEntity.Player;
+                var player = actorEntity.Player!;
                 player.NextAction = ActorAction.UseAbilitySlot;
                 player.NextActionTarget = ability.Slot;
                 player.NextActionTarget2 = (-targetEntity?.Id) ?? targetCell.ToInt32();
@@ -210,9 +196,9 @@ public class PlayerSystem :
     private bool Move(Point targetCell, GameEntity playerEntity, GameManager manager)
     {
         // TODO: avoid actors and connections
-        var position = playerEntity.Position;
+        var position = playerEntity.Position!;
         var direction = manager.TravelSystem.GetFirstStepFromShortestPath(
-            position.LevelEntity.Level, position.LevelCell, targetCell, position.Heading.Value, knownOnly: true);
+            position.LevelEntity.Level!, position.LevelCell, targetCell, position.Heading!.Value, knownOnly: true);
         if (direction == null)
         {
             manager.LoggingSystem.WriteLog(manager.Game.Services.Language.NoPath(), playerEntity, manager);

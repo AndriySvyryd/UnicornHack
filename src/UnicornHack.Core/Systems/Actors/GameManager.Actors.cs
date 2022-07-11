@@ -1,9 +1,7 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Systems.Abilities;
+﻿using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 // ReSharper disable once CheckNamespace
@@ -15,39 +13,39 @@ public partial class GameManager
     {
         get;
         private set;
-    }
+    } = null!;
 
     public EntityGroup<GameEntity> LevelActors
     {
         get;
         private set;
-    }
+    } = null!;
 
     public LookupEntityRelationship<GameEntity, Point, Dictionary<Point, GameEntity>>
         LevelActorsToLevelCellRelationship
     {
         get;
         private set;
-    }
+    } = null!;
 
     public LookupEntityRelationship<GameEntity, int, Dictionary<int, GameEntity>>
         SlottedAbilitiesToLevelActorsRelationship
     {
         get;
         private set;
-    }
+    } = null!;
 
     public PlayerSystem PlayerSystem
     {
         get;
         private set;
-    }
+    } = null!;
 
     public AISystem AISystem
     {
         get;
         private set;
-    }
+    } = null!;
 
     private void InitializeActors(SequentialMessageQueue<GameManager> queue)
     {
@@ -88,7 +86,7 @@ public partial class GameManager
                     .With(component => ((PositionComponent)component).LevelY, (int)EntityComponent.Position)
             ),
             (actorEntity, _) => actorEntity.RemoveComponent(EntityComponent.Position),
-            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level.Actors);
+            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level!.Actors);
 
         SlottedAbilitiesToLevelActorsRelationship = new(
             nameof(SlottedAbilitiesToLevelActorsRelationship),
@@ -101,7 +99,7 @@ public partial class GameManager
                 component => ((AbilityComponent)component).Slot,
                 (int)EntityComponent.Ability),
             (abilityEntity, _) => abilityEntity.RemoveComponent(EntityComponent.Ability),
-            actorEntity => (Dictionary<int, GameEntity>)actorEntity.Being.SlottedAbilities);
+            actorEntity => (Dictionary<int, GameEntity>)actorEntity.Being!.SlottedAbilities);
 
         AISystem = new AISystem();
         queue.Register<PerformActionMessage>(AISystem, PerformActionMessage.AIName, 0);

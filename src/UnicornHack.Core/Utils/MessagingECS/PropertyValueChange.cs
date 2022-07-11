@@ -32,7 +32,7 @@ public readonly struct PropertyValueChange<T> : IPropertyValueChange
 
     public bool IsEmpty => ChangedComponent == null;
 
-    public static readonly PropertyValueChange<T> Empty = new(null, null, default, default);
+    public static readonly PropertyValueChange<T> Empty = new(null!, null!, default!, default!);
 
     public void EnqueuePropertyValueChangedMessage<TEntity>(string messageName)
         where TEntity : Entity, new()

@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading;
-
-namespace UnicornHack.Utils.MessagingECS;
+﻿namespace UnicornHack.Utils.MessagingECS;
 
 /// <summary>
 ///     Implementation detail of <see cref="SequentialMessageQueue{TState}" />
@@ -14,7 +11,7 @@ public class MessageSpecificQueue<TMessage, TState> : IMessageSpecificQueue<TSta
     private readonly SortedList<int, IMessageConsumer<TMessage, TState>> _consumers = new();
 
     private readonly Queue<TMessage> _queue = new();
-    private TMessage _pooledMessage;
+    private TMessage? _pooledMessage;
 
     public void Add(IMessageConsumer<TMessage, TState> consumer, int order)
         => _consumers.Add(order, consumer);

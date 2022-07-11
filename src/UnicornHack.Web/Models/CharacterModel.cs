@@ -12,5 +12,5 @@ public class CharacterModel
     {
         get;
         set;
-    }
+    } = null!;
 }

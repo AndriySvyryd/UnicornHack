@@ -1,4 +1,3 @@
-using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Effects;
@@ -10,13 +9,13 @@ public class ApplyEffectMessage : IMessage
     public static ApplyEffectMessage Create(GameManager manager)
         => manager.Queue.CreateMessage<ApplyEffectMessage>(Name);
 
-    private GameEntity _activatorEntity;
-    private GameEntity _effectEntity;
-    private GameEntity _targetEntity;
+    private GameEntity? _activatorEntity;
+    private GameEntity? _effectEntity;
+    private GameEntity? _targetEntity;
 
     public GameEntity ActivatorEntity
     {
-        get => _activatorEntity;
+        get => _activatorEntity!;
         set
         {
             _activatorEntity?.RemoveReference(this);
@@ -27,7 +26,7 @@ public class ApplyEffectMessage : IMessage
 
     public GameEntity EffectEntity
     {
-        get => _effectEntity;
+        get => _effectEntity!;
         set
         {
             _effectEntity?.RemoveReference(this);
@@ -38,7 +37,7 @@ public class ApplyEffectMessage : IMessage
 
     public GameEntity TargetEntity
     {
-        get => _targetEntity;
+        get => _targetEntity!;
         set
         {
             _targetEntity?.RemoveReference(this);
@@ -57,13 +56,13 @@ public class ApplyEffectMessage : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
     public void Clean()
     {
-        ActivatorEntity = default;
-        EffectEntity = default;
-        TargetEntity = default;
+        ActivatorEntity = default!;
+        EffectEntity = default!;
+        TargetEntity = default!;
         TargetCell = default;
     }
 }

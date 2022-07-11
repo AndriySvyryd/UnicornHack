@@ -1,5 +1,4 @@
-﻿using System;
-using UnicornHack.Systems.Knowledge;
+﻿using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
 using UnicornHack.Utils.MessagingECS;
@@ -15,8 +14,8 @@ public class LivingSystem :
 
     public MessageProcessingResult Process(XPGainedMessage message, GameManager manager)
     {
-        var player = message.Entity.Player;
-        var being = message.Entity.Being;
+        var player = message.Entity.Player!;
+        var being = message.Entity.Being!;
 
         var hpRegenerationRate = (float)player.NextLevelXP / (being.HitPointMaximum * 4);
         var hpRegeneratingXp = message.ExperiencePoints + being.LeftoverHPRegenerationXP;
@@ -36,7 +35,7 @@ public class LivingSystem :
     public MessageProcessingResult Process(
         PropertyValueChangedMessage<GameEntity, int> message, GameManager manager)
     {
-        var being = message.Entity.Being;
+        var being = message.Entity.Being!;
         switch (message.ChangedPropertyName)
         {
             case nameof(BeingComponent.HitPoints):
@@ -117,7 +116,7 @@ public class LivingSystem :
 
     public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager manager)
     {
-        var being = message.Entity.Being;
+        var being = message.Entity.Being!;
 
         being.HitPointMaximum = 1;
         being.HitPoints = 1;

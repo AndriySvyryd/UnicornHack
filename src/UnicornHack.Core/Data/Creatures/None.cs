@@ -1,5 +1,3 @@
-using UnicornHack.Generation;
-
 namespace UnicornHack.Data.Creatures;
 
 public static partial class CreatureData

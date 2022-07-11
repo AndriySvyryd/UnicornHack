@@ -1,52 +1,48 @@
-﻿using System;
-using System.Collections.Generic;
-using UnicornHack.Primitives;
-using UnicornHack.Systems.Abilities;
+﻿using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Systems.Actors;
 
 public abstract class ActorSystemBase
 {
-    protected bool ActivateAbility(GameEntity actorEntity, int? slot, int? target, GameManager manager)
+    protected bool ActivateAbility(GameEntity actorEntity, int? slot, int? targetId, GameManager manager)
     {
         Point targetCell;
-        GameEntity targetActor;
-        if (target == null)
+        GameEntity? targetActor;
+        if (targetId == null)
         {
-            targetCell = actorEntity.Position.LevelCell;
+            targetCell = actorEntity.Position!.LevelCell;
             targetActor = actorEntity;
         }
-        else if (target.Value < 0)
+        else if (targetId.Value < 0)
         {
-            targetActor = manager.FindEntity(-target.Value);
+            targetActor = manager.FindEntity(-targetId.Value);
             if (targetActor == null
-                || !targetActor.Being.IsAlive)
+                || !targetActor.Being!.IsAlive)
             {
                 return false;
             }
 
-            targetCell = targetActor.Position.LevelCell;
+            targetCell = targetActor.Position!.LevelCell;
         }
         else
         {
-            targetCell = Point.Unpack(target).Value;
-            targetActor = actorEntity.Position.LevelEntity.Level.Actors.GetValueOrDefault(targetCell);
+            targetCell = Point.Unpack(targetId)!.Value;
+            targetActor = actorEntity.Position!.LevelEntity.Level!.Actors.GetValueOrDefault(targetCell);
         }
 
-        GameEntity abilityEntity;
+        GameEntity? abilityEntity;
         if (slot.HasValue)
         {
             abilityEntity = manager.AbilitySlottingSystem.GetAbility(actorEntity, slot.Value);
             if (abilityEntity == null)
             {
-                throw new InvalidOperationException("Actor " + actorEntity.Id + ". No ability in slot " + target);
+                throw new InvalidOperationException("Actor " + actorEntity.Id + ". No ability in slot " + targetId);
             }
         }
         else
         {
-            var vectorToTarget = actorEntity.Position.LevelCell.DifferenceTo(targetCell);
+            var vectorToTarget = actorEntity.Position!.LevelCell.DifferenceTo(targetCell);
             var isMelee = vectorToTarget.Length() <= 1;
             abilityEntity = GetDefaultAttack(actorEntity, isMelee, manager);
             if (abilityEntity == null)
@@ -68,7 +64,7 @@ public abstract class ActorSystemBase
         return ActivateAbility(abilityEntity, actorEntity, targetCell, targetActor, manager);
     }
 
-    public virtual GameEntity GetDefaultAttack(GameEntity actorEntity, bool melee, GameManager manager)
+    public virtual GameEntity? GetDefaultAttack(GameEntity actorEntity, bool melee, GameManager manager)
         => manager.AbilitySlottingSystem.GetAbility(
             actorEntity,
             melee
@@ -76,10 +72,10 @@ public abstract class ActorSystemBase
                 : AbilitySlottingSystem.DefaultRangedAttackSlot);
 
     protected virtual bool ActivateAbility(
-        GameEntity abilityEntity, GameEntity actorEntity, Point targetCell, GameEntity targetEntity,
+        GameEntity abilityEntity, GameEntity actorEntity, Point targetCell, GameEntity? targetEntity,
         GameManager manager)
     {
-        var ability = abilityEntity.Ability;
+        var ability = abilityEntity.Ability!;
         if ((ability.Activation & ActivationType.Slottable) == 0)
         {
             throw new InvalidOperationException("Ability " + abilityEntity.Id + " cannot be activated directly.");
@@ -106,14 +102,14 @@ public abstract class ActorSystemBase
         Direction direction, GameEntity actorEntity, GameManager manager, bool onlyChangeHeading = false)
     {
         // TODO: only attack on move if hostile
-        var position = actorEntity.Position;
+        var position = actorEntity.Position!;
         var targetCell = onlyChangeHeading
             ? position.LevelCell
             : position.LevelCell.Translate(direction.AsVector());
         if (!onlyChangeHeading
             && targetCell != position.LevelCell)
         {
-            var conflictingActor = position.LevelEntity.Level.Actors.GetValueOrDefault(targetCell);
+            var conflictingActor = position.LevelEntity.Level!.Actors.GetValueOrDefault(targetCell);
             if (conflictingActor != null)
             {
                 if (position.Heading != direction)
@@ -148,9 +144,9 @@ public abstract class ActorSystemBase
     {
         var itemEntity = manager.FindEntity(itemId);
         if (itemEntity == null
-            || itemEntity.Item.ContainerId != actorEntity.Id)
+            || itemEntity.Item!.ContainerId != actorEntity.Id)
         {
-            throw new InvalidOperationException("Actor " + actorEntity.Id + ". Invalid item " + itemId);
+            throw new InvalidOperationException("Actor " + actorEntity.Id + " doesn't have item " + itemId);
         }
 
         return itemEntity;

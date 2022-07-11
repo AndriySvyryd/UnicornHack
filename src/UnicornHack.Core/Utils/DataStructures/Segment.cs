@@ -1,5 +1,3 @@
-using System;
-
 namespace UnicornHack.Utils.DataStructures;
 
 /// <summary>
@@ -11,7 +9,7 @@ public readonly struct Segment : IEquatable<Segment>
     {
         if (beginning > end)
         {
-            throw new ArgumentOutOfRangeException();
+            throw new ArgumentOutOfRangeException($"Beginning {beginning} must be less or equal than end {end}");
         }
 
         Beginning = beginning;
@@ -77,7 +75,7 @@ public readonly struct Segment : IEquatable<Segment>
     public bool Equals(Segment other)
         => Beginning == other.Beginning && End == other.End;
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
         => obj is Segment other && Equals(other);
 
     public override int GetHashCode()

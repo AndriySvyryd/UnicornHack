@@ -1,9 +1,4 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Data.Creatures;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
-using UnicornHack.Utils.DataStructures;
-using Xunit;
+﻿using UnicornHack.Data.Creatures;
 
 namespace UnicornHack.Systems.Levels;
 
@@ -23,7 +18,7 @@ public class TravelSystemTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(new[] { Direction.North, Direction.Southeast },
-            manager.TravelSystem.GetPossibleMovementDirections(undine.Position, safe: true));
+            manager.TravelSystem.GetPossibleMovementDirections(undine.Position!, safe: true));
     }
 
     [Fact]
@@ -43,22 +38,22 @@ public class TravelSystemTest
 ..#
 ..<", game: manager.Game);
 
-        var connection1Entity = level1.Connections.GetValueOrDefault(new Point(1, 1));
-        var connection1 = connection1Entity.Connection;
+        var connection1Entity = level1.Connections.GetValueOrDefault(new Point(1, 1))!;
+        var connection1 = connection1Entity.Connection!;
 
-        var connection2Entity = level2.Connections.GetValueOrDefault(new Point(2, 2));
+        var connection2Entity = level2.Connections.GetValueOrDefault(new Point(2, 2))!;
 
         connection1.TargetLevelId = level2.EntityId;
-        connection1.TargetLevelCell = connection2Entity.Position.LevelCell;
+        connection1.TargetLevelCell = connection2Entity.Position!.LevelCell;
 
         var travelMessage = TravelMessage.Create(manager);
         travelMessage.ActorEntity = player;
         travelMessage.TargetHeading = Direction.South;
-        travelMessage.TargetCell = connection1Entity.Position.LevelCell;
+        travelMessage.TargetCell = connection1Entity.Position!.LevelCell;
         manager.Enqueue(travelMessage);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(level2.EntityId, player.Position.LevelId);
+        Assert.Equal(level2.EntityId, player.Position!.LevelId);
         Assert.Equal(connection1.TargetLevelCell, player.Position.LevelCell);
     }
 }

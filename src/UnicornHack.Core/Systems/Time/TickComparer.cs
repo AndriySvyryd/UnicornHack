@@ -1,10 +1,8 @@
-﻿using System.Collections.Generic;
-
-namespace UnicornHack.Systems.Time;
+﻿namespace UnicornHack.Systems.Time;
 
 public class TickComparer : IComparer<(int Tick, int Id)>
 {
-    public static readonly TickComparer Instance = new TickComparer();
+    public static readonly TickComparer Instance = new();
 
     private TickComparer()
     {

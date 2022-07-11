@@ -1,23 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reflection;
-using System.Text;
+﻿using System.Reflection;
 using UnicornHack.Utils.Caching;
 
 namespace UnicornHack.Utils.MessagingECS;
 
 // TODO: Perf: Separate into BaseEntity and ArrayEntity and allow storing components directly into properties
-public class Entity : NotificationEntity, IOwnerReferenceable, ITrackable, IPoolable
+public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable
 {
-    public static readonly MethodInfo FindComponentMethodInfo = typeof(Entity).GetMethod(nameof(FindComponent));
+    public static readonly MethodInfo FindComponentMethodInfo = typeof(Entity).GetMethod(nameof(FindComponent))!;
 
-    private Component[] _components;
+    private Component?[]? _components;
 
 #if DEBUG
+    // ReSharper disable once CollectionNeverQueried.Local
     private readonly List<object> _owners = new();
 #endif
-    private IObjectPool _pool;
+    private IObjectPool? _pool;
     private int _referenceCount;
     private bool _tracked;
     private bool _disposing;
@@ -33,11 +30,11 @@ public class Entity : NotificationEntity, IOwnerReferenceable, ITrackable, IPool
     {
         get;
         private set;
-    }
+    } = null!;
 
     public virtual void Initialize(int id, int componentCount, IEntityManager manager)
     {
-        Debug.Assert(Manager == null);
+        Debug.Assert(Manager == null!);
 
         Id = id;
         Manager = manager;
@@ -63,7 +60,7 @@ public class Entity : NotificationEntity, IOwnerReferenceable, ITrackable, IPool
         where TComponent : Component, new()
     {
 #if DEBUG
-        if (_components[componentId] != null)
+        if (_components![componentId] != null)
         {
             throw new InvalidOperationException(
                 $"Entity {Id} already contains component of type {typeof(TComponent).Name}");
@@ -81,13 +78,12 @@ public class Entity : NotificationEntity, IOwnerReferenceable, ITrackable, IPool
 
         var componentId = component.ComponentId;
         var propertyName = GetComponentPropertyName(componentId);
-
         if (propertyName != null)
         {
             FirePropertyChanging(propertyName);
         }
 
-        _components[componentId] = component;
+        _components![componentId] = component;
 
         if (component is IKeepAliveComponent)
         {
@@ -101,28 +97,28 @@ public class Entity : NotificationEntity, IOwnerReferenceable, ITrackable, IPool
             FirePropertyChanged(propertyName);
         }
 
-        Manager.OnComponentAdded(component);
+        Manager?.OnComponentAdded(component);
         return component;
     }
 
     protected virtual void InitializeComponent(Component component)
     {
-        Debug.Assert(component.Entity == null || component.Entity == this,
+        Debug.Assert(component.Entity == null! || component.Entity == this,
             $"Component {component.GetType().Name} is already owned by entity {component.Entity?.Id}");
 
         component.Entity = this;
     }
 
-    public Component FindComponent(int componentId)
-        => _components[componentId];
+    public Component? FindComponent(int componentId)
+        => _components![componentId];
 
     public TComponent GetOrAddComponent<TComponent>(int componentId)
         where TComponent : Component, new()
-        => (TComponent)_components[componentId] ?? AddComponent<TComponent>(componentId);
+        => (TComponent?)_components![componentId] ?? AddComponent<TComponent>(componentId);
 
-    public Component RemoveComponent(int componentId)
+    public Component? RemoveComponent(int componentId)
     {
-        var component = _components[componentId];
+        var component = _components![componentId];
         if (component == null)
         {
             return null;
@@ -134,7 +130,7 @@ public class Entity : NotificationEntity, IOwnerReferenceable, ITrackable, IPool
 
     public void RemoveComponent(Component component)
     {
-        if (component.Entity == null)
+        if (component.Entity == null!)
         {
             return;
         }
@@ -152,11 +148,11 @@ public class Entity : NotificationEntity, IOwnerReferenceable, ITrackable, IPool
             FirePropertyChanging(propertyName);
         }
 
-        _components[componentId] = null;
+        _components![componentId] = null;
 
         Manager?.OnComponentRemoved(component);
 
-        ((IOwnerReferenceable)component).RemoveReference(this);
+        ((IReferenceable)component).RemoveReference(this);
 
         if (component is IKeepAliveComponent)
         {
@@ -170,14 +166,14 @@ public class Entity : NotificationEntity, IOwnerReferenceable, ITrackable, IPool
     }
 
     public bool HasComponent(int componentId)
-        => _components[componentId] != null;
+        => _components![componentId] != null;
 
     public bool HasComponents(int[] ids)
     {
         for (var i = 0; i < ids.Length; i++)
         {
             var id = ids[i];
-            if (_components[id] == null)
+            if (_components![id] == null)
             {
                 return false;
             }
@@ -191,7 +187,7 @@ public class Entity : NotificationEntity, IOwnerReferenceable, ITrackable, IPool
         for (var i = 0; i < ids.Length; i++)
         {
             var id = ids[i];
-            if (_components[id] != null)
+            if (_components![id] != null)
             {
                 return true;
             }
@@ -202,7 +198,7 @@ public class Entity : NotificationEntity, IOwnerReferenceable, ITrackable, IPool
 
     public void ForEachComponent<TState>(TState state, Action<TState, int, Component> componentAction)
     {
-        for (var i = 0; i < _components.Length; i++)
+        for (var i = 0; i < _components!.Length; i++)
         {
             var component = _components[i];
             if (component != null)
@@ -219,12 +215,13 @@ public class Entity : NotificationEntity, IOwnerReferenceable, ITrackable, IPool
     public void HandlePropertyValuesChanged(IPropertyValueChanges changes)
         => Manager.OnPropertyValuesChanged(this, changes);
 
-    protected virtual string GetComponentPropertyName(int componentId) => null;
+    protected virtual string? GetComponentPropertyName(int componentId) => null;
 
-    public OwnerTransientReference<Entity, TOwner> AddReference<TOwner>(TOwner owner)
+    public TransientReference<Entity, TOwner> AddReference<TOwner>(TOwner owner)
+        where TOwner : notnull
         => new(this, owner);
 
-    void IOwnerReferenceable.AddReference(object owner)
+    void IReferenceable.AddReference(object owner)
     {
 #if DEBUG
         Debug.Assert(_id != 0);
@@ -251,7 +248,7 @@ public class Entity : NotificationEntity, IOwnerReferenceable, ITrackable, IPool
             }
 
             _disposing = true;
-            for (var i = 0; i < _components.Length; i++)
+            for (var i = 0; i < _components!.Length; i++)
             {
                 var component = _components[i];
                 if (component != null)
@@ -286,7 +283,7 @@ public class Entity : NotificationEntity, IOwnerReferenceable, ITrackable, IPool
         Manager.RemoveEntity(this);
 
         _id = 0;
-        Manager = null;
+        Manager = null!;
         _pool?.Return(this);
 
         _disposing = false;

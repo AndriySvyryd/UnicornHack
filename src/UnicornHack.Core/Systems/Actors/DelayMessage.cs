@@ -19,11 +19,11 @@ public class DelayMessage : IMessage
         manager.Enqueue(delayMessage);
     }
 
-    private GameEntity _actorEntity;
+    private GameEntity? _actorEntity;
 
     public GameEntity ActorEntity
     {
-        get => _actorEntity;
+        get => _actorEntity!;
         set
         {
             _actorEntity?.RemoveReference(this);
@@ -42,11 +42,11 @@ public class DelayMessage : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
     public void Clean()
     {
-        ActorEntity = default;
+        ActorEntity = default!;
         Delay = default;
     }
 }

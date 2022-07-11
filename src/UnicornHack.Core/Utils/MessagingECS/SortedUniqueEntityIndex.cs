@@ -1,17 +1,14 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-
-namespace UnicornHack.Utils.MessagingECS;
+﻿namespace UnicornHack.Utils.MessagingECS;
 
 public class SortedUniqueEntityIndex<TEntity, TKey> : EntityIndexBase<TEntity, TKey>
     where TEntity : Entity, new()
+    where TKey : notnull
 {
     public SortedUniqueEntityIndex(
         string name,
         IEntityGroup<TEntity> group,
         IKeyValueGetter<TEntity, TKey> keyValueGetter,
-        IComparer<TKey> comparer = null)
+        IComparer<TKey>? comparer = null)
         : base(name, group, keyValueGetter)
     {
         Index = new SortedDictionary<TKey, TEntity>(comparer ?? Comparer<TKey>.Default);
@@ -22,7 +19,7 @@ public class SortedUniqueEntityIndex<TEntity, TKey> : EntityIndexBase<TEntity, T
         get;
     }
 
-    public TEntity this[TKey key] => Index.TryGetValue(key, out var entity) ? entity : null;
+    public TEntity? this[TKey key] => Index.TryGetValue(key, out var entity) ? entity : null;
 
     protected override bool TryAddEntity(TKey key, in EntityChange<TEntity> entityChange)
     {

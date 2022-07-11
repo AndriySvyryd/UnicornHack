@@ -1,12 +1,10 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Systems.Abilities;
+﻿using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Senses;
-using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 // ReSharper disable once CheckNamespace
@@ -18,58 +16,58 @@ public partial class GameManager
     {
         get;
         private set;
-    }
+    } = null!;
 
     public LookupEntityRelationship<GameEntity, Point, Dictionary<Point, GameEntity>>
         KnownActorsToLevelCellRelationship
     {
         get;
         private set;
-    }
+    } = null!;
 
     public LookupEntityRelationship<GameEntity, Point, Dictionary<Point, GameEntity>>
         KnownItemsToLevelCellRelationship
     {
         get;
         private set;
-    }
+    } = null!;
 
     public LookupEntityRelationship<GameEntity, Point, Dictionary<Point, GameEntity>>
         KnownConnectionsToLevelCellRelationship
     {
         get;
         private set;
-    }
+    } = null!;
 
     public UniqueEntityRelationship<GameEntity> LevelKnowledgeToLevelEntityRelationship
     {
         get;
         private set;
-    }
+    } = null!;
 
     public UniqueEntityIndex<GameEntity, int> XPCooldownEntities
     {
         get;
         private set;
-    }
+    } = null!;
 
     public KnowledgeSystem KnowledgeSystem
     {
         get;
         private set;
-    }
+    } = null!;
 
     public XPSystem XPSystem
     {
         get;
         private set;
-    }
+    } = null!;
 
     public LoggingSystem LoggingSystem
     {
         get;
         private set;
-    }
+    } = null!;
 
     private void InitializeKnowledge(SequentialMessageQueue<GameManager> queue)
     {
@@ -117,7 +115,7 @@ public partial class GameManager
                 knowledgeEntity.RemoveComponent(EntityComponent.Knowledge);
                 knowledgeEntity.RemoveComponent(EntityComponent.Position);
             },
-            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level.KnownActors);
+            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level!.KnownActors);
 
         KnownItemsToLevelCellRelationship = new(
             nameof(KnownItemsToLevelCellRelationship),
@@ -158,7 +156,7 @@ public partial class GameManager
                 knowledgeEntity.RemoveComponent(EntityComponent.Knowledge);
                 knowledgeEntity.RemoveComponent(EntityComponent.Position);
             },
-            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level.KnownItems);
+            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level!.KnownItems);
 
         KnownConnectionsToLevelCellRelationship = new(
             nameof(KnownConnectionsToLevelCellRelationship),
@@ -199,7 +197,7 @@ public partial class GameManager
                 knowledgeEntity.RemoveComponent(EntityComponent.Knowledge);
                 knowledgeEntity.RemoveComponent(EntityComponent.Position);
             },
-            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level.KnownConnections);
+            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level!.KnownConnections);
 
         LevelKnowledgeToLevelEntityRelationship = new(
             nameof(LevelKnowledgeToLevelEntityRelationship),
@@ -213,7 +211,7 @@ public partial class GameManager
                 effectEntity.RemoveComponent(EntityComponent.Knowledge);
                 effectEntity.RemoveComponent(EntityComponent.Position);
             },
-            levelEntity => levelEntity.Position.Knowledge);
+            levelEntity => levelEntity.Position!.Knowledge);
 
         XPCooldownEntities = new(
             nameof(XPCooldownEntities),

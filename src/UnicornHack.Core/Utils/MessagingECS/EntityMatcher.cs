@@ -1,13 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-namespace UnicornHack.Utils.MessagingECS;
+﻿namespace UnicornHack.Utils.MessagingECS;
 
 public class EntityMatcher<TEntity> where TEntity : Entity
 {
-    private int[] _allOfIds;
-    private int[] _anyOfIds;
-    private int[] _noneOfIds;
+    private int[]? _allOfIds;
+    private int[]? _anyOfIds;
+    private int[]? _noneOfIds;
 
     public EntityMatcher<TEntity> AllOf(params int[] ids)
     {
@@ -38,7 +35,7 @@ public class EntityMatcher<TEntity> where TEntity : Entity
             .Concat(_noneOfIds ?? Enumerable.Empty<int>())
             .Distinct();
 
-    private static int[] Merge(int[] firstArray, int[] secondArray)
+    private static int[] Merge(int[]? firstArray, int[] secondArray)
         => firstArray?.Concat(secondArray).Distinct().OrderBy(id => id).ToArray()
            ?? secondArray;
 }

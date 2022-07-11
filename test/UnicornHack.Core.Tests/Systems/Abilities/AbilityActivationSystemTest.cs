@@ -1,17 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnicornHack.Data.Abilities;
+﻿using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Time;
-using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
-using Xunit;
 
 namespace UnicornHack.Systems.Abilities;
 
@@ -32,8 +25,8 @@ public class AbilityActivationSystemTest
         manager.Queue.Register(listener, AbilityActivatedMessage.Name, -1);
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 0));
-        playerEntity.Position.Heading = Direction.West;
-        playerEntity.Player.SkillPoints = 5;
+        playerEntity.Position!.Heading = Direction.West;
+        playerEntity.Player!.SkillPoints = 5;
         manager.SkillAbilitiesSystem.BuyAbilityLevel(AbilityData.Conjuration, playerEntity);
 
         manager.Queue.ProcessQueue(manager);
@@ -44,9 +37,9 @@ public class AbilityActivationSystemTest
 
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(100, playerEntity.Being.Accuracy);
+        Assert.Equal(100, playerEntity.Being!.Accuracy);
         Assert.Equal(100, playerEntity.Being.Evasion);
-        Assert.Equal(50, sylph.Being.Accuracy);
+        Assert.Equal(50, sylph.Being!.Accuracy);
         Assert.Equal(75, sylph.Being.Evasion);
 
         var bow = playerEntity.Being.Items.Single();
@@ -58,16 +51,16 @@ public class AbilityActivationSystemTest
         manager.Enqueue(equipMessage);
         manager.Queue.ProcessQueue(manager);
 
-        var nymphAbility = undine.Being.Abilities
-            .First(a => (a.Ability.Activation & ActivationType.Slottable) != 0
+        var nymphAbility = undine.Being!.Abilities
+            .First(a => (a.Ability!.Activation & ActivationType.Slottable) != 0
                         && a.Ability.Template?.Type != AbilityType.DefaultAttack);
-        Assert.Equal(2, nymphAbility.Ability.Slot);
+        Assert.Equal(2, nymphAbility.Ability!.Slot);
 
-        var attackAbility = manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.TwoHandedRangedAttack.Name)];
+        var attackAbility = manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.TwoHandedRangedAttack.Name)]!;
 
         var activateAbilityMessage = ActivateAbilityMessage.Create(manager);
         activateAbilityMessage.ActivatorEntity = playerEntity;
-        activateAbilityMessage.TargetCell = undine.Position.LevelCell;
+        activateAbilityMessage.TargetCell = undine.Position!.LevelCell;
         activateAbilityMessage.AbilityEntity = attackAbility;
 
         manager.Enqueue(activateAbilityMessage);
@@ -94,7 +87,7 @@ public class AbilityActivationSystemTest
 
         activateAbilityMessage = ActivateAbilityMessage.Create(manager);
         activateAbilityMessage.ActivatorEntity = playerEntity;
-        activateAbilityMessage.TargetCell = sylph.Position.LevelCell;
+        activateAbilityMessage.TargetCell = sylph.Position!.LevelCell;
         activateAbilityMessage.AbilityEntity = attackAbility;
 
         manager.Enqueue(activateAbilityMessage);
@@ -115,9 +108,9 @@ public class AbilityActivationSystemTest
         Assert.Equal(0, messageCount);
 
         undine.Being.HitPoints = undine.Being.HitPointMaximum;
-        var iceShardAbility = manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)];
+        var iceShardAbility = manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)]!;
 
-        var accuracy = manager.AbilityActivationSystem.GetAccuracy(iceShardAbility.Ability, playerEntity);
+        var accuracy = manager.AbilityActivationSystem.GetAccuracy(iceShardAbility.Ability!, playerEntity);
         Assert.Equal(105, accuracy);
 
         Assert.Equal(21,
@@ -142,7 +135,7 @@ public class AbilityActivationSystemTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(1, messageCount);
-        Assert.Equal(1100, iceShardAbility.Ability.CooldownTick);
+        Assert.Equal(1100, iceShardAbility.Ability!.CooldownTick);
 
         activateAbilityMessage = ActivateAbilityMessage.Create(manager);
         activateAbilityMessage.ActivatorEntity = playerEntity;
@@ -161,7 +154,7 @@ public class AbilityActivationSystemTest
     {
         var level = TestHelper.BuildLevel(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var player = playerEntity.Player;
+        var player = playerEntity.Player!;
         var manager = playerEntity.Manager;
 
         manager.Queue.ProcessQueue(manager);
@@ -169,9 +162,9 @@ public class AbilityActivationSystemTest
         manager.XPSystem.AddPlayerXP(player.NextLevelXP * 3, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(0, playerEntity.Being.ReservedEnergyPoints);
+        Assert.Equal(0, playerEntity.Being!.ReservedEnergyPoints);
         var toggledAbility = playerEntity.Being.Abilities
-            .Single(a => (a.Ability.Activation & ActivationType.WhileToggled) != 0);
+            .Single(a => (a.Ability!.Activation & ActivationType.WhileToggled) != 0);
         var setSlotMessage = SetAbilitySlotMessage.Create(manager);
         setSlotMessage.AbilityEntity = toggledAbility;
         setSlotMessage.Slot = 2;
@@ -179,7 +172,7 @@ public class AbilityActivationSystemTest
         manager.Enqueue(setSlotMessage);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.False(toggledAbility.Ability.IsActive);
+        Assert.False(toggledAbility.Ability!.IsActive);
         TestHelper.ActivateAbility(toggledAbility, playerEntity, manager, 2);
         manager.Queue.ProcessQueue(manager);
 
@@ -380,7 +373,7 @@ O........#
         var originDistance = 0;
         foreach (var (point, exposure) in targetedCells)
         {
-            visibleTerrain[level.PointToIndex[point.X, point.Y]] += exposure;
+            visibleTerrain[level.PointToIndex![point.X, point.Y]] += exposure;
             var distance = origin.DistanceTo(point);
             Assert.False(distance < originDistance, $"Point {point} is out of sequence");
 
@@ -394,7 +387,7 @@ O........#
 
     private class AbilityActivatedListener : IGameSystem<AbilityActivatedMessage>
     {
-        public Action<AbilityActivatedMessage> ProcessMessage
+        public Action<AbilityActivatedMessage>? ProcessMessage
         {
             get;
             set;

@@ -1,10 +1,8 @@
-﻿using System.Collections.Generic;
-
-namespace UnicornHack.Systems.Beings;
+﻿namespace UnicornHack.Systems.Beings;
 
 public class RaceComparer : IComparer<(byte Level, int Id)>
 {
-    public static readonly RaceComparer Instance = new RaceComparer();
+    public static readonly RaceComparer Instance = new();
 
     private RaceComparer()
     {

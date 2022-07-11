@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using UnicornHack.Hubs;
 using UnicornHack.Services;
@@ -18,7 +14,7 @@ namespace UnicornHack.Data;
 
 public class GameDbContext : DbContext, IRepository
 {
-    private Func<GameDbContext, int, IEnumerable<int[]>> _getLevels;
+    private Func<GameDbContext, int, IEnumerable<int[]>>? _getLevels;
 
     // ReSharper disable once SuggestBaseTypeForParameter
     public GameDbContext(DbContextOptions<GameDbContext> options)
@@ -30,9 +26,9 @@ public class GameDbContext : DbContext, IRepository
     {
         get;
         set;
-    }
+    } = null!;
 
-    public GameSnapshot Snapshot
+    public GameSnapshot? Snapshot
     {
         get;
         set;
@@ -42,113 +38,113 @@ public class GameDbContext : DbContext, IRepository
     {
         get;
         set;
-    }
+    } = null!;
 
     public DbSet<GameBranch> Branches
     {
         get;
         set;
-    }
+    } = null!;
 
     public DbSet<LogEntry> LogEntries
     {
         get;
         set;
-    }
+    } = null!;
 
     public DbSet<PlayerCommand> PlayerCommands
     {
         get;
         set;
-    }
+    } = null!;
 
     public DbSet<GameEntity> Entities
     {
         get;
         set;
-    }
+    } = null!;
 
     public DbSet<AbilityComponent> AbilityComponents
     {
         get;
         set;
-    }
+    } = null!;
 
     public DbSet<AIComponent> AIComponents
     {
         get;
         set;
-    }
+    } = null!;
 
     public DbSet<PlayerComponent> PlayerComponents
     {
         get;
         set;
-    }
+    } = null!;
 
     public DbSet<BeingComponent> BeingComponents
     {
         get;
         set;
-    }
+    } = null!;
 
     public DbSet<PhysicalComponent> PhysicalComponents
     {
         get;
         set;
-    }
+    } = null!;
 
     public DbSet<RaceComponent> RaceComponents
     {
         get;
         set;
-    }
+    } = null!;
 
     public DbSet<EffectComponent> EffectComponents
     {
         get;
         set;
-    }
+    } = null!;
 
     public DbSet<ItemComponent> ItemComponents
     {
         get;
         set;
-    }
+    } = null!;
 
     public DbSet<KnowledgeComponent> KnowledgeComponents
     {
         get;
         set;
-    }
+    } = null!;
 
     public DbSet<ConnectionComponent> ConnectionComponents
     {
         get;
         set;
-    }
+    } = null!;
 
     public DbSet<LevelComponent> LevelComponents
     {
         get;
         set;
-    }
+    } = null!;
 
     public DbSet<PositionComponent> PositionComponents
     {
         get;
         set;
-    }
+    } = null!;
 
     public DbSet<SensorComponent> SensorComponents
     {
         get;
         set;
-    }
+    } = null!;
 
     private IQueryable<GameEntity> AggregateEntities
         => Entities
-            .Include(e => e.Level).ThenInclude(l => l.Branch)
+            .Include(e => e.Level).ThenInclude(l => l!.Branch)
             .Include(e => e.Position)
             .Include(e => e.Connection)
             .Include(e => e.Being)
@@ -180,7 +176,9 @@ public class GameDbContext : DbContext, IRepository
             eb.Property(g => g.Id)
                 .ValueGeneratedOnAdd()
                 .UseIdentityColumn();
+            eb.Property(g => g.InitialSeed);
             eb.OwnsOne(g => g.Random);
+            eb.Navigation(g => g.Random).IsRequired();
             eb.HasOne(g => g.ActingPlayer)
                 .WithOne()
                 .HasForeignKey<Game>(l => new { l.Id, l.ActingPlayerId })
@@ -258,7 +256,8 @@ public class GameDbContext : DbContext, IRepository
             eb.HasKey(b => new { b.GameId, b.Name });
             eb.HasMany(b => b.Levels)
                 .WithOne(l => l.Branch)
-                .HasForeignKey(l => new { l.GameId, l.BranchName });
+                .HasForeignKey(l => new { l.GameId, l.BranchName })
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<LogEntry>(eb =>
@@ -448,26 +447,23 @@ public class GameDbContext : DbContext, IRepository
 
     public Game LoadGame(int gameId)
     {
-        if (_getLevels == null)
-        {
-            _getLevels = EF.CompileQuery((GameDbContext context, int id) =>
-                context.PlayerComponents
-                    .Where(playerComponent => playerComponent.GameId == id)
-                    .Join(context.PositionComponents,
-                        playerComponent => new { playerComponent.GameId, playerComponent.EntityId },
-                        positionComponent => new { positionComponent.GameId, positionComponent.EntityId },
-                        (_, positionComponent) => positionComponent.LevelId)
-                    .Join(context.PositionComponents,
-                        levelId => new { GameId = id, LevelId = levelId },
-                        positionComponent => new { positionComponent.GameId, positionComponent.LevelId },
-                        (_, positionComponent) => positionComponent)
-                    .Join(context.ConnectionComponents,
-                        positionComponent
-                            => new { positionComponent.GameId, positionComponent.EntityId },
-                        connectionComponent => new { connectionComponent.GameId, connectionComponent.EntityId },
-                        (positionComponent, connectionComponent)
-                            => new[] { positionComponent.LevelId, connectionComponent.TargetLevelId }));
-        }
+        _getLevels ??= EF.CompileQuery((GameDbContext context, int id) =>
+            context.PlayerComponents
+                .Where(playerComponent => playerComponent.GameId == id)
+                .Join(context.PositionComponents,
+                    playerComponent => new { playerComponent.GameId, playerComponent.EntityId },
+                    positionComponent => new { positionComponent.GameId, positionComponent.EntityId },
+                    (_, positionComponent) => positionComponent.LevelId)
+                .Join(context.PositionComponents,
+                    levelId => new { GameId = id, LevelId = levelId },
+                    positionComponent => new { positionComponent.GameId, positionComponent.LevelId },
+                    (_, positionComponent) => positionComponent)
+                .Join(context.ConnectionComponents,
+                    positionComponent
+                        => new { positionComponent.GameId, positionComponent.EntityId },
+                    connectionComponent => new { connectionComponent.GameId, connectionComponent.EntityId },
+                    (positionComponent, connectionComponent)
+                        => new[] { positionComponent.LevelId, connectionComponent.TargetLevelId }));
 
         LoadLevels(_getLevels(this, gameId).SelectMany(l => l).Distinct().ToList());
 
@@ -481,7 +477,7 @@ public class GameDbContext : DbContext, IRepository
                 .Load();
         }
 
-        return Find<Game>(gameId);
+        return Find<Game>(gameId)!;
     }
 
     public void LoadLevels(IReadOnlyList<int> levelIds)
@@ -489,7 +485,7 @@ public class GameDbContext : DbContext, IRepository
         Manager.IsLoading = true;
         // TODO: Perf: Compile queries
         var levelEntities = Entities.Where(levelEntity
-            => levelIds.Contains(levelEntity.Id) || levelIds.Contains(levelEntity.Position.LevelId));
+            => levelIds.Contains(levelEntity.Id) || levelIds.Contains(levelEntity.Position!.LevelId));
 
         var containedItems = levelEntities
             .Join(ItemComponents,
@@ -569,7 +565,7 @@ public class GameDbContext : DbContext, IRepository
                 (_, effectComponent) => effectComponent);
 
         levelEntities
-            .Include(e => e.Level).ThenInclude(l => l.Branch)
+            .Include(e => e.Level!).ThenInclude(l => l.Branch)
             .Include(e => e.Position)
             .Include(e => e.Connection)
             .Include(e => e.Being)
@@ -672,7 +668,7 @@ public class GameDbContext : DbContext, IRepository
     void IRepository.Remove(object entity)
         => Entry(entity).State = EntityState.Deleted;
 
-    T IRepository.Find<T>(params object[] keyValues) where T : class
+    T? IRepository.Find<T>(params object[] keyValues) where T : class
     {
         var entity = Find<T>(keyValues);
         if (entity == null)
@@ -801,7 +797,7 @@ public class GameDbContext : DbContext, IRepository
     {
         base.Dispose();
 
-        Manager = null;
+        Manager = null!;
         Snapshot = null;
     }
 }

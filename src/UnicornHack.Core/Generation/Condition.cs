@@ -1,10 +1,9 @@
-using System;
 using System.Linq.Expressions;
-using UnicornHack.Primitives;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Generation;
 
+// TODO: Remove this
 public abstract class Condition
 {
     protected static readonly ParameterExpression OwnerParameter =
@@ -32,7 +31,7 @@ public class PropertyCondition : Condition
     {
         get;
         set;
-    }
+    } = null!;
 
     public ComparisonType Type
     {
@@ -44,14 +43,14 @@ public class PropertyCondition : Condition
     {
         get;
         set;
-    }
+    } = null!;
 
     public override Expression GetExpression()
     {
-        var propertyDescription = PropertyDescription.Loader.Find(Name);
+        var propertyDescription = PropertyDescription.Loader.Get(Name);
         var componentExpression = Expression.Call(
             OwnerParameter, Entity.FindComponentMethodInfo, Expression.Constant(propertyDescription.ComponentId));
-        var getValueMethodInfo = propertyDescription.GetType().GetMethod(nameof(PropertyDescription<int>.GetValue));
+        var getValueMethodInfo = propertyDescription.GetType().GetMethod(nameof(PropertyDescription<int>.GetValue))!;
         var propertyValueExpression = Expression.Call(
             Expression.Constant(propertyDescription), getValueMethodInfo, componentExpression);
 

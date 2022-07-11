@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace UnicornHack.Utils.MessagingECS;
+﻿namespace UnicornHack.Utils.MessagingECS;
 
 public abstract class EntityRelationshipBase<TEntity> : EntityIndexBase<TEntity, int>,
     IEntityRelationshipBase<TEntity> where TEntity : Entity, new()
@@ -36,15 +34,16 @@ public abstract class EntityRelationshipBase<TEntity> : EntityIndexBase<TEntity,
         get;
     }
 
-    protected TEntity FindPrincipal(int key, TEntity entity, bool fallback)
+    protected TEntity? FindPrincipal(int key, TEntity entity, bool fallback)
     {
+        var manager = entity.Manager;
         var principal = PrincipalGroup.FindEntity(key);
-        if (principal != null)
+        if (principal != null
+            || manager == null)
         {
             return principal;
         }
 
-        var manager = entity.Manager;
         if (fallback
             && manager.FindEntity(key) == null)
         {
@@ -84,7 +83,7 @@ public abstract class EntityRelationshipBase<TEntity> : EntityIndexBase<TEntity,
 
     void IEntityRelationshipBase<TEntity>.OnEntityRemoved(TEntity dependent, TEntity principal)
     {
-        if (principal?.Manager != null
+        if (principal.Manager != null
             && _keepPrincipalAlive)
         {
             principal.RemoveReference(dependent);
@@ -101,7 +100,7 @@ public abstract class EntityRelationshipBase<TEntity> : EntityIndexBase<TEntity,
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>
-    TEntity IEntityRelationshipBase<TEntity>.FindEntity(int id)
+    TEntity? IEntityRelationshipBase<TEntity>.FindEntity(int id)
     {
         var entity = DependentGroup.FindEntity(id);
         if (entity != null && ContainsEntity(entity))
@@ -125,5 +124,5 @@ public abstract class EntityRelationshipBase<TEntity> : EntityIndexBase<TEntity,
 
     private bool ContainsEntity(TEntity entity)
         => KeyValueGetter.TryGetKey(new EntityChange<TEntity>(entity), ValueType.Current, out _)
-           && !entity.Manager.IsLoading;
+           && entity.Manager?.IsLoading == false;
 }

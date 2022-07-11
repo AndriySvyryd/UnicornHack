@@ -14,8 +14,8 @@ public interface IEntityManager
 
     ITransientReference<Entity> CreateEntity();
     void RemoveEntity(Entity entity);
-    Entity FindEntity(int id);
-    Entity LoadEntity(int id);
+    Entity? FindEntity(int id);
+    Entity? LoadEntity(int id);
 
     TComponent CreateComponent<TComponent>(int componentId)
         where TComponent : Component, new();

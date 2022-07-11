@@ -1,14 +1,5 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using CSharpScriptSerialization;
-using UnicornHack.Generation;
-using UnicornHack.Generation.Effects;
-using UnicornHack.Generation.Map;
-using UnicornHack.Primitives;
-using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Utils.DataLoading;
 
@@ -18,16 +9,23 @@ public static class CSScriptLoaderHelpers
     public static readonly string ScriptExtension = ".csx";
     public static readonly bool LoadScripts = false;
 
-    public static IReadOnlyList<string> Namespaces = new[]
+    public static IReadOnlyList<string> GlobalNamespaces = new[]
     {
-        typeof(object).GetTypeInfo().Namespace, typeof(List<>).GetTypeInfo().Namespace,
-        typeof(Effect).GetTypeInfo().Namespace, typeof(Creature).GetTypeInfo().Namespace,
-        typeof(MapFragment).GetTypeInfo().Namespace, typeof(Direction).GetTypeInfo().Namespace,
-        typeof(Dimensions).GetTypeInfo().Namespace
+        typeof(object).GetTypeInfo().Namespace!,
+        typeof(List<>).GetTypeInfo().Namespace!,
+        typeof(Debug).GetTypeInfo().Namespace!,
+        typeof(NotNullAttribute).GetTypeInfo().Namespace!,
+        typeof(Enumerable).GetTypeInfo().Namespace!,
+        typeof(StringBuilder).GetTypeInfo().Namespace!,
+        typeof(Creature).GetTypeInfo().Namespace!,
+        typeof(Effect).GetTypeInfo().Namespace!,
+        typeof(MapFragment).GetTypeInfo().Namespace!,
+        typeof(Direction).GetTypeInfo().Namespace!,
+        typeof(Dimensions).GetTypeInfo().Namespace!
     };
 
     public static T Load<T>(string script)
-        => CSScriptSerializer.Deserialize<T>(script, Enumerable.Empty<Assembly>(), Namespaces);
+        => CSScriptSerializer.Deserialize<T>(script, Enumerable.Empty<Assembly>(), GlobalNamespaces);
 
     public static T LoadFile<T>(string path) => Load<T>(File.ReadAllText(path));
 

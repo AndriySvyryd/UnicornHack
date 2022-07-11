@@ -1,29 +1,26 @@
-﻿using System;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
+﻿namespace UnicornHack.Systems.Effects;
 
-namespace UnicornHack.Systems.Effects;
-
+// TODO: Separate into Effect and AppliedEffect
 [Component(Id = (int)EntityComponent.Effect)]
 public class EffectComponent : GameComponent
 {
     private int? _affectedEntityId;
-    private GameEntity _affectedEntity;
+    private GameEntity? _affectedEntity;
     private int? _sourceEffectId;
-    private GameEntity _sourceEffect;
+    private GameEntity? _sourceEffect;
     private int? _sourceAbilityId;
-    private GameEntity _sourceAbility;
+    private GameEntity? _sourceAbility;
     private int? _containingAbilityId;
-    private string _durationAmount;
+    private string? _durationAmount;
     private int? _expirationTick;
     private int? _expirationXp;
     private bool _shouldTargetActivator;
     private int? _appliedAmount;
-    private string _amount;
-    private string _secondaryAmount;
+    private string? _amount;
+    private string? _secondaryAmount;
     private EffectType _effectType;
     private ValueCombinationFunction _combinationFunction;
-    private string _targetName;
+    private string? _targetName;
     private int? _targetEntityId;
     private EffectDuration _duration;
 
@@ -38,9 +35,9 @@ public class EffectComponent : GameComponent
         set => SetWithNotify(value, ref _affectedEntityId);
     }
 
-    public GameEntity AffectedEntity
+    public GameEntity? AffectedEntity
     {
-        get => _affectedEntity ??= Entity.Manager.FindEntity(_affectedEntityId);
+        get => _affectedEntity ??= Entity.Manager!.FindEntity(_affectedEntityId);
         set
         {
             AffectedEntityId = value?.Id;
@@ -54,9 +51,9 @@ public class EffectComponent : GameComponent
         set => SetWithNotify(value, ref _sourceEffectId);
     }
 
-    public GameEntity SourceEffect
+    public GameEntity? SourceEffect
     {
-        get => _sourceEffect ??= Entity.Manager.FindEntity(_sourceEffectId);
+        get => _sourceEffect ??= Entity.Manager?.FindEntity(_sourceEffectId);
         set
         {
             SourceEffectId = value?.Id;
@@ -70,7 +67,7 @@ public class EffectComponent : GameComponent
         set => SetWithNotify(value, ref _sourceAbilityId);
     }
 
-    public GameEntity SourceAbility
+    public GameEntity? SourceAbility
     {
         get => _sourceAbility ??= Entity.Manager.FindEntity(_sourceAbilityId);
         set
@@ -86,7 +83,7 @@ public class EffectComponent : GameComponent
         set => SetWithNotify(value, ref _containingAbilityId);
     }
 
-    public GameEntity ContainingAbility
+    public GameEntity? ContainingAbility
     {
         get;
         private set;
@@ -98,13 +95,13 @@ public class EffectComponent : GameComponent
         set => SetWithNotify(value, ref _duration);
     }
 
-    public Func<GameEntity, GameEntity, float> DurationAmountFunction
+    public Func<GameEntity, GameEntity, float>? DurationAmountFunction
     {
         get;
         set;
     }
 
-    public string DurationAmount
+    public string? DurationAmount
     {
         get => _durationAmount;
         set
@@ -139,13 +136,14 @@ public class EffectComponent : GameComponent
         set => SetWithNotify(value, ref _appliedAmount);
     }
 
-    public Func<GameEntity, GameEntity, float> AmountFunction
+    public Func<GameEntity, GameEntity, float>? AmountFunction
     {
         get;
         set;
     }
 
-    public string Amount
+    // The string function to calculate the amount of an effect
+    public string? Amount
     {
         get => _amount;
         set
@@ -155,13 +153,14 @@ public class EffectComponent : GameComponent
         }
     }
 
-    public Func<GameEntity, GameEntity, float> SecondaryAmountFunction
+    public Func<GameEntity, GameEntity, float>? SecondaryAmountFunction
     {
         get;
         set;
     }
 
-    public string SecondaryAmount
+    // The string function to calculate the secondary amount of an effect
+    public string? SecondaryAmount
     {
         get => _secondaryAmount;
         set
@@ -183,7 +182,7 @@ public class EffectComponent : GameComponent
         set => SetWithNotify(value, ref _combinationFunction);
     }
 
-    public string TargetName
+    public string? TargetName
     {
         get => _targetName;
         set => SetWithNotify(value, ref _targetName);
@@ -198,33 +197,31 @@ public class EffectComponent : GameComponent
     public EffectComponent AddToAbility(GameEntity abilityEntity)
     {
         var manager = abilityEntity.Manager;
-        using (var entityReference = manager.CreateEntity())
+        using var entityReference = manager.CreateEntity();
+        var clone = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+        clone.ShouldTargetActivator = ShouldTargetActivator;
+        clone.Duration = Duration;
+        clone.DurationAmount = DurationAmount;
+        clone.DurationAmountFunction = DurationAmountFunction;
+        clone.AppliedAmount = AppliedAmount;
+        clone.Amount = Amount;
+        clone.AmountFunction = AmountFunction;
+        clone.SecondaryAmount = SecondaryAmount;
+        clone.SecondaryAmountFunction = SecondaryAmountFunction;
+        clone.EffectType = EffectType;
+        clone.CombinationFunction = CombinationFunction;
+        clone.TargetName = TargetName;
+        clone.TargetEntityId = TargetEntityId;
+
+        clone.ContainingAbilityId = abilityEntity.Id;
+
+        if (EffectType == EffectType.AddAbility)
         {
-            var clone = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-            clone.ShouldTargetActivator = ShouldTargetActivator;
-            clone.Duration = Duration;
-            clone.DurationAmount = DurationAmount;
-            clone.DurationAmountFunction = DurationAmountFunction;
-            clone.AppliedAmount = AppliedAmount;
-            clone.Amount = Amount;
-            clone.AmountFunction = AmountFunction;
-            clone.SecondaryAmount = SecondaryAmount;
-            clone.SecondaryAmountFunction = SecondaryAmountFunction;
-            clone.EffectType = EffectType;
-            clone.CombinationFunction = CombinationFunction;
-            clone.TargetName = TargetName;
-            clone.TargetEntityId = TargetEntityId;
-
-            clone.ContainingAbilityId = abilityEntity.Id;
-
-            if (EffectType == EffectType.AddAbility)
-            {
-                Entity.Ability?.AddToEffect(entityReference.Referenced);
-            }
-
-            entityReference.Referenced.Effect = clone;
-            return clone;
+            Entity.Ability?.AddToEffect(entityReference.Referenced);
         }
+
+        entityReference.Referenced.Effect = clone;
+        return clone;
     }
 
     protected override void Clean()

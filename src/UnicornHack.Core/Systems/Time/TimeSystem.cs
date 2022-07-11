@@ -1,7 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-using System.Linq;
-using UnicornHack.Systems.Actors;
+﻿using UnicornHack.Systems.Actors;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Time;
@@ -13,7 +10,7 @@ public class TimeSystem : IGameSystem<AdvanceTurnMessage>
     public void AdvanceToNextPlayerTurn(GameManager manager)
     {
         while (manager.Game.ActingPlayer == null
-               && manager.Players.Any(p => p.Being.IsAlive))
+               && manager.Players.Any(p => p.Being!.IsAlive))
         {
             AdvanceTurnMessage.Enqueue(manager);
             manager.Queue.ProcessQueue(manager);

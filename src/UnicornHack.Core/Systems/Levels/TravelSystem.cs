@@ -1,9 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
-using UnicornHack.Primitives;
-using UnicornHack.Systems.Actors;
+﻿using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
-using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Levels;
@@ -27,12 +23,12 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
 
     private TraveledMessage TryTravel(TravelMessage message, GameManager manager, bool pretend = false)
     {
-        var position = message.ActorEntity.Position;
-        var heading = position.Heading.Value;
+        var position = message.ActorEntity.Position!;
+        var heading = position.Heading!.Value;
         var traveledMessage = TraveledMessage.Create(manager);
         traveledMessage.Entity = message.ActorEntity;
         traveledMessage.InitialLevel = position.LevelEntity;
-        traveledMessage.InitialHeading = position.Heading.Value;
+        traveledMessage.InitialHeading = heading;
         traveledMessage.InitialLevelCell = position.LevelCell;
         traveledMessage.TargetHeading = message.TargetHeading;
         traveledMessage.TargetCell = message.TargetCell;
@@ -66,7 +62,7 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         }
 
         var targetCell = message.TargetCell;
-        var level = position.LevelEntity.Level;
+        var level = position.LevelEntity.Level!;
         if (!CanMoveTo(targetCell, level))
         {
             return traveledMessage;
@@ -76,12 +72,12 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         var connectionEntity = level.Connections.GetValueOrDefault(targetCell);
         if (connectionEntity != null)
         {
-            var connection = connectionEntity.Connection;
+            var connection = connectionEntity.Connection!;
             if (connection.Direction == null
                 || (connection.Direction & ConnectionDirection.Source) != 0)
             {
-                targetLevelEntity = manager.Game.LoadLevel(connection.TargetLevelId);
-                targetCell = connection.TargetLevelCell.Value;
+                targetLevelEntity = manager.Game.LoadLevel(connection.TargetLevelId)!;
+                targetCell = connection.TargetLevelCell!.Value;
 
                 if (pretend)
                 {
@@ -91,7 +87,7 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
             }
         }
 
-        var conflictingActor = targetLevelEntity.Level.Actors.GetValueOrDefault(targetCell);
+        var conflictingActor = targetLevelEntity.Level!.Actors.GetValueOrDefault(targetCell);
         if (conflictingActor != null
             && (!message.MoveOffConflicting
                 || !MoveOffCell(conflictingActor, manager)))
@@ -133,7 +129,7 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
 
     private bool MoveOffCell(GameEntity entity, GameManager manager, bool pretend = false)
     {
-        var position = entity.Position;
+        var position = entity.Position!;
         var possibleDirectionsToMove = GetPossibleMovementDirections(position, safe: true);
         if (possibleDirectionsToMove.Count == 0)
         {
@@ -147,7 +143,7 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
 
         var travelMessage = TravelMessage.Create(manager);
         travelMessage.ActorEntity = entity;
-        travelMessage.TargetHeading = position.Heading.Value;
+        travelMessage.TargetHeading = position.Heading!.Value;
         travelMessage.TargetCell = position.LevelCell;
 
         var traveledMessage = TryTravel(travelMessage, manager, pretend);
@@ -186,11 +182,11 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         return origin.DifferenceTo(nextPoint).AsDirection();
     }
 
-    public List<Point> GetShortestPath(
+    public List<Point>? GetShortestPath(
         LevelComponent level, Point start, Point target, Direction initialDirection, bool knownOnly = false)
         => knownOnly
-            ? level.PathFinder.FindPath(start, target, initialDirection, CanMoveToKnown, level)
-            : level.PathFinder.FindPath(start, target, initialDirection, CanMoveTo, level);
+            ? level.PathFinder!.FindPath(start, target, initialDirection, CanMoveToKnown, level)
+            : level.PathFinder!.FindPath(start, target, initialDirection, CanMoveTo, level);
 
     public IReadOnlyList<Direction> GetPossibleMovementDirections(
         PositionComponent currentPosition,
@@ -199,7 +195,7 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         var availableDirections = new List<Direction>();
         for (var i = 0; i < 8; i++)
         {
-            var level = currentPosition.LevelEntity.Level;
+            var level = currentPosition.LevelEntity.Level!;
             if (CanMoveTo(currentPosition.LevelCell, i, level) == null)
             {
                 continue;
@@ -246,7 +242,7 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
             return null;
         }
 
-        var index = level.PointToIndex[locationX, locationY];
+        var index = level.PointToIndex![locationX, locationY];
         return ((MapFeature)level.Terrain[index]).CanMoveTo() ? index : null;
     }
 
@@ -257,7 +253,7 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
             return null;
         }
 
-        var index = level.PointToIndex[locationX, locationY];
+        var index = level.PointToIndex![locationX, locationY];
         return ((MapFeature)level.KnownTerrain[index]).CanMoveTo() ? index : null;
     }
 }

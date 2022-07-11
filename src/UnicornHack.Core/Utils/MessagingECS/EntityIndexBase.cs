@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-namespace UnicornHack.Utils.MessagingECS;
+﻿namespace UnicornHack.Utils.MessagingECS;
 
 public abstract class EntityIndexBase<TEntity, TKey> : IEntityChangeListener<TEntity>
     where TEntity : Entity, new()
@@ -51,7 +49,7 @@ public abstract class EntityIndexBase<TEntity, TKey> : IEntityChangeListener<TEn
     {
         Debug.Assert(entityChange.RemovedComponent == null);
 
-        Component componentUsed = null;
+        Component? componentUsed = null;
         var changes = entityChange.PropertyChanges;
         for (var i = 0; i < changes.Count; i++)
         {

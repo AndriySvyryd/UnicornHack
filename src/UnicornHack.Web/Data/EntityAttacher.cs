@@ -17,7 +17,7 @@ public static class EntityAttacher
 
         gameEntry.State = EntityState.Unchanged;
 
-        var randomEntry = gameEntry.Reference(g => g.Random).TargetEntry;
+        var randomEntry = gameEntry.Reference(g => g.Random).TargetEntry!;
         if (randomEntry.State != EntityState.Detached)
         {
             return;
@@ -80,7 +80,7 @@ public static class EntityAttacher
 
         levelEntry.State = EntityState.Unchanged;
 
-        var randomEntry = levelEntry.Reference(l => l.GenerationRandom).TargetEntry;
+        var randomEntry = levelEntry.Reference(l => l.GenerationRandom).TargetEntry!;
         if (randomEntry.State != EntityState.Detached)
         {
             return;

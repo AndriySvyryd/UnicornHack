@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 
 namespace UnicornHack.Utils.MessagingECS;
 
 public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelationshipBase<TEntity>
     where TEntity : Entity, new()
+    where TKey : notnull
     where TDictionary : class, IDictionary<TKey, TEntity>, new()
 {
-    private DependentsGroup _dependents;
+    private DependentsGroup? _dependents;
     private readonly IKeyValueGetter<TEntity, TKey> _secondaryKeyValueGetter;
 
     private static readonly IReadOnlyDictionary<TKey, TEntity> EmptyDictionary = new Dictionary<TKey, TEntity>();
@@ -21,9 +19,9 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
         IKeyValueGetter<TEntity, int> keyValueGetter,
         IKeyValueGetter<TEntity, TKey> secondaryKeyValueGetter,
         Action<TEntity, EntityChange<TEntity>> handlePrincipalDeleted,
-        Expression<Func<TEntity, TDictionary>> getDependent = null,
-        Expression<Func<TEntity, TEntity>> getPrincipal = null,
-        Func<TDictionary> factory = null,
+        Expression<Func<TEntity, TDictionary?>>? getDependent = null,
+        Expression<Func<TEntity, TEntity?>>? getPrincipal = null,
+        Func<TDictionary>? factory = null,
         bool keepPrincipalAlive = false,
         bool keepDependentAlive = false)
         : this(
@@ -50,13 +48,13 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
         IKeyValueGetter<TEntity, int> keyValueGetter,
         IKeyValueGetter<TEntity, TKey> secondaryKeyValueGetter,
         Action<TEntity, EntityChange<TEntity>> handlePrincipalDeleted,
-        Func<TEntity, TDictionary> getDependent,
-        Action<TEntity, TDictionary> setDependent,
-        Func<Component, TDictionary> componentGetDependent,
-        Func<TEntity, TEntity> getPrincipal = null,
-        Action<TEntity, TEntity> setPrincipal = null,
-        Func<Component, TEntity> componentGetPrincipal = null,
-        Func<TDictionary> factory = null,
+        Func<TEntity, TDictionary?> getDependent,
+        Action<TEntity, TDictionary?> setDependent,
+        Func<Component, TDictionary?> componentGetDependent,
+        Func<TEntity, TEntity?>? getPrincipal = null,
+        Action<TEntity, TEntity?>? setPrincipal = null,
+        Func<Component, TEntity?>? componentGetPrincipal = null,
+        Func<TDictionary>? factory = null,
         bool keepPrincipalAlive = false,
         bool keepDependentAlive = false)
         : this(
@@ -94,6 +92,7 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
     {
         principalGroup.AddListener(new PrincipalGroupListener(this));
         _secondaryKeyValueGetter = secondaryKeyValueGetter;
+        Accessor = null!;
     }
 
     private ICollectionAccessor<TEntity, TDictionary, KeyValuePair<TKey, TEntity>> Accessor
@@ -109,11 +108,11 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
     public IEntityGroup<TEntity> Dependents
         => _dependents ??= new DependentsGroup(this);
 
-    public IReadOnlyDictionary<TKey, TEntity> GetDependents(TEntity principal, Component removedComponent = null)
-        => (IReadOnlyDictionary<TKey, TEntity>)Accessor.GetDependents(principal, removedComponent) ??
-           EmptyDictionary;
+    public IReadOnlyDictionary<TKey, TEntity> GetDependents(TEntity principal, Component? removedComponent = null)
+        => (IReadOnlyDictionary<TKey, TEntity>?)Accessor.GetDependents(principal, removedComponent)
+           ?? EmptyDictionary;
 
-    public TEntity GetPrincipal(TEntity dependent, Component removedComponent = null)
+    public TEntity? GetPrincipal(TEntity dependent, Component? removedComponent = null)
         => Accessor.TryGetPrincipal(dependent, out var principal, removedComponent)
             ? principal
             : KeyValueGetter.TryGetKey(new EntityChange<TEntity>(dependent), ValueType.Current, out var key)
@@ -199,7 +198,7 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
             return false;
         }
 
-        Component componentUsed = null;
+        Component? componentUsed = null;
         var changes = entityChange.PropertyChanges;
         for (var i = 0; i < changes.Count; i++)
         {
@@ -226,6 +225,11 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
         }
 
         var principal = FindPrincipal(key, entityChange.Entity, fallback: true);
+        if (principal == null)
+        {
+            Debug.Assert(false, "Principal should exist");
+            return false;
+        }
 
         var entities = Accessor.GetOrCreateDependents(principal);
 
@@ -257,7 +261,7 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
             _relationship = relationship;
         }
 
-        public override TEntity FindEntity(int id)
+        public override TEntity? FindEntity(int id)
         {
             var entity = ((IEntityRelationshipBase<TEntity>)_relationship).FindEntity(id);
             return entity == null

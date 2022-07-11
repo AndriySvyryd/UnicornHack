@@ -1,10 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-namespace UnicornHack.Utils.MessagingECS;
+﻿namespace UnicornHack.Utils.MessagingECS;
 
 public class EntityIndex<TEntity, TKey> : EntityIndexBase<TEntity, TKey>
     where TEntity : Entity, new()
+    where TKey : notnull
 {
     public EntityIndex(
         string name,

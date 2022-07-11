@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace UnicornHack.Utils.DataStructures;
 
 public class RectangleTest

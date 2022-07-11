@@ -1,5 +1,4 @@
-﻿using UnicornHack.Primitives;
-using UnicornHack.Systems.Actors;
+﻿using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Faculties;
 using UnicornHack.Systems.Items;
@@ -14,19 +13,19 @@ public partial class GameManager
     {
         get;
         private set;
-    }
+    } = null!;
 
     public UniqueEntityRelationship<GameEntity> BeingToSecondaryNaturalWeaponRelationship
     {
         get;
         private set;
-    }
+    } = null!;
 
     public SkillAbilitiesSystem SkillAbilitiesSystem
     {
         get;
         private set;
-    }
+    } = null!;
 
     private void InitializeFaculties(SequentialMessageQueue<GameManager> queue)
     {
@@ -37,7 +36,7 @@ public partial class GameManager
             new SimpleKeyValueGetter<GameEntity, int>(
                 component => ((BeingComponent)component).PrimaryNaturalWeaponId,
                 (int)EntityComponent.Being),
-            (effectEntity, _) => effectEntity.Being.PrimaryNaturalWeaponId = null,
+            (effectEntity, _) => effectEntity.Being!.PrimaryNaturalWeaponId = null,
             keepPrincipalAlive: true,
             keepDependentAlive: false);
 
@@ -48,7 +47,7 @@ public partial class GameManager
             new SimpleKeyValueGetter<GameEntity, int>(
                 component => ((BeingComponent)component).SecondaryNaturalWeaponId,
                 (int)EntityComponent.Being),
-            (effectEntity, _) => effectEntity.Being.SecondaryNaturalWeaponId = null,
+            (effectEntity, _) => effectEntity.Being!.SecondaryNaturalWeaponId = null,
             keepPrincipalAlive: true,
             keepDependentAlive: false);
 

@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
 using CSharpScriptSerialization;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
@@ -12,7 +9,7 @@ public class ScriptedEffect : Effect
     {
         get;
         set;
-    }
+    } = null!;
 
     protected override void ConfigureEffect(EffectComponent effect)
     {
@@ -24,12 +21,12 @@ public class ScriptedEffect : Effect
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<ScriptedEffect>(GetPropertyConditions<ScriptedEffect>());
 
-    protected static new Dictionary<string, Func<TEffect, object, bool>>
+    protected static new Dictionary<string, Func<TEffect, object?, bool>>
         GetPropertyConditions<TEffect>() where TEffect : Effect
     {
         var propertyConditions = Effect.GetPropertyConditions<TEffect>();
 
-        propertyConditions.Add(nameof(Script), (o, v) => v != default);
+        propertyConditions.Add(nameof(Script), (_, v) => v != default);
         return propertyConditions;
     }
 

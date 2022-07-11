@@ -1,10 +1,9 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿namespace UnicornHack.Utils.MessagingECS;
 
-namespace UnicornHack.Utils.MessagingECS;
-
+// TODO: Add tests
 public class SortedEntityIndex<TEntity, TKey> : EntityIndexBase<TEntity, TKey>
     where TEntity : Entity, new()
+    where TKey : notnull
 {
     private readonly IComparer<TEntity> _comparer;
 
@@ -12,7 +11,7 @@ public class SortedEntityIndex<TEntity, TKey> : EntityIndexBase<TEntity, TKey>
         IEntityGroup<TEntity> group,
         IKeyValueGetter<TEntity, TKey> keyValueGetter,
         IComparer<TEntity> comparer,
-        IEqualityComparer<TKey> equalityComparer = null)
+        IEqualityComparer<TKey>? equalityComparer = null)
         : base(name, group, keyValueGetter)
     {
         _comparer = comparer;

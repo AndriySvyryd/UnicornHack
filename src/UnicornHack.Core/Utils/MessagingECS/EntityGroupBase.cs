@@ -1,15 +1,13 @@
-﻿using System.Collections.Generic;
-
-// ReSharper disable StaticMemberInGenericType
+﻿// ReSharper disable StaticMemberInGenericType
 namespace UnicornHack.Utils.MessagingECS;
 
 public abstract class EntityGroupBase<TEntity> : IEntityGroup<TEntity>
     where TEntity : Entity, new()
 {
-    private List<IEntityChangeListener<TEntity>> _changeListeners;
-    private string _entityAddedMessageName;
-    private string _entityRemovedMessageName;
-    private Dictionary<string, string> _propertyValueChangedMessageNames;
+    private List<IEntityChangeListener<TEntity>>? _changeListeners;
+    private string? _entityAddedMessageName;
+    private string? _entityRemovedMessageName;
+    private Dictionary<string, string>? _propertyValueChangedMessageNames;
 
     private const string EntityAddedMessageSuffix = "_EntityAdded";
     private const string EntityRemovedMessageSuffix = "_EntityRemoved";
@@ -50,10 +48,10 @@ public abstract class EntityGroupBase<TEntity> : IEntityGroup<TEntity>
         _changeListeners.Add(index);
     }
 
-    public abstract TEntity FindEntity(int id);
+    public abstract TEntity? FindEntity(int id);
     public abstract bool ContainsEntity(int id);
 
-    protected void OnAdded(in EntityChange<TEntity> entityChange, TEntity principal)
+    protected void OnAdded(in EntityChange<TEntity> entityChange, TEntity? principal)
     {
         if (_changeListeners != null)
         {
@@ -66,7 +64,7 @@ public abstract class EntityGroupBase<TEntity> : IEntityGroup<TEntity>
         var entity = entityChange.Entity;
         var manager = entity.Manager;
         if (_entityAddedMessageName != null
-            && !manager.IsLoading)
+            && manager is { IsLoading: false })
         {
             var message = manager.Queue.CreateMessage<EntityAddedMessage<TEntity>>(_entityAddedMessageName);
             message.Entity = entity;
@@ -79,13 +77,13 @@ public abstract class EntityGroupBase<TEntity> : IEntityGroup<TEntity>
         }
     }
 
-    protected void OnRemoved(in EntityChange<TEntity> entityChange, TEntity principal)
+    protected void OnRemoved(in EntityChange<TEntity> entityChange, TEntity? principal)
     {
         var entity = entityChange.Entity;
         var manager = entity.Manager;
 
         if (_entityRemovedMessageName != null
-            && entity.Manager != null)
+            && manager != null)
         {
             var message = manager.Queue.CreateMessage<EntityRemovedMessage<TEntity>>(_entityRemovedMessageName);
             message.Entity = entity;

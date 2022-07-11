@@ -1,11 +1,8 @@
-﻿using System;
-using System.Linq;
-using UnicornHack.Systems.Abilities;
+﻿using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Senses;
-using Xunit;
 
 namespace UnicornHack.Utils.MessagingECS;
 
@@ -21,7 +18,7 @@ public class CollectionEntityRelationshipTest
             abilityEntity.AddComponent<AbilityComponent>((int)EntityComponent.Ability);
 
             Assert.Empty(manager.EffectsToContainingAbilityRelationship.GetDependents(abilityEntity));
-            Assert.Empty(abilityEntity.Ability.Effects);
+            Assert.Empty(abilityEntity.Ability!.Effects);
             Assert.Null(abilityEntity.Effect);
 
             using (var effectEntityReference = manager.CreateEntity())
@@ -30,7 +27,7 @@ public class CollectionEntityRelationshipTest
                 var effect = effectEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
                 effect.ContainingAbilityId = abilityEntity.Id;
 
-                Assert.Same(abilityEntity, effectEntity.Effect.ContainingAbility);
+                Assert.Same(abilityEntity, effectEntity.Effect!.ContainingAbility);
                 Assert.True(manager.EffectsToContainingAbilityRelationship.Dependents.ContainsEntity(effectEntity.Id));
                 Assert.Same(effectEntity,
                     manager.EffectsToContainingAbilityRelationship.Dependents.FindEntity(effectEntity.Id));
@@ -116,7 +113,7 @@ public class CollectionEntityRelationshipTest
                 abilityEntity.AddComponent<AbilityComponent>((int)EntityComponent.Ability);
 
                 Assert.Equal(2, abilityEntity.Id);
-                Assert.Same(effectEntity, abilityEntity.Ability.Effects.Single());
+                Assert.Same(effectEntity, abilityEntity.Ability!.Effects.Single());
             }
         }
 

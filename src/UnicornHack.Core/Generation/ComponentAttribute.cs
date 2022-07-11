@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace UnicornHack.Generation;
+﻿namespace UnicornHack.Generation;
 
 [AttributeUsage(AttributeTargets.Class)]
 public sealed class ComponentAttribute : Attribute

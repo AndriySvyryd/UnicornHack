@@ -1,5 +1,3 @@
-using UnicornHack.Generation;
-
 namespace UnicornHack.Data.Branches;
 
 public static partial class BranchData

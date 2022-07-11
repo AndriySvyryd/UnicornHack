@@ -1,4 +1,3 @@
-using System;
 using static System.Math;
 
 namespace UnicornHack.Utils;

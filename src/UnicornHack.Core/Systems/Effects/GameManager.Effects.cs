@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Systems.Abilities;
+﻿using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Utils.MessagingECS;
 
@@ -12,32 +11,32 @@ public partial class GameManager
     {
         get;
         private set;
-    }
+    } = null!;
 
     public CollectionEntityRelationship<GameEntity, HashSet<GameEntity>>
         AppliedEffectsToAffectableEntityRelationship
     {
         get;
         private set;
-    }
+    } = null!;
 
     public CollectionEntityRelationship<GameEntity, HashSet<GameEntity>> AppliedEffectsToSourceAbilityRelationship
     {
         get;
         private set;
-    }
+    } = null!;
 
     public CollectionEntityRelationship<GameEntity, HashSet<GameEntity>> EffectsToContainingAbilityRelationship
     {
         get;
         private set;
-    }
+    } = null!;
 
     public EffectApplicationSystem EffectApplicationSystem
     {
         get;
         private set;
-    }
+    } = null!;
 
     private void InitializeEffects(SequentialMessageQueue<GameManager> queue)
     {
@@ -54,10 +53,10 @@ public partial class GameManager
                 component => ((EffectComponent)component).AffectedEntityId,
                 (int)EntityComponent.Effect),
             (effectEntity, _) => effectEntity.RemoveComponent((int)EntityComponent.Effect),
-            containerEntity => (HashSet<GameEntity>)(containerEntity.Being.AppliedEffects
-                                                     ?? containerEntity.Item.AppliedEffects
-                                                     ?? containerEntity.Physical.AppliedEffects
-                                                     ?? containerEntity.Sensor.AppliedEffects),
+            containerEntity => (HashSet<GameEntity>)(containerEntity.Being!.AppliedEffects
+                                                     ?? containerEntity.Item!.AppliedEffects
+                                                     ?? containerEntity.Physical!.AppliedEffects
+                                                     ?? containerEntity.Sensor!.AppliedEffects),
             keepPrincipalAlive: false, keepDependentAlive: true);
 
         EffectsToContainingAbilityRelationship = new(
@@ -68,8 +67,8 @@ public partial class GameManager
                 component => ((EffectComponent)component).ContainingAbilityId,
                 (int)EntityComponent.Effect),
             (effectEntity, _) => effectEntity.RemoveComponent((int)EntityComponent.Effect),
-            abilityEntity => (HashSet<GameEntity>)abilityEntity.Ability.Effects,
-            effectEntity => effectEntity.Effect.ContainingAbility,
+            abilityEntity => (HashSet<GameEntity>)abilityEntity.Ability!.Effects,
+            effectEntity => effectEntity.Effect!.ContainingAbility,
             keepPrincipalAlive: false, keepDependentAlive: true);
 
         AppliedEffectsToSourceAbilityRelationship = new(
@@ -82,7 +81,7 @@ public partial class GameManager
             (effectEntity, change) =>
             {
                 var sourceAbility = change.RemovedComponent as AbilityComponent
-                                    ?? effectEntity.Manager.FindEntity(effectEntity.Effect.SourceAbilityId)
+                                    ?? effectEntity.Manager.FindEntity(effectEntity.Effect!.SourceAbilityId)
                                         ?.Ability;
                 if (sourceAbility?.IsActive == true)
                 {
@@ -90,7 +89,7 @@ public partial class GameManager
                 }
                 else
                 {
-                    effectEntity.Effect.SourceAbilityId = null;
+                    effectEntity.Effect!.SourceAbilityId = null;
                 }
             });
 

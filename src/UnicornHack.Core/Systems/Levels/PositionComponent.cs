@@ -1,14 +1,11 @@
-﻿using UnicornHack.Generation;
-using UnicornHack.Primitives;
-using UnicornHack.Utils.DataStructures;
-using UnicornHack.Utils.MessagingECS;
+﻿using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Levels;
 
 [Component(Id = (int)EntityComponent.Position)]
 public class PositionComponent : GameComponent, IKeepAliveComponent
 {
-    private GameEntity _levelEntity;
+    private GameEntity? _levelEntity;
     private int _levelId;
     private byte _levelX;
     private byte _levelY;
@@ -33,7 +30,7 @@ public class PositionComponent : GameComponent, IKeepAliveComponent
 
     public GameEntity LevelEntity
     {
-        get => _levelEntity ??= Entity.Manager.FindEntity(_levelId);
+        get => _levelEntity ??= Entity.Manager.FindEntity(_levelId)!;
         set
         {
             LevelId = value.Id;
@@ -61,6 +58,11 @@ public class PositionComponent : GameComponent, IKeepAliveComponent
             var levelXSet = NotifyChanging(value.X, ref _levelX, nameof(LevelX), out var oldLevelX);
             var levelYSet = NotifyChanging(value.Y, ref _levelY, nameof(LevelY), out var oldLevelY);
 
+            if (Entity == null!)
+            {
+                return;
+            }
+
             var anyChanges = false;
             var levelXChange = PropertyValueChange<byte>.Empty;
             if (levelXSet)
@@ -80,7 +82,7 @@ public class PositionComponent : GameComponent, IKeepAliveComponent
 
             if (anyChanges)
             {
-                Entity?.HandlePropertyValuesChanged(IPropertyValueChanges.Create(levelXChange, levelYChange));
+                Entity.HandlePropertyValuesChanged(IPropertyValueChanges.Create(levelXChange, levelYChange));
             }
         }
     }
@@ -105,7 +107,7 @@ public class PositionComponent : GameComponent, IKeepAliveComponent
         set => SetWithNotify(value, ref _turningDelay);
     }
 
-    public GameEntity Knowledge
+    public GameEntity? Knowledge
     {
         get;
         set;
@@ -119,6 +121,11 @@ public class PositionComponent : GameComponent, IKeepAliveComponent
         var levelIdSet = NotifyChanging(levelId, ref _levelId, nameof(LevelId), out var oldLevelId);
         var levelXSet = NotifyChanging(levelCell.X, ref _levelX, nameof(LevelX), out var oldLevelX);
         var levelYSet = NotifyChanging(levelCell.Y, ref _levelY, nameof(LevelY), out var oldLevelY);
+
+        if (Entity == null!)
+        {
+            return;
+        }
 
         var anyChanges = false;
         var levelIdChange = PropertyValueChange<int>.Empty;
@@ -148,7 +155,7 @@ public class PositionComponent : GameComponent, IKeepAliveComponent
 
         if (anyChanges)
         {
-            Entity?.HandlePropertyValuesChanged(IPropertyValueChanges.Create(levelIdChange, levelXChange,
+            Entity.HandlePropertyValuesChanged(IPropertyValueChanges.Create(levelIdChange, levelXChange,
                 levelYChange));
         }
     }

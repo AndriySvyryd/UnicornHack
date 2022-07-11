@@ -11,7 +11,7 @@ public partial class GameManager
     {
         get;
         private set;
-    }
+    } = null!;
 
     private void InitializeSenses(SequentialMessageQueue<GameManager> queue)
     {

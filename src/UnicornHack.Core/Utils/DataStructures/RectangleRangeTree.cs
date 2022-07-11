@@ -1,16 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace UnicornHack.Utils.DataStructures;
+﻿namespace UnicornHack.Utils.DataStructures;
 
 /// <summary>
 ///     2d range tree for rectangle vertices. Vertices can be shared as long as the rectangles are different.
 /// </summary>
 public class RectangleRangeTree
 {
-    private readonly AATreeStrict<byte, AATreeLax<byte, (Point, RectangleTracker)>> _tree =
-        new AATreeStrict<byte, AATreeLax<byte, (Point, RectangleTracker)>>();
+    private readonly AATreeStrict<byte, AATreeLax<byte, (Point, RectangleTracker)>> _tree = new();
 
     public void InsertRange(IEnumerable<Rectangle> rectangles)
     {
@@ -123,22 +118,26 @@ public class RectangleRangeTree
         }
 
         // TODO: Consider using dynamic fractional cascading for perf
-        return _tree.GetRange(rectangle.TopLeft.X, rectangle.BottomRight.X, (x, t1) => t1).SelectMany(subtree =>
-            subtree.GetRange(rectangle.TopLeft.Y, rectangle.BottomRight.Y, (y, t) =>
-            {
-                // Ignore duplicates
-                if (t.Item2.ResultSet == _currentResultSet)
+        return _tree.GetRange(rectangle.TopLeft.X, rectangle.BottomRight.X, (_, t) => t)
+            .SelectMany(subtree =>
+                subtree.GetRange(rectangle.TopLeft.Y, rectangle.BottomRight.Y, (_, iteratorState) =>
                 {
-                    return null;
-                }
+                    // Ignore duplicates
+                    var (_, rectangleTracker) = iteratorState;
+                    if (rectangleTracker.ResultSet == _currentResultSet)
+                    {
+                        return null;
+                    }
 
-                t.Item2.ResultSet = _currentResultSet;
-                return t.Item2.Rectangle;
-            })).Where(r => r != null).Select(r => r.Value);
+                    rectangleTracker.ResultSet = _currentResultSet;
+                    return rectangleTracker.Rectangle;
+                }))
+            .Where(r => r != null)
+            .Select(r => r!.Value);
     }
 
-    private IEnumerable<TResult> GetAll<TResult>(Func<byte, (Point, RectangleTracker), TResult> selector) =>
-        _tree.GetAll((x, t) => t).SelectMany(subtree => subtree.GetAll(selector));
+    private IEnumerable<TResult> GetAll<TResult>(Func<byte, (Point, RectangleTracker), TResult> selector)
+        => _tree.GetAll((_, t) => t).SelectMany(subtree => subtree.GetAll(selector));
 
     private class RectangleTracker
     {
@@ -158,21 +157,9 @@ public class RectangleRangeTree
             get;
         }
 
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(this, obj))
-            {
-                return true;
-            }
-
-            var tracker = obj as RectangleTracker;
-            if (ReferenceEquals(tracker, null))
-            {
-                return false;
-            }
-
-            return Rectangle.Equals(tracker.Rectangle);
-        }
+        public override bool Equals(object? obj)
+            => ReferenceEquals(this, obj)
+               || (obj is RectangleTracker tracker && Rectangle.Equals(tracker.Rectangle));
 
         public override int GetHashCode() => Rectangle.GetHashCode();
     }

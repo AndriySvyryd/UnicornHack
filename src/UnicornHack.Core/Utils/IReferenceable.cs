@@ -1,8 +1,7 @@
 namespace UnicornHack.Utils;
 
-// TODO: Replace with garbage collection
 public interface IReferenceable
 {
-    void AddReference();
-    void RemoveReference();
+    void AddReference(object owner);
+    void RemoveReference(object owner);
 }

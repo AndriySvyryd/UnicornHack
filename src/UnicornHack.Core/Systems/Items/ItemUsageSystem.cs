@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnicornHack.Primitives;
-using UnicornHack.Systems.Actors;
+﻿using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Time;
-using UnicornHack.Utils;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Items;
@@ -54,7 +49,7 @@ public class ItemUsageSystem : IGameSystem<EquipItemMessage>
 
     private ItemEquippedMessage TryEquip(EquipItemMessage message, GameManager manager, bool pretend = false)
     {
-        var item = message.ItemEntity.Item;
+        var item = message.ItemEntity.Item!;
         var equippedMessage = ItemEquippedMessage.Create(manager);
         equippedMessage.ItemEntity = message.ItemEntity;
         equippedMessage.ActorEntity = message.ActorEntity;
@@ -85,7 +80,7 @@ public class ItemUsageSystem : IGameSystem<EquipItemMessage>
 
         if (message.Slot != EquipmentSlot.None)
         {
-            var equipableSlots = GetEquipableSlots(item, message.ActorEntity.Physical.Size);
+            var equipableSlots = GetEquipableSlots(item, message.ActorEntity.Physical!.Size);
             if ((message.Slot & equipableSlots) == 0)
             {
                 return equippedMessage;
@@ -180,7 +175,7 @@ public class ItemUsageSystem : IGameSystem<EquipItemMessage>
         {
             if (item.EquippedSlot == EquipmentSlot.None
                 || (!message.Force
-                    && item.Abilities.Select(a => a.Ability)
+                    && item.Abilities.Select(a => a.Ability!)
                         .Any(a => a.CooldownTick != null
                                   || a.CooldownXpLeft != null
                                   || (a.Activation & ActivationType.Slottable) != 0 && a.IsActive)))
@@ -228,7 +223,7 @@ public class ItemUsageSystem : IGameSystem<EquipItemMessage>
 
     // TODO: Sort by requirements
     public IEnumerable<EquipmentSlot> GetEquipableSlots(ItemComponent item, GameEntity beingEntity)
-        => GetEquipableSlots(item, beingEntity.Physical.Size).GetNonRedundantFlags(removeComposites: true);
+        => GetEquipableSlots(item, beingEntity.Physical!.Size).GetNonRedundantFlags(removeComposites: true);
 
     public EquipmentSlot GetEquipableSlots(ItemComponent item, int size)
     {
@@ -314,6 +309,6 @@ public class ItemUsageSystem : IGameSystem<EquipItemMessage>
     }
 
     // TODO: Add an index for EquipmentSlot?
-    public GameEntity GetEquippedItem(EquipmentSlot slot, GameEntity actor) =>
-        actor.Being.Items.FirstOrDefault(item => item.Item.EquippedSlot == slot);
+    public GameEntity? GetEquippedItem(EquipmentSlot slot, GameEntity actor) =>
+        actor.Being!.Items.FirstOrDefault(item => item.Item!.EquippedSlot == slot);
 }

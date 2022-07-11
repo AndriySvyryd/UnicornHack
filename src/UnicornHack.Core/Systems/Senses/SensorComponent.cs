@@ -1,6 +1,4 @@
 ﻿using System.Buffers;
-using System.Collections.Generic;
-using UnicornHack.Generation;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Senses;
@@ -14,9 +12,9 @@ public class SensorComponent : GameComponent
     private int _secondaryVisionRange;
     private bool _infravision;
     private bool _invisibilityDetection;
-    private IReadOnlyCollection<GameEntity> _abilities;
-    private IReadOnlyCollection<GameEntity> _appliedEffects;
-    private IReadOnlyCollection<GameEntity> _items;
+    private IReadOnlyCollection<GameEntity>? _abilities;
+    private IReadOnlyCollection<GameEntity>? _appliedEffects;
+    private IReadOnlyCollection<GameEntity>? _items;
 
     public SensorComponent()
     {
@@ -65,7 +63,7 @@ public class SensorComponent : GameComponent
         set => SetWithNotify(value, ref _invisibilityDetection);
     }
 
-    public byte[] VisibleTerrain
+    public byte[]? VisibleTerrain
     {
         get;
         set;

@@ -1,7 +1,5 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Systems.Beings;
+﻿using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
 
 // ReSharper disable once CheckNamespace
@@ -13,38 +11,38 @@ public partial class GameManager
     {
         get;
         private set;
-    }
+    } = null!;
 
     public EntityGroup<GameEntity> Connections
     {
         get;
         private set;
-    }
+    } = null!;
 
     public EntityGroup<GameEntity> LevelEntities
     {
         get;
         private set;
-    }
+    } = null!;
 
     public LookupEntityRelationship<GameEntity, Point, Dictionary<Point, GameEntity>>
         ConnectionsToLevelCellRelationship
     {
         get;
         private set;
-    }
+    } = null!;
 
     public CollectionEntityRelationship<GameEntity, HashSet<GameEntity>> IncomingConnectionsToLevelRelationship
     {
         get;
         private set;
-    }
+    } = null!;
 
     public TravelSystem TravelSystem
     {
         get;
         private set;
-    }
+    } = null!;
 
     private void InitializeLevels(SequentialMessageQueue<GameManager> queue)
     {
@@ -86,7 +84,7 @@ public partial class GameManager
                     .With(component => ((PositionComponent)component).LevelY, (int)EntityComponent.Position)
             ),
             (connectionEntity, _) => connectionEntity.RemoveComponent(EntityComponent.Position),
-            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level.Connections);
+            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level!.Connections);
 
         IncomingConnectionsToLevelRelationship = new(
             nameof(IncomingConnectionsToLevelRelationship),
@@ -96,7 +94,7 @@ public partial class GameManager
                 component => ((ConnectionComponent)component).TargetLevelId,
                 (int)EntityComponent.Connection),
             (effectEntity, _) => effectEntity.RemoveComponent(EntityComponent.Position),
-            levelEntity => (HashSet<GameEntity>)levelEntity.Level.IncomingConnections);
+            levelEntity => (HashSet<GameEntity>)levelEntity.Level!.IncomingConnections);
 
         TravelSystem = new TravelSystem();
         queue.Register<TravelMessage>(TravelSystem, TravelMessage.Name, 0);

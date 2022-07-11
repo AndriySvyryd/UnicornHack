@@ -1,8 +1,3 @@
-using System.Collections.Generic;
-using UnicornHack.Generation;
-using UnicornHack.Generation.Effects;
-using UnicornHack.Primitives;
-
 namespace UnicornHack.Data.Items;
 
 public static partial class ItemData

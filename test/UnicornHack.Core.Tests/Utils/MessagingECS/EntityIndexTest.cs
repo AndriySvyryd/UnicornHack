@@ -1,10 +1,7 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Systems.Actors;
+﻿using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Utils.DataStructures;
-using Xunit;
 
 namespace UnicornHack.Utils.MessagingECS;
 

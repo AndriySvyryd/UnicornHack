@@ -1,19 +1,18 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
 
 namespace UnicornHack.Utils.DataStructures;
 
-public class DictionaryAdapter<TKey, TValue> : ISnapshotableCollection<TValue>
+public class SnapshotableDictionary<TKey, TValue> : ISnapshotableCollection<TValue>
+    where TKey : notnull
 {
     private readonly Func<TValue, TKey> _keyAccessor;
 
-    public DictionaryAdapter(Func<TValue, TKey> keyAccessor)
+    public SnapshotableDictionary(Func<TValue, TKey> keyAccessor)
         : this(new Dictionary<TKey, TValue>(), keyAccessor)
     {
     }
 
-    public DictionaryAdapter(Dictionary<TKey, TValue> dictionary, Func<TValue, TKey> keyAccessor)
+    public SnapshotableDictionary(Dictionary<TKey, TValue> dictionary, Func<TValue, TKey> keyAccessor)
     {
         Dictionary = dictionary;
         _keyAccessor = keyAccessor;
@@ -27,7 +26,7 @@ public class DictionaryAdapter<TKey, TValue> : ISnapshotableCollection<TValue>
     public int Count => Dictionary.Count;
     public bool IsReadOnly => false;
 
-    public HashSet<TValue> Snapshot
+    public HashSet<TValue>? Snapshot
     {
         get;
         private set;
@@ -55,7 +54,7 @@ public class DictionaryAdapter<TKey, TValue> : ISnapshotableCollection<TValue>
     public bool Contains(TValue item) => Dictionary.ContainsValue(item);
     public void CopyTo(TValue[] array, int arrayIndex) => Dictionary.Values.CopyTo(array, arrayIndex);
     public bool Remove(TValue item) => Dictionary.Remove(_keyAccessor(item));
-    public void Insert(int index, TValue item) => throw new NotSupportedException();
+    public void Insert(int _, TValue __) => throw new NotSupportedException();
 
     public TValue this[TKey index]
     {

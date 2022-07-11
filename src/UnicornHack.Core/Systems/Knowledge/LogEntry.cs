@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using UnicornHack.Utils;
+﻿using UnicornHack.Utils;
 
 namespace UnicornHack.Systems.Knowledge;
 
@@ -13,7 +11,7 @@ public class LogEntry : NotificationEntity
     private int _id;
     private int _playerId;
     private int _tick;
-    private string _message;
+    private string _message = string.Empty;
     private LogEntryImportance _importance;
 
     public int GameId
@@ -54,14 +52,24 @@ public class LogEntry : NotificationEntity
 
     private class LogComparer : IComparer<LogEntry>, IEqualityComparer<LogEntry>
     {
-        public static readonly LogComparer Instance = new LogComparer();
+        public static readonly LogComparer Instance = new();
 
         private LogComparer()
         {
         }
 
-        public int Compare(LogEntry x, LogEntry y)
+        public int Compare(LogEntry? x, LogEntry? y)
         {
+            if (x is null)
+            {
+                return y is null ? 0 : -1;
+            }
+            
+            if (y is null)
+            {
+                return 1;
+            }
+            
             var diff = x.Tick - y.Tick;
             if (diff != 0)
             {
@@ -71,8 +79,13 @@ public class LogEntry : NotificationEntity
             return x.Id - y.Id;
         }
 
-        public bool Equals([AllowNull] LogEntry x, [AllowNull] LogEntry y) => x.Id == y.Id;
+        public bool Equals(LogEntry? x, LogEntry? y)
+        {
+            return x is null
+                ? y is null
+                : y is not null && x.Id == y.Id;
+        }
 
-        public int GetHashCode([DisallowNull] LogEntry obj) => obj.Id;
+        public int GetHashCode(LogEntry obj) => obj.Id;
     }
 }

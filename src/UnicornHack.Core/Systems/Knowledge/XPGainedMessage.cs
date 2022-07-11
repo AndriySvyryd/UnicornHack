@@ -9,11 +9,11 @@ public class XPGainedMessage : IMessage
     public static XPGainedMessage Create(GameManager manager)
         => manager.Queue.CreateMessage<XPGainedMessage>(Name);
 
-    private GameEntity _entity;
+    private GameEntity? _entity;
 
     public GameEntity Entity
     {
-        get => _entity;
+        get => _entity!;
         set
         {
             _entity?.RemoveReference(this);
@@ -32,11 +32,11 @@ public class XPGainedMessage : IMessage
     {
         get;
         set;
-    }
+    } = null!;
 
     public void Clean()
     {
-        Entity = default;
+        Entity = default!;
         ExperiencePoints = default;
     }
 }

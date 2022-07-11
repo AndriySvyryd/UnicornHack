@@ -1,9 +1,5 @@
-﻿using System;
-using System.Linq;
-using UnicornHack.Generation;
-using UnicornHack.Systems.Beings;
+﻿using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
-using UnicornHack.Systems.Senses;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Knowledge;
@@ -21,7 +17,7 @@ public class XPSystem :
     {
         if (message.TilesExplored > 0)
         {
-            AddPlayerXP(message.TilesExplored * message.LevelEntity.Level.Difficulty, manager);
+            AddPlayerXP(message.TilesExplored * message.LevelEntity.Level!.Difficulty, manager);
         }
 
         return MessageProcessingResult.ContinueProcessing;
@@ -31,7 +27,7 @@ public class XPSystem :
     {
         if (!message.BeingEntity.HasComponent(EntityComponent.Player))
         {
-            var xp = message.BeingEntity.Being.ExperiencePoints;
+            var xp = message.BeingEntity.Being!.ExperiencePoints;
             if (xp == 0)
             {
                 var level = GetXPLevel(message.BeingEntity);
@@ -60,13 +56,13 @@ public class XPSystem :
     {
         var effect = message.Entity.Effect ?? message.RemovedComponent as EffectComponent;
         var player = manager.FindEntity(effect?.AffectedEntityId)?.Player;
-        if (player?.Entity.Being.IsAlive != true)
+        if (player?.Entity.Being!.IsAlive != true)
         {
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        var race = message.Entity.Race ?? message.RemovedComponent as RaceComponent;
-        var template = PlayerRace.Loader.Find(race.TemplateName);
+        var race = message.Entity.Race ?? (RaceComponent)message.RemovedComponent!;
+        var template = PlayerRace.Loader.Find(race.TemplateName)!;
         var levelsLost = race.Level - 1;
         player.SkillPoints -= levelsLost * template.SkillPointRate;
         player.TraitPoints -= levelsLost * template.TraitPointRate;
@@ -115,15 +111,15 @@ public class XPSystem :
     }
 
     public RaceComponent GetLearningRace(GameEntity actorEntity)
-        => actorEntity.Being.Races.Select(r => r.Race).OrderBy(r => r.Level).First();
+        => actorEntity.Being!.Races.Select(r => r.Race!).OrderBy(r => r.Level).First();
 
     public byte GetXPLevel(GameEntity actorEntity)
-        => (byte)actorEntity.Being.Races.Sum(r => r.Race.Level);
+        => (byte)actorEntity.Being!.Races.Sum(r => r.Race!.Level);
 
     private void AddXP(GameEntity actorEntity, int xp, GameManager manager)
     {
-        var player = actorEntity.Player;
-        var being = actorEntity.Being;
+        var player = actorEntity.Player!;
+        var being = actorEntity.Being!;
         var leftoverXP = xp;
         while (leftoverXP != 0)
         {
@@ -136,7 +132,7 @@ public class XPSystem :
                 var race = GetLearningRace(actorEntity);
                 race.Level++;
 
-                var template = PlayerRace.Loader.Find(race.TemplateName);
+                var template = PlayerRace.Loader.Find(race.TemplateName)!;
                 player.SkillPoints += template.SkillPointRate;
                 player.TraitPoints += template.TraitPointRate;
                 player.MutationPoints += template.MutationPointRate;
@@ -165,7 +161,7 @@ public class XPSystem :
 
     public void UpdateNextLevelXP(GameEntity actorEntity)
     {
-        var player = actorEntity.Player;
+        var player = actorEntity.Player!;
         var playerLevel = GetXPLevel(actorEntity);
         if (playerLevel > player.MaxLevel)
         {

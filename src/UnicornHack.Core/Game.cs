@@ -1,10 +1,6 @@
-using System.Collections.Generic;
-using System.Linq;
-using UnicornHack.Generation;
 using UnicornHack.Services;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils;
-using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack;
 
@@ -15,10 +11,10 @@ public class Game : NotificationEntity
     private int _nextEntityId;
     private int _nextLogId;
     private int _nextCommandId;
-    private uint? _initialSeed;
-    private SimpleRandom _random;
+    private uint _initialSeed;
+    private SimpleRandom _random = null!;
     private int? _actingPlayerId;
-    private GameEntity _actingPlayer;
+    private GameEntity? _actingPlayer;
 
     public int Id
     {
@@ -51,15 +47,17 @@ public class Game : NotificationEntity
         set => SetWithNotify(value, ref _nextCommandId);
     }
 
-    public uint? InitialSeed
+    public uint InitialSeed
     {
         get => _initialSeed;
+        // ReSharper disable once UnusedMember.Local
         set => SetWithNotify(value, ref _initialSeed);
     }
 
     public SimpleRandom Random
     {
         get => _random;
+        // ReSharper disable once UnusedMember.Local
         set => SetWithNotify(value, ref _random);
     }
 
@@ -69,7 +67,7 @@ public class Game : NotificationEntity
         set => SetWithNotify(value, ref _actingPlayerId);
     }
 
-    public GameEntity ActingPlayer
+    public GameEntity? ActingPlayer
     {
         get => _actingPlayer;
         set => SetWithNotify(value, ref _actingPlayer);
@@ -86,56 +84,48 @@ public class Game : NotificationEntity
     {
         get;
         set;
-    }
+    } = null!;
 
     public GameManager Manager
     {
         get;
         set;
-    }
+    } = null!;
 
     public IRepository Repository
     {
         get;
         set;
-    }
+    } = null!;
 
-    public GameBranch GetBranch(string branchName)
-        => Branches.FirstOrDefault(b => b.Name == branchName) ??
-           Repository.Find<GameBranch>(Id, branchName);
+    public GameBranch? GetBranch(string branchName)
+        => Branches.FirstOrDefault(b => b.Name == branchName)
+           ?? Repository.Find<GameBranch>(Id, branchName);
 
-    public GameEntity LoadLevel(int levelId)
+    public GameEntity? LoadLevel(int levelId)
     {
         var levelEntity = Manager.FindEntity(levelId);
-        if (!LevelGenerator.EnsureGenerated(levelEntity.Level))
+        if (levelEntity == null
+            || LevelGenerator.EnsureGenerated(levelEntity.Level!))
         {
-            var levelsToLoad = levelEntity.Level.Connections.Values
-                .Select(c => c.Connection.TargetLevelId)
-                .Where(id => Manager.FindEntity(id) == null)
-                .ToList();
-            if (levelsToLoad.Count > 0)
-            {
-                Repository.LoadLevels(levelsToLoad);
-            }
+            return levelEntity;
+        }
+
+        var levelsToLoad = levelEntity.Level!.Connections.Values
+            .Select(c => c.Connection!.TargetLevelId)
+            .Where(id => Manager.FindEntity(id) == null)
+            .ToList();
+        if (levelsToLoad.Count > 0)
+        {
+            Repository.LoadLevels(levelsToLoad);
         }
 
         return levelEntity;
     }
 
-    public override bool Equals(object obj)
-    {
-        if (!(obj is Game otherGame))
-        {
-            return false;
-        }
+    public override bool Equals(object? obj)
+        => obj is Game otherGame
+           && (ReferenceEquals(this, otherGame) || Id == otherGame.Id);
 
-        if (ReferenceEquals(this, otherGame))
-        {
-            return true;
-        }
-
-        return Id == otherGame.Id;
-    }
-
-    public override int GetHashCode() => ~Id;
+    public override int GetHashCode() => Id.GetHashCode();
 }

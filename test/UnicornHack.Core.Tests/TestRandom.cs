@@ -1,11 +1,10 @@
-﻿using System.Collections.Generic;
-using UnicornHack.Utils;
+﻿using UnicornHack.Utils;
 
 namespace UnicornHack;
 
 public class TestRandom : SimpleRandom
 {
-    private Queue<bool> _boolsToReturn;
+    private Queue<bool>? _boolsToReturn;
 
     public void EnqueueNextBool(bool value)
     {

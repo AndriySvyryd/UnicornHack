@@ -1,17 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Text;
 using Microsoft.Extensions.Caching.Memory;
-using UnicornHack.Generation;
-using UnicornHack.Generation.Map;
-using UnicornHack.Primitives;
 using UnicornHack.Services;
 using UnicornHack.Services.English;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Utils.DataStructures;
 using UnicornHack.Utils.MessagingECS;
-using Xunit;
 
 namespace UnicornHack;
 
@@ -21,8 +14,8 @@ public static class TestHelper
     {
         var game = new Game
         {
-            Random = new TestRandom { Seed = seed ?? (uint)Environment.TickCount },
-            InitialSeed = seed,
+            Random = new TestRandom { Seed = seed ?? 1 },
+            InitialSeed = seed ?? 1,
             Repository = new TestRepository(),
             Services = new GameServices(new EnglishLanguageService(), new MemoryCache(new MemoryCacheOptions()))
         };
@@ -32,18 +25,18 @@ public static class TestHelper
         return game;
     }
 
-    public static GameManager CreateGameManager(Game game = null)
+    public static GameManager CreateGameManager(Game? game = null)
     {
         var manager = new GameManager { Game = game ?? CreateGame() };
         manager.Initialize(new SequentialMessageQueue<GameManager>());
         return manager;
     }
 
-    public static LevelComponent BuildLevel(string map = "", uint? seed = null, Game game = null)
+    public static LevelComponent BuildLevel(string map = "", uint? seed = null, Game? game = null)
         => BuildLevelWithRooms(map, seed, game).Item1;
 
     public static (LevelComponent, IReadOnlyList<Room>) BuildLevelWithRooms(
-        string map = "", uint? seed = null, Game game = null)
+        string map = "", uint? seed = null, Game? game = null)
     {
         game ??= CreateGame(seed);
 
@@ -95,7 +88,7 @@ public static class TestHelper
             (c, point, l, _) =>
             {
                 var expectedVisible = c == ' ' ? (byte)0 : (byte)255;
-                var i = l.PointToIndex[point.X, point.Y];
+                var i = l.PointToIndex![point.X, point.Y];
                 expectedVisibility[i] = expectedVisible;
                 var actualVisible = actualVisibility[i] == 0 ? 0 : 255;
                 if (expectedVisible != actualVisible
@@ -104,7 +97,7 @@ public static class TestHelper
                     mismatchedPoint = point;
                 }
             },
-            (object)null);
+            (object?)null);
 
         if (mismatchedPoint.HasValue)
         {
@@ -121,19 +114,21 @@ Seed: " + level.Game.InitialSeed);
     {
         for (var i = 0; i < actualVisibility.Length; i++)
         {
-            if (actualVisibility[i] != expectedVisibility[i])
+            if (actualVisibility[i] == expectedVisibility[i])
             {
-                var point = level.IndexToPoint[i];
-                Assert.True(false,
-                    $"Mismatch at ({point.X}, {point.Y}) expected {expectedVisibility[i]}, got {actualVisibility[i]}" +
-                    @"
+                continue;
+            }
+
+            var point = level.IndexToPoint![i];
+            Assert.True(false,
+                $"Mismatch at ({point.X}, {point.Y}) expected {expectedVisibility[i]}, got {actualVisibility[i]}" +
+                @"
 Expected map:
 " + PrintMap(level, expectedVisibility) + @"
 Actual map:
 " + PrintMap(level, actualVisibility) +
-                    PrintVisibility(level, actualVisibility) + @"
+                PrintVisibility(level, actualVisibility) + @"
 Seed: " + level.Game.InitialSeed);
-            }
         }
     }
 
@@ -151,7 +146,7 @@ Seed: " + level.Game.InitialSeed);
             (c, point, l, _) =>
             {
                 var expectedFeature = (byte)ToMapFeature(c);
-                var i = l.PointToIndex[point.X, point.Y];
+                var i = l.PointToIndex![point.X, point.Y];
                 expected[i] = expectedFeature;
                 if (expectedFeature != actualTerrain[i]
                     && (expectedFeature == (byte)MapFeature.Default
@@ -162,7 +157,7 @@ Seed: " + level.Game.InitialSeed);
                     matched = false;
                 }
             },
-            (object)null);
+            (object?)null);
 
         Assert.True(matched, @"Expected:
 " + PrintMap(level, null, expected) + @"
@@ -205,9 +200,9 @@ Seed: " + level.Game.InitialSeed);
         return feature;
     }
 
-    public static string PrintMap(LevelComponent level, byte[] visibleTerrain, byte[] terrain = null)
+    public static string PrintMap(LevelComponent level, byte[]? visibleTerrain, byte[]? terrain = null)
     {
-        terrain = terrain ?? level.Terrain;
+        terrain ??= level.Terrain;
         var builder = new StringBuilder();
         var i = 0;
         for (var y = 0; y < level.Height; y++)
@@ -234,8 +229,8 @@ Seed: " + level.Game.InitialSeed);
                             symbol = '█';
                             break;
                         case MapFeature.StoneWall:
-                            var neighbours = (DirectionFlags)level.WallNeighbors[i] & DirectionFlags.Cross;
-                            switch (neighbours)
+                            var neighbors = (DirectionFlags)level.WallNeighbors[i] & DirectionFlags.Cross;
+                            switch (neighbors)
                             {
                                 case DirectionFlags.None:
                                     symbol = '●';
@@ -286,7 +281,7 @@ Seed: " + level.Game.InitialSeed);
                                     symbol = '╋';
                                     break;
                                 default:
-                                    throw new InvalidOperationException("Invalid wall neighbours: " + neighbours);
+                                    throw new InvalidOperationException("Invalid wall neighbors: " + neighbors);
                             }
 
                             break;
@@ -335,7 +330,7 @@ Seed: " + level.Game.InitialSeed);
     public static GameEntity ActivateAbility(
         string abilityName, GameEntity activatorEntity, GameManager manager, int? slot = null)
     {
-        var ability = manager.AffectableAbilitiesIndex[(activatorEntity.Id, abilityName)];
+        var ability = manager.AffectableAbilitiesIndex[(activatorEntity.Id, abilityName)]!;
         Assert.NotNull(ability);
 
         return ActivateAbility(ability, activatorEntity, manager, slot);
@@ -344,7 +339,7 @@ Seed: " + level.Game.InitialSeed);
     public static GameEntity ActivateAbility(
         GameEntity abilityEntity, GameEntity activatorEntity, GameManager manager, int? slot = null)
     {
-        slot ??= abilityEntity.Ability.Slot;
+        slot ??= abilityEntity.Ability!.Slot;
 
         var setSlotMessage = SetAbilitySlotMessage.Create(manager);
         setSlotMessage.AbilityEntity = abilityEntity;

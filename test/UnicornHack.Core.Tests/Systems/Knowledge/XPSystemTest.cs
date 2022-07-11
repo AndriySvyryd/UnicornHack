@@ -1,15 +1,9 @@
-﻿using System;
-using System.Linq;
-using UnicornHack.Data.Creatures;
+﻿using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Utils.DataStructures;
-using Xunit;
 
 namespace UnicornHack.Systems.Knowledge;
 
@@ -25,12 +19,12 @@ public class XPSystemTest
         level.Difficulty = 3;
 
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        player.Position.Heading = Direction.West;
+        player.Position!.Heading = Direction.West;
         var manager = player.Manager;
 
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(9, player.Being.ExperiencePoints);
+        Assert.Equal(9, player.Being!.ExperiencePoints);
 
         var travelMessage = TravelMessage.Create(manager);
         travelMessage.ActorEntity = player;
@@ -49,14 +43,14 @@ public class XPSystemTest
         var level = TestHelper.BuildLevel("..");
         var undine = CreatureData.Undine.Instantiate(level, new Point(0, 0));
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(1, 0));
-        player.Position.Heading = Direction.West;
+        player.Position!.Heading = Direction.West;
         var manager = player.Manager;
 
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(2, player.Being.ExperiencePoints);
+        Assert.Equal(2, player.Being!.ExperiencePoints);
 
-        undine.Being.HitPoints = 0;
+        undine.Being!.HitPoints = 0;
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(182, player.Being.ExperiencePoints);
@@ -67,7 +61,7 @@ public class XPSystemTest
     {
         var level = TestHelper.BuildLevel(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var player = playerEntity.Player;
+        var player = playerEntity.Player!;
         var manager = playerEntity.Manager;
 
         manager.Queue.ProcessQueue(manager);
@@ -81,7 +75,7 @@ public class XPSystemTest
         Assert.Equal(0, player.TraitPoints);
         Assert.Equal(0, player.MutationPoints);
         Assert.Equal(1000, player.NextLevelXP);
-        Assert.Equal(15, playerEntity.Being.Abilities.Count);
+        Assert.Equal(15, playerEntity.Being!.Abilities.Count);
         Assert.Equal(2, playerEntity.Being.Items.Count);
 
         TestHelper.ActivateAbility(ItemData.PotionOfExperience.Name + ": Drink", playerEntity, manager);
@@ -93,8 +87,8 @@ public class XPSystemTest
         Assert.Equal(0, player.MutationPoints);
         Assert.Equal(2000, player.NextLevelXP);
         var experienceAbility =
-            manager.AffectableAbilitiesIndex[(playerEntity.Id, ItemData.PotionOfExperience.Name + ": Drink")];
-        Assert.Equal(4, experienceAbility.Ability.Slot);
+            manager.AffectableAbilitiesIndex[(playerEntity.Id, ItemData.PotionOfExperience.Name + ": Drink")]!;
+        Assert.Equal(4, experienceAbility.Ability!.Slot);
 
         var humanEntity = playerEntity.Being.Races.Single();
         TestHelper.ActivateAbility(ItemData.PotionOfElfness.Name + ": Drink", playerEntity, manager);
@@ -102,11 +96,11 @@ public class XPSystemTest
 
         Assert.Equal(1, playerEntity.Being.Items.Count);
         Assert.DoesNotContain(playerEntity.Being.Abilities,
-            a => a.Ability.Name.Contains(ItemData.PotionOfElfness.Name));
+            a => a.Ability!.Name!.Contains(ItemData.PotionOfElfness.Name));
         Assert.Equal(2, playerEntity.Being.Races.Count);
         var elfEntity = playerEntity.Being.Races.Single(r => r != humanEntity);
-        Assert.Equal(2, humanEntity.Race.Level);
-        Assert.Equal(1, elfEntity.Race.Level);
+        Assert.Equal(2, humanEntity.Race!.Level);
+        Assert.Equal(1, elfEntity.Race!.Level);
         Assert.Equal(3, manager.XPSystem.GetXPLevel(playerEntity));
         Assert.Equal(3, player.SkillPoints);
         Assert.Equal(3, player.TraitPoints);
@@ -181,9 +175,9 @@ public class XPSystemTest
             TestHelper.ActivateAbility(ItemData.FlaskOfHealing.Name + ": Drink", playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.NotNull(flaskAbilityEntity.Ability.CooldownXpLeft);
+        Assert.NotNull(flaskAbilityEntity.Ability!.CooldownXpLeft);
         Assert.Null(flaskAbilityEntity.Ability.CooldownTick);
-        playerEntity.Being.HitPoints = 50;
+        playerEntity.Being!.HitPoints = 50;
 
         TestHelper.ActivateAbility(flaskAbilityEntity, playerEntity, manager);
         Assert.Throws<InvalidOperationException>(() => manager.Queue.ProcessQueue(manager));
@@ -248,8 +242,8 @@ public class XPSystemTest
         var appliedEffect = manager.AppliedEffectsToSourceAbilityRelationship.GetDependents(debuffAbilityEntity)
             .Single();
 
-        Assert.Equal(200, appliedEffect.Effect.ExpirationXp);
-        Assert.Equal(9, playerEntity.Being.Might);
+        Assert.Equal(200, appliedEffect.Effect!.ExpirationXp);
+        Assert.Equal(9, playerEntity.Being!.Might);
 
         TestHelper.ActivateAbility(ItemData.PotionOfExperience.Name + ": Drink", playerEntity, manager);
         manager.Queue.ProcessQueue(manager);

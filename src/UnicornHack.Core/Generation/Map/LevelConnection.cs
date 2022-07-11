@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using CSharpScriptSerialization;
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Utils.DataStructures;
 
 namespace UnicornHack.Generation.Map;
 
@@ -14,7 +9,7 @@ public class LevelConnection : ICSScriptSerializable
     {
         get;
         set;
-    }
+    } = null!;
 
     public byte? Depth
     {
@@ -35,7 +30,7 @@ public class LevelConnection : ICSScriptSerializable
     }
 
     public static ConnectionComponent CreateSourceConnection(
-        LevelComponent level, Point cell, LevelConnection connectionDefinition)
+        LevelComponent level, Point cell, LevelConnection? connectionDefinition)
     {
         var targetBranchName = connectionDefinition?.BranchName ?? level.BranchName;
         var targetDepth = connectionDefinition?.Depth
@@ -44,14 +39,14 @@ public class LevelConnection : ICSScriptSerializable
         var game = level.Game;
         var manager = game.Manager;
         var branch = game.GetBranch(targetBranchName) ??
-                     Branch.Loader.Find(targetBranchName).Instantiate(game);
+                     Branch.Loader.Get(targetBranchName).Instantiate(game);
 
         var targetLevel = branch.Levels.FirstOrDefault(l => l.Depth == targetDepth);
         Point? targetCell = null;
         if (targetLevel != null)
         {
             var matchingConnection = targetLevel.IncomingConnections
-                .Select(c => c.Connection)
+                .Select(c => c.Connection!)
                 .FirstOrDefault(c => c.TargetLevelId == level.EntityId
                                      && c.TargetLevelX == null
                                      && AreMatchingDirection(c.Direction, direction));
@@ -68,7 +63,7 @@ public class LevelConnection : ICSScriptSerializable
                 }
 
                 matchingConnection.TargetLevelCell = cell;
-                targetCell = matchingConnection.Entity.Position.LevelCell;
+                targetCell = matchingConnection.Entity.Position!.LevelCell;
             }
         }
         else
@@ -93,7 +88,7 @@ public class LevelConnection : ICSScriptSerializable
         }
 
         incoming.TargetLevelCell = cell;
-        var incomingPosition = incoming.Entity.Position;
+        var incomingPosition = incoming.Entity.Position!;
         CreateConnection(level, cell, incomingPosition.LevelId, incomingPosition.LevelCell, direction);
     }
 
@@ -122,25 +117,23 @@ public class LevelConnection : ICSScriptSerializable
         LevelComponent level, Point point, int targetLevelId, Point? targetCell, ConnectionDirection? direction)
     {
         var manager = level.Entity.Manager;
-        using (var connectionEntityReference = manager.CreateEntity())
-        {
-            var connectionEntity = connectionEntityReference.Referenced;
+        using var connectionEntityReference = manager.CreateEntity();
+        var connectionEntity = connectionEntityReference.Referenced;
 
-            var position = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
-            position.LevelEntity = level.Entity;
-            position.LevelCell = point;
+        var position = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
+        position.LevelEntity = level.Entity;
+        position.LevelCell = point;
 
-            connectionEntity.Position = position;
+        connectionEntity.Position = position;
 
-            var connection = manager.CreateComponent<ConnectionComponent>(EntityComponent.Connection);
-            connection.TargetLevelId = targetLevelId;
-            connection.TargetLevelCell = targetCell;
-            connection.Direction = direction;
+        var connection = manager.CreateComponent<ConnectionComponent>(EntityComponent.Connection);
+        connection.TargetLevelId = targetLevelId;
+        connection.TargetLevelCell = targetCell;
+        connection.Direction = direction;
 
-            connectionEntity.Connection = connection;
+        connectionEntity.Connection = connection;
 
-            return connection;
-        }
+        return connection;
     }
 
     private static readonly CSScriptSerializer Serializer =

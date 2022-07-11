@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using UnicornHack.Primitives;
-using UnicornHack.Utils.DataStructures;
-
 namespace UnicornHack.Utils;
 
 // A* implementation
@@ -28,7 +22,7 @@ public class PathFinder
     }
 
     // Not thread safe
-    public List<Point> FindPath<TState>(Point start, Point target, Direction initialDirection,
+    public List<Point>? FindPath<TState>(Point start, Point target, Direction initialDirection,
         Func<byte, byte, TState, int?> canMoveTo, TState state)
     {
         var found = false;

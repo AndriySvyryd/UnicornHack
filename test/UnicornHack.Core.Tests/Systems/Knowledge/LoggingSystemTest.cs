@@ -1,16 +1,10 @@
-using System.Collections.Generic;
-using System.Linq;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
-using UnicornHack.Generation;
-using UnicornHack.Primitives;
 using UnicornHack.Services.English;
 using UnicornHack.Services.LogEvents;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
-using UnicornHack.Utils.DataStructures;
-using Xunit;
 
 namespace UnicornHack.Systems.Knowledge;
 
@@ -30,7 +24,7 @@ public class LoggingSystemTest
         var undine = CreatureData.Undine.Instantiate(level, new Point(0, 1));
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(1, 0));
-        playerEntity.Position.Heading = Direction.West;
+        playerEntity.Position!.Heading = Direction.West;
         var manager = playerEntity.Manager;
 
         manager.Queue.ProcessQueue(manager);
@@ -38,12 +32,12 @@ public class LoggingSystemTest
         ItemData.LongSword.Instantiate(playerEntity);
 
         var player2Entity = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, level, new Point(2, 0));
-        player2Entity.Position.Heading = Direction.North;
+        player2Entity.Position!.Heading = Direction.North;
 
         manager.Queue.ProcessQueue(manager);
 
-        var swordEntity = playerEntity.Being.Items
-            .Single(e => e.Item.TemplateName == ItemData.LongSword.Name);
+        var swordEntity = playerEntity.Being!.Items
+            .Single(e => e.Item!.TemplateName == ItemData.LongSword.Name);
         var equipMessage = EquipItemMessage.Create(manager);
         equipMessage.ActorEntity = playerEntity;
         equipMessage.ItemEntity = swordEntity;
@@ -51,11 +45,11 @@ public class LoggingSystemTest
 
         manager.Enqueue(equipMessage);
         manager.Queue.ProcessQueue(manager);
-        playerEntity.Player.LogEntries.Clear();
-        player2Entity.Player.LogEntries.Clear();
+        playerEntity.Player!.LogEntries.Clear();
+        player2Entity.Player!.LogEntries.Clear();
 
-        var wizardPunch = wizard.Being.Abilities
-            .Single(a => a.Ability.Action == AbilityAction.Punch);
+        var wizardPunch = wizard.Being!.Abilities
+            .Single(a => a.Ability!.Action == AbilityAction.Punch);
 
         var activateMessage = ActivateAbilityMessage.Create(manager);
         activateMessage.AbilityEntity = wizardPunch;
@@ -94,7 +88,7 @@ public class LoggingSystemTest
             manager);
 
         var wizardSpell = wizard.Being.Abilities
-            .Single(a => a.Ability.Action == AbilityAction.Spell);
+            .Single(a => a.Ability!.Action == AbilityAction.Spell);
         Verify(wizard, playerEntity, playerEntity, player2Entity,
             wizardSpell, success: true,
             "The Wizard of Yendor casts a spell at you! You are unaffected.",
@@ -238,7 +232,7 @@ public class LoggingSystemTest
         activationMessage.AbilityEntity = ability;
         activationMessage.ActivatorEntity = attacker;
         activationMessage.TargetEntity = victim;
-        ability.Ability.CooldownTick = null;
+        ability.Ability!.CooldownTick = null;
 
         manager.Enqueue(activationMessage);
 
@@ -246,24 +240,24 @@ public class LoggingSystemTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(expectedMessage1,
-            player1.Player.LogEntries.Single().Message);
+            player1.Player!.LogEntries.Single().Message);
         player1.Player.LogEntries.Clear();
         Assert.Equal(expectedMessage2,
-            player2.Player.LogEntries.Single().Message);
+            player2.Player!.LogEntries.Single().Message);
         player2.Player.LogEntries.Clear();
     }
 
     private void Verify(
         GameEntity attacker,
-        GameEntity victim,
+        GameEntity? victim,
         GameEntity sensor,
         SenseType attackerSensed,
         SenseType victimSensed,
         AbilityAction abilityAction,
         GameManager manager,
         int? damage,
-        GameEntity weapon = null,
-        string expectedMessage = "")
+        GameEntity? weapon = null,
+        string? expectedMessage = "")
     {
         var languageService = manager.Game.Services.Language;
 
@@ -277,7 +271,7 @@ public class LoggingSystemTest
                 var appliedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                 appliedEffect.AppliedAmount = damage.Value;
                 appliedEffect.EffectType = EffectType.PhysicalDamage;
-                appliedEffect.AffectedEntityId = victim.Id;
+                appliedEffect.AffectedEntityId = victim!.Id;
 
                 entity.Effect = appliedEffect;
 
@@ -305,7 +299,7 @@ public class LoggingSystemTest
 
         var attackEvent = new AttackEvent(sensor, attacker, victim, attackerSensed, victimSensed,
             appliedEffects, abilityAction, weapon,
-            ranged: weapon != null && (weapon.Item.Type & ItemType.WeaponRanged) != 0, hit: damage.HasValue);
+            ranged: weapon != null && (weapon.Item!.Type & ItemType.WeaponRanged) != 0, hit: damage.HasValue);
 
         Assert.Equal(expectedMessage, languageService.GetString(attackEvent));
     }
@@ -452,11 +446,11 @@ public class LoggingSystemTest
 
         Assert.Equal("You level up! You gain 2 SP 1 TP 0 MP.",
             languageService.GetString(new LeveledUpEvent(
-                player1, player1, player1.Being.Races.Single().Race, 2, 1, 0)));
+                player1, player1, player1.Being!.Races.Single().Race!, 2, 1, 0)));
 
         Assert.Equal("Cudley levels up! She gains 3 SP 2 TP 1 MP.",
             languageService.GetString(new LeveledUpEvent(
-                player1, player2, player2.Being.Races.Single().Race, 3, 2, 1)));
+                player1, player2, player2.Being!.Races.Single().Race!, 3, 2, 1)));
     }
 
     [Fact]

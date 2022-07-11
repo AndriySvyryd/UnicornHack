@@ -1,6 +1,3 @@
-using UnicornHack.Primitives;
-using Xunit;
-
 namespace UnicornHack.Utils.DataStructures;
 
 public class VectorTest
