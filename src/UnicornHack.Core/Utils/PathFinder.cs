@@ -6,7 +6,7 @@ public class PathFinder
     private readonly int[,] _pointToIndex;
     private readonly Point[] _indexToPoint;
 
-    private readonly PriorityQueue<int> _openNodes;
+    private readonly SnapshotablePriorityQueue<int> _openNodes;
     private readonly List<Point> _shortestPath = new();
     private readonly PathFinderNode[] _graph;
     private byte _openNodeStatus = 1;
@@ -18,7 +18,7 @@ public class PathFinder
         _indexToPoint = indexToPoint;
 
         _graph = new PathFinderNode[indexToPoint.Length];
-        _openNodes = new PriorityQueue<int>(new PathFinderNodeComparer(_graph));
+        _openNodes = new SnapshotablePriorityQueue<int>(new PathFinderNodeComparer(_graph));
     }
 
     // Not thread safe

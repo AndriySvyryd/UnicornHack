@@ -9,7 +9,7 @@ public static class CSScriptLoaderHelpers
     public static readonly string ScriptExtension = ".csx";
     public static readonly bool LoadScripts = false;
 
-    public static IReadOnlyList<string> GlobalNamespaces = new[]
+    public static readonly IReadOnlyList<string> GlobalNamespaces = new[]
     {
         typeof(object).GetTypeInfo().Namespace!,
         typeof(List<>).GetTypeInfo().Namespace!,

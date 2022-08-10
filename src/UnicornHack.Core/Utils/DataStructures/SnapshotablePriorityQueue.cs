@@ -2,22 +2,21 @@ using System.Collections;
 
 namespace UnicornHack.Utils.DataStructures;
 
-// TODO: Use the class from .NET 6 and change this to a SnapshotablePriorityQueue
-public class PriorityQueue<T> : ISnapshotableCollection<T>
+public class SnapshotablePriorityQueue<T> : ISnapshotableCollection<T>
     where T : notnull
 {
     private readonly List<T> _list = new();
     private readonly IComparer<T> _comparer;
 
-    public PriorityQueue() : this(Comparer<T>.Default, 0)
+    public SnapshotablePriorityQueue() : this(Comparer<T>.Default, 0)
     {
     }
 
-    public PriorityQueue(IComparer<T> comparer) : this(comparer, 0)
+    public SnapshotablePriorityQueue(IComparer<T> comparer) : this(comparer, 0)
     {
     }
 
-    public PriorityQueue(IComparer<T> comparer, int capacity)
+    public SnapshotablePriorityQueue(IComparer<T> comparer, int capacity)
     {
         _comparer = comparer;
         if (capacity != 0)
@@ -26,11 +25,11 @@ public class PriorityQueue<T> : ISnapshotableCollection<T>
         }
     }
 
-    public PriorityQueue(IEnumerable<T> source) : this(source, Comparer<T>.Default)
+    public SnapshotablePriorityQueue(IEnumerable<T> source) : this(source, Comparer<T>.Default)
     {
     }
 
-    public PriorityQueue(IEnumerable<T> source, IComparer<T> comparer) : this(comparer, 0)
+    public SnapshotablePriorityQueue(IEnumerable<T> source, IComparer<T> comparer) : this(comparer, 0)
     {
         foreach (var element in source)
         {
@@ -38,11 +37,11 @@ public class PriorityQueue<T> : ISnapshotableCollection<T>
         }
     }
 
-    public PriorityQueue(ICollection<T> source) : this(source, Comparer<T>.Default)
+    public SnapshotablePriorityQueue(ICollection<T> source) : this(source, Comparer<T>.Default)
     {
     }
 
-    public PriorityQueue(ICollection<T> source, IComparer<T> comparer) : this(comparer, source.Count)
+    public SnapshotablePriorityQueue(ICollection<T> source, IComparer<T> comparer) : this(comparer, source.Count)
     {
         foreach (var element in source)
         {
