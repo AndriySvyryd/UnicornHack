@@ -16,7 +16,7 @@ public class TestRandom : SimpleRandom
         _boolsToReturn.Enqueue(value);
     }
 
-    public override bool NextBool(int successProbability, ref int entropyState)
+    public override bool NextStreaklessBool(int successProbability, ref int karma)
     {
         switch (successProbability)
         {
@@ -32,6 +32,25 @@ public class TestRandom : SimpleRandom
             return _boolsToReturn.Dequeue();
         }
 
-        return base.NextBool(successProbability, ref entropyState);
+        return base.NextStreaklessBool(successProbability, ref karma);
+    }
+
+    public override bool NextStreaklessPatternlessBool(int successProbability, ref int entropyState)
+    {
+        switch (successProbability)
+        {
+            case 0:
+                return false;
+            case 100:
+                return true;
+        }
+
+        if (_boolsToReturn != null
+            && _boolsToReturn.Count > 0)
+        {
+            return _boolsToReturn.Dequeue();
+        }
+
+        return base.NextStreaklessPatternlessBool(successProbability, ref entropyState);
     }
 }

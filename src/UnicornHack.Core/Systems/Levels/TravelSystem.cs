@@ -174,7 +174,7 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
 
         if (path.Count != 0)
         {
-            nextPoint = path[path.Count - 1];
+            nextPoint = path[^1];
         }
 
         Debug.Assert(origin.DistanceTo(nextPoint) <= 1);
@@ -235,7 +235,7 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         return CanMoveTo(newLocation.X, newLocation.Y, level);
     }
 
-    private int? CanMoveTo(byte locationX, byte locationY, LevelComponent level)
+    private short? CanMoveTo(byte locationX, byte locationY, LevelComponent level)
     {
         if (locationX >= level.Width || locationY >= level.Height)
         {
@@ -246,7 +246,7 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         return ((MapFeature)level.Terrain[index]).CanMoveTo() ? index : null;
     }
 
-    private int? CanMoveToKnown(byte locationX, byte locationY, LevelComponent level)
+    private short? CanMoveToKnown(byte locationX, byte locationY, LevelComponent level)
     {
         if (locationX >= level.Width || locationY >= level.Height)
         {

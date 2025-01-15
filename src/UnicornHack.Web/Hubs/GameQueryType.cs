@@ -3,14 +3,14 @@
 public enum GameQueryType
 {
     Clear = 0,
-    PostGameStatistics,
     SlottableAbilities,
     PlayerAttributes,
     PlayerInventory,
     PlayerAdaptations,
     PlayerSkills,
+    AbilityAttributes,
     ActorAttributes,
     ItemAttributes,
-    AbilityAttributes,
-    StaticDescription
+    StaticDescription,
+    PostGameStatistics
 }

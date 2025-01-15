@@ -1,16 +1,4 @@
 using System.Text;
-using FactAttribute = System.Runtime.CompilerServices.CompilerGeneratedAttribute;
-using TheoryAttribute = System.Runtime.CompilerServices.CompilerGeneratedAttribute;
-using InlineDataAttribute = DummyDataAttribute;
-
-// Used for disabled tests
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-internal class DummyDataAttribute : Attribute
-{
-    public DummyDataAttribute(params object[] data)
-    {
-    }
-}
 
 namespace UnicornHack.Utils
 {
@@ -154,7 +142,7 @@ namespace UnicornHack.Utils
             var seed = (uint)Environment.TickCount;
             var random = new SimpleRandom { Seed = seed };
             var selectedCounts = new int[itemWeights.Length];
-            var selectionCount = 500000;
+            var selectionCount = 1000000;
             for (var i = 0; i < selectionCount; i++)
             {
                 var selectedIndex = random.NextBinomial(p, n);
@@ -199,13 +187,13 @@ namespace UnicornHack.Utils
             var seed = (uint)Environment.TickCount;
             var random = new SimpleRandom { Seed = seed };
             var selectedCounts = new int[itemWeights.Length];
-            var selectionCount = 500000;
+            var selectionCount = 1000000;
             var entropy = 0;
             var positiveStreak = 0;
             var negativeStreak = 0;
             for (var i = 0; i < selectionCount; i++)
             {
-                var result = random.NextBool(p, ref entropy);
+                var result = random.NextStreaklessPatternlessBool(p, ref entropy);
                 if (result)
                 {
                     selectedCounts[0]++;
@@ -239,19 +227,19 @@ namespace UnicornHack.Utils
                 var expected = (double)itemWeights[i] / weightSum;
                 var actual = (double)selectedCounts[i] / selectionCount;
 
-                if (!(Math.Abs(expected - actual) <= toleranceFraction * expected + uniformTolerance)) //
+                if (!(Math.Abs(expected - actual) <= toleranceFraction * expected + uniformTolerance))
                 {
                     var builder = new StringBuilder();
                     builder.AppendLine(
-                        $"Error at index {i}: expected {expected * selectionCount:N4}, "
-                        + $"actual {actual * selectionCount:N4}\r\n"
-                        + $"tolerance {(toleranceFraction * expected + uniformTolerance) * selectionCount:N4}, seed {seed}");
+                        $"Error at index {i}: expected {expected * selectionCount:N0}, "
+                        + $"actual {actual * selectionCount:N0}\r\n"
+                        + $"tolerance {(toleranceFraction * expected + uniformTolerance) * selectionCount:N0}, seed {seed}");
 
-                    builder.AppendLine("\tIndex\tFrequency\tAdjusted weight");
+                    builder.AppendLine("Index Adjusted weight Actual frequency");
                     for (var j = 0; j < itemWeights.Length; j++)
                     {
                         builder.AppendLine(
-                            $"\t{j,4:N0}\t{selectedCounts[j],9:D} {(itemWeights[j] / weightSum) * selectionCount,12:N4}");
+                            $"{j,5:N0} {(itemWeights[j] / weightSum) * selectionCount,15:N0} {selectedCounts[j],16:N0}");
                     }
 
                     Assert.False(true, builder.ToString());

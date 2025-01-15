@@ -242,11 +242,44 @@ public class SimpleRandom : NotificationEntity
     public bool NextBool() => (0x80000000 & NextUInt()) == 0;
 
     private const int BoolSeedMask = 0x000000FF;
-    private const int PositiveStreakShift = 8;
-    private const int PositiveStreakMask = 0x0000FF00;
-    private const int NegativeStreakShift = 16;
-    private const int NegativeStreakMask = 0x00FF0000;
+    private const int PositiveAccumulatorShift = 8;
+    private const int PositiveAccumulatorMask = 0x0000FF00;
+    private const int NegativeAccumulatorShift = 16;
+    private const int NegativeAccumulatorMask = 0x00FF0000;
     private const int InitializedFlag = 0x01000000;
+
+    /// <summary>
+    ///     Returns a random bool with the given <paramref name="successProbability" /> without any streaks
+    ///     longer than ((100 / p) - 1) * 2.
+    /// </summary>
+    /// <param name="successProbability">Percent of expected <c>true</c> results.</param>
+    /// <param name="karma">State used to determine the result.</param>
+    /// <returns> A random bool. </returns>
+    public virtual bool NextStreaklessBool(int successProbability, ref int karma)
+    {
+        if (successProbability < 0
+            || successProbability > 100)
+        {
+            throw new ArgumentOutOfRangeException(nameof(successProbability));
+        }
+
+        if (karma < 0
+            || karma > 100)
+        {
+            throw new ArgumentOutOfRangeException(nameof(successProbability));
+        }
+
+        // Adding success probability and then taking the modulo 100 ensures the least amount of positive and negative streaks
+        // while still maintaining the expected probability over large enough samples.
+        karma += successProbability;
+        if (karma >= 100)
+        {
+            karma -= 100;
+            return true;
+        }
+
+        return false;
+    }
 
     /// <summary>
     ///     Returns a random bool with the given <paramref name="successProbability" /> without any streaks
@@ -255,7 +288,7 @@ public class SimpleRandom : NotificationEntity
     /// <param name="successProbability">Percent of expected <c>true</c> results.</param>
     /// <param name="entropyState">State for streak-breaking.</param>
     /// <returns> A random bool. </returns>
-    public virtual bool NextBool(int successProbability, ref int entropyState)
+    public virtual bool NextStreaklessPatternlessBool(int successProbability, ref int entropyState)
     {
         if (successProbability < 0
             || successProbability > 100)
@@ -271,35 +304,37 @@ public class SimpleRandom : NotificationEntity
                 return true;
         }
 
-        var positiveStreak = (entropyState & PositiveStreakMask) >> PositiveStreakShift;
-        var negativeStreak = (entropyState & NegativeStreakMask) >> NegativeStreakShift;
+        var positiveAccumulator = (entropyState & PositiveAccumulatorMask) >> PositiveAccumulatorShift;
+        var negativeAccumulator = (entropyState & NegativeAccumulatorMask) >> NegativeAccumulatorShift;
         var seed = entropyState & BoolSeedMask;
         if (entropyState == 0)
         {
-            positiveStreak = Next(100);
-            negativeStreak = Next(100);
+            positiveAccumulator = Next(100);
+            negativeAccumulator = Next(100);
             seed = Next(100);
         }
 
-        if (positiveStreak < 100)
+        if (positiveAccumulator < 100)
         {
-            positiveStreak += successProbability;
+            positiveAccumulator += successProbability;
         }
 
-        if (negativeStreak < 100)
+        if (negativeAccumulator < 100)
         {
-            negativeStreak += 100 - successProbability;
+            negativeAccumulator += 100 - successProbability;
         }
 
+        // Adding success probability and then taking the modulo 100 ensures the least amount of positive and negative streaks
+        // while still maintaining the expected probability over large enough samples.
         seed += successProbability;
-
         var result = seed >= 100;
 
-        if (positiveStreak >= 100
-            && negativeStreak >= 100)
+        // Resets the seed after the expected number of calls where the result would start following a predictable pattern.
+        if (positiveAccumulator >= 100
+            && negativeAccumulator >= 100)
         {
-            positiveStreak = 0;
-            negativeStreak = 0;
+            positiveAccumulator = 0;
+            negativeAccumulator = 0;
             seed = Next(100);
         }
         else if (result)
@@ -307,9 +342,13 @@ public class SimpleRandom : NotificationEntity
             seed -= 100;
         }
 
+        Debug.Assert(positiveAccumulator < 200);
+        Debug.Assert(negativeAccumulator < 200);
+        Debug.Assert(seed < 100);
+
         entropyState = seed
-                       | (positiveStreak << PositiveStreakShift)
-                       | (negativeStreak << NegativeStreakShift)
+                       | (positiveAccumulator << PositiveAccumulatorShift)
+                       | (negativeAccumulator << NegativeAccumulatorShift)
                        | InitializedFlag;
 
         return result;

@@ -28,7 +28,7 @@
         <script src="~/js/vendors-main.chunk.js" asp-append-version="true"></script>
         <script src="~/js/main.chunk.js" asp-append-version="true"></script>
         <script>
-            @Html.Raw(File.ReadAllText(WebHostEnvironment.WebRootFileProvider.GetFileInfo("js/runtime~main.js").PhysicalPath))
+            @Html.Raw(File.ReadAllText(WebHostEnvironment.WebRootFileProvider.GetFileInfo("js/runtime~main.js").PhysicalPath!))
         </script>
     </environment>
     <environment include="Development">

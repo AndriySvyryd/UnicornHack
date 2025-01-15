@@ -101,7 +101,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         set;
     }
 
-    public int[,]? PointToIndex
+    public short[,]? PointToIndex
     {
         get;
         private set;
@@ -132,11 +132,9 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
 
     protected abstract void ResetWeightFunction();
 
-    // Characters that can be used as conditions for neighbors:
+    // TODO: Characters that can be used as conditions for neighbors:
     // ~ - marks the edge row and/or column as conditional
     // X - should be outside the level
-    // # - wall or other unpassable terrain
-    // . - floor or other passable terrain
     [MemberNotNull(nameof(ByteMap))]
     [MemberNotNull(nameof(PointToIndex))]
     [MemberNotNull(nameof(IndexToPoint))]
@@ -405,7 +403,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         Action<char, Point, LevelComponent, TState> write, TState state)
     {
         EnsureInitialized(level.Game);
-        
+
         var map = ByteMap;
         var x = target.X;
         var y = target.Y;
@@ -544,7 +542,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         return doorwayPoints;
     }
 
-    private static IReadOnlyList<Point> WalkPerimeter(Point firstPoint, byte[] neighbors, int[,] pointToIndex,
+    private static IReadOnlyList<Point> WalkPerimeter(Point firstPoint, byte[] neighbors, short[,] pointToIndex,
         Action<Point> perimeterAction, Action<Point> outsideAction) =>
         WalkPerimeter(new Point(firstPoint.X, (byte)(firstPoint.Y - 1)), DirectionFlags.South, Direction.North,
             new Dictionary<Point, int>(), neighbors, pointToIndex, perimeterAction, outsideAction) ??
@@ -552,7 +550,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
 
     private static List<Point>? WalkPerimeter(Point firstPoint, DirectionFlags currentNeighborMap,
         Direction previousPointDirection, Dictionary<Point, int> visitedIntersections, byte[] neighbors,
-        int[,] pointToIndex, Action<Point> perimeterAction, Action<Point> outsideAction)
+        short[,] pointToIndex, Action<Point> perimeterAction, Action<Point> outsideAction)
     {
         // Assuming both the perimeter and the inner area are contiguous
         List<Point>? perimeter = null;
@@ -587,10 +585,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                             break;
                         }
 
-                        if (perimeter == null)
-                        {
-                            perimeter = new List<Point>();
-                        }
+                        perimeter ??= new List<Point>();
 
                         if (perimeter.Count == 0 || !nextPoint.Equals(perimeter[0]))
                         {

@@ -1,3 +1,5 @@
+using MessagePack.Resolvers;
+using MessagePack;
 using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -29,7 +31,7 @@ public class Startup
 
         services.AddDbContextPool<GameDbContext>((_, options) =>
         {
-            options.UseSqlServer(_configuration.GetConnectionString(name: "DefaultConnection"))
+            options.UseSqlServer(_configuration.GetConnectionString(name: "DefaultConnection")!)
                 .ConfigureWarnings(w => w.Default(WarningBehavior.Throw)
                     .Log(CoreEventId.SensitiveDataLoggingEnabledWarning));
 
@@ -55,7 +57,17 @@ public class Startup
                 });
         });
 
-        services.AddSignalR(o => o.EnableDetailedErrors = true).AddMessagePackProtocol();
+        services.AddSignalR(o =>
+        {
+            o.EnableDetailedErrors = true;
+            o.DisableImplicitFromServicesParameters = true;
+        })
+            .AddMessagePackProtocol(
+                o => o.SerializerOptions = MessagePackSerializerOptions.Standard
+                    .WithSecurity(MessagePackSecurity.UntrustedData)
+                    .WithResolver(CompositeResolver.Create(
+                        BuiltinResolver.Instance,
+                        GeneratedResolver.Instance)));
 
         services.AddApplicationInsightsTelemetry();
 
@@ -71,6 +83,7 @@ public class Startup
     {
         if (env.IsDevelopment())
         {
+            //app.UseWebAssemblyDebugging();
             app.UseDeveloperExceptionPage();
             app.UseMigrationsEndPoint();
 
@@ -84,10 +97,11 @@ public class Startup
             app.UseExceptionHandler("/Error");
 
             // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-            //app.UseHsts();
+            app.UseHsts();
         }
 
-        //app.UseHttpsRedirection();
+        app.UseHttpsRedirection();
+
         app.UseStaticFiles();
         app.UseSpaStaticFiles();
 

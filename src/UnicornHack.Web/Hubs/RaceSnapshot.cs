@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Collections;
+using Microsoft.EntityFrameworkCore;
 using UnicornHack.Systems.Beings;
 
 namespace UnicornHack.Hubs;
@@ -15,52 +16,53 @@ public static class RaceSnapshot
             case EntityState.Added:
             {
                 var race = raceEntity.Race!;
-                properties = state == null
-                    ? new List<object?>(4)
-                    : new List<object?>(5) { (int)state };
-                properties.Add(raceEntity.Id);
-                properties.Add(context.Services.Language.GetString(race, abbreviate: false));
-                properties.Add(context.Services.Language.GetString(race, abbreviate: true));
-                properties.Add(race.Level);
+                properties =
+                [
+                    null,
+                    context.Services.Language.GetString(race, abbreviate: false),
+                    context.Services.Language.GetString(race, abbreviate: true)
+                ];
                 return properties;
             }
             case EntityState.Deleted:
-                return new List<object?> { (int)state, raceEntity.Id };
+                return SerializationContext.DeletedBitArray;
             default:
             {
                 var race = raceEntity.Race!;
-                properties = new List<object?> { (int)state, raceEntity.Id };
-
                 var raceEntry = context.DbContext.Entry(race);
-                var i = 1;
-
-                if (raceEntry.State != EntityState.Unchanged)
+                if (raceEntry.State == EntityState.Unchanged)
                 {
-                    var name = raceEntry.Property(nameof(RaceComponent.TemplateName));
-                    if (name.IsModified)
-                    {
-                        properties.Add(i);
-                        properties.Add(context.Services.Language.GetString(race, abbreviate: false));
-
-                        i++;
-                        properties.Add(i);
-                        properties.Add(context.Services.Language.GetString(race, abbreviate: true));
-                    }
-                    else
-                    {
-                        i++;
-                    }
-
-                    i++;
-                    var xpLevel = raceEntry.Property(nameof(RaceComponent.Level));
-                    if (xpLevel.IsModified)
-                    {
-                        properties.Add(i);
-                        properties.Add(race.Level);
-                    }
+                    return null;
                 }
 
-                return properties.Count > 2 ? properties : null;
+                var i = 0;
+                var setValues = new bool[3];
+                setValues[i++] = true;
+                properties = [null];
+
+                var name = raceEntry.Property(nameof(RaceComponent.TemplateName));
+                if (name.IsModified)
+                {
+                    setValues[i++] = true;
+                    properties.Add(context.Services.Language.GetString(race, abbreviate: false));
+
+                    setValues[i++] = true;
+                    properties.Add(context.Services.Language.GetString(race, abbreviate: true));
+                }
+                else
+                {
+                    setValues[i++] = false;
+                    setValues[i++] = false;
+                }
+
+                Debug.Assert(i == 3);
+                if (properties.Count == 1)
+                {
+                    return null;
+                }
+
+                properties[0] = new BitArray(setValues);
+                return properties;
             }
         }
     }

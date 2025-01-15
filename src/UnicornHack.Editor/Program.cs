@@ -10,7 +10,7 @@ namespace UnicornHack.Editor;
 public static class Program
 {
     private static readonly bool SerializeToScript = false;
-    
+
     private static string _directory = "";
     private static CSClassSerializer? _serializer;
 

@@ -3,27 +3,27 @@ namespace UnicornHack.Utils;
 // A* implementation
 public class PathFinder
 {
-    private readonly int[,] _pointToIndex;
+    private readonly short[,] _pointToIndex;
     private readonly Point[] _indexToPoint;
 
-    private readonly SnapshotablePriorityQueue<int> _openNodes;
+    private readonly SnapshotablePriorityQueue<short> _openNodes;
     private readonly List<Point> _shortestPath = new();
     private readonly PathFinderNode[] _graph;
     private byte _openNodeStatus = 1;
     private byte _closedNodeStatus = 2;
 
-    public PathFinder(int[,] pointToIndex, Point[] indexToPoint)
+    public PathFinder(short[,] pointToIndex, Point[] indexToPoint)
     {
         _pointToIndex = pointToIndex;
         _indexToPoint = indexToPoint;
 
         _graph = new PathFinderNode[indexToPoint.Length];
-        _openNodes = new SnapshotablePriorityQueue<int>(new PathFinderNodeComparer(_graph));
+        _openNodes = new SnapshotablePriorityQueue<short>(new PathFinderNodeComparer(_graph));
     }
 
     // Not thread safe
     public List<Point>? FindPath<TState>(Point start, Point target, Direction initialDirection,
-        Func<byte, byte, TState, int?> canMoveTo, TState state)
+        Func<byte, byte, TState, short?> canMoveTo, TState state)
     {
         var found = false;
 
@@ -149,7 +149,7 @@ public class PathFinder
         public byte Status;
     }
 
-    private class PathFinderNodeComparer : IComparer<int>
+    private class PathFinderNodeComparer : IComparer<short>
     {
         private readonly PathFinderNode[] _graph;
 
@@ -158,7 +158,7 @@ public class PathFinder
             _graph = graph;
         }
 
-        public int Compare(int a, int b)
+        public int Compare(short a, short b)
         {
             if (_graph[a].EstimatedTotalCost > _graph[b].EstimatedTotalCost)
             {

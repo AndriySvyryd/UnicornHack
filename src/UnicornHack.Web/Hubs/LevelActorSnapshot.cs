@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Collections;
+using Microsoft.EntityFrameworkCore;
 using UnicornHack.Services;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
@@ -41,34 +42,27 @@ public class LevelActorSnapshot
         {
             case null:
             case EntityState.Added:
-                properties = state == null
-                    ? new List<object?>(6)
-                    : new List<object?>(7) { (int)state };
-                properties.Add(actorKnowledge!.EntityId);
-
+            {
+                Debug.Assert(actorKnowledge != null, nameof(actorKnowledge));
                 Debug.Assert(knownEntity != null, nameof(knownEntity));
                 Debug.Assert(position != null, nameof(position));
                 Debug.Assert(being != null, nameof(being));
-                if (actorKnowledge.SensedType.CanIdentify())
+
+                var canIdentify = actorKnowledge.SensedType.CanIdentify();
+                properties = new List<object?>(canIdentify ? 17 : 4)
+                {
+                    null,
+                    position.LevelX,
+                    position.LevelY,
+                    (byte)position.Heading!
+                };
+
+                if (canIdentify)
                 {
                     properties.Add(ai != null
                         ? actorKnowledge.KnownEntity.Being!.Races.First().Race!.TemplateName
                         : "player");
                     properties.Add(context.Services.Language.GetActorName(knownEntity, actorKnowledge.SensedType));
-                }
-                else
-                {
-                    properties.Add(null);
-                    properties.Add(null);
-                }
-
-                properties.Add(position.LevelX);
-                properties.Add(position.LevelY);
-                properties.Add((byte)position.Heading!);
-
-                if (actorKnowledge.SensedType.CanIdentify()
-                    && ai != null)
-                {
                     var currentlyPerceived = manager.SensorySystem.SensedByPlayer(knownEntity, position.LevelCell)
                         .CanIdentify();
                     if (snapshot != null)
@@ -81,183 +75,232 @@ public class LevelActorSnapshot
                     properties.Add(currentlyPerceived ? being.HitPointMaximum : 0);
                     properties.Add(currentlyPerceived ? being.EnergyPoints : 0);
                     properties.Add(currentlyPerceived ? being.EnergyPointMaximum : 0);
-                    properties.Add(currentlyPerceived ? ai.NextActionTick : 0);
 
-                    properties.Add(currentlyPerceived ? SerializeNextAction(ai, context) : null);
+                    if (ai != null)
+                    {
+                        properties.Add(currentlyPerceived ? ai.NextActionTick : 0);
+                        properties.Add(currentlyPerceived ? SerializeNextAction(ai, context) : null);
 
-                    var meleeAttack =
-                        manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: true, manager);
-                    properties.Add(SerializeAttackSummary(
-                        meleeAttack,
-                        knownEntity,
-                        context.Observer,
-                        manager));
+                        var meleeAttack =
+                            manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: true, manager);
+                        properties.Add(SerializeAttackSummary(
+                            meleeAttack,
+                            knownEntity,
+                            context.Observer,
+                            manager));
 
-                    var rangedAttack =
-                        manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: false, manager);
-                    properties.Add(SerializeAttackSummary(
-                        rangedAttack,
-                        knownEntity,
-                        context.Observer,
-                        manager));
+                        var rangedAttack =
+                            manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: false, manager);
+                        properties.Add(SerializeAttackSummary(
+                            rangedAttack,
+                            knownEntity,
+                            context.Observer,
+                            manager));
 
-                    meleeAttack = manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: true, manager);
-                    properties.Add(SerializeAttackSummary(
-                        meleeAttack,
-                        context.Observer,
-                        knownEntity,
-                        manager));
+                        meleeAttack = manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: true, manager);
+                        properties.Add(SerializeAttackSummary(
+                            meleeAttack,
+                            context.Observer,
+                            knownEntity,
+                            manager));
 
-                    rangedAttack = manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: false, manager);
-                    properties.Add(SerializeAttackSummary(
-                        rangedAttack,
-                        context.Observer,
-                        knownEntity,
-                        manager));
-
-                    return properties;
+                        rangedAttack = manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: false, manager);
+                        properties.Add(SerializeAttackSummary(
+                            rangedAttack,
+                            context.Observer,
+                            knownEntity,
+                            manager));
+                    }
+                    else
+                    {
+                        properties.Add(0);
+                        properties.AddRange(Enumerable.Repeat<object?>(null, 5));
+                    }
+                }
+                else
+                {
+                    var setValues = new bool[17];
+                    setValues[0] = true;
+                    setValues[1] = true;
+                    setValues[2] = true;
+                    setValues[3] = true;
+                    properties[0] = new BitArray(setValues);
                 }
 
                 return properties;
+            }
             case EntityState.Deleted:
-                return new List<object?> { (int)state, knowledgeEntity.Id };
+                return SerializationContext.DeletedBitArray;
             default:
-                properties = new List<object?>(2) { (int)state, actorKnowledge!.EntityId };
+            {
+                var i = 0;
+                var setValues = new bool[17];
+                setValues[i++] = true;
+                properties = [null];
 
+                Debug.Assert(actorKnowledge != null, nameof(actorKnowledge));
                 Debug.Assert(knownEntity != null, nameof(knownEntity));
                 Debug.Assert(position != null, nameof(position));
                 Debug.Assert(being != null, nameof(being));
+
+                var positionEntry = context.DbContext.Entry(position);
+                if (positionEntry.State != EntityState.Unchanged)
+                {
+                    var levelX = positionEntry.Property(nameof(PositionComponent.LevelX));
+                    if (levelX.IsModified)
+                    {
+                        setValues[i++] = true;
+                        properties.Add(position.LevelX);
+                    }
+                    else
+                    {
+                        setValues[i++] = false;
+                    }
+
+                    var levelY = positionEntry.Property(nameof(PositionComponent.LevelY));
+                    if (levelY.IsModified)
+                    {
+                        setValues[i++] = true;
+                        properties.Add(position.LevelY);
+                    }
+                    else
+                    {
+                        setValues[i++] = false;
+                    }
+
+                    var heading = positionEntry.Property(nameof(PositionComponent.Heading));
+                    if (heading.IsModified)
+                    {
+                        setValues[i++] = true;
+                        properties.Add((byte)position.Heading!);
+                    }
+                    else
+                    {
+                        setValues[i++] = false;
+                    }
+                }
+                else
+                {
+                    setValues[i++] = false;
+                    setValues[i++] = false;
+                    setValues[i++] = false;
+                }
+
                 var knowledgeEntry = context.DbContext.Entry(actorKnowledge);
-                int? i = 1;
                 var sensedType = knowledgeEntry.Property(nameof(KnowledgeComponent.SensedType));
                 if (sensedType.IsModified)
                 {
                     var canIdentify = actorKnowledge.SensedType.CanIdentify();
-                    properties.Add(i);
+                    setValues[i++] = true;
                     properties.Add(!canIdentify
                         ? null
                         : ai != null
                             ? actorKnowledge.KnownEntity.Being!.Races.First().Race!.TemplateName
                             : "player");
 
-                    i++;
-                    properties.Add(i);
+                    setValues[i++] = true;
                     properties.Add(!canIdentify
                         ? null
                         : context.Services.Language.GetActorName(knownEntity, actorKnowledge.SensedType));
                 }
                 else
                 {
-                    i++;
+                    setValues[i++] = false;
+                    setValues[i++] = false;
                 }
 
-                var positionEntry = context.DbContext.Entry(position);
-                if (positionEntry.State != EntityState.Unchanged)
+                var currentlyPerceived = manager.SensorySystem.SensedByPlayer(knownEntity, position.LevelCell)
+                    .CanIdentify();
+                var currentPerceptionChanged = snapshot!.CurrentlyPerceived != currentlyPerceived;
+                if (currentPerceptionChanged)
                 {
-                    i++;
-                    var levelX = positionEntry.Property(nameof(PositionComponent.LevelX));
-                    if (levelX.IsModified)
+                    setValues[i++] = true;
+                    properties.Add(currentlyPerceived);
+                    snapshot.CurrentlyPerceived = currentlyPerceived;
+                }
+                else
+                {
+                    setValues[i++] = false;
+                }
+
+                var beingEntry = context.DbContext.Entry(being);
+                if (beingEntry.State != EntityState.Unchanged
+                    || currentPerceptionChanged)
+                {
+                    var hitPoints = beingEntry.Property(nameof(BeingComponent.HitPoints));
+                    if ((hitPoints.IsModified && currentlyPerceived)
+                        || currentPerceptionChanged)
                     {
-                        properties.Add(i);
-                        properties.Add(position.LevelX);
+                        setValues[i++] = true;
+                        properties.Add(currentlyPerceived ? being.HitPoints : 0);
+                    }
+                    else
+                    {
+                        setValues[i++] = false;
                     }
 
-                    i++;
-                    var levelY = positionEntry.Property(nameof(PositionComponent.LevelY));
-                    if (levelY.IsModified)
+                    var hitPointMaximum = beingEntry.Property(nameof(BeingComponent.HitPointMaximum));
+                    if ((hitPointMaximum.IsModified && currentlyPerceived)
+                        || currentPerceptionChanged)
                     {
-                        properties.Add(i);
-                        properties.Add(position.LevelY);
+                        setValues[i++] = true;
+                        properties.Add(currentlyPerceived ? being.HitPointMaximum : 0);
+                    }
+                    else
+                    {
+                        setValues[i++] = false;
                     }
 
-                    i++;
-                    var heading = positionEntry.Property(nameof(PositionComponent.Heading));
-                    if (heading.IsModified)
+                    var energyPoints = beingEntry.Property(nameof(BeingComponent.EnergyPoints));
+                    if ((energyPoints.IsModified && currentlyPerceived)
+                        || currentPerceptionChanged)
                     {
-                        properties.Add(i);
-                        properties.Add((byte)position.Heading!);
+                        setValues[i++] = true;
+                        properties.Add(currentlyPerceived ? being.EnergyPoints : 0);
+                    }
+                    else
+                    {
+                        setValues[i++] = false;
+                    }
+
+                    var energyPointMaximum = beingEntry.Property(nameof(BeingComponent.EnergyPointMaximum));
+                    if ((energyPointMaximum.IsModified && currentlyPerceived)
+                        || currentPerceptionChanged)
+                    {
+                        setValues[i++] = true;
+                        properties.Add(currentlyPerceived ? being.EnergyPointMaximum : 0);
+                    }
+                    else
+                    {
+                        setValues[i++] = false;
                     }
                 }
                 else
                 {
-                    i += 3;
+                    setValues[i++] = false;
+                    setValues[i++] = false;
+                    setValues[i++] = false;
+                    setValues[i++] = false;
                 }
 
                 if (ai != null)
                 {
-                    i++;
-                    var currentlyPerceived = manager.SensorySystem.SensedByPlayer(knownEntity, position.LevelCell)
-                        .CanIdentify();
-                    var currentPerceptionChanged = snapshot!.CurrentlyPerceived != currentlyPerceived;
-                    if (currentPerceptionChanged)
-                    {
-                        properties.Add(i);
-                        properties.Add(currentlyPerceived);
-                        snapshot.CurrentlyPerceived = currentlyPerceived;
-                    }
-
-                    var beingEntry = context.DbContext.Entry(being);
-                    if (beingEntry.State != EntityState.Unchanged
-                        || currentPerceptionChanged)
-                    {
-                        i++;
-                        var hitPoints = beingEntry.Property(nameof(BeingComponent.HitPoints));
-                        if (hitPoints.IsModified
-                            || currentPerceptionChanged)
-                        {
-                            properties.Add(i);
-                            properties.Add(currentlyPerceived ? being.HitPoints : 0);
-                        }
-
-                        i++;
-                        var hitPointMaximum = beingEntry.Property(nameof(BeingComponent.HitPointMaximum));
-                        if (hitPointMaximum.IsModified
-                            || currentPerceptionChanged)
-                        {
-                            properties.Add(i);
-                            properties.Add(currentlyPerceived ? being.HitPointMaximum : 0);
-                        }
-
-                        i++;
-                        var energyPoints = beingEntry.Property(nameof(BeingComponent.EnergyPoints));
-                        if (energyPoints.IsModified
-                            || currentPerceptionChanged)
-                        {
-                            properties.Add(i);
-                            properties.Add(currentlyPerceived ? being.EnergyPoints : 0);
-                        }
-
-                        i++;
-                        var energyPointMaximum = beingEntry.Property(nameof(BeingComponent.EnergyPointMaximum));
-                        if (energyPointMaximum.IsModified
-                            || currentPerceptionChanged)
-                        {
-                            properties.Add(i);
-                            properties.Add(currentlyPerceived ? being.EnergyPointMaximum : 0);
-                        }
-                    }
-                    else
-                    {
-                        i += 4;
-                    }
-
                     var aiEntry = context.DbContext.Entry(ai);
                     if (currentPerceptionChanged
                         || (currentlyPerceived
                             && aiEntry.State != EntityState.Unchanged
                             && aiEntry.Property(nameof(AIComponent.NextActionTick)).IsModified))
                     {
-                        i++;
-                        properties.Add(i);
+                        setValues[i++] = true;
                         properties.Add(currentlyPerceived ? ai.NextActionTick : 0);
 
-                        i++;
-                        properties.Add(i);
+                        setValues[i++] = true;
                         properties.Add(currentlyPerceived ? SerializeNextAction(ai, context) : null);
                     }
                     else
                     {
-                        i += 2;
+                        setValues[i++] = false;
+                        setValues[i++] = false;
                     }
 
                     if (sensedType.IsModified)
@@ -265,8 +308,7 @@ public class LevelActorSnapshot
                         var canIdentify = actorKnowledge.SensedType.CanIdentify();
 
                         // TODO: Snapshot the attacks and update them while the actor is perceived
-                        i++;
-                        properties.Add(i);
+                        setValues[i++] = true;
                         var meleeAttack = canIdentify
                             ? manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: true, manager)
                             : null;
@@ -276,8 +318,7 @@ public class LevelActorSnapshot
                             context.Observer,
                             manager));
 
-                        i++;
-                        properties.Add(i);
+                        setValues[i++] = true;
                         var rangedAttack = canIdentify
                             ? manager.AISystem.GetDefaultAttack(knownEntity, context.Observer, melee: false, manager)
                             : null;
@@ -287,8 +328,7 @@ public class LevelActorSnapshot
                             context.Observer,
                             manager));
 
-                        i++;
-                        properties.Add(i);
+                        setValues[i++] = true;
                         meleeAttack = canIdentify
                             ? manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: true, manager)
                             : null;
@@ -298,8 +338,7 @@ public class LevelActorSnapshot
                             knownEntity,
                             manager));
 
-                        i++;
-                        properties.Add(i);
+                        setValues[i++] = true;
                         rangedAttack = canIdentify
                             ? manager.PlayerSystem.GetDefaultAttack(context.Observer, melee: false, manager)
                             : null;
@@ -309,9 +348,28 @@ public class LevelActorSnapshot
                             knownEntity,
                             manager));
                     }
+                    else
+                    {
+                        setValues[i++] = false;
+                        setValues[i++] = false;
+                        setValues[i++] = false;
+                        setValues[i++] = false;
+                    }
+                }
+                else
+                {
+                    i += 6;
                 }
 
-                return properties.Count > 2 ? properties : null;
+                if (properties.Count == 1)
+                {
+                    return null;
+                }
+
+                Debug.Assert(i == 17);
+                properties[0] = new BitArray(setValues);
+                return properties;
+            }
         }
     }
 
@@ -320,7 +378,7 @@ public class LevelActorSnapshot
         var result = new List<object?>(2);
 
         var manager = context.Manager;
-        result.Add(ai.NextAction);
+        result.Add((int?)ai.NextAction);
         switch (ai.NextAction)
         {
             case ActorAction.UseAbilitySlot:
@@ -340,8 +398,8 @@ public class LevelActorSnapshot
 
                 var ability = abilityEntity.Ability!;
                 result.Add(context.Services.Language.GetString(ability));
-                result.Add(ai.NextActionTarget2);
-                result.Add(ability.TargetingShape);
+                result.Add(ai.NextActionTarget2 ?? 0);
+                result.Add((int)ability.TargetingShape);
                 result.Add(ability.TargetingShapeSize);
 
                 return result;
@@ -351,11 +409,15 @@ public class LevelActorSnapshot
                 var action = ai.NextAction == ActorAction.MoveOneCell ? "Move " : "Turn ";
                 result.Add(action + context.Services.Language.GetString(direction, abbreviate: true));
                 result.Add(ai.Entity.Position!.LevelCell.Translate(direction.AsVector()).ToInt32());
+                result.Add((int)TargetingShape.Line);
+                result.Add(0);
 
                 return result;
             default:
-                result.Add(ai.NextAction.ToString());
-                result.Add(ai.NextActionTarget);
+                result.Add(ai.NextAction?.ToString());
+                result.Add(ai.NextActionTarget ?? 0);
+                result.Add((int)TargetingShape.Line);
+                result.Add(0);
 
                 return result;
         }
@@ -403,18 +465,18 @@ public class LevelActorSnapshot
         var ticksToKill = expectedDamage <= 0
             ? 0
             : Math.Ceiling(victimEntity.Being!.HitPoints * 100f / expectedDamage) * stats.Delay;
-        result.Add(ticksToKill);
+        result.Add((int)ticksToKill);
 
         return result;
     }
 
-    public static List<object> SerializeAttributes(
+    public static List<object?> SerializeAttributes(
         GameEntity? actorEntity, SenseType sense, SerializationContext context)
     {
         var canIdentify = actorEntity != null && sense.CanIdentify();
         if (!canIdentify)
         {
-            return new List<object>();
+            return SerializationContext.DeletedBitArray;
         }
 
         var being = actorEntity!.Being!;
@@ -425,8 +487,9 @@ public class LevelActorSnapshot
             : context.Services.Language.GetDescription(
                 actorEntity.Being!.Races.First().Race!.TemplateName,
                 DescriptionCategory.Creature);
-        var result = new List<object>(42)
+        var result = new List<object?>(45)
         {
+            null,
             context.Services.Language.GetActorName(actorEntity, sense),
             description,
             actorEntity.Manager.XPSystem.GetXPLevel(actorEntity),
@@ -474,16 +537,18 @@ public class LevelActorSnapshot
 
         var isPlayer = actorEntity.HasComponent(EntityComponent.Player);
 
-        result.Add(actorEntity.Being!.Abilities
+        var abilities = actorEntity.Being!.Abilities
             .Where(a => a.Ability!.IsUsable
-                        && ((!isPlayer
-                             && a.Ability.Activation != ActivationType.Default
-                             && a.Ability.Activation != ActivationType.Always
-                             && a.Ability.Activation != ActivationType.OnMeleeAttack
-                             && a.Ability.Activation != ActivationType.OnRangedAttack)
-                            || (isPlayer
-                                && a.Ability.Type == AbilityType.DefaultAttack)))
-            .Select(a => AbilitySnapshot.SerializeAttributes(a, actorEntity, context)).ToList());
+                    && ((!isPlayer
+                            && a.Ability.Activation != ActivationType.Default
+                            && a.Ability.Activation != ActivationType.Always
+                            && a.Ability.Activation != ActivationType.OnMeleeAttack
+                            && a.Ability.Activation != ActivationType.OnRangedAttack)
+                        || (isPlayer
+                            && a.Ability.Type == AbilityType.DefaultAttack)))
+            .Select(a => AbilitySnapshot.SerializeAttributes(a, actorEntity, context))
+            .ToList();
+        result.Add(abilities);
 
         return result;
     }

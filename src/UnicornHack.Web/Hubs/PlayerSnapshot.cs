@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Collections;
+using Microsoft.EntityFrameworkCore;
 using UnicornHack.Data.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
@@ -23,14 +24,12 @@ public class PlayerSnapshot
     private HashSet<GameEntity> RacesSnapshot
     {
         get;
-    } =
-        new(EntityEqualityComparer<GameEntity>.Instance);
+    } = new(EntityEqualityComparer<GameEntity>.Instance);
 
     private HashSet<GameEntity> AbilitiesSnapshot
     {
         get;
-    } =
-        new(EntityEqualityComparer<GameEntity>.Instance);
+    } = new(EntityEqualityComparer<GameEntity>.Instance);
 
     private readonly HashSet<LogEntry> _tempLogEntries = new(10, LogEntry.EqualityComparer);
     private readonly HashSet<GameEntity> _tempHashSet = new(EntityEqualityComparer<GameEntity>.Instance);
@@ -65,56 +64,57 @@ public class PlayerSnapshot
         List<object?> properties;
         if (state == EntityState.Added)
         {
-            properties = new List<object?>(13)
+            properties = new List<object?>(17)
             {
-                (int)state,
+                null,
                 player.ProperName,
                 playerEntity.Position!.Knowledge!.Id,
+                snapshot?.SnapshotTick ?? 0,
                 player.Game.CurrentTick,
                 serializedLevel
             };
 
-            var races = new List<object?>();
+            var races = new Dictionary<int, List<object?>>();
             foreach (var race in being.Races)
             {
                 snapshot?.RacesSnapshot.Add(race);
 
-                races.Add(RaceSnapshot.Serialize(race, null, context));
+                races.Add(race.Id, RaceSnapshot.Serialize(race, null, context)!);
             }
 
             properties.Add(races);
 
             // TODO: Send current slot capacity
-            var abilities = new List<object?>();
+            var abilities = new Dictionary<int, List<object?>>();
             foreach (var ability in GetSlottedAbilities(playerEntity))
             {
                 snapshot?.AbilitiesSnapshot.Add(ability);
 
-                abilities.Add(AbilitySnapshot.Serialize(ability, null, context));
+                abilities.Add(ability.Id, AbilitySnapshot.Serialize(ability, null, context)!);
             }
 
             properties.Add(abilities);
 
             // TODO: Group log entries for the same tick
             // TODO: Only send entries since last player turn
-            var logEntries = new List<object?>();
+            var logEntries = new Dictionary<int, List<object?>>();
             foreach (var logEntry in GetLogEntries(player))
             {
                 snapshot?.LogEntriesSnapshot.Add(logEntry);
 
-                logEntries.Add(LogEntrySnapshot.Serialize(logEntry, null, context));
+                logEntries.Add(logEntry.Id, LogEntrySnapshot.Serialize(logEntry, null, context)!);
             }
 
             properties.Add(logEntries);
 
             properties.Add(player.NextActionTick);
-            properties.Add(player.NextLevelXP);
             properties.Add(being.ExperiencePoints);
             properties.Add(being.HitPoints);
             properties.Add(being.HitPointMaximum);
             properties.Add(being.EnergyPoints);
             properties.Add(being.EnergyPointMaximum);
             properties.Add(being.ReservedEnergyPoints);
+            properties.Add(being.EntropyState);
 
             if (snapshot != null)
             {
@@ -124,17 +124,23 @@ public class PlayerSnapshot
             return properties;
         }
 
-        properties = new List<object?>(3) { (int)state, snapshot!.SnapshotTick, player.Game.CurrentTick };
+        // TODO: Avoid allocations when no properties are modified
+        var i = 0;
+        var setValues = new bool[17];
+        setValues[i++] = true;
+        setValues[i++] = false;
+        setValues[i++] = false;
+        setValues[i++] = true;
+        setValues[i++] = true;
+        properties = [null, snapshot!.SnapshotTick, player.Game.CurrentTick];
 
-        var playerEntry = context.DbContext.Entry(player);
-        var i = 1;
         if (serializedLevel != null)
         {
-            properties.Add(i);
+            setValues[i] = true;
             properties.Add(serializedLevel);
         }
-
         i++;
+
         var serializedRaces = GameTransmissionProtocol.Serialize(
             being.Races,
             snapshot.RacesSnapshot,
@@ -143,11 +149,11 @@ public class PlayerSnapshot
             context);
         if (serializedRaces.Count > 0)
         {
-            properties.Add(i);
+            setValues[i] = true;
             properties.Add(serializedRaces);
         }
-
         i++;
+
         var serializedAbilities = GameTransmissionProtocol.Serialize(
             GetSlottedAbilities(playerEntity),
             snapshot.AbilitiesSnapshot,
@@ -156,11 +162,11 @@ public class PlayerSnapshot
             context);
         if (serializedAbilities.Count > 0)
         {
-            properties.Add(i);
+            setValues[i] = true;
             properties.Add(serializedAbilities);
         }
-
         i++;
+
         var serializedLog = GameTransmissionProtocol.Serialize(
             GetLogEntries(player),
             snapshot.LogEntriesSnapshot,
@@ -169,89 +175,97 @@ public class PlayerSnapshot
             context);
         if (serializedLog.Count > 0)
         {
-            properties.Add(i);
+            setValues[i] = true;
             properties.Add(serializedLog);
         }
-
         i++;
+
+        var playerEntry = context.DbContext.Entry(player);
         var nextActionTick = playerEntry.Property(nameof(PlayerComponent.NextActionTick));
         if (nextActionTick.IsModified)
         {
-            properties.Add(i);
+            setValues[i] = true;
             properties.Add(player.NextActionTick);
         }
-
         i++;
-        var nextLevelXP = playerEntry.Property(nameof(PlayerComponent.NextLevelXP));
-        if (nextLevelXP.IsModified)
-        {
-            properties.Add(i);
-            properties.Add(player.NextLevelXP);
-        }
 
         var beingEntry = context.DbContext.Entry(being);
         if (beingEntry.State != EntityState.Unchanged)
         {
-            i++;
             var xp = beingEntry.Property(nameof(BeingComponent.ExperiencePoints));
             if (xp.IsModified)
             {
-                properties.Add(i);
+                setValues[i] = true;
                 properties.Add(being.ExperiencePoints);
             }
-
             i++;
+
             var hitPoints = beingEntry.Property(nameof(BeingComponent.HitPoints));
             if (hitPoints.IsModified)
             {
-                properties.Add(i);
+                setValues[i] = true;
                 properties.Add(being.HitPoints);
             }
-
             i++;
+
             var hitPointMaximum = beingEntry.Property(nameof(BeingComponent.HitPointMaximum));
             if (hitPointMaximum.IsModified)
             {
-                properties.Add(i);
+                setValues[i] = true;
                 properties.Add(being.HitPointMaximum);
             }
-
             i++;
+
             var energyPoints = beingEntry.Property(nameof(BeingComponent.EnergyPoints));
             if (energyPoints.IsModified)
             {
-                properties.Add(i);
+                setValues[i] = true;
                 properties.Add(being.EnergyPoints);
             }
-
             i++;
+
             var energyPointMaximum = beingEntry.Property(nameof(BeingComponent.EnergyPointMaximum));
             if (energyPointMaximum.IsModified)
             {
-                properties.Add(i);
+                setValues[i] = true;
                 properties.Add(being.EnergyPointMaximum);
             }
-
             i++;
+
             var reservedEnergyPoints = beingEntry.Property(nameof(BeingComponent.ReservedEnergyPoints));
             if (reservedEnergyPoints.IsModified)
             {
-                properties.Add(i);
+                setValues[i] = true;
                 properties.Add(being.ReservedEnergyPoints);
             }
+            i++;
+
+            var entropyState = beingEntry.Property(nameof(BeingComponent.EntropyState));
+            if (entropyState.IsModified)
+            {
+                setValues[i] = true;
+                properties.Add(being.EntropyState);
+            }
+            i++;
+        }
+        else
+        {
+            i += 7;
         }
 
+        Debug.Assert(i == 17);
+        properties[0] = new BitArray(setValues);
         snapshot.SnapshotTick = player.Game.CurrentTick;
 
         return properties;
     }
 
     public static List<object> SerializeItems(GameEntity playerEntity, SerializationContext context)
-        => new(1)
-        {
+        =>
+        [
             playerEntity.Being!.Items
                 .Select(t => InventoryItemSnapshot.Serialize(t, null, null, context)).ToList()
-        };
+        ];
 
     public static List<object?> SerializeAdaptations(GameEntity playerEntity, SerializationContext context)
     {
@@ -279,7 +293,7 @@ public class PlayerSnapshot
                     continue;
             }
         }
-        
+
         return new List<object?>(4)
         {
             playerEntity.Player!.TraitPoints, playerEntity.Player.MutationPoints, traits, mutations

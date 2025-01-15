@@ -1,8 +1,9 @@
 ﻿using UnicornHack.Utils;
+using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Knowledge;
 
-public class LogEntry : NotificationEntity
+public class LogEntry : NotificationEntity, IIdentifiable
 {
     public static readonly IComparer<LogEntry> Comparer = LogComparer.Instance;
     public static readonly IEqualityComparer<LogEntry> EqualityComparer = LogComparer.Instance;
@@ -64,12 +65,12 @@ public class LogEntry : NotificationEntity
             {
                 return y is null ? 0 : -1;
             }
-            
+
             if (y is null)
             {
                 return 1;
             }
-            
+
             var diff = x.Tick - y.Tick;
             if (diff != 0)
             {

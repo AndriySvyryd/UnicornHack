@@ -4,7 +4,7 @@ using UnicornHack.Utils.Caching;
 namespace UnicornHack.Utils.MessagingECS;
 
 // TODO: Perf: Separate into BaseEntity and ArrayEntity and allow storing components directly into properties
-public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable
+public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable, IIdentifiable
 {
     public static readonly MethodInfo FindComponentMethodInfo = typeof(Entity).GetMethod(nameof(FindComponent))!;
 

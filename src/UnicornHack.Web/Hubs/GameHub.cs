@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.Collections;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -34,7 +35,7 @@ public class GameHub : Hub
         // TODO: Avoid using a DbContext
         var player = FindPlayer(playerName) ?? CreatePlayer(playerName);
 
-        // TODO: Get a read lock
+        // TODO: Get a read lock or make serialization thread-safe
         var gameState = _protocol.Serialize(player.Entity, EntityState.Added, null,
             new SerializationContext(_dbContext, player.Entity, _gameServices));
 
@@ -46,7 +47,7 @@ public class GameHub : Hub
     public Task ShowDialog(string playerName, int intQueryType, int[] arguments)
     {
         var results = (GameQueryType)intQueryType == GameQueryType.Clear
-            ? new List<object?> { intQueryType }
+            ? SerializationContext.DeletedBitArray
             : QueryGame(playerName, intQueryType, arguments);
 
         // TODO: only send to clients watching this player
@@ -56,13 +57,17 @@ public class GameHub : Hub
     public List<object?> QueryGame(string playerName, int intQueryType, int[] arguments)
     {
         var queryType = (GameQueryType)intQueryType;
-        var result = new List<object?> { intQueryType };
 
         var player = FindPlayer(playerName);
         if (player?.Entity.Being!.IsAlive != true)
         {
-            return result;
+            return SerializationContext.DeletedBitArray;
         }
+
+        var result = new List<object?> { null };
+        var setValues = new bool[12];
+        setValues[intQueryType + 1] = true;
+        result[0] = new BitArray(setValues);
 
         var manager = player.Entity.Manager;
         var context = new SerializationContext(_dbContext, player.Entity, _gameServices);
@@ -70,8 +75,9 @@ public class GameHub : Hub
         {
             case GameQueryType.SlottableAbilities:
                 var slot = arguments[0];
+                setValues[intQueryType] = true;
                 result.Add(slot);
-                var abilities = new List<object?>();
+                var abilities = new Dictionary<int, List<object?>>();
                 result.Add(abilities);
 
                 foreach (var slottableAbilityEntity in manager.AbilitiesToAffectableRelationship.GetDependents(
@@ -88,7 +94,7 @@ public class GameHub : Hub
                         if (ability.Type == AbilityType.DefaultAttack
                             && ((WieldingAbility)ability.Template!).ItemType == ItemType.WeaponMelee)
                         {
-                            abilities.Add(AbilitySnapshot.Serialize(slottableAbilityEntity, null, context));
+                            abilities.Add(ability.EntityId, AbilitySnapshot.Serialize(slottableAbilityEntity, null, context)!);
                         }
                     }
                     else if (slot == AbilitySlottingSystem.DefaultRangedAttackSlot)
@@ -96,13 +102,13 @@ public class GameHub : Hub
                         if (ability.Type == AbilityType.DefaultAttack
                             && ((WieldingAbility)ability.Template!).ItemType == ItemType.WeaponRanged)
                         {
-                            abilities.Add(AbilitySnapshot.Serialize(slottableAbilityEntity, null, context));
+                            abilities.Add(ability.EntityId, AbilitySnapshot.Serialize(slottableAbilityEntity, null, context)!);
                         }
                     }
                     else if ((ability.Activation & ActivationType.Slottable) != 0
                              && ability.Type != AbilityType.DefaultAttack)
                     {
-                        abilities.Add(AbilitySnapshot.Serialize(slottableAbilityEntity, null, context));
+                        abilities.Add(ability.EntityId, AbilitySnapshot.Serialize(slottableAbilityEntity, null, context)!);
                     }
                 }
 
@@ -118,6 +124,16 @@ public class GameHub : Hub
                 break;
             case GameQueryType.PlayerSkills:
                 result.Add(PlayerSnapshot.SerializeSkills(player.Entity, context));
+                break;
+            case GameQueryType.AbilityAttributes:
+                var abilityEntity = manager.FindEntity(arguments[0])!;
+
+                var ownerEntity = abilityEntity.Ability!.OwnerEntity!;
+                var activatorEntity = abilityEntity.Ability!.OwnerEntity!.HasComponent(EntityComponent.Item)
+                    ? player.Entity!
+                    : ownerEntity;
+
+                result.Add(AbilitySnapshot.SerializeAttributes(abilityEntity, activatorEntity, context));
                 break;
             case GameQueryType.ActorAttributes:
             {
@@ -143,16 +159,7 @@ public class GameHub : Hub
                 }
 
                 break;
-            case GameQueryType.AbilityAttributes:
-                var abilityEntity = manager.FindEntity(arguments[0])!;
-
-                var ownerEntity = abilityEntity.Ability!.OwnerEntity!;
-                var activatorEntity = abilityEntity.Ability!.OwnerEntity!.HasComponent(EntityComponent.Item)
-                    ? player.Entity!
-                    : ownerEntity;
-
-                result.Add(AbilitySnapshot.SerializeAttributes(abilityEntity, activatorEntity, context));
-                break;
+                // TODO: Handle StaticDescription and PostGameStatistics
             default:
                 throw new InvalidOperationException($"Query type {intQueryType} not supported");
         }
@@ -182,6 +189,7 @@ public class GameHub : Hub
         {
             if (currentPlayer.Game.CurrentTick != currentPlayer.NextActionTick)
             {
+                Debug.Assert(false, "Action sent out of turn");
                 // TODO: Log action sent out of turn
                 return;
             }
@@ -194,11 +202,15 @@ public class GameHub : Hub
             _dbContext.Snapshot.CaptureState(_dbContext, _gameServices);
         }
 
+        // TODO: Get a lock
         currentPlayer.NextAction = action;
         currentPlayer.NextActionTarget = target;
         currentPlayer.NextActionTarget2 = target2;
 
         Turn(currentPlayer);
+
+        // TODO: Log turn ended prematurely
+        Debug.Assert(currentPlayer.Game.CurrentTick == currentPlayer.NextActionTick, "Turn ended prematurely");
 
         _dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
         foreach (var playerEntity in currentPlayer.Game.Manager.Players)
@@ -237,7 +249,7 @@ public class GameHub : Hub
             }
             else
             {
-                level.TerrainChanges = new Dictionary<int, byte>();
+                level.TerrainChanges = new Dictionary<short, byte>();
             }
 
             if (level.KnownTerrainChanges != null)
@@ -246,7 +258,7 @@ public class GameHub : Hub
             }
             else
             {
-                level.KnownTerrainChanges = new Dictionary<int, byte>();
+                level.KnownTerrainChanges = new Dictionary<short, byte>();
             }
 
             if (level.WallNeighborsChanges != null)
@@ -255,7 +267,7 @@ public class GameHub : Hub
             }
             else
             {
-                level.WallNeighborsChanges = new Dictionary<int, byte>();
+                level.WallNeighborsChanges = new Dictionary<short, byte>();
             }
 
             if (_dbContext.Snapshot?.LevelSnapshots.ContainsKey(levelEntity.Id) != true)
@@ -305,7 +317,7 @@ public class GameHub : Hub
             // TODO: Move VisibleTerrainSnapshot and VisibleTerrainChanges to the snapshot
             if (level.VisibleTerrainChanges == null)
             {
-                level.VisibleTerrainChanges = new Dictionary<int, byte>();
+                level.VisibleTerrainChanges = new Dictionary<short, byte>();
             }
             else
             {
@@ -315,7 +327,7 @@ public class GameHub : Hub
             if (level.VisibleTerrainSnapshot != null)
             {
                 var tileCount = level.TileCount;
-                for (var i = 0; i < tileCount; i++)
+                for (short i = 0; i < tileCount; i++)
                 {
                     var newValue = level.VisibleTerrain[i];
                     if (newValue != level.VisibleTerrainSnapshot[i])
@@ -418,7 +430,7 @@ public class GameHub : Hub
             && cachedGameObject is Game cachedGame
             && cachedGame.CurrentTick == loadedGame.CurrentTick)
         {
-            // TODO: Unload non-adjacent levels when too many loaded
+            // TODO: Unload old levels
             loadedGame = cachedGame;
 
             InitializeContext(loadedGame);
@@ -438,7 +450,7 @@ public class GameHub : Hub
                 new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
         }
 
-        // TODO: Preserve old games
+        // TODO: Preserve replays
         if (!_dbContext.PlayerComponents.Local.Any(pc => pc.Entity.Being!.IsAlive))
         {
             _dbContext.Clean(loadedGame);

@@ -11,10 +11,10 @@ public class PropertyCollectionAccessorTest
         manager.Queue.ProcessQueue(manager);
 
         var accessor =
-            new PropertyCollectionAccessor<GameEntity, Dictionary<int, byte>, KeyValuePair<int, byte>>(e
+            new PropertyCollectionAccessor<GameEntity, Dictionary<short, byte>, KeyValuePair<short, byte>>(e
                 => e.Level!.WallNeighborsChanges);
-        accessor.SetDefaultFactory(() => new Dictionary<int, byte>());
-        
+        accessor.SetDefaultFactory(() => new Dictionary<short, byte>());
+
         Assert.Null(accessor.GetDependents(level.Entity));
         Assert.Null(level.WallNeighborsChanges);
 

@@ -474,6 +474,7 @@ public class BeveledVisibilityCalculator
                 return;
             }
 
+            var anyValidSectors = false;
             for (var sectorIndex = 0; sectorIndex < sectors.Length; sectorIndex++)
             {
                 top = sectors[sectorIndex].Top;
@@ -530,7 +531,7 @@ public class BeveledVisibilityCalculator
                     bottomY = (int)(bottomIntersectionY + 0.5f);
                 }
 
-                // Go through the tiles in the current column of the choosen sector
+                // Go through the tiles in the current column of the chosen sector
                 var wasOpaque = -1; // 0:false, 1:true, -1:not applicable
                 for (var y = bottomY; y <= topY; y++)
                 {
@@ -600,6 +601,8 @@ public class BeveledVisibilityCalculator
                                         ((x << 1) + 1) * newTop.Y / (float)(newTop.X << 1);
                                     break;
                                 }
+
+                                anyValidSectors = true;
 
                                 if (sectorIndex > 0
                                     && sectors[sectorIndex - 1].Top.Y == 0)
@@ -727,6 +730,7 @@ public class BeveledVisibilityCalculator
                                 var tL = bottomSideIntersectionX - x + 0.5f;
 
                                 visibleArea = lT * tL * 0.5f;
+                                Debug.Assert(0f <= visibleArea && visibleArea <= 1f, "Invalid visible area: " + visibleArea);
                             }
                             else
                             {
@@ -741,6 +745,7 @@ public class BeveledVisibilityCalculator
                                 var rT = topSideY - sectors[sectorIndex].NextBottomIntersectionY;
 
                                 visibleArea = (lT + rT) * 0.5f;
+                                Debug.Assert(0f <= visibleArea && visibleArea < 1f, "Invalid visible area: " + visibleArea);
                             }
 
                             visibility = (byte)(visibility * visibleArea);
@@ -757,6 +762,7 @@ public class BeveledVisibilityCalculator
                             // The length of the bottom side that is to the right of the bottom slope
                             var bR = x + 0.5f - bottomSideIntersectionX;
                             var blockedArea = rB * bR * 0.5f;
+                            Debug.Assert(0f <= blockedArea && blockedArea <= 1f, "Invalid visible area: " + blockedArea);
 
                             visibility = (byte)(visibility - adjustedMaxVisibility * blockedArea);
                         }
@@ -772,8 +778,10 @@ public class BeveledVisibilityCalculator
                             // The length of the top side that is to the left of the top slope
                             var tL = bottomSideIntersectionX - x + 0.5f;
                             var blockedArea = lT * tL * 0.5f;
+                            Debug.Assert(0f <= blockedArea && blockedArea <= 1f, "Invalid visible area: " + blockedArea);
 
-                            visibility = (byte)(visibility - adjustedMaxVisibility * blockedArea);
+                            var newVisibility = visibility - adjustedMaxVisibility * blockedArea;
+                            visibility = newVisibility < 0 ? (byte)0 : (byte)newVisibility;
                         }
                         else if (y == topY)
                         {
@@ -797,6 +805,7 @@ public class BeveledVisibilityCalculator
                                 // The length of the bottom side that is to the right of the top slope
                                 var bR = x + 0.5f - bottomSideIntersectionX;
                                 visibleArea = rB * bR * 0.5f;
+                                Debug.Assert(0f <= visibleArea && visibleArea < 1f, "Invalid visible area: " + visibleArea);
                             }
                             else
                             {
@@ -810,11 +819,11 @@ public class BeveledVisibilityCalculator
                                 // The length of the right side that is below the top slope
                                 var rB = sectors[sectorIndex].NextTopIntersectionY - bottomSideY;
                                 visibleArea = (lB + rB) * 0.5f;
+                                Debug.Assert(0f <= visibleArea && visibleArea < 1f, "Invalid visible area: " + visibleArea);
                             }
 
-                            visibility = (byte)(visibility -
-                                                (adjustedMaxVisibility -
-                                                 (byte)(adjustedMaxVisibility * visibleArea)));
+                            var newVisibility = visibility - adjustedMaxVisibility * (1 - visibleArea);
+                            visibility = newVisibility < 0 ? (byte)0 : (byte)newVisibility;
                         }
 
                         visibility += MinVisibility;
@@ -839,6 +848,15 @@ public class BeveledVisibilityCalculator
                 {
                     sectors[sectorIndex].Top = new Slope(0, 1);
                 }
+                else
+                {
+                    anyValidSectors = true;
+                }
+            }
+
+            if (!anyValidSectors)
+            {
+                return;
             }
         }
     }

@@ -1,12 +1,14 @@
-﻿using UnicornHack.Data;
+﻿using System.Collections;
+using UnicornHack.Data;
 using UnicornHack.Services;
 
 namespace UnicornHack.Hubs;
 
 public class SerializationContext
 {
-    public SerializationContext(
-        GameDbContext dbContext, GameEntity observer, GameServices services)
+    public static readonly List<object?> DeletedBitArray = [new BitArray([false])];
+
+    public SerializationContext(GameDbContext dbContext, GameEntity observer, GameServices services)
     {
         DbContext = dbContext;
         Observer = observer;

@@ -6,5 +6,5 @@ export const enum MapFeature {
     StoneWall = 4,
     StoneArchway = 5,
     Pool = 14,
-    Unexplored = 255
+    Unexplored = 254
 }

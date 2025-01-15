@@ -61,7 +61,7 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
         set => SetWithNotify(value, ref _width);
     }
 
-    public int TileCount => Height * Width;
+    public short TileCount => (short)(Height * Width);
 
     public SimpleRandom GenerationRandom
     {
@@ -81,7 +81,7 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
         set;
     }
 
-    public Dictionary<int, byte>? VisibleTerrainChanges
+    public Dictionary<short, byte>? VisibleTerrainChanges
     {
         get;
         set;
@@ -105,7 +105,7 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
         set => SetWithNotify(value, ref _terrain);
     }
 
-    public Dictionary<int, byte>? TerrainChanges
+    public Dictionary<short, byte>? TerrainChanges
     {
         get;
         set;
@@ -117,7 +117,7 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
         set => SetWithNotify(value, ref _knownTerrain);
     }
 
-    public Dictionary<int, byte>? KnownTerrainChanges
+    public Dictionary<short, byte>? KnownTerrainChanges
     {
         get;
         set;
@@ -130,7 +130,7 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
         set => SetWithNotify(value, ref _wallNeighbors);
     }
 
-    public Dictionary<int, byte>? WallNeighborsChanges
+    public Dictionary<short, byte>? WallNeighborsChanges
     {
         get;
         set;
@@ -183,7 +183,7 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
         private set;
     }
 
-    public int[,]? PointToIndex
+    public short[,]? PointToIndex
     {
         get;
         private set;

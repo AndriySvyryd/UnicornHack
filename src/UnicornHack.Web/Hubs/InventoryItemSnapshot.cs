@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Collections;
+using Microsoft.EntityFrameworkCore;
 using UnicornHack.Services;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Items;
@@ -32,14 +33,13 @@ public class InventoryItemSnapshot
             {
                 var item = itemEntity.Item!;
                 var manager = context.Manager;
-                properties = state == null
-                    ? new List<object?>(6)
-                    : new List<object?>(7) { (int)state };
-                properties.Add(itemEntity.Id);
-                properties.Add((int)item.Type);
-                properties.Add(item.TemplateName);
-                properties.Add(
-                    context.Services.Language.GetString(item, item.GetQuantity(), SenseType.Sight));
+                properties = new List<object?>(6)
+                {
+                    null,
+                    (int)item.Type,
+                    item.TemplateName,
+                    context.Services.Language.GetString(item, item.GetQuantity(), SenseType.Sight)
+                };
                 var slots = manager.ItemUsageSystem.GetEquipableSlots(item, context.Observer.Physical!.Size)
                     .GetNonRedundantFlags(removeComposites: true)
                     .Select(s => Serialize(s, context))
@@ -51,22 +51,30 @@ public class InventoryItemSnapshot
                 return properties;
             }
             case EntityState.Deleted:
-                return new List<object?> { (int)state, itemEntity.Id };
+                return SerializationContext.DeletedBitArray;
             default:
             {
+                var i = 0;
+                var setValues = new bool[6];
+                setValues[i++] = true;
+                setValues[i++] = false;
+                setValues[i++] = false;
+                properties = [null];
+
                 var item = itemEntity.Item!;
                 var manager = context.Manager;
-                properties = new List<object?>(2) { (int)state, itemEntity.Id };
 
-                var i = 3;
                 var newName = context.Services.Language.GetString(item, item.GetQuantity(), SenseType.Sight);
                 if (snapshot!.NameSnapshot != newName)
                 {
-                    properties.Add(i);
+                    setValues[i++] = true;
                     properties.Add(newName);
                 }
+                else
+                {
+                    setValues[i++] = false;
+                }
 
-                i++;
                 var physicalObserver = context.Observer.Physical!;
                 var physicalObserverEntry = context.DbContext.Entry(physicalObserver);
                 if (physicalObserverEntry.Property(nameof(PhysicalComponent.Size)).IsModified)
@@ -76,21 +84,35 @@ public class InventoryItemSnapshot
                         .Select(s => Serialize(s, context))
                         .ToList();
 
-                    properties.Add(i);
+                    setValues[i++] = true;
                     properties.Add(slots);
                 }
+                else
+                {
+                    setValues[i++] = false;
+                }
 
-                i++;
                 var equippedSlot = context.DbContext.Entry(item).Property(nameof(ItemComponent.EquippedSlot));
                 if (equippedSlot.IsModified)
                 {
-                    properties.Add(i);
+                    setValues[i++] = true;
                     properties.Add(item.EquippedSlot == EquipmentSlot.None
                         ? null
                         : Serialize(item.EquippedSlot, context));
                 }
+                else
+                {
+                    setValues[i++] = false;
+                }
 
-                return properties.Count > 2 ? properties : null;
+                if (properties.Count == 1)
+                {
+                    return null;
+                }
+
+                Debug.Assert(i == 6);
+                properties[0] = new BitArray(setValues);
+                return properties;
             }
         }
     }
@@ -101,12 +123,12 @@ public class InventoryItemSnapshot
         context.Services.Language.GetString(slot, context.Observer, abbreviate: false)
     };
 
-    public static List<object> SerializeAttributes(GameEntity? itemEntity, SenseType sense, SerializationContext context)
+    public static List<object?> SerializeAttributes(GameEntity? itemEntity, SenseType sense, SerializationContext context)
     {
         var canIdentify = itemEntity != null && sense.CanIdentify();
         if (!canIdentify)
         {
-            return new List<object>();
+            return SerializationContext.DeletedBitArray;
         }
 
         var manager = itemEntity!.Manager;
@@ -117,8 +139,9 @@ public class InventoryItemSnapshot
             .GetNonRedundantFlags(removeComposites: true)
             .Select(s => Serialize(s, context))
             .ToList();
-        return new List<object>(12)
+        return new List<object?>(13)
         {
+            null,
             context.Services.Language.GetString(item, item.GetQuantity(), sense),
             context.Services.Language.GetDescription(item.TemplateName, DescriptionCategory.Item),
             item.Type,

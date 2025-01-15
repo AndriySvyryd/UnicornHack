@@ -9,7 +9,7 @@ public class UniformLayout : Layout, ICSScriptSerializable
     private Dimensions _lotSize;
 
     protected static Dimensions DefaultMaxLotSize = new(15, 15);
-    
+
     public Dimensions MaxLotSize
     {
         get;
@@ -17,7 +17,7 @@ public class UniformLayout : Layout, ICSScriptSerializable
     } = DefaultMaxLotSize;
 
     protected static Dimensions DefaultMinLotSize = new(5, 5);
-    
+
     public Dimensions MinLotSize
     {
         get;

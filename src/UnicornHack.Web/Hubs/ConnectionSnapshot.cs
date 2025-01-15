@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Collections;
+using Microsoft.EntityFrameworkCore;
 using UnicornHack.Systems.Levels;
 
 namespace UnicornHack.Hubs;
@@ -19,47 +20,71 @@ public static class ConnectionSnapshot
                 var knownEntity = connectionKnowledge.KnownEntity;
                 var connection = knownEntity.Connection!;
                 var position = knownEntity.Position!;
-                properties = state == null
-                    ? new List<object?>(4)
-                    : new List<object?>(5) { (int)state };
-                properties.Add(connectionEntity.Id);
-                properties.Add(position.LevelX);
-                properties.Add(position.LevelY);
-                properties.Add(manager.FindEntity(connection.TargetLevelId)!.Level!.Depth
-                               > position.LevelEntity.Level!.Depth);
+                properties =
+                [
+                    null,
+                    position.LevelX,
+                    position.LevelY,
+                    manager.FindEntity(connection.TargetLevelId)!.Level!.Depth
+                        > position.LevelEntity.Level!.Depth,
+                ];
                 return properties;
             }
             case EntityState.Deleted:
-                return new List<object?> { (int)state, connectionEntity.Id };
+                return SerializationContext.DeletedBitArray;
             default:
             {
                 var connectionKnowledge = connectionEntity.Knowledge!;
                 var knownEntity = connectionKnowledge.KnownEntity;
                 var position = knownEntity.Position!;
                 var connectionEntry = context.DbContext.Entry(connectionKnowledge);
-                properties = new List<object?> { (int)state, connectionKnowledge.EntityId };
 
-                var i = 1;
+                var i = 0;
+                var setValues = new bool[4];
+                setValues[i++] = true;
+                properties = [null];
+
                 var positionEntry = context.DbContext.Entry(position)!;
                 if (positionEntry.State != EntityState.Unchanged)
                 {
                     var levelX = connectionEntry.Property(nameof(PositionComponent.LevelX));
                     if (levelX.IsModified)
                     {
-                        properties.Add(i);
+                        setValues[i++] = true;
                         properties.Add(position.LevelX);
                     }
+                    else
+                    {
+                        setValues[i++] = false;
+                    }
 
-                    i++;
                     var levelY = connectionEntry.Property(nameof(PositionComponent.LevelY));
                     if (levelY.IsModified)
                     {
-                        properties.Add(i);
+                        setValues[i++] = true;
                         properties.Add(position.LevelY);
                     }
+                    else
+                    {
+                        setValues[i++] = false;
+                    }
+                }
+                else
+                {
+                    setValues[i++] = false;
+                    setValues[i++] = false;
                 }
 
-                return properties.Count > 2 ? properties : null;
+                setValues[i++] = false;
+
+                if (properties.Count == 1)
+                {
+                    return null;
+                }
+
+                Debug.Assert(i == 4);
+                properties[0] = new BitArray(setValues);
+                return properties;
             }
         }
     }

@@ -52,7 +52,7 @@ public static class TerrainSystem
     }
 
     private static bool ModifyNeighbors(
-        LevelComponent level, byte[] neighbors, Dictionary<int, byte>? changes, Point point, bool add)
+        LevelComponent level, byte[] neighbors, Dictionary<short, byte>? changes, Point point, bool add)
     {
         var changed = false;
         for (var directionIndex = 0; directionIndex < 8; directionIndex++)

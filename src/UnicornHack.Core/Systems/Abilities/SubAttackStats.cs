@@ -4,6 +4,12 @@ namespace UnicornHack.Systems.Abilities;
 
 public class SubAttackStats
 {
+    public int AbilityId
+    {
+        get;
+        set;
+    }
+
     public AbilitySuccessCondition SuccessCondition
     {
         get;

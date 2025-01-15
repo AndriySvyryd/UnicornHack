@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Collections;
+using MessagePack;
+using Microsoft.EntityFrameworkCore;
 using UnicornHack.Services;
 using UnicornHack.Systems.Abilities;
 
@@ -15,86 +17,120 @@ public static class AbilitySnapshot
             case EntityState.Added:
             {
                 var ability = abilityEntity.Ability!;
-
-                properties = state == null
-                    ? new List<object?>(6)
-                    : new List<object?>(7) { (int)state };
-
-                properties.Add(abilityEntity.Id);
-                properties.Add(context.Services.Language.GetString(ability));
-                properties.Add(ability.Activation);
-                properties.Add(ability.Slot);
-                properties.Add(ability.CooldownTick);
-                properties.Add(ability.CooldownXpLeft);
-                properties.Add(ability.TargetingShape);
-                properties.Add(ability.TargetingShapeSize);
-
+                properties =
+                [
+                    null,
+                    context.Services.Language.GetString(ability),
+                    (int)ability.Activation,
+                    ability.Slot,
+                    ability.CooldownTick,
+                    ability.CooldownXpLeft,
+                    (int)ability.TargetingShape,
+                    ability.TargetingShapeSize
+                ];
                 return properties;
             }
             case EntityState.Deleted:
-                return new List<object?> { (int)state, abilityEntity.Id };
+                return SerializationContext.DeletedBitArray;
             default:
             {
                 var ability = abilityEntity.Ability!;
-                properties = new List<object?> { (int)state, abilityEntity.Id };
                 var abilityEntry = context.DbContext.Entry(ability);
-                var i = 1;
+                if (abilityEntry.State == EntityState.Unchanged)
+                {
+                    return null;
+                }
+
+                var i = 0;
+                var setValues = new bool[8];
+                setValues[i++] = true;
+                properties = [null];
+
                 var name = abilityEntry.Property(nameof(AbilityComponent.Name));
                 if (name.IsModified)
                 {
-                    properties.Add(i);
+                    setValues[i++] = true;
                     properties.Add(context.Services.Language.GetString(ability));
                 }
+                else
+                {
+                    setValues[i++] = false;
+                }
 
-                i++;
                 var activation = abilityEntry.Property(nameof(AbilityComponent.Activation));
                 if (activation.IsModified)
                 {
-                    properties.Add(i);
+                    setValues[i++] = true;
                     properties.Add(ability.Activation);
                 }
+                else
+                {
+                    setValues[i++] = false;
+                }
 
-                i++;
                 var slot = abilityEntry.Property(nameof(AbilityComponent.Slot));
                 if (slot.IsModified)
                 {
-                    properties.Add(i);
+                    setValues[i++] = true;
                     properties.Add(ability.Slot);
                 }
+                else
+                {
+                    setValues[i++] = false;
+                }
 
-                i++;
                 var cooldownTick = abilityEntry.Property(nameof(AbilityComponent.CooldownTick));
                 if (cooldownTick.IsModified)
                 {
-                    properties.Add(i);
+                    setValues[i++] = true;
                     properties.Add(ability.CooldownTick);
                 }
+                else
+                {
+                    setValues[i++] = false;
+                }
 
-                i++;
                 var cooldownXpLeft = abilityEntry.Property(nameof(AbilityComponent.CooldownXpLeft));
                 if (cooldownXpLeft.IsModified)
                 {
-                    properties.Add(i);
+                    setValues[i++] = true;
                     properties.Add(ability.CooldownXpLeft);
                 }
+                else
+                {
+                    setValues[i++] = false;
+                }
 
-                i++;
                 var targetingShape = abilityEntry.Property(nameof(AbilityComponent.TargetingShape));
                 if (targetingShape.IsModified)
                 {
-                    properties.Add(i);
-                    properties.Add(ability.TargetingShape);
+                    setValues[i++] = true;
+                    properties.Add((int)ability.TargetingShape);
+                }
+                else
+                {
+                    setValues[i++] = false;
                 }
 
-                i++;
                 var targetingType = abilityEntry.Property(nameof(AbilityComponent.TargetingShapeSize));
                 if (targetingType.IsModified)
                 {
-                    properties.Add(i);
+                    setValues[i++] = true;
                     properties.Add(ability.TargetingShapeSize);
                 }
+                else
+                {
+                    setValues[i++] = false;
+                }
 
-                return properties.Count > 2 ? properties : null;
+                if (properties.Count == 1)
+                {
+                    return null;
+                }
+
+                Debug.Assert(i == 8);
+                properties[0] = new BitArray(setValues);
+                return properties;
             }
         }
     }
@@ -113,8 +149,9 @@ public static class AbilitySnapshot
         var stats = manager.AbilityActivationSystem.GetAttackStats(activateMessage);
         manager.ReturnMessage(activateMessage);
 
-        var result = new List<object?>(ability.Template == null ? 21 : 22)
+        var result = new List<object?>(ability.Template == null ? 20 : 21)
         {
+            null,
             ability.EntityId,
             context.Services.Language.GetString(ability),
             ability.Level,
@@ -170,8 +207,9 @@ public static class AbilitySnapshot
     }
 
     private static List<object> Serialize(SubAttackStats stats, GameEntity activator, SerializationContext context)
-        => new(3)
+        => new(4)
         {
+            stats.AbilityId,
             stats.SuccessCondition,
             stats.Accuracy,
             stats.Effects.Where(e => e.Effect!.EffectType != EffectType.Activate)

@@ -9,7 +9,7 @@ public enum MapFeature : byte
     StoneWall = 4,
     StoneArchway = 5,
     Pool = 14,
-    Unexplored = 255
+    Unexplored = 254
 }
 
 public static class MapFeatureExtensions

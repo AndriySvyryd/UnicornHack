@@ -23,7 +23,7 @@ public readonly struct Rectangle : IEnumerable<Point>, IEquatable<Rectangle>
     {
         if (width == 0 || height == 0)
         {
-            throw new ArgumentOutOfRangeException();
+            throw new ArgumentOutOfRangeException(nameof(width));
         }
 
         TopLeft = topLeft;
@@ -205,15 +205,15 @@ public readonly struct Rectangle : IEnumerable<Point>, IEquatable<Rectangle>
         return new Rectangle(new Point(x1, y1), width, height);
     }
 
-    public static (int[,], Point[]) GetPointIndex(IMemoryCache cache, byte width, byte height)
+    public static (short[,], Point[]) GetPointIndex(IMemoryCache cache, byte width, byte height)
     {
         var key = nameof(GetPointIndex).GetHashCode() ^ (width << 8 + height);
         if (!cache.TryGetValue(key, out var result))
         {
             using var entry = cache.CreateEntry(key);
-            var pointToIndex = new int[width, height];
+            var pointToIndex = new short[width, height];
             var indexToPoint = new Point[width * height];
-            var i = 0;
+            short i = 0;
             for (byte y = 0; y < height; y++)
             {
                 for (byte x = 0; x < width; x++)
@@ -227,7 +227,7 @@ public readonly struct Rectangle : IEnumerable<Point>, IEquatable<Rectangle>
             entry.SetValue(result);
         }
 
-        return ((int[,], Point[]))result;
+        return ((short[,], Point[]))result;
     }
 
     public override string ToString() => $"({TopLeft}, {BottomRight})";

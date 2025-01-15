@@ -76,13 +76,13 @@ public class LoggingSystemTest
             manager);
 
         Verify(playerEntity, wizard, playerEntity, player2Entity,
-            playerEntity.Being.SlottedAbilities[AbilitySlottingSystem.DefaultMeleeAttackSlot], success: true,
+            playerEntity.Being.SlottedAbilities[AbilitySlottingSystem.DefaultMeleeAttackSlot], success: false, // For players success is inverted
             "You slash the Wizard of Yendor. (<damage physical='90'>90</damage> pts.)",
             "Dudley slashes the Wizard of Yendor. (<damage physical='90'>90</damage> pts.)",
             manager);
 
         Verify(playerEntity, wizard, playerEntity, player2Entity,
-            playerEntity.Being.SlottedAbilities[AbilitySlottingSystem.DefaultMeleeAttackSlot], success: false,
+            playerEntity.Being.SlottedAbilities[AbilitySlottingSystem.DefaultMeleeAttackSlot], success: true,
             "You try to slash the Wizard of Yendor, but miss.",
             "Dudley tries to slash the Wizard of Yendor, but misses.",
             manager);

@@ -281,6 +281,7 @@ public class AbilityActivationSystem :
                     if (target == activateMessage.TargetEntity)
                     {
                         var subStats = new SubAttackStats();
+                        subStats.AbilityId = targetMessage.AbilityEntity.Ability!.EntityId;
                         subStats.SuccessCondition = targetMessage.AbilityEntity.Ability!.SuccessCondition;
 
                         var accuracy = manager.AbilityActivationSystem.GetAccuracy(
@@ -955,35 +956,54 @@ public class AbilityActivationSystem :
             return 0;
         }
 
+        message.Outcome = ApplicationOutcome.Success;
         if (message.AbilityEntity.Ability!.SuccessCondition == AbilitySuccessCondition.Always
             || !message.ActivatorEntity.HasComponent(EntityComponent.Being)
             || !message.TargetEntity.HasComponent(EntityComponent.Being))
         {
-            message.Outcome = ApplicationOutcome.Success;
             return 100;
         }
 
         accuracy ??= GetAccuracy(message.AbilityEntity.Ability, message.ActivatorEntity);
         var deflectionProbability = GetDeflectionProbability(
             message.AbilityEntity, message.ActivatorEntity, message.TargetEntity, exposure, accuracy);
-        if (!pretend
-            && DetermineSuccess(message.TargetEntity, deflectionProbability))
-        {
-            message.Outcome = ApplicationOutcome.Deflection;
-            return 0;
-        }
 
         var evasionProbability = GetEvasionProbability(
             message.AbilityEntity, message.ActivatorEntity, message.TargetEntity, exposure, accuracy);
-        if (!pretend
-            && DetermineSuccess(message.TargetEntity, evasionProbability))
+
+        var missOutcome = ApplicationOutcome.Miss;
+        var defenseProbability = evasionProbability;
+        if (evasionProbability < deflectionProbability)
         {
-            message.Outcome = ApplicationOutcome.Miss;
-            return 0;
+            defenseProbability = deflectionProbability;
+            missOutcome = ApplicationOutcome.Deflection;
         }
 
-        message.Outcome = ApplicationOutcome.Success;
-        return pretend ? (100 - deflectionProbability) * (100 - evasionProbability) / 100 : 100;
+        var useAttackerFortune = false;
+        var fortuneEntity = message.TargetEntity;
+        if (fortuneEntity.Player == null
+            && message.ActivatorEntity.Player != null)
+        {
+            useAttackerFortune = true;
+            fortuneEntity = message.ActivatorEntity;
+        }
+
+        var entropyState = fortuneEntity.Being!.EntropyState;
+        var defenseSuccess = useAttackerFortune
+            ? !fortuneEntity.Game.Random.NextStreaklessBool(100 - defenseProbability, ref entropyState)
+            : fortuneEntity.Game.Random.NextStreaklessBool(defenseProbability, ref entropyState);
+
+        if (!pretend)
+        {
+            fortuneEntity.Being.EntropyState = entropyState;
+        }
+
+        if (defenseSuccess)
+        {
+            message.Outcome = missOutcome;
+        }
+
+        return 100 - defenseProbability;
     }
 
     private int GetAttackRating(
@@ -1059,14 +1079,6 @@ public class AbilityActivationSystem :
             default:
                 throw new ArgumentOutOfRangeException();
         }
-    }
-
-    private bool DetermineSuccess(GameEntity victimEntity, int successProbability)
-    {
-        var entropyState = victimEntity.Being!.EntropyState;
-        var success = victimEntity.Game.Random.NextBool(successProbability, ref entropyState);
-        victimEntity.Being.EntropyState = entropyState;
-        return success;
     }
 
     private int GetMissProbability(int attackRating, int defenseRating)

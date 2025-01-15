@@ -1,4 +1,4 @@
-﻿import { action, observable } from 'mobx';
+﻿    import { action, observable } from 'mobx';
 import { capitalize } from '../Util';
 import { EntityState } from './EntityState';
 import { GameQueryType } from './GameQueryType';
@@ -483,6 +483,7 @@ export class AbilityAttributes {
 }
 
 export class SubAbilityAttributes {
+    abilityId: number = -1;
     @observable successCondition: AbilitySuccessCondition = AbilitySuccessCondition.Always;
     @observable accuracy: number = 0;
     @observable effects: Map<number, EffectAttributes> = new Map<number, EffectAttributes>();
@@ -491,6 +492,7 @@ export class SubAbilityAttributes {
     static expand(compactAttributes: any[]): SubAbilityAttributes {
         var i = 0;
         const attributes = new SubAbilityAttributes();
+        attributes.abilityId = compactAttributes[i++];
         attributes.successCondition = compactAttributes[i++];
         attributes.accuracy = compactAttributes[i++];
         (<any[]>compactAttributes[i++]).forEach((a: any[]) => EffectAttributes.expand(a).addTo(attributes.effects));

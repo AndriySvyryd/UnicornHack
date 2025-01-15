@@ -9,11 +9,11 @@ public class GameTransmissionProtocol
         GameEntity playerEntity, EntityState state, GameSnapshot? snapshot, SerializationContext context)
         => GameSnapshot.Serialize(playerEntity, state, snapshot, context);
 
-    public static List<List<object?>?> Serialize<TEntity>(
+    public static Dictionary<int, List<object?>> Serialize<TEntity>(
         ISnapshotableCollection<TEntity> collection,
         Func<TEntity, EntityState?, SerializationContext, List<object?>?> serializeElement,
         SerializationContext context)
-        where TEntity : Entity
+        where TEntity : GameEntity
         => Serialize(
             collection,
             collection.Snapshot!,
@@ -21,13 +21,13 @@ public class GameTransmissionProtocol
             new HashSet<TEntity>(EntityEqualityComparer<TEntity>.Instance),
             context);
 
-    public static List<List<object?>?> Serialize<T>(
+    public static Dictionary<int, List<object?>> Serialize<T>(
         IEnumerable<T> collection,
         HashSet<T> snapshots,
         Func<T, EntityState?, SerializationContext, List<object?>?> serializeElement,
         HashSet<T> removed,
         SerializationContext context)
-        where T : class
+        where T : IIdentifiable
     {
         removed.Clear();
         removed.EnsureCapacity(snapshots.Count);
@@ -38,14 +38,14 @@ public class GameTransmissionProtocol
 
         snapshots.Clear();
 
-        var serializedElements = new List<List<object?>?>();
+        var serializedElements = new Dictionary<int, List<object?>>();
 
         foreach (var element in collection)
         {
             snapshots.Add(element);
             if (!removed.Remove(element))
             {
-                serializedElements.Add(serializeElement(element, EntityState.Added, context));
+                serializedElements.Add(element.Id, serializeElement(element, EntityState.Added, context)!);
 
                 continue;
             }
@@ -53,19 +53,19 @@ public class GameTransmissionProtocol
             var serialized = serializeElement(element, EntityState.Modified, context);
             if (serialized != null)
             {
-                serializedElements.Add(serialized);
+                serializedElements.Add(element.Id, serialized);
             }
         }
 
         foreach (var element in removed)
         {
-            serializedElements.Add(serializeElement(element, EntityState.Deleted, context));
+            serializedElements.Add(element.Id, serializeElement(element, EntityState.Deleted, context)!);
         }
 
         return serializedElements;
     }
 
-    public static List<List<object?>?> Serialize<TEntity, TSnapshot>(
+    public static Dictionary<int, List<object?>> Serialize<TEntity, TSnapshot>(
         IEnumerable<TEntity> collection,
         Dictionary<TEntity, TSnapshot> snapshots,
         Func<TEntity, EntityState?, TSnapshot, SerializationContext, List<object?>?> serializeElement,
@@ -83,7 +83,7 @@ public class GameTransmissionProtocol
 
         snapshots.Clear();
 
-        var serializedElements = new List<List<object?>?>();
+        var serializedElements = new Dictionary<int, List<object?>>();
 
         foreach (var element in collection)
         {
@@ -91,7 +91,7 @@ public class GameTransmissionProtocol
             {
                 snapshot = new TSnapshot();
                 snapshots.Add(element, snapshot);
-                serializedElements.Add(serializeElement(element, EntityState.Added, snapshot, context));
+                serializedElements.Add(element.Id, serializeElement(element, EntityState.Added, snapshot, context)!);
 
                 continue;
             }
@@ -101,13 +101,13 @@ public class GameTransmissionProtocol
             var serialized = serializeElement(element, EntityState.Modified, snapshot, context);
             if (serialized != null)
             {
-                serializedElements.Add(serialized);
+                serializedElements.Add(element.Id, serialized);
             }
         }
 
         foreach (var pair in removed)
         {
-            serializedElements.Add(serializeElement(pair.Key, EntityState.Deleted, pair.Value, context));
+            serializedElements.Add(pair.Key.Id, serializeElement(pair.Key, EntityState.Deleted, pair.Value, context)!);
         }
 
         return serializedElements;

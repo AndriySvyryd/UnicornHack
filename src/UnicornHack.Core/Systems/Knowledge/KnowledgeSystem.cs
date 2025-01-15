@@ -134,20 +134,18 @@ public class KnowledgeSystem :
         var knowledge = position.Knowledge;
         if (knowledge == null)
         {
-            using (var entityReference = manager.CreateEntity())
-            {
-                var knowledgeEntityReference = entityReference.Referenced;
-                var knowledgeComponent = manager.CreateComponent<KnowledgeComponent>(EntityComponent.Knowledge);
-                knowledgeComponent.KnownEntityId = position.EntityId;
-                knowledgeComponent.SensedType = sensedType;
-                knowledgeEntityReference.Knowledge = knowledgeComponent;
+            using var entityReference = manager.CreateEntity();
+            var knowledgeEntityReference = entityReference.Referenced;
+            var knowledgeComponent = manager.CreateComponent<KnowledgeComponent>(EntityComponent.Knowledge);
+            knowledgeComponent.KnownEntityId = position.EntityId;
+            knowledgeComponent.SensedType = sensedType;
+            knowledgeEntityReference.Knowledge = knowledgeComponent;
 
-                var knowledgePosition = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
-                knowledgePosition.SetLevelPosition(position.LevelId, position.LevelCell);
-                knowledgePosition.Heading = position.Heading;
+            var knowledgePosition = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
+            knowledgePosition.SetLevelPosition(position.LevelId, position.LevelCell);
+            knowledgePosition.Heading = position.Heading;
 
-                knowledgeEntityReference.Position = knowledgePosition;
-            }
+            knowledgeEntityReference.Position = knowledgePosition;
         }
         else
         {
@@ -159,7 +157,7 @@ public class KnowledgeSystem :
         }
     }
 
-    public int RevealTerrain(int index, LevelComponent level)
+    public int RevealTerrain(short index, LevelComponent level)
     {
         var terrain = level.Terrain[index];
         var knownTerrain = level.KnownTerrain[index];

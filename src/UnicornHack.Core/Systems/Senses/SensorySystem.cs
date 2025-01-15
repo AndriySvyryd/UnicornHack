@@ -146,7 +146,7 @@ public class SensorySystem : IGameSystem<TraveledMessage>, IGameSystem<EntityAdd
             var visibleTiles = GetVisibleTiles(playerEntity);
 
             // TODO: Only check in the max visibility range
-            for (var i = 0; i < tileCount; i++)
+            for (short i = 0; i < tileCount; i++)
             {
                 var visibility = visibleTiles[i];
                 if (visibility == 0)
