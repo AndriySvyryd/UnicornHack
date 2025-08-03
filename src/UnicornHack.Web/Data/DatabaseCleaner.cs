@@ -127,7 +127,8 @@ public class DatabaseCleaner
                 new LoggingOptions(),
                 new DiagnosticListener("Fake"),
                 new SqlServerLoggingDefinitions(),
-                new NullDbContextLogger()));
+                new NullDbContextLogger()),
+            null!);
 #pragma warning restore EF1001 // Internal EF Core API usage.
 
     protected static string BuildCustomSql()

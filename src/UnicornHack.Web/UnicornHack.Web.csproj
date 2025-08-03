@@ -2,57 +2,47 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
-    <TypeScriptToolsVersion>Latest</TypeScriptToolsVersion>
     <IsPackable>false</IsPackable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <LangVersion>12.0</LangVersion>
     <RootNamespace>UnicornHack</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <SpaRoot>ClientApp\</SpaRoot>
-    <DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
+    <SpaRoot>..\..\..\UnicornHackClient\</SpaRoot>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.21.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="6.0.8" />
-    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="6.0.8" />
-    <PackageReference Include="Microsoft.AspNetCore.SpaServices.Extensions" Version="6.0.8" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="6.0.8" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.8" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="6.0.8">
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.18" />
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.18" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="8.0.18" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.18" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.18">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.12.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.12.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
-
-  <ItemGroup>
-    <!-- Don't publish the SPA source files, but do show them in the project files list -->
-    <Content Remove="$(SpaRoot)**" />
-    <None Remove="$(SpaRoot)**" />
-    <None Include="$(SpaRoot)**" Exclude="$(SpaRoot)node_modules\**" />
-  </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\UnicornHack.Core\UnicornHack.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Update="wwwroot\favicon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
-  <Target Name="DebugEnsureNodeEnv" BeforeTargets="Build" Condition=" '$(Configuration)' == 'Debug' And !Exists('$(SpaRoot)node_modules') ">
-    <!-- Ensure Node.js is installed -->
-    <Exec Command="node --version" ContinueOnError="true">
-      <Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
-    </Exec>
-    <Error Condition="'$(ErrorCode)' != '0'" Text="Node.js is required to build and run this project. To continue, please install Node.js from https://nodejs.org/, and then restart your command prompt or IDE." />
-    <Message Importance="high" Text="Restoring dependencies using 'npm'. This may take several minutes..." />
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" />
-  </Target>
-
-  <Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish">
-    <!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" />
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
-
+  <Target Name="PublishBuild" AfterTargets="ComputeFilesToPublish">
     <!-- Include the newly-built files in the publish output -->
     <ItemGroup>
       <DistFiles Include="$(SpaRoot)build\**" />

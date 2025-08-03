@@ -227,7 +227,7 @@ public readonly struct Rectangle : IEnumerable<Point>, IEquatable<Rectangle>
             entry.SetValue(result);
         }
 
-        return ((short[,], Point[]))result;
+        return ((short[,], Point[]))result!;
     }
 
     public override string ToString() => $"({TopLeft}, {BottomRight})";

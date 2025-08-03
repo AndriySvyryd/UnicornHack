@@ -24,6 +24,7 @@ bld/
 [Oo]bj/
 [Ll]og/
 BenchmarkDotNet.Artifacts/
+src/UnicornHack.Web/wwwroot/build
 
 # Visual Studio cache/options directory
 .vs/

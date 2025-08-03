@@ -1,6 +1,5 @@
 using MessagePack.Resolvers;
 using MessagePack;
-using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using UnicornHack.Data;
@@ -70,12 +69,6 @@ public class Startup
                         GeneratedResolver.Instance)));
 
         services.AddApplicationInsightsTelemetry();
-
-        // In production, the React files will be served from this directory
-        services.AddSpaStaticFiles(configuration =>
-        {
-            configuration.RootPath = "wwwroot";
-        });
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -102,8 +95,7 @@ public class Startup
 
         app.UseHttpsRedirection();
 
-        app.UseStaticFiles();
-        app.UseSpaStaticFiles();
+        app.UseStaticFiles(new StaticFileOptions { ServeUnknownFileTypes = true });
 
         app.UseRouting();
 
@@ -115,16 +107,6 @@ public class Startup
             endpoints.MapHub<GameHub>("/gameHub");
 
             endpoints.MapControllers();
-        });
-
-        app.UseSpa(spa =>
-        {
-            spa.Options.DefaultPage = "/";
-            if (env.IsDevelopment())
-            {
-                spa.Options.SourcePath = "ClientApp";
-                spa.UseReactDevelopmentServer(npmScript: "start");
-            }
         });
     }
 }

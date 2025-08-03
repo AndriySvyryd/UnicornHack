@@ -4,7 +4,7 @@
     <AssemblyName>UnicornHack.Core</AssemblyName>
     <PackageId>UnicornHack.Core</PackageId>
     <VersionPrefix>0.1.0</VersionPrefix>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
@@ -28,12 +28,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.10.1" />
-    <PackageReference Include="Antlr4BuildTasks" Version="10.7.0">
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" />
+    <PackageReference Include="Antlr4BuildTasks" Version="12.10.0">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CSharpScriptSerializer" Version="3.0.4" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="8.0.0" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

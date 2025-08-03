@@ -2,14 +2,14 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>UnicornHack.PerformanceTests</RootNamespace>
-    <LangVersion>10.0</LangVersion>
+    <LangVersion>12.0</LangVersion>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.13.1" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.2" />
   </ItemGroup>
 
   <ItemGroup>
