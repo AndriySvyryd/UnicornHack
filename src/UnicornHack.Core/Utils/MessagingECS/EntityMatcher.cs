@@ -38,4 +38,26 @@ public class EntityMatcher<TEntity> where TEntity : Entity
     private static int[] Merge(int[]? firstArray, int[] secondArray)
         => firstArray?.Concat(secondArray).Distinct().OrderBy(id => id).ToArray()
            ?? secondArray;
+
+    public override string ToString()
+    {
+        var parts = new List<string>();
+
+        if (_allOfIds?.Length > 0)
+        {
+            parts.Add($"All:[{string.Join(",", _allOfIds)}]");
+        }
+
+        if (_anyOfIds?.Length > 0)
+        {
+            parts.Add($"Any:[{string.Join(",", _anyOfIds)}]");
+        }
+
+        if (_noneOfIds?.Length > 0)
+        {
+            parts.Add($"None:[{string.Join(",", _noneOfIds)}]");
+        }
+
+        return parts.Count > 0 ? string.Join(" ", parts) : "Empty";
+    }
 }

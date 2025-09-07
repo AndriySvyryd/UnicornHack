@@ -49,7 +49,7 @@ public abstract class EntityIndexBase<TEntity, TKey> : IEntityChangeListener<TEn
     {
         Debug.Assert(entityChange.RemovedComponent == null);
 
-        Component? componentUsed = null;
+        var keyValueChanged = false;
         var changes = entityChange.PropertyChanges;
         for (var i = 0; i < changes.Count; i++)
         {
@@ -62,12 +62,12 @@ public abstract class EntityIndexBase<TEntity, TKey> : IEntityChangeListener<TEn
                     return true;
                 }
 
-                componentUsed = changedComponent;
+                keyValueChanged = true;
                 break;
             }
         }
 
-        if (componentUsed == null)
+        if (!keyValueChanged)
         {
             return HandleNonKeyPropertyValuesChanged(entityChange);
         }

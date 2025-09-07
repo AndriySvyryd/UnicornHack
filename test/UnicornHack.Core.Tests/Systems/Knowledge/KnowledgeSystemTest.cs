@@ -32,9 +32,9 @@ public class KnowledgeSystemTest
         var connectionKnowledge = connection.Position!.Knowledge!;
 
         Assert.Equal(4, manager.KnownPositions.Count);
-        Assert.Equal(1, level.KnownItems.Count);
+        Assert.Single(level.KnownItems);
         Assert.Equal(2, level.KnownActors.Count);
-        Assert.Equal(1, level.KnownConnections.Count);
+        Assert.Single(level.KnownConnections);
 
         Assert.Equal(undine.Position.LevelCell, nymphKnowledge.Position!.LevelCell);
         Assert.Equal(undine.Position.Heading, nymphKnowledge.Position.Heading);
@@ -75,9 +75,9 @@ public class KnowledgeSystemTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(4, manager.KnownPositions.Count);
-        Assert.Equal(1, level.KnownItems.Count);
+        Assert.Single(level.KnownItems);
         Assert.Equal(2, level.KnownActors.Count);
-        Assert.Equal(1, level.KnownConnections.Count);
+        Assert.Single(level.KnownConnections);
         Assert.Same(nymphKnowledge, undine.Position.Knowledge);
         Assert.Same(daggerKnowledge, dagger.Position.Knowledge);
 

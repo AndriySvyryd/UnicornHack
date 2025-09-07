@@ -111,6 +111,11 @@ public class UniqueEntityRelationship<TEntity> : EntityRelationshipBase<TEntity>
             return true;
         }
 
+        if (OrphanedEntities.TryGetValue(key, out var existingOrphanedEntity))
+        {
+            throw new InvalidOperationException(
+                $"Orphaned dependent entity {entityChange.Entity.Id} cannot be added because an orphaned dependent entity {existingOrphanedEntity.Id} with the key {key} already exists in the unique relationship '{Name}'");
+        }
         OrphanedEntities.Add(key, entityChange.Entity);
 
         return false;
@@ -118,10 +123,11 @@ public class UniqueEntityRelationship<TEntity> : EntityRelationshipBase<TEntity>
 
     private void Add(int key, in EntityChange<TEntity> entityChange, TEntity principal)
     {
-        if (Accessor.GetDependent(principal) != null)
+        var existingDependent = Accessor.GetDependent(principal);
+        if (existingDependent != null)
         {
             throw new InvalidOperationException(
-                $"The key {key} already exists in the unique relationship for {_dependents?.Name}");
+                $"Dependent entity {entityChange.Entity.Id} cannot be added because a dependent entity {existingDependent.Id} with the key {key} already exists in the unique relationship '{Name}'");
         }
 
         Accessor.SetDependent(principal, entityChange.Entity);

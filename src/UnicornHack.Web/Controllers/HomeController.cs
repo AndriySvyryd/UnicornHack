@@ -19,7 +19,7 @@ public class HomeController : Controller
         }
 
         // TODO: Validate name and that the character is not dead.
-        return View(nameof(Game), model.Name);
+        return Redirect($"/build/index.html?name={model.Name}");
     }
 
     [Route("Error")]

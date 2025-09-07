@@ -1,6 +1,7 @@
 ﻿using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Senses;
 
@@ -216,6 +217,211 @@ public class LookupEntityRelationshipTest
         Assert.Equal(0, manager.Beings.Count);
         Assert.Equal(3, testSystem.MessagesProcessed);
         Assert.Equal(3, testSystem.GroupChangesDetected);
+    }
+
+    [Fact]
+    public void Secondary_principal_removal_causes_dependent_to_be_removed()
+    {
+        var manager = TestHelper.CreateGameManager();
+
+        // Create a level
+        using var levelEntityReference = manager.CreateEntity();
+        var levelEntity = levelEntityReference.Referenced;
+        levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+
+        // Create an actor first that will be referenced
+        var actorEntityReference = manager.CreateEntity();
+        var actorEntity = actorEntityReference.Referenced;
+        actorEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
+        actorEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+        var actorPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
+        actorPosition.LevelId = levelEntity.Id;
+        actorPosition.LevelX = 10;
+        actorPosition.LevelY = 11;
+        actorEntity.Position = actorPosition;
+
+        // Create a knowledge entity that references the actor
+        var knowledgeEntityReference = manager.CreateEntity();
+        var knowledgeEntity = knowledgeEntityReference.Referenced;
+        var knowledge = manager.CreateComponent<KnowledgeComponent>((int)EntityComponent.Knowledge);
+        knowledge.KnownEntityId = actorEntity.Id;
+        knowledgeEntity.Knowledge = knowledge;
+
+        var position = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
+        position.LevelId = levelEntity.Id;
+        position.LevelX = 5;
+        position.LevelY = 6;
+        knowledgeEntity.Position = position;
+
+        actorEntityReference.Dispose();
+        knowledgeEntityReference.Dispose();
+        Assert.NotNull(knowledgeEntity.Manager);
+        Assert.NotNull(knowledgeEntity.Manager);
+
+        // Verify the relationship is established since both principal and secondary principal exist
+        Assert.True(manager.KnownActorsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Single(manager.KnownActorsToLevelCellRelationship.GetDependents(levelEntity));
+        Assert.Single(levelEntity.Level!.KnownActors);
+        Assert.Same(knowledgeEntity, levelEntity.Level.KnownActors[new Point(5, 6)]);
+
+        // Remove the actor from the LevelActors group (secondary principal group)
+        actorEntity.AI = null;
+
+        // The knowledge entity should be removed from the relationship and deleted
+        Assert.False(manager.KnownActorsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Empty(manager.KnownActorsToLevelCellRelationship.GetDependents(levelEntity));
+        Assert.Empty(levelEntity.Level.KnownActors);
+        Assert.Null(knowledgeEntity.Manager);
+    }
+
+    [Fact]
+    public void Secondary_principal_key_can_be_set_after()
+    {
+        var manager = TestHelper.CreateGameManager();
+        manager.IsLoading = true;
+
+        // Create a level
+        using var levelEntityReference = manager.CreateEntity();
+        var levelEntity = levelEntityReference.Referenced;
+        levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+
+        // Create a knowledge entity that references an actor that will be created later
+        using var knowledgeEntityReference = manager.CreateEntity();
+        var knowledgeEntity = knowledgeEntityReference.Referenced;
+        var knowledge = manager.CreateComponent<KnowledgeComponent>((int)EntityComponent.Knowledge);
+        knowledgeEntity.Knowledge = knowledge;
+
+        var position = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
+        position.LevelId = levelEntity.Id;
+        position.LevelX = 5;
+        position.LevelY = 6;
+        knowledgeEntity.Position = position;
+
+        // During loading, the relationship should not be established yet
+        Assert.False(manager.KnownActorsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Empty(manager.KnownActorsToLevelCellRelationship.GetDependents(levelEntity));
+
+        // Create the referenced actor during loading
+        using var actorEntityReference = manager.CreateEntity();
+        var actorEntity = actorEntityReference.Referenced;
+        actorEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
+        actorEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+        var actorPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
+        actorPosition.LevelId = levelEntity.Id;
+        actorPosition.LevelX = 10;
+        actorPosition.LevelY = 11;
+        actorEntity.Position = actorPosition;
+        knowledge.KnownEntityId = actorEntity.Id;
+
+        // The relationship should be established now that the secondary principal exists
+        Assert.True(manager.KnownActorsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Single(manager.KnownActorsToLevelCellRelationship.GetDependents(levelEntity));
+        Assert.False(manager.KnownItemsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Empty(manager.KnownItemsToLevelCellRelationship.GetDependents(levelEntity));
+        Assert.False(manager.KnownConnectionsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Empty(manager.KnownConnectionsToLevelCellRelationship.GetDependents(levelEntity));
+    }
+
+    [Fact]
+    public void Secondary_principal_can_be_added_after_dependent()
+    {
+        var manager = TestHelper.CreateGameManager();
+        manager.IsLoading = true;
+
+        using var levelEntityReference = manager.CreateEntity();
+        var levelEntity = levelEntityReference.Referenced;
+        levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+
+        // Create an actor that will be referenced by multiple knowledge entities
+        using var actorEntityReference = manager.CreateEntity();
+        var actorEntity = actorEntityReference.Referenced;
+        actorEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
+        actorEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+        var actorPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
+        actorPosition.LevelId = levelEntity.Id;
+        actorPosition.LevelX = 50;
+        actorPosition.LevelY = 51;
+
+        using var knowledgeEntityRef = manager.CreateEntity();
+        var knowledgeEntity = knowledgeEntityRef.Referenced;
+        var knowledge = manager.CreateComponent<KnowledgeComponent>((int)EntityComponent.Knowledge);
+        knowledge.KnownEntityId = actorEntity.Id;
+        knowledgeEntity.Knowledge = knowledge;
+
+        var position = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
+        position.LevelId = levelEntity.Id;
+        position.LevelX = 1;
+        position.LevelY = 2;
+        knowledgeEntity.Position = position;
+
+        // Should not be in the relationship yet because the actor doesn't have a position (not in LevelActors)
+        Assert.False(manager.KnownActorsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Empty(manager.KnownActorsToLevelCellRelationship.GetDependents(levelEntity));
+
+        // Add the actor to the LevelActors group by giving it a position
+        actorEntity.Position = actorPosition;
+
+        // The knowledge entity should now be in the relationship
+        Assert.True(manager.KnownActorsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Single(manager.KnownActorsToLevelCellRelationship.GetDependents(levelEntity));
+        Assert.Single(levelEntity.Level!.KnownActors);
+    }
+
+    [Fact]
+    public void Secondary_principal_key_change_updates_relationship()
+    {
+        var manager = TestHelper.CreateGameManager();
+
+        // Create a level
+        using var levelEntityReference = manager.CreateEntity();
+        var levelEntity = levelEntityReference.Referenced;
+        levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+
+        // Create two actors
+        using var firstActorReference = manager.CreateEntity();
+        var firstActor = firstActorReference.Referenced;
+        firstActor.AddComponent<AIComponent>((int)EntityComponent.AI);
+        firstActor.AddComponent<BeingComponent>((int)EntityComponent.Being);
+        var firstActorPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
+        firstActorPosition.LevelId = levelEntity.Id;
+        firstActorPosition.LevelX = 10;
+        firstActorPosition.LevelY = 11;
+        firstActor.Position = firstActorPosition;
+
+        using var secondActorReference = manager.CreateEntity();
+        var secondActor = secondActorReference.Referenced;
+        secondActor.AddComponent<AIComponent>((int)EntityComponent.AI);
+        secondActor.AddComponent<BeingComponent>((int)EntityComponent.Being);
+        var secondActorPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
+        secondActorPosition.LevelId = levelEntity.Id;
+        secondActorPosition.LevelX = 20;
+        secondActorPosition.LevelY = 21;
+        secondActor.Position = secondActorPosition;
+
+        // Create a knowledge entity that references the first actor
+        using var knowledgeEntityReference = manager.CreateEntity();
+        var knowledgeEntity = knowledgeEntityReference.Referenced;
+        var knowledge = manager.CreateComponent<KnowledgeComponent>((int)EntityComponent.Knowledge);
+        knowledge.KnownEntityId = firstActor.Id;
+        knowledgeEntity.Knowledge = knowledge;
+
+        var position = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
+        position.LevelId = levelEntity.Id;
+        position.LevelX = 5;
+        position.LevelY = 6;
+        knowledgeEntity.Position = position;
+
+        // Verify the relationship is established
+        Assert.True(manager.KnownActorsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Single(manager.KnownActorsToLevelCellRelationship.GetDependents(levelEntity));
+
+        // Change the knowledge entity to reference the second actor
+        knowledge.KnownEntityId = secondActor.Id;
+
+        // The relationship should still be maintained (different secondary principal reference)
+        Assert.True(manager.KnownActorsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Single(manager.KnownActorsToLevelCellRelationship.GetDependents(levelEntity));
+        Assert.Single(levelEntity.Level!.KnownActors);
     }
 
     private class RelationshipTestSystem :

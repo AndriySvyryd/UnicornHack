@@ -131,8 +131,8 @@ public class KnowledgeSystem :
 
     private void UpdateKnowledge(PositionComponent position, SenseType sensedType, GameManager manager)
     {
-        var knowledge = position.Knowledge;
-        if (knowledge == null)
+        var knowledgeEntity = position.Knowledge;
+        if (knowledgeEntity == null)
         {
             using var entityReference = manager.CreateEntity();
             var knowledgeEntityReference = entityReference.Referenced;
@@ -149,9 +149,9 @@ public class KnowledgeSystem :
         }
         else
         {
-            knowledge.Knowledge!.SensedType = sensedType;
+            knowledgeEntity.Knowledge!.SensedType = sensedType;
 
-            var knowledgePosition = knowledge.Position!;
+            var knowledgePosition = knowledgeEntity.Position!;
             knowledgePosition.SetLevelPosition(position.LevelId, position.LevelCell);
             knowledgePosition.Heading = position.Heading;
         }

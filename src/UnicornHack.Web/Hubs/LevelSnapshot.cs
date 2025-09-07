@@ -57,6 +57,7 @@ public class LevelSnapshot
         var level = levelEntity.Level!;
         List<object?> properties;
         var tileCount = level.TileCount;
+
         switch (state)
         {
             case null:

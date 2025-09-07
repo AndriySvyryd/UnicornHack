@@ -38,7 +38,7 @@ public class EnglishLanguageService : ILanguageService
                 return Creature.Loader.Get(id).EnglishDescription ?? "";
         }
 
-        return "";
+        return id;
     }
 
     [return: NotNullIfNotNull("actorEntity")]
@@ -57,7 +57,7 @@ public class EnglishLanguageService : ILanguageService
         {
             return null;
         }
-        
+
         if (person == EnglishPerson.Second)
         {
             return EnglishMorphologicalProcessor.GetPronoun(
@@ -509,7 +509,7 @@ public class EnglishLanguageService : ILanguageService
         var damageTag = TaggingService.GetDamageTag(effects, out var damageTaken);
 
         return damageTaken
-            ? Format(reflexive ? "[{0} pts.]" : "({0} pts.)", damageTag)
+            ? string.Format(Culture, reflexive ? "[{0} pts.]" : "({0} pts.)", damageTag)
             : ToSentence(victimPronoun, reflexive ? "are" : "is", "unaffected.");
     }
 
@@ -598,14 +598,14 @@ public class EnglishLanguageService : ILanguageService
         var leveledGender = (EnglishGender?)@event.LeveledEntity.Being!.Sex;
 
         return ToSentence(
-                   GetString(@event.LeveledEntity, leveledPerson, SenseType.Sight),
-                   EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "level up", leveledPerson),
-                   "!") + " " +
-               ToSentence(
-                   EnglishMorphologicalProcessor.GetPronoun(EnglishPronounForm.Normal, EnglishNumber.Singular,
-                       leveledPerson, leveledGender),
-                   EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "gain", leveledPerson),
-                   $"{@event.SkillPointsGained} SP {@event.TraitPointsGained} TP {@event.MutationPointsGained} MP");
+                GetString(@event.LeveledEntity, leveledPerson, SenseType.Sight),
+                EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "level up", leveledPerson),
+                "!") + " " +
+            ToSentence(
+                EnglishMorphologicalProcessor.GetPronoun(EnglishPronounForm.Normal, EnglishNumber.Singular,
+                    leveledPerson, leveledGender),
+                EnglishMorphologicalProcessor.ProcessVerbSimplePresent(verbPhrase: "gain", leveledPerson),
+                $"{@event.SkillPointsGained} SP {@event.TraitPointsGained} TP {@event.MutationPointsGained} MP");
     }
 
     public string NoDefaultAttack(bool melee)
@@ -623,20 +623,18 @@ public class EnglishLanguageService : ILanguageService
     public virtual string Welcome(GameEntity playerEntity)
     {
         var manager = playerEntity.Manager;
-        return Format(
+        return string.Format(Culture,
             "Welcome to the {0}, {1}!",
             manager.FindEntity(playerEntity.Position!.LevelId)!.Level!.Branch.Name,
             GetString(playerEntity, EnglishPerson.Third, SenseType.Sight));
     }
 
     public virtual string UnableToMove(Direction direction)
-        => Format("Can't move {0}.", GetString(direction, abbreviate: false));
+        => string.Format(Culture, "Can't move {0}.", GetString(direction, abbreviate: false));
 
     #endregion
 
     #region Formatting
-
-    protected string Format(string format, params object[] arguments) => string.Format(Culture, format, arguments);
 
     protected virtual string ToSentence(params string?[] components)
     {

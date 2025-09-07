@@ -86,12 +86,7 @@ public partial class GameManager
             new KeyValueGetter<GameEntity, Point>(
                 (change, matcher, valueType) =>
                 {
-                    if (!matcher.TryGetValue<int>(
-                            change, (int)EntityComponent.Knowledge, nameof(KnowledgeComponent.KnownEntityId),
-                            valueType,
-                            out var knownEntityId)
-                        || !change.Entity.Manager.LevelActors.ContainsEntity(knownEntityId)
-                        || !matcher.TryGetValue<byte>(
+                    if (!matcher.TryGetValue<byte>(
                             change, (int)EntityComponent.Position, nameof(PositionComponent.LevelX), valueType,
                             out var levelX)
                         || !matcher.TryGetValue<byte>(
@@ -104,9 +99,6 @@ public partial class GameManager
                     return (new Point(levelX, levelY), true);
                 },
                 new PropertyMatcher<GameEntity>()
-                    .With(component => ((KnowledgeComponent)component).KnownEntityId,
-                        (int)EntityComponent.Knowledge)
-                    .With(component => ((PositionComponent)component).LevelId, (int)EntityComponent.Position)
                     .With(component => ((PositionComponent)component).LevelX, (int)EntityComponent.Position)
                     .With(component => ((PositionComponent)component).LevelY, (int)EntityComponent.Position)
             ),
@@ -115,7 +107,11 @@ public partial class GameManager
                 knowledgeEntity.RemoveComponent(EntityComponent.Knowledge);
                 knowledgeEntity.RemoveComponent(EntityComponent.Position);
             },
-            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level!.KnownActors);
+            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level!.KnownActors,
+            secondaryPrincipalGroup: LevelActors,
+            secondaryPrincipalKeyValueGetter: new SimpleKeyValueGetter<GameEntity, int>(
+                component => ((KnowledgeComponent)component).KnownEntityId,
+                (int)EntityComponent.Knowledge));
 
         KnownItemsToLevelCellRelationship = new(
             nameof(KnownItemsToLevelCellRelationship),
@@ -127,12 +123,7 @@ public partial class GameManager
             new KeyValueGetter<GameEntity, Point>(
                 (change, matcher, valueType) =>
                 {
-                    if (!matcher.TryGetValue<int>(
-                            change, (int)EntityComponent.Knowledge, nameof(KnowledgeComponent.KnownEntityId),
-                            valueType,
-                            out var knownEntityId)
-                        || !change.Entity.Manager.LevelItems.ContainsEntity(knownEntityId)
-                        || !matcher.TryGetValue<byte>(
+                    if (!matcher.TryGetValue<byte>(
                             change, (int)EntityComponent.Position, nameof(PositionComponent.LevelX), valueType,
                             out var levelX)
                         || !matcher.TryGetValue<byte>(
@@ -145,9 +136,6 @@ public partial class GameManager
                     return (new Point(levelX, levelY), true);
                 },
                 new PropertyMatcher<GameEntity>()
-                    .With(component => ((KnowledgeComponent)component).KnownEntityId,
-                        (int)EntityComponent.Knowledge)
-                    .With(component => ((PositionComponent)component).LevelId, (int)EntityComponent.Position)
                     .With(component => ((PositionComponent)component).LevelX, (int)EntityComponent.Position)
                     .With(component => ((PositionComponent)component).LevelY, (int)EntityComponent.Position)
             ),
@@ -156,7 +144,11 @@ public partial class GameManager
                 knowledgeEntity.RemoveComponent(EntityComponent.Knowledge);
                 knowledgeEntity.RemoveComponent(EntityComponent.Position);
             },
-            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level!.KnownItems);
+            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level!.KnownItems,
+            secondaryPrincipalGroup: LevelItems,
+            secondaryPrincipalKeyValueGetter: new SimpleKeyValueGetter<GameEntity, int>(
+                component => ((KnowledgeComponent)component).KnownEntityId,
+                (int)EntityComponent.Knowledge));
 
         KnownConnectionsToLevelCellRelationship = new(
             nameof(KnownConnectionsToLevelCellRelationship),
@@ -168,12 +160,7 @@ public partial class GameManager
             new KeyValueGetter<GameEntity, Point>(
                 (change, matcher, valueType) =>
                 {
-                    if (!matcher.TryGetValue<int>(
-                            change, (int)EntityComponent.Knowledge, nameof(KnowledgeComponent.KnownEntityId),
-                            valueType,
-                            out var knownEntityId)
-                        || !change.Entity.Manager.Connections.ContainsEntity(knownEntityId)
-                        || !matcher.TryGetValue<byte>(
+                    if (!matcher.TryGetValue<byte>(
                             change, (int)EntityComponent.Position, nameof(PositionComponent.LevelX), valueType,
                             out var levelX)
                         || !matcher.TryGetValue<byte>(
@@ -186,9 +173,6 @@ public partial class GameManager
                     return (new Point(levelX, levelY), true);
                 },
                 new PropertyMatcher<GameEntity>()
-                    .With(component => ((KnowledgeComponent)component).KnownEntityId,
-                        (int)EntityComponent.Knowledge)
-                    .With(component => ((PositionComponent)component).LevelId, (int)EntityComponent.Position)
                     .With(component => ((PositionComponent)component).LevelX, (int)EntityComponent.Position)
                     .With(component => ((PositionComponent)component).LevelY, (int)EntityComponent.Position)
             ),
@@ -197,7 +181,11 @@ public partial class GameManager
                 knowledgeEntity.RemoveComponent(EntityComponent.Knowledge);
                 knowledgeEntity.RemoveComponent(EntityComponent.Position);
             },
-            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level!.KnownConnections);
+            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level!.KnownConnections,
+            secondaryPrincipalGroup: Connections,
+            secondaryPrincipalKeyValueGetter: new SimpleKeyValueGetter<GameEntity, int>(
+                component => ((KnowledgeComponent)component).KnownEntityId,
+                (int)EntityComponent.Knowledge));
 
         LevelKnowledgeToLevelEntityRelationship = new(
             nameof(LevelKnowledgeToLevelEntityRelationship),
@@ -206,10 +194,10 @@ public partial class GameManager
             new SimpleKeyValueGetter<GameEntity, int>(
                 component => ((KnowledgeComponent)component).KnownEntityId,
                 (int)EntityComponent.Knowledge),
-            (effectEntity, _) =>
+            (knowledgeEntity, _) =>
             {
-                effectEntity.RemoveComponent(EntityComponent.Knowledge);
-                effectEntity.RemoveComponent(EntityComponent.Position);
+                knowledgeEntity.RemoveComponent(EntityComponent.Knowledge);
+                knowledgeEntity.RemoveComponent(EntityComponent.Position);
             },
             levelEntity => levelEntity.Position!.Knowledge);
 

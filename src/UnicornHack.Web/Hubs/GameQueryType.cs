@@ -11,6 +11,5 @@ public enum GameQueryType
     AbilityAttributes,
     ActorAttributes,
     ItemAttributes,
-    StaticDescription,
     PostGameStatistics
 }

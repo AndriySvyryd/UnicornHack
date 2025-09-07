@@ -103,12 +103,9 @@ public abstract class EntityRelationshipBase<TEntity> : EntityIndexBase<TEntity,
     TEntity? IEntityRelationshipBase<TEntity>.FindEntity(int id)
     {
         var entity = DependentGroup.FindEntity(id);
-        if (entity != null && ContainsEntity(entity))
-        {
-            return entity;
-        }
-
-        return null;
+        return entity != null && ContainsEntity(entity)
+            ? entity
+            : null;
     }
 
     /// <summary>
@@ -122,7 +119,7 @@ public abstract class EntityRelationshipBase<TEntity> : EntityIndexBase<TEntity,
         return entity != null && ContainsEntity(entity);
     }
 
-    private bool ContainsEntity(TEntity entity)
-        => KeyValueGetter.TryGetKey(new EntityChange<TEntity>(entity), ValueType.Current, out _)
-           && entity.Manager?.IsLoading == false;
+    protected virtual bool ContainsEntity(TEntity entity)
+        => KeyValueGetter.TryGetKey(new EntityChange<TEntity>(entity), ValueType.Current, out var key)
+            && FindPrincipal(key, entity, fallback: false) is { };
 }

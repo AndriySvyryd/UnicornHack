@@ -1,4 +1,5 @@
-﻿using UnicornHack.Systems.Actors;
+﻿using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
@@ -216,10 +217,9 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
 
             if (leftover != null)
             {
-                if (targetContainer!.Capacity
-                    <= targetContainer.Items.Count
-                    || targetContainer.Capacity
-                    <= (targetContainer.Entity.Being?.SlottedAbilities?.Count ?? 0))
+                if (targetContainer!.Capacity <= targetContainer.Items.Count
+                    || (targetContainer.Entity.Being != null
+                        && manager.AbilitySlottingSystem.GetFirstFreeSlot(targetContainer.Entity) == null))
                 {
                     return itemMovedMessage;
                 }
@@ -228,17 +228,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
                 {
                     leftover.Entity.RemoveComponent(EntityComponent.Position);
                     leftover.ContainerId = targetContainer.EntityId;
-
-                    // TODO: Update container weight
                 }
-            }
-
-            if (message.TargetContainerEntity != null
-                && itemMovedMessage.InitialLevelCell != null
-                && !pretend)
-            {
-                // TODO: Calculate delay
-                DelayMessage.Enqueue(message.TargetContainerEntity, TimeSystem.DefaultActionDelay / 2, manager);
             }
 
             itemMovedMessage.Successful = true;

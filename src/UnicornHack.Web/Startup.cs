@@ -76,7 +76,7 @@ public class Startup
     {
         if (env.IsDevelopment())
         {
-            //app.UseWebAssemblyDebugging();
+            app.UseWebAssemblyDebugging();
             app.UseDeveloperExceptionPage();
             app.UseMigrationsEndPoint();
 

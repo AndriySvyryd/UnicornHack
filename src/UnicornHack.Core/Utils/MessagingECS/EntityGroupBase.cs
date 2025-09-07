@@ -31,7 +31,7 @@ public abstract class EntityGroupBase<TEntity> : IEntityGroup<TEntity>
 
     public string GetPropertyValueChangedMessageName(string propertyName)
     {
-        _propertyValueChangedMessageNames ??= new Dictionary<string, string>();
+        _propertyValueChangedMessageNames ??= [];
 
         if (!_propertyValueChangedMessageNames.TryGetValue(propertyName, out var messageName))
         {
@@ -44,7 +44,7 @@ public abstract class EntityGroupBase<TEntity> : IEntityGroup<TEntity>
 
     public void AddListener(IEntityChangeListener<TEntity> index)
     {
-        _changeListeners ??= new();
+        _changeListeners ??= [];
         _changeListeners.Add(index);
     }
 

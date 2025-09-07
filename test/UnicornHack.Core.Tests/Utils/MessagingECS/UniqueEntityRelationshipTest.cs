@@ -189,7 +189,7 @@ public class UniqueEntityRelationshipTest
                 conflictingBeingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
                 conflictingBeingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
 
-                Assert.Throws<ArgumentException>(() => conflictingBeing.PrimaryNaturalWeaponId = 1);
+                Assert.Throws<InvalidOperationException>(() => conflictingBeing.PrimaryNaturalWeaponId = 1);
             }
         }
     }

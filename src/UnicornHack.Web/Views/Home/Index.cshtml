@@ -4,8 +4,8 @@
 }
 
 <div class="container">
-    <div class="intro">
-        <div style="margin-right: auto; margin-left: auto">
+    <div class="row justify-content-center">
+        <div style="width: auto">
             <h1 class="text-center">UnicornHack</h1>
             <br />
             <pre class="text-left">
@@ -37,11 +37,9 @@
             <form asp-controller="Home" asp-action="Game" method="get" role="form">
                 <div asp-validation-summary="All" class="text-danger"></div>
                 @*TODO: Validate name and that the character is not dead. Autocomplete alive characters.*@
-                <div class="form-group">
+                <div class="input-group" style="width: 300px">
                     <input asp-for="Name" class="form-control" />
-                </div>
-                <div class="form-row">
-                    <button type="submit" class="form-inline btn-secondary" style="margin: auto">Play</button>
+                    <button type="submit" class="btn btn-secondary">Play</button>
                 </div>
             </form>
         </div>

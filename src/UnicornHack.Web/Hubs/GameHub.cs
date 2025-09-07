@@ -28,7 +28,10 @@ public class GameHub : Hub
     }
 
     public Task SendMessage(string message)
-        => Clients.All.SendAsync("ReceiveMessage", Context.User!.Identity!.Name, message);
+    {
+        // TODO: Sanitize tags
+        return Clients.All.SendAsync("ReceiveMessage", Context.User!.Identity!.Name, message);
+    }
 
     public List<object?> GetState(string playerName)
     {
@@ -159,7 +162,7 @@ public class GameHub : Hub
                 }
 
                 break;
-                // TODO: Handle StaticDescription and PostGameStatistics
+                // TODO: Handle PostGameStatistics
             default:
                 throw new InvalidOperationException($"Query type {intQueryType} not supported");
         }
@@ -167,12 +170,8 @@ public class GameHub : Hub
         return result;
     }
 
-    public Task ShowStaticDescriptionDialog(string playerName, string topicId, DescriptionCategory category) =>
-        // TODO: only send to clients watching this player
-        Clients.All.SendAsync("ReceiveUIRequest", QueryStaticDescription(topicId, category));
-
-    public List<object> QueryStaticDescription(string topicId, DescriptionCategory category)
-        => new(2) { GameQueryType.StaticDescription, _gameServices.Language.GetDescription(topicId, category) };
+    public string QueryStaticDescription(string topicId, int category)
+        => _gameServices.Language.GetDescription(topicId, (DescriptionCategory)category);
 
     public async Task PerformAction(string playerName, int intAction, int? target, int? target2)
     {
@@ -351,6 +350,7 @@ public class GameHub : Hub
 
         _dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
 
+        // AcceptChanges is delayed to allow using this state in serialization
         _dbContext.SaveChanges(acceptAllChangesOnSuccess: false);
     }
 
@@ -399,9 +399,9 @@ public class GameHub : Hub
         ItemData.PotionOfDwarfness.Instantiate(playerEntity);
         ItemData.SkillbookOfConjuration.Instantiate(playerEntity);
 
+        manager.Queue.ProcessQueue(manager);
         manager.LoggingSystem.WriteLog(game.Services.Language.Welcome(playerEntity), playerEntity, manager);
 
-        manager.Queue.ProcessQueue(manager);
         Turn(playerEntity.Player!);
         _dbContext.ChangeTracker.AcceptAllChanges();
 
@@ -468,7 +468,6 @@ public class GameHub : Hub
     private void Initialize(Game game)
     {
         game.Services = _gameServices;
-        game.Repository = _dbContext;
         if (game.Manager == null!)
         {
             var queue = new SequentialMessageQueue<GameManager>();
@@ -483,6 +482,14 @@ public class GameHub : Hub
 
     private void InitializeContext(Game game)
     {
+        if (game.Repository != null
+            && game.Repository is DbContext oldContext)
+        {
+            oldContext.ChangeTracker.Tracked -= OnTracked;
+            oldContext.ChangeTracker.StateChanged -= OnStateChanged;
+        }
+
+        game.Repository = _dbContext;
         _dbContext.Manager = game.Manager;
         _dbContext.ChangeTracker.Tracked += OnTracked;
         _dbContext.ChangeTracker.StateChanged += OnStateChanged;
