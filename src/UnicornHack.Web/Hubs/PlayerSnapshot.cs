@@ -260,11 +260,11 @@ public class PlayerSnapshot
         return properties;
     }
 
-    public static List<object> SerializeItems(GameEntity playerEntity, SerializationContext context)
+    public static List<object?> SerializeItems(GameEntity playerEntity, SerializationContext context)
         =>
         [
             playerEntity.Being!.Items
-                .Select(t => InventoryItemSnapshot.Serialize(t, null, null, context)).ToList()
+                .ToDictionary(t => t.Item!.EntityId, t => InventoryItemSnapshot.Serialize(t, null, null, context))
         ];
 
     public static List<object?> SerializeAdaptations(GameEntity playerEntity, SerializationContext context)
@@ -300,14 +300,14 @@ public class PlayerSnapshot
         };
     }
 
-    public static List<object> SerializeSkills(GameEntity playerEntity, SerializationContext context)
+    public static List<object?> SerializeSkills(GameEntity playerEntity, SerializationContext context)
     {
         var manager = context.Manager;
         var playerId = playerEntity.Id;
 
-        return new List<object>(31)
+        return new List<object?>(32)
         {
-            playerEntity.Player!.SkillPoints,
+            null,
             GetAbilityLevel(AbilityData.HandWeapons.Name, playerId, manager),
             GetAbilityLevel(AbilityData.ShortWeapons.Name, playerId, manager),
             GetAbilityLevel(AbilityData.MediumWeapons.Name, playerId, manager),
@@ -337,7 +337,8 @@ public class PlayerSnapshot
             GetAbilityLevel(AbilityData.Assassination.Name, playerId, manager),
             GetAbilityLevel(AbilityData.Stealth.Name, playerId, manager),
             GetAbilityLevel(AbilityData.Artifice.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.Leadership.Name, playerId, manager)
+            GetAbilityLevel(AbilityData.Leadership.Name, playerId, manager),
+            playerEntity.Player!.SkillPoints
         };
     }
 

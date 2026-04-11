@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using MessagePack;
 using Microsoft.EntityFrameworkCore;
 using UnicornHack.Services;
 using UnicornHack.Systems.Abilities;
@@ -61,7 +60,7 @@ public static class AbilitySnapshot
                 if (activation.IsModified)
                 {
                     setValues[i++] = true;
-                    properties.Add(ability.Activation);
+                    properties.Add((int)ability.Activation);
                 }
                 else
                 {
@@ -155,9 +154,9 @@ public static class AbilitySnapshot
             ability.EntityId,
             context.Services.Language.GetString(ability),
             ability.Level,
-            ability.Activation,
+            (int)ability.Activation,
             ability.ActivationCondition,
-            ability.TargetingShape,
+            (int)ability.TargetingShape,
             ability.TargetingShapeSize,
             ability.Range,
             ability.MinHeadingDeviation,
@@ -168,7 +167,7 @@ public static class AbilitySnapshot
             ability.CooldownTick == null ? 0 : ability.CooldownTick.Value - manager.Game.CurrentTick,
             ability.XPCooldown,
             ability.CooldownXpLeft ?? 0,
-            stats.SelfEffects.Select(e => SerializeEffectAttributes(e, activator, context)).ToList(),
+            stats.SelfEffects.ToDictionary(e => e.Effect!.EntityId, e => SerializeEffectAttributes(e, activator, context)),
             stats.SubAttacks.Select(s => Serialize(s, activator, context)).ToList()
         };
 
@@ -186,10 +185,9 @@ public static class AbilitySnapshot
         GameEntity effectEntity, GameEntity activator, SerializationContext context)
     {
         var effect = effectEntity.Effect!;
-        return new List<object?>(9)
+        return new List<object?>(8)
         {
-            effect.EntityId,
-            effect.EffectType,
+            (int)effect.EffectType,
             effect.ShouldTargetActivator,
             effect.AppliedAmount != null
                 ? effect.AppliedAmount.ToString()
@@ -198,21 +196,20 @@ public static class AbilitySnapshot
                     // TODO: output a reader-friendly version of AmountExpression
                     : context.Manager.EffectApplicationSystem.GetAmount(effect, activator)
                       + $" ({effect.Amount})",
-            effect.CombinationFunction,
+            (int)effect.CombinationFunction,
             effect.TargetName,
             effect.SecondaryAmount,
-            effect.Duration,
+            (int)effect.Duration,
             effect.DurationAmount
         };
     }
 
     private static List<object> Serialize(SubAttackStats stats, GameEntity activator, SerializationContext context)
-        => new(4)
+        => new(3)
         {
-            stats.AbilityId,
-            stats.SuccessCondition,
+            (int)stats.SuccessCondition,
             stats.Accuracy,
             stats.Effects.Where(e => e.Effect!.EffectType != EffectType.Activate)
-                .Select(e => SerializeEffectAttributes(e, activator, context)).ToList()
+                .ToDictionary(e => e.Effect!.EntityId, e => SerializeEffectAttributes(e, activator, context))
         };
 }

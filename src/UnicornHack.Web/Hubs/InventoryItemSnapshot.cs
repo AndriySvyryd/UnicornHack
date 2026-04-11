@@ -43,7 +43,7 @@ public class InventoryItemSnapshot
                 var slots = manager.ItemUsageSystem.GetEquipableSlots(item, context.Observer.Physical!.Size)
                     .GetNonRedundantFlags(removeComposites: true)
                     .Select(s => Serialize(s, context))
-                    .ToList();
+                    .ToDictionary(s => (int)s[0], s => s);
                 properties.Add(slots.Count > 0 ? slots : null);
                 properties.Add(item.EquippedSlot == EquipmentSlot.None
                     ? null
@@ -82,7 +82,7 @@ public class InventoryItemSnapshot
                     var slots = manager.ItemUsageSystem.GetEquipableSlots(item, physicalObserver.Size)
                         .GetNonRedundantFlags(removeComposites: true)
                         .Select(s => Serialize(s, context))
-                        .ToList();
+                        .ToDictionary(s => (int)s[0], s => s);
 
                     setValues[i++] = true;
                     properties.Add(slots);
@@ -117,9 +117,10 @@ public class InventoryItemSnapshot
         }
     }
 
-    private static object[] Serialize(EquipmentSlot slot, SerializationContext context) => new object[]
+    private static List<object> Serialize(EquipmentSlot slot, SerializationContext context) => new List<object>(3)
     {
-        (int)slot, context.Services.Language.GetString(slot, context.Observer, abbreviate: true),
+        (int)slot,
+        context.Services.Language.GetString(slot, context.Observer, abbreviate: true),
         context.Services.Language.GetString(slot, context.Observer, abbreviate: false)
     };
 
@@ -138,16 +139,16 @@ public class InventoryItemSnapshot
         var equipableSlots = manager.ItemUsageSystem.GetEquipableSlots(item, context.Observer.Physical!.Size)
             .GetNonRedundantFlags(removeComposites: true)
             .Select(s => Serialize(s, context))
-            .ToList();
+            .ToDictionary(s => (int)s[0], s => s);
         return new List<object?>(13)
         {
             null,
             context.Services.Language.GetString(item, item.GetQuantity(), sense),
             context.Services.Language.GetDescription(item.TemplateName, DescriptionCategory.Item),
-            item.Type,
+            (int)item.Type,
             (int)physical.Material,
             physical.Weight,
-            template.Complexity ?? ItemComplexity.Normal,
+            (int)(template.Complexity ?? ItemComplexity.Normal),
             template.RequiredMight ?? 0,
             template.RequiredSpeed ?? 0,
             template.RequiredFocus ?? 0,

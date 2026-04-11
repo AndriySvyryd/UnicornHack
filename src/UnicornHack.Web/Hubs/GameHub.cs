@@ -224,8 +224,7 @@ public class GameHub : Hub
 
             if (!playerEntity.Being!.IsAlive)
             {
-                var results = new List<object> { GameQueryType.PostGameStatistics, new List<object>() };
-
+                var results = QueryGame(playerName, (int)GameQueryType.PostGameStatistics, Array.Empty<int>());
                 // TODO: only send to clients watching this player
                 await Clients.All.SendAsync("ReceiveUIRequest", results).ConfigureAwait(false);
             }

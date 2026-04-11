@@ -63,7 +63,11 @@ public class Program
                         BuiltinResolver.Instance,
                         GeneratedResolver.Instance)));
 
-        services.AddApplicationInsightsTelemetry();
+        if (!env.IsDevelopment())
+        {
+            // TODO: Add connection string and other configuration for Application Insights
+            services.AddApplicationInsightsTelemetry();
+        }
 
         var app = builder.Build();
 
