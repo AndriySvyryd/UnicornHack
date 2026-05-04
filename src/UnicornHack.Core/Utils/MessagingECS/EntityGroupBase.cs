@@ -1,6 +1,10 @@
 ﻿// ReSharper disable StaticMemberInGenericType
 namespace UnicornHack.Utils.MessagingECS;
 
+/// <summary>
+///     Base class for entity groups. Listeners are notified synchronously,
+///     while change messages are enqueued for asynchronous processing.
+/// </summary>
 public abstract class EntityGroupBase<TEntity> : IEntityGroup<TEntity>
     where TEntity : Entity, new()
 {
@@ -42,11 +46,19 @@ public abstract class EntityGroupBase<TEntity> : IEntityGroup<TEntity>
         return messageName;
     }
 
-    public void AddListener(IEntityChangeListener<TEntity> index)
+    public void AddListener(IEntityChangeListener<TEntity> listener)
     {
         _changeListeners ??= [];
-        _changeListeners.Add(index);
+        _changeListeners.Add(listener);
     }
+
+    public void RemoveListener(IEntityChangeListener<TEntity> listener)
+    {
+        _changeListeners?.Remove(listener);
+    }
+
+    public virtual bool HasPropertyValueSubscribers
+        => _changeListeners is { Count: > 0 } || _propertyValueChangedMessageNames is { Count: > 0 };
 
     public abstract TEntity? FindEntity(int id);
     public abstract bool ContainsEntity(int id);

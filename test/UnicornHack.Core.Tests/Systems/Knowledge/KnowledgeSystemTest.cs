@@ -93,4 +93,42 @@ public class KnowledgeSystemTest
         Assert.Equal(SenseType.Sight, daggerKnowledge.Knowledge.SensedType);
         Assert.Same(level.KnownItems.GetValueOrDefault(new Point(1, 0)), daggerKnowledge);
     }
+
+    [Fact]
+    public void SensedType_updated_when_entity_leaves_FOV()
+    {
+        // Use a map where the player can see an entity initially,
+        // then turn away so the entity's position is no longer visible
+        // but the old knowledge position is also not visible (fog of war retention).
+        var level = TestHelper.BuildLevel(TestMap);
+        var undine = CreatureData.Undine.Instantiate(level, new Point(0, 0));
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
+        player.Position!.Heading = Direction.North;
+        var manager = player.Manager;
+
+        manager.Queue.ProcessQueue(manager);
+
+        var nymphKnowledge = undine.Position!.Knowledge!;
+        Assert.Equal(SenseType.Sight, nymphKnowledge.Knowledge!.SensedType);
+        Assert.True(nymphKnowledge.Knowledge.IsIdentified);
+
+        // Turn the player so the undine's position is no longer in the FOV.
+        // The knowledge entity position is at the same cell as the undine,
+        // which is also no longer visible, so knowledge is retained (fog of war).
+        var travelMessage = TravelMessage.Create(manager);
+        travelMessage.ActorEntity = player;
+        travelMessage.TargetHeading = Direction.South;
+        travelMessage.TargetCell = player.Position.LevelCell;
+        manager.Enqueue(travelMessage);
+
+        manager.Queue.ProcessQueue(manager);
+
+        // Knowledge entity should still exist but SensedType should be updated to None
+        Assert.NotNull(nymphKnowledge.Manager);
+        Assert.Equal(SenseType.None, nymphKnowledge.Knowledge.SensedType);
+        // IsIdentified should be preserved
+        Assert.True(nymphKnowledge.Knowledge.IsIdentified);
+        // Knowledge position should remain at the last known location
+        Assert.Equal(new Point(0, 0), nymphKnowledge.Position!.LevelCell);
+    }
 }

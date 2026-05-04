@@ -47,7 +47,8 @@ namespace UnicornHack.Hubs.MessagePack
         static CastingFormatter()
         {
             Serializers.TryAdd(typeof(object),
-                (Instance, (object p1, ref MessagePackWriter p2, object p3, MessagePackSerializerOptions p4) => { }));
+                (Instance, (object p1, ref MessagePackWriter p2, object p3, MessagePackSerializerOptions p4) => { }
+            ));
         }
 
         public void Serialize(ref MessagePackWriter writer, object? value, MessagePackSerializerOptions options)

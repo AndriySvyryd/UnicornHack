@@ -8,7 +8,7 @@ public class PlayerCommand : NotificationEntity
     private int _id;
     private int _playerId;
     private int _tick;
-    private ActorAction _action;
+    private ActorActionType _action;
     private int? _target;
     private int? _target2;
 
@@ -36,7 +36,7 @@ public class PlayerCommand : NotificationEntity
         set => SetWithNotify(value, ref _tick);
     }
 
-    public ActorAction Action
+    public ActorActionType Action
     {
         get => _action;
         set => SetWithNotify(value, ref _action);

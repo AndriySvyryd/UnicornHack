@@ -27,8 +27,8 @@ public class EnglishLanguageService : ILanguageService
     #region Game concepts
 
     [return: NotNullIfNotNull("actorEntity")]
-    public string? GetActorName(GameEntity? actorEntity, SenseType sense)
-        => GetString(actorEntity, EnglishPerson.Third, sense, definiteDeterminer: null);
+    public string? GetActorName(GameEntity? actorEntity, bool isIdentified)
+        => GetString(actorEntity, EnglishPerson.Third, isIdentified, definiteDeterminer: null);
 
     public string GetDescription(string id, DescriptionCategory category)
     {
@@ -46,12 +46,12 @@ public class EnglishLanguageService : ILanguageService
         => GetString(
             actorEntity,
             person,
-            sense,
+            sense.CanIdentify(),
             definiteDeterminer: true);
 
     [return: NotNullIfNotNull("actorEntity")]
     protected virtual string? GetString(
-        GameEntity? actorEntity, EnglishPerson person, SenseType sense, bool? definiteDeterminer)
+        GameEntity? actorEntity, EnglishPerson person, bool isIdentified, bool? definiteDeterminer)
     {
         if (actorEntity == null)
         {
@@ -64,7 +64,7 @@ public class EnglishLanguageService : ILanguageService
                 EnglishPronounForm.Normal, EnglishNumber.Singular, person, gender: null);
         }
 
-        if (!sense.CanIdentify())
+        if (!isIdentified)
         {
             return "something";
         }
@@ -89,8 +89,8 @@ public class EnglishLanguageService : ILanguageService
         return name.Trim();
     }
 
-    public virtual string GetString(ItemComponent item, int quantity, SenseType sense)
-        => GetString(item, quantity, sense, definiteDeterminer: null);
+    public virtual string GetString(ItemComponent item, int quantity, bool isIdentified)
+        => GetString(item, quantity, isIdentified, definiteDeterminer: null);
 
     public string GetString(RaceComponent race, bool abbreviate)
         => abbreviate
@@ -98,8 +98,11 @@ public class EnglishLanguageService : ILanguageService
             : race.TemplateName;
 
     public virtual string GetString(ItemComponent item, int quantity, SenseType sense, bool? definiteDeterminer)
+        => GetString(item, quantity, sense.CanIdentify(), definiteDeterminer);
+
+    public virtual string GetString(ItemComponent item, int quantity, bool isIdentified, bool? definiteDeterminer)
     {
-        if (!sense.CanIdentify())
+        if (!isIdentified)
         {
             return "something";
         }
@@ -614,6 +617,24 @@ public class EnglishLanguageService : ILanguageService
         return $"Can't attack. You don't have a {weaponType} weapon equipped.";
     }
 
+    public string NoAbilityInSlot(int slot)
+        => $"No ability in slot {slot}.";
+
+    public string AbilityCannotBeActivated(AbilityComponent ability)
+        => $"Can't use {GetString(ability)}.";
+
+    public string AbilityOnCooldown(AbilityComponent ability)
+        => $"{GetString(ability)} is on cooldown.";
+
+    public string AbilityNotUsable(AbilityComponent ability)
+        => $"Can't use {GetString(ability)}.";
+
+    public string NotEnoughEnergy(AbilityComponent ability)
+        => $"Not enough energy to use {GetString(ability)}.";
+
+    public string ItemNotInInventory()
+        => "You don't have that item.";
+
     public string NoPath() => "No path to target!";
 
     #endregion
@@ -621,13 +642,10 @@ public class EnglishLanguageService : ILanguageService
     #region Interface messages
 
     public virtual string Welcome(GameEntity playerEntity)
-    {
-        var manager = playerEntity.Manager;
-        return string.Format(Culture,
+        => string.Format(Culture,
             "Welcome to the {0}, {1}!",
-            manager.FindEntity(playerEntity.Position!.LevelId)!.Level!.Branch.Name,
+            playerEntity.Position!.LevelEntity.Level!.Branch.Name,
             GetString(playerEntity, EnglishPerson.Third, SenseType.Sight));
-    }
 
     public virtual string UnableToMove(Direction direction)
         => string.Format(Culture, "Can't move {0}.", GetString(direction, abbreviate: false));

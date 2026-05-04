@@ -692,7 +692,7 @@ public class EffectApplicationSystem :
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        var targetEntity = manager.FindEntity(effect.AffectedEntityId.Value);
+        var targetEntity = effect.AffectedEntity;
         if (targetEntity == null)
         {
             return MessageProcessingResult.ContinueProcessing;
@@ -1536,7 +1536,7 @@ public class EffectApplicationSystem :
         {
             if (x == null)
             {
-                return y == null ? 0 : - 1;
+                return y == null ? 0 : -1;
             }
 
             if (y == null)

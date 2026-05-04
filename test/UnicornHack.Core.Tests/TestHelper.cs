@@ -6,10 +6,22 @@ using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.MessagingECS;
 
+using UnicornHack.Systems.Time;
+
 namespace UnicornHack;
 
 public static class TestHelper
 {
+    public static void AdvanceToNextPlayerTurn(GameManager manager)
+    {
+        while (manager.Game.ActingPlayer == null
+               && manager.Players.Any(p => p.Being!.IsAlive))
+        {
+            AdvanceTurnMessage.Enqueue(manager);
+            manager.Queue.ProcessQueue(manager);
+        }
+    }
+
     public static Game CreateGame(uint? seed = null)
     {
         var game = new Game
@@ -101,7 +113,7 @@ public static class TestHelper
 
         if (mismatchedPoint.HasValue)
         {
-            Assert.False(true, $"Mismatch at ({mismatchedPoint.Value.X}, {mismatchedPoint.Value.Y})" + @"
+            Assert.Fail($"Mismatch at ({mismatchedPoint.Value.X}, {mismatchedPoint.Value.Y})" + @"
 Expected map:
 " + PrintMap(level, expectedVisibility) + @"
 Actual map:
@@ -120,7 +132,7 @@ Seed: " + level.Game.InitialSeed);
             }
 
             var point = level.IndexToPoint![i];
-            Assert.True(false,
+            Assert.Fail(
                 $"Mismatch at ({point.X}, {point.Y}) expected {expectedVisibility[i]}, got {actualVisibility[i]}" +
                 @"
 Expected map:

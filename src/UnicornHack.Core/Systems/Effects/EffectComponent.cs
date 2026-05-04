@@ -37,7 +37,7 @@ public class EffectComponent : GameComponent
 
     public GameEntity? AffectedEntity
     {
-        get => _affectedEntity ??= Entity.Manager!.FindEntity(_affectedEntityId);
+        get => _affectedEntity ??= Entity.Manager?.FindEntity(_affectedEntityId);
         set
         {
             AffectedEntityId = value?.Id;

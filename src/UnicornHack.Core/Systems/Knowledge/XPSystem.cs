@@ -42,7 +42,7 @@ public class XPSystem :
 
     public MessageProcessingResult Process(EntityAddedMessage<GameEntity> message, GameManager manager)
     {
-        var affectedEntity = manager.FindEntity(message.Entity.Effect?.AffectedEntityId);
+        var affectedEntity = message.Entity.Effect?.AffectedEntity;
         if (affectedEntity?.HasComponent(EntityComponent.Player) != true)
         {
             return MessageProcessingResult.ContinueProcessing;
@@ -55,7 +55,7 @@ public class XPSystem :
     public MessageProcessingResult Process(EntityRemovedMessage<GameEntity> message, GameManager manager)
     {
         var effect = message.Entity.Effect ?? message.RemovedComponent as EffectComponent;
-        var player = manager.FindEntity(effect?.AffectedEntityId)?.Player;
+        var player = effect?.AffectedEntity?.Player;
         if (player?.Entity.Being!.IsAlive != true)
         {
             return MessageProcessingResult.ContinueProcessing;

@@ -192,15 +192,15 @@ public class AbilityActivationSystemTest
         Assert.Equal(200, toggledAbility.Ability.CooldownTick);
         Assert.Equal(0, playerEntity.Being.ReservedEnergyPoints);
 
-        player.NextAction = ActorAction.Wait;
+        player.NextAction = ActorActionType.Wait;
         AdvanceTurnMessage.Enqueue(manager);
         manager.Queue.ProcessQueue(manager);
 
-        player.NextAction = ActorAction.Wait;
+        player.NextAction = ActorActionType.Wait;
         AdvanceTurnMessage.Enqueue(manager);
         manager.Queue.ProcessQueue(manager);
 
-        player.NextAction = ActorAction.Wait;
+        player.NextAction = ActorActionType.Wait;
         AdvanceTurnMessage.Enqueue(manager);
         manager.Queue.ProcessQueue(manager);
 

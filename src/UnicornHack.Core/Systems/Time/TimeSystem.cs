@@ -7,14 +7,23 @@ public class TimeSystem : IGameSystem<AdvanceTurnMessage>
 {
     public const int DefaultActionDelay = 100;
 
-    public void AdvanceToNextPlayerTurn(GameManager manager)
+    public TurnResult AdvanceSingleTurn(GameManager manager)
     {
-        while (manager.Game.ActingPlayer == null
-               && manager.Players.Any(p => p.Being!.IsAlive))
+        if (!manager.Players.Any(p => p.Being!.IsAlive)
+            || manager.TemporalEntitiesIndex.Count == 0)
         {
-            AdvanceTurnMessage.Enqueue(manager);
-            manager.Queue.ProcessQueue(manager);
+            return TurnResult.GameOver;
         }
+
+        AdvanceTurnMessage.Enqueue(manager);
+        manager.Queue.ProcessQueue(manager);
+
+        if (manager.Game.ActingPlayer != null)
+        {
+            return TurnResult.PlayerTurn;
+        }
+
+        return TurnResult.Continue;
     }
 
     public MessageProcessingResult Process(AdvanceTurnMessage message, GameManager manager)

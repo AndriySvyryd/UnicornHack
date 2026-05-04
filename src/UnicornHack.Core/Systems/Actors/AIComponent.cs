@@ -4,7 +4,7 @@
 public class AIComponent : GameComponent
 {
     private string? _properName;
-    private ActorAction? _nextAction;
+    private ActorActionType? _nextAction;
     private int? _nextActionTarget;
     private int? _nextActionTarget2;
     private int? _nextActionTick;
@@ -22,7 +22,7 @@ public class AIComponent : GameComponent
         set => SetWithNotify(value, ref _properName);
     }
 
-    public ActorAction? NextAction
+    public ActorActionType? NextAction
     {
         get => _nextAction;
         set => SetWithNotify(value, ref _nextAction);

@@ -87,8 +87,9 @@ public class EntityRelationshipPerfTest
         {
         }
 
-        public bool OnPropertyValuesChanged(in EntityChange<GameEntity> entityChange)
-            => false;
+        public void OnPropertyValuesChanged(in EntityChange<GameEntity> entityChange)
+        {
+        }
     }
 
     [Benchmark]

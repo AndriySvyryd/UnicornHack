@@ -218,6 +218,100 @@ public class CollectionEntityRelationshipTest
         Assert.Equal(3, testSystem.GroupChangesDetected);
     }
 
+    [Fact]
+    public void Dependent_listener_receives_property_changes()
+    {
+        var manager = TestHelper.CreateGameManager();
+        var listener = new DependentTestListener();
+        manager.EffectsToContainingAbilityRelationship.AddDependentsListener(listener);
+
+        using var abilityEntityReference = manager.CreateEntity();
+        var abilityEntity = abilityEntityReference.Referenced;
+        abilityEntity.AddComponent<AbilityComponent>((int)EntityComponent.Ability);
+
+        using var effectEntityReference = manager.CreateEntity();
+        var effectEntity = effectEntityReference.Referenced;
+        var effect = effectEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
+        effect.ContainingAbilityId = abilityEntity.Id;
+
+        Assert.Equal(1, listener.AddedCount);
+        Assert.Equal(0, listener.PropertyChangedCount);
+
+        effect.DurationAmount = "10";
+
+        Assert.Equal(1, listener.PropertyChangedCount);
+        Assert.Same(effectEntity, listener.LastPropertyChangedEntity);
+        Assert.Same(abilityEntity, listener.LastPrincipal);
+
+        effect.ContainingAbilityId = null;
+
+        Assert.Equal(1, listener.RemovedCount);
+        Assert.Equal(1, listener.PropertyChangedCount);
+    }
+
+    [Fact]
+    public void Dependent_listener_does_not_receive_property_changes_on_removal()
+    {
+        var manager = TestHelper.CreateGameManager();
+        var listener = new DependentTestListener();
+        manager.EffectsToContainingAbilityRelationship.AddDependentsListener(listener);
+
+        using var abilityEntityReference = manager.CreateEntity();
+        var abilityEntity = abilityEntityReference.Referenced;
+        abilityEntity.AddComponent<AbilityComponent>((int)EntityComponent.Ability);
+
+        using var effectEntityReference = manager.CreateEntity();
+        var effectEntity = effectEntityReference.Referenced;
+        var effect = effectEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
+        effect.ContainingAbilityId = abilityEntity.Id;
+
+        Assert.Equal(1, listener.AddedCount);
+
+        // Removing the Effect component removes the entity from the Effects group,
+        // which should not fire a property change on the dependent listener.
+        effectEntity.Effect = null;
+
+        Assert.Equal(0, listener.PropertyChangedCount);
+        Assert.Equal(1, listener.RemovedCount);
+    }
+
+    private class DependentTestListener : IDependentEntityChangeListener<GameEntity>
+    {
+        public int AddedCount
+        {
+            get; private set;
+        }
+        public int RemovedCount
+        {
+            get; private set;
+        }
+        public int PropertyChangedCount
+        {
+            get; private set;
+        }
+        public GameEntity? LastPropertyChangedEntity
+        {
+            get; private set;
+        }
+        public GameEntity? LastPrincipal
+        {
+            get; private set;
+        }
+
+        public void OnEntityAdded(in EntityChange<GameEntity> entityChange, GameEntity principal)
+            => AddedCount++;
+
+        public void OnEntityRemoved(in EntityChange<GameEntity> entityChange, GameEntity principal)
+            => RemovedCount++;
+
+        public void OnPropertyValuesChanged(in EntityChange<GameEntity> entityChange, GameEntity principal)
+        {
+            PropertyChangedCount++;
+            LastPropertyChangedEntity = entityChange.Entity;
+            LastPrincipal = principal;
+        }
+    }
+
     private class RelationshipTestSystem :
         IGameSystem<EntityAddedMessage<GameEntity>>,
         IGameSystem<EntityRemovedMessage<GameEntity>>,
@@ -304,7 +398,7 @@ public class CollectionEntityRelationshipTest
             GroupChangesDetected++;
         }
 
-        public bool OnPropertyValuesChanged(in EntityChange<GameEntity> entityChange)
+        public void OnPropertyValuesChanged(in EntityChange<GameEntity> entityChange)
         {
             var changes = entityChange.PropertyChanges;
 
@@ -317,8 +411,6 @@ public class CollectionEntityRelationshipTest
             Assert.Equal("10", changes.GetValue<string>(0, ValueType.Current));
 
             GroupChangesDetected++;
-
-            return false;
         }
     }
 }

@@ -1,6 +1,5 @@
 using MessagePack;
 using MessagePack.Resolvers;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using UnicornHack.Data;
 using UnicornHack.Hubs;
@@ -21,7 +20,7 @@ public class Program
 
         services.AddSingleton<ILanguageService, EnglishLanguageService>();
         services.AddSingleton<GameServices>();
-        services.AddSingleton<GameTransmissionProtocol>();
+
         services.AddDatabaseDeveloperPageExceptionFilter();
 
         services.AddDbContextPool<GameDbContext>((_, options) =>

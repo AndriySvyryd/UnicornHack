@@ -8,11 +8,11 @@ namespace UnicornHack.Services;
 public interface ILanguageService
 {
     string GetPropertyName(string propertyName, bool abbreviate);
-    
+
     [return: NotNullIfNotNull("actorEntity")]
-    string? GetActorName(GameEntity? actorEntity, SenseType sense);
+    string? GetActorName(GameEntity? actorEntity, bool isIdentified);
     string GetDescription(string id, DescriptionCategory category);
-    string GetString(ItemComponent item, int quantity, SenseType sense);
+    string GetString(ItemComponent item, int quantity, bool isIdentified);
     string GetString(RaceComponent race, bool abbreviate);
     string GetString(AbilityComponent ability);
     string GetString(Direction direction, bool abbreviate);
@@ -25,6 +25,12 @@ public interface ILanguageService
     string GetString(in DeathEvent @event);
     string GetString(in LeveledUpEvent @event);
     string NoDefaultAttack(bool melee);
+    string NoAbilityInSlot(int slot);
+    string AbilityCannotBeActivated(AbilityComponent ability);
+    string AbilityOnCooldown(AbilityComponent ability);
+    string AbilityNotUsable(AbilityComponent ability);
+    string NotEnoughEnergy(AbilityComponent ability);
+    string ItemNotInInventory();
     string Welcome(GameEntity playerEntity);
     string UnableToMove(Direction direction);
     string NoPath();

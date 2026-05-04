@@ -410,7 +410,8 @@ public class EnglishMorphologicalProcessor
             Debug.Assert(state.Replacement == null, "Repeated suffix " + suffix);
             state.Replacement = new ReplacementSuffix
             {
-                ReplacementString = replacement, CharactersToReplace = charactersToReplace
+                ReplacementString = replacement,
+                CharactersToReplace = charactersToReplace
             };
         }
 

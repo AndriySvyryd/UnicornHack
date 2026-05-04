@@ -44,8 +44,9 @@ public class UniqueEntityIndex<TEntity, TKey> : EntityIndexBase<TEntity, TKey>, 
         return true;
     }
 
-    protected override bool HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange)
-        => false;
+    protected override void HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange)
+    {
+    }
 
     public override string ToString() => "UniqueIndex: " + Name;
 

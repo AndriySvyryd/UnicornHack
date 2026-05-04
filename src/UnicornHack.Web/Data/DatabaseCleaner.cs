@@ -108,16 +108,34 @@ public class DatabaseCleaner
     }
 
     protected virtual DropSequenceOperation Drop(DatabaseSequence sequence)
-        => new() { Name = sequence.Name, Schema = sequence.Schema };
+        => new()
+        {
+            Name = sequence.Name,
+            Schema = sequence.Schema
+        };
 
     protected virtual DropTableOperation Drop(DatabaseTable table)
-        => new() { Name = table.Name, Schema = table.Schema };
+        => new()
+        {
+            Name = table.Name,
+            Schema = table.Schema
+        };
 
     protected virtual DropForeignKeyOperation Drop(DatabaseForeignKey foreignKey)
-        => new() { Name = foreignKey.Name!, Table = foreignKey.Table.Name, Schema = foreignKey.Table.Schema };
+        => new()
+        {
+            Name = foreignKey.Name!,
+            Table = foreignKey.Table.Name,
+            Schema = foreignKey.Table.Schema
+        };
 
     protected virtual DropIndexOperation Drop(DatabaseIndex index)
-        => new() { Name = index.Name!, Table = index.Table!.Name, Schema = index.Table.Schema };
+        => new()
+        {
+            Name = index.Name!,
+            Table = index.Table!.Name,
+            Schema = index.Table.Schema
+        };
 
 #pragma warning disable EF1001 // Internal EF Core API usage.
     protected static IDatabaseModelFactory CreateDatabaseModelFactory(ILoggerFactory loggerFactory)

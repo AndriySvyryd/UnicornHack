@@ -2,6 +2,9 @@
 
 namespace UnicornHack.Utils.MessagingECS;
 
+/// <summary>
+///     A one-to-one relationship: each principal has at most one dependent entity.
+/// </summary>
 public class UniqueEntityRelationship<TEntity> : EntityRelationshipBase<TEntity>
     where TEntity : Entity, new()
 {
@@ -92,6 +95,12 @@ public class UniqueEntityRelationship<TEntity> : EntityRelationshipBase<TEntity>
     public IEntityGroup<TEntity> Dependents
         => _dependents ??= new DependentsGroup(this);
 
+    public void AddDependentsListener(IDependentEntityChangeListener<TEntity> listener)
+        => ((DependentEntityGroupBase<TEntity>)Dependents).AddDependentListener(listener);
+
+    public void RemoveDependentsListener(IDependentEntityChangeListener<TEntity> listener)
+        => ((DependentEntityGroupBase<TEntity>)Dependents).RemoveDependentListener(listener);
+
     public TEntity? GetDependent(TEntity principal, Component? removedComponent = null)
         => Accessor.GetDependent(principal, removedComponent);
 
@@ -167,16 +176,23 @@ public class UniqueEntityRelationship<TEntity> : EntityRelationshipBase<TEntity>
         ((IEntityRelationshipBase<TEntity>)this).OnEntityRemoved(entityChange.Entity, principal);
     }
 
-    protected override bool HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange)
+    protected override void HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange)
     {
-        _dependents?.PropertyValuesChanged(entityChange);
+        if (_dependents is not { HasPropertyValueSubscribers: true })
+        {
+            return;
+        }
 
-        return true;
+        var principal = GetPrincipal(entityChange.Entity);
+        if (principal != null)
+        {
+            _dependents.PropertyValuesChanged(entityChange, principal);
+        }
     }
 
     public override string ToString() => "UniqueRelationship: " + Name;
 
-    private class DependentsGroup : EntityGroupBase<TEntity>
+    private class DependentsGroup : DependentEntityGroupBase<TEntity>
     {
         private readonly IEntityRelationshipBase<TEntity> _relationship;
 
@@ -191,19 +207,19 @@ public class UniqueEntityRelationship<TEntity> : EntityRelationshipBase<TEntity>
         public override bool ContainsEntity(int id) => _relationship.ContainsEntity(id);
 
         public void Add(in EntityChange<TEntity> entityChange, TEntity principal)
-            => OnAdded(entityChange, principal);
+            => OnDependentAdded(entityChange, principal);
 
         public void Remove(in EntityChange<TEntity> entityChange, TEntity principal)
-            => OnRemoved(entityChange, principal);
+            => OnDependentRemoved(entityChange, principal);
 
-        public void PropertyValuesChanged(in EntityChange<TEntity> entityChange)
+        public void PropertyValuesChanged(in EntityChange<TEntity> entityChange, TEntity principal)
         {
             if (FindEntity(entityChange.Entity.Id) == null)
             {
                 return;
             }
 
-            OnPropertyValuesChanged(entityChange);
+            OnDependentPropertyValuesChanged(entityChange, principal);
         }
 
         public override string ToString() => "ReferenceDependentGroup: " + Name;
@@ -250,8 +266,9 @@ public class UniqueEntityRelationship<TEntity> : EntityRelationshipBase<TEntity>
             _relationship.HandlePrincipalEntityRemoved(dependent, entityChange);
         }
 
-        public bool OnPropertyValuesChanged(in EntityChange<TEntity> entityChange)
-            => false;
+        public void OnPropertyValuesChanged(in EntityChange<TEntity> entityChange)
+        {
+        }
 
         public override string ToString() => "Principal " + _relationship;
     }

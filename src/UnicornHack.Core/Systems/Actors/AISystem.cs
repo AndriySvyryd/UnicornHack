@@ -40,18 +40,18 @@ public class AISystem :
         var position = actorEntity.Position!;
         switch (action)
         {
-            case ActorAction.Wait:
+            case ActorActionType.Wait:
                 ai.NextActionTick += TimeSystem.DefaultActionDelay;
                 break;
-            case ActorAction.ChangeHeading:
-            case ActorAction.MoveOneCell:
+            case ActorActionType.ChangeHeading:
+            case ActorActionType.MoveOneCell:
                 var moveDirection = (Direction)target!.Value;
                 Move(moveDirection, actorEntity, manager,
-                    onlyChangeHeading: action == ActorAction.ChangeHeading);
+                    onlyChangeHeading: action == ActorActionType.ChangeHeading);
 
                 break;
-            case ActorAction.DropItem:
-                var itemToDrop = GetItem(target!.Value, actorEntity, manager);
+            case ActorActionType.DropItem:
+                var itemToDrop = GetItem(target!.Value, actorEntity, manager)!;
                 var dropMessage = MoveItemMessage.Create(manager);
                 dropMessage.ItemEntity = itemToDrop;
                 dropMessage.TargetLevelEntity = position.LevelEntity;
@@ -59,14 +59,9 @@ public class AISystem :
 
                 manager.Enqueue(dropMessage);
                 break;
-            case ActorAction.EquipItem:
-                var itemToEquip = GetItem(target!.Value, actorEntity, manager);
+            case ActorActionType.EquipItem:
+                var itemToEquip = GetItem(target!.Value, actorEntity, manager)!;
                 var slot = (EquipmentSlot)target2!.Value;
-                if (itemToEquip == null)
-                {
-                    return MessageProcessingResult.ContinueProcessing;
-                }
-
                 var equipMessage = EquipItemMessage.Create(manager);
                 equipMessage.ActorEntity = actorEntity;
                 equipMessage.ItemEntity = itemToEquip;
@@ -74,13 +69,8 @@ public class AISystem :
 
                 manager.Enqueue(equipMessage);
                 break;
-            case ActorAction.UnequipItem:
-                var itemToUnequip = GetItem(target!.Value, actorEntity, manager);
-                if (itemToUnequip == null)
-                {
-                    return MessageProcessingResult.ContinueProcessing;
-                }
-
+            case ActorActionType.UnequipItem:
+                var itemToUnequip = GetItem(target!.Value, actorEntity, manager)!;
                 var unequipMessage = EquipItemMessage.Create(manager);
                 unequipMessage.ActorEntity = actorEntity;
                 unequipMessage.ItemEntity = itemToUnequip;
@@ -88,11 +78,11 @@ public class AISystem :
 
                 manager.Enqueue(unequipMessage);
                 break;
-            case ActorAction.UseAbilitySlot:
+            case ActorActionType.UseAbilitySlot:
                 ActivateAbility(actorEntity, target, target2, manager);
                 break;
-            case ActorAction.MoveToCell:
-            case ActorAction.SetAbilitySlot:
+            case ActorActionType.MoveToCell:
+            case ActorActionType.SetAbilitySlot:
             default:
                 throw new InvalidOperationException(
                     $"Action {action} on actor {actorEntity.Id} is invalid.");
@@ -167,7 +157,7 @@ public class AISystem :
         }
 
         var ai = aiEntity.AI!;
-        ai.NextAction = ActorAction.UseAbilitySlot;
+        ai.NextAction = ActorActionType.UseAbilitySlot;
         ai.NextActionTarget = abilityEntity.Ability!.Slot;
         ai.NextActionTarget2 = targetEntity.Position!.LevelCell.ToInt32();
 
@@ -191,7 +181,7 @@ public class AISystem :
             activationMessage.AbilityEntity = abilityEntity;
             activationMessage.ActivatorEntity = aiEntity;
             activationMessage.TargetEntity = targetEntity;
-            if (!manager.AbilityActivationSystem.CanActivateAbility(activationMessage, shouldThrow: false))
+            if (manager.AbilityActivationSystem.CanActivateAbility(activationMessage) != null)
             {
                 manager.Queue.ReturnMessage(activationMessage);
                 continue;
@@ -250,7 +240,7 @@ public class AISystem :
                 if (manager.TravelSystem.CanTravel(travelMessage, manager))
                 {
                     var ai = actorEntity.AI!;
-                    ai.NextAction = changeHeading ? ActorAction.ChangeHeading : ActorAction.MoveOneCell;
+                    ai.NextAction = changeHeading ? ActorActionType.ChangeHeading : ActorActionType.MoveOneCell;
                     ai.NextActionTarget = (int)directionToMove.Value;
                     manager.Queue.ReturnMessage(travelMessage);
                     return true;
@@ -286,7 +276,7 @@ public class AISystem :
 
         var changeHeading = position.Heading != directionToMove;
         var ai = actorEntity.AI!;
-        ai.NextAction = changeHeading ? ActorAction.ChangeHeading : ActorAction.MoveOneCell;
+        ai.NextAction = changeHeading ? ActorActionType.ChangeHeading : ActorActionType.MoveOneCell;
         ai.NextActionTarget = (int)directionToMove.Value;
     }
 

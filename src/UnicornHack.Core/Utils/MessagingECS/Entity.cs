@@ -244,6 +244,7 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
         {
             if (_disposing)
             {
+                // Re-entrant: a component removal triggered another RemoveReference
                 return;
             }
 
@@ -259,6 +260,8 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
 
             if (_referenceCount > 0)
             {
+                // A component removal re-added a reference (e.g. IKeepAliveComponent),
+                // so the entity is still alive
                 _disposing = false;
                 return;
             }

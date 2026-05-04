@@ -6,12 +6,21 @@ namespace UnicornHack.Utils;
 public class SimpleRandom : NotificationEntity
 {
     private const float IntToFloat = 1.0f / int.MaxValue;
+    private uint _seed = 1;
 
+    // Xorshift is degenerate at state 0 — every subsequent step yields 0, so this is not a valid seed.
     public uint Seed
     {
-        get;
-        set;
-    } = 1;
+        get => _seed;
+        set
+        {
+            if (value == 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), "Seed cannot be 0");
+            }
+            _seed = value;
+        }
+    }
 
     public int Roll(int diceCount, int diceSides)
     {
@@ -233,10 +242,10 @@ public class SimpleRandom : NotificationEntity
 
     private uint NextUInt()
     {
-        Seed ^= Seed << 13;
-        Seed ^= Seed >> 17;
-        Seed ^= Seed << 5;
-        return Seed;
+        _seed ^= _seed << 13;
+        _seed ^= _seed >> 17;
+        _seed ^= _seed << 5;
+        return _seed;
     }
 
     public bool NextBool() => (0x80000000 & NextUInt()) == 0;

@@ -35,7 +35,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="xcopy /Y &quot;$(SolutionDir)\.editorconfig&quot; &quot;$(ProjectDir)\$(OutDir)&quot;" />
+    <Exec Command="xcopy /Y &quot;..\..\.editorconfig&quot; &quot;$(ProjectDir)\$(OutDir)&quot;" />
   </Target>
 
 </Project>

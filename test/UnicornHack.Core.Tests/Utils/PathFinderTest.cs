@@ -115,7 +115,8 @@ Seed: " + seed);
             }
 
             previousPointDirectionIndex = byte.MaxValue;
-            NextPointFound: ;
+            NextPointFound:
+            ;
         }
 
         return expectedPath;

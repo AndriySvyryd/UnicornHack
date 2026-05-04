@@ -1,5 +1,8 @@
 ﻿namespace UnicornHack.Utils.MessagingECS;
 
+/// <summary>
+///     Listens on an entity group and maintains a key-based index of entities.
+/// </summary>
 public abstract class EntityIndexBase<TEntity, TKey> : IEntityChangeListener<TEntity>
     where TEntity : Entity, new()
 {
@@ -45,7 +48,7 @@ public abstract class EntityIndexBase<TEntity, TKey> : IEntityChangeListener<TEn
         }
     }
 
-    bool IEntityChangeListener<TEntity>.OnPropertyValuesChanged(in EntityChange<TEntity> entityChange)
+    void IEntityChangeListener<TEntity>.OnPropertyValuesChanged(in EntityChange<TEntity> entityChange)
     {
         Debug.Assert(entityChange.RemovedComponent == null);
 
@@ -59,7 +62,7 @@ public abstract class EntityIndexBase<TEntity, TKey> : IEntityChangeListener<TEn
                 // The component might have been removed by the previous change listener
                 if (entityChange.Entity.FindComponent(changedComponent.ComponentId) != changedComponent)
                 {
-                    return true;
+                    return;
                 }
 
                 keyValueChanged = true;
@@ -69,7 +72,9 @@ public abstract class EntityIndexBase<TEntity, TKey> : IEntityChangeListener<TEn
 
         if (!keyValueChanged)
         {
-            return HandleNonKeyPropertyValuesChanged(entityChange);
+            // Non-key property changed: delegate to subclass (e.g. relationships handle secondary key changes).
+            HandleNonKeyPropertyValuesChanged(entityChange);
+            return;
         }
 
         if (KeyValueGetter.TryGetKey(entityChange, ValueType.PreferOld, out var oldKey))
@@ -81,11 +86,9 @@ public abstract class EntityIndexBase<TEntity, TKey> : IEntityChangeListener<TEn
         {
             TryAddEntity(newKey, entityChange);
         }
-
-        return true;
     }
 
     protected abstract bool TryAddEntity(TKey key, in EntityChange<TEntity> entityChange);
     protected abstract bool TryRemoveEntity(TKey key, in EntityChange<TEntity> entityChange);
-    protected abstract bool HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange);
+    protected abstract void HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange);
 }

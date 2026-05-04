@@ -59,8 +59,7 @@ public static class LevelGenerator
         catch (Exception e)
         {
             // TODO: Log parameters if failed
-            var msg = $@"Error while generating level '{levelComponent.BranchName}:{levelComponent.Depth
-            }', initial seed {levelComponent.Game.InitialSeed}:
+            var msg = $@"Error while generating level '{levelComponent.BranchName}:{levelComponent.Depth}', initial seed {levelComponent.Game.InitialSeed}:
 ";
 
             Console.WriteLine(msg);

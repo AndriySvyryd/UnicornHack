@@ -1,11 +1,11 @@
 ﻿using System.Collections;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.Caching.Memory;
 using UnicornHack.Data;
 using UnicornHack.Data.Items;
+using UnicornHack.Hubs.ChangeTracking;
 using UnicornHack.Services;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
@@ -18,13 +18,11 @@ public class GameHub : Hub
 {
     private readonly GameDbContext _dbContext;
     private readonly GameServices _gameServices;
-    private readonly GameTransmissionProtocol _protocol;
 
-    public GameHub(GameDbContext dbContext, GameServices gameServices, GameTransmissionProtocol protocol)
+    public GameHub(GameDbContext dbContext, GameServices gameServices)
     {
         _dbContext = dbContext;
         _gameServices = gameServices;
-        _protocol = protocol;
     }
 
     public Task SendMessage(string message)
@@ -33,14 +31,13 @@ public class GameHub : Hub
         return Clients.All.SendAsync("ReceiveMessage", Context.User!.Identity!.Name, message);
     }
 
-    public List<object?> GetState(string playerName)
+    public PlayerChange GetState(string playerName)
     {
         // TODO: Avoid using a DbContext
         var player = FindPlayer(playerName) ?? CreatePlayer(playerName);
 
         // TODO: Get a read lock or make serialization thread-safe
-        var gameState = _protocol.Serialize(player.Entity, EntityState.Added, null,
-            new SerializationContext(_dbContext, player.Entity, _gameServices));
+        var gameState = GameStateManager.GetState(player.Entity, _gameServices);
 
         Debug.Assert(_dbContext.ChangeTracker.Entries().All(e => e.State == EntityState.Unchanged));
 
@@ -97,7 +94,7 @@ public class GameHub : Hub
                         if (ability.Type == AbilityType.DefaultAttack
                             && ((WieldingAbility)ability.Template!).ItemType == ItemType.WeaponMelee)
                         {
-                            abilities.Add(ability.EntityId, AbilitySnapshot.Serialize(slottableAbilityEntity, null, context)!);
+                            abilities.Add(ability.EntityId, GameQueryProcessor.SerializeSlottedAbility(slottableAbilityEntity, context)!);
                         }
                     }
                     else if (slot == AbilitySlottingSystem.DefaultRangedAttackSlot)
@@ -105,28 +102,28 @@ public class GameHub : Hub
                         if (ability.Type == AbilityType.DefaultAttack
                             && ((WieldingAbility)ability.Template!).ItemType == ItemType.WeaponRanged)
                         {
-                            abilities.Add(ability.EntityId, AbilitySnapshot.Serialize(slottableAbilityEntity, null, context)!);
+                            abilities.Add(ability.EntityId, GameQueryProcessor.SerializeSlottedAbility(slottableAbilityEntity, context)!);
                         }
                     }
                     else if ((ability.Activation & ActivationType.Slottable) != 0
                              && ability.Type != AbilityType.DefaultAttack)
                     {
-                        abilities.Add(ability.EntityId, AbilitySnapshot.Serialize(slottableAbilityEntity, null, context)!);
+                        abilities.Add(ability.EntityId, GameQueryProcessor.SerializeSlottedAbility(slottableAbilityEntity, context)!);
                     }
                 }
 
                 break;
             case GameQueryType.PlayerAttributes:
-                result.Add(LevelActorSnapshot.SerializeAttributes(player.Entity, SenseType.Sight, context));
+                result.Add(GameQueryProcessor.SerializeActorAttributes(player.Entity, true, context));
                 break;
             case GameQueryType.PlayerInventory:
-                result.Add(PlayerSnapshot.SerializeItems(player.Entity, context));
+                result.Add(GameQueryProcessor.SerializeItems(player.Entity, context));
                 break;
             case GameQueryType.PlayerAdaptations:
-                result.Add(PlayerSnapshot.SerializeAdaptations(player.Entity, context));
+                result.Add(GameQueryProcessor.SerializeAdaptations(player.Entity, context));
                 break;
             case GameQueryType.PlayerSkills:
-                result.Add(PlayerSnapshot.SerializeSkills(player.Entity, context));
+                result.Add(GameQueryProcessor.SerializeSkills(player.Entity, context));
                 break;
             case GameQueryType.AbilityAttributes:
                 var abilityEntity = manager.FindEntity(arguments[0])!;
@@ -136,14 +133,14 @@ public class GameHub : Hub
                     ? player.Entity!
                     : ownerEntity;
 
-                result.Add(AbilitySnapshot.SerializeAttributes(abilityEntity, activatorEntity, context));
+                result.Add(GameQueryProcessor.SerializeAbilityAttributes(abilityEntity, activatorEntity, context));
                 break;
             case GameQueryType.ActorAttributes:
             {
                 var actorKnowledge = manager.FindEntity(arguments[0])?.Knowledge;
 
-                result.Add(LevelActorSnapshot.SerializeAttributes(
-                    actorKnowledge?.KnownEntity, actorKnowledge?.SensedType ?? SenseType.None, context));
+                result.Add(GameQueryProcessor.SerializeActorAttributes(
+                    actorKnowledge?.KnownEntity, actorKnowledge?.IsIdentified ?? false, context));
                 break;
             }
             case GameQueryType.ItemAttributes:
@@ -153,16 +150,16 @@ public class GameHub : Hub
 
                 if (item != null)
                 {
-                    result.Add(InventoryItemSnapshot.SerializeAttributes(itemEntity, SenseType.Sight, context));
+                    result.Add(GameQueryProcessor.SerializeItemAttributes(itemEntity, true, context));
                 }
                 else
                 {
-                    result.Add(InventoryItemSnapshot.SerializeAttributes(
-                        itemKnowledge?.KnownEntity, itemKnowledge?.SensedType ?? SenseType.None, context));
+                    result.Add(GameQueryProcessor.SerializeItemAttributes(
+                        itemKnowledge?.KnownEntity, itemKnowledge?.IsIdentified ?? false, context));
                 }
 
                 break;
-                // TODO: Handle PostGameStatistics
+            // TODO: Handle PostGameStatistics
             default:
                 throw new InvalidOperationException($"Query type {intQueryType} not supported");
         }
@@ -175,113 +172,90 @@ public class GameHub : Hub
 
     public async Task PerformAction(string playerName, int intAction, int? target, int? target2)
     {
-        var action = (ActorAction?)intAction;
+        var action = (ActorActionType?)intAction;
         var currentPlayer = FindPlayer(playerName);
         if (currentPlayer == null)
         {
             currentPlayer = CreatePlayer(playerName);
-            action = null;
-            target = null;
-            target2 = null;
+
+            foreach (var playerEntity in currentPlayer.Game.Manager.Players)
+            {
+                var serializedPlayer = GameStateManager.GetState(playerEntity, _gameServices);
+
+                // TODO: only send to clients watching this player
+                await Clients.All.SendAsync("ReceiveState", serializedPlayer).ConfigureAwait(false);
+            }
+
+            return;
         }
-        else
+
+        if (currentPlayer.Game.CurrentTick != currentPlayer.NextActionTick)
         {
-            if (currentPlayer.Game.CurrentTick != currentPlayer.NextActionTick)
-            {
-                Debug.Assert(false, "Action sent out of turn");
-                // TODO: Log action sent out of turn
-                return;
-            }
-
-            if (_dbContext.Snapshot == null)
-            {
-                _dbContext.Snapshot = new GameSnapshot();
-            }
-
-            _dbContext.Snapshot.CaptureState(_dbContext, _gameServices);
+            // TODO: Log action sent out of turn instead
+            throw new InvalidOperationException("Action sent out of turn");
         }
+
+        var manager = currentPlayer.Game.Manager;
 
         // TODO: Get a lock
         currentPlayer.NextAction = action;
         currentPlayer.NextActionTarget = target;
         currentPlayer.NextActionTarget2 = target2;
 
-        Turn(currentPlayer);
+        var previousTick = currentPlayer.Game.CurrentTick;
+        var changeSets = GameStateManager.Turn(currentPlayer, _dbContext.LevelChangeBuilder!, _gameServices,
+            onAfterEachTurn: MarkTerrainPropertiesModified);
+
+        _dbContext.SaveChanges();
 
         // TODO: Log turn ended prematurely
         Debug.Assert(currentPlayer.Game.CurrentTick == currentPlayer.NextActionTick, "Turn ended prematurely");
 
-        _dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
-        foreach (var playerEntity in currentPlayer.Game.Manager.Players)
+        foreach (var playerEntity in manager.Players)
         {
-            var newPlayer = action == null;
-            var serializedPlayer = _protocol.Serialize(
-                playerEntity, newPlayer ? EntityState.Added : EntityState.Modified, _dbContext.Snapshot,
-                new SerializationContext(_dbContext, playerEntity, _gameServices));
+            if (!changeSets.TryGetValue(playerEntity.Id, out var playerChangeSets)
+                && previousTick != currentPlayer.Game.CurrentTick)
+            {
+                var builder = _dbContext.LevelChangeBuilder?.PlayerBuilders
+                    .FirstOrDefault(l => l.PlayerEntityId == playerEntity.Id);
+                throw new InvalidOperationException(
+                    $"No change sets for player {playerEntity.Id}. "
+                    + $"Tick: {manager.Game.CurrentTick}. "
+                    + $"NextActionTick: {currentPlayer.NextActionTick}.");
+            }
 
             // TODO: only send to clients watching this player
-            await Clients.All.SendAsync("ReceiveState", serializedPlayer).ConfigureAwait(false);
+            await Clients.All.SendAsync("ReceiveChangeSets", playerChangeSets ?? []).ConfigureAwait(false);
 
             if (!playerEntity.Being!.IsAlive)
             {
-                var results = QueryGame(playerName, (int)GameQueryType.PostGameStatistics, Array.Empty<int>());
+                var results = QueryGame(playerName, (int)GameQueryType.PostGameStatistics, []);
                 // TODO: only send to clients watching this player
                 await Clients.All.SendAsync("ReceiveUIRequest", results).ConfigureAwait(false);
             }
         }
-
-        _dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
-
-        _dbContext.ChangeTracker.AcceptAllChanges();
     }
 
-    private void Turn(PlayerComponent currentPlayer)
+    private Dictionary<int, List<TurnChangeSet>> Turn(PlayerComponent currentPlayer, bool collectChanges)
     {
-        var manager = currentPlayer.Game.Manager;
-        foreach (var levelEntity in manager.Levels)
-        {
-            var level = levelEntity.Level!;
-            if (level.TerrainChanges != null)
-            {
-                level.TerrainChanges.Clear();
-            }
-            else
-            {
-                level.TerrainChanges = new Dictionary<short, byte>();
-            }
+        var changeSets = GameStateManager.Turn(currentPlayer, _dbContext.LevelChangeBuilder!, _gameServices,
+            collectChanges,
+            onAfterEachTurn: collectChanges ? MarkTerrainPropertiesModified : null);
 
-            if (level.KnownTerrainChanges != null)
-            {
-                level.KnownTerrainChanges.Clear();
-            }
-            else
-            {
-                level.KnownTerrainChanges = new Dictionary<short, byte>();
-            }
+        _dbContext.SaveChanges();
 
-            if (level.WallNeighborsChanges != null)
-            {
-                level.WallNeighborsChanges.Clear();
-            }
-            else
-            {
-                level.WallNeighborsChanges = new Dictionary<short, byte>();
-            }
+        return changeSets;
+    }
 
-            if (_dbContext.Snapshot?.LevelSnapshots.ContainsKey(levelEntity.Id) != true)
-            {
-                level.VisibleTerrainSnapshot = null;
-            }
+    private void InitializeListeners(GameManager manager)
+    {
+        var levelChangeBuilder = new LevelChangeBuilder();
+        levelChangeBuilder.RegisterOnGroups(manager);
+        _dbContext.LevelChangeBuilder = levelChangeBuilder;
+    }
 
-            level.VisibleNeighborsChanged = false;
-        }
-
-        currentPlayer.Game.ActingPlayer = null;
-
-        manager.TimeSystem.AdvanceToNextPlayerTurn(manager);
-
-        //TODO: If all players are dead end the game
-
+    private void MarkTerrainPropertiesModified(GameManager manager)
+    {
         _dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
         foreach (var levelEntity in manager.Levels)
         {
@@ -312,31 +286,8 @@ public class GameHub : Hub
                 levelEntry.Property(l => l.WallNeighbors).IsModified = true;
             }
 
-            // TODO: Move VisibleTerrainSnapshot and VisibleTerrainChanges to the snapshot
-            if (level.VisibleTerrainChanges == null)
-            {
-                level.VisibleTerrainChanges = new Dictionary<short, byte>();
-            }
-            else
-            {
-                level.VisibleTerrainChanges.Clear();
-            }
-
-            if (level.VisibleTerrainSnapshot != null)
-            {
-                var tileCount = level.TileCount;
-                for (short i = 0; i < tileCount; i++)
-                {
-                    var newValue = level.VisibleTerrain[i];
-                    if (newValue != level.VisibleTerrainSnapshot[i])
-                    {
-                        level.VisibleTerrainChanges.Add(i, newValue);
-                    }
-                }
-            }
-
             if (level.VisibleTerrainSnapshot == null
-                || level.VisibleTerrainChanges.Count > 0)
+                || (level.VisibleTerrainChanges != null && level.VisibleTerrainChanges.Count > 0))
             {
                 levelEntry.Property(l => l.VisibleTerrain).IsModified = true;
             }
@@ -348,9 +299,6 @@ public class GameHub : Hub
         }
 
         _dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
-
-        // AcceptChanges is delayed to allow using this state in serialization
-        _dbContext.SaveChanges(acceptAllChangesOnSuccess: false);
     }
 
     private PlayerComponent CreatePlayer(string name)
@@ -362,6 +310,9 @@ public class GameHub : Hub
             rng.GetBytes(rngData);
 
             seed = (uint)(rngData[0] | rngData[1] << 8 | rngData[2] << 16 | rngData[3] << 24);
+#if DEBUG
+            seed = 1;
+#endif
         }
 
         var game = new Game { InitialSeed = seed, Random = new SimpleRandom { Seed = seed } };
@@ -401,9 +352,9 @@ public class GameHub : Hub
         manager.Queue.ProcessQueue(manager);
         manager.LoggingSystem.WriteLog(game.Services.Language.Welcome(playerEntity), playerEntity, manager);
 
-        Turn(playerEntity.Player!);
-        _dbContext.ChangeTracker.AcceptAllChanges();
+        Turn(playerEntity.Player!, collectChanges: false);
 
+        _dbContext.LevelChangeBuilder!.RegisterPlayerBuilder(playerEntity, manager);
         _gameServices.SharedCache.Set(game, game,
             new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
 
@@ -476,16 +427,21 @@ public class GameHub : Hub
         }
 
         InitializeContext(game);
-        _dbContext.Snapshot = null;
     }
 
     private void InitializeContext(Game game)
     {
-        if (game.Repository != null
-            && game.Repository is DbContext oldContext)
+        if (game.Repository is GameDbContext oldDbContext)
         {
-            oldContext.ChangeTracker.Tracked -= OnTracked;
-            oldContext.ChangeTracker.StateChanged -= OnStateChanged;
+            oldDbContext.ChangeTracker.Tracked -= OnTracked;
+            oldDbContext.ChangeTracker.StateChanged -= OnStateChanged;
+            _dbContext.LevelChangeBuilder = oldDbContext.LevelChangeBuilder;
+            oldDbContext.LevelChangeBuilder = null;
+        }
+
+        if (_dbContext.LevelChangeBuilder == null)
+        {
+            InitializeListeners(game.Manager);
         }
 
         game.Repository = _dbContext;

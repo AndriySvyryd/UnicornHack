@@ -25,7 +25,7 @@ public class Branch : ILoadable
     }
 
     private string? _generationWeight;
-    
+
     public string? GenerationWeight
     {
         get => _generationWeight;
@@ -39,7 +39,13 @@ public class Branch : ILoadable
     // TODO: default terrain type for floor/wall/empty space
 
     public GameBranch Instantiate(Game game)
-        => new() { Game = game, Name = Name, Length = Length, Difficulty = Difficulty };
+        => new()
+        {
+            Game = game,
+            Name = Name,
+            Length = Length,
+            Difficulty = Difficulty
+        };
 
     public static readonly CSScriptLoader<Branch> Loader =
         new(@"Data\Branches\", typeof(BranchData));

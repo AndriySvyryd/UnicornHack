@@ -121,7 +121,7 @@ public class AATreeTest
                     }
 
                     Assert.True(result == null, $"Found deleted key {value2} with value {result}");
-                    Assert.Empty(tree.GetRange(value2, value2).Where(v => v.Item2 == j + 1));
+                    Assert.DoesNotContain(tree.GetRange(value2, value2), v => v.Item2 == j + 1);
                 }
                 else
                 {

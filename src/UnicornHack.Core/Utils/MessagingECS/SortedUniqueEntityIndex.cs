@@ -37,8 +37,9 @@ public class SortedUniqueEntityIndex<TEntity, TKey> : EntityIndexBase<TEntity, T
         return Index.Remove(key);
     }
 
-    protected override bool HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange)
-        => false;
+    protected override void HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange)
+    {
+    }
 
     public TEntity First() => Index.First().Value;
 

@@ -13,7 +13,7 @@ public class ItemUsageSystemTest
         var level = TestHelper.BuildLevel(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         var player = playerEntity.Player!;
-        player.NextAction = ActorAction.Wait;
+        player.NextAction = ActorActionType.Wait;
         var manager = playerEntity.Manager;
 
         manager.Queue.ProcessQueue(manager);
@@ -96,7 +96,7 @@ public class ItemUsageSystemTest
         AdvanceTurnMessage.Enqueue(manager);
         manager.Queue.ProcessQueue(manager);
 
-        player.NextAction = ActorAction.Wait;
+        player.NextAction = ActorActionType.Wait;
         AdvanceTurnMessage.Enqueue(manager);
         manager.Queue.ProcessQueue(manager);
         AdvanceTurnMessage.Enqueue(manager);
@@ -146,7 +146,7 @@ public class ItemUsageSystemTest
         var level = TestHelper.BuildLevel(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         var player = playerEntity.Player!;
-        player.NextAction = ActorAction.Wait;
+        player.NextAction = ActorActionType.Wait;
         var manager = playerEntity.Manager;
 
         manager.Queue.ProcessQueue(manager);
@@ -214,7 +214,7 @@ public class ItemUsageSystemTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(EquipmentSlot.GraspBothMelee, shieldEntity.Item.EquippedSlot);
-        Assert.Equal(1, playerEntity.Being.Items.Count);
+        Assert.Single(playerEntity.Being.Items);
 
         moveItemMessage = MoveItemMessage.Create(manager);
         moveItemMessage.ItemEntity = shieldEntity;
@@ -234,7 +234,7 @@ public class ItemUsageSystemTest
         var level = TestHelper.BuildLevel(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         var player = playerEntity.Player!;
-        player.NextAction = ActorAction.Wait;
+        player.NextAction = ActorActionType.Wait;
         var manager = playerEntity.Manager;
 
         manager.Queue.ProcessQueue(manager);
@@ -293,7 +293,7 @@ public class ItemUsageSystemTest
         var level = TestHelper.BuildLevel(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         var player = playerEntity.Player!;
-        player.NextAction = ActorAction.Wait;
+        player.NextAction = ActorActionType.Wait;
         var manager = playerEntity.Manager;
 
         manager.Queue.ProcessQueue(manager);

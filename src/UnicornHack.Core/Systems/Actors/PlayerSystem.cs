@@ -60,11 +60,11 @@ public class PlayerSystem :
         var position = playerEntity.Position!;
         switch (action)
         {
-            case ActorAction.Wait:
+            case ActorActionType.Wait:
                 player.NextActionTick += TimeSystem.DefaultActionDelay;
                 break;
-            case ActorAction.ChangeHeading:
-            case ActorAction.MoveOneCell:
+            case ActorActionType.ChangeHeading:
+            case ActorActionType.MoveOneCell:
                 var moveDirection = (Direction)target!.Value;
                 switch (moveDirection)
                 {
@@ -75,13 +75,20 @@ public class PlayerSystem :
                         break;
                     default:
                         Move(moveDirection, playerEntity, manager,
-                            onlyChangeHeading: action == ActorAction.ChangeHeading);
+                            onlyChangeHeading: action == ActorActionType.ChangeHeading);
                         break;
                 }
 
                 break;
-            case ActorAction.MoveToCell:
+            case ActorActionType.MoveToCell:
                 var targetCell = Point.Unpack(target)!.Value;
+
+                if (targetCell == position.LevelCell)
+                {
+                    // Treat as Wait.
+                    player.NextActionTick += TimeSystem.DefaultActionDelay;
+                    break;
+                }
 
                 if (position.LevelCell.DistanceTo(targetCell) == 1)
                 {
@@ -95,14 +102,18 @@ public class PlayerSystem :
 
                 if (position.LevelCell != targetCell)
                 {
-                    player.NextAction = ActorAction.MoveToCell;
+                    player.NextAction = ActorActionType.MoveToCell;
                     player.NextActionTarget = target;
                     player.QueuedAction = true;
                 }
 
                 break;
-            case ActorAction.DropItem:
+            case ActorActionType.DropItem:
                 var itemToDrop = GetItem(target!.Value, playerEntity, manager);
+                if (itemToDrop == null)
+                {
+                    return false;
+                }
 
                 var dropMessage = MoveItemMessage.Create(manager);
                 dropMessage.ItemEntity = itemToDrop;
@@ -111,7 +122,7 @@ public class PlayerSystem :
 
                 manager.Enqueue(dropMessage);
                 break;
-            case ActorAction.EquipItem:
+            case ActorActionType.EquipItem:
                 var itemToEquip = GetItem(target!.Value, playerEntity, manager);
                 var slot = (EquipmentSlot)target2!.Value;
                 if (itemToEquip == null)
@@ -127,8 +138,12 @@ public class PlayerSystem :
 
                 manager.Enqueue(equipMessage);
                 break;
-            case ActorAction.UnequipItem:
+            case ActorActionType.UnequipItem:
                 var itemToUnequip = GetItem(target!.Value, playerEntity, manager);
+                if (itemToUnequip == null)
+                {
+                    return false;
+                }
 
                 var unequipMessage = EquipItemMessage.Create(manager);
                 unequipMessage.ActorEntity = playerEntity;
@@ -137,7 +152,7 @@ public class PlayerSystem :
 
                 manager.Enqueue(unequipMessage);
                 break;
-            case ActorAction.SetAbilitySlot:
+            case ActorActionType.SetAbilitySlot:
                 var setSlotMessage = SetAbilitySlotMessage.Create(manager);
                 setSlotMessage.AbilityEntity = manager.FindEntity(target);
                 setSlotMessage.OwnerEntity = playerEntity;
@@ -145,7 +160,7 @@ public class PlayerSystem :
 
                 manager.Enqueue(setSlotMessage);
                 break;
-            case ActorAction.UseAbilitySlot:
+            case ActorActionType.UseAbilitySlot:
                 ActivateAbility(playerEntity, target, target2, manager);
                 break;
             default:
@@ -181,7 +196,7 @@ public class PlayerSystem :
                 }
 
                 var player = actorEntity.Player!;
-                player.NextAction = ActorAction.UseAbilitySlot;
+                player.NextAction = ActorActionType.UseAbilitySlot;
                 player.NextActionTarget = ability.Slot;
                 player.NextActionTarget2 = (-targetEntity?.Id) ?? targetCell.ToInt32();
                 player.QueuedAction = true;

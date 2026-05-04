@@ -79,6 +79,34 @@ Key systems include:
 - `KnowledgeSystem`: Information tracking and discovery
 - `TimeSystem`: Turn scheduling and timing
 
+### Per-Turn Change Set Architecture
+
+When a player performs an action, the server processes all turns until the player can act again. Instead of sending a single delta covering all accumulated changes, the server collects changes **per turn** (one entity's action + cascading effects) and sends them as a list of `TurnChangeSet` objects via the `ReceiveChangeSets` SignalR method. The client applies them sequentially with a configurable delay to animate what happened.
+
+**Server flow** (`GameStateManager.Turn`):
+1. For each turn: clear terrain dicts → capture visible terrain snapshot → `TimeSystem.AdvanceSingleTurn()` → compute visible terrain changes
+2. For each registered `PlayerChangeListener`: if `HasObservableChanges` → `BuildChangeSet()` → append to that player's list (a forced emit also happens on the terminating `PlayerTurn` tick to keep the last state aligned)
+3. `levelChangeBuilder.Clear()` → repeat until `TurnResult.PlayerTurn` or `GameOver`
+4. Returns `Dictionary<int, List<TurnChangeSet>>` keyed by player entity id; the hub sends each player their list in one `ReceiveChangeSets` call
+
+**Change detection** — organized under [src/UnicornHack.Web/Hubs/ChangeTracking/](src/UnicornHack.Web/Hubs/ChangeTracking):
+- `LevelChangeBuilder`: shared per-game aggregator. Owns the level-scope builders (`ActorChangeBuilder`, `ItemChangeBuilder`, `ConnectionChangeBuilder`) and a list of `PlayerChangeListener`s. Registered once on the ECS groups; `RegisterPlayerListener` is idempotent.
+- `PlayerChangeListener`: per-player. Owns `RaceChangeBuilder`, `AbilityChangeBuilder`, `LogChangeBuilder`. Implements `IEntityChangeListener` on `LevelActors` to capture the player entity's scalar property changes (HP/EP/XP/…) into an internal `_pendingChange: PlayerChange`. `BuildChangeSet` assembles the final `PlayerChange` by combining level, races, abilities, log, terrain, and scalar bits.
+- `ChangeBuilder<TChange>` (abstract): shared state machine for the five entity-scope builders (Actor/Item/Connection/Race/Ability). Encapsulates Added/Modified/Removed tracking and serialization emission. Subclasses override only: which groups to subscribe to, how to filter relevant entities, how to translate property changes onto the DTO, and how to produce full snapshots. See [ChangeBuilder.cs](src/UnicornHack.Web/Hubs/ChangeTracking/ChangeBuilder.cs) for the state-transition table.
+- `TerrainChangeBuilder`: static helper. Diffs the dictionaries `LevelComponent` maintains (`KnownTerrainChanges`, `TerrainChanges`, `WallNeighborsChanges`, `VisibleTerrainChanges`) into a full `LevelMap` or sparse `LevelMapChanges`.
+- `LogChangeBuilder`: high-water-mark on log-entry id. Intentionally not a `ChangeBuilder` subclass — ordered append-only event streams don't need the state machine.
+
+**Invariants** enforced by `ChangeBuilder<TChange>`:
+- `IChangeWithState.LastState` is assigned once when an entry is created and never mutated afterward.
+- Add-then-Remove within a turn cancels iff `LastState == EntityState.Added` (client never knew the entity).
+- `WriteTo` must be called at most once per `Clear` cycle — asserted in debug builds. A duplicate `PlayerChangeListener` registration would violate this; `LevelChangeBuilder.RegisterPlayerListener` is idempotent.
+
+**Adding a property to a `*Change` DTO**: (1) append `[Key(n)]` with the next integer, bump `PropertyCount`, (2) handle the property in the builder's `TrackPropertyChanges` (`ItemChangeBuilder`, `ActorChangeBuilder`, `AbilityChangeBuilder`) — or nothing for re-serialize-from-scratch builders (`ConnectionChangeBuilder`, `RaceChangeBuilder`), (3) assign the value in the static `SerializeX` full-snapshot method, (4) add a case to the client-side `Client*.ExpandToCollection` property switch and `Deserialize`.
+
+**Initial load** (`GetState`): uses `PlayerChangeListener.SerializePlayer` — a full snapshot with `ChangedProperties = null` on every DTO.
+
+**`TurnChangeSet`**: Contains `Tick` (game tick), `PlayerState` (same serialized format as `GetState`), and `Events` (placeholder for future structured event DTOs).
+
 ## Code Style
 
 ### General Guidelines
@@ -158,6 +186,29 @@ Key systems include:
 - Components are added/removed through entity properties or methods
 - Entity relationships are managed through specialized relationship classes
 
+### Navigation Properties
+Relationships maintain navigation properties on components for efficient access to related entities. Always use these instead of `FindEntity(fkId)` or group lookups:
+
+| FK Property | Navigation Property | Returns |
+|---|---|---|
+| `PositionComponent.LevelId` | `position.LevelEntity` | Level entity |
+| `ConnectionComponent.TargetLevelId` | `connection.TargetLevelEntity` | Target level entity |
+| `KnowledgeComponent.KnownEntityId` | `knowledge.KnownEntity` | Known entity |
+| `ItemComponent.ContainerId` | `item.ContainerEntity` | Container entity |
+| `AbilityComponent.OwnerId` | `ability.OwnerEntity` | Owner entity |
+| `EffectComponent.AffectedEntityId` | `effect.AffectedEntity` | Affected entity |
+| `EffectComponent.SourceAbilityId` | `effect.SourceAbility` | Source ability entity |
+| `EffectComponent.SourceEffectId` | `effect.SourceEffect` | Source effect entity |
+| `EffectComponent.ContainingAbilityId` | `effect.ContainingAbility` | Containing ability entity |
+
+Collections maintained by relationships:
+- `level.Actors/Items/Connections` — `Dictionary<Point, GameEntity>` of actors/items/connections on this level
+- `level.KnownActors/KnownItems/KnownConnections` — knowledge entities keyed by position
+- `level.IncomingConnections` — connections targeting this level
+- `being.Races/Abilities/AppliedEffects/Items/SlottedAbilities` — related entity collections
+- `ability.Effects` — effects belonging to this ability
+- `position.Knowledge` — back-reference from a level entity to its knowledge entity
+
 ### Component Design
 - Components inherit from `GameComponent` for game-specific functionality
 - Use property change notifications via `SetWithNotify()` for data binding
@@ -213,6 +264,10 @@ Key systems include:
 - Mock dependencies appropriately using the established patterns
 - Test edge cases and error conditions
 - Use performance tests for critical path optimizations
+
+### Web.Tests Project
+- Tests change tracking and serialization correctness without a database
+- `WebTestHelper` creates an in-memory game, builds levels, and wires up the necessary services
 
 ## Web Layer Guidelines
 

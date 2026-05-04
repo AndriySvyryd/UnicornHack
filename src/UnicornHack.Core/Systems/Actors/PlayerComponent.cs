@@ -7,7 +7,7 @@ namespace UnicornHack.Systems.Actors;
 public class PlayerComponent : GameComponent, IKeepAliveComponent
 {
     private string _properName = null!;
-    private ActorAction? _nextAction;
+    private ActorActionType? _nextAction;
     private int? _nextActionTarget;
     private int? _nextActionTarget2;
     private bool _queuedAction;
@@ -50,7 +50,7 @@ public class PlayerComponent : GameComponent, IKeepAliveComponent
         set => SetWithNotify(value, ref _properName);
     }
 
-    public ActorAction? NextAction
+    public ActorActionType? NextAction
     {
         get => _nextAction;
         set => SetWithNotify(value, ref _nextAction);

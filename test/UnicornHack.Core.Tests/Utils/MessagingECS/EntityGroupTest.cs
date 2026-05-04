@@ -131,4 +131,51 @@ public class EntityGroupTest
             return MessageProcessingResult.ContinueProcessing;
         }
     }
+
+    [Fact]
+    public void RemoveListener_stops_notifications()
+    {
+        var manager = TestHelper.CreateGameManager();
+        var listener = new CountingListener();
+        manager.Effects.AddListener(listener);
+
+        using var entityReference = manager.CreateEntity();
+        var entity = entityReference.Referenced;
+        var effect = manager.CreateComponent<EffectComponent>((int)EntityComponent.Effect);
+        entity.Effect = effect;
+
+        Assert.Equal(1, listener.AddedCount);
+
+        manager.Effects.RemoveListener(listener);
+
+        effect.DurationAmount = "10";
+
+        // Listener was removed, so no property change should be detected
+        Assert.Equal(0, listener.PropertyChangedCount);
+
+        entity.Effect = null;
+
+        // Listener was removed, so no removal should be detected
+        Assert.Equal(0, listener.RemovedCount);
+    }
+
+    private class CountingListener : IEntityChangeListener<GameEntity>
+    {
+        public int AddedCount
+        {
+            get; private set;
+        }
+        public int RemovedCount
+        {
+            get; private set;
+        }
+        public int PropertyChangedCount
+        {
+            get; private set;
+        }
+
+        public void OnEntityAdded(in EntityChange<GameEntity> entityChange) => AddedCount++;
+        public void OnEntityRemoved(in EntityChange<GameEntity> entityChange) => RemovedCount++;
+        public void OnPropertyValuesChanged(in EntityChange<GameEntity> entityChange) => PropertyChangedCount++;
+    }
 }

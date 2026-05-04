@@ -1,5 +1,4 @@
-﻿using UnicornHack.Systems.Abilities;
-using UnicornHack.Systems.Actors;
+﻿using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
@@ -81,9 +80,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
         var itemMovedMessage = ItemMovedMessage.Create(manager);
         itemMovedMessage.ItemEntity = itemEntity;
         itemMovedMessage.InitialLevelCell = position?.LevelCell;
-        itemMovedMessage.InitialContainer = item.ContainerId != null
-            ? manager.FindEntity(item.ContainerId.Value)
-            : null;
+        itemMovedMessage.InitialContainer = item.ContainerEntity;
         itemMovedMessage.InitialCount = item.GetQuantity();
         itemMovedMessage.SuppressLog = message.SuppressLog;
 
@@ -101,7 +98,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
                 && item.EquippedSlot != EquipmentSlot.None)
             {
                 var equipMessage = EquipItemMessage.Create(manager);
-                equipMessage.ActorEntity = manager.FindEntity(item.ContainerId.Value)!;
+                equipMessage.ActorEntity = item.ContainerEntity!;
                 equipMessage.ItemEntity = itemEntity;
                 equipMessage.SuppressLog = true;
                 equipMessage.Force = message.Force;
@@ -364,11 +361,11 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
 
     public GameEntity GetTopContainer(GameEntity target, GameManager manager)
     {
-        var containerId = target.Item?.ContainerId;
-        while (containerId != null)
+        var container = target.Item?.ContainerEntity;
+        while (container != null)
         {
-            target = manager.FindEntity(containerId.Value)!;
-            containerId = target.Item?.ContainerId;
+            target = container;
+            container = target.Item?.ContainerEntity;
         }
 
         return target;

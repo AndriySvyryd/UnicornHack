@@ -1,5 +1,4 @@
-using Microsoft.EntityFrameworkCore;
-using UnicornHack.Hubs;
+using UnicornHack.Hubs.ChangeTracking;
 using UnicornHack.Services;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
@@ -28,7 +27,7 @@ public class GameDbContext : DbContext, IRepository
         set;
     } = null!;
 
-    public GameSnapshot? Snapshot
+    public LevelChangeBuilder? LevelChangeBuilder
     {
         get;
         set;
@@ -460,7 +459,11 @@ public class GameDbContext : DbContext, IRepository
                     (_, positionComponent) => positionComponent)
                 .Join(context.ConnectionComponents,
                     positionComponent
-                        => new { positionComponent.GameId, positionComponent.EntityId },
+                        => new
+                        {
+                            positionComponent.GameId,
+                            positionComponent.EntityId
+                        },
                     connectionComponent => new { connectionComponent.GameId, connectionComponent.EntityId },
                     (positionComponent, connectionComponent)
                         => new[] { positionComponent.LevelId, connectionComponent.TargetLevelId }));
@@ -797,7 +800,8 @@ public class GameDbContext : DbContext, IRepository
     {
         base.Dispose();
 
+        LevelChangeBuilder?.UnregisterFromGroups(Manager);
+        LevelChangeBuilder = null;
         Manager = null!;
-        Snapshot = null;
     }
 }

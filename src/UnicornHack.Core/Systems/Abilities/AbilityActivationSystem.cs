@@ -45,18 +45,12 @@ public class AbilityActivationSystem :
     private static readonly MethodInfo _speedModifierMethod = typeof(AbilityActivationSystem)
         .GetMethod(nameof(GetSpeedModifierMethod), BindingFlags.NonPublic | BindingFlags.Static)!;
 
-    public bool CanActivateAbility(ActivateAbilityMessage activateAbilityMessage, bool shouldThrow)
+    public string? CanActivateAbility(ActivateAbilityMessage activateAbilityMessage)
     {
         var message = Activate(activateAbilityMessage, pretend: true, stats: null)!;
-
-        var hasError = !string.IsNullOrEmpty(message.ActivationError);
-        if (hasError && shouldThrow)
-        {
-            throw new InvalidOperationException(message.ActivationError);
-        }
-
+        var error = message.ActivationError;
         activateAbilityMessage.AbilityEntity.Manager.ReturnMessage(message);
-        return !hasError;
+        return error;
     }
 
     public AttackStats GetAttackStats(ActivateAbilityMessage activateAbilityMessage)
@@ -462,7 +456,8 @@ public class AbilityActivationSystem :
 
             activations.Add(new AbilityActivation
             {
-                ActivationMessage = activationMessage, TargetMessage = targetMessage
+                ActivationMessage = activationMessage,
+                TargetMessage = targetMessage
             });
         }
     }
@@ -743,7 +738,7 @@ public class AbilityActivationSystem :
             {
                 manager.Process(newActivation);
             }
-            else if (!CanActivateAbility(newActivation, shouldThrow: false))
+            else if (CanActivateAbility(newActivation) != null)
             {
                 return false;
             }

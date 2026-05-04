@@ -37,7 +37,18 @@ public abstract class ActorSystemBase
             abilityEntity = manager.AbilitySlottingSystem.GetAbility(actorEntity, slot.Value);
             if (abilityEntity == null)
             {
-                throw new InvalidOperationException("Actor " + actorEntity.Id + ". No ability in slot " + targetId);
+                if (actorEntity.HasComponent(EntityComponent.Player))
+                {
+                    manager.LoggingSystem.WriteLog(
+                        manager.Game.Services.Language.NoAbilityInSlot(slot.Value), actorEntity, manager);
+                }
+                else
+                {
+                    throw new InvalidOperationException(
+                        "Actor " + actorEntity.Id + ". No ability in slot " + slot.Value);
+                }
+
+                return false;
             }
         }
         else
@@ -78,6 +89,13 @@ public abstract class ActorSystemBase
         var ability = abilityEntity.Ability!;
         if ((ability.Activation & ActivationType.Slottable) == 0)
         {
+            if (actorEntity.HasComponent(EntityComponent.Player))
+            {
+                manager.LoggingSystem.WriteLog(
+                    manager.Game.Services.Language.AbilityCannotBeActivated(ability), actorEntity, manager);
+                return false;
+            }
+
             throw new InvalidOperationException("Ability " + abilityEntity.Id + " cannot be activated directly.");
         }
 
@@ -87,8 +105,25 @@ public abstract class ActorSystemBase
         activationMessage.TargetEntity = targetEntity;
         activationMessage.TargetCell = targetCell;
 
-        if (!manager.AbilityActivationSystem.CanActivateAbility(
-                activationMessage, shouldThrow: actorEntity.HasComponent(EntityComponent.Player)))
+        var isPlayer = actorEntity.HasComponent(EntityComponent.Player);
+        if (isPlayer)
+        {
+            var activationError = manager.AbilityActivationSystem.CanActivateAbility(activationMessage);
+            if (activationError != null)
+            {
+                var language = manager.Game.Services.Language;
+                var logMessage = ability.CooldownTick != null || ability.CooldownXpLeft != null
+                    ? language.AbilityOnCooldown(ability)
+                    : ability.EnergyCost > 0
+                      && (ability.OwnerEntity!.Being ?? actorEntity.Being)?.EnergyPoints < ability.EnergyCost
+                        ? language.NotEnoughEnergy(ability)
+                        : language.AbilityNotUsable(ability);
+                manager.LoggingSystem.WriteLog(logMessage, actorEntity, manager);
+                manager.Queue.ReturnMessage(activationMessage);
+                return false;
+            }
+        }
+        else if (manager.AbilityActivationSystem.CanActivateAbility(activationMessage) != null)
         {
             manager.Queue.ReturnMessage(activationMessage);
             return false;
@@ -140,12 +175,19 @@ public abstract class ActorSystemBase
         return true;
     }
 
-    protected GameEntity GetItem(int itemId, GameEntity actorEntity, GameManager manager)
+    protected GameEntity? GetItem(int itemId, GameEntity actorEntity, GameManager manager)
     {
         var itemEntity = manager.FindEntity(itemId);
         if (itemEntity == null
             || itemEntity.Item!.ContainerId != actorEntity.Id)
         {
+            if (actorEntity.HasComponent(EntityComponent.Player))
+            {
+                manager.LoggingSystem.WriteLog(
+                    manager.Game.Services.Language.ItemNotInInventory(), actorEntity, manager);
+                return null;
+            }
+
             throw new InvalidOperationException("Actor " + actorEntity.Id + " doesn't have item " + itemId);
         }
 

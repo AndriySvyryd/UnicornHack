@@ -98,13 +98,13 @@ public class SortedLookupEntityIndex<TEntity, TKey, TSortKey> : EntityIndexBase<
         return false;
     }
 
-    protected override bool HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange)
+    protected override void HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange)
     {
         Debug.Assert(entityChange.RemovedComponent == null);
 
         if (!KeyValueGetter.TryGetKey(entityChange, ValueType.Current, out var key))
         {
-            return false;
+            return;
         }
 
         Component? componentUsed = null;
@@ -117,7 +117,7 @@ public class SortedLookupEntityIndex<TEntity, TKey, TSortKey> : EntityIndexBase<
                 // The component might have been removed by the previous change listener
                 if (entityChange.Entity.FindComponent(changedComponent.ComponentId) != changedComponent)
                 {
-                    return true;
+                    return;
                 }
 
                 componentUsed = changedComponent;
@@ -127,7 +127,7 @@ public class SortedLookupEntityIndex<TEntity, TKey, TSortKey> : EntityIndexBase<
 
         if (componentUsed == null)
         {
-            return false;
+            return;
         }
 
         var entities = GetOrAddEntities(key);
@@ -146,8 +146,6 @@ public class SortedLookupEntityIndex<TEntity, TKey, TSortKey> : EntityIndexBase<
         {
             Index.Remove(key);
         }
-
-        return true;
     }
 
     public override string ToString() => "SortedLookupIndex: " + Name;

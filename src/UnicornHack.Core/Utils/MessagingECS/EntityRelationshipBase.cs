@@ -1,5 +1,13 @@
 ﻿namespace UnicornHack.Utils.MessagingECS;
 
+/// <summary>
+///     Base class for entity relationships that link dependent entities to principal entities
+///     via a foreign key. Manages optional keep-alive reference counting: when
+///     <c>keepPrincipalAlive</c> is true, a dependent entity holds a reference to its principal,
+///     preventing the principal from being disposed while dependents exist (and vice versa for
+///     <c>keepDependentAlive</c>).
+///     Derived classes track orphaned dependents, which are linked when the principal appears.
+/// </summary>
 public abstract class EntityRelationshipBase<TEntity> : EntityIndexBase<TEntity, int>,
     IEntityRelationshipBase<TEntity> where TEntity : Entity, new()
 {

@@ -2,6 +2,12 @@
 
 namespace UnicornHack.Utils.MessagingECS;
 
+/// <summary>
+///     A relationship that stores dependents in a dictionary keyed by a secondary key.
+///     Optionally supports a secondary principal group:
+///     a dependent is only added to the relationship when both the primary principal
+///     and the secondary principal exist in their respective groups.
+/// </summary>
 public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelationshipBase<TEntity>
     where TEntity : Entity, new()
     where TKey : notnull
@@ -20,6 +26,12 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
 
     public IEntityGroup<TEntity> Dependents
         => _dependents ??= new DependentsGroup(this);
+
+    public void AddDependentsListener(IDependentEntityChangeListener<TEntity> listener)
+        => ((DependentEntityGroupBase<TEntity>)Dependents).AddDependentListener(listener);
+
+    public void RemoveDependentsListener(IDependentEntityChangeListener<TEntity> listener)
+        => ((DependentEntityGroupBase<TEntity>)Dependents).RemoveDependentListener(listener);
 
     public LookupEntityRelationship(
         string name,
@@ -247,10 +259,11 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
         int? secondaryPrincipalKey = null;
         if (_secondaryPrincipalKeyValueGetter != null)
         {
-            if (_secondaryPrincipalKeyValueGetter.TryGetKey(entityChange, ValueType.PreferOld, out var secondaryPK)
-                && _secondaryPrincipalGroup!.ContainsEntity(secondaryPK))
+            if (_secondaryPrincipalKeyValueGetter.TryGetKey(entityChange, ValueType.PreferOld, out var secondaryPK))
             {
-                secondaryPrincipalKey = secondaryPK;
+                secondaryPrincipalKey = _secondaryPrincipalGroup!.ContainsEntity(secondaryPK)
+                    ? secondaryPK
+                    : null;
             }
             else
             {
@@ -260,6 +273,8 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
 
         var dependentEntities = _accessor.GetDependents(principal);
         if (dependentEntities != null
+            && dependentEntities.TryGetValue(secondaryKey, out var existing)
+            && existing.Id == entityChange.Entity.Id
             && dependentEntities.Remove(secondaryKey))
         {
             if (secondaryPrincipalKey != null
@@ -290,14 +305,14 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
         ((IEntityRelationshipBase<TEntity>)this).OnEntityRemoved(entityChange.Entity, principal);
     }
 
-    protected override bool HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange)
+    protected override void HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange)
     {
         Debug.Assert(entityChange.RemovedComponent == null);
 
         if (!KeyValueGetter.TryGetKey(entityChange, ValueType.Current, out var key)
             || FindPrincipal(key, entityChange.Entity, fallback: true) is not { } principal)
         {
-            return true;
+            return;
         }
 
         var secondaryKeyPropertyChanged = false;
@@ -312,7 +327,7 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
                 // The component might have been removed by the previous change listener
                 if (entityChange.Entity.FindComponent(changedComponent.ComponentId) != changedComponent)
                 {
-                    return true;
+                    return;
                 }
 
                 secondaryKeyPropertyChanged = true;
@@ -324,7 +339,7 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
             {
                 if (entityChange.Entity.FindComponent(changedComponent.ComponentId) != changedComponent)
                 {
-                    return true;
+                    return;
                 }
 
                 secondaryPrincipalKeyPropertyChanged = true;
@@ -335,6 +350,8 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
         var entity = entityChange.Entity;
         if (secondaryPrincipalKeyPropertyChanged)
         {
+            // Remove from old secondary principal's tracking index, then either
+            // re-add under the new secondary principal or remove from the relationship.
             if (_secondaryPrincipalKeyValueGetter!.TryGetKey(entityChange, ValueType.PreferOld, out var oldSecondaryPrincipalKey)
                 && _secondaryPrincipalToDependentsIndex!.TryGetValue(oldSecondaryPrincipalKey, out var oldDependentSet))
             {
@@ -359,6 +376,8 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
                 else
                 {
                     if (_secondaryKeyValueGetter.TryGetKey(entityChange, ValueType.PreferOld, out var oldSortKey)
+                        && entities.TryGetValue(oldSortKey, out var existing)
+                        && existing.Id == entity.Id
                         && entities.Remove(oldSortKey))
                     {
                         OnEntityRemoved(entityChange, principal);
@@ -368,6 +387,7 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
         }
         else
         {
+            // If a secondary principal is required, verify it still exists; otherwise skip.
             int? secondaryPrincipalKey = null;
             if (_secondaryPrincipalKeyValueGetter != null)
             {
@@ -378,7 +398,7 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
                 }
                 else
                 {
-                    return true;
+                    return;
                 }
             }
 
@@ -408,16 +428,14 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
             }
             else
             {
-                _dependents?.PropertyValuesChanged(entityChange);
+                _dependents?.PropertyValuesChanged(entityChange, principal);
             }
         }
-
-        return true;
     }
 
     public override string ToString() => "LookupRelationship: " + Name;
 
-    private class DependentsGroup : EntityGroupBase<TEntity>
+    private class DependentsGroup : DependentEntityGroupBase<TEntity>
     {
         private readonly LookupEntityRelationship<TEntity, TKey, TDictionary> _relationship;
 
@@ -434,19 +452,19 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
             => FindEntity(id) != null;
 
         public void Add(in EntityChange<TEntity> entityChange, TEntity principal)
-            => OnAdded(entityChange, principal);
+            => OnDependentAdded(entityChange, principal);
 
         public void Remove(in EntityChange<TEntity> entityChange, TEntity principal)
-            => OnRemoved(entityChange, principal);
+            => OnDependentRemoved(entityChange, principal);
 
-        public void PropertyValuesChanged(in EntityChange<TEntity> entityChange)
+        public void PropertyValuesChanged(in EntityChange<TEntity> entityChange, TEntity principal)
         {
             if (FindEntity(entityChange.Entity.Id) == null)
             {
                 return;
             }
 
-            OnPropertyValuesChanged(entityChange);
+            OnDependentPropertyValuesChanged(entityChange, principal);
         }
 
         public override string ToString() => "LookupDependentGroup: " + Name;
@@ -527,8 +545,9 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
             _relationship._accessor.ResetDependents(principal);
         }
 
-        public bool OnPropertyValuesChanged(in EntityChange<TEntity> entityChange)
-            => false;
+        public void OnPropertyValuesChanged(in EntityChange<TEntity> entityChange)
+        {
+        }
 
         public override string ToString() => "Principal " + _relationship;
     }
@@ -582,17 +601,25 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
                 return;
             }
 
+            // Snapshot via ToArray because TryRemoveEntity modifies the set.
             foreach (var dependent in dependentsToRemove.ToArray())
             {
                 var dependentChange = new EntityChange<TEntity>(dependent);
-                _relationship.KeyValueGetter.TryGetKey(dependentChange, ValueType.Current, out var primaryKey);
+                if (!_relationship.KeyValueGetter.TryGetKey(dependentChange, ValueType.Current, out var primaryKey))
+                {
+                    continue;
+                }
+
                 _relationship.TryRemoveEntity(primaryKey, dependentChange);
                 _relationship.HandlePrincipalEntityRemoved(dependent, entityChange);
             }
+
+            _relationship._secondaryPrincipalToDependentsIndex.Remove(secondaryPrincipalKey);
         }
 
-        public bool OnPropertyValuesChanged(in EntityChange<TEntity> entityChange)
-            => false;
+        public void OnPropertyValuesChanged(in EntityChange<TEntity> entityChange)
+        {
+        }
 
         public override string ToString() => "SecondaryPrincipal " + _relationship;
     }

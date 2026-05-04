@@ -7,6 +7,7 @@
 #pragma warning disable SA1649 // File name should match first type name
 
 using MessagePack.Formatters;
+using UnicornHack.Hubs.ChangeTracking;
 using UnicornHack.Hubs.MessagePack;
 
 namespace MessagePack.Resolvers
@@ -57,12 +58,30 @@ namespace MessagePack.Resolvers
                 { typeof(MapFeature[]), 8 },
                 { typeof(Dictionary<int, List<object>>), 9 },
                 { typeof(Dictionary<string, int>), 10 },
-                { typeof(List<List<object>>), 11 },
-                { typeof(List<object>), 12 },
                 { typeof(List<(short, byte)>), 13 },
                 { typeof(List<(short, DirectionFlags)>), 14 },
                 { typeof(List<(short, MapFeature)>), 15 },
-                { typeof(object), 16 }
+                { typeof(object), 16 },
+                { typeof(PlayerChange), 17 },
+                { typeof(LevelChange), 18 },
+                { typeof(ActorChange), 19 },
+                { typeof(ItemChange), 20 },
+                { typeof(ConnectionChange), 21 },
+                { typeof(RaceChange), 22 },
+                { typeof(AbilityChange), 23 },
+                { typeof(LogEntryChange), 24 },
+                { typeof(TurnChangeSet), 25 },
+                { typeof(Dictionary<int, ActorChange>), 26 },
+                { typeof(Dictionary<int, ItemChange>), 27 },
+                { typeof(Dictionary<int, ConnectionChange>), 28 },
+                { typeof(Dictionary<int, RaceChange>), 29 },
+                { typeof(Dictionary<int, AbilityChange>), 30 },
+                { typeof(Dictionary<int, LogEntryChange>), 31 },
+                { typeof(List<TurnChangeSet>), 32 },
+                { typeof(LevelMap), 33 },
+                { typeof(LevelMapChanges), 34 },
+                { typeof(AttackSummary), 35 },
+                { typeof(ActorActionChange), 36 }
             };
         }
 
@@ -95,10 +114,6 @@ namespace MessagePack.Resolvers
                     return new DictionaryFormatter<int, List<object>>();
                 case 10:
                     return new DictionaryFormatter<string, int>();
-                case 11:
-                    return new ListFormatter<List<object>>();
-                case 12:
-                    return new ListFormatter<object>();
                 case 13:
                     return new ListFormatter<(short, byte)>();
                 case 14:
@@ -107,7 +122,48 @@ namespace MessagePack.Resolvers
                     return new ListFormatter<(short, MapFeature)>();
                 case 16:
                     return new CastingFormatter();
-                default: return null;
+                case 17:
+                    return PlayerChangeFormatter.Instance;
+                case 18:
+                    return LevelChangeFormatter.Instance;
+                case 19:
+                    return ActorChangeFormatter.Instance;
+                case 20:
+                    return ItemChangeFormatter.Instance;
+                case 21:
+                    return ConnectionChangeFormatter.Instance;
+                case 22:
+                    return RaceChangeFormatter.Instance;
+                case 23:
+                    return AbilityChangeFormatter.Instance;
+                case 24:
+                    return LogEntryChangeFormatter.Instance;
+                case 25:
+                    return TurnChangeSetFormatter.Instance;
+                case 26:
+                    return new DictionaryFormatter<int, ActorChange>();
+                case 27:
+                    return new DictionaryFormatter<int, ItemChange>();
+                case 28:
+                    return new DictionaryFormatter<int, ConnectionChange>();
+                case 29:
+                    return new DictionaryFormatter<int, RaceChange>();
+                case 30:
+                    return new DictionaryFormatter<int, AbilityChange>();
+                case 31:
+                    return new DictionaryFormatter<int, LogEntryChange>();
+                case 32:
+                    return new ListFormatter<TurnChangeSet>();
+                case 33:
+                    return LevelMapFormatter.Instance;
+                case 34:
+                    return LevelMapChangesFormatter.Instance;
+                case 35:
+                    return AttackSummaryFormatter.Instance;
+                case 36:
+                    return NextActionChangeFormatter.Instance;
+                default:
+                    return null;
             }
         }
     }

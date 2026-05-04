@@ -35,7 +35,7 @@ public class ItemGroup : ILoadable
     } = "item groups";
 
     public static readonly SingleCSScriptLoader<ItemGroup> Loader =
-        new ("Data", typeof(ItemGroupData));
+        new("Data", typeof(ItemGroupData));
 
     // TODO: Make more complex items more frequent on lower levels
     public IEnumerable<ItemGroup> GetGroups(Item item)

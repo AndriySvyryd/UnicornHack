@@ -10,7 +10,7 @@ public class ComponentTest
         var manager = TestHelper.CreateGameManager();
         var component = manager.CreateComponent<ItemComponent>(EntityComponent.Item);
 
-        Assert.Equal(component.ComponentId, (int)EntityComponent.Item);
+        Assert.Equal((int)EntityComponent.Item, component.ComponentId);
     }
 
     [Fact]

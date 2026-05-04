@@ -91,7 +91,8 @@ public class CSClassSerializer : CSScriptSerializer
         process.EnableRaisingEvents = true;
         process.StartInfo = new ProcessStartInfo(executable, arguments)
         {
-            CreateNoWindow = true, UseShellExecute = false
+            CreateNoWindow = true,
+            UseShellExecute = false
         };
 
         process.Exited += (_, _) =>

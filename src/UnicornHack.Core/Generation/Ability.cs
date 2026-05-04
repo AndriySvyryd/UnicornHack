@@ -138,7 +138,7 @@ public class Ability : ILoadable, ICSScriptSerializable
         get;
         set;
     }
-    
+
     [MaybeNull]
     public IReadOnlyList<Effect> Effects
     {

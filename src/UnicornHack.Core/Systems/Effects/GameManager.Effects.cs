@@ -81,8 +81,7 @@ public partial class GameManager
             (effectEntity, change) =>
             {
                 var sourceAbility = change.RemovedComponent as AbilityComponent
-                                    ?? effectEntity.Manager.FindEntity(effectEntity.Effect!.SourceAbilityId)
-                                        ?.Ability;
+                                    ?? effectEntity.Effect!.SourceAbility?.Ability;
                 if (sourceAbility?.IsActive == true)
                 {
                     effectEntity.Effect = null;

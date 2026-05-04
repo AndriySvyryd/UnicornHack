@@ -119,11 +119,14 @@ public class KnowledgeSystem :
             {
                 var knowledgePosition = knowledge.Position!;
                 if (level != knowledgePosition.LevelEntity?.Level
-                    || (manager.SensorySystem.SensedByPlayer(knowledge, knowledgePosition.LevelCell)
-                        & knowledge.Knowledge!.SensedType) != SenseType.None)
+                    || manager.SensorySystem.SensedByPlayer(knowledge, knowledgePosition.LevelCell) != SenseType.None)
                 {
                     knowledge.RemoveComponent(EntityComponent.Knowledge);
                     knowledge.RemoveComponent(EntityComponent.Position);
+                }
+                else
+                {
+                    knowledge.Knowledge!.SensedType = SenseType.None;
                 }
             }
         }
@@ -139,6 +142,11 @@ public class KnowledgeSystem :
             var knowledgeComponent = manager.CreateComponent<KnowledgeComponent>(EntityComponent.Knowledge);
             knowledgeComponent.KnownEntityId = position.EntityId;
             knowledgeComponent.SensedType = sensedType;
+            if (sensedType.CanIdentify())
+            {
+                knowledgeComponent.IsIdentified = true;
+            }
+
             knowledgeEntityReference.Knowledge = knowledgeComponent;
 
             var knowledgePosition = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
@@ -150,6 +158,10 @@ public class KnowledgeSystem :
         else
         {
             knowledgeEntity.Knowledge!.SensedType = sensedType;
+            if (sensedType.CanIdentify())
+            {
+                knowledgeEntity.Knowledge.IsIdentified = true;
+            }
 
             var knowledgePosition = knowledgeEntity.Position!;
             knowledgePosition.SetLevelPosition(position.LevelId, position.LevelCell);

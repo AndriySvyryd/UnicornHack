@@ -6,6 +6,7 @@ public class KnowledgeComponent : GameComponent
     private GameEntity? _knownEntity;
     private int _knownEntityId;
     private SenseType _sensedType;
+    private bool _isIdentified;
 
     public KnowledgeComponent()
     {
@@ -28,6 +29,12 @@ public class KnowledgeComponent : GameComponent
         set => SetWithNotify(value, ref _sensedType);
     }
 
+    public bool IsIdentified
+    {
+        get => _isIdentified;
+        set => SetWithNotify(value, ref _isIdentified);
+    }
+
     // Unmapped properties
 
     public GameEntity KnownEntity
@@ -45,6 +52,7 @@ public class KnowledgeComponent : GameComponent
         _knownEntity = default;
         _knownEntityId = default;
         _sensedType = default;
+        _isIdentified = default;
 
         base.Clean();
     }

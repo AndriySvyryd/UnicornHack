@@ -255,6 +255,106 @@ public class UniqueEntityRelationshipTest
         Assert.Equal(3, testSystem.GroupChangesDetected);
     }
 
+    [Fact]
+    public void Dependent_listener_receives_property_changes()
+    {
+        var manager = TestHelper.CreateGameManager();
+        var listener = new DependentTestListener();
+        manager.BeingToPrimaryNaturalWeaponRelationship.AddDependentsListener(listener);
+
+        using var weaponEntityReference = manager.CreateEntity();
+        var weaponEntity = weaponEntityReference.Referenced;
+        weaponEntity.AddComponent<ItemComponent>((int)EntityComponent.Item);
+        weaponEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
+
+        using var beingEntityReference = manager.CreateEntity();
+        var beingEntity = beingEntityReference.Referenced;
+        var being = beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+        beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
+        beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
+        being.PrimaryNaturalWeaponId = weaponEntity.Id;
+
+        Assert.Equal(1, listener.AddedCount);
+        Assert.Equal(0, listener.PropertyChangedCount);
+
+        being.ColdResistance = 10;
+
+        Assert.Equal(1, listener.PropertyChangedCount);
+        Assert.Same(beingEntity, listener.LastPropertyChangedEntity);
+        Assert.Same(weaponEntity, listener.LastPrincipal);
+
+        being.PrimaryNaturalWeaponId = null;
+
+        Assert.Equal(1, listener.RemovedCount);
+        Assert.Equal(1, listener.PropertyChangedCount);
+    }
+
+    [Fact]
+    public void Dependent_listener_does_not_receive_property_changes_on_removal()
+    {
+        var manager = TestHelper.CreateGameManager();
+        var listener = new DependentTestListener();
+        manager.BeingToPrimaryNaturalWeaponRelationship.AddDependentsListener(listener);
+
+        using var weaponEntityReference = manager.CreateEntity();
+        var weaponEntity = weaponEntityReference.Referenced;
+        weaponEntity.AddComponent<ItemComponent>((int)EntityComponent.Item);
+        weaponEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
+
+        using var beingEntityReference = manager.CreateEntity();
+        var beingEntity = beingEntityReference.Referenced;
+        var being = beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+        beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
+        beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
+        being.PrimaryNaturalWeaponId = weaponEntity.Id;
+
+        Assert.Equal(1, listener.AddedCount);
+
+        // Now remove the being component — this removes the entity from the Beings group
+        // and the relationship, so no property change should fire on the dependent listener.
+        beingEntity.Being = null;
+
+        Assert.Equal(0, listener.PropertyChangedCount);
+        Assert.Equal(1, listener.RemovedCount);
+    }
+
+    private class DependentTestListener : IDependentEntityChangeListener<GameEntity>
+    {
+        public int AddedCount
+        {
+            get; private set;
+        }
+        public int RemovedCount
+        {
+            get; private set;
+        }
+        public int PropertyChangedCount
+        {
+            get; private set;
+        }
+        public GameEntity? LastPropertyChangedEntity
+        {
+            get; private set;
+        }
+        public GameEntity? LastPrincipal
+        {
+            get; private set;
+        }
+
+        public void OnEntityAdded(in EntityChange<GameEntity> entityChange, GameEntity principal)
+            => AddedCount++;
+
+        public void OnEntityRemoved(in EntityChange<GameEntity> entityChange, GameEntity principal)
+            => RemovedCount++;
+
+        public void OnPropertyValuesChanged(in EntityChange<GameEntity> entityChange, GameEntity principal)
+        {
+            PropertyChangedCount++;
+            LastPropertyChangedEntity = entityChange.Entity;
+            LastPrincipal = principal;
+        }
+    }
+
     private class RelationshipTestSystem :
         IGameSystem<EntityAddedMessage<GameEntity>>,
         IGameSystem<EntityRemovedMessage<GameEntity>>,
@@ -340,7 +440,7 @@ public class UniqueEntityRelationshipTest
             GroupChangesDetected++;
         }
 
-        public bool OnPropertyValuesChanged(in EntityChange<GameEntity> entityChange)
+        public void OnPropertyValuesChanged(in EntityChange<GameEntity> entityChange)
         {
             var changes = entityChange.PropertyChanges;
 
@@ -353,8 +453,6 @@ public class UniqueEntityRelationshipTest
             Assert.Equal(10, changes.GetValue<int>(0, ValueType.Current));
 
             GroupChangesDetected++;
-
-            return false;
         }
     }
 }

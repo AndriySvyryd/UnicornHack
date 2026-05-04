@@ -6,7 +6,7 @@ namespace UnicornHack.Generation.Map;
 public abstract class Layout
 {
     protected static float DefaultCoverage = 0.33f;
-    
+
     public float Coverage
     {
         get;
@@ -14,7 +14,7 @@ public abstract class Layout
     } = DefaultCoverage;
 
     protected static byte DefaultMaxRoomCount = 16;
-    
+
     public byte MaxRoomCount
     {
         get;
@@ -91,7 +91,7 @@ public abstract class Layout
                                          .Count(c => c.Connection!.TargetLevelX == null) < 3
                                      || (level.Branch.Length > level.Depth
                                          && level.Connections.Values
-                                             .Select(c => manager.FindEntity(c.Connection!.TargetLevelId)?.Level)
+                                             .Select(c => c.Connection!.TargetLevelEntity?.Level)
                                              .Count(l =>
                                                  l != null
                                                  && l.BranchName == level.BranchName

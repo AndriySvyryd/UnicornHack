@@ -13,7 +13,7 @@ public class Affectable
         {
             return;
         }
-        
+
         manager.EffectApplicationSystem.AddPropertyEffect(propertyName, value.Value, abilityId, manager, function);
     }
 }

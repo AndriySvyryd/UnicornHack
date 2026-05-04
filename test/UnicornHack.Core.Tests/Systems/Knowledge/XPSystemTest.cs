@@ -94,7 +94,7 @@ public class XPSystemTest
         TestHelper.ActivateAbility(ItemData.PotionOfElfness.Name + ": Drink", playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, playerEntity.Being.Items.Count);
+        Assert.Single(playerEntity.Being.Items);
         Assert.DoesNotContain(playerEntity.Being.Abilities,
             a => a.Ability!.Name!.Contains(ItemData.PotionOfElfness.Name));
         Assert.Equal(2, playerEntity.Being.Races.Count);
@@ -136,7 +136,7 @@ public class XPSystemTest
 
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(1, playerEntity.Being.Races.Count);
+        Assert.Single(playerEntity.Being.Races);
         Assert.Equal(17, playerEntity.Being.Abilities.Count);
         Assert.Equal(2, manager.XPSystem.GetXPLevel(playerEntity));
         Assert.Equal(2, elfEntity.Race.Level);

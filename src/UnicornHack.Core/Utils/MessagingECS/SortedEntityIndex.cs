@@ -43,8 +43,9 @@ public class SortedEntityIndex<TEntity, TKey> : EntityIndexBase<TEntity, TKey>
     protected override bool TryRemoveEntity(TKey key, in EntityChange<TEntity> entityChange)
         => GetOrAddEntities(key).Remove(entityChange.Entity);
 
-    protected override bool HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange)
-        => false;
+    protected override void HandleNonKeyPropertyValuesChanged(in EntityChange<TEntity> entityChange)
+    {
+    }
 
     public override string ToString() => "SortedIndex: " + Name;
 }

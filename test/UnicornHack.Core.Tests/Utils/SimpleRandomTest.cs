@@ -2,7 +2,6 @@ using System.Text;
 
 namespace UnicornHack.Utils
 {
-    // These tests are flaky
     public class SimpleRandomTest
     {
         [Fact]
@@ -63,7 +62,7 @@ namespace UnicornHack.Utils
 
         private void TestPick(float[] itemWeights, float weightSum)
         {
-            var seed = (uint)Environment.TickCount;
+            const uint seed = 1;
             var random = new SimpleRandom { Seed = seed };
             var selectedCounts = new int[itemWeights.Length];
             var selectionCount = 100000;
@@ -87,7 +86,7 @@ namespace UnicornHack.Utils
                 weightSum += items[i];
             }
 
-            var seed = (uint)Environment.TickCount;
+            const uint seed = 2;
             var random = new SimpleRandom { Seed = seed };
             var selectedCounts = new int[items.Length];
             var selectionCount = 10000;
@@ -117,18 +116,18 @@ namespace UnicornHack.Utils
                         builder.AppendLine($"\t{j}:\t{selectedCounts[j]},\t{items[j]}");
                     }
 
-                    Assert.False(true, builder.ToString());
+                    Assert.Fail(builder.ToString());
                 }
             }
         }
 
         [Theory]
-        [InlineData(0.0f)]
-        [InlineData(0.2f)]
-        [InlineData(0.5f)]
-        [InlineData(0.7f)]
-        [InlineData(1.0f)]
-        public void Binomial(float p)
+        [InlineData(0.0f, 100u)]
+        [InlineData(0.2f, 200u)]
+        [InlineData(0.5f, 300u)]
+        [InlineData(0.7f, 400u)]
+        [InlineData(1.0f, 500u)]
+        public void Binomial(float p, uint seed)
         {
             var weightSum = 0f;
             var itemWeights = new float[10];
@@ -139,7 +138,6 @@ namespace UnicornHack.Utils
                 weightSum += itemWeights[i];
             }
 
-            var seed = (uint)Environment.TickCount;
             var random = new SimpleRandom { Seed = seed };
             var selectedCounts = new int[itemWeights.Length];
             var selectionCount = 1000000;
@@ -153,14 +151,14 @@ namespace UnicornHack.Utils
         }
 
         [Theory]
-        [InlineData(0)]
-        [InlineData(25)]
-        [InlineData(33)]
-        [InlineData(50)]
-        [InlineData(66)]
-        [InlineData(70)]
-        [InlineData(100)]
-        public void NoStreakBool(int p)
+        [InlineData(0, 600u)]
+        [InlineData(25, 700u)]
+        [InlineData(33, 800u)]
+        [InlineData(50, 900u)]
+        [InlineData(66, 1000u)]
+        [InlineData(70, 1100u)]
+        [InlineData(100, 1200u)]
+        public void NoStreakBool(int p, uint seed)
         {
             var itemWeights = new[] { p, 100f - p };
             var maxPositiveStreak = 2;
@@ -184,7 +182,6 @@ namespace UnicornHack.Utils
                 maxNegativeStreak = (int)Math.Ceiling((100f / p) - 1) * 2;
             }
 
-            var seed = (uint)Environment.TickCount;
             var random = new SimpleRandom { Seed = seed };
             var selectedCounts = new int[itemWeights.Length];
             var selectionCount = 1000000;
@@ -242,7 +239,7 @@ namespace UnicornHack.Utils
                             $"{j,5:N0} {(itemWeights[j] / weightSum) * selectionCount,15:N0} {selectedCounts[j],16:N0}");
                     }
 
-                    Assert.False(true, builder.ToString());
+                    Assert.Fail(builder.ToString());
                 }
             }
         }

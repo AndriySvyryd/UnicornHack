@@ -8,5 +8,5 @@ public interface IEntityChangeListener<TEntity>
 
     void OnEntityRemoved(in EntityChange<TEntity> entityChange);
 
-    bool OnPropertyValuesChanged(in EntityChange<TEntity> entityChange);
+    void OnPropertyValuesChanged(in EntityChange<TEntity> entityChange);
 }

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>UnicornHack.Web.PerformanceTests</RootNamespace>
+    <LangVersion>14.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\UnicornHack.Core\UnicornHack.Core.csproj" />
+    <ProjectReference Include="..\..\src\UnicornHack.Web\UnicornHack.Web.csproj" />
+    <ProjectReference Include="..\UnicornHack.Web.Tests\UnicornHack.Web.Tests.csproj" />
+  </ItemGroup>
+
+</Project>
