@@ -3,23 +3,26 @@ using UnicornHack.Systems.Levels;
 
 namespace UnicornHack.Hubs.ChangeTracking;
 
-public class LevelChangeBuilder
+public class RoomChangeBuilder
 {
     private readonly ActorChangeBuilder _actorBuilder = new();
     private readonly ItemChangeBuilder _itemBuilder = new();
     private readonly ConnectionChangeBuilder _connectionBuilder = new();
+    private readonly EventBuilder _eventBuilder = new();
 
     public List<PlayerChangeBuilder> PlayerBuilders { get; } = [];
 
-    public bool HasChanges(LevelComponent? level)
-        => _actorBuilder.HasChanges || _itemBuilder.HasChanges || _connectionBuilder.HasChanges
-           || (level != null && TerrainChangeBuilder.HasChanges(level));
+    public EventBuilder EventBuilder => _eventBuilder;
 
-    public LevelChange? GetSerializedLevel(
-        GameEntity? levelEntity, GameEntity observer, GameServices services)
+    public bool HasChanges(RoomComponent? room)
+        => _actorBuilder.HasChanges || _itemBuilder.HasChanges || _connectionBuilder.HasChanges
+           || (room != null && TerrainChangeBuilder.HasChanges(room));
+
+    public RoomChange? GetSerializedRoom(
+        GameEntity? roomEntity, GameEntity observer, GameServices services)
     {
-        var level = levelEntity?.Level;
-        var hasTerrainChanges = level != null && TerrainChangeBuilder.HasChanges(level);
+        var room = roomEntity?.Room;
+        var hasTerrainChanges = room != null && TerrainChangeBuilder.HasChanges(room);
         if (!_actorBuilder.HasChanges && !_itemBuilder.HasChanges
             && !_connectionBuilder.HasChanges && !hasTerrainChanges)
         {
@@ -27,7 +30,7 @@ public class LevelChangeBuilder
         }
 
         var context = new SerializationContext(null!, observer, services);
-        var change = new LevelChange();
+        var change = new RoomChange();
 
         if (_actorBuilder.HasChanges)
         {
@@ -52,7 +55,7 @@ public class LevelChangeBuilder
 
         if (hasTerrainChanges)
         {
-            TerrainChangeBuilder.WriteToLevelChange(level!, change);
+            TerrainChangeBuilder.WriteToRoomChange(room!, change);
         }
 
         return change;
@@ -63,6 +66,7 @@ public class LevelChangeBuilder
         _actorBuilder.Clear();
         _itemBuilder.Clear();
         _connectionBuilder.Clear();
+        _eventBuilder.Clear();
 
         foreach (var builder in PlayerBuilders)
         {
@@ -70,30 +74,30 @@ public class LevelChangeBuilder
         }
     }
 
-    public static LevelChange SerializeLevel(
-        GameEntity levelEntity, SerializationContext context)
+    public static RoomChange SerializeRoom(
+        GameEntity roomEntity, SerializationContext context)
     {
-        var level = levelEntity.Level!;
+        var room = roomEntity.Room!;
 
         var actors = new Dictionary<int, ActorChange>();
-        foreach (var actor in level.KnownActors.Values
+        foreach (var actor in room.KnownActors.Values
                      .Select(a => a.Knowledge!).Select(a => a.Entity))
         {
             actors.Add(actor.Id, ActorChangeBuilder.SerializeActor(actor, context));
         }
 
         var items = new Dictionary<int, ItemChange>();
-        foreach (var item in level.KnownItems.Values
+        foreach (var item in room.KnownItems.Values
                      .Select(t => t.Knowledge!).Select(t => t.Entity))
         {
             items.Add(item.Id, ItemChangeBuilder.SerializeItem(item, context));
         }
 
         var connections = new Dictionary<int, ConnectionChange>();
-        foreach (var connection in level.KnownConnections.Values
+        foreach (var connection in room.KnownConnections.Values
                      .Select(c => c.Knowledge!)
-                     .Where(c => c.KnownEntity.Connection!.Direction == null
-                                 || (c.KnownEntity.Connection.Direction & ConnectionDirection.Source) != 0)
+                     .Where(c => c.KnownEntity.Connection!.Directionality == null
+                                 || (c.KnownEntity.Connection.Directionality & Directionality.Source) != 0)
                      .Select(c => c.Entity))
         {
             var connectionChange = ConnectionChangeBuilder.SerializeConnection(connection);
@@ -101,38 +105,40 @@ public class LevelChangeBuilder
             connections.Add(connection.Id, connectionChange);
         }
 
-        var change = new LevelChange
+        var change = new RoomChange
         {
             ChangedProperties = null,
             Actors = actors,
             Items = items,
             Connections = connections,
-            BranchName = level.BranchName,
-            Depth = level.Depth,
-            Width = level.Width,
-            Height = level.Height
+            BranchName = room.Level.BranchName,
+            Depth = room.Level.Depth,
+            Width = room.Width,
+            Height = room.Height,
+            GridX = room.GridX,
+            GridY = room.GridY
         };
 
-        SerializeMap(level, change);
+        SerializeMap(room, change);
         return change;
     }
 
-    private static void SerializeMap(LevelComponent level, LevelChange change)
+    private static void SerializeMap(RoomComponent room, RoomChange change)
     {
-        var tileCount = level.TileCount;
-        var knownTerrainChanges = new List<(short, byte)>();
-        var wallNeighborsChanges = new List<(short, byte)>();
+        var tileCount = room.TileCount;
+        var knownTerrainChanges = new List<(short, MapFeature)>();
+        var wallNeighborsChanges = new List<(short, DirectionFlags)>();
         for (short j = 0; j < tileCount; j++)
         {
-            var feature = level.KnownTerrain[j];
-            if (feature == (byte)MapFeature.Unexplored)
+            var feature = room.KnownTerrain[j];
+            if (feature == MapFeature.Unexplored)
             {
                 continue;
             }
 
             knownTerrainChanges.Add((j, feature));
-            var neighbors = level.WallNeighbors[j];
-            if (neighbors != 0)
+            var neighbors = room.Neighbors[j];
+            if (neighbors != DirectionFlags.None)
             {
                 wallNeighborsChanges.Add((j, neighbors));
             }
@@ -141,7 +147,7 @@ public class LevelChangeBuilder
         var visibleTerrainChanges = new List<(short, byte)>();
         for (short j = 0; j < tileCount; j++)
         {
-            var visibility = level.VisibleTerrain[j];
+            var visibility = room.VisibleTerrain[j];
             if (visibility != 0)
             {
                 visibleTerrainChanges.Add((j, visibility));
@@ -154,25 +160,25 @@ public class LevelChangeBuilder
         }
         else if ((knownTerrainChanges.Count + wallNeighborsChanges.Count + visibleTerrainChanges.Count) > tileCount)
         {
-            change.LevelMap = new LevelMap
+            change.LevelMap = new RoomMap
             {
-                Terrain = level.KnownTerrain,
-                WallNeighbors = TerrainChangeBuilder.MaskWallNeighborsToExplored(level),
-                VisibleTerrain = level.VisibleTerrain
+                Terrain = room.KnownTerrain,
+                WallNeighbors = TerrainChangeBuilder.MaskWallNeighborsToExplored(room),
+                VisibleTerrain = room.VisibleTerrain
             };
         }
         else
         {
             if (knownTerrainChanges.Count == 0 && wallNeighborsChanges.Count == 0)
             {
-                change.LevelMapChanges = new LevelMapChanges
+                change.LevelMapChanges = new RoomMapChanges
                 {
                     VisibleTerrainChanges = visibleTerrainChanges
                 };
             }
             else
             {
-                change.LevelMapChanges = new LevelMapChanges
+                change.LevelMapChanges = new RoomMapChanges
                 {
                     ChangedProperties = null,
                     TerrainChanges = knownTerrainChanges,
@@ -188,6 +194,7 @@ public class LevelChangeBuilder
         _actorBuilder.RegisterOnGroups(manager);
         _itemBuilder.RegisterOnGroups(manager);
         _connectionBuilder.RegisterOnGroups(manager);
+        _eventBuilder.RegisterOnGroups(manager);
 
         foreach (var playerEntity in manager.Players)
         {

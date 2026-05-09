@@ -130,6 +130,13 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     protected static readonly ParameterExpression ConnectionParameter =
         Expression.Parameter(typeof(ConnectionComponent), name: "connection");
 
+    /// <summary>
+    ///     <see cref="RoomFeatures" /> bitmask of the room being filled. Used by per-room
+    ///     fragment weight expressions in <see cref="DefiningMapFragment" />.
+    /// </summary>
+    protected static readonly ParameterExpression RoomFeaturesParameter =
+        Expression.Parameter(typeof(RoomFeatures), name: "roomFeatures");
+
     protected abstract void ResetWeightFunction();
 
     // TODO: Characters that can be used as conditions for neighbors:
@@ -275,15 +282,15 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         }
     }
 
-    public Room? TryPlace(LevelComponent level, Rectangle boundingRectangle)
+    public Chunk? TryPlace(RoomComponent room, Rectangle boundingRectangle, int minDoorways = 0)
     {
         try
         {
-            EnsureInitialized(level.Game);
+            EnsureInitialized(room.Game);
 
             return ByteMap.Length != 0
-                ? TryPlaceStaticMap(level, boundingRectangle)
-                : TryPlace(level, boundingRectangle, DynamicMap);
+                ? TryPlaceStaticMap(room, boundingRectangle)
+                : TryPlace(room, boundingRectangle, DynamicMap, minDoorways);
         }
         catch (Exception ex)
         {
@@ -291,32 +298,40 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         }
     }
 
-    protected virtual Room TryPlaceStaticMap(LevelComponent level, Rectangle boundingRectangle)
+    protected virtual Chunk TryPlaceStaticMap(RoomComponent room, Rectangle boundingRectangle)
     {
         // TODO: take transformations into account
-        var target = boundingRectangle.PlaceInside(PayloadArea, level.GenerationRandom);
+        var target = boundingRectangle.PlaceInside(PayloadArea, room.Level.GenerationRandom);
         if (!target.HasValue)
         {
             throw new InvalidOperationException($"Couldn't fit fragment {Name} into {boundingRectangle}");
         }
 
-        var doorwayPoints = new List<Point>();
-        var perimeterPoints = new List<Point>();
-        var insidePoints = new List<Point>();
+        var doorwayPoints = new HashSet<Point>();
+        var perimeterPoints = new HashSet<Point>();
+        var insidePoints = new HashSet<Point>();
         var points = new List<Point>();
         var predefinedPoints = new List<(Point, char)>();
-        WriteMap(target.Value, level, Write,
+        WriteMap(target.Value, room, Write,
             (doorwayPoints, perimeterPoints, insidePoints, points, predefinedPoints));
 
+        var chunkBounds = new Rectangle(target.Value, PayloadArea.Width, PayloadArea.Height);
         if (!NoRandomDoorways && doorwayPoints.Count == 0)
         {
-            // TODO: find doorway candidates in the perimeter walls
+            FindStaticMapDoorwayPoints(chunkBounds, room, doorwayPoints);
+            if (doorwayPoints.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    $"Static fragment '{Name}' placed at {chunkBounds} has no doorway candidates. "
+                    + "Add '?' markers, set NoRandomDoorways=true, or surround the fragment with reachable terrain.");
+            }
         }
 
-        return new Room(level,
-            new Rectangle(target.Value, PayloadArea.Width, PayloadArea.Height),
+        return new Chunk(room,
+            chunkBounds,
             doorwayPoints,
             insidePoints,
+            perimeterPoints,
             predefinedPoints,
             this);
     }
@@ -324,14 +339,14 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     protected void Write(
         char c,
         Point point,
-        LevelComponent level,
-        (List<Point> doorwayPoints,
-            List<Point> perimeterPoints,
-            List<Point> insidePoints,
+        RoomComponent room,
+        (HashSet<Point> doorwayPoints,
+            HashSet<Point> perimeterPoints,
+            HashSet<Point> insidePoints,
             List<Point> points,
             List<(Point, char)> predefinedPoints) state)
     {
-        var (doorwayPoints, _, insidePoints, points, predefinedPoints) = state;
+        var (doorwayPoints, perimeterPoints, insidePoints, points, predefinedPoints) = state;
         var feature = MapFeature.Default;
         switch (c)
         {
@@ -346,12 +361,15 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             case '?':
                 feature = MapFeature.StoneFloor;
                 doorwayPoints.Add(point);
+                perimeterPoints.Add(point);
                 goto case '\u0001';
             case '#':
                 feature = MapFeature.StoneWall;
+                perimeterPoints.Add(point);
                 goto case '\u0001';
             case 'A':
                 feature = MapFeature.StoneArchway;
+                perimeterPoints.Add(point);
                 goto case '\u0001';
             case '=':
                 feature = MapFeature.Pool;
@@ -367,7 +385,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             case ']':
                 feature = MapFeature.StoneFloor;
                 points.Add(point);
-                CreateConnection(level, point, c);
+                CreateConnection(room, point, c);
                 break;
             case ' ':
                 break;
@@ -378,14 +396,14 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                 break;
         }
 
-        TerrainSystem.SetTerrain(feature, point, level);
+        TerrainSystem.SetTerrain(feature, point, room);
     }
 
-    protected virtual void CreateConnection(LevelComponent level, Point point, char? glyph)
+    protected virtual void CreateConnection(RoomComponent room, Point point, char? glyph)
     {
     }
 
-    protected Room? TryPlace(LevelComponent level, Rectangle boundingRectangle, DynamicMap? map)
+    protected Chunk? TryPlace(RoomComponent room, Rectangle boundingRectangle, DynamicMap? map, int minDoorways = 0)
     {
         if (map == null || !boundingRectangle.Contains(map.MinSize))
         {
@@ -393,16 +411,17 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         }
 
         // TODO: Read the defaults from the defining fragment
-        return BuildRoom(level, map.GetRoomPoints(level, boundingRectangle),
-            p => TerrainSystem.SetTerrain(MapFeature.StoneFloor, p, level),
-            p => TerrainSystem.SetTerrain(MapFeature.StoneWall, p, level),
-            _ => { });
+        return BuildChunk(room, map.GetRoomPoints(room, boundingRectangle),
+            p => TerrainSystem.SetTerrain(MapFeature.StoneFloor, p, room),
+            p => TerrainSystem.SetTerrain(MapFeature.StoneWall, p, room),
+            _ => { },
+            minDoorways);
     }
 
-    public void WriteMap<TState>(Point target, LevelComponent level,
-        Action<char, Point, LevelComponent, TState> write, TState state)
+    public void WriteMap<TState>(Point target, RoomComponent room,
+        Action<char, Point, RoomComponent, TState> write, TState state)
     {
-        EnsureInitialized(level.Game);
+        EnsureInitialized(room.Game);
 
         var map = ByteMap;
         var x = target.X;
@@ -419,57 +438,55 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                 y++;
             }
 
-            write(mapPoint, new Point(x, y), level, state);
+            write(mapPoint, new Point(x, y), room, state);
             x++;
         }
     }
 
-    public virtual Room? BuildRoom(LevelComponent level, IEnumerable<Point> points, Action<Point> insideAction,
-        Action<Point> perimeterAction, Action<Point> outsideAction)
+    public virtual Chunk? BuildChunk(RoomComponent room, IEnumerable<Point> points, Action<Point> insideAction,
+        Action<Point> perimeterAction, Action<Point> outsideAction, int minDoorways = 0)
     {
-        var insidePoints = new List<Point>();
-        var neighbors = new byte[level.TileCount];
+        var insidePoints = new HashSet<Point>();
+        var neighbors = new byte[room.TileCount];
         var firstPoint = new Point();
         var lastPoint = new Point();
         var left = byte.MaxValue;
         var right = byte.MinValue;
         var occupiedPointCount = 0;
-        foreach (var roomPoint in points)
+        foreach (var chunkPoint in points)
         {
             if (occupiedPointCount == 0)
             {
-                firstPoint = roomPoint;
+                firstPoint = chunkPoint;
                 right = firstPoint.X;
                 left = firstPoint.X;
             }
-            else if (lastPoint.Y != roomPoint.Y)
+            else if (lastPoint.Y != chunkPoint.Y)
             {
                 right = Math.Max(right, lastPoint.X);
-                left = Math.Min(left, roomPoint.X);
+                left = Math.Min(left, chunkPoint.X);
             }
 
-            lastPoint = roomPoint;
+            lastPoint = chunkPoint;
 
             for (var directionIndex = 0; directionIndex < 8; directionIndex++)
             {
                 var direction = Vector.MovementDirections[directionIndex];
-                var newLocationX = (byte)(roomPoint.X + direction.X);
-                var newLocationY = (byte)(roomPoint.Y + direction.Y);
+                var newLocationX = (byte)(chunkPoint.X + direction.X);
+                var newLocationY = (byte)(chunkPoint.Y + direction.Y);
 
-                if (newLocationX >= level.Width || newLocationY >= level.Height)
+                if (newLocationX >= room.Width || newLocationY >= room.Height)
                 {
                     continue;
                 }
 
-                var newLocationIndex = level.PointToIndex![newLocationX, newLocationY];
+                var newLocationIndex = room.PointToIndex![newLocationX, newLocationY];
                 var newNeighbors = (byte)(neighbors[newLocationIndex] |
                                            1 << Vector.OppositeDirectionIndexes[directionIndex]);
                 if (newNeighbors == (byte)DirectionFlags.All &&
-                    (neighbors[level.PointToIndex[roomPoint.X, roomPoint.Y]] & 1 << directionIndex) != 0)
+                    (neighbors[room.PointToIndex[chunkPoint.X, chunkPoint.Y]] & 1 << directionIndex) != 0)
                 {
-                    var insidePoint = new Point(newLocationX, newLocationY);
-                    insideAction.Invoke(insidePoint);
-                    insidePoints.Add(insidePoint);
+                    insidePoints.Add(new Point(newLocationX, newLocationY));
                 }
 
                 neighbors[newLocationIndex] = newNeighbors;
@@ -483,22 +500,100 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             return null;
         }
 
-        var perimeter = WalkPerimeter(firstPoint, neighbors, level.PointToIndex!, perimeterAction, outsideAction);
+        // Compute perimeter and doorway points WITHOUT writing terrain yet. The perimeter
+        // walk collects points into a list; terrain is only written once we confirm the
+        // chunk has enough doorways to satisfy the caller's minimum.
+        var perimeterPoints = new HashSet<Point>();
+        var perimeter = WalkPerimeter(firstPoint, neighbors, room.PointToIndex!,
+            p => perimeterPoints.Add(p), outsideAction);
+        var doorwayPoints = FindDoorwayPoints(perimeter, room);
 
-        var doorwayPoints = perimeter.Count > 7 ? FindDoorwayPoints(perimeter, level) : null;
+        if (doorwayPoints.Count < minDoorways)
+        {
+            return null;
+        }
 
-        return new Room(level,
+        // Doorway check passed — commit terrain writes.
+        foreach (var p in insidePoints)
+        {
+            insideAction(p);
+        }
+
+        foreach (var p in perimeterPoints)
+        {
+            perimeterAction(p);
+        }
+
+        return new Chunk(room,
             new Rectangle(new Point(left, firstPoint.Y), new Point(right, lastPoint.Y)),
             doorwayPoints,
             insidePoints,
+            perimeterPoints,
             new List<(Point, char)>(),
             this);
     }
 
-    private static List<Point> FindDoorwayPoints(
-        IReadOnlyList<Point> perimeter, LevelComponent level, bool allowCorners = false)
+    /// <summary>
+    ///     Scans the perimeter of <paramref name="chunkBounds" /> for wall tiles whose inward
+    ///     orthogonal neighbour is floor and whose outward neighbour is corridor-able
+    ///     (default-fill or floor). Such tiles can host a door connecting the chunk to the
+    ///     surrounding empty space.
+    /// </summary>
+    private static void FindStaticMapDoorwayPoints(Rectangle chunkBounds, RoomComponent room, HashSet<Point> doorwayPoints)
     {
-        var doorwayPoints = new List<Point>();
+        foreach (var point in chunkBounds.GetPerimeter())
+        {
+            if (!room.IsValid(point)
+                || room.Terrain[room.PointToIndex![point.X, point.Y]] != MapFeature.StoneWall)
+            {
+                continue;
+            }
+
+            // Determine inward direction (perpendicular to the bounding edge the point
+            // sits on); skip corner tiles where both axes are on the boundary.
+            var onLeft = point.X == chunkBounds.TopLeft.X;
+            var onRight = point.X == chunkBounds.BottomRight.X;
+            var onTop = point.Y == chunkBounds.TopLeft.Y;
+            var onBottom = point.Y == chunkBounds.BottomRight.Y;
+            if ((onLeft || onRight) && (onTop || onBottom))
+            {
+                continue;
+            }
+
+            int inDx = 0;
+            int inDy = 0;
+            if (onLeft) { inDx = 1; }
+            else if (onRight) { inDx = -1; }
+            else if (onTop) { inDy = 1; }
+            else { inDy = -1; }
+
+            var inside = new Point((byte)(point.X + inDx), (byte)(point.Y + inDy));
+            var outside = new Point((byte)(point.X - inDx), (byte)(point.Y - inDy));
+
+            if (!room.IsValid(inside) || !room.IsValid(outside))
+            {
+                continue;
+            }
+
+            var insideFeature = room.Terrain[room.PointToIndex[inside.X, inside.Y]];
+            if (insideFeature != MapFeature.StoneFloor && insideFeature != MapFeature.RockFloor)
+            {
+                continue;
+            }
+
+            if (!UniformRoomLayout.CanPlaceCorridor(outside, room))
+            {
+                continue;
+            }
+
+            doorwayPoints.Add(point);
+        }
+    }
+
+    private static HashSet<Point> FindDoorwayPoints(
+        IReadOnlyList<Point> perimeter, RoomComponent room, bool allowCorners = false)
+    {
+        var doorwayPoints = new HashSet<Point>();
         for (var i = 0; i < perimeter.Count; i++)
         {
             var point = perimeter[i];
@@ -525,13 +620,13 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             var secondOrthogonal = firstOrthogonal.GetInverse();
 
             var corridorCandidatePoint = point.Translate(firstOrthogonal);
-            if (!level.IsValid(corridorCandidatePoint) || !Layout.CanPlaceCorridor(corridorCandidatePoint, level))
+            if (!room.IsValid(corridorCandidatePoint) || !UniformRoomLayout.CanPlaceCorridor(corridorCandidatePoint, room))
             {
                 continue;
             }
 
             var doorwayCandidatePoint = point.Translate(secondOrthogonal);
-            if (!level.IsValid(doorwayCandidatePoint) || !Layout.CanPlaceCorridor(doorwayCandidatePoint, level))
+            if (!room.IsValid(doorwayCandidatePoint) || !UniformRoomLayout.CanPlaceCorridor(doorwayCandidatePoint, room))
             {
                 continue;
             }
@@ -555,7 +650,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         // Assuming both the perimeter and the inner area are contiguous
         List<Point>? perimeter = null;
         var currentPoint = firstPoint;
-        var previousPointDirectionIndex = (int)previousPointDirection;
+        var previousPointDirectionIndex = (byte)previousPointDirection;
         var perimeterLooped = false;
 
         for (var j = 0; j < neighbors.Length + 2; j++)
@@ -563,7 +658,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             var perimeterPointFound = false;
             for (var i = 3; i > 0; i--)
             {
-                var directionIndexToCheck = (previousPointDirectionIndex + i * 2) % 8;
+                var directionIndexToCheck = (byte)((previousPointDirectionIndex + i * 2) % 8);
                 var neighborDirection = (DirectionFlags)(1 << directionIndexToCheck);
                 if ((currentNeighborMap & neighborDirection) == neighborDirection)
                 {

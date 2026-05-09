@@ -1,8 +1,6 @@
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
 using UnicornHack.Generation;
-using UnicornHack.Hubs.ChangeTracking;
-using UnicornHack.Services;
 using UnicornHack.Systems.Actors;
 using Xunit;
 
@@ -25,7 +23,7 @@ public class MultiTurnSequenceTest
 ..........
 ..........";
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(map, game);
+        var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(5, 5));

@@ -1,20 +1,20 @@
-﻿namespace UnicornHack.Systems.Levels;
+namespace UnicornHack.Systems.Levels;
 
 public static class TerrainSystem
 {
-    public static void SetTerrain(MapFeature feature, Point point, LevelComponent level)
+    public static void SetTerrain(MapFeature feature, Point point, RoomComponent room)
     {
-        var index = level.PointToIndex![point.X, point.Y];
-        level.Terrain[index] = (byte)feature;
-        if (level.TerrainChanges != null)
+        var index = room.PointToIndex![point.X, point.Y];
+        room.Terrain[index] = feature;
+        if (room.TerrainChanges != null)
         {
-            level.TerrainChanges[index] = (byte)feature;
-            if (level.VisibleTerrain[index] != 0)
+            room.TerrainChanges[index] = feature;
+            if (room.VisibleTerrain[index] != 0)
             {
-                level.KnownTerrain[index] = (byte)feature;
-                if (level.KnownTerrainChanges != null)
+                room.KnownTerrain[index] = feature;
+                if (room.KnownTerrainChanges != null)
                 {
-                    level.KnownTerrainChanges[index] = (byte)feature;
+                    room.KnownTerrainChanges[index] = feature;
                 }
             }
         }
@@ -24,27 +24,27 @@ public static class TerrainSystem
             case MapFeature.Pool:
             case MapFeature.RockFloor:
             case MapFeature.StoneFloor:
-                if (ModifyNeighbors(level, level.VisibleNeighbors, null, point, add: true))
+                if (ModifyNeighbors(room, room.KnownNeighbors, null, point, add: true))
                 {
-                    level.VisibleNeighborsChanged = true;
+                    room.KnownNeighborsChanged = true;
                 }
 
-                if (level.TerrainChanges != null)
+                if (room.TerrainChanges != null)
                 {
-                    ModifyNeighbors(level, level.WallNeighbors,
-                        level.WallNeighborsChanges, point, add: false);
+                    ModifyNeighbors(room, room.Neighbors,
+                        room.NeighborChanges, point, add: false);
                 }
 
                 break;
             case MapFeature.StoneArchway:
             case MapFeature.StoneWall:
-                ModifyNeighbors(level, level.WallNeighbors,
-                    level.WallNeighborsChanges, point, add: true);
+                ModifyNeighbors(room, room.Neighbors,
+                    room.NeighborChanges, point, add: true);
 
-                if (level.TerrainChanges != null
-                    && ModifyNeighbors(level, level.VisibleNeighbors, null, point, add: false))
+                if (room.TerrainChanges != null
+                    && ModifyNeighbors(room, room.KnownNeighbors, null, point, add: false))
                 {
-                    level.VisibleNeighborsChanged = true;
+                    room.KnownNeighborsChanged = true;
                 }
 
                 break;
@@ -52,7 +52,7 @@ public static class TerrainSystem
     }
 
     private static bool ModifyNeighbors(
-        LevelComponent level, byte[] neighbors, Dictionary<short, byte>? changes, Point point, bool add)
+        RoomComponent room, DirectionFlags[] neighbors, Dictionary<short, DirectionFlags>? changes, Point point, bool add)
     {
         var changed = false;
         for (var directionIndex = 0; directionIndex < 8; directionIndex++)
@@ -60,17 +60,17 @@ public static class TerrainSystem
             var direction = Vector.MovementDirections[directionIndex];
             var newLocation = point.Translate(direction);
 
-            if (!level.IsValid(newLocation))
+            if (!room.IsValid(newLocation))
             {
                 continue;
             }
 
-            var newLocationIndex = level.PointToIndex![newLocation.X, newLocation.Y];
-            var neighborBit = (byte)(1 << Vector.OppositeDirectionIndexes[directionIndex]);
+            var newLocationIndex = room.PointToIndex![newLocation.X, newLocation.Y];
+            var neighborBit = (DirectionFlags)(1 << Vector.OppositeDirectionIndexes[directionIndex]);
             var oldValue = neighbors[newLocationIndex];
             var newValue = add
-                ? (byte)(oldValue | neighborBit)
-                : (byte)(oldValue & (byte)~neighborBit);
+                ? oldValue | neighborBit
+                : oldValue & ~neighborBit;
 
             if (oldValue != newValue)
             {
@@ -87,7 +87,7 @@ public static class TerrainSystem
     }
 
     public static IEnumerable<Point> GetAdjacentPoints(
-        LevelComponent level, Point point, Direction startingDirection, bool includeInitial = false)
+        RoomComponent room, Point point, Direction startingDirection, bool includeInitial = false)
     {
         if (includeInitial)
         {
@@ -97,8 +97,8 @@ public static class TerrainSystem
         for (var i = 0; i < 8; i++)
         {
             var newPoint = point.Translate(startingDirection.Rotate(i).AsVector());
-            if (newPoint.X < level.Width
-                && newPoint.Y < level.Height)
+            if (newPoint.X < room.Width
+                && newPoint.Y < room.Height)
             {
                 yield return newPoint;
             }

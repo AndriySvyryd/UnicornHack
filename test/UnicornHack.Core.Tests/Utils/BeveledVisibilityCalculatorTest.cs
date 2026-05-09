@@ -521,7 +521,7 @@ A###
         });
     private static void TestFOV(string map, byte[] expectedVisibility, Direction heading = Direction.Southeast, bool noFalloff = true)
     {
-        var level = TestHelper.BuildLevel(map);
+        var level = TestHelper.BuildRoom(map);
         var visibleTerrain = GetVisibleTerrain(
             level, origin: new Point(0, 0), heading, new byte[level.TileCount], noFalloff);
 
@@ -529,7 +529,7 @@ A###
     }
 
     public static byte[] GetVisibleTerrain(
-        LevelComponent level, Point origin, Direction heading, byte[] visibleTerrain, bool noFalloff = true)
+        RoomComponent level, Point origin, Direction heading, byte[] visibleTerrain, bool noFalloff = true)
     {
         level.VisibilityCalculator!.ComputeDirected(
             origin, heading, primaryFOVQuadrants: 1, primaryRange: 24, totalFOVQuadrants: 2, secondaryRange: 12,
@@ -537,7 +537,7 @@ A###
         return visibleTerrain;
     }
 
-    public static byte[] GetVisibleTerrain(LevelComponent level, Point origin, byte[] visibleTerrain,
+    public static byte[] GetVisibleTerrain(RoomComponent level, Point origin, byte[] visibleTerrain,
         bool noFalloff = true)
     {
         level.VisibilityCalculator!.ComputeOmnidirectional(
@@ -547,7 +547,7 @@ A###
 
     private static void TestLOS(string map, byte[] expectedVisibility, Point? origin = null)
     {
-        var (level, rooms) = TestHelper.BuildLevelWithRooms(map);
+        var (level, rooms) = TestHelper.BuildRoomWithChunks(map);
         var target = rooms.Single().DoorwayPoints.Single();
         origin ??= new Point(0, 0);
         var visibleTerrainList = GetLOS(level, target, origin.Value);
@@ -566,7 +566,7 @@ A###
         TestHelper.AssertVisibility(level, expectedVisibility, visibleTerrain);
     }
 
-    public static List<(Point, byte)> GetLOS(LevelComponent level, Point target, Point origin)
+    public static List<(Point, byte)> GetLOS(RoomComponent level, Point target, Point origin)
         => level.VisibilityCalculator!.ComputeLOS(origin, target, SensorySystem.TileBlocksVisibility,
             level.Entity.Manager);
 }

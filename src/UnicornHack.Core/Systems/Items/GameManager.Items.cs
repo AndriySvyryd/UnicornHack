@@ -8,7 +8,7 @@ namespace UnicornHack;
 
 public partial class GameManager
 {
-    public EntityGroup<GameEntity> LevelItems
+    public EntityGroup<GameEntity> RoomItems
     {
         get;
         private set;
@@ -21,7 +21,7 @@ public partial class GameManager
     } = null!;
 
     public LookupEntityRelationship<GameEntity, Point, Dictionary<Point, GameEntity>>
-        LevelItemsToLevelCellRelationship
+        RoomItemsToRoomCellRelationship
     {
         get;
         private set;
@@ -54,25 +54,25 @@ public partial class GameManager
                 .AllOf((int)EntityComponent.Item, (int)EntityComponent.Physical)
                 .NoneOf((int)EntityComponent.Position));
 
-        LevelItems = CreateGroup(nameof(LevelItems),
+        RoomItems = CreateGroup(nameof(RoomItems),
             new EntityMatcher<GameEntity>()
                 .AllOf((int)EntityComponent.Item, (int)EntityComponent.Physical, (int)EntityComponent.Position));
 
-        LevelItemsToLevelCellRelationship = new(
-            nameof(LevelItemsToLevelCellRelationship),
-            LevelItems,
-            Levels,
+        RoomItemsToRoomCellRelationship = new(
+            nameof(RoomItemsToRoomCellRelationship),
+            RoomItems,
+            Rooms,
             new SimpleKeyValueGetter<GameEntity, int>(
-                component => ((PositionComponent)component).LevelId,
+                component => ((PositionComponent)component).RoomId,
                 (int)EntityComponent.Position),
             new KeyValueGetter<GameEntity, Point>(
                 (change, matcher, valueType) =>
                 {
                     if (!matcher.TryGetValue<byte>(
-                            change, (int)EntityComponent.Position, nameof(PositionComponent.LevelX), valueType,
+                            change, (int)EntityComponent.Position, nameof(PositionComponent.CellX), valueType,
                             out var levelX)
                         || !matcher.TryGetValue<byte>(
-                            change, (int)EntityComponent.Position, nameof(PositionComponent.LevelY), valueType,
+                            change, (int)EntityComponent.Position, nameof(PositionComponent.CellY), valueType,
                             out var levelY))
                     {
                         return (new Point(0, 0), false);
@@ -81,11 +81,11 @@ public partial class GameManager
                     return (new Point(levelX, levelY), true);
                 },
                 new PropertyMatcher<GameEntity>()
-                    .With(component => ((PositionComponent)component).LevelX, (int)EntityComponent.Position)
-                    .With(component => ((PositionComponent)component).LevelY, (int)EntityComponent.Position)
+                    .With(component => ((PositionComponent)component).CellX, (int)EntityComponent.Position)
+                    .With(component => ((PositionComponent)component).CellY, (int)EntityComponent.Position)
             ),
             (itemEntity, _) => itemEntity.RemoveComponent(EntityComponent.Position),
-            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level!.Items);
+            roomEntity => (Dictionary<Point, GameEntity>)roomEntity.Room!.Items);
 
         EntityItemsToContainerRelationship = new(
             nameof(EntityItemsToContainerRelationship),

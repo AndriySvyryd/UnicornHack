@@ -18,7 +18,7 @@ public class AbilityActivationSystemTest
     [Fact]
     public void Can_use_projectile_abilities_on_targets_in_LOS()
     {
-        var level = TestHelper.BuildLevel(TestMap);
+        var level = TestHelper.BuildRoom(TestMap);
 
         var manager = level.Entity.Manager;
         var listener = new AbilityActivatedListener();
@@ -60,7 +60,7 @@ public class AbilityActivationSystemTest
 
         var activateAbilityMessage = ActivateAbilityMessage.Create(manager);
         activateAbilityMessage.ActivatorEntity = playerEntity;
-        activateAbilityMessage.TargetCell = undine.Position!.LevelCell;
+        activateAbilityMessage.TargetCell = undine.Position!.Cell;
         activateAbilityMessage.AbilityEntity = attackAbility;
 
         manager.Enqueue(activateAbilityMessage);
@@ -87,7 +87,7 @@ public class AbilityActivationSystemTest
 
         activateAbilityMessage = ActivateAbilityMessage.Create(manager);
         activateAbilityMessage.ActivatorEntity = playerEntity;
-        activateAbilityMessage.TargetCell = sylph.Position!.LevelCell;
+        activateAbilityMessage.TargetCell = sylph.Position!.Cell;
         activateAbilityMessage.AbilityEntity = attackAbility;
 
         manager.Enqueue(activateAbilityMessage);
@@ -128,7 +128,7 @@ public class AbilityActivationSystemTest
 
         activateAbilityMessage = ActivateAbilityMessage.Create(manager);
         activateAbilityMessage.ActivatorEntity = playerEntity;
-        activateAbilityMessage.TargetCell = undine.Position.LevelCell;
+        activateAbilityMessage.TargetCell = undine.Position.Cell;
         activateAbilityMessage.AbilityEntity = iceShardAbility;
         manager.Enqueue(activateAbilityMessage);
 
@@ -139,7 +139,7 @@ public class AbilityActivationSystemTest
 
         activateAbilityMessage = ActivateAbilityMessage.Create(manager);
         activateAbilityMessage.ActivatorEntity = playerEntity;
-        activateAbilityMessage.TargetCell = undine.Position.LevelCell;
+        activateAbilityMessage.TargetCell = undine.Position.Cell;
         activateAbilityMessage.AbilityEntity = iceShardAbility;
         manager.Enqueue(activateAbilityMessage);
 
@@ -152,7 +152,7 @@ public class AbilityActivationSystemTest
     [Fact]
     public void Can_use_toggleable_abilities()
     {
-        var level = TestHelper.BuildLevel(".");
+        var level = TestHelper.BuildRoom(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         var player = playerEntity.Player!;
         var manager = playerEntity.Manager;
@@ -355,7 +355,7 @@ O........#
         int targetShapeSize,
         Direction heading)
     {
-        var (level, rooms) = TestHelper.BuildLevelWithRooms(map);
+        var (level, rooms) = TestHelper.BuildRoomWithChunks(map);
         var room = rooms.Single();
         var origin = room.PredefinedPoints.Single(p => p.Item2 == 'O').Item1;
         var (target, targetChar) = room.PredefinedPoints.SingleOrDefault(p => p.Item2 == 'T');

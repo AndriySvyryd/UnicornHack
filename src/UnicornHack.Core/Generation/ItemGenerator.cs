@@ -10,41 +10,44 @@ public class ItemGenerator
         set;
     } = 3;
 
-    public virtual void Fill(LevelComponent level, IReadOnlyList<Room> rooms)
+    public virtual void Fill(RoomComponent room, IReadOnlyList<Chunk> chunks)
     {
-        var itemsToPlace = level.GenerationRandom.NextBinomial(
+        var itemsToPlace = room.Level.GenerationRandom.NextBinomial(
             0.5f,
-            (ExpectedInitialCount - level.Items.Count) * 2);
-        var roomsToFill = rooms.Count;
-        var difficultyFraction = (float)(level.Difficulty - 1) / LevelGenerator.MaxDifficulty;
-        foreach (var room in level.GenerationRandom.WeightedOrder(rooms, r => r.InsidePoints.Count))
+            (ExpectedInitialCount - room.Items.Count) * 2);
+        var roomsToFill = chunks.Count;
+        var difficultyFraction = (float)(room.Level.Difficulty - 1) / LevelGenerator.MaxDifficulty;
+        foreach (var chunk in room.Level.GenerationRandom.WeightedOrder(chunks, r => r.InsidePoints.Count))
         {
             var itemsPerRoom = (int)Math.Ceiling((float)itemsToPlace / roomsToFill);
             for (var i = 0; i < itemsPerRoom; i++)
             {
-                if (!level.GenerationRandom.TryPick(
-                        room.InsidePoints,
-                        p => level.Items.GetValueOrDefault(new Point(p.X, p.Y)) == null,
+                if (!room.Level.GenerationRandom.TryPick(
+                        chunk.InsidePoints,
+                        p => room.Items.GetValueOrDefault(new Point(p.X, p.Y)) == null,
                         out var point))
                 {
                     goto NextRoom;
                 }
 
                 var enumeratorsStack = new Stack<IEnumerator<ItemGroup>>();
-                var currentGroup = ItemGroup.Loader.Object;
+                var data = room.Level.Game.Services.Data;
+                var currentGroup = data.ItemGroups.Object;
                 var itemPlaced = false;
                 do
                 {
                     if (currentGroup.SubGroups == null)
                     {
-                        foreach (var itemVariant in level.GenerationRandom.WeightedOrder(
-                                     Item.Loader.GetAllValues(currentGroup), c => c.GetWeight(level)))
+                        foreach (var itemVariant in room.Level.GenerationRandom.WeightedOrder(
+                                     data.Items.GetAllValues(currentGroup), c => c.GetWeight(room)))
                         {
                             var quantity = currentGroup.Type == ItemType.Coin
-                                ? level.GenerationRandom.NextBinomial(difficultyFraction, 49) + 1
+                                ? room.Level.GenerationRandom.NextBinomial(difficultyFraction, 49) + 1
                                 : 1;
-                            if (itemVariant.Instantiate(level, point, quantity))
+                            if (itemVariant.Instantiate(room, point, quantity))
                             {
+                                room.Level.GenerationStats.RecordItemInstance(
+                                    itemVariant.Name, itemVariant.Type);
                                 itemPlaced = true;
                                 break;
                             }
@@ -59,7 +62,7 @@ public class ItemGenerator
                     }
                     else
                     {
-                        enumeratorsStack.Push(level.GenerationRandom
+                        enumeratorsStack.Push(room.Level.GenerationRandom
                             .WeightedOrder(currentGroup.SubGroups, g => g.Weight).GetEnumerator());
                     }
 

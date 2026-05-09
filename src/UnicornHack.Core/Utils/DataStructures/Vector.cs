@@ -14,11 +14,11 @@ public readonly struct Vector : IEquatable<Vector>
     // Order matters, see Direction.cs
 
     public static readonly Vector[] MovementDirections =
-    {
+    [
         new(1, 0), new(1, -1), new(0, -1), new(-1, -1), new(-1, 0), new(-1, 1), new(0, 1), new(1, 1)
-    };
+    ];
 
-    public static readonly byte[] OppositeDirectionIndexes = { 4, 5, 6, 7, 0, 1, 2, 3 };
+    public static readonly byte[] OppositeDirectionIndexes = [4, 5, 6, 7, 0, 1, 2, 3];
 
     public bool IsCardinalAligned() => X == 0 || Y == 0;
 

@@ -30,9 +30,9 @@ public class PlayerRace : Being, ICSScriptSerializable, ILoadable
         set;
     }
 
-    public static GameEntity InstantiatePlayer(string name, Sex sex, LevelComponent level, Point cell)
+    public static GameEntity InstantiatePlayer(string name, Sex sex, RoomComponent room, Point cell)
     {
-        var manager = level.Entity.Manager;
+        var manager = room.Entity.Manager;
         using (var playerEntityReference = manager.CreateEntity())
         {
             var playerEntity = playerEntityReference.Referenced;
@@ -55,8 +55,8 @@ public class PlayerRace : Being, ICSScriptSerializable, ILoadable
             playerEntity.Physical = physical;
 
             var position = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
-            position.LevelId = level.EntityId;
-            position.LevelCell = cell;
+            position.RoomId = room.EntityId;
+            position.Cell = cell;
             position.Heading = Direction.South;
 
             playerEntity.Position = position;

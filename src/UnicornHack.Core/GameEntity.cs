@@ -153,14 +153,14 @@ public class GameEntity : Entity
         }
     }
 
-    public LevelComponent? Level
+    public RoomComponent? Room
     {
-        get => (LevelComponent?)FindComponent((int)EntityComponent.Level);
+        get => (RoomComponent?)FindComponent((int)EntityComponent.Room);
         set
         {
             if (value == null)
             {
-                RemoveComponent(EntityComponent.Level);
+                RemoveComponent(EntityComponent.Room);
             }
             else
             {

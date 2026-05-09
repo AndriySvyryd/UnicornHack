@@ -34,4 +34,30 @@ public interface ILanguageService
     string Welcome(GameEntity playerEntity);
     string UnableToMove(Direction direction);
     string NoPath();
+
+    /// <summary>
+    ///     Composes the localized hover-tooltip for a single room cell on the map screen.
+    ///     Server-side composition keeps tooltip wording consistent with the rest of the
+    ///     localized payload and lets translators provide alternative phrasing without
+    ///     touching the client.
+    /// </summary>
+    /// <param name="features">Active <see cref="RoomFeatures" /> on the room.</param>
+    /// <param name="isCurrent">The room is the player's current room.</param>
+    /// <param name="isVisited">The room has been visited at least once.</param>
+    /// <param name="revealedActorCount">
+    ///     Revealed creature count, or <c>-1</c> when not revealed at the player's current
+    ///     closeness to the room.
+    /// </param>
+    /// <param name="revealedItemCount">Revealed item count, or <c>-1</c> when not revealed.</param>
+    /// <param name="strongestActorName">
+    ///     Localized name of the room's strongest creature, or <c>null</c> when none / not
+    ///     revealed.
+    /// </param>
+    string GetRoomTooltip(
+        RoomFeatures features,
+        bool isCurrent,
+        bool isVisited,
+        int revealedActorCount,
+        int revealedItemCount,
+        string? strongestActorName);
 }

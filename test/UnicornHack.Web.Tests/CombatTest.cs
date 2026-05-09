@@ -19,11 +19,11 @@ public class CombatTest
 .......
 .......";
 
-    private static (PlayerComponent Player, LevelChangeBuilder Listener, GameServices Services, GameManager Manager)
+    private static (PlayerComponent Player, RoomChangeBuilder Listener, GameServices Services, GameManager Manager)
         SetupGame(bool withNpc = true)
     {
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(TestMap, game);
+        var level = TestHelper.BuildRoom(TestMap, game);
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(3, 3));
@@ -63,7 +63,7 @@ public class CombatTest
     public void RangedAttack()
     {
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(TestMap, game);
+        var level = TestHelper.BuildRoom(TestMap, game);
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(3, 5));
@@ -95,7 +95,7 @@ public class CombatTest
         WebTestHelper.PerformAndVerify(player, listener, services,
             ActorActionType.EquipItem, swordEntity.Id, (int)EquipmentSlot.GraspPrimaryMelee);
 
-        var npc = manager.LevelActors.Single(a => a.AI != null && a.Being!.IsAlive);
+        var npc = manager.RoomActors.Single(a => a.AI != null && a.Being!.IsAlive);
         var npcId = npc.Id;
         var npcStartHp = npc.Being!.HitPoints;
         var playerStartHp = player.Entity.Being!.HitPoints;
@@ -129,7 +129,7 @@ public class CombatTest
 
         // Final change-set verification: the dead NPC must be gone from the client view.
         var fresh = WebTestHelper.PerformAndVerify(player, listener, services, ActorActionType.Wait);
-        Assert.DoesNotContain(fresh.Level!.Actors!.Values,
+        Assert.DoesNotContain(fresh.Room!.Actors!.Values,
             a => a.BaseName != "player" && a.IsCurrentlyPerceived);
     }
 
@@ -147,7 +147,7 @@ public class CombatTest
         Assert.True(fresh.Hp <= baselineHp);
 
         // NPC actor should have a next action
-        var npcActor = fresh.Level!.Actors!.Values.FirstOrDefault(a => a.BaseName != "player" && a.IsCurrentlyPerceived);
+        var npcActor = fresh.Room!.Actors!.Values.FirstOrDefault(a => a.BaseName != "player" && a.IsCurrentlyPerceived);
         if (npcActor != null)
         {
             var nextAction = npcActor.NextAction;

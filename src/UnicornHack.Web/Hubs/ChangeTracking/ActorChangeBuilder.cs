@@ -29,15 +29,15 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
     public override void RegisterOnGroups(GameManager manager)
     {
         manager.KnownPositions.AddListener(this);
-        manager.KnownActorsToLevelCellRelationship.AddDependentsListener(this);
-        manager.LevelActors.AddListener(this);
+        manager.KnownActorsToCellRelationship.AddDependentsListener(this);
+        manager.RoomActors.AddListener(this);
     }
 
     public override void UnregisterFromGroups(GameManager manager)
     {
         manager.KnownPositions.RemoveListener(this);
-        manager.KnownActorsToLevelCellRelationship.RemoveDependentsListener(this);
-        manager.LevelActors.RemoveListener(this);
+        manager.KnownActorsToCellRelationship.RemoveDependentsListener(this);
+        manager.RoomActors.RemoveListener(this);
     }
 
     /// <summary>
@@ -102,11 +102,11 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
             {
                 switch (propertyName)
                 {
-                    case nameof(PositionComponent.LevelX):
-                        change.LevelX = entity.Position!.LevelX;
+                    case nameof(PositionComponent.CellX):
+                        change.LevelX = entity.Position!.CellX;
                         break;
-                    case nameof(PositionComponent.LevelY):
-                        change.LevelY = entity.Position!.LevelY;
+                    case nameof(PositionComponent.CellY):
+                        change.LevelY = entity.Position!.CellY;
                         break;
                     case nameof(PositionComponent.Heading):
                         change.Heading = (byte)entity.Position!.Heading!;
@@ -389,8 +389,8 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
             var change = new ActorChange
             {
                 ChangedProperties = null,
-                LevelX = position.LevelX,
-                LevelY = position.LevelY,
+                LevelX = position.CellX,
+                LevelY = position.CellY,
                 Heading = (byte)position.Heading!,
                 BaseName = ai != null
                     ? knownEntity.Being!.Races.First().Race!.TemplateName
@@ -437,8 +437,8 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
             return new ActorChange
             {
                 ChangedProperties = null,
-                LevelX = position.LevelX,
-                LevelY = position.LevelY,
+                LevelX = position.CellX,
+                LevelY = position.CellY,
                 Heading = (byte)position.Heading!
             };
         }
@@ -484,7 +484,7 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
                 {
                     Type = ai.NextAction!.Value,
                     Name = actionLabel + context.Services.Language.GetString(direction, abbreviate: true),
-                    Target = ai.Entity.Position!.LevelCell.Translate(direction.AsVector()).ToInt32(),
+                    Target = ai.Entity.Position!.Cell.Translate(direction.AsVector()).ToInt32(),
                     TargetingShape = TargetingShape.Line,
                     TargetingShapeSize = 0
                 };

@@ -36,7 +36,7 @@ public static partial class CreatureData
         },
         InitialLevel = 5,
         GenerationWeight = "0",
-        GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+        GenerationFlags = CreatureGenerationFlags.NonGenocidable | CreatureGenerationFlags.NonPolymorphable,
         Noise = ActorNoiseType.Bark,
         Weight = 500,
         Perception = -7,

@@ -166,8 +166,8 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
                 var position = container.Position;
                 if (position != null)
                 {
-                    moveMessage.TargetLevelEntity = position.LevelEntity;
-                    moveMessage.TargetCell = position.LevelCell;
+                    moveMessage.TargetRoomEntity = position.RoomEntity;
+                    moveMessage.TargetCell = position.Cell;
                     moveMessage.TargetContainerEntity = null;
                     if (!manager.ItemMovingSystem.CanMoveItem(moveMessage, manager))
                     {
@@ -189,10 +189,10 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
         return true;
     }
 
-    public bool Instantiate(LevelComponent level, Point cell, int quantity = 1)
+    public bool Instantiate(RoomComponent room, Point cell, int quantity = 1)
     {
-        var levelEntity = level.Entity;
-        var manager = levelEntity.Manager;
+        var roomEntity = room.Entity;
+        var manager = roomEntity.Manager;
         var countable = Countable ?? false;
         var instanceCount = countable ? 1 : quantity;
         for (var i = 0; i < instanceCount; i++)
@@ -205,7 +205,7 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
 
             var moveMessage = MoveItemMessage.Create(manager);
             moveMessage.ItemEntity = itemEntityReference.Referenced;
-            moveMessage.TargetLevelEntity = levelEntity;
+            moveMessage.TargetRoomEntity = roomEntity;
             moveMessage.TargetCell = cell;
 
             if (!manager.ItemMovingSystem.CanMoveItem(moveMessage, manager))
@@ -421,12 +421,12 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
         Expression.Parameter(typeof(int), name: "instances");
 
     private static readonly UnicornExpressionVisitor _translator =
-        new(new[] { BranchParameter, DepthParameter, InstancesParameter });
+        new([BranchParameter, DepthParameter, InstancesParameter]);
 
     public static Func<string, int, int, float> CreateWeightFunction(string expression)
         => _translator.Translate<Func<string, int, int, float>, float>(expression);
 
-    public float GetWeight(LevelComponent level)
+    public float GetWeight(RoomComponent room)
     {
         if (_weightFunction == null)
         {
@@ -442,7 +442,7 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
 
         try
         {
-            return _weightFunction(level.Branch.Name, level.Depth, 0);
+            return _weightFunction(room.Level.Branch.Name, room.Level.Depth, 0);
         }
         catch (Exception e)
         {

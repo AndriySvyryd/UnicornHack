@@ -17,10 +17,9 @@ public sealed class LevelMapFormatter : IMessagePackFormatter<LevelMap?>
         }
 
         var resolver = options.Resolver;
-        writer.WriteArrayHeader(3);
-        resolver.GetFormatterWithVerify<byte[]>().Serialize(ref writer, value.Terrain, options);
-        resolver.GetFormatterWithVerify<byte[]>().Serialize(ref writer, value.WallNeighbors, options);
-        resolver.GetFormatterWithVerify<byte[]>().Serialize(ref writer, value.VisibleTerrain, options);
+        writer.WriteArrayHeader(2);
+        resolver.GetFormatterWithVerify<List<RoomEntry>>().Serialize(ref writer, value.Rooms, options);
+        resolver.GetFormatterWithVerify<List<int>>().Serialize(ref writer, value.AvailableTargets, options);
     }
 
     public LevelMap? Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
@@ -38,13 +37,10 @@ public sealed class LevelMapFormatter : IMessagePackFormatter<LevelMap?>
             switch (i)
             {
                 case 0:
-                    value.Terrain = resolver.GetFormatterWithVerify<byte[]>().Deserialize(ref reader, options);
+                    value.Rooms = resolver.GetFormatterWithVerify<List<RoomEntry>>().Deserialize(ref reader, options);
                     break;
                 case 1:
-                    value.WallNeighbors = resolver.GetFormatterWithVerify<byte[]>().Deserialize(ref reader, options);
-                    break;
-                case 2:
-                    value.VisibleTerrain = resolver.GetFormatterWithVerify<byte[]>().Deserialize(ref reader, options);
+                    value.AvailableTargets = resolver.GetFormatterWithVerify<List<int>>().Deserialize(ref reader, options);
                     break;
                 default:
                     reader.Skip();

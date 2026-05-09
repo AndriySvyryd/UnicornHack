@@ -5,58 +5,65 @@ namespace UnicornHack.Systems.Levels;
 [Component(Id = (int)EntityComponent.Connection)]
 public class ConnectionComponent : GameComponent
 {
-    private GameEntity? _targetLevelEntity;
-    private int _targetLevelId;
-    private byte? _targetLevelX;
-    private byte? _targetLevelY;
-    private ConnectionDirection? _connectionDirection;
+    private GameEntity? _targetRoomEntity;
+    private int _targetRoomId;
+    private byte? _targetCellX;
+    private byte? _targetCellY;
+    private Directionality? _cardinality;
+    private Direction _orientation;
+    private bool _hidden;
 
     public ConnectionComponent()
     {
         ComponentId = (int)EntityComponent.Connection;
     }
 
-    public int TargetLevelId
+    public int TargetRoomId
     {
-        get => _targetLevelId;
+        get => _targetRoomId;
         set
         {
-            _targetLevelEntity = null;
-            SetWithNotify(value, ref _targetLevelId);
+            _targetRoomEntity = null;
+            SetWithNotify(value, ref _targetRoomId);
         }
     }
 
-    public GameEntity TargetLevelEntity
+    public GameEntity TargetRoomEntity
     {
-        get => _targetLevelEntity ??= Entity.Manager.FindEntity(_targetLevelId)!;
+        get
+        {
+            _targetRoomEntity ??= Entity.Manager.FindEntity(_targetRoomId);
+            Debug.Assert(_targetRoomEntity != null, $"TargetRoomEntity {_targetRoomId} not loaded");
+            return _targetRoomEntity!;
+        }
         set
         {
-            _targetLevelId = value.Id;
-            _targetLevelEntity = value;
+            _targetRoomId = value.Id;
+            _targetRoomEntity = value;
         }
     }
 
     public byte? TargetLevelX
     {
-        get => _targetLevelX;
-        set => SetWithNotify(value, ref _targetLevelX);
+        get => _targetCellX;
+        set => SetWithNotify(value, ref _targetCellX);
     }
 
     public byte? TargetLevelY
     {
-        get => _targetLevelY;
-        set => SetWithNotify(value, ref _targetLevelY);
+        get => _targetCellY;
+        set => SetWithNotify(value, ref _targetCellY);
     }
 
-    public Point? TargetLevelCell
+    public Point? TargetCell
     {
-        get => _targetLevelX == null || _targetLevelY == null
+        get => _targetCellX == null || _targetCellY == null
             ? null
-            : new Point(_targetLevelX.Value, _targetLevelY.Value);
+            : new Point(_targetCellX.Value, _targetCellY.Value);
         set
         {
-            var levelXSet = NotifyChanging(value?.X, ref _targetLevelX, nameof(TargetLevelX), out var oldLevelX);
-            var levelYSet = NotifyChanging(value?.Y, ref _targetLevelY, nameof(TargetLevelY), out var oldLevelY);
+            var levelXSet = NotifyChanging(value?.X, ref _targetCellX, nameof(TargetLevelX), out var oldLevelX);
+            var levelYSet = NotifyChanging(value?.Y, ref _targetCellY, nameof(TargetLevelY), out var oldLevelY);
 
             var anyChanges = false;
             var levelXChange = PropertyValueChange<byte?>.Empty;
@@ -82,19 +89,43 @@ public class ConnectionComponent : GameComponent
         }
     }
 
-    public ConnectionDirection? Direction
+    public Directionality? Directionality
     {
-        get => _connectionDirection;
-        set => SetWithNotify(value, ref _connectionDirection);
+        get => _cardinality;
+        set => SetWithNotify(value, ref _cardinality);
+    }
+
+    /// <summary>
+    ///     The cardinal direction the player faces when entering through this connection
+    ///     (one of East, North, West, South). For inter-level connections this is
+    ///     <see cref="Primitives.Direction.Down" /> or <see cref="Primitives.Direction.Up" />.
+    /// </summary>
+    public Direction Orientation
+    {
+        get => _orientation;
+        set => SetWithNotify(value, ref _orientation);
+    }
+
+    /// <summary>
+    ///     A hidden connection is one the player hasn't discovered yet -- it's part of the
+    ///     room graph but isn't shown on the map until revealed (e.g. by clearing the source
+    ///     room or activating a reveal boon).
+    /// </summary>
+    public bool Hidden
+    {
+        get => _hidden;
+        set => SetWithNotify(value, ref _hidden);
     }
 
     protected override void Clean()
     {
-        _targetLevelEntity = default;
-        _targetLevelId = default;
-        _targetLevelX = default;
-        _targetLevelY = default;
-        _connectionDirection = default;
+        _targetRoomEntity = default;
+        _targetRoomId = default;
+        _targetCellX = default;
+        _targetCellY = default;
+        _cardinality = default;
+        _orientation = default;
+        _hidden = default;
 
         base.Clean();
     }

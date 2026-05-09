@@ -1,3 +1,4 @@
+using UnicornHack.Data;
 using UnicornHack.Hubs.ChangeTracking;
 using UnicornHack.Services;
 using UnicornHack.Systems.Actors;
@@ -14,15 +15,25 @@ public static class GameStateManager
         => PlayerChangeBuilder.SerializePlayer(
             playerEntity, new SerializationContext(null!, playerEntity, services));
 
+    /// <summary>
+    ///     Advances the game until the current player is ready to act again, optionally
+    ///     accumulating <see cref="TurnChangeSet" />s per affected player.
+    ///     <para>
+    ///         When <paramref name="dbContext" /> is provided, terrain property dirtiness
+    ///         is marked on the EF change tracker between turns so the eventual
+    ///         <c>SaveChanges</c> persists the room state. Tests/perf scenarios that don't
+    ///         persist anything pass <c>null</c>.
+    ///     </para>
+    /// </summary>
     public static Dictionary<int, List<TurnChangeSet>> Turn(
         PlayerComponent currentPlayer,
-        LevelChangeBuilder levelChangeBuilder,
+        RoomChangeBuilder roomChangeBuilder,
         GameServices services,
         bool collectChanges = true,
-        Action<GameManager>? onAfterEachTurn = null)
+        GameDbContext? dbContext = null)
     {
         var manager = currentPlayer.Game.Manager;
-        var builders = collectChanges ? levelChangeBuilder.PlayerBuilders : null;
+        var builders = collectChanges ? roomChangeBuilder.PlayerBuilders : null;
         var changeSetsAccumulator = new Dictionary<int, List<TurnChangeSet>>();
 
         currentPlayer.Game.ActingPlayer = null;
@@ -48,7 +59,10 @@ public static class GameStateManager
             if (collectChanges)
             {
                 ComputeVisibleTerrainChanges(manager);
-                onAfterEachTurn?.Invoke(manager);
+                if (dbContext is not null)
+                {
+                    MarkTerrainPropertiesModified(dbContext, manager);
+                }
 
                 foreach (var builder in builders!)
                 {
@@ -59,7 +73,7 @@ public static class GameStateManager
                         var changeSet = new TurnChangeSet
                         {
                             PlayerState = builder.BuildChangeSet(manager, services),
-                            Events = null // TODO: Serialize messages
+                            Events = roomChangeBuilder.EventBuilder.GetEvents(builder.PlayerEntityId)
                         };
 
                         if (!changeSetsAccumulator.TryGetValue(builder.PlayerEntityId, out var list))
@@ -73,7 +87,7 @@ public static class GameStateManager
                 }
             }
 
-            levelChangeBuilder.Clear();
+            roomChangeBuilder.Clear();
 
             if (result is TurnResult.PlayerTurn or TurnResult.GameOver)
             {
@@ -86,92 +100,139 @@ public static class GameStateManager
 
     public static void ClearTerrainChangeDicts(GameManager manager)
     {
-        foreach (var levelEntity in manager.Levels)
+        foreach (var roomEntity in manager.Rooms)
         {
-            var level = levelEntity.Level!;
-            if (level.TerrainChanges != null)
+            var room = roomEntity.Room!;
+            if (room.TerrainChanges != null)
             {
-                level.TerrainChanges.Clear();
+                room.TerrainChanges.Clear();
             }
             else
             {
-                level.TerrainChanges = [];
+                room.TerrainChanges = [];
             }
 
-            if (level.KnownTerrainChanges != null)
+            if (room.KnownTerrainChanges != null)
             {
-                level.KnownTerrainChanges.Clear();
+                room.KnownTerrainChanges.Clear();
             }
             else
             {
-                level.KnownTerrainChanges = [];
+                room.KnownTerrainChanges = [];
             }
 
-            if (level.WallNeighborsChanges != null)
+            if (room.NeighborChanges != null)
             {
-                level.WallNeighborsChanges.Clear();
+                room.NeighborChanges.Clear();
             }
             else
             {
-                level.WallNeighborsChanges = [];
+                room.NeighborChanges = [];
             }
 
-            level.VisibleNeighborsChanged = false;
+            room.KnownNeighborsChanged = false;
         }
     }
 
     public static void CaptureVisibleTerrainSnapshots(GameManager manager)
     {
-        foreach (var levelEntity in manager.Levels)
+        foreach (var roomEntity in manager.Rooms)
         {
-            var level = levelEntity.Level!;
-            if (level.Width == 0)
+            var room = roomEntity.Room!;
+            if (room.Width == 0)
             {
                 continue;
             }
 
-            if (level.VisibleTerrainSnapshot == null)
+            if (room.VisibleTerrainSnapshot == null)
             {
-                level.VisibleTerrainSnapshot = (byte[])level.VisibleTerrain.Clone();
+                room.VisibleTerrainSnapshot = (byte[])room.VisibleTerrain.Clone();
             }
             else
             {
-                level.VisibleTerrain.CopyTo(level.VisibleTerrainSnapshot, 0);
+                room.VisibleTerrain.CopyTo(room.VisibleTerrainSnapshot, 0);
             }
         }
     }
 
     public static void ComputeVisibleTerrainChanges(GameManager manager)
     {
-        foreach (var levelEntity in manager.Levels)
+        foreach (var roomEntity in manager.Rooms)
         {
-            var level = levelEntity.Level!;
-            if (level.Width == 0)
+            var room = roomEntity.Room!;
+            if (room.Width == 0)
             {
                 continue;
             }
 
-            if (level.VisibleTerrainChanges == null)
+            if (room.VisibleTerrainChanges == null)
             {
-                level.VisibleTerrainChanges = [];
+                room.VisibleTerrainChanges = [];
             }
             else
             {
-                level.VisibleTerrainChanges.Clear();
+                room.VisibleTerrainChanges.Clear();
             }
 
-            if (level.VisibleTerrainSnapshot != null)
+            if (room.VisibleTerrainSnapshot != null)
             {
-                var tileCount = level.TileCount;
+                var tileCount = room.TileCount;
                 for (short i = 0; i < tileCount; i++)
                 {
-                    var newValue = level.VisibleTerrain[i];
-                    if (newValue != level.VisibleTerrainSnapshot[i])
+                    var newValue = room.VisibleTerrain[i];
+                    if (newValue != room.VisibleTerrainSnapshot[i])
                     {
-                        level.VisibleTerrainChanges.Add(i, newValue);
+                        room.VisibleTerrainChanges.Add(i, newValue);
                     }
                 }
             }
         }
+    }
+
+    private static void MarkTerrainPropertiesModified(GameDbContext dbContext, GameManager manager)
+    {
+        dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
+        foreach (var roomEntity in manager.Rooms)
+        {
+            var room = roomEntity.Room!;
+
+            var levelEntry = dbContext.Entry(room);
+            if (levelEntry.State == EntityState.Added
+                || room.Width == 0)
+            {
+                continue;
+            }
+
+            if (room.TerrainChanges == null
+                || room.TerrainChanges.Count > 0)
+            {
+                levelEntry.Property(l => l.Terrain).IsModified = true;
+            }
+
+            if (room.KnownTerrainChanges == null
+                || room.KnownTerrainChanges.Count > 0)
+            {
+                levelEntry.Property(l => l.KnownTerrain).IsModified = true;
+            }
+
+            if (room.NeighborChanges == null
+                || room.NeighborChanges.Count > 0)
+            {
+                levelEntry.Property(l => l.Neighbors).IsModified = true;
+            }
+
+            if (room.VisibleTerrainSnapshot == null
+                || (room.VisibleTerrainChanges != null && room.VisibleTerrainChanges.Count > 0))
+            {
+                levelEntry.Property(l => l.VisibleTerrain).IsModified = true;
+            }
+
+            if (room.KnownNeighborsChanged)
+            {
+                levelEntry.Property(l => l.KnownNeighbors).IsModified = true;
+            }
+        }
+
+        dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
     }
 }

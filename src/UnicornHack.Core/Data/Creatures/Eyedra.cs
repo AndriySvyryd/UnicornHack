@@ -96,7 +96,7 @@ public static partial class CreatureData
         },
         InitialLevel = 8,
         GenerationWeight = "3",
-        GenerationFlags = GenerationFlags.NonPolymorphable,
+        GenerationFlags = CreatureGenerationFlags.NonPolymorphable,
         Behavior = AIBehavior.Wandering,
         Sex = Sex.None,
         Weight = 250,

@@ -1,6 +1,7 @@
 namespace UnicornHack.Utils.DataLoading;
 
-public class GroupedCSScriptLoader<TKey, T> : CSScriptLoaderBase<T> where T : class, ILoadable
+public class GroupedCSScriptLoader<TKey, T> : CSScriptLoaderBase<T>, IGroupedLoader<TKey, T>
+    where T : class, ILoadable
     where TKey : notnull
 {
     private Dictionary<TKey, List<T>>? _objects;
@@ -40,7 +41,7 @@ public class GroupedCSScriptLoader<TKey, T> : CSScriptLoaderBase<T> where T : cl
     }
 
     public IReadOnlyList<T> GetAllValues(TKey key)
-        => Objects.TryGetValue(key, out var list) ? list : new List<T>();
+        => Objects.TryGetValue(key, out var list) ? list : [];
 
     public IEnumerable<TKey> GetAllKeys()
         => Objects.Keys;

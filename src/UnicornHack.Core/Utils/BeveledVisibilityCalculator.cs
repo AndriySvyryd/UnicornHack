@@ -1,4 +1,4 @@
-﻿using UnicornHack.Systems.Levels;
+using UnicornHack.Systems.Levels;
 
 namespace UnicornHack.Utils;
 
@@ -10,7 +10,7 @@ namespace UnicornHack.Utils;
 public class BeveledVisibilityCalculator
 {
     private readonly Func<byte, byte, DirectionFlags> _getUnconnectedNeighbors;
-    private readonly LevelComponent _level;
+    private readonly RoomComponent _level;
     private const byte MinVisibility = 0;
     public const byte MaxVisibility = 254;
     private const byte NormalizedMaxVisibility = MaxVisibility - MinVisibility;
@@ -27,10 +27,10 @@ public class BeveledVisibilityCalculator
     /// </remarks>
     public BeveledVisibilityCalculator(
         Func<byte, byte, DirectionFlags> getUnconnectedNeighbors,
-        LevelComponent level)
+        RoomComponent room)
     {
         _getUnconnectedNeighbors = getUnconnectedNeighbors;
-        _level = level;
+        _level = room;
     }
 
     /// <summary>
@@ -48,7 +48,7 @@ public class BeveledVisibilityCalculator
         Point origin,
         byte range,
         bool noFalloff,
-        Func<byte, byte, LevelComponent, (bool, int)> blocksVisibility,
+        Func<byte, byte, RoomComponent, (bool, int)> blocksVisibility,
         byte[] visibleTerrain)
     {
         var (_, index) = blocksVisibility(origin.X, origin.Y, _level);
@@ -86,7 +86,7 @@ public class BeveledVisibilityCalculator
         int primaryFOVQuadrants, int primaryRange,
         int totalFOVQuadrants, int secondaryRange,
         bool noFalloff,
-        Func<byte, byte, LevelComponent, (bool, int)> blocksVisibility,
+        Func<byte, byte, RoomComponent, (bool, int)> blocksVisibility,
         byte[] visibleTerrain)
     {
         if (primaryFOVQuadrants > totalFOVQuadrants)
@@ -173,7 +173,7 @@ public class BeveledVisibilityCalculator
     /// <returns> Array that will contain the terrain visibility. </returns>
     public List<(Point, byte)> ComputeLOS(
         Point origin, Point target,
-        Func<byte, byte, LevelComponent, (bool, int)> blocksVisibility,
+        Func<byte, byte, RoomComponent, (bool, int)> blocksVisibility,
         GameManager manager)
     {
         var targetVector = origin.DifferenceTo(target);
@@ -196,7 +196,7 @@ public class BeveledVisibilityCalculator
         Point origin,
         Vector targetVector,
         int range,
-        Func<byte, byte, LevelComponent, (bool, int)> blocksVisibility,
+        Func<byte, byte, RoomComponent, (bool, int)> blocksVisibility,
         GameManager manager)
     {
         var targetOctant = targetVector.GetOctant();
@@ -425,7 +425,7 @@ public class BeveledVisibilityCalculator
         int octant, Point origin,
         int range, byte linearFalloff, DirectionFlags marginalCellsToDouble,
         int x, Slope top, Slope bottom,
-        Func<byte, byte, LevelComponent, (bool, int)> blocksVisibility,
+        Func<byte, byte, RoomComponent, (bool, int)> blocksVisibility,
         byte[]? visibleTerrain,
         List<(int, byte)>? visibleTerrainList)
     {
@@ -863,7 +863,7 @@ public class BeveledVisibilityCalculator
 
     // Switch statements repeated below for perf
     private (bool, int) BlocksVisibility(int x, int y, int octant, Point origin,
-        Func<byte, byte, LevelComponent, (bool, int)> blocksVisibility)
+        Func<byte, byte, RoomComponent, (bool, int)> blocksVisibility)
     {
         int nx = origin.X, ny = origin.Y;
         switch (octant)

@@ -1,3 +1,6 @@
+using System.Runtime.CompilerServices;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using UnicornHack.Hubs.ChangeTracking;
 using UnicornHack.Services;
 using UnicornHack.Systems.Abilities;
@@ -13,7 +16,7 @@ namespace UnicornHack.Data;
 
 public class GameDbContext : DbContext, IRepository
 {
-    private Func<GameDbContext, int, IEnumerable<int[]>>? _getLevels;
+    private Func<GameDbContext, int, IEnumerable<int>>? _getRoomIds;
 
     // ReSharper disable once SuggestBaseTypeForParameter
     public GameDbContext(DbContextOptions<GameDbContext> options)
@@ -27,7 +30,7 @@ public class GameDbContext : DbContext, IRepository
         set;
     } = null!;
 
-    public LevelChangeBuilder? LevelChangeBuilder
+    public RoomChangeBuilder? RoomChangeBuilder
     {
         get;
         set;
@@ -40,6 +43,12 @@ public class GameDbContext : DbContext, IRepository
     } = null!;
 
     public DbSet<GameBranch> Branches
+    {
+        get;
+        set;
+    } = null!;
+
+    public DbSet<GameLevel> Levels
     {
         get;
         set;
@@ -123,7 +132,7 @@ public class GameDbContext : DbContext, IRepository
         set;
     } = null!;
 
-    public DbSet<LevelComponent> LevelComponents
+    public DbSet<RoomComponent> RoomComponents
     {
         get;
         set;
@@ -143,7 +152,7 @@ public class GameDbContext : DbContext, IRepository
 
     private IQueryable<GameEntity> AggregateEntities
         => Entities
-            .Include(e => e.Level).ThenInclude(l => l!.Branch)
+            .Include(e => e.Room).ThenInclude(r => r!.Level).ThenInclude(l => l!.Branch)
             .Include(e => e.Position)
             .Include(e => e.Connection)
             .Include(e => e.Being)
@@ -161,8 +170,7 @@ public class GameDbContext : DbContext, IRepository
     {
         // TODO: Use pre-convention model configuration to ignore all collection types
 
-        modelBuilder.HasChangeTrackingStrategy(ChangeTrackingStrategy
-            .ChangingAndChangedNotificationsWithOriginalValues);
+        modelBuilder.HasChangeTrackingStrategy(ChangeTrackingStrategy.ChangingAndChangedNotifications);
 
         modelBuilder.UsePropertyAccessMode(PropertyAccessMode.PreferProperty);
 
@@ -175,9 +183,15 @@ public class GameDbContext : DbContext, IRepository
             eb.Property(g => g.Id)
                 .ValueGeneratedOnAdd()
                 .UseIdentityColumn();
-            eb.Property(g => g.InitialSeed);
             eb.OwnsOne(g => g.Random);
             eb.Navigation(g => g.Random).IsRequired();
+            eb.OwnsOne(g => g.Options, ob =>
+            {
+                ob.Ignore(o => o.RevealLevels);
+                ob.Ignore(o => o.RevealRooms);
+                ob.Ignore(o => o.DisableSessionCache);
+            });
+            eb.Navigation(g => g.Options).IsRequired();
             eb.HasOne(g => g.ActingPlayer)
                 .WithOne()
                 .HasForeignKey<Game>(l => new { l.Id, l.ActingPlayerId })
@@ -185,6 +199,10 @@ public class GameDbContext : DbContext, IRepository
             eb.HasMany(g => g.Branches)
                 .WithOne(l => l.Game)
                 .HasForeignKey(l => l.GameId);
+            eb.HasMany<GameLevel>()
+                .WithOne(l => l.Game)
+                .HasForeignKey(l => l.GameId)
+                .OnDelete(DeleteBehavior.Restrict);
             eb.HasMany<LogEntry>()
                 .WithOne()
                 .HasForeignKey(l => l.GameId)
@@ -236,7 +254,7 @@ public class GameDbContext : DbContext, IRepository
                 .WithOne()
                 .HasForeignKey(e => e.GameId)
                 .OnDelete(DeleteBehavior.Restrict);
-            eb.HasMany<LevelComponent>()
+            eb.HasMany<RoomComponent>()
                 .WithOne()
                 .HasForeignKey(e => e.GameId)
                 .OnDelete(DeleteBehavior.Restrict);
@@ -256,6 +274,19 @@ public class GameDbContext : DbContext, IRepository
             eb.HasMany(b => b.Levels)
                 .WithOne(l => l.Branch)
                 .HasForeignKey(l => new { l.GameId, l.BranchName })
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<GameLevel>(eb =>
+        {
+            eb.HasKey(l => new { l.GameId, l.BranchName, l.Depth });
+            eb.OwnsOne(l => l.GenerationRandom);
+            eb.Navigation(l => l.GenerationRandom).IsRequired();
+            eb.OwnsOne(l => l.GenerationStats);
+            eb.Navigation(l => l.GenerationStats).IsRequired();
+            eb.HasMany(l => l.Rooms)
+                .WithOne(r => r.Level)
+                .HasForeignKey(r => new { r.GameId, r.BranchName, r.Depth })
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -294,8 +325,8 @@ public class GameDbContext : DbContext, IRepository
                 .HasForeignKey<ItemComponent>(c => new { c.GameId, c.EntityId });
             eb.HasOne(e => e.Knowledge).WithOne(c => c.Entity)
                 .HasForeignKey<KnowledgeComponent>(c => new { c.GameId, c.EntityId });
-            eb.HasOne(e => e.Level).WithOne(c => c.Entity)
-                .HasForeignKey<LevelComponent>(c => new { c.GameId, c.EntityId });
+            eb.HasOne(e => e.Room).WithOne(c => c.Entity)
+                .HasForeignKey<RoomComponent>(c => new { c.GameId, c.EntityId });
             eb.HasOne(e => e.Physical).WithOne(c => c.Entity)
                 .HasForeignKey<PhysicalComponent>(c => new { c.GameId, c.EntityId });
             eb.HasOne(e => e.Position).WithOne(c => c.Entity)
@@ -392,13 +423,13 @@ public class GameDbContext : DbContext, IRepository
 
         modelBuilder.Entity<ConnectionComponent>(eb =>
         {
-            eb.Ignore(c => c.TargetLevelCell);
-            eb.Ignore(c => c.TargetLevelEntity);
+            eb.Ignore(c => c.TargetCell);
+            eb.Ignore(c => c.TargetRoomEntity);
             eb.Property("_tracked");
             eb.HasKey(c => new { c.GameId, c.EntityId });
         });
 
-        modelBuilder.Entity<LevelComponent>(eb =>
+        modelBuilder.Entity<RoomComponent>(eb =>
         {
             eb.Ignore(l => l.Actors);
             eb.Ignore(l => l.Items);
@@ -411,22 +442,30 @@ public class GameDbContext : DbContext, IRepository
             eb.Ignore(l => l.PointToIndex);
             eb.Ignore(l => l.TerrainChanges);
             eb.Ignore(l => l.KnownTerrainChanges);
-            eb.Ignore(l => l.WallNeighborsChanges);
+            eb.Ignore(l => l.NeighborChanges);
             eb.Ignore(l => l.VisibleTerrainSnapshot);
             eb.Ignore(l => l.VisibleTerrainChanges);
-            eb.Ignore(l => l.VisibleNeighborsChanged);
+            eb.Ignore(l => l.KnownNeighborsChanged);
             eb.Ignore(l => l.PathFinder);
             eb.Ignore(l => l.VisibilityCalculator);
             eb.Property("_tracked");
 
+            eb.Property(l => l.Terrain)
+                .HasConversion(MapFeatureArrayConverter, MapFeatureArrayComparer);
+            eb.Property(l => l.KnownTerrain)
+                .HasConversion(MapFeatureArrayConverter, MapFeatureArrayComparer);
+            eb.Property(l => l.Neighbors)
+                .HasConversion(DirectionFlagsArrayConverter, DirectionFlagsArrayComparer);
+            eb.Property(l => l.KnownNeighbors)
+                .HasConversion(DirectionFlagsArrayConverter, DirectionFlagsArrayComparer);
+
             eb.HasKey(l => new { l.GameId, l.EntityId });
-            eb.OwnsOne(l => l.GenerationRandom);
         });
 
         modelBuilder.Entity<PositionComponent>(eb =>
         {
-            eb.Ignore(c => c.LevelCell);
-            eb.Ignore(c => c.LevelEntity);
+            eb.Ignore(c => c.Cell);
+            eb.Ignore(c => c.RoomEntity);
             eb.Ignore(c => c.Knowledge);
             eb.Property("_tracked");
             eb.HasKey(c => new { c.GameId, c.EntityId });
@@ -446,220 +485,233 @@ public class GameDbContext : DbContext, IRepository
 
     public Game LoadGame(int gameId)
     {
-        _getLevels ??= EF.CompileQuery((GameDbContext context, int id) =>
+        // For each player: emit the player's current room id, plus - by walking
+        // player -> position (player's room id) -> player's room (BranchName, Depth)
+        // -> every room on that level -> that room's connections - each connection's
+        // target room id. Union deduplicates.
+        _getRoomIds ??= EF.CompileQuery((GameDbContext context, int id) =>
             context.PlayerComponents
                 .Where(playerComponent => playerComponent.GameId == id)
                 .Join(context.PositionComponents,
                     playerComponent => new { playerComponent.GameId, playerComponent.EntityId },
                     positionComponent => new { positionComponent.GameId, positionComponent.EntityId },
-                    (_, positionComponent) => positionComponent.LevelId)
-                .Join(context.PositionComponents,
-                    levelId => new { GameId = id, LevelId = levelId },
-                    positionComponent => new { positionComponent.GameId, positionComponent.LevelId },
-                    (_, positionComponent) => positionComponent)
-                .Join(context.ConnectionComponents,
-                    positionComponent
-                        => new
-                        {
-                            positionComponent.GameId,
-                            positionComponent.EntityId
-                        },
-                    connectionComponent => new { connectionComponent.GameId, connectionComponent.EntityId },
-                    (positionComponent, connectionComponent)
-                        => new[] { positionComponent.LevelId, connectionComponent.TargetLevelId }));
+                    (_, positionComponent) => positionComponent.RoomId)
+                .Union(context.PlayerComponents
+                    .Where(playerComponent => playerComponent.GameId == id)
+                    .Join(context.PositionComponents,
+                        playerComponent => new { playerComponent.GameId, playerComponent.EntityId },
+                        positionComponent => new { positionComponent.GameId, positionComponent.EntityId },
+                        (_, positionComponent) => positionComponent.RoomId)
+                    .Join(context.RoomComponents,
+                        roomId => new { GameId = id, EntityId = roomId },
+                        roomComponent => new { roomComponent.GameId, roomComponent.EntityId },
+                        (_, playerRoom) => new { playerRoom.BranchName, playerRoom.Depth })
+                    .Join(context.RoomComponents,
+                        level => new { GameId = id, level.BranchName, level.Depth },
+                        roomComponent => new { roomComponent.GameId, roomComponent.BranchName, roomComponent.Depth },
+                        (_, levelRoom) => levelRoom.EntityId)
+                    .Join(context.PositionComponents,
+                        levelRoomId => new { GameId = id, RoomId = levelRoomId },
+                        positionComponent => new { positionComponent.GameId, positionComponent.RoomId },
+                        (_, positionComponent) => new { positionComponent.GameId, positionComponent.EntityId })
+                    .Join(context.ConnectionComponents,
+                        x => new { x.GameId, x.EntityId },
+                        connectionComponent => new { connectionComponent.GameId, connectionComponent.EntityId },
+                        (_, connectionComponent) => connectionComponent.TargetRoomId)));
 
-        LoadLevels(_getLevels(this, gameId).SelectMany(l => l).Distinct().ToList());
+        LoadRooms(_getRoomIds(this, gameId).ToList());
 
-        foreach (var player in PlayerComponents.Local.ToList())
-        {
-            LogEntries
-                .Where(e => e.GameId == player.GameId && e.PlayerId == player.EntityId)
-                .OrderByDescending(e => e.Tick)
-                .ThenByDescending(e => e.Id)
-                .Take(10)
-                .Load();
-        }
+        // Load the 10 most recent log entries per player.
+        var playerIds = PlayerComponents.Local.Select(p => p.EntityId).ToList();
+
+        LogEntries
+            .Where(e => e.GameId == gameId
+                && playerIds.Contains(e.PlayerId)
+                && LogEntries
+                    .Where(e2 => e2.GameId == gameId && e2.PlayerId == e.PlayerId)
+                    .OrderByDescending(e2 => e2.Tick)
+                    .ThenByDescending(e2 => e2.Id)
+                    .Take(10)
+                    .Contains(e))
+            .Load();
 
         return Find<Game>(gameId)!;
     }
 
-    public void LoadLevels(IReadOnlyList<int> levelIds)
+    public void LoadRooms(IReadOnlyList<int> roomIds)
     {
         Manager.IsLoading = true;
-        // TODO: Perf: Compile queries
-        var levelEntities = Entities.Where(levelEntity
-            => levelIds.Contains(levelEntity.Id) || levelIds.Contains(levelEntity.Position!.LevelId));
 
-        var containedItems = levelEntities
-            .Join(ItemComponents,
-                levelEntity => levelEntity.Id, itemComponent => itemComponent.ContainerId,
-                (_, itemComponent) => itemComponent)
-            .Join(Entities,
-                itemComponent => itemComponent.EntityId, containedEntity => containedEntity.Id,
-                (_, containedEntity) => containedEntity);
+        if (roomIds.Count == 0)
+        {
+            Manager.IsLoading = false;
+            return;
+        }
 
-        var nestedContainedItems = containedItems
-            .Join(ItemComponents,
-                levelEntity => levelEntity.Id, itemComponent => itemComponent.ContainerId,
-                (_, itemComponent) => itemComponent)
-            .Join(Entities,
-                itemComponent => itemComponent.EntityId, containedEntity => containedEntity.Id,
-                (_, containedEntity) => containedEntity);
+        // 1. Entities that ARE one of the requested rooms or are positioned in one.
+        //    Split into two Concat branches so each becomes a single-predicate query
+        //    against the roomIds parameter - see the nestedMix comment below for why.
+        //    Distinct is required because a room entity also has itself in Position.
+        var roomResidentIds = Entities
+            .Where(e => roomIds.Contains(e.Id))
+            .Select(e => e.Id)
+            .Concat(Entities
+                .Where(e => roomIds.Contains(e.Position!.RoomId))
+                .Select(e => e.Id))
+            .Distinct()
+            .ToList();
 
-        // TODO: Query additional nested items
+        // 2. Items at containment depths 1 and 2 (via EXISTS into ItemComponents),
+        //    plus primary and secondary natural weapons of beings in the room set.
+        //    All four projections share the same roomResidentIds list parameter.
+        //    TODO: Query additional nested items
+        List<int> itemAndWeaponIds;
+        if (roomResidentIds.Count == 0)
+        {
+            itemAndWeaponIds = [];
+        }
+        else
+        {
+            // Split the depth-1 and depth-2 item lookups into separate Concat
+            // branches so each is a single-predicate query against roomResidentIds
+            // (see nestedMix comment below). The downstream affectableIds.Distinct()
+            // removes any item that matches both branches.
+            itemAndWeaponIds = ItemComponents
+                .Where(ic => ic.ContainerId.HasValue && roomResidentIds.Contains(ic.ContainerId.Value))
+                .Select(ic => ic.EntityId)
+                .Concat(ItemComponents
+                    .Where(ic => ic.ContainerId.HasValue
+                                 && ItemComponents.Any(parent =>
+                                     parent.EntityId == ic.ContainerId.Value
+                                     && parent.ContainerId.HasValue
+                                     && roomResidentIds.Contains(parent.ContainerId.Value)))
+                    .Select(ic => ic.EntityId))
+                .Concat(BeingComponents
+                    .Where(bc => roomResidentIds.Contains(bc.EntityId) && bc.PrimaryNaturalWeaponId.HasValue)
+                    .Select(bc => bc.PrimaryNaturalWeaponId!.Value))
+                .Concat(BeingComponents
+                    .Where(bc => roomResidentIds.Contains(bc.EntityId) && bc.SecondaryNaturalWeaponId.HasValue)
+                    .Select(bc => bc.SecondaryNaturalWeaponId!.Value))
+                .ToList();
+        }
 
-        var primaryNaturalWeapons = levelEntities
-            .Join(BeingComponents,
-                levelEntity => levelEntity.Id, beingComponent => beingComponent.EntityId,
-                (_, beingComponent) => beingComponent)
-            .Join(Entities,
-                beingComponent => beingComponent.PrimaryNaturalWeaponId, weaponEntity => weaponEntity.Id,
-                (_, weaponEntity) => weaponEntity);
+        var affectableIds = roomResidentIds
+            .Concat(itemAndWeaponIds)
+            .Distinct()
+            .ToList();
 
-        var secondaryNaturalWeapons = levelEntities
-            .Join(BeingComponents,
-                levelEntity => levelEntity.Id, beingComponent => beingComponent.EntityId,
-                (_, beingComponent) => beingComponent)
-            .Join(Entities,
-                beingComponent => beingComponent.SecondaryNaturalWeaponId, weaponEntity => weaponEntity.Id,
-                (_, weaponEntity) => weaponEntity);
+        // 3. Top-level abilities AND top-level effects in one round-trip.
+        //    - Abilities owned by an affectable (Kind = 0)
+        //    - Effects either directly affecting an affectable, OR contained
+        //      in an ability that itself is owned by an affectable (Kind = 1).
+        //      The second branch is expressed as EXISTS against AbilityComponents
+        //      so we don't need a materialized topAbilityIds list yet.
+        var topMix = affectableIds.Count == 0
+            ? []
+            : AbilityComponents
+                .Where(ac => ac.OwnerId.HasValue && affectableIds.Contains(ac.OwnerId.Value))
+                .Select(ac => new { Id = ac.EntityId, IsEffect = false })
+                .Concat(EffectComponents
+                    .Where(ec => ec.AffectedEntityId.HasValue && affectableIds.Contains(ec.AffectedEntityId.Value))
+                    .Select(ec => new { Id = ec.EntityId, IsEffect = true }))
+                .Concat(EffectComponents
+                    .Where(ec => ec.ContainingAbilityId.HasValue
+                                 && AbilityComponents.Any(ac =>
+                                     ac.EntityId == ec.ContainingAbilityId.Value
+                                     && ac.OwnerId.HasValue
+                                     && affectableIds.Contains(ac.OwnerId.Value)))
+                    .Select(ec => new { Id = ec.EntityId, IsEffect = true }))
+                .ToList();
 
-        var affectableEntities = levelEntities
-            .Concat(containedItems)
-            .Concat(nestedContainedItems)
-            .Concat(primaryNaturalWeapons)
-            .Concat(secondaryNaturalWeapons);
+        var topAbilityIds = topMix.Where(x => !x.IsEffect).Select(x => x.Id).ToList();
+        var topEffectIds = topMix.Where(x => x.IsEffect).Select(x => x.Id).Distinct().ToList();
 
-        var appliedEffects = affectableEntities
-            .Join(EffectComponents,
-                affectableEntity => affectableEntity.Id, effectComponent => effectComponent.AffectedEntityId,
-                (_, effectComponent) => effectComponent);
+        // 4. Nested abilities and effects (one more graph level) in one round-trip.
+        //    Each branch of the Concat is a single-predicate query against the
+        //    topEffectIds list - this is deliberate. A single Where(ec => A || B || C)
+        //    where each clause references the same OPENJSON parameter forces SQL
+        //    Server into nested loops that rebuild OPENJSON per outer row (the
+        //    previous plan rebound it ~4500 times and ran in 6+ seconds). Splitting
+        //    into UNION ALL lets each branch use a hash semi join that builds
+        //    OPENJSON once and hash-probes the source table. Duplicate effect ids
+        //    across branches are removed by the client-side Distinct() below.
+        //    - Abilities owned by a top-level effect (Kind = 0)
+        //    - Effects directly affecting a top-level effect (Kind = 1)
+        //    - Effects directly affecting a top-level ability (Kind = 1)
+        //    - Effects contained in a top-level effect (Kind = 1)
+        //    - Effects contained in a nested ability - expressed as EXISTS so we
+        //      don't need a materialized nestedAbilityIds list yet (Kind = 1).
+        var nestedMix = topEffectIds.Count == 0 && topAbilityIds.Count == 0
+            ? []
+            : AbilityComponents
+                .Where(ac => ac.OwnerId.HasValue && topEffectIds.Contains(ac.OwnerId.Value))
+                .Select(ac => new { Id = ac.EntityId, IsEffect = false })
+                .Concat(EffectComponents
+                    .Where(ec => ec.AffectedEntityId.HasValue && topEffectIds.Contains(ec.AffectedEntityId.Value))
+                    .Select(ec => new { Id = ec.EntityId, IsEffect = true }))
+                .Concat(EffectComponents
+                    .Where(ec => ec.AffectedEntityId.HasValue && topAbilityIds.Contains(ec.AffectedEntityId.Value))
+                    .Select(ec => new { Id = ec.EntityId, IsEffect = true }))
+                .Concat(EffectComponents
+                    .Where(ec => ec.ContainingAbilityId.HasValue && topEffectIds.Contains(ec.ContainingAbilityId.Value))
+                    .Select(ec => new { Id = ec.EntityId, IsEffect = true }))
+                .Concat(EffectComponents
+                    .Where(ec => ec.ContainingAbilityId.HasValue
+                                 && AbilityComponents.Any(ac =>
+                                     ac.EntityId == ec.ContainingAbilityId.Value
+                                     && ac.OwnerId.HasValue
+                                     && topEffectIds.Contains(ac.OwnerId.Value)))
+                    .Select(ec => new { Id = ec.EntityId, IsEffect = true }))
+                .ToList();
 
-        var abilities = affectableEntities
-            .Join(AbilityComponents,
-                affectableEntity => affectableEntity.Id, abilityComponent => abilityComponent.OwnerId,
-                (_, abilityComponent) => abilityComponent);
+        var nestedAbilityIds = nestedMix.Where(x => !x.IsEffect).Select(x => x.Id).ToList();
+        var nestedEffectIds = nestedMix.Where(x => x.IsEffect).Select(x => x.Id).Distinct().ToList();
 
-        var effects = abilities
-            .Join(EffectComponents,
-                abilityComponent => abilityComponent.EntityId, effectComponent => effectComponent.ContainingAbilityId,
-                (_, effectComponent) => effectComponent);
+        // 6. Effects directly on a nested ability. nestedAbilityIds wasn't
+        //    materialized at step 5, so this is a separate round-trip.
+        var abilityEffectIds = nestedAbilityIds.Count == 0
+            ? []
+            : EffectComponents
+                .Where(ec => ec.AffectedEntityId.HasValue && nestedAbilityIds.Contains(ec.AffectedEntityId.Value))
+                .Select(ec => ec.EntityId)
+                .ToList();
 
-        var nestedAbilityEffects = effects
-            .Join(EffectComponents,
-                effectComponent => effectComponent.EntityId,
-                nestedEffectComponent => nestedEffectComponent.ContainingAbilityId,
-                (_, nestedEffectComponent) => nestedEffectComponent);
+        // 5. Load every reachable entity in a single query together with all of
+        //    its components. Including every component navigation is safe even
+        //    for entities that wouldn't normally carry them - the LEFT JOINs
+        //    simply return nulls - and it guards against unexpected component
+        //    combinations.
+        var allEntityIds = affectableIds
+            .Concat(topAbilityIds)
+            .Concat(topEffectIds)
+            .Concat(nestedAbilityIds)
+            .Concat(nestedEffectIds)
+            .Concat(abilityEffectIds)
+            .Distinct()
+            .ToList();
 
-        var effectItemAppliedEffects = effects
-            .Join(EffectComponents,
-                effectComponent => effectComponent.EntityId,
-                appliedEffectComponent => appliedEffectComponent.AffectedEntityId,
-                (_, effectComponent) => effectComponent);
-
-        var effectItemAbilities = effects
-            .Join(AbilityComponents,
-                effectComponent => effectComponent.EntityId, abilityComponent => abilityComponent.OwnerId,
-                (_, abilityComponent) => abilityComponent);
-
-        var effectItemAbilityEffects = effectItemAbilities
-            .Join(EffectComponents,
-                abilityComponent => abilityComponent.EntityId, effectComponent => effectComponent.ContainingAbilityId,
-                (_, effectComponent) => effectComponent);
-
-        levelEntities
-            .Include(e => e.Level!).ThenInclude(l => l.Branch)
-            .Include(e => e.Position)
-            .Include(e => e.Connection)
-            .Include(e => e.Being)
-            .Include(e => e.Player)
-            .Include(e => e.AI)
-            .Include(e => e.Sensor)
-            .Include(e => e.Physical)
-            .Include(e => e.Item)
-            .Include(e => e.Knowledge)
-            .Load();
-
-        containedItems
-            .Include(e => e.Physical)
-            .Include(e => e.Item)
-            .Load();
-
-        nestedContainedItems
-            .Include(e => e.Physical)
-            .Include(e => e.Item)
-            .Load();
-
-        primaryNaturalWeapons
-            .Include(e => e.Physical)
-            .Include(e => e.Item)
-            .Load();
-
-        secondaryNaturalWeapons
-            .Include(e => e.Physical)
-            .Include(e => e.Item)
-            .Load();
-
-        abilities
-            .Join(Entities, abilityComponent => abilityComponent.EntityId,
-                abilityEntity => abilityEntity.Id,
-                (_, abilityEntity) => abilityEntity)
-            .Include(e => e.Ability)
-            .Load();
-
-        appliedEffects
-            .Join(Entities,
-                effectComponent => effectComponent.EntityId, effectEntity => effectEntity.Id,
-                (_, effectEntity) => effectEntity)
-            .Include(e => e.Effect)
-            .Include(e => e.Race)
-            .Include(e => e.Ability)
-            .Load();
-
-        effects
-            .Join(Entities,
-                effectComponent => effectComponent.EntityId, effectEntity => effectEntity.Id,
-                (_, effectEntity) => effectEntity)
-            .Include(e => e.Effect)
-            .Include(e => e.Physical)
-            .Include(e => e.Item)
-            .Include(e => e.Ability)
-            .Load();
-
-        nestedAbilityEffects
-            .Join(Entities,
-                effectComponent => effectComponent.EntityId, effectEntity => effectEntity.Id,
-                (_, effectEntity) => effectEntity)
-            .Include(e => e.Effect)
-            .Include(e => e.Ability)
-            .Load();
-
-        effectItemAppliedEffects
-            .Join(Entities,
-                effectComponent => effectComponent.EntityId, effectEntity => effectEntity.Id,
-                (_, effectEntity) => effectEntity)
-            .Include(e => e.Effect)
-            .Include(e => e.Ability)
-            .Load();
-
-        effectItemAbilities
-            .Join(Entities,
-                abilityComponent => abilityComponent.EntityId, abilityEntity => abilityEntity.Id,
-                (_, effectEntity) => effectEntity)
-            .Include(e => e.Ability)
-            .Load();
-
-        effectItemAbilityEffects
-            .Join(Entities,
-                effectComponent => effectComponent.EntityId, effectEntity => effectEntity.Id,
-                (_, effectEntity) => effectEntity)
-            .Include(e => e.Effect)
-            .Include(e => e.Ability)
-            .Load();
+        if (allEntityIds.Count > 0)
+        {
+            Entities.Where(e => allEntityIds.Contains(e.Id))
+                .Include(e => e.Room!).ThenInclude(l => l.Level).ThenInclude(l => l!.Branch)
+                .Include(e => e.Position)
+                .Include(e => e.Connection)
+                .Include(e => e.Being)
+                .Include(e => e.Player)
+                .Include(e => e.AI)
+                .Include(e => e.Sensor)
+                .Include(e => e.Physical)
+                .Include(e => e.Item)
+                .Include(e => e.Knowledge)
+                .Include(e => e.Ability)
+                .Include(e => e.Effect)
+                .Include(e => e.Race)
+                .Load();
+        }
 
         Manager.IsLoading = false;
 
-        foreach (var level in LevelComponents.Local)
+        foreach (var level in RoomComponents.Local)
         {
             level.EnsureInitialized();
         }
@@ -705,14 +757,19 @@ public class GameDbContext : DbContext, IRepository
 
     public void Clean(Game game)
     {
-        foreach (var component in LevelComponents.Where(b => b.GameId == game.Id))
+        foreach (var component in RoomComponents.Where(b => b.GameId == game.Id))
         {
-            LevelComponents.Remove(component);
+            RoomComponents.Remove(component);
         }
 
         foreach (var branch in Branches.Where(b => b.GameId == game.Id))
         {
             Branches.Remove(branch);
+        }
+
+        foreach (var level in Levels.Where(b => b.GameId == game.Id))
+        {
+            Levels.Remove(level);
         }
 
         foreach (var logEntry in LogEntries.Where(e => e.GameId == game.Id))
@@ -800,8 +857,101 @@ public class GameDbContext : DbContext, IRepository
     {
         base.Dispose();
 
-        LevelChangeBuilder?.UnregisterFromGroups(Manager);
-        LevelChangeBuilder = null;
+        RoomChangeBuilder?.UnregisterFromGroups(Manager);
+        RoomChangeBuilder = null;
         Manager = null!;
+    }
+    
+    public static readonly ValueConverter<MapFeature[], byte[]> MapFeatureArrayConverter = CreateByteEnumArrayConverter<MapFeature>();
+
+    public static readonly ValueComparer<MapFeature[]> MapFeatureArrayComparer = CreateByteEnumArrayComparer<MapFeature>();
+
+    public static readonly ValueConverter<DirectionFlags[], byte[]> DirectionFlagsArrayConverter = CreateByteEnumArrayConverter<DirectionFlags>();
+
+    public static readonly ValueComparer<DirectionFlags[]> DirectionFlagsArrayComparer = CreateByteEnumArrayComparer<DirectionFlags>();
+
+    /// <summary>
+    ///     Builds a <see cref="ValueConverter" /> between a <c>TEnum[]</c> and a <c>byte[]</c>
+    ///     for any <see cref="byte" />-backed enum. Element-by-element copy with a per-element
+    ///     cast — analyzer-friendly (CA2018 disallows <see cref="Buffer.BlockCopy" /> with
+    ///     <c>array.Length</c>) and the JIT collapses it to a tight loop.
+    /// </summary>
+    private static ValueConverter<TEnum[], byte[]> CreateByteEnumArrayConverter<TEnum>()
+        where TEnum : struct, Enum
+        => new(
+            v => EnumArrayToBytes(v),
+            v => BytesToEnumArray<TEnum>(v));
+
+    /// <summary>
+    ///     Builds a <see cref="ValueComparer" /> for <c>TEnum[]</c>. The default reference
+    ///     comparer would miss in-place mutations of the room's terrain/neighbor arrays;
+    ///     element-wise equality + per-element hashing fixes that. Snapshot is intentionally
+    ///     unsupported because we don't take property snapshots for these large arrays.
+    /// </summary>
+    private static ValueComparer<TEnum[]> CreateByteEnumArrayComparer<TEnum>()
+        where TEnum : struct, Enum
+        => new(
+            (a, b) => ByteEnumArraysEqual(a, b),
+            v => HashByteEnumArray(v),
+            v => ThrowSnapshotNotSupported(v));
+
+    // Full notification support is implemented, so snapshot methods shouldn't be used.
+    private static T ThrowSnapshotNotSupported<T>(T value)
+        => throw new NotSupportedException($"Cloning of {typeof(T).Name} is not supported.");
+
+    private static byte[] EnumArrayToBytes<TEnum>(TEnum[] source) where TEnum : struct, Enum
+    {
+        var copy = new byte[source.Length];
+        for (var i = 0; i < source.Length; i++)
+        {
+            copy[i] = Unsafe.As<TEnum, byte>(ref source[i]);
+        }
+
+        return copy;
+    }
+
+    private static TEnum[] BytesToEnumArray<TEnum>(byte[] source) where TEnum : struct, Enum
+    {
+        var copy = new TEnum[source.Length];
+        for (var i = 0; i < source.Length; i++)
+        {
+            copy[i] = Unsafe.As<byte, TEnum>(ref source[i]);
+        }
+
+        return copy;
+    }
+
+    private static bool ByteEnumArraysEqual<T>(T[]? a, T[]? b) where T : struct, Enum
+    {
+        if (ReferenceEquals(a, b))
+        {
+            return true;
+        }
+
+        if (a == null || b == null || a.Length != b.Length)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < a.Length; i++)
+        {
+            if (!a[i].Equals(b[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static int HashByteEnumArray<T>(T[] array) where T : struct, Enum
+    {
+        var hash = new HashCode();
+        for (var i = 0; i < array.Length; i++)
+        {
+            hash.Add(array[i]);
+        }
+
+        return hash.ToHashCode();
     }
 }

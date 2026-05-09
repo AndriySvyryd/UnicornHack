@@ -36,7 +36,7 @@ public static partial class CreatureData
         },
         InitialLevel = 2,
         GenerationWeight = "4",
-        GenerationFlags = GenerationFlags.SmallGroup,
+        GenerationFlags = CreatureGenerationFlags.SmallGroup,
         Noise = ActorNoiseType.Bleat,
         Weight = 600,
         MovementDelay = 33,

@@ -16,14 +16,14 @@ public class ConnectingMapFragment : MapFragment
     private Func<string, int, int, int, ConnectionComponent?, float>? _weightFunction;
 
     private static readonly UnicornExpressionVisitor _translator =
-        new(new[] { BranchParameter, DepthParameter, InstancesParameter, TagInstancesParameter, ConnectionParameter });
+        new([BranchParameter, DepthParameter, InstancesParameter, TagInstancesParameter, ConnectionParameter]);
 
     protected override void ResetWeightFunction() => _weightFunction = null;
 
     public static Func<string, int, int, int, ConnectionComponent?, float> CreateWeightFunction(string expression)
         => _translator.Translate<Func<string, int, int, int, ConnectionComponent?, float>, float>(expression);
 
-    public float GetWeight(LevelComponent level, Rectangle boundingRectangle, ConnectionComponent? target)
+    public float GetWeight(RoomComponent room, Rectangle boundingRectangle, ConnectionComponent? target)
     {
         // TODO: take transformations into account
         if (PayloadArea.Width > boundingRectangle.Width || PayloadArea.Height > boundingRectangle.Height)
@@ -45,7 +45,7 @@ public class ConnectingMapFragment : MapFragment
 
         try
         {
-            return _weightFunction(level.Branch.Name, level.Depth, 0, 0, target);
+            return _weightFunction(room.Level.Branch.Name, room.Level.Depth, 0, 0, target);
         }
         catch (Exception e)
         {
@@ -53,58 +53,58 @@ public class ConnectingMapFragment : MapFragment
         }
     }
 
-    public override Room? BuildRoom(LevelComponent level, IEnumerable<Point> points, Action<Point> insideAction,
-        Action<Point> perimeterAction, Action<Point> outsideAction)
+    public override Chunk? BuildChunk(RoomComponent room, IEnumerable<Point> points, Action<Point> insideAction,
+        Action<Point> perimeterAction, Action<Point> outsideAction, int minDoorways = 0)
     {
-        var room = base.BuildRoom(level, points, insideAction, perimeterAction, outsideAction);
-        if (room == null
-            || room.InsidePoints.Count == 0)
+        var chunk = base.BuildChunk(room, points, insideAction, perimeterAction, outsideAction, minDoorways);
+        if (chunk == null
+            || chunk.InsidePoints.Count == 0)
         {
-            return room;
+            return chunk;
         }
 
         var connectionDefinitions = Connections;
         if (connectionDefinitions.Count == 0)
         {
-            connectionDefinitions = new[] { new LevelConnection() };
+            connectionDefinitions = [new LevelConnection()];
         }
 
         foreach (var levelConnection in connectionDefinitions.Where(c => c.Glyph == null))
         {
-            var connectionPoint = level.GenerationRandom.Pick(room.InsidePoints,
-                p => !level.Connections.ContainsKey(p));
-            CreateConnection(level, connectionPoint, levelConnection);
+            var connectionPoint = room.Level.GenerationRandom.Pick(chunk.BoundingRectangle,
+                p => chunk.InsidePoints.Contains(p) && !room.Connections.ContainsKey(p));
+            CreateConnection(room, connectionPoint, levelConnection);
         }
 
-        return room;
+        return chunk;
     }
 
-    protected override void CreateConnection(LevelComponent level, Point point, char? glyph)
-        => CreateConnection(level, point, Connections.FirstOrDefault(c => c.Glyph == glyph));
+    protected override void CreateConnection(RoomComponent room, Point point, char? glyph)
+        => CreateConnection(room, point, Connections.FirstOrDefault(c => c.Glyph == glyph));
 
     protected virtual void CreateConnection(
-        LevelComponent level, Point point, LevelConnection? connectionDefinition)
+        RoomComponent room, Point point, LevelConnection? connectionDefinition)
     {
-        foreach (var connectionEntity in level.IncomingConnections)
+        foreach (var connectionEntity in room.IncomingConnections)
         {
             var connection = connectionEntity.Connection!;
             if (connection.TargetLevelX == null)
             {
-                var target = connection.TargetLevelEntity.Level!;
+                var target = connection.TargetRoomEntity.Room!;
                 if ((connectionDefinition?.BranchName == null
-                     || connectionDefinition.BranchName == target.BranchName)
+                     || connectionDefinition.BranchName == target.Level.BranchName)
                     && (connectionDefinition?.Depth == null
-                        || connectionDefinition.Depth == target.Depth)
-                    && LevelConnection.AreMatchingDirection(connection.Direction, connectionDefinition?.Direction))
+                        || connectionDefinition.Depth == target.Level.Depth)
+                    && LevelConnection.AreMatchingDirectionality(connection.Directionality, connectionDefinition?.Direction))
                 {
-                    LevelConnection.CreateReceivingConnection(level, point, connection,
+                    LevelConnection.CreateReceivingConnection(room, point, connection,
                         connectionDefinition?.Direction);
                     return;
                 }
             }
         }
 
-        LevelConnection.CreateSourceConnection(level, point, connectionDefinition);
+        LevelConnection.CreateSourceConnection(room, point, connectionDefinition);
     }
 
     public static readonly CSScriptLoader<ConnectingMapFragment> Loader =

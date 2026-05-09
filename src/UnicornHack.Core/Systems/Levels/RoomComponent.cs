@@ -1,52 +1,119 @@
-﻿using System.Buffers;
-using UnicornHack.Utils;
+﻿using UnicornHack.Utils;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Levels;
 
-[Component(Id = (int)EntityComponent.Level)]
-public class LevelComponent : GameComponent, IKeepAliveComponent
+[Component(Id = (int)EntityComponent.Room)]
+public class RoomComponent : GameComponent, IKeepAliveComponent
 {
     private string? _branchName;
-    private GameBranch? _branch;
-    private int _difficulty;
     private byte _depth;
+    private GameLevel? _level;
+    private RoomFeatures _features;
+    private RoomReveal _reveal;
+    private byte _gridX;
+    private byte _gridY;
+    private bool _isVisited;
     private byte _height;
     private byte _width;
-    private SimpleRandom? _generationRandom;
-    private byte[]? _visibleTerrain;
-    private byte[]? _visibleNeighbors;
-    private byte[]? _terrain;
-    private byte[]? _knownTerrain;
-    private byte[]? _wallNeighbors;
+    private byte[] _visibleTerrain = Array.Empty<byte>();
+    private DirectionFlags[] _knownNeighbors = Array.Empty<DirectionFlags>();
+    private MapFeature[] _terrain = Array.Empty<MapFeature>();
+    private MapFeature[] _knownTerrain = Array.Empty<MapFeature>();
+    private DirectionFlags[] _neighbors = Array.Empty<DirectionFlags>();
 
-    public LevelComponent()
+    public RoomComponent()
     {
-        ComponentId = (int)EntityComponent.Level;
+        ComponentId = (int)EntityComponent.Room;
     }
 
     public string BranchName
     {
         get => _branchName!;
-        set => SetWithNotify(value, ref _branchName);
-    }
-
-    public GameBranch Branch
-    {
-        get => _branch!;
-        set => SetWithNotify(value, ref _branch);
-    }
-
-    public int Difficulty
-    {
-        get => _difficulty;
-        set => SetWithNotify(value, ref _difficulty);
+        set
+        {
+            _level = null;
+            SetWithNotify(value, ref _branchName);
+        }
     }
 
     public byte Depth
     {
         get => _depth;
-        set => SetWithNotify(value, ref _depth);
+        set
+        {
+            _level = null;
+            SetWithNotify(value, ref _depth);
+        }
+    }
+
+    public GameLevel Level
+    {
+        get
+        {
+            if (_level != null)
+            {
+                return _level;
+            }
+
+            if (_branchName == null)
+            {
+                return null!;
+            }
+
+            var entity = Entity;
+            var branch = entity?.Game?.GetBranch(_branchName);
+            if (branch == null)
+            {
+                return null!;
+            }
+
+            foreach (var l in branch.Levels)
+            {
+                if (l.Depth == _depth)
+                {
+                    return _level = l;
+                }
+            }
+
+            return null!;
+        }
+        set
+        {
+            BranchName = value.BranchName;
+            Depth = value.Depth;
+            _level = value;
+        }
+    }
+
+    public RoomFeatures Features
+    {
+        get => _features;
+        set => SetWithNotify(value, ref _features);
+    }
+
+    public RoomReveal Reveal
+    {
+        get => _reveal;
+        set => SetWithNotify(value, ref _reveal);
+    }
+
+    public byte GridX
+    {
+        get => _gridX;
+        set => SetWithNotify(value, ref _gridX);
+    }
+
+    public byte GridY
+    {
+        get => _gridY;
+        set => SetWithNotify(value, ref _gridY);
+    }
+
+    public bool IsVisited
+    {
+        get => _isVisited;
+        set => SetWithNotify(value, ref _isVisited);
     }
 
     public byte Height
@@ -63,15 +130,9 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
 
     public short TileCount => (short)(Height * Width);
 
-    public SimpleRandom GenerationRandom
-    {
-        get => _generationRandom!;
-        set => SetWithNotify(value, ref _generationRandom);
-    }
-
     public byte[] VisibleTerrain
     {
-        get => _visibleTerrain!;
+        get => _visibleTerrain;
         set => SetWithNotify(value, ref _visibleTerrain);
     }
 
@@ -87,54 +148,53 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
         set;
     }
 
-    public byte[] VisibleNeighbors
+    public MapFeature[] Terrain
     {
-        get => _visibleNeighbors!;
-        set => SetWithNotify(value, ref _visibleNeighbors);
-    }
-
-    public bool VisibleNeighborsChanged
-    {
-        get;
-        set;
-    }
-
-    public byte[] Terrain
-    {
-        get => _terrain!;
+        get => _terrain;
         set => SetWithNotify(value, ref _terrain);
     }
 
-    public Dictionary<short, byte>? TerrainChanges
+    public Dictionary<short, MapFeature>? TerrainChanges
     {
         get;
         set;
     } = new();
 
-    public byte[] KnownTerrain
+    public MapFeature[] KnownTerrain
     {
-        get => _knownTerrain!;
+        get => _knownTerrain;
         set => SetWithNotify(value, ref _knownTerrain);
     }
 
-    public Dictionary<short, byte>? KnownTerrainChanges
+    public Dictionary<short, MapFeature>? KnownTerrainChanges
     {
         get;
         set;
     } = new();
 
-    // TODO: Track known neighbors as well
-    public byte[] WallNeighbors
+    public DirectionFlags[] Neighbors
     {
-        get => _wallNeighbors!;
-        set => SetWithNotify(value, ref _wallNeighbors);
+        get => _neighbors;
+        set => SetWithNotify(value, ref _neighbors);
     }
 
-    public Dictionary<short, byte>? WallNeighborsChanges
+    public Dictionary<short, DirectionFlags>? NeighborChanges
     {
         get;
         set;
     } = new();
+
+    public DirectionFlags[] KnownNeighbors
+    {
+        get => _knownNeighbors;
+        set => SetWithNotify(value, ref _knownNeighbors);
+    }
+
+    public bool KnownNeighborsChanged
+    {
+        get;
+        set;
+    }
 
     public IReadOnlyDictionary<Point, GameEntity> Actors
     {
@@ -215,7 +275,7 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
 #pragma warning restore CS8774
 
     private DirectionFlags GetVisibleNeighbors(byte x, byte y) => x < Width && y < Height
-        ? (DirectionFlags)VisibleNeighbors[PointToIndex![x, y]]
+        ? KnownNeighbors[PointToIndex![x, y]]
         : DirectionFlags.None;
 
     public bool IsValid(Point point)
@@ -223,30 +283,7 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
 
     protected override void Clean()
     {
-        if (_visibleTerrain != null)
-        {
-            ArrayPool<byte>.Shared.Return(_visibleTerrain);
-        }
-
-        if (_visibleNeighbors != null)
-        {
-            ArrayPool<byte>.Shared.Return(_visibleNeighbors);
-        }
-
-        if (_terrain != null)
-        {
-            ArrayPool<byte>.Shared.Return(_terrain);
-        }
-
-        if (_knownTerrain != null)
-        {
-            ArrayPool<byte>.Shared.Return(_knownTerrain);
-        }
-
-        if (_wallNeighbors != null)
-        {
-            ArrayPool<byte>.Shared.Return(_wallNeighbors);
-        }
+        LevelLayout.ReleaseTerrain(this);
 
         ((Dictionary<Point, GameEntity>?)Actors)?.Clear();
         ((Dictionary<Point, GameEntity>?)Items)?.Clear();
@@ -257,17 +294,13 @@ public class LevelComponent : GameComponent, IKeepAliveComponent
         ((Dictionary<Point, GameEntity>?)KnownConnections)?.Clear();
 
         _branchName = default;
-        _branch = default;
-        _difficulty = default;
         _depth = default;
-        _height = default;
-        _width = default;
-        _generationRandom = default;
-        _visibleTerrain = default;
-        _visibleNeighbors = default;
-        _terrain = default;
-        _knownTerrain = default;
-        _wallNeighbors = default;
+        _level = default;
+        _features = default;
+        _reveal = default;
+        _gridX = default;
+        _gridY = default;
+        _isVisited = default;
 
         base.Clean();
     }

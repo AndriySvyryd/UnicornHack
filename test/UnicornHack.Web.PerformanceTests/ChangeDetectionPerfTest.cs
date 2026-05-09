@@ -50,10 +50,10 @@ public class ChangeDetectionPerfTest
 ....................";
 
     private Game _game = null!;
-    private LevelComponent _level = null!;
+    private RoomComponent _room = null!;
     private GameEntity _playerEntity = null!;
     private PlayerComponent _player = null!;
-    private LevelChangeBuilder _builder = null!;
+    private RoomChangeBuilder _builder = null!;
     private GameServices _services = null!;
 
     /// <summary>
@@ -66,11 +66,11 @@ public class ChangeDetectionPerfTest
     public void Setup()
     {
         _game = WebTestHelper.CreateGame();
-        _level = WebTestHelper.BuildLevel(Map, _game);
+        _room = TestHelper.BuildRoom(Map, _game);
         var manager = _game.Manager;
 
         var center = new Point(10, 7);
-        _playerEntity = PlayerRace.InstantiatePlayer("Bench", Sex.Male, _level, center);
+        _playerEntity = PlayerRace.InstantiatePlayer("Bench", Sex.Male, _room, center);
         manager.Queue.ProcessQueue(manager);
 
         // Equip the player so attack-summary recomputation is exercised every turn.
@@ -94,12 +94,12 @@ public class ChangeDetectionPerfTest
 
                     var x = center.X + dx;
                     var y = center.Y + dy;
-                    if (x <= 0 || x >= _level.Width - 1 || y <= 0 || y >= _level.Height - 1)
+                    if (x <= 0 || x >= _room.Width - 1 || y <= 0 || y >= _room.Height - 1)
                     {
                         continue;
                     }
 
-                    CreatureData.Human.Instantiate(_level, new Point((byte)x, (byte)y));
+                    CreatureData.Human.Instantiate(_room, new Point((byte)x, (byte)y));
                     placed++;
                 }
             }

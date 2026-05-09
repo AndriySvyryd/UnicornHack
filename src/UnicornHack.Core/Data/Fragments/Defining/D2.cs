@@ -7,8 +7,8 @@ public static partial class DefiningMapFragmentData
         Name = "d2",
         GenerationWeight = "0",
         NoRandomDoorways = true,
-        LevelHeight = 5,
-        LevelWidth = 5,
+        RoomHeight = 5,
+        RoomWidth = 5,
         Map = @"
 #####
 #BBB#

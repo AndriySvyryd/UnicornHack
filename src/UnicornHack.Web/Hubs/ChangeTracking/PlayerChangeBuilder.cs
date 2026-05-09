@@ -15,7 +15,7 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
 
     private PlayerChange _pendingChange = new();
 
-    public LevelChangeBuilder LevelChangeBuilder
+    public RoomChangeBuilder RoomChangeBuilder
     {
         get;
     }
@@ -29,22 +29,22 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
 
     /// <summary>
     ///     Id of the level entity the client last received in a full snapshot.
-    ///     Used to detect cross-level transitions so a full <see cref="LevelChange" /> snapshot
+    ///     Used to detect cross-level transitions so a full <see cref="RoomChange" /> snapshot
     ///     is emitted instead of a delta (which carries only entity/terrain changes, not
-    ///     <see cref="LevelChange.Width" /> / <see cref="LevelChange.Height" /> /
-    ///     <see cref="LevelChange.BranchName" /> / <see cref="LevelChange.Depth" />).
+    ///     <see cref="RoomChange.Width" /> / <see cref="RoomChange.Height" /> /
+    ///     <see cref="RoomChange.BranchName" /> / <see cref="RoomChange.Depth" />).
     /// </summary>
-    private int LastSentLevelId
+    private int LastSentRoomId
     {
         get; set;
     }
 
-    public PlayerChangeBuilder(GameEntity playerEntity, LevelChangeBuilder levelChangeBuilder)
+    public PlayerChangeBuilder(GameEntity playerEntity, RoomChangeBuilder roomChangeBuilder)
     {
         _playerEntityId = playerEntity.Id;
         LastSentTick = playerEntity.Game.CurrentTick;
-        LastSentLevelId = playerEntity.Position?.LevelId ?? 0;
-        LevelChangeBuilder = levelChangeBuilder;
+        LastSentRoomId = playerEntity.Position?.RoomId ?? 0;
+        RoomChangeBuilder = roomChangeBuilder;
 
         _raceBuilder = new RaceChangeBuilder(playerEntity.Id);
         _abilityBuilder = new AbilityChangeBuilder(playerEntity.Id);
@@ -64,13 +64,13 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
             return true;
         }
 
-        var currentLevelId = playerEntity?.Position?.LevelId ?? 0;
-        if (currentLevelId != LastSentLevelId)
+        var currentRoomId = playerEntity?.Position?.RoomId ?? 0;
+        if (currentRoomId != LastSentRoomId)
         {
             return true;
         }
 
-        return LevelChangeBuilder.HasChanges(playerEntity?.Position?.LevelEntity.Level);
+        return RoomChangeBuilder.HasChanges(playerEntity?.Position?.RoomEntity.Room);
     }
 
     public PlayerChange BuildChangeSet(GameManager manager, GameServices services)
@@ -94,22 +94,22 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
         };
         LastSentTick = manager.Game.CurrentTick;
 
-        var currentLevelEntity = playerEntity.Position?.LevelEntity;
-        var currentLevelId = currentLevelEntity?.Id ?? 0;
-        if (currentLevelId != LastSentLevelId && currentLevelEntity != null)
+        var currentRoomEntity = playerEntity.Position?.RoomEntity;
+        var currentRoomId = currentRoomEntity?.Id ?? 0;
+        if (currentRoomId != LastSentRoomId && currentRoomEntity != null)
         {
             // Player moved to a different level. Emit a full snapshot.
-            change.Level = LevelChangeBuilder.SerializeLevel(
-                currentLevelEntity, new SerializationContext(null!, playerEntity, services));
-            LastSentLevelId = currentLevelId;
+            change.Room = RoomChangeBuilder.SerializeRoom(
+                currentRoomEntity, new SerializationContext(null!, playerEntity, services));
+            LastSentRoomId = currentRoomId;
         }
         else
         {
-            var levelChangeSet = LevelChangeBuilder.GetSerializedLevel(
-                currentLevelEntity, playerEntity, services);
+            var levelChangeSet = RoomChangeBuilder.GetSerializedRoom(
+                currentRoomEntity, playerEntity, services);
             if (levelChangeSet != null)
             {
-                change.Level = levelChangeSet;
+                change.Room = levelChangeSet;
             }
         }
 
@@ -190,8 +190,8 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
         var player = playerEntity.Player!;
         var being = playerEntity.Being!;
 
-        var serializedLevel = LevelChangeBuilder.SerializeLevel(
-            playerEntity.Position!.LevelEntity, context);
+        var serializedLevel = RoomChangeBuilder.SerializeRoom(
+            playerEntity.Position!.RoomEntity, context);
 
         var races = new Dictionary<int, RaceChange>();
         foreach (var race in being.Races)
@@ -225,7 +225,7 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
             Id = playerEntity.Position.Knowledge!.Id,
             PreviousTick = 0,
             CurrentTick = player.Game.CurrentTick,
-            Level = serializedLevel,
+            Room = serializedLevel,
             Races = races,
             Abilities = abilities,
             Log = logEntries,
@@ -242,14 +242,14 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
 
     public void RegisterOnGroups(GameManager manager)
     {
-        manager.LevelActors.AddListener(this);
+        manager.RoomActors.AddListener(this);
         _raceBuilder.RegisterOnGroups(manager);
         _abilityBuilder.RegisterOnGroups(manager);
     }
 
     public void UnregisterFromGroups(GameManager manager)
     {
-        manager.LevelActors.RemoveListener(this);
+        manager.RoomActors.RemoveListener(this);
         _raceBuilder.UnregisterFromGroups(manager);
         _abilityBuilder.UnregisterFromGroups(manager);
     }

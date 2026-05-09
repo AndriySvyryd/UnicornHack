@@ -10,13 +10,13 @@ public class ConnectionChangeBuilder : ChangeBuilder<ConnectionChange>
     public override void RegisterOnGroups(GameManager manager)
     {
         manager.KnownPositions.AddListener(this);
-        manager.KnownConnectionsToLevelCellRelationship.AddDependentsListener(this);
+        manager.KnownConnectionsToCellRelationship.AddDependentsListener(this);
     }
 
     public override void UnregisterFromGroups(GameManager manager)
     {
         manager.KnownPositions.RemoveListener(this);
-        manager.KnownConnectionsToLevelCellRelationship.RemoveDependentsListener(this);
+        manager.KnownConnectionsToCellRelationship.RemoveDependentsListener(this);
     }
 
     protected override bool IsRelevant(GameEntity entity)
@@ -50,15 +50,14 @@ public class ConnectionChangeBuilder : ChangeBuilder<ConnectionChange>
         var position = knownEntity.Position!;
         return new ConnectionChange
         {
-            LevelX = position.LevelX,
-            LevelY = position.LevelY,
-            IsDown = knownEntity.Connection!.TargetLevelEntity.Level!.Depth
-                > position.LevelEntity.Level!.Depth
+            LevelX = position.CellX,
+            LevelY = position.CellY,
+            Orientation = knownEntity.Connection!.Orientation
         };
     }
 
     private static bool IsSourceConnection(ConnectionComponent? connection)
         => connection != null
-            && (connection.Direction == null
-                || (connection.Direction & ConnectionDirection.Source) != 0);
+            && (connection.Directionality == null
+                || (connection.Directionality & Directionality.Source) != 0);
 }

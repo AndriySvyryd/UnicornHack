@@ -1,6 +1,7 @@
 namespace UnicornHack.Utils.DataLoading;
 
-public class SingleCSScriptLoader<T> : CSScriptLoaderBase<T> where T : class, ILoadable, new()
+public class SingleCSScriptLoader<T> : CSScriptLoaderBase<T>, ISingleLoader<T>
+    where T : class, ILoadable, new()
 {
     private readonly string _name;
 

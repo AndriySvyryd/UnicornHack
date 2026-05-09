@@ -11,8 +11,8 @@ public class Game : NotificationEntity
     private int _nextEntityId;
     private int _nextLogId;
     private int _nextCommandId;
-    private uint _initialSeed;
     private SimpleRandom _random = null!;
+    private GameOptions _options = new();
     private int? _actingPlayerId;
     private GameEntity? _actingPlayer;
 
@@ -47,18 +47,17 @@ public class Game : NotificationEntity
         set => SetWithNotify(value, ref _nextCommandId);
     }
 
-    public uint InitialSeed
-    {
-        get => _initialSeed;
-        // ReSharper disable once UnusedMember.Local
-        set => SetWithNotify(value, ref _initialSeed);
-    }
-
     public SimpleRandom Random
     {
         get => _random;
         // ReSharper disable once UnusedMember.Local
         set => SetWithNotify(value, ref _random);
+    }
+
+    public GameOptions Options
+    {
+        get => _options;
+        set => SetWithNotify(value, ref _options);
     }
 
     public int? ActingPlayerId
@@ -102,25 +101,25 @@ public class Game : NotificationEntity
         => Branches.FirstOrDefault(b => b.Name == branchName)
            ?? Repository.Find<GameBranch>(Id, branchName);
 
-    public GameEntity? LoadLevel(int levelId)
+    public GameEntity? LoadRoom(int roomId)
     {
-        var levelEntity = Manager.FindEntity(levelId);
-        if (levelEntity == null
-            || LevelGenerator.EnsureGenerated(levelEntity.Level!))
+        var roomEntity = Manager.FindEntity(roomId);
+        if (roomEntity == null
+            || LevelGenerator.EnsureGenerated(roomEntity.Room!))
         {
-            return levelEntity;
+            return roomEntity;
         }
 
-        var levelsToLoad = levelEntity.Level!.Connections.Values
-            .Select(c => c.Connection!.TargetLevelId)
+        var roomsToLoad = roomEntity.Room!.Connections.Values
+            .Select(c => c.Connection!.TargetRoomId)
             .Where(id => Manager.FindEntity(id) == null)
             .ToList();
-        if (levelsToLoad.Count > 0)
+        if (roomsToLoad.Count > 0)
         {
-            Repository.LoadLevels(levelsToLoad);
+            Repository.LoadRooms(roomsToLoad);
         }
 
-        return levelEntity;
+        return roomEntity;
     }
 
     public override bool Equals(object? obj)

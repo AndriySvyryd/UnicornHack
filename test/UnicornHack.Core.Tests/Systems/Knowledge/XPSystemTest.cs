@@ -12,11 +12,11 @@ public class XPSystemTest
     [Fact]
     public void Xp_gained_on_exploration()
     {
-        var level = TestHelper.BuildLevel(@"
+        var level = TestHelper.BuildRoom(@"
 ...
 >..
 ..#");
-        level.Difficulty = 3;
+        level.Level.Difficulty = 3;
 
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         player.Position!.Heading = Direction.West;
@@ -40,7 +40,7 @@ public class XPSystemTest
     [Fact]
     public void Xp_gained_on_enemy_death()
     {
-        var level = TestHelper.BuildLevel("..");
+        var level = TestHelper.BuildRoom("..");
         var undine = CreatureData.Undine.Instantiate(level, new Point(0, 0));
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(1, 0));
         player.Position!.Heading = Direction.West;
@@ -59,7 +59,7 @@ public class XPSystemTest
     [Fact]
     public void Races_level_up()
     {
-        var level = TestHelper.BuildLevel(".");
+        var level = TestHelper.BuildRoom(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         var player = playerEntity.Player!;
         var manager = playerEntity.Manager;
@@ -160,7 +160,7 @@ public class XPSystemTest
     [Fact]
     public void Some_abilities_cooldown_with_xp()
     {
-        var level = TestHelper.BuildLevel(".");
+        var level = TestHelper.BuildRoom(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         var manager = playerEntity.Manager;
 
@@ -201,7 +201,7 @@ public class XPSystemTest
     [Fact]
     public void Some_effects_expire_with_xp()
     {
-        var level = TestHelper.BuildLevel(".");
+        var level = TestHelper.BuildRoom(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         var manager = playerEntity.Manager;
 

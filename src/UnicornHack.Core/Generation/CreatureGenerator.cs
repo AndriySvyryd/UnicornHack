@@ -1,4 +1,4 @@
-﻿using UnicornHack.Systems.Levels;
+using UnicornHack.Systems.Levels;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Generation;
@@ -11,35 +11,37 @@ public class CreatureGenerator
         set;
     } = 8;
 
-    public virtual void Fill(LevelComponent level, IReadOnlyList<Room> rooms)
+    public virtual void Fill(RoomComponent room, IReadOnlyList<Chunk> chunks)
     {
-        var actorsCount = level.Actors.Count;
-        var creaturesToPlace = level.GenerationRandom.NextBinomial(0.5f, (ExpectedInitialCount - actorsCount) * 2);
-        var roomsToFill = rooms.Count;
-        var difficultyFraction = (float)(level.Difficulty - 1) / LevelGenerator.MaxDifficulty;
+        var actorsCount = room.Actors.Count;
+        var creaturesToPlace = room.Level.GenerationRandom.NextBinomial(0.5f, (ExpectedInitialCount - actorsCount) * 2);
+        var roomsToFill = chunks.Count;
+        var difficultyFraction = (float)(room.Level.Difficulty - 1) / LevelGenerator.MaxDifficulty;
 
-        foreach (var room in level.GenerationRandom.WeightedOrder(rooms, r => r.InsidePoints.Count))
+        foreach (var chunk in room.Level.GenerationRandom.WeightedOrder(chunks, r => r.InsidePoints.Count))
         {
             var creaturesPerRoom = (int)Math.Ceiling((float)creaturesToPlace / roomsToFill);
             for (var i = 0; i < creaturesPerRoom; i++)
             {
-                if (!level.GenerationRandom.TryPick(
-                        room.InsidePoints,
-                        p => !level.Actors.ContainsKey(p),
+                if (!room.Level.GenerationRandom.TryPick(
+                        chunk.InsidePoints,
+                        p => !room.Actors.ContainsKey(p),
                         out var point))
                 {
                     goto NextRoom;
                 }
 
                 foreach (var creatureLevel in Sequence.GetAlternating(
-                             level.GenerationRandom.NextBinomial(difficultyFraction, Creature.MaxLevel - 1), 0,
+                             room.Level.GenerationRandom.NextBinomial(difficultyFraction, Creature.MaxLevel - 1), 0,
                              Creature.MaxLevel - 1))
                 {
-                    foreach (var creatureVariant in level.GenerationRandom.WeightedOrder(
-                                 Creature.Loader.GetAllValues((byte)(creatureLevel + 1)), c => c.GetWeight(level)))
+                    foreach (var creatureVariant in room.Level.GenerationRandom.WeightedOrder(
+                                 room.Level.Game.Services.Data.Creatures.GetAllValues((byte)(creatureLevel + 1)), c => c.GetWeight(room)))
                     {
-                        if (creatureVariant.Instantiate(level, point) != null)
+                        if (creatureVariant.Instantiate(room, point) != null)
                         {
+                            room.Level.GenerationStats.RecordCreatureInstance(
+                                creatureVariant.Name, creatureVariant.GenerationFlags);
                             goto CreaturePlaced;
                         }
                     }

@@ -5,11 +5,11 @@ using UnicornHack.Hubs.ChangeTracking;
 
 namespace UnicornHack.Hubs.MessagePack;
 
-public sealed class LevelMapChangesFormatter : IMessagePackFormatter<LevelMapChanges?>
+public sealed class RoomMapChangesFormatter : IMessagePackFormatter<RoomMapChanges?>
 {
-    public static readonly LevelMapChangesFormatter Instance = new();
+    public static readonly RoomMapChangesFormatter Instance = new();
 
-    public void Serialize(ref MessagePackWriter writer, LevelMapChanges? value, MessagePackSerializerOptions options)
+    public void Serialize(ref MessagePackWriter writer, RoomMapChanges? value, MessagePackSerializerOptions options)
     {
         if (value == null)
         {
@@ -19,18 +19,18 @@ public sealed class LevelMapChangesFormatter : IMessagePackFormatter<LevelMapCha
 
         var resolver = options.Resolver;
         var values = value.ChangedProperties;
-        var length = ChangeSetFormatterHelper.GetSerializedLength(values, LevelMapChanges.PropertyCount);
+        var length = ChangeSetFormatterHelper.GetSerializedLength(values, RoomMapChanges.PropertyCount);
         writer.WriteArrayHeader(length);
         resolver.GetFormatterWithVerify<BitArray?>().Serialize(ref writer, values, options);
         if (values == null || values[1])
         {
-            resolver.GetFormatterWithVerify<List<(short, byte)>?>()
+            resolver.GetFormatterWithVerify<List<(short, MapFeature)>?>()
                 .Serialize(ref writer, value.TerrainChanges, options);
         }
 
         if (values == null || values[2])
         {
-            resolver.GetFormatterWithVerify<List<(short, byte)>?>()
+            resolver.GetFormatterWithVerify<List<(short, DirectionFlags)>?>()
                 .Serialize(ref writer, value.WallNeighborsChanges, options);
         }
 
@@ -41,7 +41,7 @@ public sealed class LevelMapChangesFormatter : IMessagePackFormatter<LevelMapCha
         }
     }
 
-    public LevelMapChanges? Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
+    public RoomMapChanges? Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
     {
         if (reader.TryReadNil())
         {
@@ -49,22 +49,34 @@ public sealed class LevelMapChangesFormatter : IMessagePackFormatter<LevelMapCha
         }
 
         var resolver = options.Resolver;
-        var count = reader.ReadArrayHeader();
-        var value = new LevelMapChanges();
-        for (var i = 0; i < count; i++)
+        var length = reader.ReadArrayHeader();
+        var value = new RoomMapChanges();
+        BitArray? values = null;
+
+        for (var i = 0; i < length; i++)
         {
+            if (values != null && !values[i])
+            {
+                continue;
+            }
+
             switch (i)
             {
                 case 0:
-                    value.ChangedProperties =
-                        resolver.GetFormatterWithVerify<BitArray?>().Deserialize(ref reader, options);
+                    values = resolver.GetFormatterWithVerify<BitArray?>().Deserialize(ref reader, options);
+                    if (values != null)
+                    {
+                        length = values.Length;
+                    }
+
+                    value.ChangedProperties = values;
                     break;
                 case 1:
-                    value.TerrainChanges = resolver.GetFormatterWithVerify<List<(short, byte)>?>()
+                    value.TerrainChanges = resolver.GetFormatterWithVerify<List<(short, MapFeature)>?>()
                         .Deserialize(ref reader, options);
                     break;
                 case 2:
-                    value.WallNeighborsChanges = resolver.GetFormatterWithVerify<List<(short, byte)>?>()
+                    value.WallNeighborsChanges = resolver.GetFormatterWithVerify<List<(short, DirectionFlags)>?>()
                         .Deserialize(ref reader, options);
                     break;
                 case 3:

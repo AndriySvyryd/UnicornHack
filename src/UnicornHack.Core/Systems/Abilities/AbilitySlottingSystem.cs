@@ -109,8 +109,8 @@ public class AbilitySlottingSystem :
                     var position = ability.OwnerEntity!.Position!;
                     var dropMessage = MoveItemMessage.Create(manager);
                     dropMessage.ItemEntity = manager.FindEntity(itemId)!;
-                    dropMessage.TargetLevelEntity = position.LevelEntity;
-                    dropMessage.TargetCell = position.LevelCell;
+                    dropMessage.TargetRoomEntity = position.RoomEntity;
+                    dropMessage.TargetCell = position.Cell;
 
                     manager.Enqueue(dropMessage);
                 }
@@ -153,8 +153,8 @@ public class AbilitySlottingSystem :
             var position = message.PrincipalEntity.Position!;
             var dropMessage = MoveItemMessage.Create(manager);
             dropMessage.ItemEntity = manager.FindEntity(itemId)!;
-            dropMessage.TargetLevelEntity = position.LevelEntity;
-            dropMessage.TargetCell = position.LevelCell;
+            dropMessage.TargetRoomEntity = position.RoomEntity;
+            dropMessage.TargetCell = position.Cell;
             dropMessage.SuppressLog = true;
 
             manager.Enqueue(dropMessage);

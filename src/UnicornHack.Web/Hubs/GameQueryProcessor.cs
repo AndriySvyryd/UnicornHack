@@ -1,4 +1,5 @@
 using UnicornHack.Data.Abilities;
+using UnicornHack.Hubs.ChangeTracking;
 using UnicornHack.Services;
 using UnicornHack.Systems.Abilities;
 
@@ -61,7 +62,7 @@ public static class GameQueryProcessor
             var effect = effectEntity.Effect!;
             if (effect.EffectType != EffectType.AddAbility
                 || effect.TargetName == null
-                || !(Ability.Loader.Find(effect.TargetName) is LeveledAbility template))
+                || !(context.Services.Data.Abilities.Find(effect.TargetName) is LeveledAbility template))
             {
                 continue;
             }
@@ -247,7 +248,12 @@ public static class GameQueryProcessor
 
         if (ability.Template != null)
         {
-            result.Add(context.Services.Language.GetDescription(ability.Name!, DescriptionCategory.Ability));
+            // ability.Name may legitimately be null for synthesized sub-abilities (e.g. inner attack
+            // abilities of a wielded weapon).
+            // TODO: Generate a name for synthesized abilities
+            result.Add(ability.Name is { } name
+                ? context.Services.Data.Abilities.Find(name)?.EnglishDescription ?? ""
+                : "");
         }
 
         return result;
@@ -263,7 +269,7 @@ public static class GameQueryProcessor
 
         var manager = itemEntity!.Manager;
         var item = itemEntity.Item!;
-        var template = Item.Loader.Get(item.TemplateName);
+        var template = context.Services.Data.Items.Get(item.TemplateName);
         var physical = itemEntity.Physical!;
         var equipableSlots = manager.ItemUsageSystem.GetEquipableSlots(item, context.Observer.Physical!.Size)
             .GetNonRedundantFlags(removeComposites: true)
@@ -334,4 +340,134 @@ public static class GameQueryProcessor
         context.Services.Language.GetString(slot, context.Observer, abbreviate: true),
         context.Services.Language.GetString(slot, context.Observer, abbreviate: false)
     };
+
+    /// <summary>
+    ///     Serializes the room graph for the level the player is currently in. Per-room reveal
+    ///     rules:
+    ///     <list type="bullet">
+    ///         <item>Features and graph topology are always revealed (the picker on the client
+    ///             needs to render every cell).</item>
+    ///         <item><see cref="RoomEntry.RevealedActorCount" /> /
+    ///             <see cref="RoomEntry.RevealedItemCount" /> are populated for the player's
+    ///             current room, every adjacent (1 hop) room and every visited room.</item>
+    ///         <item><see cref="RoomEntry.StrongestActorName" /> is populated for visited
+    ///             rooms only.</item>
+    ///     </list>
+    ///     "Adjacent" follows non-hidden intra-level connections; hidden corridors don't reveal
+    ///     anything until traversed.
+    /// </summary>
+    public static LevelMap SerializeRoomMap(GameEntity playerEntity)
+    {
+        var currentRoom = playerEntity.Position?.RoomEntity.Room;
+        if (currentRoom == null)
+        {
+            return new LevelMap();
+        }
+
+        var gameLevel = currentRoom.Level;
+        var result = new LevelMap();
+
+        // Compute available travel targets based on hostiles + player position.
+        // TODO: Check hostility
+        var hasHostiles = currentRoom.Actors.Values.Any(a => a.HasComponent(EntityComponent.AI));
+        var playerCell = playerEntity.Position!.Cell;
+
+        // Distance 0 = current room; distance 1 = adjacent via non-hidden intra-level
+        // connection; everything else stays unrevealed unless visited.
+        var adjacentRoomIds = new HashSet<int>();
+        foreach (var connectionEntity in currentRoom.Connections.Values)
+        {
+            var connection = connectionEntity.Connection!;
+            var targetRoom = connection.TargetRoomEntity.Room;
+            if (targetRoom == null || targetRoom.Level != gameLevel || connection.Hidden)
+            {
+                continue;
+            }
+            adjacentRoomIds.Add(targetRoom.EntityId);
+        }
+
+        var languageService = playerEntity.Manager.Game.Services.Language;
+
+        foreach (var room in gameLevel.Rooms)
+        {
+            var connectedTo = new List<int>();
+            foreach (var connectionEntity in room.Connections.Values)
+            {
+                var connection = connectionEntity.Connection!;
+                var targetRoom = connection.TargetRoomEntity.Room;
+                if (targetRoom == null || targetRoom.Level != room.Level || connection.Hidden)
+                {
+                    continue;
+                }
+
+                connectedTo.Add(targetRoom.EntityId);
+
+                // A target is available if this is the current room AND either there are no
+                // hostiles or the player is standing on this specific connection tile.
+                if (room.EntityId == currentRoom.EntityId)
+                {
+                    var connectionTile = connectionEntity.Position!.Cell;
+                    if (!hasHostiles || playerCell == connectionTile)
+                    {
+                        result.AvailableTargets.Add(targetRoom.EntityId);
+                    }
+                }
+            }
+
+            var entry = new RoomEntry
+            {
+                Id = room.EntityId,
+                GridX = room.GridX,
+                GridY = room.GridY,
+                Features = room.Features,
+                IsVisited = room.IsVisited,
+                ConnectedTo = connectedTo
+            };
+
+            var isCurrent = room.EntityId == currentRoom.EntityId;
+            var isClose = isCurrent || adjacentRoomIds.Contains(room.EntityId);
+            if (isClose || room.IsVisited)
+            {
+                entry.RevealedActorCount = isCurrent
+                    ? room.Actors.Values.Count(a => a != playerEntity)
+                    : room.Actors.Count;
+                entry.RevealedItemCount = room.Items.Count;
+            }
+
+            if (room.IsVisited)
+            {
+                GameEntity? strongest = null;
+                var bestHp = -1;
+                foreach (var actor in room.Actors.Values)
+                {
+                    if (actor == playerEntity)
+                    {
+                        continue;
+                    }
+                    var hp = actor.Being?.HitPointMaximum ?? 0;
+                    if (hp > bestHp)
+                    {
+                        bestHp = hp;
+                        strongest = actor;
+                    }
+                }
+                if (strongest != null)
+                {
+                    entry.StrongestActorName = languageService.GetActorName(strongest, isIdentified: true);
+                }
+            }
+
+            entry.Tooltip = languageService.GetRoomTooltip(
+                entry.Features,
+                isCurrent,
+                entry.IsVisited,
+                entry.RevealedActorCount,
+                entry.RevealedItemCount,
+                entry.StrongestActorName);
+
+            result.Rooms.Add(entry);
+        }
+
+        return result;
+    }
 }

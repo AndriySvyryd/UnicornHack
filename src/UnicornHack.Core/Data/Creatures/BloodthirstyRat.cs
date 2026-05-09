@@ -25,7 +25,7 @@ public static partial class CreatureData
         InitialLevel = 2,
         GenerationWeight = "5",
         PreviousStageName = "sewer rat",
-        GenerationFlags = GenerationFlags.SmallGroup,
+        GenerationFlags = CreatureGenerationFlags.SmallGroup,
         Noise = ActorNoiseType.Sqeek,
         Size = 2,
         Weight = 150,

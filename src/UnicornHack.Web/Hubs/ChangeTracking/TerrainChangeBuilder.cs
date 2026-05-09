@@ -4,30 +4,30 @@ namespace UnicornHack.Hubs.ChangeTracking;
 
 public static class TerrainChangeBuilder
 {
-    public static bool HasChanges(LevelComponent level)
-        => (level.KnownTerrainChanges?.Count > 0)
-           || (level.TerrainChanges?.Count > 0)
-           || (level.WallNeighborsChanges?.Count > 0)
-           || (level.VisibleTerrainChanges?.Count > 0);
+    public static bool HasChanges(RoomComponent room)
+        => (room.KnownTerrainChanges?.Count > 0)
+           || (room.TerrainChanges?.Count > 0)
+           || (room.NeighborChanges?.Count > 0)
+           || (room.VisibleTerrainChanges?.Count > 0);
 
-    public static void WriteToLevelChange(LevelComponent level, LevelChange change)
+    public static void WriteToRoomChange(RoomComponent room, RoomChange change)
     {
-        var wallNeighborsChanges = new List<(short, byte)>();
-        var knownTerrainChanges = new List<(short, byte)>(level.KnownTerrainChanges!.Count);
-        if (level.KnownTerrainChanges.Count > 0)
+        var wallNeighborsChanges = new List<(short, DirectionFlags)>();
+        var knownTerrainChanges = new List<(short, MapFeature)>(room.KnownTerrainChanges!.Count);
+        if (room.KnownTerrainChanges.Count > 0)
         {
-            foreach (var terrainChange in level.KnownTerrainChanges)
+            foreach (var terrainChange in room.KnownTerrainChanges)
             {
                 knownTerrainChanges.Add((terrainChange.Key, terrainChange.Value));
-                wallNeighborsChanges.Add((terrainChange.Key, level.WallNeighbors[terrainChange.Key]));
+                wallNeighborsChanges.Add((terrainChange.Key, room.Neighbors[terrainChange.Key]));
             }
         }
 
-        if (level.TerrainChanges!.Count > 0)
+        if (room.TerrainChanges!.Count > 0)
         {
-            foreach (var terrainChange in level.TerrainChanges)
+            foreach (var terrainChange in room.TerrainChanges)
             {
-                if (level.VisibleTerrain[terrainChange.Key] == 0)
+                if (room.VisibleTerrain[terrainChange.Key] == 0)
                 {
                     continue;
                 }
@@ -36,11 +36,11 @@ public static class TerrainChangeBuilder
             }
         }
 
-        if (level.WallNeighborsChanges!.Count > 0)
+        if (room.NeighborChanges!.Count > 0)
         {
-            foreach (var wallNeighborsChange in level.WallNeighborsChanges)
+            foreach (var wallNeighborsChange in room.NeighborChanges)
             {
-                if (level.VisibleTerrain[wallNeighborsChange.Key] == 0)
+                if (room.VisibleTerrain[wallNeighborsChange.Key] == 0)
                 {
                     continue;
                 }
@@ -49,39 +49,39 @@ public static class TerrainChangeBuilder
             }
         }
 
-        var changesCount = knownTerrainChanges.Count + wallNeighborsChanges.Count + level.VisibleTerrainChanges!.Count;
+        var changesCount = knownTerrainChanges.Count + wallNeighborsChanges.Count + room.VisibleTerrainChanges!.Count;
         if (changesCount == 0)
         {
             return;
         }
 
-        if (changesCount > level.TileCount)
+        if (changesCount > room.TileCount)
         {
-            change.LevelMap = new LevelMap
+            change.LevelMap = new RoomMap
             {
-                Terrain = level.KnownTerrain,
-                WallNeighbors = MaskWallNeighborsToExplored(level),
-                VisibleTerrain = level.VisibleTerrain
+                Terrain = room.KnownTerrain,
+                WallNeighbors = MaskWallNeighborsToExplored(room),
+                VisibleTerrain = room.VisibleTerrain
             };
             return;
         }
 
-        var visibleTerrainChanges = new List<(short, byte)>(level.VisibleTerrainChanges!.Count);
-        foreach (var visibleTerrainChange in level.VisibleTerrainChanges)
+        var visibleTerrainChanges = new List<(short, byte)>(room.VisibleTerrainChanges!.Count);
+        foreach (var visibleTerrainChange in room.VisibleTerrainChanges)
         {
             visibleTerrainChanges.Add((visibleTerrainChange.Key, visibleTerrainChange.Value));
         }
 
         if (knownTerrainChanges.Count == 0 && wallNeighborsChanges.Count == 0)
         {
-            change.LevelMapChanges = new LevelMapChanges
+            change.LevelMapChanges = new RoomMapChanges
             {
                 VisibleTerrainChanges = visibleTerrainChanges
             };
             return;
         }
 
-        change.LevelMapChanges = new LevelMapChanges
+        change.LevelMapChanges = new RoomMapChanges
         {
             ChangedProperties = null,
             TerrainChanges = knownTerrainChanges,
@@ -91,24 +91,24 @@ public static class TerrainChangeBuilder
     }
 
     /// <summary>
-    ///     Builds a copy of <see cref="LevelComponent.WallNeighbors" /> with bits zeroed for
+    ///     Builds a copy of <see cref="RoomComponent.Neighbors" /> with bits zeroed for
     ///     tiles the player hasn't explored. The client only stores wall-neighbor bits for
-    ///     tiles whose <c>KnownTerrain</c> is set (see <see cref="WriteToLevelChange" /> and
-    ///     <c>LevelChangeBuilder.SerializeMap</c>, which both gate WallNeighbors emission on
+    ///     tiles whose <c>KnownTerrain</c> is set (see <see cref="WriteToRoomChange" /> and
+    ///     <c>roomChangeBuilder.SerializeMap</c>, which both gate WallNeighbors emission on
     ///     <c>KnownTerrain != Unexplored</c> / <c>VisibleTerrain != 0</c>). Sending raw
-    ///     <see cref="LevelComponent.WallNeighbors" /> in a full <see cref="LevelMap" />
+    ///     <see cref="RoomComponent.Neighbors" /> in a full <see cref="RoomMap" />
     ///     would leak bits for unexplored tiles and would not match what the next
     ///     <c>GetState</c> reports, breaking client state convergence.
     /// </summary>
-    public static byte[] MaskWallNeighborsToExplored(LevelComponent level)
+    public static DirectionFlags[] MaskWallNeighborsToExplored(RoomComponent room)
     {
-        var tileCount = level.TileCount;
-        var masked = new byte[tileCount];
+        var tileCount = room.TileCount;
+        var masked = new DirectionFlags[tileCount];
         for (var i = 0; i < tileCount; i++)
         {
-            if (level.KnownTerrain[i] != (byte)MapFeature.Unexplored)
+            if (room.KnownTerrain[i] != MapFeature.Unexplored)
             {
-                masked[i] = level.WallNeighbors[i];
+                masked[i] = room.Neighbors[i];
             }
         }
 

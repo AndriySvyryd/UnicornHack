@@ -4,7 +4,7 @@ using MessagePack;
 namespace UnicornHack.Hubs.ChangeTracking;
 
 [MessagePackObject]
-public partial class LevelMapChanges
+public partial class RoomMapChanges
 {
     public const int PropertyCount = 4;
 
@@ -12,7 +12,7 @@ public partial class LevelMapChanges
     public BitArray? ChangedProperties { get; set; } = new BitArray(PropertyCount) { [0] = true };
 
     [Key(1)]
-    public List<(short, byte)>? TerrainChanges
+    public List<(short, MapFeature)>? TerrainChanges
     {
         get => field; set
         {
@@ -21,7 +21,7 @@ public partial class LevelMapChanges
         }
     }
     [Key(2)]
-    public List<(short, byte)>? WallNeighborsChanges
+    public List<(short, DirectionFlags)>? WallNeighborsChanges
     {
         get => field; set
         {

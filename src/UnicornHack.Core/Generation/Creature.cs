@@ -121,7 +121,7 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
         }
     }
 
-    public GenerationFlags GenerationFlags
+    public CreatureGenerationFlags GenerationFlags
     {
         get;
         set;
@@ -512,9 +512,9 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
         set => _reanimation = value;
     }
 
-    public GameEntity Instantiate(LevelComponent level, Point cell)
+    public GameEntity Instantiate(RoomComponent room, Point cell)
     {
-        var manager = level.Entity.Manager;
+        var manager = room.Entity.Manager;
         using var creatureEntityReference = manager.CreateEntity();
         var creatureEntity = creatureEntityReference.Referenced;
 
@@ -529,7 +529,7 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
         creatureEntity.AI = ai;
 
         var being = manager.CreateComponent<BeingComponent>(EntityComponent.Being);
-        being.Sex = Sex ?? (level.GenerationRandom.Roll(1, 2) > 1
+        being.Sex = Sex ?? (room.Level.GenerationRandom.Roll(1, 2) > 1
             ? Primitives.Sex.Female
             : Primitives.Sex.Male);
 
@@ -544,9 +544,9 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
 
         // TODO: return null or try a different cell if cell occupied
         var position = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
-        position.LevelId = level.EntityId;
-        position.LevelCell = cell;
-        position.Heading = (Direction)level.GenerationRandom.Next(7);
+        position.RoomId = room.EntityId;
+        position.Cell = cell;
+        position.Heading = (Direction)room.Level.GenerationRandom.Next(7);
         creatureEntity.Position = position;
 
         using var innateAbilityReference = manager.CreateEntity();
@@ -648,12 +648,12 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
         Expression.Parameter(typeof(int), name: "instances");
 
     private static readonly UnicornExpressionVisitor _translator =
-        new(new[] { BranchParameter, DepthParameter, InstancesParameter });
+        new([BranchParameter, DepthParameter, InstancesParameter]);
 
     public static Func<string, int, int, float> CreateWeightFunction(string expression)
         => _translator.Translate<Func<string, int, int, float>, float>(expression);
 
-    public float GetWeight(LevelComponent level)
+    public float GetWeight(RoomComponent room)
     {
         if (_weightFunction == null)
         {
@@ -669,7 +669,7 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
 
         try
         {
-            return _weightFunction(level.Branch.Name, level.Depth, 0);
+            return _weightFunction(room.Level.Branch.Name, room.Level.Depth, 0);
         }
         catch (Exception e)
         {
@@ -709,7 +709,7 @@ public class Creature : Being, ICSScriptSerializable, ILoadable
             { nameof(GenerationWeight), (_, v) => v != null && (string)v != DefaultWeight },
             { nameof(PreviousStageName), (_, v) => v != null },
             { nameof(NextStageName), (_, v) => v != null },
-            { nameof(GenerationFlags), (_, v) => (GenerationFlags)v! != GenerationFlags.None },
+            { nameof(GenerationFlags), (_, v) => (CreatureGenerationFlags)v! != CreatureGenerationFlags.None },
             { nameof(Behavior), (_, v) => (AIBehavior)v! != AIBehavior.None },
             { nameof(Noise), (o, v) => (ActorNoiseType)v! != (o.BaseCreature?.Noise ?? ActorNoiseType.Silent) },
             { nameof(Sex), (o, v) => (Sex?)v != o.BaseCreature?.Sex },

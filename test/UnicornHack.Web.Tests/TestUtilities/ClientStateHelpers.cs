@@ -27,7 +27,7 @@ public static class ClientStateHelpers
             Log = new Dictionary<int, LogEntryChange>()
         };
 
-        DeserializeLevel(data.Level!, player);
+        DeserializeLevel(data.Room!, player);
 
         foreach (var kvp in data.Races!)
         {
@@ -71,13 +71,13 @@ public static class ClientStateHelpers
 
         if (setValues[5])
         {
-            if (data.Level!.ChangedProperties != null)
+            if (data.Room!.ChangedProperties != null)
             {
-                ApplyLevelDelta(player, data.Level);
+                ApplyLevelDelta(player, data.Room);
             }
             else
             {
-                DeserializeLevel(data.Level, player);
+                DeserializeLevel(data.Room, player);
             }
         }
 
@@ -146,13 +146,13 @@ public static class ClientStateHelpers
         }
     }
 
-    private static void DeserializeLevel(LevelChange data, PlayerChange player)
+    private static void DeserializeLevel(RoomChange data, PlayerChange player)
     {
-        var levelMap = new LevelMap();
+        var levelMap = new RoomMap();
         if (data.LevelMap is { } fullMap)
         {
-            levelMap.Terrain = (byte[])fullMap.Terrain.Clone();
-            levelMap.WallNeighbors = (byte[])fullMap.WallNeighbors.Clone();
+            levelMap.Terrain = (MapFeature[])fullMap.Terrain.Clone();
+            levelMap.WallNeighbors = (DirectionFlags[])fullMap.WallNeighbors.Clone();
             levelMap.VisibleTerrain = (byte[])fullMap.VisibleTerrain.Clone();
         }
         else if (data.LevelMapChanges is { } sparseMap)
@@ -161,7 +161,7 @@ public static class ClientStateHelpers
             ApplySparseMapChanges(sparseMap, levelMap);
         }
 
-        player.Level = new LevelChange
+        player.Room = new RoomChange
         {
             ChangedProperties = null,
             BranchName = data.BranchName,
@@ -173,7 +173,7 @@ public static class ClientStateHelpers
             Connections = new Dictionary<int, ConnectionChange>(),
             LevelMap = levelMap
         };
-        var level = player.Level;
+        var level = player.Room;
 
         if (data.Actors != null)
         {
@@ -200,19 +200,19 @@ public static class ClientStateHelpers
         }
     }
 
-    private static void InitializeEmptyMap(LevelMap levelMap, int width, int height)
+    private static void InitializeEmptyMap(RoomMap levelMap, int width, int height)
     {
         var tileCount = width * height;
-        levelMap.Terrain = new byte[tileCount];
-        levelMap.WallNeighbors = new byte[tileCount];
+        levelMap.Terrain = new MapFeature[tileCount];
+        levelMap.WallNeighbors = new DirectionFlags[tileCount];
         levelMap.VisibleTerrain = new byte[tileCount];
-        Array.Fill(levelMap.Terrain, (byte)254);
+        Array.Fill(levelMap.Terrain, (MapFeature)254);
     }
 
-    private static void ApplyLevelDelta(PlayerChange player, LevelChange data)
+    private static void ApplyLevelDelta(PlayerChange player, RoomChange data)
     {
         var setValues = data.ChangedProperties!;
-        var level = player.Level!;
+        var level = player.Room!;
         var levelMap = level.LevelMap!;
 
         for (var i = 1; i < setValues.Length; i++)
@@ -268,7 +268,7 @@ public static class ClientStateHelpers
         }
     }
 
-    private static void ApplySparseMapChanges(LevelMapChanges sparseMap, LevelMap levelMap)
+    private static void ApplySparseMapChanges(RoomMapChanges sparseMap, RoomMap levelMap)
     {
         var setValues = sparseMap.ChangedProperties;
         if (setValues != null)
@@ -280,12 +280,12 @@ public static class ClientStateHelpers
 
             if (setValues[2] && sparseMap.WallNeighborsChanges != null)
             {
-                ApplyTerrainChanges(sparseMap.WallNeighborsChanges, levelMap.WallNeighbors);
+                ApplyWallNeighborChanges(sparseMap.WallNeighborsChanges, levelMap.WallNeighbors);
             }
 
             if (setValues[3] && sparseMap.VisibleTerrainChanges != null)
             {
-                ApplyTerrainChanges(sparseMap.VisibleTerrainChanges, levelMap.VisibleTerrain);
+                ApplyVisibilityChanges(sparseMap.VisibleTerrainChanges, levelMap.VisibleTerrain);
             }
         }
         else
@@ -297,17 +297,33 @@ public static class ClientStateHelpers
 
             if (sparseMap.WallNeighborsChanges != null)
             {
-                ApplyTerrainChanges(sparseMap.WallNeighborsChanges, levelMap.WallNeighbors);
+                ApplyWallNeighborChanges(sparseMap.WallNeighborsChanges, levelMap.WallNeighbors);
             }
 
             if (sparseMap.VisibleTerrainChanges != null)
             {
-                ApplyTerrainChanges(sparseMap.VisibleTerrainChanges, levelMap.VisibleTerrain);
+                ApplyVisibilityChanges(sparseMap.VisibleTerrainChanges, levelMap.VisibleTerrain);
             }
         }
     }
 
-    private static void ApplyTerrainChanges(List<(short Index, byte Value)> changes, byte[] target)
+    private static void ApplyTerrainChanges(List<(short Index, MapFeature Value)> changes, MapFeature[] target)
+    {
+        foreach (var (index, value) in changes)
+        {
+            target[index] = value;
+        }
+    }
+
+    private static void ApplyWallNeighborChanges(List<(short Index, DirectionFlags Value)> changes, DirectionFlags[] target)
+    {
+        foreach (var (index, value) in changes)
+        {
+            target[index] = value;
+        }
+    }
+
+    private static void ApplyVisibilityChanges(List<(short Index, byte Value)> changes, byte[] target)
     {
         foreach (var (index, value) in changes)
         {
@@ -524,7 +540,7 @@ public static class ClientStateHelpers
                         existing.LevelY = data.LevelY;
                         break;
                     case 3:
-                        existing.IsDown = data.IsDown;
+                        existing.Orientation = data.Orientation;
                         break;
                 }
             }

@@ -7,7 +7,7 @@ public class LivingSystemTest
     [Fact]
     public void Hp_and_ep_depend_on_might_and_focus_and_regenerate_with_xp()
     {
-        var level = TestHelper.BuildLevel(".");
+        var level = TestHelper.BuildRoom(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
 
         var manager = playerEntity.Manager;
@@ -44,7 +44,7 @@ public class LivingSystemTest
     [Fact]
     public void Reserved_ep_does_not_replenish()
     {
-        var level = TestHelper.BuildLevel(".");
+        var level = TestHelper.BuildRoom(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         var manager = playerEntity.Manager;
 

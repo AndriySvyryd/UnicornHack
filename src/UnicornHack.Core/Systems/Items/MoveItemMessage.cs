@@ -35,7 +35,7 @@ public class MoveItemMessage : IMessage
         }
     }
 
-    public GameEntity? TargetLevelEntity
+    public GameEntity? TargetRoomEntity
     {
         get => _targetLevelEntity;
         set
@@ -74,7 +74,7 @@ public class MoveItemMessage : IMessage
     {
         ItemEntity = default!;
         TargetContainerEntity = default;
-        TargetLevelEntity = default;
+        TargetRoomEntity = default;
         TargetCell = default;
         SuppressLog = default;
         Force = default;

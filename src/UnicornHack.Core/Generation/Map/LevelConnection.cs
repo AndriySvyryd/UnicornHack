@@ -23,113 +23,160 @@ public class LevelConnection : ICSScriptSerializable
         set;
     }
 
-    public ConnectionDirection? Direction
+    public Directionality? Direction
     {
         get;
         set;
     }
 
     public static ConnectionComponent CreateSourceConnection(
-        LevelComponent level, Point cell, LevelConnection? connectionDefinition)
+        RoomComponent room, Point cell, LevelConnection? connectionDefinition)
     {
-        var targetBranchName = connectionDefinition?.BranchName ?? level.BranchName;
-        var targetDepth = connectionDefinition?.Depth
-                          ?? (byte)(connectionDefinition?.BranchName == null ? level.Depth + 1 : 1);
-        var direction = connectionDefinition?.Direction;
-        var game = level.Game;
+        var sourceLevel = room.Level;
+        var sourceBranch = sourceLevel.Branch;
+        var game = room.Game;
         var manager = game.Manager;
-        var branch = game.GetBranch(targetBranchName) ??
-                     Branch.Loader.Get(targetBranchName).Instantiate(game);
 
-        var targetLevel = branch.Levels.FirstOrDefault(l => l.Depth == targetDepth);
-        Point? targetCell = null;
-        if (targetLevel != null)
+        string targetBranchName;
+        byte targetDepth;
+        Branch? resolvedBranch = null;
+        if (connectionDefinition?.BranchName != null)
         {
-            var matchingConnection = targetLevel.IncomingConnections
+            targetBranchName = connectionDefinition.BranchName;
+            targetDepth = connectionDefinition.BranchName == sourceBranch.Name
+                ? (byte)(sourceLevel.Depth + 1)
+                : connectionDefinition.Depth ?? 1;
+        }
+        else if (sourceLevel.Depth >= sourceBranch.Length)
+        {
+            var nextBranch = PickRandomNextBranch(game, sourceBranch.Name, sourceLevel.Depth);
+            targetBranchName = nextBranch.Name;
+            resolvedBranch = nextBranch;
+            targetDepth = connectionDefinition?.Depth ?? 1;
+        }
+        else
+        {
+            targetBranchName = sourceBranch.Name;
+            targetDepth = connectionDefinition?.Depth ?? (byte)(sourceLevel.Depth + 1);
+        }
+
+        var direction = connectionDefinition?.Direction;
+        var branch = game.GetBranch(targetBranchName) ??
+                     (resolvedBranch ?? game.Services.Data.Branches.Get(targetBranchName)).Instantiate(game);
+
+        var targetGameLevel = branch.Levels.FirstOrDefault(l => l.Depth == targetDepth);
+        var targetRoom = targetGameLevel?.Rooms.FirstOrDefault();
+        Point? targetCell = null;
+        if (targetRoom != null)
+        {
+            var matchingConnection = targetRoom.IncomingConnections
                 .Select(c => c.Connection!)
-                .FirstOrDefault(c => c.TargetLevelId == level.EntityId
+                .FirstOrDefault(c => c.TargetRoomId == room.EntityId
                                      && c.TargetLevelX == null
-                                     && AreMatchingDirection(c.Direction, direction));
+                                     && AreMatchingDirectionality(c.Directionality, direction));
             if (matchingConnection != null)
             {
-                if (matchingConnection.Direction == null)
+                if (matchingConnection.Directionality == null)
                 {
-                    matchingConnection.Direction = GetInverse(direction ?? ConnectionDirection.Both);
+                    matchingConnection.Directionality = GetInverse(direction ?? Directionality.Both);
                 }
 
                 if (direction == null)
                 {
-                    direction = GetInverse(matchingConnection.Direction.Value);
+                    direction = GetInverse(matchingConnection.Directionality.Value);
                 }
 
-                matchingConnection.TargetLevelCell = cell;
-                targetCell = matchingConnection.Entity.Position!.LevelCell;
+                matchingConnection.TargetCell = cell;
+                targetCell = matchingConnection.Entity.Position!.Cell;
             }
         }
         else
         {
-            targetLevel = LevelGenerator.CreateEmpty(branch, targetDepth, level.GenerationRandom.Seed, manager);
+            var newGameLevel = LevelGenerator.CreateEmpty(branch, targetDepth, room.Level.GenerationRandom.Seed, manager);
+            // Create a placeholder room so the connection has a target entity ID.
+            // It will be replaced when the target level is generated (by the layout's Fill).
+            targetRoom = LevelLayout.CreateEmptyRoom(newGameLevel, manager);
         }
 
-        return CreateConnection(level, cell, targetLevel.EntityId, targetCell, direction);
+        return CreateConnection(room, cell, targetRoom.EntityId, targetCell, direction, Primitives.Direction.Down);
+    }
+
+    /// <summary>
+    ///     Picks a destination branch for an inter-branch connection sourced from
+    ///     <paramref name="sourceBranchName" /> at <paramref name="sourceDepth" />, weighted
+    ///     by each candidate branch's <see cref="Branch.GenerationWeight" />.
+    /// </summary>
+    private static Branch PickRandomNextBranch(Game game, string sourceBranchName, int sourceDepth)
+    {
+        var candidates = game.Services.Data.Branches.GetAsList();
+        // WeightedOrder skips zero-weight items and yields nothing when every weight is 0.
+        var picked = game.Random.WeightedOrder(
+            candidates,
+            b => b.GetWeight(sourceBranchName, sourceDepth)).FirstOrDefault();
+        return picked
+            ?? throw new InvalidOperationException(
+                $"No branch with positive GenerationWeight found for a connection from '{sourceBranchName}' depth {sourceDepth}. "
+                + "Ensure at least one branch's GenerationWeight expression returns a positive value for this source.");
     }
 
     public static void CreateReceivingConnection(
-        LevelComponent level, Point cell, ConnectionComponent incoming, ConnectionDirection? direction)
+        RoomComponent room, Point cell, ConnectionComponent incoming, Directionality? direction)
     {
-        if (incoming.Direction == null)
+        if (incoming.Directionality == null)
         {
-            incoming.Direction = GetInverse(direction ?? ConnectionDirection.Both);
+            incoming.Directionality = GetInverse(direction ?? Directionality.Both);
         }
 
         if (direction == null)
         {
-            direction = GetInverse(incoming.Direction.Value);
+            direction = GetInverse(incoming.Directionality.Value);
         }
 
-        incoming.TargetLevelCell = cell;
+        incoming.TargetCell = cell;
         var incomingPosition = incoming.Entity.Position!;
-        CreateConnection(level, cell, incomingPosition.LevelId, incomingPosition.LevelCell, direction);
+        CreateConnection(room, cell, incomingPosition.RoomId, incomingPosition.Cell, direction, Primitives.Direction.Up);
     }
 
-    public static bool AreMatchingDirection(ConnectionDirection? first, ConnectionDirection? second)
+    public static bool AreMatchingDirectionality(Directionality? first, Directionality? second)
         => first == null
            || second == null
            || first == GetInverse(second.Value);
 
-    private static ConnectionDirection GetInverse(ConnectionDirection direction)
+    private static Directionality GetInverse(Directionality direction)
     {
-        var inverse = ConnectionDirection.None;
-        if ((direction & ConnectionDirection.Source) != 0)
+        var inverse = Directionality.None;
+        if ((direction & Directionality.Source) != 0)
         {
-            inverse |= ConnectionDirection.Destination;
+            inverse |= Directionality.Destination;
         }
 
-        if ((direction & ConnectionDirection.Destination) != 0)
+        if ((direction & Directionality.Destination) != 0)
         {
-            inverse |= ConnectionDirection.Source;
+            inverse |= Directionality.Source;
         }
 
         return inverse;
     }
 
     protected static ConnectionComponent CreateConnection(
-        LevelComponent level, Point point, int targetLevelId, Point? targetCell, ConnectionDirection? direction)
+        RoomComponent room, Point point, int targetRoomId, Point? targetCell,
+        Directionality? cardinality, Direction direction)
     {
-        var manager = level.Entity.Manager;
+        var manager = room.Entity.Manager;
         using var connectionEntityReference = manager.CreateEntity();
         var connectionEntity = connectionEntityReference.Referenced;
 
         var position = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
-        position.LevelEntity = level.Entity;
-        position.LevelCell = point;
+        position.RoomEntity = room.Entity;
+        position.Cell = point;
 
         connectionEntity.Position = position;
 
         var connection = manager.CreateComponent<ConnectionComponent>(EntityComponent.Connection);
-        connection.TargetLevelId = targetLevelId;
-        connection.TargetLevelCell = targetCell;
-        connection.Direction = direction;
+        connection.TargetRoomId = targetRoomId;
+        connection.TargetCell = targetCell;
+        connection.Directionality = cardinality;
+        connection.Orientation = direction;
 
         connectionEntity.Connection = connection;
 

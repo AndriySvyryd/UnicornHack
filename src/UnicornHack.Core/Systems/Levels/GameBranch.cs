@@ -9,6 +9,7 @@ public class GameBranch : NotificationEntity
     private string? _name;
     private byte _length;
     private int _difficulty;
+    private bool _isTerminal;
 
     public int GameId
     {
@@ -40,8 +41,18 @@ public class GameBranch : NotificationEntity
         set => SetWithNotify(value, ref _difficulty);
     }
 
-    public ICollection<LevelComponent> Levels
+    /// <summary>
+    ///     Mirrors <see cref="Generation.Branch.IsTerminal" /> on the runtime branch
+    ///     instance. Set during <see cref="Generation.Branch.Instantiate" />.
+    /// </summary>
+    public bool IsTerminal
+    {
+        get => _isTerminal;
+        set => SetWithNotify(value, ref _isTerminal);
+    }
+
+    public ICollection<GameLevel> Levels
     {
         get;
-    } = new ObservableHashSet<LevelComponent>();
+    } = new ObservableHashSet<GameLevel>();
 }

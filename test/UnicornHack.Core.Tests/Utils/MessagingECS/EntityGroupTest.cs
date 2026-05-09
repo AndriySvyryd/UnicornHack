@@ -12,25 +12,25 @@ public class EntityGroupTest
         using (var entityReference = manager.CreateEntity())
         {
             var entity = entityReference.Referenced;
-            entity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+            entity.AddComponent<RoomComponent>((int)EntityComponent.Room);
 
-            Assert.Equal(1, manager.Levels.Count);
-            Assert.True(manager.Levels.Matcher.Matches(entity));
-            Assert.True(manager.Levels.ContainsEntity(entity.Id));
-            Assert.Same(entity, manager.Levels.FindEntity(entity.Id));
-            Assert.Same(entity, manager.Levels.Single());
+            Assert.Equal(1, manager.Rooms.Count);
+            Assert.True(manager.Rooms.Matcher.Matches(entity));
+            Assert.True(manager.Rooms.ContainsEntity(entity.Id));
+            Assert.Same(entity, manager.Rooms.FindEntity(entity.Id));
+            Assert.Same(entity, manager.Rooms.Single());
 
             entity.AddComponent<ConnectionComponent>((int)EntityComponent.Connection);
 
-            Assert.Equal(1, manager.Levels.Count);
+            Assert.Equal(1, manager.Rooms.Count);
 
-            entity.RemoveComponent(EntityComponent.Level);
+            entity.RemoveComponent(EntityComponent.Room);
 
-            Assert.Equal(0, manager.Levels.Count);
-            Assert.False(manager.Levels.Matcher.Matches(entity));
-            Assert.False(manager.Levels.ContainsEntity(entity.Id));
-            Assert.Null(manager.Levels.FindEntity(entity.Id));
-            Assert.Empty(manager.Levels);
+            Assert.Equal(0, manager.Rooms.Count);
+            Assert.False(manager.Rooms.Matcher.Matches(entity));
+            Assert.False(manager.Rooms.ContainsEntity(entity.Id));
+            Assert.Null(manager.Rooms.FindEntity(entity.Id));
+            Assert.Empty(manager.Rooms);
         }
 
         Assert.Equal(0, manager.Queue.QueuedCount);

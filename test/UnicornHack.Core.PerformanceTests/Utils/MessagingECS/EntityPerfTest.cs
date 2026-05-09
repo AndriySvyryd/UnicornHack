@@ -26,7 +26,7 @@ public class EntityPerfTest
         {
             var entity = manager.CreateEntity().Referenced;
             entity.AddComponent<KnowledgeComponent>((int)EntityComponent.Knowledge);
-            entity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+            entity.AddComponent<RoomComponent>((int)EntityComponent.Room);
             _entities[i] = entity;
         }
 

@@ -11,7 +11,7 @@ public abstract class ActorSystemBase
         GameEntity? targetActor;
         if (targetId == null)
         {
-            targetCell = actorEntity.Position!.LevelCell;
+            targetCell = actorEntity.Position!.Cell;
             targetActor = actorEntity;
         }
         else if (targetId.Value < 0)
@@ -23,12 +23,12 @@ public abstract class ActorSystemBase
                 return false;
             }
 
-            targetCell = targetActor.Position!.LevelCell;
+            targetCell = targetActor.Position!.Cell;
         }
         else
         {
             targetCell = Point.Unpack(targetId)!.Value;
-            targetActor = actorEntity.Position!.LevelEntity.Level!.Actors.GetValueOrDefault(targetCell);
+            targetActor = actorEntity.Position!.RoomEntity.Room!.Actors.GetValueOrDefault(targetCell);
         }
 
         GameEntity? abilityEntity;
@@ -53,7 +53,7 @@ public abstract class ActorSystemBase
         }
         else
         {
-            var vectorToTarget = actorEntity.Position!.LevelCell.DifferenceTo(targetCell);
+            var vectorToTarget = actorEntity.Position!.Cell.DifferenceTo(targetCell);
             var isMelee = vectorToTarget.Length() <= 1;
             abilityEntity = GetDefaultAttack(actorEntity, isMelee, manager);
             if (abilityEntity == null)
@@ -139,12 +139,12 @@ public abstract class ActorSystemBase
         // TODO: only attack on move if hostile
         var position = actorEntity.Position!;
         var targetCell = onlyChangeHeading
-            ? position.LevelCell
-            : position.LevelCell.Translate(direction.AsVector());
+            ? position.Cell
+            : position.Cell.Translate(direction.AsVector());
         if (!onlyChangeHeading
-            && targetCell != position.LevelCell)
+            && targetCell != position.Cell)
         {
-            var conflictingActor = position.LevelEntity.Level!.Actors.GetValueOrDefault(targetCell);
+            var conflictingActor = position.RoomEntity.Room!.Actors.GetValueOrDefault(targetCell);
             if (conflictingActor != null)
             {
                 if (position.Heading != direction)
@@ -152,7 +152,7 @@ public abstract class ActorSystemBase
                     var turnMessage = TravelMessage.Create(manager);
                     turnMessage.ActorEntity = actorEntity;
                     turnMessage.TargetHeading = direction;
-                    turnMessage.TargetCell = position.LevelCell;
+                    turnMessage.TargetCell = position.Cell;
 
                     manager.Enqueue(turnMessage);
                     return true;

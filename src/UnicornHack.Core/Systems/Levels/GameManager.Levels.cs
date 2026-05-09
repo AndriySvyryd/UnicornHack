@@ -7,7 +7,7 @@ namespace UnicornHack;
 
 public partial class GameManager
 {
-    public EntityGroup<GameEntity> Levels
+    public EntityGroup<GameEntity> Rooms
     {
         get;
         private set;
@@ -19,20 +19,20 @@ public partial class GameManager
         private set;
     } = null!;
 
-    public EntityGroup<GameEntity> LevelEntities
+    public EntityGroup<GameEntity> RoomEntities
     {
         get;
         private set;
     } = null!;
 
     public LookupEntityRelationship<GameEntity, Point, Dictionary<Point, GameEntity>>
-        ConnectionsToLevelCellRelationship
+        ConnectionsToCellRelationship
     {
         get;
         private set;
     } = null!;
 
-    public CollectionEntityRelationship<GameEntity, HashSet<GameEntity>> IncomingConnectionsToLevelRelationship
+    public CollectionEntityRelationship<GameEntity, HashSet<GameEntity>> IncomingConnectionsToRoomRelationship
     {
         get;
         private set;
@@ -46,55 +46,55 @@ public partial class GameManager
 
     private void InitializeLevels(SequentialMessageQueue<GameManager> queue)
     {
-        Add<LevelComponent>(EntityComponent.Level, poolSize: 4);
+        Add<RoomComponent>(EntityComponent.Room, poolSize: 4);
         Add<ConnectionComponent>(EntityComponent.Connection, poolSize: 8);
         Add<PositionComponent>(EntityComponent.Position, poolSize: 32);
 
-        Levels = CreateGroup(nameof(Levels),
-            new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Level));
+        Rooms = CreateGroup(nameof(Rooms),
+            new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Room));
         Connections = CreateGroup(nameof(Connections),
             new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Position, (int)EntityComponent.Connection));
-        LevelEntities = CreateGroup(nameof(LevelEntities),
+        RoomEntities = CreateGroup(nameof(RoomEntities),
             new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Position));
 
-        ConnectionsToLevelCellRelationship = new(
-            nameof(ConnectionsToLevelCellRelationship),
+        ConnectionsToCellRelationship = new(
+            nameof(ConnectionsToCellRelationship),
             Connections,
-            Levels,
+            Rooms,
             new SimpleKeyValueGetter<GameEntity, int>(
-                component => ((PositionComponent)component).LevelId,
+                component => ((PositionComponent)component).RoomId,
                 (int)EntityComponent.Position),
             new KeyValueGetter<GameEntity, Point>(
                 (change, matcher, valueType) =>
                 {
                     if (!matcher.TryGetValue<byte>(
-                            change, (int)EntityComponent.Position, nameof(PositionComponent.LevelX), valueType,
-                            out var levelX)
+                            change, (int)EntityComponent.Position, nameof(PositionComponent.CellX), valueType,
+                            out var cellX)
                         || !matcher.TryGetValue<byte>(
-                            change, (int)EntityComponent.Position, nameof(PositionComponent.LevelY), valueType,
-                            out var levelY))
+                            change, (int)EntityComponent.Position, nameof(PositionComponent.CellY), valueType,
+                            out var cellY))
                     {
                         return (new Point(0, 0), false);
                     }
 
-                    return (new Point(levelX, levelY), true);
+                    return (new Point(cellX, cellY), true);
                 },
                 new PropertyMatcher<GameEntity>()
-                    .With(component => ((PositionComponent)component).LevelX, (int)EntityComponent.Position)
-                    .With(component => ((PositionComponent)component).LevelY, (int)EntityComponent.Position)
+                    .With(component => ((PositionComponent)component).CellX, (int)EntityComponent.Position)
+                    .With(component => ((PositionComponent)component).CellY, (int)EntityComponent.Position)
             ),
             (connectionEntity, _) => connectionEntity.RemoveComponent(EntityComponent.Position),
-            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level!.Connections);
+            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Room!.Connections);
 
-        IncomingConnectionsToLevelRelationship = new(
-            nameof(IncomingConnectionsToLevelRelationship),
+        IncomingConnectionsToRoomRelationship = new(
+            nameof(IncomingConnectionsToRoomRelationship),
             Connections,
-            Levels,
+            Rooms,
             new SimpleKeyValueGetter<GameEntity, int>(
-                component => ((ConnectionComponent)component).TargetLevelId,
+                component => ((ConnectionComponent)component).TargetRoomId,
                 (int)EntityComponent.Connection),
             (effectEntity, _) => effectEntity.RemoveComponent(EntityComponent.Position),
-            levelEntity => (HashSet<GameEntity>)levelEntity.Level!.IncomingConnections);
+            levelEntity => (HashSet<GameEntity>)levelEntity.Room!.IncomingConnections);
 
         TravelSystem = new TravelSystem();
         queue.Register<TravelMessage>(TravelSystem, TravelMessage.Name, 0);

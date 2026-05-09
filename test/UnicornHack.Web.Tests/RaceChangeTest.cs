@@ -16,11 +16,11 @@ public class RaceChangeTest
 .....
 .....";
 
-    private static (PlayerComponent Player, LevelChangeBuilder Listener, GameServices Services, GameManager Manager)
+    private static (PlayerComponent Player, RoomChangeBuilder Listener, GameServices Services, GameManager Manager)
         SetupGame()
     {
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(TestMap, game);
+        var level = TestHelper.BuildRoom(TestMap, game);
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 2));

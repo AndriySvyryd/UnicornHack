@@ -5,7 +5,7 @@ public class TerrainSystemTest
     [Fact]
     public void GetAdjacentPoints_returns_valid_points()
     {
-        var level = TestHelper.BuildLevel(@"
+        var level = TestHelper.BuildRoom(@"
 .#.
 ...
 ...");

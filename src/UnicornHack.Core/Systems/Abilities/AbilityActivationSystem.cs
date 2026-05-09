@@ -28,10 +28,10 @@ public class AbilityActivationSystem :
         Expression.Parameter(typeof(GameEntity), name: "activator");
 
     private static readonly AccuracyExpressionVisitor _accuracyTranslator =
-        new(new[] { AbilityParameter, ActivatorParameter });
+        new([AbilityParameter, ActivatorParameter]);
 
     private static readonly DelayExpressionVisitor _delayTranslator =
-        new(new[] { AbilityParameter, ActivatorParameter });
+        new([AbilityParameter, ActivatorParameter]);
 
     private static readonly MethodInfo _accuracyRequirementsModifierMethod = typeof(AbilityActivationSystem)
         .GetMethod(nameof(GetAccuracyRequirementsModifierMethod), BindingFlags.NonPublic | BindingFlags.Static)!;
@@ -179,7 +179,7 @@ public class AbilityActivationSystem :
             if (activatorPosition != null
                 && stats == null)
             {
-                var targetCell = activateMessage.TargetCell ?? activateMessage.TargetEntity?.Position!.LevelCell;
+                var targetCell = activateMessage.TargetCell ?? activateMessage.TargetEntity?.Position!.Cell;
                 if (targetCell == null)
                 {
                     targetEffectsMessage.ActivationError = $"Speed too low to activate ability {ability.EntityId}.";
@@ -192,7 +192,7 @@ public class AbilityActivationSystem :
                     var travelMessage = TravelMessage.Create(manager);
                     travelMessage.ActorEntity = activateMessage.ActivatorEntity;
                     travelMessage.TargetHeading = requiredHeading;
-                    travelMessage.TargetCell = activatorPosition.LevelCell;
+                    travelMessage.TargetCell = activatorPosition.Cell;
 
                     if (!manager.TravelSystem.CanTravel(travelMessage, manager))
                     {
@@ -342,7 +342,7 @@ public class AbilityActivationSystem :
             case ActivationType.WhileToggled:
                 return activatorPosition.Heading!.Value;
             case ActivationType.Targeted:
-                var targetDirection = activatorPosition.LevelCell.DifferenceTo(targetCell);
+                var targetDirection = activatorPosition.Cell.DifferenceTo(targetCell);
                 if (targetDirection.Length() == 0)
                 {
                     return activatorPosition.Heading!.Value;
@@ -819,20 +819,20 @@ public class AbilityActivationSystem :
             return targets;
         }
 
-        var level = activatorPosition!.LevelEntity.Level!;
-        var targetCell = activationMessage.TargetCell ?? activationMessage.TargetEntity!.Position!.LevelCell;
+        var room = activatorPosition!.RoomEntity.Room!;
+        var targetCell = activationMessage.TargetCell ?? activationMessage.TargetEntity!.Position!.Cell;
         var cells = GetTargetedCells(
-            activatorPosition.LevelCell,
+            activatorPosition.Cell,
             targetCell,
             activatorPosition.Heading!.Value,
             ability.Range,
             ability.TargetingShape,
             ability.TargetingShapeSize,
-            level);
+            room);
 
         foreach (var (visibleTargetCell, exposure) in cells)
         {
-            var target = level.Actors.GetValueOrDefault(visibleTargetCell);
+            var target = room.Actors.GetValueOrDefault(visibleTargetCell);
             if (target != null)
             {
                 targets.Add((target, exposure));
@@ -857,9 +857,9 @@ public class AbilityActivationSystem :
         int range,
         TargetingShape targetingShape,
         int targetShapeSize,
-        LevelComponent level)
+        RoomComponent room)
     {
-        var manager = level.Entity.Manager;
+        var manager = room.Entity.Manager;
         var targetVector = originCell.DifferenceTo(targetCell);
         var targetDistance = targetVector.Length();
         if (targetDistance == 0)
@@ -878,7 +878,7 @@ public class AbilityActivationSystem :
                         $"TargetingShape {targetingShape} with size {targetShapeSize} not supported");
                 }
 
-                return manager.SensorySystem.GetLOS(originCell, targetVector, range, level);
+                return manager.SensorySystem.GetLOS(originCell, targetVector, range, room);
             }
             case TargetingShape.Cone:
             {
@@ -924,7 +924,7 @@ public class AbilityActivationSystem :
                         return targets;
                     }
 
-                    var losCells = manager.SensorySystem.GetLOS(originCell, targetCell, level);
+                    var losCells = manager.SensorySystem.GetLOS(originCell, targetCell, room);
                     var last = losCells.LastOrDefault(c => c.Item1 == targetCell);
                     if (last.Item2 != 0)
                     {
@@ -1012,16 +1012,16 @@ public class AbilityActivationSystem :
         {
             var originPosition = activatorEntity.Position!;
             var targetPosition = targetEntity.Position!;
-            var targetCell = targetPosition.LevelCell;
-            var level = originPosition.LevelEntity.Level!;
+            var targetCell = targetPosition.Cell;
+            var room = originPosition.RoomEntity.Room!;
             var cells = GetTargetedCells(
-                originPosition.LevelCell,
+                originPosition.Cell,
                 targetCell,
                 originPosition.Heading!.Value,
                 ability.Range,
                 TargetingShape.Square,
                 1,
-                level);
+                room);
 
             exposure = cells.LastOrDefault().Item2;
 
@@ -1213,7 +1213,7 @@ public class AbilityActivationSystem :
     private static float GetAccuracyRequirementsModifierMethod(GameEntity abilityEntity, GameEntity activatorEntity)
     {
         var item = abilityEntity.Ability!.OwnerEntity!.Item!;
-        var template = Item.Loader.Get(item.TemplateName);
+        var template = activatorEntity.Manager.Game.Services.Data.Items.Get(item.TemplateName);
         var skillBonus =
             activatorEntity.Manager.SkillAbilitiesSystem.GetItemSkillBonus(template, activatorEntity.Player);
         var requiredPerception = template.RequiredPerception ?? 0;
@@ -1263,7 +1263,7 @@ public class AbilityActivationSystem :
     private static float GetDelayRequirementModifierMethod(GameEntity abilityEntity, GameEntity activatorEntity)
     {
         var item = abilityEntity.Ability!.OwnerEntity!.Item!;
-        var template = Item.Loader.Get(item.TemplateName);
+        var template = activatorEntity.Manager.Game.Services.Data.Items.Get(item.TemplateName);
         var skillBonus =
             activatorEntity.Manager.SkillAbilitiesSystem.GetItemSkillBonus(template, activatorEntity.Player);
         var requiredSpeed = template.RequiredSpeed ?? 0;

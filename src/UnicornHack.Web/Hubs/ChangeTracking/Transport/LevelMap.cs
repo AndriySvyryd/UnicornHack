@@ -3,14 +3,15 @@ using MessagePack;
 namespace UnicornHack.Hubs.ChangeTracking;
 
 [MessagePackObject]
-public partial class LevelMap
+public class LevelMap
 {
     [Key(0)]
-    public byte[] Terrain { get; set; } = [];
+    public List<RoomEntry> Rooms { get; set; } = [];
 
+    /// <summary>
+    ///     Room entity ids that the player can travel to right now.
+    ///     Empty if the player can't travel (e.g. not on a door and hostiles present).
+    /// </summary>
     [Key(1)]
-    public byte[] WallNeighbors { get; set; } = [];
-
-    [Key(2)]
-    public byte[] VisibleTerrain { get; set; } = [];
+    public List<int> AvailableTargets { get; set; } = [];
 }

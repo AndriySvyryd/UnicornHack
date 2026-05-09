@@ -10,7 +10,7 @@ public class SkillAbilitiesSystemTest
     [Fact]
     public void Skills_add_abilities()
     {
-        var level = TestHelper.BuildLevel(".");
+        var level = TestHelper.BuildRoom(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         var manager = playerEntity.Manager;
 
@@ -64,7 +64,7 @@ public class SkillAbilitiesSystemTest
         var moveItemMessage = MoveItemMessage.Create(manager);
         moveItemMessage.ItemEntity = firstWaterBook;
         moveItemMessage.TargetCell = new Point(0, 0);
-        moveItemMessage.TargetLevelEntity = level.Entity;
+        moveItemMessage.TargetRoomEntity = level.Entity;
 
         manager.Enqueue(moveItemMessage);
         manager.Queue.ProcessQueue(manager);
@@ -97,7 +97,7 @@ public class SkillAbilitiesSystemTest
     [Fact]
     public void Default_attacks_are_slotted_when_weapons_are_equipped()
     {
-        var level = TestHelper.BuildLevel(".");
+        var level = TestHelper.BuildRoom(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         var manager = playerEntity.Manager;
 

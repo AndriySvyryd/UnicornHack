@@ -1,4 +1,4 @@
-﻿using System.Buffers;
+using System.Buffers;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.MessagingECS;
@@ -38,18 +38,18 @@ public class SensorySystem : IGameSystem<TraveledMessage>, IGameSystem<EntityAdd
 
         if (sensor.Entity.HasComponent(EntityComponent.Player))
         {
-            UpdateVisibleTerrain(sensor.Entity.Position!.LevelEntity.Level!, manager);
+            UpdateVisibleTerrain(sensor.Entity.Position!.RoomEntity.Room!, manager);
         }
     }
 
     public byte GetVisibility(GameEntity sensorEntity, Point p)
-        => GetVisibleTiles(sensorEntity)[sensorEntity.Position!.LevelEntity.Level!.PointToIndex![p.X, p.Y]];
+        => GetVisibleTiles(sensorEntity)[sensorEntity.Position!.RoomEntity.Room!.PointToIndex![p.X, p.Y]];
 
     public byte[] GetVisibleTiles(GameEntity sensorEntity)
     {
         var position = sensorEntity.Position!;
         var sensor = sensorEntity.Sensor!;
-        var level = position.LevelEntity.Level!;
+        var level = position.RoomEntity.Room!;
 
         var tileCount = level.TileCount;
         if (sensor.VisibleTerrain == null
@@ -74,7 +74,7 @@ public class SensorySystem : IGameSystem<TraveledMessage>, IGameSystem<EntityAdd
         Array.Clear(sensor.VisibleTerrain, 0, tileCount);
 
         level.VisibilityCalculator!.ComputeDirected(
-            position.LevelCell,
+            position.Cell,
             position.Heading!.Value,
             sensor.PrimaryFOVQuadrants,
             sensor.PrimaryVisionRange,
@@ -89,32 +89,32 @@ public class SensorySystem : IGameSystem<TraveledMessage>, IGameSystem<EntityAdd
         return sensor.VisibleTerrain;
     }
 
-    public IReadOnlyList<(Point, byte)> GetLOS(Point origin, Point target, LevelComponent level)
-        => level.VisibilityCalculator!.ComputeLOS(
+    public IReadOnlyList<(Point, byte)> GetLOS(Point origin, Point target, RoomComponent room)
+        => room.VisibilityCalculator!.ComputeLOS(
             origin,
             target,
             TileBlocksVisibility,
-            level.Entity.Manager);
+            room.Entity.Manager);
 
     public IReadOnlyList<(Point, byte)> GetLOS(
         Point origin,
         Vector targetVector,
         int range,
-        LevelComponent level)
-        => level.VisibilityCalculator!.ComputeLOS(
+        RoomComponent room)
+        => room.VisibilityCalculator!.ComputeLOS(
             origin,
             targetVector,
             range,
             TileBlocksVisibility,
-            level.Entity.Manager);
+            room.Entity.Manager);
 
-    public static (bool, int) TileBlocksVisibility(byte x, byte y, LevelComponent level)
+    public static (bool, int) TileBlocksVisibility(byte x, byte y, RoomComponent room)
     {
-        if (x < level.Width && y < level.Height)
+        if (x < room.Width && y < room.Height)
         {
-            var index = level.PointToIndex![x, y];
+            var index = room.PointToIndex![x, y];
             var blocking = false;
-            switch ((MapFeature)level.Terrain[index])
+            switch (room.Terrain[index])
             {
                 // This is inlined for perf
                 case MapFeature.Default:
@@ -130,39 +130,70 @@ public class SensorySystem : IGameSystem<TraveledMessage>, IGameSystem<EntityAdd
         return (true, -1);
     }
 
-    private void UpdateVisibleTerrain(LevelComponent level, GameManager manager)
+    private void UpdateVisibleTerrain(RoomComponent room, GameManager manager)
     {
-        var tileCount = level.TileCount;
-        Array.Clear(level.VisibleTerrain, 0, tileCount);
+        var tileCount = room.TileCount;
+        Array.Clear(room.VisibleTerrain, 0, tileCount);
+
+        var options = manager.Game.Options;
+        var revealAll = options.RevealLevels || options.RevealRooms;
 
         var tilesExplored = 0;
-        foreach (var playerEntity in manager.Players)
+        if (revealAll)
         {
-            if (playerEntity.Position!.LevelId != level.EntityId)
-            {
-                continue;
-            }
-
-            var visibleTiles = GetVisibleTiles(playerEntity);
-
-            // TODO: Only check in the max visibility range
             for (short i = 0; i < tileCount; i++)
             {
-                var visibility = visibleTiles[i];
-                if (visibility == 0)
+                room.VisibleTerrain[i] = byte.MaxValue;
+                tilesExplored += manager.KnowledgeSystem.RevealTerrain(i, room);
+            }
+
+            if (options.RevealLevels)
+            {
+                RevealHiddenConnections(room);
+            }
+        }
+        else
+        {
+            foreach (var playerEntity in manager.Players)
+            {
+                if (playerEntity.Position!.RoomId != room.EntityId)
                 {
                     continue;
                 }
 
-                level.VisibleTerrain[i] = visibility;
+                var visibleTiles = GetVisibleTiles(playerEntity);
 
-                // KnownTerrain updated here instead of a separate method for performance
-                tilesExplored += manager.KnowledgeSystem.RevealTerrain(i, level);
+                // TODO: Only check in the max visibility range
+                for (short i = 0; i < tileCount; i++)
+                {
+                    var visibility = visibleTiles[i];
+                    if (visibility == 0)
+                    {
+                        continue;
+                    }
+
+                    room.VisibleTerrain[i] = visibility;
+
+                    // KnownTerrain updated here instead of a separate method for performance
+                    tilesExplored += manager.KnowledgeSystem.RevealTerrain(i, room);
+                }
             }
         }
 
-        VisibleTerrainChangedMessage.Enqueue(level.Entity, manager);
-        KnownTerrainChangedMessage.Enqueue(level.Entity, tilesExplored, manager);
+        VisibleTerrainChangedMessage.Enqueue(room.Entity, manager);
+        KnownTerrainChangedMessage.Enqueue(room.Entity, tilesExplored, manager);
+    }
+
+    private static void RevealHiddenConnections(RoomComponent room)
+    {
+        foreach (var connectionEntity in room.Connections.Values)
+        {
+            var connection = connectionEntity.Connection!;
+            if (connection.Hidden)
+            {
+                connection.Hidden = false;
+            }
+        }
     }
 
     public SenseType SensedByPlayer(GameEntity target, Point targetPosition)
@@ -174,7 +205,7 @@ public class SensorySystem : IGameSystem<TraveledMessage>, IGameSystem<EntityAdd
         }
 
         var manager = target.Manager;
-        var level = manager.ItemMovingSystem.GetTopContainer(target, manager).Position!.LevelEntity.Level!;
+        var level = manager.ItemMovingSystem.GetTopContainer(target, manager).Position!.RoomEntity.Room!;
         if (level.VisibleTerrain[level.PointToIndex![targetPosition.X, targetPosition.Y]] != 0)
         {
             sensed |= SenseType.Sight;
@@ -189,7 +220,7 @@ public class SensorySystem : IGameSystem<TraveledMessage>, IGameSystem<EntityAdd
         var manager = sensor.Manager;
         target = manager.ItemMovingSystem.GetTopContainer(target, manager);
         if (target.Position == null
-            || sensor.Position?.LevelId != target.Position.LevelId)
+            || sensor.Position?.RoomId != target.Position.RoomId)
         {
             return null;
         }
@@ -206,7 +237,7 @@ public class SensorySystem : IGameSystem<TraveledMessage>, IGameSystem<EntityAdd
             sense |= SenseType.Telepathy;
         }
 
-        return sense | CanSense(sensor, target, target.Position.LevelCell);
+        return sense | CanSense(sensor, target, target.Position.Cell);
     }
 
     public SenseType CanSense(GameEntity sensor, GameEntity target, Point targetPosition)

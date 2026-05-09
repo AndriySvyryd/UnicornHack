@@ -14,7 +14,7 @@ public class SensorySystemTest
     [Fact]
     public void Visibility_updated_on_travel()
     {
-        var level = TestHelper.BuildLevel(TestMap);
+        var level = TestHelper.BuildRoom(TestMap);
         var undine = CreatureData.Undine.Instantiate(level, new Point(0, 1));
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
         player.Position!.Heading = Direction.West;
@@ -28,13 +28,13 @@ public class SensorySystemTest
 
         var dagger = undine.Being!.Items.Single();
         Assert.Equal(SenseType.Sight, manager.SensorySystem.CanSense(player, undine));
-        Assert.Equal(SenseType.Sight, manager.SensorySystem.SensedByPlayer(undine, undine.Position!.LevelCell));
+        Assert.Equal(SenseType.Sight, manager.SensorySystem.SensedByPlayer(undine, undine.Position!.Cell));
         Assert.Equal(SenseType.Sight | SenseType.Touch | SenseType.Telepathy,
             manager.SensorySystem.CanSense(player, player));
         Assert.Equal(SenseType.Sight | SenseType.Touch | SenseType.Telepathy,
-            manager.SensorySystem.SensedByPlayer(player, player.Position.LevelCell));
+            manager.SensorySystem.SensedByPlayer(player, player.Position.Cell));
         Assert.Equal(SenseType.Sight, manager.SensorySystem.CanSense(player, dagger));
-        Assert.Equal(SenseType.Sight, manager.SensorySystem.SensedByPlayer(dagger, undine.Position.LevelCell));
+        Assert.Equal(SenseType.Sight, manager.SensorySystem.SensedByPlayer(dagger, undine.Position.Cell));
         var expectedVisibleMap = @"
 .
 .
@@ -49,15 +49,15 @@ public class SensorySystemTest
         var travelMessage = TravelMessage.Create(manager);
         travelMessage.ActorEntity = player;
         travelMessage.TargetHeading = Direction.South;
-        travelMessage.TargetCell = player.Position.LevelCell;
+        travelMessage.TargetCell = player.Position.Cell;
         manager.Enqueue(travelMessage);
 
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(SenseType.None, manager.SensorySystem.CanSense(player, undine));
-        Assert.Equal(SenseType.None, manager.SensorySystem.SensedByPlayer(undine, undine.Position.LevelCell));
+        Assert.Equal(SenseType.None, manager.SensorySystem.SensedByPlayer(undine, undine.Position.Cell));
         Assert.Equal(SenseType.None, manager.SensorySystem.CanSense(player, dagger));
-        Assert.Equal(SenseType.None, manager.SensorySystem.SensedByPlayer(dagger, undine.Position.LevelCell));
+        Assert.Equal(SenseType.None, manager.SensorySystem.SensedByPlayer(dagger, undine.Position.Cell));
         expectedVisibleMap = @"
  
  

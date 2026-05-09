@@ -37,7 +37,13 @@ public class EffectComponent : GameComponent
 
     public GameEntity? AffectedEntity
     {
-        get => _affectedEntity ??= Entity.Manager?.FindEntity(_affectedEntityId);
+        get
+        {
+            _affectedEntity ??= Entity?.Manager?.FindEntity(_affectedEntityId);
+            Debug.Assert(_affectedEntity != null || _affectedEntityId == null,
+                $"AffectedEntity {_affectedEntityId} not loaded");
+            return _affectedEntity;
+        }
         set
         {
             AffectedEntityId = value?.Id;
@@ -53,7 +59,13 @@ public class EffectComponent : GameComponent
 
     public GameEntity? SourceEffect
     {
-        get => _sourceEffect ??= Entity.Manager?.FindEntity(_sourceEffectId);
+        get
+        {
+            _sourceEffect ??= Entity.Manager?.FindEntity(_sourceEffectId);
+            Debug.Assert(_sourceEffect != null || _sourceEffectId == null,
+                $"SourceEffect {_sourceEffectId} not loaded");
+            return _sourceEffect;
+        }
         set
         {
             SourceEffectId = value?.Id;
@@ -69,7 +81,13 @@ public class EffectComponent : GameComponent
 
     public GameEntity? SourceAbility
     {
-        get => _sourceAbility ??= Entity.Manager.FindEntity(_sourceAbilityId);
+        get
+        {
+            _sourceAbility ??= Entity.Manager.FindEntity(_sourceAbilityId);
+            Debug.Assert(_sourceAbility != null || _sourceAbilityId == null,
+                $"SourceAbility {_sourceAbilityId} not loaded");
+            return _sourceAbility;
+        }
         set
         {
             SourceAbilityId = value?.Id;

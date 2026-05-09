@@ -15,21 +15,21 @@ public partial class GameManager
         private set;
     } = null!;
 
-    public EntityGroup<GameEntity> LevelActors
+    public EntityGroup<GameEntity> RoomActors
     {
         get;
         private set;
     } = null!;
 
     public LookupEntityRelationship<GameEntity, Point, Dictionary<Point, GameEntity>>
-        LevelActorsToLevelCellRelationship
+        RoomActorsToRoomCellRelationship
     {
         get;
         private set;
     } = null!;
 
     public LookupEntityRelationship<GameEntity, int, Dictionary<int, GameEntity>>
-        SlottedAbilitiesToLevelActorsRelationship
+        SlottedAbilitiesToRoomActorsRelationship
     {
         get;
         private set;
@@ -55,25 +55,25 @@ public partial class GameManager
         Players = CreateGroup(nameof(Players),
             new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Player));
 
-        LevelActors = CreateGroup(nameof(LevelActors),
+        RoomActors = CreateGroup(nameof(RoomActors),
             new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Position, (int)EntityComponent.Being)
                 .AnyOf((int)EntityComponent.AI, (int)EntityComponent.Player));
 
-        LevelActorsToLevelCellRelationship = new(
-            nameof(LevelActorsToLevelCellRelationship),
-            LevelActors,
-            Levels,
+        RoomActorsToRoomCellRelationship = new(
+            nameof(RoomActorsToRoomCellRelationship),
+            RoomActors,
+            Rooms,
             new SimpleKeyValueGetter<GameEntity, int>(
-                component => ((PositionComponent)component).LevelId,
+                component => ((PositionComponent)component).RoomId,
                 (int)EntityComponent.Position),
             new KeyValueGetter<GameEntity, Point>(
                 (change, matcher, valueType) =>
                 {
                     if (!matcher.TryGetValue<byte>(
-                            change, (int)EntityComponent.Position, nameof(PositionComponent.LevelX), valueType,
+                            change, (int)EntityComponent.Position, nameof(PositionComponent.CellX), valueType,
                             out var levelX)
                         || !matcher.TryGetValue<byte>(
-                            change, (int)EntityComponent.Position, nameof(PositionComponent.LevelY), valueType,
+                            change, (int)EntityComponent.Position, nameof(PositionComponent.CellY), valueType,
                             out var levelY))
                     {
                         return (new Point(0, 0), false);
@@ -82,16 +82,16 @@ public partial class GameManager
                     return (new Point(levelX, levelY), true);
                 },
                 new PropertyMatcher<GameEntity>()
-                    .With(component => ((PositionComponent)component).LevelX, (int)EntityComponent.Position)
-                    .With(component => ((PositionComponent)component).LevelY, (int)EntityComponent.Position)
+                    .With(component => ((PositionComponent)component).CellX, (int)EntityComponent.Position)
+                    .With(component => ((PositionComponent)component).CellY, (int)EntityComponent.Position)
             ),
             (actorEntity, _) => actorEntity.RemoveComponent(EntityComponent.Position),
-            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Level!.Actors);
+            roomEntity => (Dictionary<Point, GameEntity>)roomEntity.Room!.Actors);
 
-        SlottedAbilitiesToLevelActorsRelationship = new(
-            nameof(SlottedAbilitiesToLevelActorsRelationship),
+        SlottedAbilitiesToRoomActorsRelationship = new(
+            nameof(SlottedAbilitiesToRoomActorsRelationship),
             Abilities,
-            LevelActors,
+            RoomActors,
             new SimpleKeyValueGetter<GameEntity, int>(
                 component => ((AbilityComponent)component).OwnerId,
                 (int)EntityComponent.Ability),

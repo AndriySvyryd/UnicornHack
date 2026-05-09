@@ -43,7 +43,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 5,
-        GenerationFlags = GenerationFlags.SmallGroup,
+        GenerationFlags = CreatureGenerationFlags.SmallGroup,
         Noise = ActorNoiseType.Hiss,
         Size = 2,
         Weight = 30,

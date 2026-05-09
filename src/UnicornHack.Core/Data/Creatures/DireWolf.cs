@@ -24,7 +24,7 @@ public static partial class CreatureData
         },
         InitialLevel = 7,
         GenerationWeight = "3",
-        GenerationFlags = GenerationFlags.SmallGroup,
+        GenerationFlags = CreatureGenerationFlags.SmallGroup,
         Noise = ActorNoiseType.Bark,
         Weight = 1200,
         Perception = -6,

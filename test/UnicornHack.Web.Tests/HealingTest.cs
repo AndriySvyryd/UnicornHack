@@ -21,7 +21,7 @@ public class HealingTest
     public void UseFlaskOfHealing()
     {
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(TestMap, game);
+        var level = TestHelper.BuildRoom(TestMap, game);
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(3, 3));
@@ -63,7 +63,7 @@ public class HealingTest
     public void HealAtFullHP()
     {
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(TestMap, game);
+        var level = TestHelper.BuildRoom(TestMap, game);
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(3, 3));

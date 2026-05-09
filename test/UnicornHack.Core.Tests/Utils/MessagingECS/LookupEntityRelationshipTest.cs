@@ -15,8 +15,8 @@ public class LookupEntityRelationshipTest
     {
         var manager = TestHelper.CreateGameManager();
         using var levelEntityReference = manager.CreateEntity();
-        var levelEntity = levelEntityReference.Referenced;
-        levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+        var roomEntity = levelEntityReference.Referenced;
+        roomEntity.AddComponent<RoomComponent>((int)EntityComponent.Room);
 
         using (var firstPositionEntityReference = manager.CreateEntity())
         {
@@ -24,26 +24,26 @@ public class LookupEntityRelationshipTest
             firstPositionEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
             firstPositionEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
             var firstPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-            firstPosition.LevelId = levelEntity.Id;
-            firstPosition.LevelCell = new Point(2, 3);
+            firstPosition.RoomId = roomEntity.Id;
+            firstPosition.Cell = new Point(2, 3);
             firstPositionEntity.Position = firstPosition;
 
             Assert.True(
-                manager.LevelActorsToLevelCellRelationship.Dependents.ContainsEntity(firstPositionEntity.Id));
+                manager.RoomActorsToRoomCellRelationship.Dependents.ContainsEntity(firstPositionEntity.Id));
             Assert.Same(firstPositionEntity,
-                manager.LevelActorsToLevelCellRelationship.Dependents.FindEntity(firstPositionEntity.Id));
+                manager.RoomActorsToRoomCellRelationship.Dependents.FindEntity(firstPositionEntity.Id));
             Assert.Same(firstPositionEntity,
-                manager.LevelActorsToLevelCellRelationship.GetDependents(levelEntity)
+                manager.RoomActorsToRoomCellRelationship.GetDependents(roomEntity)
                     .GetValueOrDefault(new Point(2, 3)));
-            Assert.Same(firstPositionEntity, levelEntity.Level!.Actors.GetValueOrDefault(new Point(2, 3)));
-            Assert.Same(levelEntity, manager.LevelActorsToLevelCellRelationship.GetPrincipal(firstPositionEntity));
-            Assert.Same(levelEntity, firstPositionEntity.Position.LevelEntity);
+            Assert.Same(firstPositionEntity, roomEntity.Room!.Actors.GetValueOrDefault(new Point(2, 3)));
+            Assert.Same(roomEntity, manager.RoomActorsToRoomCellRelationship.GetPrincipal(firstPositionEntity));
+            Assert.Same(roomEntity, firstPositionEntity.Position.RoomEntity);
 
 
-            firstPosition.LevelCell = new Point(1, 2);
+            firstPosition.Cell = new Point(1, 2);
 
-            Assert.Same(firstPositionEntity, levelEntity.Level.Actors.GetValueOrDefault(new Point(1, 2)));
-            Assert.Null(levelEntity.Level.Actors.GetValueOrDefault(new Point(2, 3)));
+            Assert.Same(firstPositionEntity, roomEntity.Room.Actors.GetValueOrDefault(new Point(1, 2)));
+            Assert.Null(roomEntity.Room.Actors.GetValueOrDefault(new Point(2, 3)));
 
             using (var secondPositionEntityReference = manager.CreateEntity())
             {
@@ -51,38 +51,38 @@ public class LookupEntityRelationshipTest
                 secondPositionEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
                 secondPositionEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
                 var secondPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-                secondPosition.LevelId = levelEntity.Id;
-                secondPosition.LevelX = 2;
-                secondPosition.LevelY = 3;
+                secondPosition.RoomId = roomEntity.Id;
+                secondPosition.CellX = 2;
+                secondPosition.CellY = 3;
                 secondPositionEntity.Position = secondPosition;
 
-                Assert.Same(secondPositionEntity, levelEntity.Level.Actors.GetValueOrDefault(new Point(2, 3)));
+                Assert.Same(secondPositionEntity, roomEntity.Room.Actors.GetValueOrDefault(new Point(2, 3)));
 
                 secondPositionEntity.Position = null;
 
-                Assert.Null(levelEntity.Level.Actors.GetValueOrDefault(new Point(2, 3)));
+                Assert.Null(roomEntity.Room.Actors.GetValueOrDefault(new Point(2, 3)));
             }
 
-            Assert.Same(firstPositionEntity, levelEntity.Level.Actors.GetValueOrDefault(new Point(1, 2)));
+            Assert.Same(firstPositionEntity, roomEntity.Room.Actors.GetValueOrDefault(new Point(1, 2)));
 
             using (var secondLevelEntityReference = manager.CreateEntity())
             {
                 var secondLevelEntity = secondLevelEntityReference.Referenced;
-                secondLevelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
-                firstPosition.LevelId = secondLevelEntity.Id;
+                secondLevelEntity.AddComponent<RoomComponent>((int)EntityComponent.Room);
+                firstPosition.RoomId = secondLevelEntity.Id;
 
-                Assert.Null(manager.LevelActorsToLevelCellRelationship.GetDependents(levelEntity)
+                Assert.Null(manager.RoomActorsToRoomCellRelationship.GetDependents(roomEntity)
                     .GetValueOrDefault(new Point(1, 2)));
-                Assert.Null(levelEntity.Level.Actors.GetValueOrDefault(new Point(1, 2)));
+                Assert.Null(roomEntity.Room.Actors.GetValueOrDefault(new Point(1, 2)));
 
-                secondLevelEntity.Level = null;
+                secondLevelEntity.Room = null;
             }
 
             Assert.Null(firstPositionEntity.Position);
             Assert.False(
-                manager.LevelActorsToLevelCellRelationship.Dependents.ContainsEntity(firstPositionEntity.Id));
-            Assert.Null(manager.LevelActorsToLevelCellRelationship.Dependents.FindEntity(firstPositionEntity.Id));
-            Assert.Null(manager.LevelActorsToLevelCellRelationship.GetPrincipal(firstPositionEntity));
+                manager.RoomActorsToRoomCellRelationship.Dependents.ContainsEntity(firstPositionEntity.Id));
+            Assert.Null(manager.RoomActorsToRoomCellRelationship.Dependents.FindEntity(firstPositionEntity.Id));
+            Assert.Null(manager.RoomActorsToRoomCellRelationship.GetPrincipal(firstPositionEntity));
         }
     }
 
@@ -92,18 +92,18 @@ public class LookupEntityRelationshipTest
         var manager = TestHelper.CreateGameManager();
         using var levelEntityReference = manager.CreateEntity();
         var levelEntity = levelEntityReference.Referenced;
-        levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+        levelEntity.AddComponent<RoomComponent>((int)EntityComponent.Room);
 
         using var firstPositionEntityReference = manager.CreateEntity();
         var firstPositionEntity = firstPositionEntityReference.Referenced;
         firstPositionEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
         firstPositionEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
         var firstPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        firstPosition.LevelId = levelEntity.Id;
-        firstPosition.LevelCell = new Point(2, 3);
+        firstPosition.RoomId = levelEntity.Id;
+        firstPosition.Cell = new Point(2, 3);
         firstPositionEntity.Position = firstPosition;
 
-        Assert.Same(firstPositionEntity, levelEntity.Level!.Actors[new Point(2, 3)]);
+        Assert.Same(firstPositionEntity, levelEntity.Room!.Actors[new Point(2, 3)]);
 
         using (var secondPositionEntityReference = manager.CreateEntity())
         {
@@ -111,9 +111,9 @@ public class LookupEntityRelationshipTest
             secondPositionEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
             secondPositionEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
             var secondPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-            secondPosition.LevelId = levelEntity.Id;
-            secondPosition.LevelX = 2;
-            secondPosition.LevelY = 3;
+            secondPosition.RoomId = levelEntity.Id;
+            secondPosition.CellX = 2;
+            secondPosition.CellY = 3;
 
             Assert.Throws<ArgumentException>(() => secondPositionEntity.Position = secondPosition);
         }
@@ -228,7 +228,7 @@ public class LookupEntityRelationshipTest
         // Create a level
         using var levelEntityReference = manager.CreateEntity();
         var levelEntity = levelEntityReference.Referenced;
-        levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+        levelEntity.AddComponent<RoomComponent>((int)EntityComponent.Room);
 
         // Create an actor first that will be referenced
         var actorEntityReference = manager.CreateEntity();
@@ -236,9 +236,9 @@ public class LookupEntityRelationshipTest
         actorEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
         actorEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
         var actorPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        actorPosition.LevelId = levelEntity.Id;
-        actorPosition.LevelX = 10;
-        actorPosition.LevelY = 11;
+        actorPosition.RoomId = levelEntity.Id;
+        actorPosition.CellX = 10;
+        actorPosition.CellY = 11;
         actorEntity.Position = actorPosition;
 
         // Create a knowledge entity that references the actor
@@ -249,9 +249,9 @@ public class LookupEntityRelationshipTest
         knowledgeEntity.Knowledge = knowledge;
 
         var position = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        position.LevelId = levelEntity.Id;
-        position.LevelX = 5;
-        position.LevelY = 6;
+        position.RoomId = levelEntity.Id;
+        position.CellX = 5;
+        position.CellY = 6;
         knowledgeEntity.Position = position;
 
         actorEntityReference.Dispose();
@@ -260,18 +260,18 @@ public class LookupEntityRelationshipTest
         Assert.NotNull(knowledgeEntity.Manager);
 
         // Verify the relationship is established since both principal and secondary principal exist
-        Assert.True(manager.KnownActorsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
-        Assert.Single(manager.KnownActorsToLevelCellRelationship.GetDependents(levelEntity));
-        Assert.Single(levelEntity.Level!.KnownActors);
-        Assert.Same(knowledgeEntity, levelEntity.Level.KnownActors[new Point(5, 6)]);
+        Assert.True(manager.KnownActorsToCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Single(manager.KnownActorsToCellRelationship.GetDependents(levelEntity));
+        Assert.Single(levelEntity.Room!.KnownActors);
+        Assert.Same(knowledgeEntity, levelEntity.Room.KnownActors[new Point(5, 6)]);
 
         // Remove the actor from the LevelActors group (secondary principal group)
         actorEntity.AI = null;
 
         // The knowledge entity should be removed from the relationship and deleted
-        Assert.False(manager.KnownActorsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
-        Assert.Empty(manager.KnownActorsToLevelCellRelationship.GetDependents(levelEntity));
-        Assert.Empty(levelEntity.Level.KnownActors);
+        Assert.False(manager.KnownActorsToCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Empty(manager.KnownActorsToCellRelationship.GetDependents(levelEntity));
+        Assert.Empty(levelEntity.Room.KnownActors);
         Assert.Null(knowledgeEntity.Manager);
     }
 
@@ -284,7 +284,7 @@ public class LookupEntityRelationshipTest
         // Create a level
         using var levelEntityReference = manager.CreateEntity();
         var levelEntity = levelEntityReference.Referenced;
-        levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+        levelEntity.AddComponent<RoomComponent>((int)EntityComponent.Room);
 
         // Create a knowledge entity that references an actor that will be created later
         using var knowledgeEntityReference = manager.CreateEntity();
@@ -293,14 +293,14 @@ public class LookupEntityRelationshipTest
         knowledgeEntity.Knowledge = knowledge;
 
         var position = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        position.LevelId = levelEntity.Id;
-        position.LevelX = 5;
-        position.LevelY = 6;
+        position.RoomId = levelEntity.Id;
+        position.CellX = 5;
+        position.CellY = 6;
         knowledgeEntity.Position = position;
 
         // During loading, the relationship should not be established yet
-        Assert.False(manager.KnownActorsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
-        Assert.Empty(manager.KnownActorsToLevelCellRelationship.GetDependents(levelEntity));
+        Assert.False(manager.KnownActorsToCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Empty(manager.KnownActorsToCellRelationship.GetDependents(levelEntity));
 
         // Create the referenced actor during loading
         using var actorEntityReference = manager.CreateEntity();
@@ -308,19 +308,19 @@ public class LookupEntityRelationshipTest
         actorEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
         actorEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
         var actorPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        actorPosition.LevelId = levelEntity.Id;
-        actorPosition.LevelX = 10;
-        actorPosition.LevelY = 11;
+        actorPosition.RoomId = levelEntity.Id;
+        actorPosition.CellX = 10;
+        actorPosition.CellY = 11;
         actorEntity.Position = actorPosition;
         knowledge.KnownEntityId = actorEntity.Id;
 
         // The relationship should be established now that the secondary principal exists
-        Assert.True(manager.KnownActorsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
-        Assert.Single(manager.KnownActorsToLevelCellRelationship.GetDependents(levelEntity));
-        Assert.False(manager.KnownItemsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
-        Assert.Empty(manager.KnownItemsToLevelCellRelationship.GetDependents(levelEntity));
-        Assert.False(manager.KnownConnectionsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
-        Assert.Empty(manager.KnownConnectionsToLevelCellRelationship.GetDependents(levelEntity));
+        Assert.True(manager.KnownActorsToCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Single(manager.KnownActorsToCellRelationship.GetDependents(levelEntity));
+        Assert.False(manager.KnownItemsToCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Empty(manager.KnownItemsToCellRelationship.GetDependents(levelEntity));
+        Assert.False(manager.KnownConnectionsToCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Empty(manager.KnownConnectionsToCellRelationship.GetDependents(levelEntity));
     }
 
     [Fact]
@@ -331,7 +331,7 @@ public class LookupEntityRelationshipTest
 
         using var levelEntityReference = manager.CreateEntity();
         var levelEntity = levelEntityReference.Referenced;
-        levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+        levelEntity.AddComponent<RoomComponent>((int)EntityComponent.Room);
 
         // Create an actor that will be referenced by multiple knowledge entities
         using var actorEntityReference = manager.CreateEntity();
@@ -339,9 +339,9 @@ public class LookupEntityRelationshipTest
         actorEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
         actorEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
         var actorPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        actorPosition.LevelId = levelEntity.Id;
-        actorPosition.LevelX = 50;
-        actorPosition.LevelY = 51;
+        actorPosition.RoomId = levelEntity.Id;
+        actorPosition.CellX = 50;
+        actorPosition.CellY = 51;
 
         using var knowledgeEntityRef = manager.CreateEntity();
         var knowledgeEntity = knowledgeEntityRef.Referenced;
@@ -350,22 +350,22 @@ public class LookupEntityRelationshipTest
         knowledgeEntity.Knowledge = knowledge;
 
         var position = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        position.LevelId = levelEntity.Id;
-        position.LevelX = 1;
-        position.LevelY = 2;
+        position.RoomId = levelEntity.Id;
+        position.CellX = 1;
+        position.CellY = 2;
         knowledgeEntity.Position = position;
 
         // Should not be in the relationship yet because the actor doesn't have a position (not in LevelActors)
-        Assert.False(manager.KnownActorsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
-        Assert.Empty(manager.KnownActorsToLevelCellRelationship.GetDependents(levelEntity));
+        Assert.False(manager.KnownActorsToCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Empty(manager.KnownActorsToCellRelationship.GetDependents(levelEntity));
 
         // Add the actor to the LevelActors group by giving it a position
         actorEntity.Position = actorPosition;
 
         // The knowledge entity should now be in the relationship
-        Assert.True(manager.KnownActorsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
-        Assert.Single(manager.KnownActorsToLevelCellRelationship.GetDependents(levelEntity));
-        Assert.Single(levelEntity.Level!.KnownActors);
+        Assert.True(manager.KnownActorsToCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Single(manager.KnownActorsToCellRelationship.GetDependents(levelEntity));
+        Assert.Single(levelEntity.Room!.KnownActors);
     }
 
     [Fact]
@@ -376,7 +376,7 @@ public class LookupEntityRelationshipTest
         // Create a level
         using var levelEntityReference = manager.CreateEntity();
         var levelEntity = levelEntityReference.Referenced;
-        levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+        levelEntity.AddComponent<RoomComponent>((int)EntityComponent.Room);
 
         // Create two actors
         using var firstActorReference = manager.CreateEntity();
@@ -384,9 +384,9 @@ public class LookupEntityRelationshipTest
         firstActor.AddComponent<AIComponent>((int)EntityComponent.AI);
         firstActor.AddComponent<BeingComponent>((int)EntityComponent.Being);
         var firstActorPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        firstActorPosition.LevelId = levelEntity.Id;
-        firstActorPosition.LevelX = 10;
-        firstActorPosition.LevelY = 11;
+        firstActorPosition.RoomId = levelEntity.Id;
+        firstActorPosition.CellX = 10;
+        firstActorPosition.CellY = 11;
         firstActor.Position = firstActorPosition;
 
         using var secondActorReference = manager.CreateEntity();
@@ -394,9 +394,9 @@ public class LookupEntityRelationshipTest
         secondActor.AddComponent<AIComponent>((int)EntityComponent.AI);
         secondActor.AddComponent<BeingComponent>((int)EntityComponent.Being);
         var secondActorPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        secondActorPosition.LevelId = levelEntity.Id;
-        secondActorPosition.LevelX = 20;
-        secondActorPosition.LevelY = 21;
+        secondActorPosition.RoomId = levelEntity.Id;
+        secondActorPosition.CellX = 20;
+        secondActorPosition.CellY = 21;
         secondActor.Position = secondActorPosition;
 
         // Create a knowledge entity that references the first actor
@@ -407,22 +407,22 @@ public class LookupEntityRelationshipTest
         knowledgeEntity.Knowledge = knowledge;
 
         var position = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        position.LevelId = levelEntity.Id;
-        position.LevelX = 5;
-        position.LevelY = 6;
+        position.RoomId = levelEntity.Id;
+        position.CellX = 5;
+        position.CellY = 6;
         knowledgeEntity.Position = position;
 
         // Verify the relationship is established
-        Assert.True(manager.KnownActorsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
-        Assert.Single(manager.KnownActorsToLevelCellRelationship.GetDependents(levelEntity));
+        Assert.True(manager.KnownActorsToCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Single(manager.KnownActorsToCellRelationship.GetDependents(levelEntity));
 
         // Change the knowledge entity to reference the second actor
         knowledge.KnownEntityId = secondActor.Id;
 
         // The relationship should still be maintained (different secondary principal reference)
-        Assert.True(manager.KnownActorsToLevelCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
-        Assert.Single(manager.KnownActorsToLevelCellRelationship.GetDependents(levelEntity));
-        Assert.Single(levelEntity.Level!.KnownActors);
+        Assert.True(manager.KnownActorsToCellRelationship.Dependents.ContainsEntity(knowledgeEntity.Id));
+        Assert.Single(manager.KnownActorsToCellRelationship.GetDependents(levelEntity));
+        Assert.Single(levelEntity.Room!.KnownActors);
     }
 
     [Fact]
@@ -507,7 +507,7 @@ public class LookupEntityRelationshipTest
 
         using var levelEntityReference = manager.CreateEntity();
         var levelEntity = levelEntityReference.Referenced;
-        levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+        levelEntity.AddComponent<RoomComponent>((int)EntityComponent.Room);
 
         var sharedCell = new Point(5, 6);
 
@@ -517,9 +517,9 @@ public class LookupEntityRelationshipTest
         actorEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
         actorEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
         var actorPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        actorPosition.LevelId = levelEntity.Id;
-        actorPosition.LevelX = 10;
-        actorPosition.LevelY = 11;
+        actorPosition.RoomId = levelEntity.Id;
+        actorPosition.CellX = 10;
+        actorPosition.CellY = 11;
         actorEntity.Position = actorPosition;
 
         // Underlying item (in LevelItems group, the secondary principal for KnownItems)
@@ -528,9 +528,9 @@ public class LookupEntityRelationshipTest
         itemEntity.AddComponent<ItemComponent>((int)EntityComponent.Item);
         itemEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
         var itemPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        itemPosition.LevelId = levelEntity.Id;
-        itemPosition.LevelX = 12;
-        itemPosition.LevelY = 13;
+        itemPosition.RoomId = levelEntity.Id;
+        itemPosition.CellX = 12;
+        itemPosition.CellY = 13;
         itemEntity.Position = itemPosition;
 
         // Actor-knowledge entity at sharedCell — populates level.KnownActors[sharedCell]
@@ -540,9 +540,9 @@ public class LookupEntityRelationshipTest
         actorKnowledge.KnownEntityId = actorEntity.Id;
         actorKnowledgeEntity.Knowledge = actorKnowledge;
         var actorKnowledgePosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        actorKnowledgePosition.LevelId = levelEntity.Id;
-        actorKnowledgePosition.LevelX = (byte)sharedCell.X;
-        actorKnowledgePosition.LevelY = (byte)sharedCell.Y;
+        actorKnowledgePosition.RoomId = levelEntity.Id;
+        actorKnowledgePosition.CellX = (byte)sharedCell.X;
+        actorKnowledgePosition.CellY = (byte)sharedCell.Y;
         actorKnowledgeEntity.Position = actorKnowledgePosition;
 
         // Item-knowledge entity at the SAME cell — populates level.KnownItems[sharedCell]
@@ -552,18 +552,18 @@ public class LookupEntityRelationshipTest
         itemKnowledge.KnownEntityId = itemEntity.Id;
         itemKnowledgeEntity.Knowledge = itemKnowledge;
         var itemKnowledgePosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        itemKnowledgePosition.LevelId = levelEntity.Id;
-        itemKnowledgePosition.LevelX = (byte)sharedCell.X;
-        itemKnowledgePosition.LevelY = (byte)sharedCell.Y;
+        itemKnowledgePosition.RoomId = levelEntity.Id;
+        itemKnowledgePosition.CellX = (byte)sharedCell.X;
+        itemKnowledgePosition.CellY = (byte)sharedCell.Y;
         itemKnowledgeEntity.Position = itemKnowledgePosition;
 
-        Assert.Same(actorKnowledgeEntity, levelEntity.Level!.KnownActors[sharedCell]);
-        Assert.Same(itemKnowledgeEntity, levelEntity.Level.KnownItems[sharedCell]);
+        Assert.Same(actorKnowledgeEntity, levelEntity.Room!.KnownActors[sharedCell]);
+        Assert.Same(itemKnowledgeEntity, levelEntity.Room.KnownItems[sharedCell]);
 
         // Track removal events on the actor relationship to ensure no spurious removal
         // fires for the item-knowledge entity (which it never tracked).
         var actorListener = new DependentTestListener();
-        manager.KnownActorsToLevelCellRelationship.AddDependentsListener(actorListener);
+        manager.KnownActorsToCellRelationship.AddDependentsListener(actorListener);
 
         // Remove the item-knowledge from the shared dependent group. This triggers
         // KnownActorsToLevelCellRelationship.TryRemoveEntity for the item-knowledge
@@ -571,12 +571,12 @@ public class LookupEntityRelationshipTest
         itemKnowledgeEntity.Knowledge = null;
 
         // The actor relationship must be untouched — actor-knowledge still in place.
-        Assert.Same(actorKnowledgeEntity, levelEntity.Level.KnownActors[sharedCell]);
-        Assert.True(manager.KnownActorsToLevelCellRelationship.Dependents.ContainsEntity(actorKnowledgeEntity.Id));
+        Assert.Same(actorKnowledgeEntity, levelEntity.Room.KnownActors[sharedCell]);
+        Assert.True(manager.KnownActorsToCellRelationship.Dependents.ContainsEntity(actorKnowledgeEntity.Id));
         Assert.Equal(0, actorListener.RemovedCount);
 
         // The item-knowledge is gone from the items lookup as expected.
-        Assert.False(levelEntity.Level.KnownItems.ContainsKey(sharedCell));
+        Assert.False(levelEntity.Room.KnownItems.ContainsKey(sharedCell));
     }
 
     /// <summary>
@@ -595,7 +595,7 @@ public class LookupEntityRelationshipTest
 
         using var levelEntityReference = manager.CreateEntity();
         var levelEntity = levelEntityReference.Referenced;
-        levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+        levelEntity.AddComponent<RoomComponent>((int)EntityComponent.Room);
 
         var sharedCell = new Point(5, 6);
 
@@ -605,9 +605,9 @@ public class LookupEntityRelationshipTest
         actorEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
         actorEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
         var actorPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        actorPosition.LevelId = levelEntity.Id;
-        actorPosition.LevelX = 10;
-        actorPosition.LevelY = 11;
+        actorPosition.RoomId = levelEntity.Id;
+        actorPosition.CellX = 10;
+        actorPosition.CellY = 11;
         actorEntity.Position = actorPosition;
 
         // Two items (in LevelItems group, secondary principal for KnownItems)
@@ -616,9 +616,9 @@ public class LookupEntityRelationshipTest
         firstItem.AddComponent<ItemComponent>((int)EntityComponent.Item);
         firstItem.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
         var firstItemPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        firstItemPosition.LevelId = levelEntity.Id;
-        firstItemPosition.LevelX = 12;
-        firstItemPosition.LevelY = 13;
+        firstItemPosition.RoomId = levelEntity.Id;
+        firstItemPosition.CellX = 12;
+        firstItemPosition.CellY = 13;
         firstItem.Position = firstItemPosition;
 
         using var secondItemReference = manager.CreateEntity();
@@ -626,9 +626,9 @@ public class LookupEntityRelationshipTest
         secondItem.AddComponent<ItemComponent>((int)EntityComponent.Item);
         secondItem.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
         var secondItemPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        secondItemPosition.LevelId = levelEntity.Id;
-        secondItemPosition.LevelX = 14;
-        secondItemPosition.LevelY = 15;
+        secondItemPosition.RoomId = levelEntity.Id;
+        secondItemPosition.CellX = 14;
+        secondItemPosition.CellY = 15;
         secondItem.Position = secondItemPosition;
 
         // Actor-knowledge entity at sharedCell — populates level.KnownActors[sharedCell]
@@ -638,9 +638,9 @@ public class LookupEntityRelationshipTest
         actorKnowledge.KnownEntityId = actorEntity.Id;
         actorKnowledgeEntity.Knowledge = actorKnowledge;
         var actorKnowledgePosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        actorKnowledgePosition.LevelId = levelEntity.Id;
-        actorKnowledgePosition.LevelX = (byte)sharedCell.X;
-        actorKnowledgePosition.LevelY = (byte)sharedCell.Y;
+        actorKnowledgePosition.RoomId = levelEntity.Id;
+        actorKnowledgePosition.CellX = (byte)sharedCell.X;
+        actorKnowledgePosition.CellY = (byte)sharedCell.Y;
         actorKnowledgeEntity.Position = actorKnowledgePosition;
 
         // Item-knowledge entity at the SAME cell, initially tracking firstItem
@@ -650,17 +650,17 @@ public class LookupEntityRelationshipTest
         itemKnowledge.KnownEntityId = firstItem.Id;
         itemKnowledgeEntity.Knowledge = itemKnowledge;
         var itemKnowledgePosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        itemKnowledgePosition.LevelId = levelEntity.Id;
-        itemKnowledgePosition.LevelX = (byte)sharedCell.X;
-        itemKnowledgePosition.LevelY = (byte)sharedCell.Y;
+        itemKnowledgePosition.RoomId = levelEntity.Id;
+        itemKnowledgePosition.CellX = (byte)sharedCell.X;
+        itemKnowledgePosition.CellY = (byte)sharedCell.Y;
         itemKnowledgeEntity.Position = itemKnowledgePosition;
 
-        Assert.Same(actorKnowledgeEntity, levelEntity.Level!.KnownActors[sharedCell]);
-        Assert.Same(itemKnowledgeEntity, levelEntity.Level.KnownItems[sharedCell]);
+        Assert.Same(actorKnowledgeEntity, levelEntity.Room!.KnownActors[sharedCell]);
+        Assert.Same(itemKnowledgeEntity, levelEntity.Room.KnownItems[sharedCell]);
 
         // Track removals on the actor relationship — none should fire for the item-knowledge.
         var actorListener = new DependentTestListener();
-        manager.KnownActorsToLevelCellRelationship.AddDependentsListener(actorListener);
+        manager.KnownActorsToCellRelationship.AddDependentsListener(actorListener);
 
         // Mutate the item-knowledge's secondary-principal key (KnownEntityId) from one
         // item to another. Both target ids are absent from LevelActors, so the actor
@@ -670,12 +670,12 @@ public class LookupEntityRelationshipTest
         itemKnowledge.KnownEntityId = secondItem.Id;
 
         // The actor lookup must be untouched.
-        Assert.Same(actorKnowledgeEntity, levelEntity.Level.KnownActors[sharedCell]);
-        Assert.True(manager.KnownActorsToLevelCellRelationship.Dependents.ContainsEntity(actorKnowledgeEntity.Id));
+        Assert.Same(actorKnowledgeEntity, levelEntity.Room.KnownActors[sharedCell]);
+        Assert.True(manager.KnownActorsToCellRelationship.Dependents.ContainsEntity(actorKnowledgeEntity.Id));
         Assert.Equal(0, actorListener.RemovedCount);
 
         // The item-knowledge should now be tracking secondItem under KnownItems.
-        Assert.Same(itemKnowledgeEntity, levelEntity.Level.KnownItems[sharedCell]);
+        Assert.Same(itemKnowledgeEntity, levelEntity.Room.KnownItems[sharedCell]);
     }
 
     private class DependentTestListener : IDependentEntityChangeListener<GameEntity>

@@ -16,7 +16,7 @@ public class EntityRelationshipPerfTest
     {
         var manager = TestHelper.CreateGameManager();
         var testSystem = new RelationshipTestSystem();
-        manager.IncomingConnectionsToLevelRelationship.Dependents.AddListener(testSystem);
+        manager.IncomingConnectionsToRoomRelationship.Dependents.AddListener(testSystem);
 
         if (_connections == null
             || _connections.Length != EntityCount)
@@ -25,7 +25,7 @@ public class EntityRelationshipPerfTest
         }
 
         _levelEntity = manager.CreateEntity().Referenced;
-        var level = _levelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+        var level = _levelEntity.AddComponent<RoomComponent>((int)EntityComponent.Room);
 
         level.Height = (byte)Math.Ceiling(Math.Sqrt(EntityCount));
         level.Width = level.Height;
@@ -37,8 +37,8 @@ public class EntityRelationshipPerfTest
             var connectionEntity = manager.CreateEntity().Referenced;
 
             var position = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
-            position.LevelEntity = _levelEntity;
-            position.LevelCell = new Point(x++, y);
+            position.RoomEntity = _levelEntity;
+            position.Cell = new Point(x++, y);
             if (x == level.Width)
             {
                 x = 0;
@@ -97,7 +97,7 @@ public class EntityRelationshipPerfTest
     {
         for (var i = 0; i < EntityCount; i++)
         {
-            _connections[i].TargetLevelId = _levelEntity.Id;
+            _connections[i].TargetRoomId = _levelEntity.Id;
         }
     }
 
@@ -106,7 +106,7 @@ public class EntityRelationshipPerfTest
     {
         for (var i = 0; i < EntityCount; i++)
         {
-            _connections[i].TargetLevelId = 0;
+            _connections[i].TargetRoomId = 0;
         }
     }
 
@@ -125,7 +125,7 @@ public class EntityRelationshipPerfTest
     {
         for (var i = 0; i < EntityCount; i++)
         {
-            _connections[i].TargetLevelCell = new Point(1, 1);
+            _connections[i].TargetCell = new Point(1, 1);
         }
     }
 }

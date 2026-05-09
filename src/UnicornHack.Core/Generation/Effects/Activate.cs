@@ -19,7 +19,7 @@ public class Activate : DurationEffect
 
         if (Projectile != null)
         {
-            var item = Item.Loader.Get(Projectile).AddToEntity(effect.Entity!);
+            var item = effect.Entity!.Manager.Game.Services.Data.Items.Get(Projectile).AddToEntity(effect.Entity!);
             effect.TargetEntityId = item.EntityId;
         }
     }

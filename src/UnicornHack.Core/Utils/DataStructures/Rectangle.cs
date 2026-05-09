@@ -205,6 +205,41 @@ public readonly struct Rectangle : IEnumerable<Point>, IEquatable<Rectangle>
         return new Rectangle(new Point(x1, y1), width, height);
     }
 
+    /// <summary>
+    ///     Returns a random rectangle inside <paramref name="boundingRectangle" /> whose
+    ///     position is biased toward one of the four edges. Width and height are picked
+    ///     uniformly between <paramref name="minSize" /> and the bounding rectangle's
+    ///     dimensions; the X and Y offsets are biased independently by picking a side and
+    ///     keeping the offset closer to it (min/max of two uniform draws).
+    /// </summary>
+    public static Rectangle CreateRandomNearEdge(
+        SimpleRandom random, Rectangle boundingRectangle, Dimensions minSize)
+    {
+        var width = (byte)random.Next(minSize.Width, boundingRectangle.Width + 1);
+        var height = (byte)random.Next(minSize.Height, boundingRectangle.Height + 1);
+
+        var x1 = (byte)PickBiasedTowardEdge(
+            random, boundingRectangle.TopLeft.X, boundingRectangle.BottomRight.X + 1 - width);
+        var y1 = (byte)PickBiasedTowardEdge(
+            random, boundingRectangle.TopLeft.Y, boundingRectangle.BottomRight.Y + 1 - height);
+
+        return new Rectangle(new Point(x1, y1), width, height);
+    }
+
+    // Picks an integer in [min, max] biased toward either min or max. Take min-of-two
+    // or max-of-two uniform draws depending on which side is favoured for this axis.
+    private static int PickBiasedTowardEdge(SimpleRandom random, int min, int max)
+    {
+        if (min >= max)
+        {
+            return min;
+        }
+
+        var a = random.Next(min, max + 1);
+        var b = random.Next(min, max + 1);
+        return random.NextSingle(0f, 1f) < 0.5f ? Math.Min(a, b) : Math.Max(a, b);
+    }
+
     public static (short[,], Point[]) GetPointIndex(IMemoryCache cache, byte width, byte height)
     {
         var key = nameof(GetPointIndex).GetHashCode() ^ (width << 8 + height);

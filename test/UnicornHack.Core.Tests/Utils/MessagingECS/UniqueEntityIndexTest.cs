@@ -11,7 +11,7 @@ public class UniqueEntityIndexTest
     [Fact]
     public void Index_is_updated()
     {
-        var level = TestHelper.BuildLevel(".");
+        var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
 
         manager.Queue.ProcessQueue(manager);
@@ -21,8 +21,8 @@ public class UniqueEntityIndexTest
         beingEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
         beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
         var position = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-        position.LevelId = level.EntityId;
-        position.LevelCell = new Point(2, 3);
+        position.RoomId = level.EntityId;
+        position.Cell = new Point(2, 3);
         beingEntity.Position = position;
 
         using var innateAbilityReference = manager.CreateEntity();
@@ -43,7 +43,7 @@ public class UniqueEntityIndexTest
         innateAbilityEntity.Ability = innateAbility;
 
         manager.EffectApplicationSystem.AddPropertyEffect(nameof(PhysicalComponent.Capacity),
-            (AbilitySlottingSystem.DefaultSlotCapacity) + 2, innateAbilityEntity.Id, manager);
+            AbilitySlottingSystem.DefaultSlotCapacity + 2, innateAbilityEntity.Id, manager);
 
         manager.Queue.ProcessQueue(manager);
 

@@ -39,7 +39,12 @@ public class KnowledgeComponent : GameComponent
 
     public GameEntity KnownEntity
     {
-        get => _knownEntity ??= Entity.Manager.FindEntity(_knownEntityId)!;
+        get
+        {
+            _knownEntity ??= Entity.Manager.FindEntity(_knownEntityId);
+            Debug.Assert(_knownEntity != null, $"KnownEntity {_knownEntityId} not loaded");
+            return _knownEntity!;
+        }
         set
         {
             KnownEntityId = value.Id;

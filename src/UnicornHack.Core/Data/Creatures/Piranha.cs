@@ -22,7 +22,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 5,
-        GenerationFlags = GenerationFlags.SmallGroup,
+        GenerationFlags = CreatureGenerationFlags.SmallGroup,
         Size = 1,
         Weight = 60,
         Perception = -7,

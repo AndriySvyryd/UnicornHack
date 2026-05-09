@@ -37,13 +37,13 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        var levelItem =
-            position.LevelEntity.Level!.Items.GetValueOrDefault(new Point(position.LevelX, position.LevelY));
-        if (levelItem != null)
+        var roomItem =
+            position.RoomEntity.Room!.Items.GetValueOrDefault(new Point(position.CellX, position.CellY));
+        if (roomItem != null)
         {
             // Pickup item on move over
             var moveMessage = MoveItemMessage.Create(manager);
-            moveMessage.ItemEntity = levelItem;
+            moveMessage.ItemEntity = roomItem;
             moveMessage.TargetContainerEntity = message.Entity;
 
             manager.Enqueue(moveMessage);
@@ -61,8 +61,8 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
         {
             var moveItemMessage = MoveItemMessage.Create(manager);
             moveItemMessage.ItemEntity = item;
-            moveItemMessage.TargetCell = position.LevelCell;
-            moveItemMessage.TargetLevelEntity = position.LevelEntity;
+            moveItemMessage.TargetCell = position.Cell;
+            moveItemMessage.TargetRoomEntity = position.RoomEntity;
             moveItemMessage.SuppressLog = true;
             moveItemMessage.Force = true;
 
@@ -79,7 +79,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
         var position = itemEntity.Position!;
         var itemMovedMessage = ItemMovedMessage.Create(manager);
         itemMovedMessage.ItemEntity = itemEntity;
-        itemMovedMessage.InitialLevelCell = position?.LevelCell;
+        itemMovedMessage.InitialLevelCell = position?.Cell;
         itemMovedMessage.InitialContainer = item.ContainerEntity;
         itemMovedMessage.InitialCount = item.GetQuantity();
         itemMovedMessage.SuppressLog = message.SuppressLog;
@@ -92,7 +92,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
                 $"Invalid target container '{message.TargetContainerEntity?.Id}' for item '{itemEntity.Id}'");
         }
 
-        if (message.TargetLevelEntity != null)
+        if (message.TargetRoomEntity != null)
         {
             if (item.ContainerId != null
                 && item.EquippedSlot != EquipmentSlot.None)
@@ -120,7 +120,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
                 initialTopContainer = itemMovedMessage.InitialContainer != null
                     ? manager.ItemMovingSystem.GetTopContainer(itemMovedMessage.InitialContainer, manager)
                     : itemEntity;
-                initialPosition = initialTopContainer.Position?.LevelCell;
+                initialPosition = initialTopContainer.Position?.Cell;
             }
 
             var spilloverDirection = Direction.South;
@@ -133,15 +133,15 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
 
             ItemComponent? leftover = null;
             foreach (var targetPoint in TerrainSystem.GetAdjacentPoints(
-                         message.TargetLevelEntity.Level!, message.TargetCell!.Value, spilloverDirection,
+                         message.TargetRoomEntity.Room!, message.TargetCell!.Value, spilloverDirection,
                          includeInitial: true))
             {
-                if (!manager.TravelSystem.CanMoveTo(targetPoint, message.TargetLevelEntity.Level!))
+                if (!manager.TravelSystem.CanMoveTo(targetPoint, message.TargetRoomEntity.Room!))
                 {
                     continue;
                 }
 
-                var existingItem = message.TargetLevelEntity.Level!.Items.GetValueOrDefault(targetPoint);
+                var existingItem = message.TargetRoomEntity.Room!.Items.GetValueOrDefault(targetPoint);
                 if (existingItem == null)
                 {
                     itemMovedMessage.Successful = true;
@@ -153,7 +153,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
                     item.ContainerId = null;
                     position ??= manager.CreateComponent<PositionComponent>(EntityComponent.Position);
 
-                    position.SetLevelPosition(message.TargetLevelEntity.Id, targetPoint);
+                    position.SetRoomPosition(message.TargetRoomEntity.Id, targetPoint);
 
                     itemEntity.Position = position;
 
@@ -308,7 +308,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
                 return reference;
             }
 
-            var newItemEntityReference = Item.Loader.Get(item.TemplateName).Instantiate(manager);
+            var newItemEntityReference = manager.Game.Services.Data.Items.Get(item.TemplateName).Instantiate(manager);
 
             newItemEntityReference.Referenced.Item!.Count = quantity;
             item.Count -= quantity;

@@ -91,7 +91,7 @@ public static partial class CreatureData
         InitialLevel = 9,
         GenerationWeight = "$branch == 'hell' ? 1 : 0",
         PreviousStageName = "naga",
-        GenerationFlags = GenerationFlags.NonGenocidable,
+        GenerationFlags = CreatureGenerationFlags.NonGenocidable,
         Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector,
         Noise = ActorNoiseType.Cuss,
         Sex = Sex.Female,

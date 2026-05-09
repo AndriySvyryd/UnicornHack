@@ -1,4 +1,5 @@
 ﻿using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
@@ -7,17 +8,17 @@ namespace UnicornHack.Utils.MessagingECS;
 
 public class EntityIndexTest
 {
-    [Fact(Skip = "Unused")]
+    [Fact]
     public void Index_is_updated()
     {
         var manager = TestHelper.CreateGameManager();
 
         GameEntity firstLevelEntity;
-        LevelComponent level;
+        RoomComponent level;
         using (var levelEntityReference = manager.CreateEntity())
         {
             firstLevelEntity = levelEntityReference.Referenced;
-            level = firstLevelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+            level = firstLevelEntity.AddComponent<RoomComponent>((int)EntityComponent.Room);
         }
 
         GameEntity firstKnowledgeEntity;
@@ -25,9 +26,10 @@ public class EntityIndexTest
         {
             var firstPositionEntity = firstPositionEntityReference.Referenced;
             firstPositionEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
+            firstPositionEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
             var firstPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-            firstPosition.LevelId = firstLevelEntity.Id;
-            firstPosition.LevelCell = new Point(2, 3);
+            firstPosition.RoomId = firstLevelEntity.Id;
+            firstPosition.Cell = new Point(2, 3);
             firstPositionEntity.Position = firstPosition;
 
             using (var firstKnowledgeEntityReference = manager.CreateEntity())
@@ -36,8 +38,8 @@ public class EntityIndexTest
                 var knowledge = firstKnowledgeEntity.AddComponent<KnowledgeComponent>((int)EntityComponent.Knowledge);
                 knowledge.KnownEntityId = firstPositionEntity.Id;
                 var firstKnowledgePosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-                firstKnowledgePosition.LevelId = firstLevelEntity.Id;
-                firstKnowledgePosition.LevelCell = new Point(2, 3);
+                firstKnowledgePosition.RoomId = firstLevelEntity.Id;
+                firstKnowledgePosition.Cell = new Point(2, 3);
                 firstKnowledgeEntity.Position = firstKnowledgePosition;
 
                 Assert.Same(firstKnowledgeEntity, level.KnownActors.GetValueOrDefault(new Point(2, 3)));
@@ -49,10 +51,11 @@ public class EntityIndexTest
         {
             var secondPositionEntity = secondPositionEntityReference.Referenced;
             secondPositionEntity.AddComponent<ItemComponent>((int)EntityComponent.Item);
+            secondPositionEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
             var secondPosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-            secondPosition.LevelId = firstLevelEntity.Id;
-            secondPosition.LevelX = 2;
-            secondPosition.LevelY = 3;
+            secondPosition.RoomId = firstLevelEntity.Id;
+            secondPosition.CellX = 2;
+            secondPosition.CellY = 3;
             secondPositionEntity.Position = secondPosition;
 
             using (var secondKnowledgeEntityReference = manager.CreateEntity())
@@ -61,8 +64,8 @@ public class EntityIndexTest
                 var knowledge = secondKnowledgeEntity.AddComponent<KnowledgeComponent>((int)EntityComponent.Knowledge);
                 knowledge.KnownEntityId = secondPositionEntity.Id;
                 var secondKnowledgePosition = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
-                secondKnowledgePosition.LevelId = firstLevelEntity.Id;
-                secondKnowledgePosition.LevelCell = new Point(2, 3);
+                secondKnowledgePosition.RoomId = firstLevelEntity.Id;
+                secondKnowledgePosition.Cell = new Point(2, 3);
                 secondKnowledgeEntity.Position = secondKnowledgePosition;
 
                 Assert.Same(secondKnowledgeEntity, level.KnownItems.GetValueOrDefault(new Point(2, 3)));
@@ -70,25 +73,25 @@ public class EntityIndexTest
             }
         }
 
-        firstKnowledgeEntity.Position.LevelCell = new Point(1, 3);
+        firstKnowledgeEntity.Position.Cell = new Point(1, 3);
 
         Assert.Same(firstKnowledgeEntity, level.KnownActors.GetValueOrDefault(new Point(1, 3)));
-        Assert.Same(secondKnowledgeEntity, level.KnownActors.GetValueOrDefault(new Point(2, 3)));
+        Assert.Same(secondKnowledgeEntity, level.KnownItems.GetValueOrDefault(new Point(2, 3)));
 
         secondKnowledgeEntity.Position = null;
 
-        Assert.Null(level.KnownActors.GetValueOrDefault(new Point(2, 3)));
+        Assert.Null(level.KnownItems.GetValueOrDefault(new Point(2, 3)));
 
         using (var secondLevelEntityReference = manager.CreateEntity())
         {
             var secondLevelEntity = secondLevelEntityReference.Referenced;
-            secondLevelEntity.AddComponent<LevelComponent>((int)EntityComponent.Level);
-            firstKnowledgeEntity.Position.LevelId = secondLevelEntity.Id;
+            var secondLevel = secondLevelEntity.AddComponent<RoomComponent>((int)EntityComponent.Room);
+            firstKnowledgeEntity.Position.RoomId = secondLevelEntity.Id;
 
             Assert.Null(level.KnownActors.GetValueOrDefault(new Point(1, 3)));
-            Assert.Same(firstKnowledgeEntity, level.KnownActors.GetValueOrDefault(new Point(1, 3)));
+            Assert.Same(firstKnowledgeEntity, secondLevel.KnownActors.GetValueOrDefault(new Point(1, 3)));
 
-            secondLevelEntity.Level = null;
+            secondLevelEntity.Room = null;
         }
 
         Assert.Null(firstKnowledgeEntity.Position);

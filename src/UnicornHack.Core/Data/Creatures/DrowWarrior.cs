@@ -52,7 +52,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 7,
-        GenerationFlags = GenerationFlags.NonPolymorphable | GenerationFlags.SmallGroup,
+        GenerationFlags = CreatureGenerationFlags.NonPolymorphable | CreatureGenerationFlags.SmallGroup,
         Behavior = AIBehavior.AlignmentAware | AIBehavior.WeaponCollector,
         Noise = ActorNoiseType.Speach,
         Weight = 800,

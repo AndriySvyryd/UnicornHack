@@ -24,7 +24,7 @@ public static partial class CreatureData
         },
         InitialLevel = 4,
         GenerationWeight = "4",
-        GenerationFlags = GenerationFlags.SmallGroup,
+        GenerationFlags = CreatureGenerationFlags.SmallGroup,
         Behavior = AIBehavior.Stalking,
         Noise = ActorNoiseType.Moan,
         Weight = 1000,

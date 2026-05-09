@@ -9,8 +9,8 @@ public static class CSScriptLoaderHelpers
     public static readonly string ScriptExtension = ".csx";
     public static readonly bool LoadScripts = false;
 
-    public static readonly IReadOnlyList<string> GlobalNamespaces = new[]
-    {
+    public static readonly IReadOnlyList<string> GlobalNamespaces =
+    [
         typeof(object).GetTypeInfo().Namespace!,
         typeof(List<>).GetTypeInfo().Namespace!,
         typeof(Debug).GetTypeInfo().Namespace!,
@@ -22,7 +22,7 @@ public static class CSScriptLoaderHelpers
         typeof(MapFragment).GetTypeInfo().Namespace!,
         typeof(Direction).GetTypeInfo().Namespace!,
         typeof(Dimensions).GetTypeInfo().Namespace!
-    };
+    ];
 
     public static T Load<T>(string script)
         => CSScriptSerializer.Deserialize<T>(script, Enumerable.Empty<Assembly>(), GlobalNamespaces);

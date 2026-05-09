@@ -22,7 +22,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 3,
-        GenerationFlags = GenerationFlags.NonPolymorphable,
+        GenerationFlags = CreatureGenerationFlags.NonPolymorphable,
         Behavior = AIBehavior.GoldCollector | AIBehavior.WeaponCollector | AIBehavior.MagicUser,
         Noise = ActorNoiseType.Speach,
         Sex = Sex.Male,

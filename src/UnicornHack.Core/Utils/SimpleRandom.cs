@@ -35,12 +35,69 @@ public class SimpleRandom : NotificationEntity
 
     public TInput Pick<TInput>(IReadOnlyList<TInput> items) => items[Next(0, items.Count)];
 
+    public Point Pick(Rectangle rect, Func<Point, bool> condition)
+    {
+        var width = rect.Width;
+        var height = rect.Height;
+        var area = width * height;
+        var startIndex = Next(0, area);
+        for (var offset = 0; offset < area; offset++)
+        {
+            var i = (startIndex + offset) % area;
+            var p = new Point((byte)(rect.TopLeft.X + i % width), (byte)(rect.TopLeft.Y + i / width));
+            if (condition(p))
+            {
+                return p;
+            }
+        }
+
+        throw new InvalidOperationException("No point in the rectangle meets the condition");
+    }
+
+    public TInput Pick<TInput>(IReadOnlyCollection<TInput> items, Func<TInput, bool> condition) =>
+        !TryPick(items, condition, out var item)
+            ? throw new InvalidOperationException("No elements meet the condition")
+            : item;
+
     public TInput Pick<TInput>(IReadOnlyList<TInput> items, Func<TInput, bool> condition) =>
         !TryPick(items, condition, out var item)
             ? throw new InvalidOperationException("No elements meet the condition")
             : item;
 
     public TInput TryPick<TInput>(IReadOnlyList<TInput> items) => items[Next(0, items.Count)];
+
+    public bool TryPick<TInput>(IReadOnlyCollection<TInput> items, Func<TInput, bool> condition, [NotNullWhen(true)] out TInput? item)
+    {
+        var index = Next(0, items.Count);
+        var i = 0;
+        foreach (var candidate in items)
+        {
+            if (i >= index && condition(candidate))
+            {
+                item = candidate!;
+                return true;
+            }
+            i++;
+        }
+
+        i = 0;
+        foreach (var candidate in items)
+        {
+            if (i >= index)
+            {
+                break;
+            }
+            if (condition(candidate))
+            {
+                item = candidate!;
+                return true;
+            }
+            i++;
+        }
+
+        item = default;
+        return false;
+    }
 
     public bool TryPick<TInput>(IReadOnlyList<TInput> items, Func<TInput, bool> condition, [NotNullWhen(true)] out TInput? item)
     {
@@ -117,7 +174,7 @@ public class SimpleRandom : NotificationEntity
                     yield break;
                 }
 
-                selectedIndex = BinarySearch(cumulativeWeights, Next(0, sum));
+                selectedIndex = BinarySearch(cumulativeWeights, NextSingle(0, sum));
             }
 
             yield return selector(items[selectedIndex], selectedIndex);
@@ -195,9 +252,9 @@ public class SimpleRandom : NotificationEntity
     /// <summary>
     ///     Returns a random number in the range [<paramref name="minValue" />, <paramref name="maxValue" />)
     /// </summary>
-    public int Next(int minValue, int maxValue) => (int)Next(minValue, (float)maxValue);
+    public int Next(int minValue, int maxValue) => (int)NextSingle(minValue, maxValue);
 
-    public float Next(float minValue, float maxValue)
+    public float NextSingle(float minValue, float maxValue)
     {
         if (minValue >= maxValue)
         {
@@ -215,7 +272,7 @@ public class SimpleRandom : NotificationEntity
             return minValue;
         }
 
-        return minValue + IntToFloat * NextInt() * range;
+        return minValue + IntToFloat * (NextInt() - 1) * range;
     }
 
     private int NextInt() => (int)(int.MaxValue & NextUInt());
@@ -231,7 +288,7 @@ public class SimpleRandom : NotificationEntity
         var successes = 0;
         for (var i = 0; i < n; i++)
         {
-            if (Next(0, 1f) <= p)
+            if (NextSingle(0, 1f) <= p)
             {
                 successes++;
             }
@@ -245,7 +302,7 @@ public class SimpleRandom : NotificationEntity
         _seed ^= _seed << 13;
         _seed ^= _seed >> 17;
         _seed ^= _seed << 5;
-        return _seed;
+        return _seed - 1; // _seed is never 0
     }
 
     public bool NextBool() => (0x80000000 & NextUInt()) == 0;

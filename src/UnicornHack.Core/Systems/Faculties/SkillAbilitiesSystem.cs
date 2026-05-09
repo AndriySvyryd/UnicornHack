@@ -186,7 +186,7 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
             melee ? SecondaryMeleeWeaponAttackName : SecondaryRangedWeaponAttackName,
             actorEntity, secondaryWeapon, activation, manager);
 
-        foreach (WieldingAbility defaultAttackTemplate in Ability.Loader.GetAllValues(AbilityType.DefaultAttack))
+        foreach (WieldingAbility defaultAttackTemplate in manager.Game.Services.Data.Abilities.GetAllValues(AbilityType.DefaultAttack))
         {
             if ((melee && (defaultAttackTemplate.ItemType & ItemType.WeaponMelee) != 0)
                 || (!melee && (defaultAttackTemplate.ItemType & ItemType.WeaponRanged) != 0))
@@ -281,7 +281,7 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
         }
 
         // TODO: Support claws, tentacles, etc.
-        return Item.Loader.Get("fist").Instantiate(manager);
+        return manager.Game.Services.Data.Items.Get("fist").Instantiate(manager);
     }
 
     private AbilityComponent? ResetWeaponAbility(
@@ -511,7 +511,7 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
                 handnessMultiplier = 1;
             }
 
-            var template = Item.Loader.Get(item.TemplateName);
+            var template = manager.Game.Services.Data.Items.Get(item.TemplateName);
             var skillBonus = GetItemSkillBonus(template, actorEntity.Player) * baseMultiplier;
 
             var requiredMight = template.RequiredMight ?? 0;

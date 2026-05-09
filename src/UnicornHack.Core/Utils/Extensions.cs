@@ -289,7 +289,7 @@ public static class Extensions
                 }
                 else if (leftSet is not BlockExpression leftBlock)
                 {
-                    _setExpression = Expression.Block(new[] { leftSet, _setExpression });
+                    _setExpression = Expression.Block([leftSet, _setExpression]);
                 }
                 else if (_setExpression is BlockExpression rightBlock)
                 {
@@ -299,7 +299,7 @@ public static class Extensions
                 else
                 {
                     _setExpression = leftBlock.Update(leftBlock.Variables,
-                        leftBlock.Expressions.Concat(new[] { _setExpression }));
+                        leftBlock.Expressions.Concat([_setExpression]));
                 }
 
                 _componentGetExpression = Expression.Coalesce(leftComponentGetExpression, _componentGetExpression);

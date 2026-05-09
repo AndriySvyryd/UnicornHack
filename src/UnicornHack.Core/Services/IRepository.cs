@@ -6,5 +6,5 @@ public interface IRepository
     void Add<T>(T entity) where T : class;
     void Remove(object entity);
     void RemoveTracked(object entity);
-    void LoadLevels(IReadOnlyList<int> levelIds);
+    void LoadRooms(IReadOnlyList<int> roomIds);
 }

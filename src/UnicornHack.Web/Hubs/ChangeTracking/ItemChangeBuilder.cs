@@ -10,13 +10,13 @@ public class ItemChangeBuilder : ChangeBuilder<ItemChange>
     public override void RegisterOnGroups(GameManager manager)
     {
         manager.KnownPositions.AddListener(this);
-        manager.KnownItemsToLevelCellRelationship.AddDependentsListener(this);
+        manager.KnownItemsToCellRelationship.AddDependentsListener(this);
     }
 
     public override void UnregisterFromGroups(GameManager manager)
     {
         manager.KnownPositions.RemoveListener(this);
-        manager.KnownItemsToLevelCellRelationship.RemoveDependentsListener(this);
+        manager.KnownItemsToCellRelationship.RemoveDependentsListener(this);
     }
 
     protected override void OnBaseGroupPropertyValuesChanged(in EntityChange<GameEntity> entityChange)
@@ -60,11 +60,11 @@ public class ItemChangeBuilder : ChangeBuilder<ItemChange>
             {
                 switch (propertyName)
                 {
-                    case nameof(PositionComponent.LevelX):
-                        change.LevelX = entity.Position!.LevelX;
+                    case nameof(PositionComponent.CellX):
+                        change.LevelX = entity.Position!.CellX;
                         break;
-                    case nameof(PositionComponent.LevelY):
-                        change.LevelY = entity.Position!.LevelY;
+                    case nameof(PositionComponent.CellY):
+                        change.LevelY = entity.Position!.CellY;
                         break;
                 }
             }
@@ -121,8 +121,8 @@ public class ItemChangeBuilder : ChangeBuilder<ItemChange>
 
         var change = new ItemChange
         {
-            LevelX = position.LevelX,
-            LevelY = position.LevelY,
+            LevelX = position.CellX,
+            LevelY = position.CellY,
             IsCurrentlyPerceived = currentlyPerceived
         };
 

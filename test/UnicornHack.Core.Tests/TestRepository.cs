@@ -33,7 +33,7 @@ public class TestRepository : IRepository
         }
     }
 
-    public void LoadLevels(IReadOnlyList<int> levelIds)
+    public void LoadRooms(IReadOnlyList<int> roomIds)
     {
     }
 }

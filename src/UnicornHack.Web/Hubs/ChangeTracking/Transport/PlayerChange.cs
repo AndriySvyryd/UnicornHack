@@ -48,7 +48,7 @@ public partial class PlayerChange
         }
     }
     [Key(5)]
-    public LevelChange? Level
+    public RoomChange? Room
     {
         get => field; set
         {

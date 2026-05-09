@@ -30,7 +30,7 @@ public static partial class CreatureData
         },
         InitialLevel = 7,
         GenerationWeight = "$branch == 'hell' ? 2 : 0",
-        GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable | GenerationFlags.SmallGroup,
+        GenerationFlags = CreatureGenerationFlags.NonGenocidable | CreatureGenerationFlags.NonPolymorphable | CreatureGenerationFlags.SmallGroup,
         Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector,
         Weight = 1000,
         Perception = -6,

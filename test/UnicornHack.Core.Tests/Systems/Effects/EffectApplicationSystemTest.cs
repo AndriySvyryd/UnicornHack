@@ -9,7 +9,7 @@ public class EffectApplicationSystemTest
     [Fact]
     public void Active_abilities_are_updated_when_contained_effects_change()
     {
-        var level = TestHelper.BuildLevel(".");
+        var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
 
@@ -100,7 +100,7 @@ public class EffectApplicationSystemTest
     [Fact]
     public void Properties_are_updated_when_races_change()
     {
-        var level = TestHelper.BuildLevel(".");
+        var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
 

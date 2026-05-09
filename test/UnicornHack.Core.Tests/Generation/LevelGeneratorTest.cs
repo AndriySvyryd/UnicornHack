@@ -20,13 +20,12 @@ public class LevelGeneratorTest
     {
         var game = TestHelper.CreateGame(seed);
         var manager = game.Manager;
-        var dungeon = BranchData.Dungeon.Instantiate(game);
-        game.Branches.Add(dungeon);
+        var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
 
         var firstLevel = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed, manager);
         LevelGenerator.EnsureGenerated(firstLevel);
         manager.Queue.ProcessQueue(manager);
-        var firstTerrain = SnapshotTerrain(firstLevel);
+        var firstTerrain = SnapshotTerrain(firstLevel.Rooms.First());
 
         // Mirror LevelConnection.Create: derive the next level's seed from the current
         // level's post-generation RNG state.
@@ -35,13 +34,13 @@ public class LevelGeneratorTest
         var secondLevel = LevelGenerator.CreateEmpty(dungeon, depth: 2, secondSeed, manager);
         LevelGenerator.EnsureGenerated(secondLevel);
         manager.Queue.ProcessQueue(manager);
-        var secondTerrain = SnapshotTerrain(secondLevel);
+        var secondTerrain = SnapshotTerrain(secondLevel.Rooms.First());
 
         Assert.False(TerrainEquals(firstTerrain, secondTerrain),
             $"Depth 1 and depth 2 produced identical terrain for initial seed {seed}.");
     }
 
-    private static byte[] SnapshotTerrain(LevelComponent level)
+    private static byte[] SnapshotTerrain(RoomComponent level)
     {
         var snapshot = new byte[level.TileCount];
         Array.Copy(level.Terrain, snapshot, level.TileCount);

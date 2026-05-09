@@ -1,7 +1,7 @@
 namespace UnicornHack.Generation;
 
 [Flags]
-public enum GenerationFlags
+public enum CreatureGenerationFlags
 {
     None,
     NonGenocidable = 1 << 1,

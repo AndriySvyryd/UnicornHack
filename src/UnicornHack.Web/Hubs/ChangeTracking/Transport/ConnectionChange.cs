@@ -29,7 +29,7 @@ public partial class ConnectionChange
         }
     }
     [Key(3)]
-    public bool IsDown
+    public Direction Orientation
     {
         get => field; set
         {

@@ -30,7 +30,7 @@ public static partial class CreatureData
         InitialLevel = 5,
         GenerationWeight = "3",
         NextStageName = "ogre lord",
-        GenerationFlags = GenerationFlags.SmallGroup,
+        GenerationFlags = CreatureGenerationFlags.SmallGroup,
         Behavior = AIBehavior.GoldCollector | AIBehavior.GemCollector | AIBehavior.WeaponCollector,
         Noise = ActorNoiseType.Grunt,
         Size = 8,

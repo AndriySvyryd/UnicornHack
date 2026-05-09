@@ -31,17 +31,17 @@ public class EntityManagerTest
         using (var entityReference = ((IEntityManager)manager).CreateEntity())
         {
             entity = (GameEntity)entityReference.Referenced;
-            entity.AddComponent<LevelComponent>((int)EntityComponent.Level);
+            entity.AddComponent<RoomComponent>((int)EntityComponent.Room);
 
             Assert.Same(entity, manager.FindEntity(entity.Id));
 
-            RemoveComponentMessage.Enqueue(entity, EntityComponent.Level, manager);
+            RemoveComponentMessage.Enqueue(entity, EntityComponent.Room, manager);
 
             Assert.NotNull(manager.FindEntity(entity.Id));
-            Assert.True(entity.HasComponent(EntityComponent.Level));
+            Assert.True(entity.HasComponent(EntityComponent.Room));
 
             manager.Queue.ProcessQueue(manager);
-            Assert.False(entity.HasComponent(EntityComponent.Level));
+            Assert.False(entity.HasComponent(EntityComponent.Room));
         }
 
         Assert.Null(manager.FindEntity(entity.Id));

@@ -29,7 +29,7 @@ public static partial class CreatureData
         },
         InitialLevel = 1,
         GenerationWeight = "0",
-        GenerationFlags = GenerationFlags.NonPolymorphable | GenerationFlags.SmallGroup,
+        GenerationFlags = CreatureGenerationFlags.NonPolymorphable | CreatureGenerationFlags.SmallGroup,
         Behavior = AIBehavior.GoldCollector | AIBehavior.WeaponCollector,
         Noise = ActorNoiseType.Speach,
         Size = 2,

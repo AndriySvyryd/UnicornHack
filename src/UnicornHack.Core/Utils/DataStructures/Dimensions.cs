@@ -22,6 +22,8 @@ public readonly struct Dimensions : IEquatable<Dimensions>
 
     public bool Contains(Dimensions d) => Width >= d.Width && Height >= d.Height;
 
+    public override string ToString() => $"{Width}x{Height}";
+
     public bool Equals(Dimensions other)
         => Width == other.Width && Height == other.Height;
 

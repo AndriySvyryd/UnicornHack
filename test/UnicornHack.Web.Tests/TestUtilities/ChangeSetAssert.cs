@@ -21,7 +21,7 @@ public static class ChangeSetAssert
         AssertAbilitiesEqual(expected.Abilities!, actual.Abilities!);
         AssertRacesEqual(expected.Races!, actual.Races!);
         AssertLogContainsAll(expected.Log!, actual.Log!);
-        AssertLevelEqual(expected.Level!, actual.Level!);
+        AssertLevelEqual(expected.Room!, actual.Room!);
     }
 
     private static void AssertAbilitiesEqual(Dictionary<int, AbilityChange> expected, Dictionary<int, AbilityChange> actual)
@@ -72,7 +72,7 @@ public static class ChangeSetAssert
         }
     }
 
-    private static void AssertLevelEqual(LevelChange expected, LevelChange actual)
+    private static void AssertLevelEqual(RoomChange expected, RoomChange actual)
     {
         Assert.True(expected.BranchName == actual.BranchName, $"Level BranchName expected '{expected.BranchName}', actual '{actual.BranchName}'");
         Assert.True(expected.Depth == actual.Depth, $"Level Depth expected {expected.Depth}, actual {actual.Depth}");
@@ -143,11 +143,11 @@ public static class ChangeSetAssert
             var act = actual[kvp.Key];
             Assert.True(exp.LevelX == act.LevelX, $"Connection {kvp.Key}: LevelX expected {exp.LevelX}, actual {act.LevelX}");
             Assert.True(exp.LevelY == act.LevelY, $"Connection {kvp.Key}: LevelY expected {exp.LevelY}, actual {act.LevelY}");
-            Assert.True(exp.IsDown == act.IsDown, $"Connection {kvp.Key}: IsDown expected {exp.IsDown}, actual {act.IsDown}");
+            Assert.True(exp.Orientation == act.Orientation, $"Connection {kvp.Key}: Orientation expected {exp.Orientation}, actual {act.Orientation}");
         }
     }
 
-    private static void AssertTerrainEqual(LevelChange expectedLevel, LevelChange actualLevel)
+    private static void AssertTerrainEqual(RoomChange expectedLevel, RoomChange actualLevel)
     {
         var expectedMap = expectedLevel.LevelMap;
         var actualMap = actualLevel.LevelMap;
@@ -193,23 +193,23 @@ public static class ChangeSetAssert
         foreach (var changeSet in changeSets)
         {
             var player = changeSet.PlayerState;
-            var level = player.Level;
+            var level = player.Room;
 
             if (level != null && level.ChangedProperties != null)
             {
                 if (level.Actors != null)
                 {
-                    AssertNoRedundantEntityChanges(level.Actors, runningState.Level!.Actors!, AssertActorPropertiesChanged);
+                    AssertNoRedundantEntityChanges(level.Actors, runningState.Room!.Actors!, AssertActorPropertiesChanged);
                 }
 
                 if (level.Items != null)
                 {
-                    AssertNoRedundantEntityChanges(level.Items, runningState.Level!.Items!, AssertItemPropertiesChanged);
+                    AssertNoRedundantEntityChanges(level.Items, runningState.Room!.Items!, AssertItemPropertiesChanged);
                 }
 
                 if (level.Connections != null)
                 {
-                    AssertNoRedundantEntityChanges(level.Connections, runningState.Level!.Connections!, AssertConnectionPropertiesChanged);
+                    AssertNoRedundantEntityChanges(level.Connections, runningState.Room!.Connections!, AssertConnectionPropertiesChanged);
                 }
             }
 
@@ -327,7 +327,7 @@ public static class ChangeSetAssert
             {
                 1 => change.LevelX == baseline.LevelX,
                 2 => change.LevelY == baseline.LevelY,
-                3 => change.IsDown == baseline.IsDown,
+                3 => change.Orientation == baseline.Orientation,
                 _ => false
             };
 

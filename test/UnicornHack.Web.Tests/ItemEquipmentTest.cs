@@ -17,11 +17,11 @@ public class ItemEquipmentTest
 .....
 .....";
 
-    private static (PlayerComponent Player, LevelChangeBuilder Listener, GameServices Services, GameManager Manager)
+    private static (PlayerComponent Player, RoomChangeBuilder Listener, GameServices Services, GameManager Manager)
         SetupGame()
     {
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(TestMap, game);
+        var level = TestHelper.BuildRoom(TestMap, game);
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 2));
@@ -157,7 +157,7 @@ public class ItemEquipmentTest
 .........................
 .........................";
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(map, game);
+        var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
         // Place a creature just south of the wall gap
@@ -228,7 +228,7 @@ public class ItemEquipmentTest
 .........................
 .........................";
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(map, game);
+        var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
         // Surround the eventual player position (12,12) with creatures and items
@@ -344,7 +344,7 @@ public class ItemEquipmentTest
 .........................
 .........................";
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(map, game);
+        var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
         // Creature directly north of the player. Player faces South initially,

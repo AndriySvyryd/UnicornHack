@@ -54,16 +54,18 @@ namespace MessagePack.Resolvers
                 { typeof((short, DirectionFlags)[]), 3 },
                 { typeof((short, MapFeature)), 4 },
                 { typeof((short, MapFeature)[]), 5 },
+                { typeof(DirectionFlags), 6 },
                 { typeof(DirectionFlags[]), 7 },
                 { typeof(MapFeature[]), 8 },
                 { typeof(Dictionary<int, List<object>>), 9 },
                 { typeof(Dictionary<string, int>), 10 },
+                { typeof(MapFeature), 11 },
                 { typeof(List<(short, byte)>), 13 },
                 { typeof(List<(short, DirectionFlags)>), 14 },
                 { typeof(List<(short, MapFeature)>), 15 },
                 { typeof(object), 16 },
                 { typeof(PlayerChange), 17 },
-                { typeof(LevelChange), 18 },
+                { typeof(RoomChange), 18 },
                 { typeof(ActorChange), 19 },
                 { typeof(ItemChange), 20 },
                 { typeof(ConnectionChange), 21 },
@@ -78,10 +80,15 @@ namespace MessagePack.Resolvers
                 { typeof(Dictionary<int, AbilityChange>), 30 },
                 { typeof(Dictionary<int, LogEntryChange>), 31 },
                 { typeof(List<TurnChangeSet>), 32 },
-                { typeof(LevelMap), 33 },
-                { typeof(LevelMapChanges), 34 },
+                { typeof(RoomMap), 33 },
+                { typeof(RoomMapChanges), 34 },
                 { typeof(AttackSummary), 35 },
-                { typeof(ActorActionChange), 36 }
+                { typeof(ActorActionChange), 36 },
+                { typeof(LevelMap), 37 },
+                { typeof(RoomEntry), 38 },
+                { typeof(List<RoomEntry>), 39 },
+                { typeof(List<int>), 40 },
+                { typeof(SteppedOnConnectionEvent), 41 }
             };
         }
 
@@ -106,6 +113,8 @@ namespace MessagePack.Resolvers
                     return new ValueTupleFormatter<short, MapFeature>();
                 case 5:
                     return new ArrayFormatter<(short, MapFeature)>();
+                case 6:
+                    return DirectionFlagsFormatter.Instance;
                 case 7:
                     return new ArrayFormatter<DirectionFlags>();
                 case 8:
@@ -114,6 +123,8 @@ namespace MessagePack.Resolvers
                     return new DictionaryFormatter<int, List<object>>();
                 case 10:
                     return new DictionaryFormatter<string, int>();
+                case 11:
+                    return MapFeatureFormatter.Instance;
                 case 13:
                     return new ListFormatter<(short, byte)>();
                 case 14:
@@ -125,7 +136,7 @@ namespace MessagePack.Resolvers
                 case 17:
                     return PlayerChangeFormatter.Instance;
                 case 18:
-                    return LevelChangeFormatter.Instance;
+                    return RoomChangeFormatter.Instance;
                 case 19:
                     return ActorChangeFormatter.Instance;
                 case 20:
@@ -155,13 +166,23 @@ namespace MessagePack.Resolvers
                 case 32:
                     return new ListFormatter<TurnChangeSet>();
                 case 33:
-                    return LevelMapFormatter.Instance;
+                    return RoomMapFormatter.Instance;
                 case 34:
-                    return LevelMapChangesFormatter.Instance;
+                    return RoomMapChangesFormatter.Instance;
                 case 35:
                     return AttackSummaryFormatter.Instance;
                 case 36:
                     return NextActionChangeFormatter.Instance;
+                case 37:
+                    return LevelMapFormatter.Instance;
+                case 38:
+                    return RoomEntryFormatter.Instance;
+                case 39:
+                    return new ListFormatter<RoomEntry>();
+                case 40:
+                    return new ListFormatter<int>();
+                case 41:
+                    return SteppedOnConnectionEventFormatter.Instance;
                 default:
                     return null;
             }

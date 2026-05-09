@@ -12,7 +12,7 @@ public class AbilitySlottingSystemTest
     [Fact]
     public void Abilities_can_be_assigned_to_slots()
     {
-        var level = TestHelper.BuildLevel(".");
+        var level = TestHelper.BuildRoom(".");
         var manager = level.Entity.Manager;
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
 
@@ -155,7 +155,7 @@ public class AbilitySlottingSystemTest
     [Fact]
     public void Items_are_stored_in_slots()
     {
-        var level = TestHelper.BuildLevel(@"
+        var level = TestHelper.BuildRoom(@"
 ...
 ...
 ..#");
@@ -186,7 +186,7 @@ public class AbilitySlottingSystemTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Null(coinItem.ContainerId);
-        Assert.Equal(new Point(1, 0), coinItem.Entity.Position!.LevelCell);
+        Assert.Equal(new Point(1, 0), coinItem.Entity.Position!.Cell);
         Assert.Null(playerEntity.Being.SlottedAbilities.GetValueOrDefault(2));
 
         var moveItemMessage = MoveItemMessage.Create(manager);
@@ -204,7 +204,7 @@ public class AbilitySlottingSystemTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Null(coinItem.ContainerId);
-        Assert.Equal(new Point(1, 0), coinItem.Entity.Position.LevelCell);
+        Assert.Equal(new Point(1, 0), coinItem.Entity.Position.Cell);
 
         moveItemMessage = MoveItemMessage.Create(manager);
         moveItemMessage.ItemEntity = coinItem.Entity;
@@ -217,7 +217,7 @@ public class AbilitySlottingSystemTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Null(coinItem.ContainerId);
-        Assert.Equal(new Point(1, 0), coinItem.Entity.Position.LevelCell);
+        Assert.Equal(new Point(1, 0), coinItem.Entity.Position.Cell);
         Assert.Null(playerEntity.Being.SlottedAbilities.GetValueOrDefault(2));
     }
 }

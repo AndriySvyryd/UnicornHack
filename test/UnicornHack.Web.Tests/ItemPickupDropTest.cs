@@ -16,11 +16,11 @@ public class ItemPickupDropTest
 .....
 .....";
 
-    private static (PlayerComponent Player, LevelChangeBuilder Listener, GameServices Services, GameManager Manager)
+    private static (PlayerComponent Player, RoomChangeBuilder Listener, GameServices Services, GameManager Manager)
         SetupGame()
     {
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(TestMap, game);
+        var level = TestHelper.BuildRoom(TestMap, game);
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 2));
@@ -47,7 +47,7 @@ public class ItemPickupDropTest
             ActorActionType.DropItem, swordEntity.Id);
 
         // Dropped item should appear on the level
-        Assert.Contains(fresh.Level!.Items!.Values, i => i.BaseName == "long sword");
+        Assert.Contains(fresh.Room!.Items!.Values, i => i.BaseName == "long sword");
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public class ItemPickupDropTest
             ActorActionType.DropItem, swordEntity.Id);
 
         // Dropped item should appear on the level
-        Assert.Contains(fresh.Level!.Items!.Values, i => i.BaseName == "long sword");
+        Assert.Contains(fresh.Room!.Items!.Values, i => i.BaseName == "long sword");
     }
 
     [Fact]
@@ -81,6 +81,6 @@ public class ItemPickupDropTest
             ActorActionType.DropItem, daggerEntity.Id);
 
         // Verify both items ended up on the level
-        Assert.True(fresh.Level!.Items!.Count >= 2);
+        Assert.True(fresh.Room!.Items!.Count >= 2);
     }
 }

@@ -84,7 +84,13 @@ public class ItemComponent : GameComponent
 
     public GameEntity? ContainerEntity
     {
-        get => _containerEntity ??= Entity.Manager.FindEntity(_containerId);
+        get
+        {
+            _containerEntity ??= Entity.Manager.FindEntity(_containerId);
+            Debug.Assert(_containerEntity != null || _containerId == null,
+                $"ContainerEntity {_containerId} not loaded");
+            return _containerEntity;
+        }
         set
         {
             _containerEntity = value;

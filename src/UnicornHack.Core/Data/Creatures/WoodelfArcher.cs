@@ -29,7 +29,7 @@ public static partial class CreatureData
         },
         InitialLevel = 4,
         GenerationWeight = "3",
-        GenerationFlags = GenerationFlags.SmallGroup,
+        GenerationFlags = CreatureGenerationFlags.SmallGroup,
         Behavior = AIBehavior.AlignmentAware | AIBehavior.WeaponCollector,
         Noise = ActorNoiseType.Speach,
         Weight = 800,

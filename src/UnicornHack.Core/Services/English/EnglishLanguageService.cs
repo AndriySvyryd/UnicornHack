@@ -644,7 +644,7 @@ public class EnglishLanguageService : ILanguageService
     public virtual string Welcome(GameEntity playerEntity)
         => string.Format(Culture,
             "Welcome to the {0}, {1}!",
-            playerEntity.Position!.LevelEntity.Level!.Branch.Name,
+            playerEntity.Position!.RoomEntity.Room!.Level.Branch.Name,
             GetString(playerEntity, EnglishPerson.Third, SenseType.Sight));
 
     public virtual string UnableToMove(Direction direction)
@@ -692,6 +692,92 @@ public class EnglishLanguageService : ILanguageService
         builder.Remove(startIndex: 0, length: 1).Insert(index: 0, value: char.ToUpper(first));
 
         return builder;
+    }
+
+    #endregion
+
+    #region Map screen
+
+    public string GetRoomTooltip(
+        RoomFeatures features,
+        bool isCurrent,
+        bool isVisited,
+        int revealedActorCount,
+        int revealedItemCount,
+        string? strongestActorName)
+    {
+        var sb = new StringBuilder();
+
+        var header = isCurrent ? "Current room"
+            : isVisited ? "Visited room"
+            : "Unexplored room";
+        sb.Append("<b>").Append(header).AppendLine("</b>");
+
+        var featureNames = GetRoomFeatureNames(features);
+        if (featureNames.Length > 0)
+        {
+            sb.Append("Features: ").AppendLine(featureNames);
+        }
+
+        if (revealedActorCount >= 0)
+        {
+            sb.Append("Creatures: ").Append(revealedActorCount.ToString(Culture)).AppendLine();
+        }
+
+        if (revealedItemCount >= 0)
+        {
+            sb.Append("Items: ").Append(revealedItemCount.ToString(Culture)).AppendLine();
+        }
+
+        if (!string.IsNullOrEmpty(strongestActorName))
+        {
+            sb.Append("Strongest: ").AppendLine(strongestActorName);
+        }
+
+        // Trim the trailing newline.
+        while (sb.Length > 0 && (sb[sb.Length - 1] == '\n' || sb[sb.Length - 1] == '\r'))
+        {
+            sb.Length--;
+        }
+        return sb.ToString();
+    }
+
+    private static string GetRoomFeatureNames(RoomFeatures features)
+    {
+        if (features == RoomFeatures.Normal)
+        {
+            return "";
+        }
+
+        var parts = new List<string>();
+        AppendIf(features, RoomFeatures.Entrance, "Entrance", parts);
+        AppendIf(features, RoomFeatures.Exit, "Exit", parts);
+        AppendIf(features, RoomFeatures.Boss, "Boss", parts);
+        AppendIf(features, RoomFeatures.Cursed, "Cursed", parts);
+        AppendIf(features, RoomFeatures.Challenge, "Challenge", parts);
+        AppendIf(features, RoomFeatures.DeityAltar, "Deity altar", parts);
+        AppendIf(features, RoomFeatures.SkillPedestal, "Skill pedestal", parts);
+        AppendIf(features, RoomFeatures.TraitPedestal, "Trait pedestal", parts);
+        AppendIf(features, RoomFeatures.FeatPedestal, "Feat pedestal", parts);
+        AppendIf(features, RoomFeatures.RacePedestal, "Race pedestal", parts);
+        AppendIf(features, RoomFeatures.WeaponStand, "Weapon stand", parts);
+        AppendIf(features, RoomFeatures.ArmorStand, "Armor stand", parts);
+        AppendIf(features, RoomFeatures.ItemCase, "Item case", parts);
+        AppendIf(features, RoomFeatures.Fountain, "Fountain", parts);
+        AppendIf(features, RoomFeatures.BigFountain, "Big fountain", parts);
+        AppendIf(features, RoomFeatures.MinorShrine, "Minor shrine", parts);
+        AppendIf(features, RoomFeatures.MajorShrine, "Major shrine", parts);
+        AppendIf(features, RoomFeatures.RitualShrine, "Ritual shrine", parts);
+        AppendIf(features, RoomFeatures.Secret, "Secret", parts);
+        return string.Join(", ", parts);
+
+        static void AppendIf(RoomFeatures features, RoomFeatures flag, string name, List<string> target)
+        {
+            if ((features & flag) != 0)
+            {
+                target.Add(name);
+            }
+        }
     }
 
     #endregion

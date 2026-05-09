@@ -48,7 +48,7 @@ public static partial class CreatureData
         },
         InitialLevel = 30,
         GenerationWeight = "$branch == 'hell' ? 0 : 1",
-        GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+        GenerationFlags = CreatureGenerationFlags.NonGenocidable | CreatureGenerationFlags.NonPolymorphable,
         Behavior = AIBehavior.Stalking,
         Noise = ActorNoiseType.Cuss,
         Sex = Sex.Male,

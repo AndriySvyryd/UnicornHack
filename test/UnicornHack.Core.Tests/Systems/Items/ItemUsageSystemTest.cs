@@ -10,7 +10,7 @@ public class ItemUsageSystemTest
     [Fact]
     public void Cannot_unequip_items_in_use()
     {
-        var level = TestHelper.BuildLevel(".");
+        var level = TestHelper.BuildRoom(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         var player = playerEntity.Player!;
         player.NextAction = ActorActionType.Wait;
@@ -56,7 +56,7 @@ public class ItemUsageSystemTest
         var moveItemMessage = MoveItemMessage.Create(manager);
         moveItemMessage.ItemEntity = shieldEntity;
         moveItemMessage.TargetCell = new Point(0, 0);
-        moveItemMessage.TargetLevelEntity = level.Entity;
+        moveItemMessage.TargetRoomEntity = level.Entity;
 
         manager.Enqueue(moveItemMessage);
         manager.Queue.ProcessQueue(manager);
@@ -85,7 +85,7 @@ public class ItemUsageSystemTest
         moveItemMessage = MoveItemMessage.Create(manager);
         moveItemMessage.ItemEntity = shieldEntity;
         moveItemMessage.TargetCell = new Point(0, 0);
-        moveItemMessage.TargetLevelEntity = level.Entity;
+        moveItemMessage.TargetRoomEntity = level.Entity;
         manager.Enqueue(moveItemMessage);
 
         manager.Queue.ProcessQueue(manager);
@@ -143,7 +143,7 @@ public class ItemUsageSystemTest
     [Fact]
     public void Can_force_unequip_items_in_use()
     {
-        var level = TestHelper.BuildLevel(".");
+        var level = TestHelper.BuildRoom(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         var player = playerEntity.Player!;
         player.NextAction = ActorActionType.Wait;
@@ -208,7 +208,7 @@ public class ItemUsageSystemTest
         var moveItemMessage = MoveItemMessage.Create(manager);
         moveItemMessage.ItemEntity = shieldEntity;
         moveItemMessage.TargetCell = new Point(0, 0);
-        moveItemMessage.TargetLevelEntity = level.Entity;
+        moveItemMessage.TargetRoomEntity = level.Entity;
 
         manager.Enqueue(moveItemMessage);
         manager.Queue.ProcessQueue(manager);
@@ -219,7 +219,7 @@ public class ItemUsageSystemTest
         moveItemMessage = MoveItemMessage.Create(manager);
         moveItemMessage.ItemEntity = shieldEntity;
         moveItemMessage.TargetCell = new Point(0, 0);
-        moveItemMessage.TargetLevelEntity = level.Entity;
+        moveItemMessage.TargetRoomEntity = level.Entity;
         moveItemMessage.Force = true;
 
         manager.Enqueue(moveItemMessage);
@@ -231,7 +231,7 @@ public class ItemUsageSystemTest
     [Fact]
     public void Cannot_equip_items_that_require_EP()
     {
-        var level = TestHelper.BuildLevel(".");
+        var level = TestHelper.BuildRoom(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         var player = playerEntity.Player!;
         player.NextAction = ActorActionType.Wait;
@@ -290,7 +290,7 @@ public class ItemUsageSystemTest
     [Fact]
     public void Items_add_hindrance_when_requirements_not_met()
     {
-        var level = TestHelper.BuildLevel(".");
+        var level = TestHelper.BuildRoom(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         var player = playerEntity.Player!;
         player.NextAction = ActorActionType.Wait;

@@ -42,7 +42,7 @@ public abstract class PropertyDescription : ILoadable
             .MakeGenericMethod(property.PropertyType.IsEnum
                 ? property.PropertyType.GetEnumUnderlyingType().UnwrapNullableType()
                 : property.PropertyType.UnwrapNullableType())
-            .Invoke(null, new object[] { property, componentType, propertyAttribute, componentAttribute })!;
+            .Invoke(null, [property, componentType, propertyAttribute, componentAttribute])!;
 
     private static readonly MethodInfo CreatePropertyDescriptionMethod = typeof(PropertyDescription).GetTypeInfo()
         .GetDeclaredMethods(nameof(CreatePropertyDescription)).Single(mi => mi.IsGenericMethodDefinition);

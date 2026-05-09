@@ -35,7 +35,7 @@ public class BeveledVisibilityCalculatorPerfTest
 ........#.#.#.#.#.#.#..
 ..#####................";
 
-        var level = TestHelper.BuildLevel(map);
+        var level = TestHelper.BuildRoom(map);
 
         var visibleTerrain = new byte[level.TileCount];
         for (var i = 0; i < Iterations; i++)
@@ -86,7 +86,7 @@ public class BeveledVisibilityCalculatorPerfTest
 ........#.#.#.#.#.#.#..
 ..#####................";
 
-        var level = TestHelper.BuildLevel(map);
+        var level = TestHelper.BuildRoom(map);
 
         var visibleTerrain = new byte[level.TileCount];
         for (var i = 0; i < Iterations * 2; i++)
@@ -137,7 +137,7 @@ public class BeveledVisibilityCalculatorPerfTest
 ........#.#.#.#.#.#.#..
 ..#####................";
 
-        var level = TestHelper.BuildLevel(map);
+        var level = TestHelper.BuildRoom(map);
         var pool = level.Entity.Manager.PointByteListArrayPool;
 
         for (var i = 0; i < Iterations << 3; i++)

@@ -54,8 +54,8 @@ public class AISystem :
                 var itemToDrop = GetItem(target!.Value, actorEntity, manager)!;
                 var dropMessage = MoveItemMessage.Create(manager);
                 dropMessage.ItemEntity = itemToDrop;
-                dropMessage.TargetLevelEntity = position.LevelEntity;
-                dropMessage.TargetCell = position.LevelCell;
+                dropMessage.TargetRoomEntity = position.RoomEntity;
+                dropMessage.TargetCell = position.Cell;
 
                 manager.Enqueue(dropMessage);
                 break;
@@ -132,8 +132,8 @@ public class AISystem :
         foreach (var playerEntity in manager.Players)
         {
             var playerPosition = playerEntity.Position!;
-            if (playerPosition.LevelId != aiPosition.LevelId
-                || playerPosition.LevelCell.DistanceTo(aiPosition.LevelCell) > 1
+            if (playerPosition.RoomId != aiPosition.RoomId
+                || playerPosition.Cell.DistanceTo(aiPosition.Cell) > 1
                 || !playerEntity.Being!.IsAlive)
             {
                 continue;
@@ -159,7 +159,7 @@ public class AISystem :
         var ai = aiEntity.AI!;
         ai.NextAction = ActorActionType.UseAbilitySlot;
         ai.NextActionTarget = abilityEntity.Ability!.Slot;
-        ai.NextActionTarget2 = targetEntity.Position!.LevelCell.ToInt32();
+        ai.NextActionTarget2 = targetEntity.Position!.Cell.ToInt32();
 
         return true;
     }
@@ -200,33 +200,33 @@ public class AISystem :
         foreach (var playerEntity in manager.Players)
         {
             var playerPosition = playerEntity.Position!;
-            if (playerPosition.LevelId != aiPosition.LevelId
-                || playerPosition.LevelCell.DistanceTo(aiPosition.LevelCell) > 8
+            if (playerPosition.RoomId != aiPosition.RoomId
+                || playerPosition.Cell.DistanceTo(aiPosition.Cell) > 8
                 || !playerEntity.Being!.IsAlive)
             {
                 continue;
             }
 
-            var level = aiPosition.LevelEntity.Level!;
+            var room = aiPosition.RoomEntity.Room!;
 
             // TODO: Check memory and senses
-            //if (manager.SensorySystem.GetVisibility(aiEntity, playerPosition.LevelCell, level) == 0)
+            //if (manager.SensorySystem.GetVisibility(aiEntity, playerPosition.Cell, room) == 0)
             //{
             //    continue;
             //}
 
             // TODO: Avoid connections and creatures
             var directionToMove = manager.TravelSystem.GetFirstStepFromShortestPath(
-                level, aiPosition.LevelCell, playerPosition.LevelCell, aiPosition.Heading!.Value);
+                room, aiPosition.Cell, playerPosition.Cell, aiPosition.Heading!.Value);
 
             if (directionToMove != null)
             {
                 var changeHeading = position.Heading != directionToMove;
                 var targetCell = changeHeading
-                    ? position.LevelCell
-                    : position.LevelCell.Translate(directionToMove.Value.AsVector());
+                    ? position.Cell
+                    : position.Cell.Translate(directionToMove.Value.AsVector());
                 if (!changeHeading
-                    && targetCell == playerPosition.LevelCell)
+                    && targetCell == playerPosition.Cell)
                 {
                     // No need to move
                     return true;

@@ -7,7 +7,7 @@ public static partial class CreatureData
         Name = "NONE",
         InitialLevel = 1,
         GenerationWeight = "0",
-        GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+        GenerationFlags = CreatureGenerationFlags.NonGenocidable | CreatureGenerationFlags.NonPolymorphable,
         Weight = 0,
         Perception = -9,
         Might = -9,

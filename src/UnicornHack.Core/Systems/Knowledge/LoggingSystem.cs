@@ -35,7 +35,7 @@ public class LoggingSystem :
             var initialTopContainer = message.InitialContainer != null
                 ? manager.ItemMovingSystem.GetTopContainer(message.InitialContainer, manager)
                 : itemEntity;
-            var initialPosition = message.InitialLevelCell ?? initialTopContainer.Position?.LevelCell;
+            var initialPosition = message.InitialLevelCell ?? initialTopContainer.Position?.Cell;
             var initialSensed = initialPosition != null
                 ? manager.SensorySystem.CanSense(playerEntity, initialTopContainer, initialPosition.Value)
                 : SenseType.None;

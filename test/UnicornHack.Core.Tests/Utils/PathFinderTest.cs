@@ -35,11 +35,11 @@ public class PathFinderTest
 ...**",
         Direction.North);
 
-    public static (LevelComponent, Point) TestPath(string expectedPathMap, Direction initialDirection)
+    public static (RoomComponent, Point) TestPath(string expectedPathMap, Direction initialDirection)
     {
         var seed = (uint)Environment.TickCount;
         var map = expectedPathMap.Replace('*', '.');
-        var level = TestHelper.BuildLevel(map, seed);
+        var level = TestHelper.BuildRoom(map, seed: seed);
 
         var expectedFragment = new NormalMapFragment { Map = expectedPathMap };
         expectedFragment.EnsureInitialized(level.Game);
@@ -79,7 +79,7 @@ Seed: " + seed);
         return (level, expectedPath.Last());
     }
 
-    private static List<Point> ExtractPath(LevelComponent level, byte[] expectedPathArray, byte pathValue)
+    private static List<Point> ExtractPath(RoomComponent level, byte[] expectedPathArray, byte pathValue)
     {
         var expectedPath = new List<Point>();
         var currentPathPoint = new Point(0, 0);

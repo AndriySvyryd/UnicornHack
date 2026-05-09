@@ -20,10 +20,17 @@ public class Program
 
         services.AddSingleton<ILanguageService, EnglishLanguageService>();
         services.AddSingleton<GameServices>();
+        services.Configure<GameOptions>(configuration);
+
+        if (!env.IsDevelopment())
+        {
+            // --DisableSessionCache=true is ignored in non-Development environments;
+            services.PostConfigure<GameOptions>(o => o.DisableSessionCache = false);
+        }
 
         services.AddDatabaseDeveloperPageExceptionFilter();
 
-        services.AddDbContextPool<GameDbContext>((_, options) =>
+        services.AddPooledDbContextFactory<GameDbContext>((_, options) =>
         {
             options.UseSqlServer(configuration.GetConnectionString(name: "DefaultConnection")!)
                 .ConfigureWarnings(w => w.Default(WarningBehavior.Throw)
@@ -59,8 +66,11 @@ public class Program
                 o => o.SerializerOptions = MessagePackSerializerOptions.Standard
                     .WithSecurity(MessagePackSecurity.UntrustedData)
                     .WithResolver(CompositeResolver.Create(
+                        // TODO: Remove all except GeneratedResolver
+                        GeneratedResolver.Instance,
                         BuiltinResolver.Instance,
-                        GeneratedResolver.Instance)));
+                        DynamicGenericResolver.Instance,
+                        PrimitiveObjectResolver.Instance)));
 
         if (!env.IsDevelopment())
         {
@@ -76,10 +86,14 @@ public class Program
             app.UseDeveloperExceptionPage();
             app.UseMigrationsEndPoint();
 
-            using var serviceScope = app.Services.GetRequiredService<IServiceScopeFactory>()
-                .CreateScope();
-            using var context = serviceScope.ServiceProvider.GetService<GameDbContext>()!;
-            new DatabaseCleaner().Clean(context.Database);
+
+            if (configuration.GetValue<bool>("ResetDatabase"))
+            {
+                using var serviceScope = app.Services.GetRequiredService<IServiceScopeFactory>()
+                    .CreateScope();
+                using var context = serviceScope.ServiceProvider.GetService<GameDbContext>()!;
+                new DatabaseCleaner().Clean(context.Database);
+            }
         }
         else
         {

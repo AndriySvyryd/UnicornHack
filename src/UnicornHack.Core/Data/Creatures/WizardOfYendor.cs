@@ -35,7 +35,7 @@ public static partial class CreatureData
         },
         InitialLevel = 30,
         GenerationWeight = "0",
-        GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+        GenerationFlags = CreatureGenerationFlags.NonGenocidable | CreatureGenerationFlags.NonPolymorphable,
         Behavior = AIBehavior.RangedPeaceful | AIBehavior.MagicUser,
         Noise = ActorNoiseType.Cuss,
         Sex = Sex.Male,

@@ -44,7 +44,7 @@ public sealed class PlayerChangeFormatter : IMessagePackFormatter<PlayerChange?>
 
         if (values == null || values[5])
         {
-            resolver.GetFormatterWithVerify<LevelChange?>().Serialize(ref writer, value.Level, options);
+            resolver.GetFormatterWithVerify<RoomChange?>().Serialize(ref writer, value.Room, options);
         }
 
         if (values == null || values[6])
@@ -149,7 +149,7 @@ public sealed class PlayerChangeFormatter : IMessagePackFormatter<PlayerChange?>
                     result.CurrentTick = reader.ReadInt32();
                     break;
                 case 5:
-                    result.Level = resolver.GetFormatterWithVerify<LevelChange?>()
+                    result.Room = resolver.GetFormatterWithVerify<RoomChange?>()
                         .Deserialize(ref reader, options);
                     break;
                 case 6:

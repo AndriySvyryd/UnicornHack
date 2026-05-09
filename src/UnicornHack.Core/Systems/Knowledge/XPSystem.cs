@@ -17,7 +17,7 @@ public class XPSystem :
     {
         if (message.TilesExplored > 0)
         {
-            AddPlayerXP(message.TilesExplored * message.LevelEntity.Level!.Difficulty, manager);
+            AddPlayerXP(message.TilesExplored * message.RoomEntity.Room!.Level.Difficulty, manager);
         }
 
         return MessageProcessingResult.ContinueProcessing;
@@ -62,7 +62,7 @@ public class XPSystem :
         }
 
         var race = message.Entity.Race ?? (RaceComponent)message.RemovedComponent!;
-        var template = PlayerRace.Loader.Find(race.TemplateName)!;
+        var template = manager.Game.Services.Data.PlayerRaces.Find(race.TemplateName)!;
         var levelsLost = race.Level - 1;
         player.SkillPoints -= levelsLost * template.SkillPointRate;
         player.TraitPoints -= levelsLost * template.TraitPointRate;
@@ -132,7 +132,7 @@ public class XPSystem :
                 var race = GetLearningRace(actorEntity);
                 race.Level++;
 
-                var template = PlayerRace.Loader.Find(race.TemplateName)!;
+                var template = manager.Game.Services.Data.PlayerRaces.Find(race.TemplateName)!;
                 player.SkillPoints += template.SkillPointRate;
                 player.TraitPoints += template.TraitPointRate;
                 player.MutationPoints += template.MutationPointRate;

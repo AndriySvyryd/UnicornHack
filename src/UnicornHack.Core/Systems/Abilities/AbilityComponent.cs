@@ -78,7 +78,13 @@ public class AbilityComponent : GameComponent
 
     public GameEntity? OwnerEntity
     {
-        get => _ownerEntity ??= Entity.Manager.FindEntity(_ownerId);
+        get
+        {
+            _ownerEntity ??= Entity.Manager.FindEntity(_ownerId);
+            Debug.Assert(_ownerEntity != null || _ownerId == null,
+                $"OwnerEntity {_ownerId} not loaded");
+            return _ownerEntity;
+        }
         set
         {
             OwnerId = value?.Id;

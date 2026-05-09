@@ -10,5 +10,5 @@ public abstract class DynamicMap
         set;
     } = new(5, 5);
 
-    public abstract IEnumerable<Point> GetRoomPoints(LevelComponent level, Rectangle boundingRectangle);
+    public abstract IEnumerable<Point> GetRoomPoints(RoomComponent room, Rectangle boundingRectangle);
 }

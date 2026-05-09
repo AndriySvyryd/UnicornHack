@@ -10,14 +10,14 @@ public class NormalMapFragment : MapFragment
     private Func<string, int, int, int, float>? _weightFunction;
 
     private static readonly UnicornExpressionVisitor _translator =
-        new(new[] { BranchParameter, DepthParameter, InstancesParameter, TagInstancesParameter });
+        new([BranchParameter, DepthParameter, InstancesParameter, TagInstancesParameter]);
 
     protected override void ResetWeightFunction() => _weightFunction = null;
 
     public Func<string, int, int, int, float> CreateWeightFunction(string expression)
         => _translator.Translate<Func<string, int, int, int, float>, float>(expression);
 
-    public float GetWeight(LevelComponent level, Rectangle boundingRectangle)
+    public float GetWeight(RoomComponent room, Rectangle boundingRectangle)
     {
         // TODO: take transformations into account
         if (PayloadArea.Width > boundingRectangle.Width || PayloadArea.Height > boundingRectangle.Height)
@@ -39,7 +39,7 @@ public class NormalMapFragment : MapFragment
 
         try
         {
-            return _weightFunction(level.Branch.Name, level.Depth, 0, 0);
+            return _weightFunction(room.Level.Branch.Name, room.Level.Depth, 0, 0);
         }
         catch (Exception e)
         {

@@ -1,4 +1,4 @@
-﻿using UnicornHack.Utils.MessagingECS;
+using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Knowledge;
 
@@ -9,25 +9,25 @@ public class KnownTerrainChangedMessage : IMessage
     public static KnownTerrainChangedMessage Create(GameManager manager)
         => manager.Queue.CreateMessage<KnownTerrainChangedMessage>(Name);
 
-    public static void Enqueue(GameEntity levelEntity, int tilesExplored, GameManager manager)
+    public static void Enqueue(GameEntity roomEntity, int tilesExplored, GameManager manager)
     {
         var terrainChanged = Create(manager);
-        terrainChanged.LevelEntity = levelEntity;
+        terrainChanged.RoomEntity = roomEntity;
         terrainChanged.TilesExplored = tilesExplored;
 
         manager.Enqueue(terrainChanged);
     }
 
-    private GameEntity? _levelEntity;
+    private GameEntity? _roomEntity;
 
-    public GameEntity LevelEntity
+    public GameEntity RoomEntity
     {
-        get => _levelEntity!;
+        get => _roomEntity!;
         set
         {
-            _levelEntity?.RemoveReference(this);
-            _levelEntity = value;
-            _levelEntity?.AddReference(this);
+            _roomEntity?.RemoveReference(this);
+            _roomEntity = value;
+            _roomEntity?.AddReference(this);
         }
     }
 
@@ -45,7 +45,7 @@ public class KnownTerrainChangedMessage : IMessage
 
     public void Clean()
     {
-        LevelEntity = default!;
+        RoomEntity = default!;
         TilesExplored = default;
     }
 }

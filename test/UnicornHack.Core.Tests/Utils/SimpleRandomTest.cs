@@ -122,6 +122,28 @@ namespace UnicornHack.Utils
         }
 
         [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(10)]
+        public void Next_never_returns_max_value(int maxValue)
+        {
+            const uint seed = 1;
+            var random = new SimpleRandom { Seed = seed };
+            var selectedCounts = new int[maxValue];
+            var selectionCount = 1000000;
+            for (var i = 0; i < selectionCount; i++)
+            {
+                var value = random.Next(0, maxValue);
+                selectedCounts[value]++;
+                Assert.InRange(value, 0, maxValue - 1);
+            }
+            var expectedCountMin = 0.95 * selectionCount / maxValue;
+            var expectedCountMax = 1.05 * selectionCount / maxValue;
+            Assert.All(selectedCounts, count => Assert.InRange(count, expectedCountMin, expectedCountMax));
+        }
+
+        [Theory]
         [InlineData(0.0f, 100u)]
         [InlineData(0.2f, 200u)]
         [InlineData(0.5f, 300u)]
@@ -236,7 +258,7 @@ namespace UnicornHack.Utils
                     for (var j = 0; j < itemWeights.Length; j++)
                     {
                         builder.AppendLine(
-                            $"{j,5:N0} {(itemWeights[j] / weightSum) * selectionCount,15:N0} {selectedCounts[j],16:N0}");
+                            $"{j,5:N0} {itemWeights[j] / weightSum * selectionCount,15:N0} {selectedCounts[j],16:N0}");
                     }
 
                     Assert.Fail(builder.ToString());

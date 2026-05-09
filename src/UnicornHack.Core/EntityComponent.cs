@@ -10,7 +10,7 @@ public enum EntityComponent
     Physical,
     Race,
     Item,
-    Level,
+    Room,
     Connection,
     Position,
     Sensor,

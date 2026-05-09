@@ -5,10 +5,10 @@ namespace UnicornHack.Systems.Levels;
 [Component(Id = (int)EntityComponent.Position)]
 public class PositionComponent : GameComponent, IKeepAliveComponent
 {
-    private GameEntity? _levelEntity;
+    private GameEntity? _roomEntity;
     private int _levelId;
-    private byte _levelX;
-    private byte _levelY;
+    private byte _cellX;
+    private byte _cellY;
     private Direction? _heading;
     private int _movementDelay;
     private int _turningDelay;
@@ -18,45 +18,50 @@ public class PositionComponent : GameComponent, IKeepAliveComponent
         ComponentId = (int)EntityComponent.Position;
     }
 
-    public int LevelId
+    public int RoomId
     {
         get => _levelId;
         set
         {
-            _levelEntity = null;
+            _roomEntity = null;
             SetWithNotify(value, ref _levelId);
         }
     }
 
-    public GameEntity LevelEntity
+    public GameEntity RoomEntity
     {
-        get => _levelEntity ??= Entity.Manager.FindEntity(_levelId)!;
+        get
+        {
+            _roomEntity ??= Entity.Manager.FindEntity(_levelId);
+            Debug.Assert(_roomEntity != null, $"RoomEntity {_levelId} not loaded");
+            return _roomEntity!;
+        }
         set
         {
-            LevelId = value.Id;
-            _levelEntity = value;
+            RoomId = value.Id;
+            _roomEntity = value;
         }
     }
 
-    public byte LevelX
+    public byte CellX
     {
-        get => _levelX;
-        set => SetWithNotify(value, ref _levelX);
+        get => _cellX;
+        set => SetWithNotify(value, ref _cellX);
     }
 
-    public byte LevelY
+    public byte CellY
     {
-        get => _levelY;
-        set => SetWithNotify(value, ref _levelY);
+        get => _cellY;
+        set => SetWithNotify(value, ref _cellY);
     }
 
-    public Point LevelCell
+    public Point Cell
     {
-        get => new(LevelX, LevelY);
+        get => new(CellX, CellY);
         set
         {
-            var levelXSet = NotifyChanging(value.X, ref _levelX, nameof(LevelX), out var oldLevelX);
-            var levelYSet = NotifyChanging(value.Y, ref _levelY, nameof(LevelY), out var oldLevelY);
+            var levelXSet = NotifyChanging(value.X, ref _cellX, nameof(CellX), out var oldLevelX);
+            var levelYSet = NotifyChanging(value.Y, ref _cellY, nameof(CellY), out var oldLevelY);
 
             if (Entity == null!)
             {
@@ -64,25 +69,25 @@ public class PositionComponent : GameComponent, IKeepAliveComponent
             }
 
             var anyChanges = false;
-            var levelXChange = PropertyValueChange<byte>.Empty;
+            var cellXChange = PropertyValueChange<byte>.Empty;
             if (levelXSet)
             {
                 anyChanges = true;
-                NotifyChanged(nameof(LevelX));
-                levelXChange = new PropertyValueChange<byte>(this, nameof(LevelX), oldLevelX, value.X);
+                NotifyChanged(nameof(CellX));
+                cellXChange = new PropertyValueChange<byte>(this, nameof(CellX), oldLevelX, value.X);
             }
 
-            var levelYChange = PropertyValueChange<byte>.Empty;
+            var cellYChange = PropertyValueChange<byte>.Empty;
             if (levelYSet)
             {
                 anyChanges = true;
-                NotifyChanged(nameof(LevelY));
-                levelYChange = new PropertyValueChange<byte>(this, nameof(LevelY), oldLevelY, value.Y);
+                NotifyChanged(nameof(CellY));
+                cellYChange = new PropertyValueChange<byte>(this, nameof(CellY), oldLevelY, value.Y);
             }
 
             if (anyChanges)
             {
-                Entity.HandlePropertyValuesChanged(IPropertyValueChanges.Create(levelXChange, levelYChange));
+                Entity.HandlePropertyValuesChanged(IPropertyValueChanges.Create(cellXChange, cellYChange));
             }
         }
     }
@@ -114,13 +119,13 @@ public class PositionComponent : GameComponent, IKeepAliveComponent
     }
 
     /// <summary>
-    ///     Sets <see cref="LevelId" /> and <see cref="LevelCell" /> atomically.
+    ///     Sets <see cref="RoomId" /> and <see cref="Cell" /> atomically.
     /// </summary>
-    public void SetLevelPosition(int levelId, Point levelCell)
+    public void SetRoomPosition(int levelId, Point levelCell)
     {
-        var levelIdSet = NotifyChanging(levelId, ref _levelId, nameof(LevelId), out var oldLevelId);
-        var levelXSet = NotifyChanging(levelCell.X, ref _levelX, nameof(LevelX), out var oldLevelX);
-        var levelYSet = NotifyChanging(levelCell.Y, ref _levelY, nameof(LevelY), out var oldLevelY);
+        var roomIdSet = NotifyChanging(levelId, ref _levelId, nameof(RoomId), out var oldRoomId);
+        var cellXSet = NotifyChanging(levelCell.X, ref _cellX, nameof(CellX), out var oldCellX);
+        var cellYSet = NotifyChanging(levelCell.Y, ref _cellY, nameof(CellY), out var oldCellY);
 
         if (Entity == null!)
         {
@@ -129,43 +134,43 @@ public class PositionComponent : GameComponent, IKeepAliveComponent
 
         var anyChanges = false;
         var levelIdChange = PropertyValueChange<int>.Empty;
-        if (levelIdSet)
+        if (roomIdSet)
         {
             anyChanges = true;
-            _levelEntity = null;
-            NotifyChanged(nameof(LevelId));
-            levelIdChange = new PropertyValueChange<int>(this, nameof(LevelId), oldLevelId, levelId);
+            _roomEntity = null;
+            NotifyChanged(nameof(RoomId));
+            levelIdChange = new PropertyValueChange<int>(this, nameof(RoomId), oldRoomId, levelId);
         }
 
-        var levelXChange = PropertyValueChange<byte>.Empty;
-        if (levelXSet)
+        var cellXChange = PropertyValueChange<byte>.Empty;
+        if (cellXSet)
         {
             anyChanges = true;
-            NotifyChanged(nameof(LevelX));
-            levelXChange = new PropertyValueChange<byte>(this, nameof(LevelX), oldLevelX, levelCell.X);
+            NotifyChanged(nameof(CellX));
+            cellXChange = new PropertyValueChange<byte>(this, nameof(CellX), oldCellX, levelCell.X);
         }
 
-        var levelYChange = PropertyValueChange<byte>.Empty;
-        if (levelYSet)
+        var cellYChange = PropertyValueChange<byte>.Empty;
+        if (cellYSet)
         {
             anyChanges = true;
-            NotifyChanged(nameof(LevelY));
-            levelYChange = new PropertyValueChange<byte>(this, nameof(LevelY), oldLevelY, levelCell.Y);
+            NotifyChanged(nameof(CellY));
+            cellYChange = new PropertyValueChange<byte>(this, nameof(CellY), oldCellY, levelCell.Y);
         }
 
         if (anyChanges)
         {
-            Entity.HandlePropertyValuesChanged(IPropertyValueChanges.Create(levelIdChange, levelXChange,
-                levelYChange));
+            Entity.HandlePropertyValuesChanged(IPropertyValueChanges.Create(levelIdChange, cellXChange,
+                cellYChange));
         }
     }
 
     protected override void Clean()
     {
-        _levelEntity = default;
+        _roomEntity = default;
         _levelId = default;
-        _levelX = default;
-        _levelY = default;
+        _cellX = default;
+        _cellY = default;
         _heading = default;
         _movementDelay = default;
         _turningDelay = default;

@@ -1,4 +1,4 @@
-﻿using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Senses;
@@ -17,24 +17,24 @@ public class KnowledgeSystem :
 {
     public MessageProcessingResult Process(VisibleTerrainChangedMessage message, GameManager manager)
     {
-        var level = message.LevelEntity.Level!;
-        UpdateAllEntitiesKnowledge(level.Actors, level.KnownActors, level, manager);
-        UpdateAllEntitiesKnowledge(level.Connections, level.KnownConnections, level, manager);
-        UpdateAllEntitiesKnowledge(level.Items, level.KnownItems, level, manager);
+        var room = message.RoomEntity.Room!;
+        UpdateAllEntitiesKnowledge(room.Actors, room.KnownActors, room, manager);
+        UpdateAllEntitiesKnowledge(room.Connections, room.KnownConnections, room, manager);
+        UpdateAllEntitiesKnowledge(room.Items, room.KnownItems, room, manager);
 
         return MessageProcessingResult.ContinueProcessing;
     }
 
     private void UpdateAllEntitiesKnowledge(
-        IReadOnlyDictionary<Point, GameEntity> levelEntities,
+        IReadOnlyDictionary<Point, GameEntity> entities,
         IReadOnlyDictionary<Point, GameEntity> knownPositions,
-        LevelComponent level,
+        RoomComponent room,
         GameManager manager)
     {
         // TODO: Perf: use interval tree to only get the entities and knowledge within sense range
-        foreach (var levelEntity in levelEntities.Values)
+        foreach (var entity in entities.Values)
         {
-            UpdateEntityKnowledge(levelEntity, knownPositions, manager, level);
+            UpdateEntityKnowledge(entity, knownPositions, manager, room);
         }
     }
 
@@ -42,19 +42,19 @@ public class KnowledgeSystem :
     {
         if (message.Successful)
         {
-            var level = message.Entity.Position!.LevelEntity.Level!;
-            UpdateEntityKnowledge(message.Entity, level.KnownActors, manager, level,
+            var room = message.Entity.Position!.RoomEntity.Room!;
+            UpdateEntityKnowledge(message.Entity, room.KnownActors, manager, room,
                 additionalCellToTest: message.InitialLevelCell);
         }
         else if (message.Entity.HasComponent(EntityComponent.Player))
         {
-            var level = message.Entity.Position!.LevelEntity.Level!;
-            var index = level.PointToIndex![message.TargetCell.X, message.TargetCell.Y];
+            var room = message.Entity.Position!.RoomEntity.Room!;
+            var index = room.PointToIndex![message.TargetCell.X, message.TargetCell.Y];
 
-            var tilesExplored = RevealTerrain(index, level);
+            var tilesExplored = RevealTerrain(index, room);
             if (tilesExplored > 0)
             {
-                KnownTerrainChangedMessage.Enqueue(level.Entity, tilesExplored, manager);
+                KnownTerrainChangedMessage.Enqueue(room.Entity, tilesExplored, manager);
             }
         }
 
@@ -65,7 +65,7 @@ public class KnowledgeSystem :
         GameEntity entity,
         IReadOnlyDictionary<Point, GameEntity> knownPositions,
         GameManager manager,
-        LevelComponent level,
+        RoomComponent room,
         Point? additionalCellToTest = null)
     {
         var position = entity.Position;
@@ -75,12 +75,12 @@ public class KnowledgeSystem :
         }
 
         SenseType sensedType;
-        if ((sensedType = manager.SensorySystem.SensedByPlayer(entity, position.LevelCell)) != SenseType.None
+        if ((sensedType = manager.SensorySystem.SensedByPlayer(entity, position.Cell)) != SenseType.None
             || (additionalCellToTest != null
                 && (sensedType = manager.SensorySystem.SensedByPlayer(entity, additionalCellToTest.Value))
                 != SenseType.None))
         {
-            var conflictingKnowledge = knownPositions.GetValueOrDefault(position.LevelCell);
+            var conflictingKnowledge = knownPositions.GetValueOrDefault(position.Cell);
             if (conflictingKnowledge != null)
             {
                 var conflictingEntityId = conflictingKnowledge.Knowledge!.KnownEntityId;
@@ -98,8 +98,8 @@ public class KnowledgeSystem :
                 foreach (var playerEntity in manager.Players)
                 {
                     var playerPosition = playerEntity.Position!;
-                    if (position.LevelId == playerPosition.LevelId
-                        && position.LevelCell.DistanceTo(playerPosition.LevelCell) <= 2)
+                    if (position.RoomId == playerPosition.RoomId
+                        && position.Cell.DistanceTo(playerPosition.Cell) <= 2)
                     {
                         var player = playerEntity.Player!;
                         if (player.QueuedAction)
@@ -118,8 +118,8 @@ public class KnowledgeSystem :
             if (knowledge != null)
             {
                 var knowledgePosition = knowledge.Position!;
-                if (level != knowledgePosition.LevelEntity?.Level
-                    || manager.SensorySystem.SensedByPlayer(knowledge, knowledgePosition.LevelCell) != SenseType.None)
+                if (room != knowledgePosition.RoomEntity?.Room
+                    || manager.SensorySystem.SensedByPlayer(knowledge, knowledgePosition.Cell) != SenseType.None)
                 {
                     knowledge.RemoveComponent(EntityComponent.Knowledge);
                     knowledge.RemoveComponent(EntityComponent.Position);
@@ -150,7 +150,7 @@ public class KnowledgeSystem :
             knowledgeEntityReference.Knowledge = knowledgeComponent;
 
             var knowledgePosition = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
-            knowledgePosition.SetLevelPosition(position.LevelId, position.LevelCell);
+            knowledgePosition.SetRoomPosition(position.RoomId, position.Cell);
             knowledgePosition.Heading = position.Heading;
 
             knowledgeEntityReference.Position = knowledgePosition;
@@ -164,24 +164,24 @@ public class KnowledgeSystem :
             }
 
             var knowledgePosition = knowledgeEntity.Position!;
-            knowledgePosition.SetLevelPosition(position.LevelId, position.LevelCell);
+            knowledgePosition.SetRoomPosition(position.RoomId, position.Cell);
             knowledgePosition.Heading = position.Heading;
         }
     }
 
-    public int RevealTerrain(short index, LevelComponent level)
+    public int RevealTerrain(short index, RoomComponent room)
     {
-        var terrain = level.Terrain[index];
-        var knownTerrain = level.KnownTerrain[index];
+        var terrain = room.Terrain[index];
+        var knownTerrain = room.KnownTerrain[index];
         if (knownTerrain != terrain)
         {
-            level.KnownTerrain[index] = terrain;
-            if (level.KnownTerrainChanges != null)
+            room.KnownTerrain[index] = terrain;
+            if (room.KnownTerrainChanges != null)
             {
-                level.KnownTerrainChanges[index] = terrain;
+                room.KnownTerrainChanges[index] = terrain;
             }
 
-            if (knownTerrain == (byte)MapFeature.Unexplored)
+            if (knownTerrain == MapFeature.Unexplored)
             {
                 return 1;
             }
@@ -195,11 +195,11 @@ public class KnowledgeSystem :
         if (message.Successful)
         {
             var itemEntity = message.ItemEntity;
-            var level = itemEntity.Position?.LevelEntity.Level ??
-                        itemEntity.Item!.ContainerEntity?.Position?.LevelEntity.Level;
-            if (level != null)
+            var room = itemEntity.Position?.RoomEntity.Room ??
+                        itemEntity.Item!.ContainerEntity?.Position?.RoomEntity.Room;
+            if (room != null)
             {
-                UpdateEntityKnowledge(itemEntity, level.KnownItems, manager, level,
+                UpdateEntityKnowledge(itemEntity, room.KnownItems, manager, room,
                     additionalCellToTest: message.InitialLevelCell);
             }
         }

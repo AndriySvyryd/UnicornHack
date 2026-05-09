@@ -1,4 +1,4 @@
-﻿using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 
@@ -45,8 +45,8 @@ public static class EntityAttacher
         {
             switch (id)
             {
-                case (int)EntityComponent.Level:
-                    Attach((LevelComponent)component, c);
+                case (int)EntityComponent.Room:
+                    Attach((RoomComponent)component, c);
                     break;
                 case (int)EntityComponent.Player:
                     Attach((PlayerComponent)component, c);
@@ -69,7 +69,20 @@ public static class EntityAttacher
         connectionEntry.State = EntityState.Unchanged;
     }
 
-    public static void Attach(LevelComponent level, GameDbContext context)
+    public static void Attach(RoomComponent room, GameDbContext context)
+    {
+        var roomEntry = context.Entry(room);
+        if (roomEntry.State != EntityState.Detached)
+        {
+            return;
+        }
+
+        roomEntry.State = EntityState.Unchanged;
+
+        Attach(room.Level, context);
+    }
+
+    public static void Attach(GameLevel level, GameDbContext context)
     {
         var levelEntry = context.Entry(level);
         if (levelEntry.State != EntityState.Detached)

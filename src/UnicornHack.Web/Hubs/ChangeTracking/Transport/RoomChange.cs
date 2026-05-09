@@ -4,9 +4,9 @@ using MessagePack;
 namespace UnicornHack.Hubs.ChangeTracking;
 
 [MessagePackObject]
-public partial class LevelChange
+public partial class RoomChange
 {
-    public const int PropertyCount = 10;
+    public const int PropertyCount = 12;
 
     [Key(0)]
     public BitArray? ChangedProperties { get; set; } = new BitArray(PropertyCount) { [0] = true };
@@ -39,7 +39,7 @@ public partial class LevelChange
         }
     }
     [Key(4)]
-    public LevelMap? LevelMap
+    public RoomMap? LevelMap
     {
         get => field; set
         {
@@ -48,7 +48,7 @@ public partial class LevelChange
         }
     }
     [Key(5)]
-    public LevelMapChanges? LevelMapChanges
+    public RoomMapChanges? LevelMapChanges
     {
         get => field; set
         {
@@ -90,6 +90,24 @@ public partial class LevelChange
         {
             field = value;
             ChangedProperties?.Set(9, true);
+        }
+    }
+    [Key(10)]
+    public byte GridX
+    {
+        get => field; set
+        {
+            field = value;
+            ChangedProperties?.Set(10, true);
+        }
+    }
+    [Key(11)]
+    public byte GridY
+    {
+        get => field; set
+        {
+            field = value;
+            ChangedProperties?.Set(11, true);
         }
     }
 }

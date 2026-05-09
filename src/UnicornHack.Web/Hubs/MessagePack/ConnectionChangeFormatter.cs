@@ -39,7 +39,7 @@ public sealed class ConnectionChangeFormatter : IMessagePackFormatter<Connection
 
         if (values == null || values[3])
         {
-            writer.Write(value.IsDown);
+            writer.Write((byte)value.Orientation);
         }
     }
 
@@ -80,7 +80,7 @@ public sealed class ConnectionChangeFormatter : IMessagePackFormatter<Connection
                     result.LevelY = reader.ReadInt32();
                     break;
                 case 3:
-                    result.IsDown = reader.ReadBoolean();
+                    result.Orientation = (Direction)reader.ReadByte();
                     break;
                 default:
                     reader.Skip();

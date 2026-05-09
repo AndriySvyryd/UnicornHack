@@ -19,7 +19,7 @@ public class VisibilityTest
 .....
 .....";
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(map, game);
+        var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 2));
@@ -31,15 +31,15 @@ public class VisibilityTest
         var state = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
 
         // Verify terrain arrays are populated
-        Assert.Equal(level.Width, state.Level!.Width);
-        Assert.Equal(level.Height, state.Level!.Height);
+        Assert.Equal(level.Width, state.Room!.Width);
+        Assert.Equal(level.Height, state.Room!.Height);
 
         // Player should see tiles around position (2,2)
-        var tileCount = state.Level!.Width * state.Level!.Height;
+        var tileCount = state.Room!.Width * state.Room!.Height;
         var hasExplored = false;
         for (var i = 0; i < tileCount; i++)
         {
-            if (state.Level.LevelMap!.Terrain[i] != 0)
+            if (state.Room.LevelMap!.Terrain[i] != 0)
             {
                 hasExplored = true;
                 break;
@@ -64,7 +64,7 @@ public class VisibilityTest
 ..........
 ..........";
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(map, game);
+        var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(1, 1));
@@ -106,7 +106,7 @@ public class VisibilityTest
 ..........
 ..........";
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(map, game);
+        var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(5, 5));
@@ -133,10 +133,10 @@ public class VisibilityTest
     private static int CountExploredTiles(PlayerChange state)
     {
         var count = 0;
-        var tileCount = state.Level!.Width * state.Level!.Height;
+        var tileCount = state.Room!.Width * state.Room!.Height;
         for (var i = 0; i < tileCount; i++)
         {
-            if (state.Level.LevelMap!.Terrain[i] != 0)
+            if (state.Room.LevelMap!.Terrain[i] != 0)
             {
                 count++;
             }
@@ -159,7 +159,7 @@ public class VisibilityTest
 ..........
 ..........";
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(map, game);
+        var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
         // Place item on the level near where the player will spawn
@@ -175,8 +175,8 @@ public class VisibilityTest
         var state = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
 
         // Item should be present and perceived
-        Assert.NotEmpty(state.Level!.Items!);
-        var swordItem = state.Level.Items!.Values.SingleOrDefault(i => i.BaseName == "long sword");
+        Assert.NotEmpty(state.Room!.Items!);
+        var swordItem = state.Room.Items!.Values.SingleOrDefault(i => i.BaseName == "long sword");
         Assert.NotNull(swordItem);
         Assert.True(swordItem.IsCurrentlyPerceived, "Item near player should be perceived");
     }
@@ -202,7 +202,7 @@ public class VisibilityTest
 ..........
 ..........";
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(map, game);
+        var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
         // Place item in Room B
@@ -218,7 +218,7 @@ public class VisibilityTest
 
         // Initial state: item is perceived
         var initial = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
-        var swordItem = initial.Level!.Items!.Values.SingleOrDefault(i => i.BaseName == "long sword");
+        var swordItem = initial.Room!.Items!.Values.SingleOrDefault(i => i.BaseName == "long sword");
         Assert.NotNull(swordItem);
         Assert.True(swordItem.IsCurrentlyPerceived, "Item should be perceived initially");
 
@@ -246,7 +246,7 @@ public class VisibilityTest
 
         // Full refresh: the item should still be in the state but with IsCurrentlyPerceived=false
         var afterState = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
-        var swordAfter = afterState.Level!.Items!.Values.SingleOrDefault(i => i.BaseName == "long sword");
+        var swordAfter = afterState.Room!.Items!.Values.SingleOrDefault(i => i.BaseName == "long sword");
         Assert.NotNull(swordAfter);
         Assert.False(swordAfter.IsCurrentlyPerceived, "Item behind wall should not be perceived after move");
     }
@@ -286,7 +286,7 @@ public class VisibilityTest
 .........................
 .........................";
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(map, game);
+        var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
         // Place item in the bottom-left area
@@ -302,7 +302,7 @@ public class VisibilityTest
 
         // Establish baseline: item is perceived
         var baseline = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
-        var swordItem = baseline.Level!.Items!.Values.SingleOrDefault(i => i.BaseName == "long sword");
+        var swordItem = baseline.Room!.Items!.Values.SingleOrDefault(i => i.BaseName == "long sword");
         Assert.NotNull(swordItem);
         Assert.True(swordItem.IsCurrentlyPerceived, "Item should be perceived at baseline");
 
@@ -314,7 +314,7 @@ public class VisibilityTest
         // After moving north the item should be out of vision range.
         // PerformAndVerify already asserts delta-applied state == fresh GetState,
         // so the IsCurrentlyPerceived delta was carried correctly if the test passes.
-        swordItem = fresh.Level!.Items!.Values.SingleOrDefault(i => i.BaseName == "long sword");
+        swordItem = fresh.Room!.Items!.Values.SingleOrDefault(i => i.BaseName == "long sword");
         Assert.NotNull(swordItem);
         Assert.False(swordItem.IsCurrentlyPerceived,
             "Item should not be perceived after player moved far away");
@@ -322,7 +322,7 @@ public class VisibilityTest
         fresh = WebTestHelper.PerformAndVerify(player, listener, game.Services,
             ActorActionType.MoveOneCell, (int)Direction.South);
 
-        swordItem = fresh.Level!.Items!.Values.SingleOrDefault(i => i.BaseName == "long sword");
+        swordItem = fresh.Room!.Items!.Values.SingleOrDefault(i => i.BaseName == "long sword");
         Assert.NotNull(swordItem);
         Assert.True(swordItem.IsCurrentlyPerceived,
             "Item should be perceived after player moved back closer");
@@ -366,7 +366,7 @@ public class VisibilityTest
 .........................
 .........................";
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(map, game);
+        var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
         // Place several NPCs south of the wall (invisible to the player initially)
@@ -460,7 +460,7 @@ public class VisibilityTest
 .........................
 .........................";
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(map, game);
+        var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
         // Place creatures and item south of where the player will be — visible in south-facing FOV.

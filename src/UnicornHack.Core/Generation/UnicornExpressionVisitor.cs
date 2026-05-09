@@ -11,21 +11,21 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
     private readonly IEnumerable<ParameterExpression> _orderedParameters;
 
     private static readonly MethodInfo _minMethod =
-        typeof(Math).GetMethod(nameof(Math.Min), new[] { typeof(int), typeof(int) })!;
+        typeof(Math).GetMethod(nameof(Math.Min), [typeof(int), typeof(int)])!;
 
     private static readonly MethodInfo _minMethodD =
-        typeof(Math).GetMethod(nameof(Math.Min), new[] { typeof(double), typeof(double) })!;
+        typeof(Math).GetMethod(nameof(Math.Min), [typeof(double), typeof(double)])!;
 
     private static readonly MethodInfo _maxMethod =
-        typeof(Math).GetMethod(nameof(Math.Max), new[] { typeof(int), typeof(int) })!;
+        typeof(Math).GetMethod(nameof(Math.Max), [typeof(int), typeof(int)])!;
 
     private static readonly MethodInfo _maxMethodD =
-        typeof(Math).GetMethod(nameof(Math.Max), new[] { typeof(double), typeof(double) })!;
+        typeof(Math).GetMethod(nameof(Math.Max), [typeof(double), typeof(double)])!;
 
-    private static readonly MethodInfo _absMethod = typeof(Math).GetMethod(nameof(Math.Abs), new[] { typeof(int) })!;
+    private static readonly MethodInfo _absMethod = typeof(Math).GetMethod(nameof(Math.Abs), [typeof(int)])!;
 
     private static readonly MethodInfo _absMethodD =
-        typeof(Math).GetMethod(nameof(Math.Abs), new[] { typeof(double) })!;
+        typeof(Math).GetMethod(nameof(Math.Abs), [typeof(double)])!;
 
     private static readonly MethodInfo _stringConcat = typeof(string)
         .GetRequiredRuntimeMethod(nameof(string.Concat), typeof(string), typeof(string));

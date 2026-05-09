@@ -1,7 +1,7 @@
 namespace UnicornHack.Primitives;
 
 // Order matters
-public enum Direction
+public enum Direction : byte
 {
     East = 0,
     Northeast,
@@ -16,7 +16,7 @@ public enum Direction
 }
 
 [Flags]
-public enum DirectionFlags
+public enum DirectionFlags : byte
 {
     None = 0,
     East = 1 << 0,
@@ -27,9 +27,6 @@ public enum DirectionFlags
     Southwest = 1 << 5,
     South = 1 << 6,
     Southeast = 1 << 7,
-    Up = 1 << 8,
-    Down = 1 << 9,
-    Center = 1 << 10,
     NorthAndEast = North | East,
     NorthAndWest = North | West,
     SouthAndWest = South | West,
@@ -119,4 +116,25 @@ public static class DirectionExtensions
         var difference = Math.Abs((int)otherDirection - (int)direction);
         return difference > 4 ? 8 - difference : difference;
     }
+
+    /// <summary>
+    ///     Returns whether the offset <c>(<paramref name="dx" />, <paramref name="dy" />)</c>
+    ///     from a reference point lies in the half-plane (cardinal) or quadrant (ordinal)
+    ///     corresponding to <paramref name="direction" />.
+    ///     Tiles exactly on the axis (dx == 0 or dy == 0) are accepted by both adjacent
+    ///     cardinal directions.
+    /// </summary>
+    public static bool IsInDirection(this Direction direction, int dx, int dy)
+        => direction switch
+        {
+            Direction.East => dx >= 0,
+            Direction.West => dx <= 0,
+            Direction.North => dy <= 0,
+            Direction.South => dy >= 0,
+            Direction.Northeast => dx >= 0 && dy <= 0,
+            Direction.Northwest => dx <= 0 && dy <= 0,
+            Direction.Southeast => dx >= 0 && dy >= 0,
+            Direction.Southwest => dx <= 0 && dy >= 0,
+            _ => false
+        };
 }

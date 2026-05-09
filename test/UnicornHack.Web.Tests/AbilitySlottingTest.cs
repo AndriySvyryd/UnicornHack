@@ -19,11 +19,11 @@ public class AbilitySlottingTest
 .......
 .......";
 
-    private static (PlayerComponent Player, LevelChangeBuilder Listener, GameServices Services, GameManager Manager)
+    private static (PlayerComponent Player, RoomChangeBuilder Listener, GameServices Services, GameManager Manager)
         SetupGame()
     {
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(TestMap, game);
+        var level = TestHelper.BuildRoom(TestMap, game);
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(3, 3));
@@ -112,7 +112,7 @@ public class AbilitySlottingTest
 
         // Place NPC south
         CreatureData.Human.Instantiate(
-            manager.FindEntity(player.Entity.Position!.LevelId)!.Level!, new Point(3, 4));
+            manager.FindEntity(player.Entity.Position!.RoomId)!.Room!, new Point(3, 4));
         manager.Queue.ProcessQueue(manager);
 
         // Equip sword to get melee attack in slot 0

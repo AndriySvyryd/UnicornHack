@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Threading;
 using Microsoft.Extensions.Caching.Memory;
 using UnicornHack.Services;
 using UnicornHack.Services.English;
@@ -27,9 +28,9 @@ public static class TestHelper
         var game = new Game
         {
             Random = new TestRandom { Seed = seed ?? 1 },
-            InitialSeed = seed ?? 1,
+            Options = { InitialSeed = seed ?? 1 },
             Repository = new TestRepository(),
-            Services = new GameServices(new EnglishLanguageService(), new MemoryCache(new MemoryCacheOptions()))
+            Services = new GameServices(new EnglishLanguageService(), new MemoryCache(new MemoryCacheOptions()), new TestDataProvider())
         };
 
         game.Manager = CreateGameManager(game);
@@ -44,48 +45,92 @@ public static class TestHelper
         return manager;
     }
 
-    public static LevelComponent BuildLevel(string map = "", uint? seed = null, Game? game = null)
-        => BuildLevelWithRooms(map, seed, game).Item1;
+    public static RoomComponent BuildRoom(string map = "", Game? game = null, uint? seed = null, byte depth = 0)
+        => BuildRoomWithChunks(map, game, seed, depth).Item1;
 
-    public static (LevelComponent, IReadOnlyList<Room>) BuildLevelWithRooms(
-        string map = "", uint? seed = null, Game? game = null)
+    public static (RoomComponent, IReadOnlyList<Chunk>) BuildRoomWithChunks(
+        string map = "", Game? game = null, uint? seed = null, byte depth = 0)
     {
         game ??= CreateGame(seed);
 
         var fragment = new DefiningMapFragment
         {
             Map = map,
-            Layout = new EmptyLayout { Coverage = 0 },
+            // Synthetic test rooms aren't part of a connected dungeon — opt out of the
+            // doorway-required guard so trivial maps (e.g. ".") that have no walls don't
+            // trip MapFragment.TryPlaceStaticMap's connectivity check.
+            NoRandomDoorways = true,
             CreatureGenerator = new CreatureGenerator { ExpectedInitialCount = 0 },
             ItemGenerator = new ItemGenerator { ExpectedInitialCount = 0 }
         };
 
-        return CreateLevel(fragment, game);
+        return BuildRoom(fragment, game, depth);
     }
 
-    public static (LevelComponent, IReadOnlyList<Room>) CreateLevel(DefiningMapFragment fragment, Game game)
+    /// <summary>
+    ///     Registers <paramref name="fragment" /> on a fresh test branch and generates a
+    ///     single-room level. The supplied <paramref name="game" /> gets its own isolated
+    ///     <see cref="IDataProvider.DefiningMapFragments" /> loader (via
+    ///     <see cref="TestDataProvider" />) so concurrent tests adding fragments don't
+    ///     interfere. The fragment's <see cref="DefiningMapFragment.GenerationWeight" /> is
+    ///     rewritten to match only the synthetic branch; <see cref="LevelGenerator.PickFragmentForRoom" />
+    ///     then picks it for any room in that branch.
+    /// </summary>
+    public static (RoomComponent, IReadOnlyList<Chunk>) BuildRoom(
+        DefiningMapFragment fragment, Game game, byte depth = 0, byte branchLength = 10)
     {
-        var branch = new GameBranch { Game = game, Name = "test branch", Length = 1, Difficulty = 1 };
-        game.Branches.Add(branch);
+        var id = Interlocked.Increment(ref _testBranchCounter);
+        var branchName = "test branch " + id;
 
+        var testBranch = new Branch
+        {
+            Name = branchName,
+            Length = branchLength,
+            Difficulty = 1,
+            Layout = new EmptyLevelLayout()
+        };
+        var branchEntity = testBranch.Instantiate(game);
+        game.Branches.Add(branchEntity);
+
+        fragment.Name = string.IsNullOrEmpty(fragment.Name) ? "test fragment " + id : fragment.Name;
+        fragment.GenerationWeight = $"$branch == '{branchName}' ? 1 : 0";
         fragment.EnsureInitialized(game);
         if (fragment.Height != 0)
         {
-            fragment.LevelHeight = fragment.Height;
+            fragment.RoomHeight = fragment.Height;
         }
 
         if (fragment.Width != 0)
         {
-            fragment.LevelWidth = fragment.Width;
+            fragment.RoomWidth = fragment.Width;
         }
 
-        var level = LevelGenerator.CreateEmpty(branch, 0, game.Random.Seed, game.Manager);
-        var rooms = LevelGenerator.Generate(level, fragment);
+        // Add to whichever DefiningMapFragments loader the game's services already point at,
+        // installing a fresh isolated TestDataProvider on first use so the addition doesn't
+        // leak into parallel tests via the static singleton. Tests that explicitly preserve
+        // the default (static) provider keep that behaviour.
+        var testProvider = (TestDataProvider)game.Services.Data;
+        testProvider.DefiningMapFragments.Add(fragment);
 
-        return (level, rooms);
+        var gameLevel = LevelGenerator.CreateEmpty(branchEntity, depth, game.Random.Seed, game.Manager);
+        var chunks = LevelGenerator.Generate(gameLevel, testBranch, validateGraph: false);
+        Assert.NotNull(chunks);
+
+        return (gameLevel.Rooms.First(), chunks);
     }
 
-    public static void AssertVisibility(LevelComponent level, string expectedVisibleMap, byte[] actualVisibility)
+    private static int _testBranchCounter;
+
+    /// <summary>
+    ///     Instantiates a <see cref="GameBranch" /> for the given production
+    ///     <paramref name="branch" /> on the supplied <paramref name="game" />.
+    ///     Uses the shared branch data directly — branches and layouts are immutable
+    ///     during generation, so no per-test cloning is needed.
+    /// </summary>
+    public static GameBranch InstantiateBranch(Branch branch, Game game)
+        => branch.Instantiate(game);
+
+    public static void AssertVisibility(RoomComponent level, string expectedVisibleMap, byte[] actualVisibility)
     {
         var expectedFragment =
             new NormalMapFragment { Map = expectedVisibleMap, Width = level.Width, Height = level.Height };
@@ -118,11 +163,11 @@ Expected map:
 " + PrintMap(level, expectedVisibility) + @"
 Actual map:
 " + PrintMap(level, actualVisibility) + @"
-Seed: " + level.Game.InitialSeed);
+Seed: " + level.Game.Options.InitialSeed);
         }
     }
 
-    public static void AssertVisibility(LevelComponent level, byte[] expectedVisibility, byte[] actualVisibility)
+    public static void AssertVisibility(RoomComponent level, byte[] expectedVisibility, byte[] actualVisibility)
     {
         for (var i = 0; i < actualVisibility.Length; i++)
         {
@@ -140,16 +185,16 @@ Expected map:
 Actual map:
 " + PrintMap(level, actualVisibility) +
                 PrintVisibility(level, actualVisibility) + @"
-Seed: " + level.Game.InitialSeed);
+Seed: " + level.Game.Options.InitialSeed);
         }
     }
 
-    public static void AssertTerrain(LevelComponent level, string expectedMap, byte[] actualTerrain)
+    public static void AssertTerrain(RoomComponent level, string expectedMap, MapFeature[] actualTerrain)
     {
         var expectedFragment = new NormalMapFragment { Map = expectedMap, Width = level.Width, Height = level.Height };
         expectedFragment.EnsureInitialized(level.Game);
 
-        var expected = new byte[level.TileCount];
+        var expected = new MapFeature[level.TileCount];
         var matched = true;
 
         expectedFragment.WriteMap(
@@ -157,14 +202,14 @@ Seed: " + level.Game.InitialSeed);
             level,
             (c, point, l, _) =>
             {
-                var expectedFeature = (byte)ToMapFeature(c);
+                var expectedFeature = ToMapFeature(c);
                 var i = l.PointToIndex![point.X, point.Y];
                 expected[i] = expectedFeature;
                 if (expectedFeature != actualTerrain[i]
-                    && (expectedFeature == (byte)MapFeature.Default
-                        || expectedFeature == (byte)MapFeature.Unexplored)
-                    && !(actualTerrain[i] == (byte)MapFeature.Default
-                         || actualTerrain[i] == (byte)MapFeature.Unexplored))
+                    && (expectedFeature == MapFeature.Default
+                        || expectedFeature == MapFeature.Unexplored)
+                    && !(actualTerrain[i] == MapFeature.Default
+                         || actualTerrain[i] == MapFeature.Unexplored))
                 {
                     matched = false;
                 }
@@ -175,7 +220,7 @@ Seed: " + level.Game.InitialSeed);
 " + PrintMap(level, null, expected) + @"
 Actual:
 " + PrintMap(level, null, actualTerrain) + @"
-Seed: " + level.Game.InitialSeed);
+Seed: " + level.Game.Options.InitialSeed);
     }
 
     public static MapFeature ToMapFeature(char c)
@@ -212,7 +257,7 @@ Seed: " + level.Game.InitialSeed);
         return feature;
     }
 
-    public static string PrintMap(LevelComponent level, byte[]? visibleTerrain, byte[]? terrain = null)
+    public static string PrintMap(RoomComponent level, byte[]? visibleTerrain, MapFeature[]? terrain = null)
     {
         terrain ??= level.Terrain;
         var builder = new StringBuilder();
@@ -227,7 +272,7 @@ Seed: " + level.Game.InitialSeed);
                 }
                 else
                 {
-                    var feature = (MapFeature)terrain[i];
+                    var feature = terrain[i];
                     var symbol = ' ';
                     switch (feature)
                     {
@@ -241,7 +286,7 @@ Seed: " + level.Game.InitialSeed);
                             symbol = '█';
                             break;
                         case MapFeature.StoneWall:
-                            var neighbors = (DirectionFlags)level.WallNeighbors[i] & DirectionFlags.Cross;
+                            var neighbors = level.Neighbors[i] & DirectionFlags.Cross;
                             switch (neighbors)
                             {
                                 case DirectionFlags.None:
@@ -319,7 +364,7 @@ Seed: " + level.Game.InitialSeed);
         return builder.ToString();
     }
 
-    public static string PrintVisibility(LevelComponent level, byte[] visibleTerrain)
+    public static string PrintVisibility(RoomComponent level, byte[] visibleTerrain)
     {
         var builder = new StringBuilder();
         var i = 0;

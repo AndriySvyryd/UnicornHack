@@ -17,7 +17,7 @@ public static partial class CreatureData
         },
         InitialLevel = 1,
         GenerationWeight = "0",
-        GenerationFlags = GenerationFlags.NonPolymorphable,
+        GenerationFlags = CreatureGenerationFlags.NonPolymorphable,
         Behavior = AIBehavior.WeaponCollector,
         Noise = ActorNoiseType.Speach,
         Weight = 1000,

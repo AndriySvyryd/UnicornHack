@@ -83,16 +83,16 @@ public class PlayerSystem :
             case ActorActionType.MoveToCell:
                 var targetCell = Point.Unpack(target)!.Value;
 
-                if (targetCell == position.LevelCell)
+                if (targetCell == position.Cell)
                 {
                     // Treat as Wait.
                     player.NextActionTick += TimeSystem.DefaultActionDelay;
                     break;
                 }
 
-                if (position.LevelCell.DistanceTo(targetCell) == 1)
+                if (position.Cell.DistanceTo(targetCell) == 1)
                 {
-                    return Move(position.LevelCell.DifferenceTo(targetCell).AsDirection(), playerEntity, manager);
+                    return Move(position.Cell.DifferenceTo(targetCell).AsDirection(), playerEntity, manager);
                 }
 
                 if (!Move(targetCell, playerEntity, manager))
@@ -100,7 +100,7 @@ public class PlayerSystem :
                     return false;
                 }
 
-                if (position.LevelCell != targetCell)
+                if (position.Cell != targetCell)
                 {
                     player.NextAction = ActorActionType.MoveToCell;
                     player.NextActionTarget = target;
@@ -117,8 +117,8 @@ public class PlayerSystem :
 
                 var dropMessage = MoveItemMessage.Create(manager);
                 dropMessage.ItemEntity = itemToDrop;
-                dropMessage.TargetLevelEntity = position.LevelEntity;
-                dropMessage.TargetCell = position.LevelCell;
+                dropMessage.TargetRoomEntity = position.RoomEntity;
+                dropMessage.TargetCell = position.Cell;
 
                 manager.Enqueue(dropMessage);
                 break;
@@ -163,6 +163,13 @@ public class PlayerSystem :
             case ActorActionType.UseAbilitySlot:
                 ActivateAbility(playerEntity, target, target2, manager);
                 break;
+            case ActorActionType.TravelToRoom:
+                if (!manager.TravelSystem.TravelToRoom(playerEntity, target!.Value, manager))
+                {
+                    return false;
+                }
+
+                break;
             default:
                 throw new InvalidOperationException(
                     $"Action {action} on character {playerEntity.Player!.ProperName} is invalid.");
@@ -188,7 +195,7 @@ public class PlayerSystem :
         if ((ability.Activation & ActivationType.Manual) == 0)
         {
             // TODO: Also check LOS and move closer if none
-            if (position.LevelCell.DistanceTo(targetCell) > ability.Range)
+            if (position.Cell.DistanceTo(targetCell) > ability.Range)
             {
                 if (!Move(targetCell, actorEntity, manager))
                 {
@@ -213,7 +220,7 @@ public class PlayerSystem :
         // TODO: avoid actors and connections
         var position = playerEntity.Position!;
         var direction = manager.TravelSystem.GetFirstStepFromShortestPath(
-            position.LevelEntity.Level!, position.LevelCell, targetCell, position.Heading!.Value, knownOnly: true);
+            position.RoomEntity.Room!, position.Cell, targetCell, position.Heading!.Value, knownOnly: true);
         if (direction == null)
         {
             manager.LoggingSystem.WriteLog(manager.Game.Services.Language.NoPath(), playerEntity, manager);

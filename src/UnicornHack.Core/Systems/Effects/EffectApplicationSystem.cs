@@ -24,7 +24,7 @@ public class EffectApplicationSystem :
         Expression.Parameter(typeof(GameEntity), name: "activator");
 
     private static readonly EffectExpressionVisitor _translator =
-        new(new[] { EffectParameter, ActivatorParameter });
+        new([EffectParameter, ActivatorParameter]);
 
     private static readonly MethodInfo _requirementsModifierMethod = typeof(EffectApplicationSystem)
         .GetMethod(nameof(GetRequirementsModifier), BindingFlags.NonPublic | BindingFlags.Static)!;
@@ -147,7 +147,7 @@ public class EffectApplicationSystem :
         switch (effect.EffectType)
         {
             case EffectType.ChangeProperty:
-                var propertyDescription = PropertyDescription.Loader.Find(effect.TargetName!)!;
+                var propertyDescription = manager.Game.Services.Data.PropertyDescriptions.Find(effect.TargetName!)!;
                 Debug.Assert(propertyDescription.IsCalculated == (effect.Duration != EffectDuration.Instant));
 
                 ApplyEffect(effect, targetEntity!, activatorEntity, amountOverride, appliedEffects, manager, pretend);
@@ -173,7 +173,7 @@ public class EffectApplicationSystem :
                     else
                     {
                         var level = 0;
-                        var template = Ability.Loader.Get(effect.TargetName!); // TODO: use effectEntity.Ability?.Name ?
+                        var template = manager.Game.Services.Data.Abilities.Get(effect.TargetName!); // TODO: use effectEntity.Ability?.Name ?
                         if (template is LeveledAbility)
                         {
                             level = CalculateAbilityLevel(abilityAddedEntity.Effect!);
@@ -210,7 +210,7 @@ public class EffectApplicationSystem :
                         return null;
                     }
 
-                    var raceDefinition = PlayerRace.Loader.Find(raceName)!;
+                    var raceDefinition = manager.Game.Services.Data.PlayerRaces.Find(raceName)!;
 
                     var existingRace = targetEntity.Being!.Races
                         .SingleOrDefault(r => r.Race!.Species == raceDefinition.Species);
@@ -304,14 +304,14 @@ public class EffectApplicationSystem :
                     if (targetEntity != null)
                     {
                         var position = targetEntity.Position;
-                        moveItemMessage.TargetLevelEntity = position!.LevelEntity;
-                        moveItemMessage.TargetCell = position.LevelCell;
+                        moveItemMessage.TargetRoomEntity = position!.RoomEntity;
+                        moveItemMessage.TargetCell = position.Cell;
                     }
                     else
                     {
                         Debug.Assert(targetCell != null);
 
-                        moveItemMessage.TargetLevelEntity = activatorEntity.Position!.LevelEntity;
+                        moveItemMessage.TargetRoomEntity = activatorEntity.Position!.RoomEntity;
                         moveItemMessage.TargetCell = targetCell;
                     }
 
@@ -459,7 +459,7 @@ public class EffectApplicationSystem :
                 if (player != null)
                 {
                     appliedEffect.ExpirationXp =
-                        affectedEntity.Position!.LevelEntity.Level!.Difficulty *
+                        affectedEntity.Position!.RoomEntity.Room!.Level.Difficulty *
                         GetDurationAmount(effect, activatorEntity);
                 }
                 else
@@ -692,7 +692,7 @@ public class EffectApplicationSystem :
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        var targetEntity = effect.AffectedEntity;
+        var targetEntity = effect.AffectedEntity ?? manager.FindEntity(effect.AffectedEntityId);
         if (targetEntity == null)
         {
             return MessageProcessingResult.ContinueProcessing;
@@ -707,7 +707,7 @@ public class EffectApplicationSystem :
                     break;
                 }
 
-                var propertyDescription = PropertyDescription.Loader.Find(effect.TargetName!)!;
+                var propertyDescription = manager.Game.Services.Data.PropertyDescriptions.Find(effect.TargetName!)!;
                 UpdateProperty(propertyDescription, targetEntity, effect);
 
                 break;
@@ -1098,7 +1098,7 @@ public class EffectApplicationSystem :
 
         var baseMultiplier =
             manager.SkillAbilitiesSystem.GetHandnessMultiplier(EquipmentSlot.GraspPrimaryMelee);
-        var template = Item.Loader.Get(item.TemplateName);
+        var template = manager.Game.Services.Data.Items.Get(item.TemplateName);
         var skillBonus = manager.SkillAbilitiesSystem.GetItemSkillBonus(template, activatorEntity.Player);
 
         var requiredMight = template.RequiredMight ?? 0;
@@ -1223,7 +1223,7 @@ public class EffectApplicationSystem :
 
     private void InitializeProperties(GameEntity entity)
     {
-        foreach (var propertyDescription in PropertyDescription.Loader.GetAll())
+        foreach (var propertyDescription in entity.Manager.Game.Services.Data.PropertyDescriptions.GetAll())
         {
             if (propertyDescription.IsCalculated
                 && entity.HasComponent(propertyDescription.ComponentId))

@@ -35,7 +35,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 12,
-        GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+        GenerationFlags = CreatureGenerationFlags.NonGenocidable | CreatureGenerationFlags.NonPolymorphable,
         Behavior = AIBehavior.Wandering | AIBehavior.Stalking,
         Noise = ActorNoiseType.Howl,
         Weight = 0,

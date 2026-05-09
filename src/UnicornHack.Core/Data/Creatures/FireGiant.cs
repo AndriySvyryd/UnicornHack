@@ -28,7 +28,7 @@ public static partial class CreatureData
             }
         },
         InitialLevel = 9,
-        GenerationFlags = GenerationFlags.SmallGroup,
+        GenerationFlags = CreatureGenerationFlags.SmallGroup,
         Behavior = AIBehavior.GemCollector | AIBehavior.WeaponCollector,
         Noise = ActorNoiseType.Boast,
         Size = 16,

@@ -24,7 +24,7 @@ public static partial class CreatureData
         },
         InitialLevel = 10,
         GenerationWeight = "0",
-        GenerationFlags = GenerationFlags.NonGenocidable | GenerationFlags.NonPolymorphable,
+        GenerationFlags = CreatureGenerationFlags.NonGenocidable | CreatureGenerationFlags.NonPolymorphable,
         Behavior = AIBehavior.Wandering | AIBehavior.Stalking,
         Weight = 0,
         MovementDelay = 300,

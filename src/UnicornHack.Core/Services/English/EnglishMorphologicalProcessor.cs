@@ -3,12 +3,12 @@ namespace UnicornHack.Services.English;
 public class EnglishMorphologicalProcessor
 {
     private static readonly string[] UninflectiveSuffixes =
-    {
+    [
         "fish", "ese", "ois", "sheep", "deer", "pos", "itis", "ism", "ness"
-    };
+    ];
 
     private static readonly string[] UninflectiveWords =
-    {
+    [
         "advice", "aircraft", "asparagus", "barracks", "beef", "bison", "binoculars", "bream", "britches",
         "breeches", "broccoli", "cabbage", "carp", "cattle", "clippers", "chassis", "cod", "contretemps", "corps",
         "corn", "cotton", "chaos", "diabetes", "debris", "earth", "elk", "eland", "flounder", "gallows", "gold",
@@ -19,7 +19,7 @@ public class EnglishMorphologicalProcessor
         "species", "swine", "scabies", "shambles", "shingles", "trout", "tuna", "traffic", "tobacco", "wildebeest",
         "whiting", "venison", "apparatus", "impetus", "prospectus", "cantus", "nexus", "sinus", "coitus", "plexus",
         "status", "hiatus"
-    };
+    ];
 
     private static readonly Dictionary<string, string> IrregularPlurals = new()
     {

@@ -15,7 +15,7 @@ public class LoggingSystemTest
     [Fact]
     public void AttackEvent()
     {
-        var level = TestHelper.BuildLevel(@"
+        var level = TestHelper.BuildRoom(@"
 ...
 ...
 ...");
@@ -307,7 +307,7 @@ public class LoggingSystemTest
     [Fact]
     public void DeathEvent()
     {
-        var level = TestHelper.BuildLevel();
+        var level = TestHelper.BuildRoom();
         var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
         var manager = level.Entity.Manager;
@@ -323,7 +323,7 @@ public class LoggingSystemTest
     [Fact]
     public void ItemEquipmentEvent()
     {
-        var level = TestHelper.BuildLevel();
+        var level = TestHelper.BuildRoom();
         var armor = ItemData.MailArmor.Instantiate(level.Entity.Manager).Referenced;
         var nymph = CreatureData.Undine.Instantiate(level, new Point(0, 1));
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
@@ -351,7 +351,7 @@ public class LoggingSystemTest
     [Fact]
     public void ItemUnequipmentEvent()
     {
-        var level = TestHelper.BuildLevel();
+        var level = TestHelper.BuildRoom();
         var armor = ItemData.MailArmor.Instantiate(level.Entity.Manager).Referenced;
         var nymph = CreatureData.Undine.Instantiate(level, new Point(0, 1));
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
@@ -377,7 +377,7 @@ public class LoggingSystemTest
     [Fact]
     public void ItemConsumptionEvent()
     {
-        var level = TestHelper.BuildLevel();
+        var level = TestHelper.BuildRoom();
         var flask = ItemData.FlaskOfHealing.Instantiate(level.Entity.Manager).Referenced;
         var potion = ItemData.PotionOfExperience.Instantiate(level.Entity.Manager).Referenced;
         var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
@@ -404,7 +404,7 @@ public class LoggingSystemTest
     [Fact]
     public void ItemPickUpEvent()
     {
-        var level = TestHelper.BuildLevel();
+        var level = TestHelper.BuildRoom();
         var coins = ItemData.GoldCoin.Instantiate(level.Entity.Manager).Referenced;
         var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
@@ -421,7 +421,7 @@ public class LoggingSystemTest
     [Fact]
     public void ItemDropEvent()
     {
-        var level = TestHelper.BuildLevel();
+        var level = TestHelper.BuildRoom();
         var coins = ItemData.GoldCoin.Instantiate(level.Entity.Manager).Referenced;
         var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
@@ -438,7 +438,7 @@ public class LoggingSystemTest
     [Fact]
     public void LeveledUpEvent()
     {
-        var level = TestHelper.BuildLevel();
+        var level = TestHelper.BuildRoom();
         var player1 = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         var player2 = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, level, new Point(0, 1));
         var manager = level.Entity.Manager;
@@ -456,14 +456,14 @@ public class LoggingSystemTest
     [Fact]
     public void Welcome()
     {
-        var level = TestHelper.BuildLevel();
+        var level = TestHelper.BuildRoom();
         var player = PlayerRace.InstantiatePlayer("Conan the Barbarian", Sex.Male, level, new Point(0, 0));
         var manager = level.Entity.Manager;
         var languageService = manager.Game.Services.Language;
 
         var message = languageService.Welcome(player);
 
-        Assert.Equal("Welcome to the test branch, Conan the Barbarian!", message);
+        Assert.Equal($"Welcome to the {level.Level.BranchName}, Conan the Barbarian!", message);
     }
 
     protected EnglishLanguageService CreateLanguageService() => new EnglishLanguageService();

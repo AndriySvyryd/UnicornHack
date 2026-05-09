@@ -16,11 +16,11 @@ public class ChangeBuilderTest
 .....
 .....";
 
-    private static (GameManager Manager, GameEntity PlayerEntity, LevelChangeBuilder Listener)
+    private static (GameManager Manager, GameEntity PlayerEntity, RoomChangeBuilder Listener)
         SetupGameWithListener()
     {
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(TestMap, game);
+        var level = TestHelper.BuildRoom(TestMap, game);
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 2));
@@ -90,7 +90,7 @@ public class ChangeBuilderTest
         // Custom setup: clear the auto-slotted flask ability before the listener is
         // registered, so the client's initial state does not contain it.
         var game = WebTestHelper.CreateGame();
-        var level = WebTestHelper.BuildLevel(TestMap, game);
+        var level = TestHelper.BuildRoom(TestMap, game);
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 2));

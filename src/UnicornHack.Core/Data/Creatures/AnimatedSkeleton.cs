@@ -30,7 +30,7 @@ public static partial class CreatureData
         },
         InitialLevel = 3,
         GenerationWeight = "3",
-        GenerationFlags = GenerationFlags.SmallGroup,
+        GenerationFlags = CreatureGenerationFlags.SmallGroup,
         Behavior = AIBehavior.WeaponCollector,
         Weight = 300,
         MovementDelay = 100,
