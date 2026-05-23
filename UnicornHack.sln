@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnicornHack.Web.Tests", "te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnicornHack.Web.PerformanceTests", "test\UnicornHack.Web.PerformanceTests\UnicornHack.Web.PerformanceTests.csproj", "{8B17D36A-D4D0-41D2-A3AE-4813F673FA5A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnicornHack.DiagnosticClient", "test\UnicornHack.DiagnosticClient\UnicornHack.DiagnosticClient.csproj", "{BCD29160-36B1-4DC9-AE95-A6675C4CBEFC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -127,6 +129,18 @@ Global
 		{8B17D36A-D4D0-41D2-A3AE-4813F673FA5A}.Release|x64.Build.0 = Release|Any CPU
 		{8B17D36A-D4D0-41D2-A3AE-4813F673FA5A}.Release|x86.ActiveCfg = Release|Any CPU
 		{8B17D36A-D4D0-41D2-A3AE-4813F673FA5A}.Release|x86.Build.0 = Release|Any CPU
+		{BCD29160-36B1-4DC9-AE95-A6675C4CBEFC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BCD29160-36B1-4DC9-AE95-A6675C4CBEFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCD29160-36B1-4DC9-AE95-A6675C4CBEFC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BCD29160-36B1-4DC9-AE95-A6675C4CBEFC}.Debug|x64.Build.0 = Debug|Any CPU
+		{BCD29160-36B1-4DC9-AE95-A6675C4CBEFC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BCD29160-36B1-4DC9-AE95-A6675C4CBEFC}.Debug|x86.Build.0 = Debug|Any CPU
+		{BCD29160-36B1-4DC9-AE95-A6675C4CBEFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BCD29160-36B1-4DC9-AE95-A6675C4CBEFC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BCD29160-36B1-4DC9-AE95-A6675C4CBEFC}.Release|x64.ActiveCfg = Release|Any CPU
+		{BCD29160-36B1-4DC9-AE95-A6675C4CBEFC}.Release|x64.Build.0 = Release|Any CPU
+		{BCD29160-36B1-4DC9-AE95-A6675C4CBEFC}.Release|x86.ActiveCfg = Release|Any CPU
+		{BCD29160-36B1-4DC9-AE95-A6675C4CBEFC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -139,6 +153,7 @@ Global
 		{9E7D5050-B6A9-4AD8-94B6-F4DD1C53927C} = {E1416F49-DAC9-4EAF-9689-C5B84EA5C604}
 		{2E122A98-FC61-4C56-89A0-0C5134945D7E} = {E1416F49-DAC9-4EAF-9689-C5B84EA5C604}
 		{8B17D36A-D4D0-41D2-A3AE-4813F673FA5A} = {E1416F49-DAC9-4EAF-9689-C5B84EA5C604}
+		{BCD29160-36B1-4DC9-AE95-A6675C4CBEFC} = {E1416F49-DAC9-4EAF-9689-C5B84EA5C604}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E8AE20F5-24C9-4FE1-A1F7-ECF0FF7A0A66}

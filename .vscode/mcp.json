@@ -1,0 +1,38 @@
+{
+    "$schema": "https://aka.ms/vscode-mcp-server-config-schema",
+    "servers": {
+        "unicornhack-diagnostic": {
+            "type": "stdio",
+            "command": "dotnet",
+            "args": [
+                "run",
+                "--project",
+                "${workspaceFolder}/test/UnicornHack.DiagnosticClient/UnicornHack.DiagnosticClient.csproj",
+                "-c",
+                "Debug",
+                "--",
+                "--name",
+                "${input:playerName}",
+                "--server",
+                "${input:serverUrl}",
+                "--insecure",
+                "--log-file",
+                "${workspaceFolder}/test/UnicornHack.DiagnosticClient/bin/diag.log"
+            ]
+        }
+    },
+    "inputs": [
+        {
+            "id": "playerName",
+            "type": "promptString",
+            "description": "UnicornHack character name. Auto-created on first connect.",
+            "default": "diag-bot"
+        },
+        {
+            "id": "serverUrl",
+            "type": "promptString",
+            "description": "Base URL of the running UnicornHack.Web instance (no /gameHub suffix).",
+            "default": "https://localhost:7251"
+        }
+    ]
+}
