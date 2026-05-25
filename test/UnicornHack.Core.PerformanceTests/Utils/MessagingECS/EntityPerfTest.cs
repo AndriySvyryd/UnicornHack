@@ -1,4 +1,4 @@
-﻿using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Attributes;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;

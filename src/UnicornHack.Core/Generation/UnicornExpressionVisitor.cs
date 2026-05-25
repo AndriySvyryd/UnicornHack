@@ -27,6 +27,12 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
     private static readonly MethodInfo _absMethodD =
         typeof(Math).GetMethod(nameof(Math.Abs), [typeof(double)])!;
 
+    private static readonly MethodInfo _logMethod =
+        typeof(Math).GetMethod(nameof(Math.Log), [typeof(double)])!;
+
+    private static readonly MethodInfo _logMethodBase =
+        typeof(Math).GetMethod(nameof(Math.Log), [typeof(double), typeof(double)])!;
+
     private static readonly MethodInfo _stringConcat = typeof(string)
         .GetRequiredRuntimeMethod(nameof(string.Concat), typeof(string), typeof(string));
 
@@ -39,7 +45,26 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
         }
     }
 
-    protected Dictionary<string, ParameterExpression> Parameters
+    /// <summary>
+    ///     Variant that lets a caller bind named DSL variables to arbitrary precomputed
+    ///     expressions instead of straight lambda parameters. The <paramref name="parameters" />
+    ///     list still drives the compiled lambda's signature; <paramref name="variableOverrides" />
+    ///     replaces the parser-time binding for the named variables, so an author who
+    ///     writes <c>$myVar</c> in the expression gets the override expression baked into
+    ///     the compiled IL at that AST node.
+    /// </summary>
+    public UnicornExpressionVisitor(
+        IEnumerable<ParameterExpression> parameters,
+        IReadOnlyDictionary<string, Expression> variableOverrides)
+        : this(parameters)
+    {
+        foreach (var (name, expression) in variableOverrides)
+        {
+            Parameters[name] = expression;
+        }
+    }
+
+    protected Dictionary<string, Expression> Parameters
     {
         get;
     } = new();
@@ -186,6 +211,27 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
         return context.ASTERISK() != null ? Multiply(left, right) : Divide(left, right);
     }
 
+    public override Expression VisitShiftExpression(
+        UnicornExpressionParser.ShiftExpressionContext context)
+    {
+        // Shift operators (<<, >>) are bitwise and require integral operands. Coerce
+        // both sides to int; the shift count must also be int per Expression.LeftShift /
+        // RightShift. Truncates any double operand toward zero, matching C# casting.
+        var left = Visit(context.Left);
+        var right = Visit(context.Right);
+        if (left.Type != typeof(int))
+        {
+            left = Convert(left, typeof(int));
+        }
+
+        if (right.Type != typeof(int))
+        {
+            right = Convert(right, typeof(int));
+        }
+
+        return context.LSHIFT() != null ? LeftShift(left, right) : RightShift(left, right);
+    }
+
     public override Expression VisitUnaryExpression(
         UnicornExpressionParser.UnaryExpressionContext context)
     {
@@ -249,6 +295,43 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
         return Parameters[context.Variable.Text];
     }
 
+    public override Expression VisitIndexedVariableExpression(
+        UnicornExpressionParser.IndexedVariableExpressionContext context)
+    {
+        if (context.exception != null)
+        {
+            throw new UnicornExpressionException(context.exception);
+        }
+
+        var parameter = Parameters[context.Variable.Text];
+        var key = Visit(context.Index);
+
+        // Resolve a GetValueOrDefault overload from the parameter's runtime dictionary type.
+        // We only support IReadOnlyDictionary<,> today; that's the only declared indexed
+        // parameter ($tagInstances). Throw eagerly for any other parameter so the author
+        // gets a useful error at script-compile time.
+        var dictInterface = (parameter.Type.IsGenericType
+                && parameter.Type.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>)
+                ? parameter.Type
+                : null)
+            ?? parameter.Type.GetInterfaces()
+                .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>))
+            ?? throw new InvalidOperationException(
+                $"Indexer access '[]' is only supported on IReadOnlyDictionary<,> parameters; '${context.Variable.Text}' has type {parameter.Type}.");
+
+        var typeArgs = dictInterface.GetGenericArguments();
+        var keyType = typeArgs[0];
+        var valueType = typeArgs[1];
+        var getOrDefault = typeof(CollectionExtensions)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .First(m => m.Name == nameof(CollectionExtensions.GetValueOrDefault)
+                && m.GetParameters().Length == 2)
+            .MakeGenericMethod(keyType, valueType);
+
+        var convertedKey = key.Type == keyType ? key : Convert(key, keyType);
+        return Call(null, getOrDefault, Convert(parameter, dictInterface), convertedKey);
+    }
+
     public override Expression VisitInvocationExpression(
         UnicornExpressionParser.InvocationExpressionContext context)
     {
@@ -285,6 +368,21 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
             case "Abs":
                 method = childrenCommonType == typeof(double) ? _absMethodD : _absMethod;
                 break;
+            case "Log":
+            {
+                // Log accepts either one argument (natural log) or two arguments
+                // (value, base). Both arguments and the result are double — we route
+                // through Math.Log so callers can write `Log($instances + 1)` or
+                // `Log($instances + 1, 2)` for a base-2 log.
+                var args = children.Select(c => Convert(c, typeof(double))).ToArray();
+                return args.Length switch
+                {
+                    1 => Call(null, _logMethod, args[0]),
+                    2 => Call(null, _logMethodBase, args[0], args[1]),
+                    _ => throw new InvalidOperationException(
+                        $"Function Log expects 1 or 2 arguments but got {args.Length}")
+                };
+            }
             default:
                 throw new InvalidOperationException($"Function {function} not supported");
         }

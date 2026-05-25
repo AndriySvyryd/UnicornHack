@@ -1,7 +1,6 @@
 ﻿using CSharpScriptSerialization;
 using UnicornHack.Data.Fragments;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Utils.DataLoading;
 
 namespace UnicornHack.Generation.Map;
 
@@ -108,32 +107,60 @@ public class DefiningMapFragment : ConnectingMapFragment
     ///     together (width, height, default terrain, creature/item generators) so they don't
     ///     have to invoke five <c>GetEffective*</c> methods individually.
     /// </summary>
+    /// <remarks>
+    ///     Throws when the effective <see cref="CreatureGenerator" /> or
+    ///     <see cref="ItemGenerator" /> ends up null — e.g. when neither this fragment
+    ///     nor the branch supplies one. <see cref="RoomParameters" />'s constructor also
+    ///     rejects zero <see cref="RoomWidth" /> / <see cref="RoomHeight" />.
+    /// </remarks>
     public RoomParameters GetRoomParameters(Branch branch)
-        => new(
+    {
+        var creatures = GetEffectiveCreatureGenerator(branch)
+            ?? throw new InvalidOperationException(
+                $"'{Name}': no CreatureGenerator set on the fragment or branch '{branch.Name}'.");
+        var items = GetEffectiveItemGenerator(branch)
+            ?? throw new InvalidOperationException(
+                $"'{Name}': no ItemGenerator set on the fragment or branch '{branch.Name}'.");
+        return new RoomParameters(
             GetEffectiveRoomWidth(branch),
             GetEffectiveRoomHeight(branch),
             GetEffectiveDefaultTerrain(branch),
-            GetEffectiveCreatureGenerator(branch),
-            GetEffectiveItemGenerator(branch));
+            creatures,
+            items);
+    }
 
-    private Func<string, int, RoomFeatures, int, int, ConnectionComponent?, float>? _weightFunction;
+    // Lambda compiled from the fragment's GenerationWeight DSL. Signature mirrors the
+    // _translator parameter list below. SourceName + the two per-name dicts back the
+    // visitor-emitted `$instances` / `$globalInstances` lookups — the lookup IL is
+    // baked in only when the expression actually references the variable, so when it
+    // doesn't, the lambda performs zero dict reads on the hot path.
+    private Func<
+        string,                                  // branch
+        int,                                     // depth
+        RoomFeatures,                            // roomFeatures
+        string,                                  // sourceName
+        IReadOnlyDictionary<string, int>,        // fragmentInstancesByName
+        IReadOnlyDictionary<string, int>,        // globalFragmentInstancesByName
+        IReadOnlyDictionary<string, int>,        // tagInstances
+        IReadOnlyDictionary<string, int>,        // globalTagInstances
+        IReadOnlyDictionary<RoomFeatures, int>,  // globalFeatureInstances
+        ConnectionComponent?,                    // connection
+        float>? _weightFunction;
 
     private static readonly UnicornExpressionVisitor _translator =
-        new(
-        [
+        CreateInstanceAwareTranslator(
             BranchParameter,
             DepthParameter,
             RoomFeaturesParameter,
-            InstancesParameter,
+            SourceNameParameter,
+            FragmentInstancesByNameParameter,
+            GlobalFragmentInstancesByNameParameter,
             TagInstancesParameter,
-            ConnectionParameter
-        ]);
+            GlobalTagInstancesParameter,
+            GlobalFeatureInstancesParameter,
+            ConnectionParameter);
 
     protected override void ResetWeightFunction() => _weightFunction = null;
-
-    public static new Func<string, int, RoomFeatures, int, int, ConnectionComponent?, float> CreateWeightFunction(
-        string expression)
-        => _translator.Translate<Func<string, int, RoomFeatures, int, int, ConnectionComponent?, float>, float>(expression);
 
     /// <summary>
     ///     Returns this fragment's selection weight for a level- or room-scoped pick. The
@@ -142,23 +169,32 @@ public class DefiningMapFragment : ConnectingMapFragment
     ///     picks. Existing weight expressions that don't reference <c>$roomFeatures</c> are
     ///     unaffected.
     /// </summary>
-    public float GetWeight(string branchName, byte depth, RoomFeatures roomFeatures, int instances, int tagInstances)
+    public float GetWeight(
+        string branchName,
+        byte depth,
+        RoomFeatures roomFeatures,
+        IReadOnlyDictionary<string, int> fragmentInstancesByName,
+        IReadOnlyDictionary<string, int> globalFragmentInstancesByName,
+        IReadOnlyDictionary<string, int> tagInstances,
+        IReadOnlyDictionary<string, int> globalTagInstances,
+        IReadOnlyDictionary<RoomFeatures, int> globalFeatureInstances)
     {
         if (_weightFunction == null)
         {
-            try
-            {
-                _weightFunction = CreateWeightFunction(GenerationWeight ?? DefaultWeight);
-            }
-            catch (Exception e)
-            {
-                throw new InvalidOperationException("Error while parsing the GenerationWeight for " + Name, e);
-            }
+            _weightFunction = CompileWeightFunction<
+                Func<string, int, RoomFeatures, string,
+                    IReadOnlyDictionary<string, int>, IReadOnlyDictionary<string, int>,
+                    IReadOnlyDictionary<string, int>, IReadOnlyDictionary<string, int>,
+                    IReadOnlyDictionary<RoomFeatures, int>, ConnectionComponent?, float>>(_translator);
         }
 
         try
         {
-            return _weightFunction(branchName, depth, roomFeatures, instances, tagInstances, null);
+            return _weightFunction(
+                    branchName, depth, roomFeatures, SourceName,
+                    fragmentInstancesByName, globalFragmentInstancesByName,
+                    tagInstances, globalTagInstances, globalFeatureInstances, null)
+                * WeightMultiplier;
         }
         catch (Exception e)
         {
@@ -167,13 +203,45 @@ public class DefiningMapFragment : ConnectingMapFragment
     }
 
     /// <summary>
+    ///     Backward-compatible overload for tests that pass the scalar per-fragment
+    ///     instance counts directly. Wraps them into single-entry dicts keyed by
+    ///     <see cref="MapFragment.SourceName" /> so the visitor's <c>$instances</c> /
+    ///     <c>$globalInstances</c> lookups resolve to the supplied values.
+    /// </summary>
+    public float GetWeight(
+        string branchName, byte depth, RoomFeatures roomFeatures,
+        int instances, IReadOnlyDictionary<string, int> tagInstances,
+        int globalInstances, IReadOnlyDictionary<string, int> globalTagInstances,
+        IReadOnlyDictionary<RoomFeatures, int> globalFeatureInstances)
+    {
+        var key = SourceName;
+        return GetWeight(
+            branchName, depth, roomFeatures,
+            new Dictionary<string, int>(StringComparer.Ordinal) { [key] = instances },
+            new Dictionary<string, int>(StringComparer.Ordinal) { [key] = globalInstances },
+            tagInstances, globalTagInstances, globalFeatureInstances);
+    }
+
+    /// <summary>
+    ///     Backward-compatible overload; treats per-level and game-wide instance counts as
+    ///     equivalent for callers that don't track the game-wide totals explicitly.
+    /// </summary>
+    public float GetWeight(
+        string branchName, byte depth, RoomFeatures roomFeatures, int instances, IReadOnlyDictionary<string, int> tagInstances)
+        => GetWeight(branchName, depth, roomFeatures, instances, tagInstances, instances, tagInstances,
+            EmptyFeatureInstances);
+
+    private static readonly IReadOnlyDictionary<RoomFeatures, int> EmptyFeatureInstances =
+        new Dictionary<RoomFeatures, int>();
+
+    /// <summary>
     ///     Backward-compatible overload; delegates to the room-aware overload with
     ///     <see cref="RoomFeatures.Normal" />.
     /// </summary>
-    public float GetWeight(string branchName, byte depth, int instances, int tagInstances)
+    public float GetWeight(string branchName, byte depth, int instances, IReadOnlyDictionary<string, int> tagInstances)
         => GetWeight(branchName, depth, RoomFeatures.Normal, instances, tagInstances);
 
-    public static new readonly CSScriptLoader<DefiningMapFragment> Loader =
+    public static new readonly MapFragmentLoader<DefiningMapFragment> Loader =
         new(@"Data\Fragments\Defining\", typeof(DefiningMapFragmentData));
 
     private static readonly CSScriptSerializer Serializer =

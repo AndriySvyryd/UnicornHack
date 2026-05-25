@@ -136,7 +136,7 @@ public class GraphMaterializationTest
             var level = LevelGenerator.CreateEmpty(dungeon, depth: 2, attemptSeed, manager);
             try
             {
-                var chunks = LevelGenerator.Generate(level, validateGraph: true);
+                var chunks = LevelGenerator.Generate(level);
                 if (chunks is not null)
                 {
                     return (ReconstructGraph(level), level);

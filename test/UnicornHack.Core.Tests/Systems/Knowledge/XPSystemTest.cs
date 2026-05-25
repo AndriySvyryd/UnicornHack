@@ -1,4 +1,4 @@
-﻿using UnicornHack.Data.Creatures;
+using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;

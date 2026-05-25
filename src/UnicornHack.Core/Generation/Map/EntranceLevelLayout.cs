@@ -6,8 +6,7 @@ namespace UnicornHack.Generation.Map;
 ///     <see cref="TreeLevelLayout" /> tuned for the introductory <c>entrance</c> branch:
 ///     a single short level placed before <c>dungeon</c> so new players get a small,
 ///     low-pressure first room set (few rooms, sparse graph, no curses, no hidden
-///     connections, more rewards). Replaces the previous depth-1 special case on
-///     <see cref="DungeonLevelLayout" />.
+///     connections, more rewards).
 /// </summary>
 public class EntranceLevelLayout : TreeLevelLayout
 {

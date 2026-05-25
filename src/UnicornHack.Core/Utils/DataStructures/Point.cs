@@ -1,7 +1,7 @@
 // ReSharper disable ImpureMethodCallOnReadonlyValueField
 namespace UnicornHack.Utils.DataStructures;
 
-public readonly struct Point : IEquatable<Point>
+public readonly struct Point : IEquatable<Point>, IComparable<Point>
 {
     public readonly byte X;
     public readonly byte Y;
@@ -50,6 +50,12 @@ public readonly struct Point : IEquatable<Point>
 
     public override int GetHashCode()
         => HashCode.Combine(X, Y);
+
+    public int CompareTo(Point other)
+    {
+        var xComparison = X.CompareTo(other.X);
+        return xComparison != 0 ? xComparison : Y.CompareTo(other.Y);
+    }
 
     public static bool operator ==(Point left, Point right) => left.Equals(right);
 

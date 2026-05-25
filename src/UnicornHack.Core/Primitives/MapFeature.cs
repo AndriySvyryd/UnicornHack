@@ -8,7 +8,20 @@ public enum MapFeature : byte
     RockWall = 3,
     StoneWall = 4,
     StoneArchway = 5,
+    DeityAltar = 6,
+    MajorShrine = 7,
+    MinorShrine = 8,
+    RitualShrine = 9,
+    SmallFountain = 10,
+    BigFountain = 11,
+    SkillPedestal = 12,
+    RacePedestal = 13,
     Pool = 14,
+    TraitPedestal = 15,
+    FeatPedestal = 16,
+    ArmorStand = 17,
+    ItemCase = 18,
+    WeaponStand = 19,
     Unexplored = 254
 }
 

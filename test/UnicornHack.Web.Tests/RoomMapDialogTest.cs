@@ -40,11 +40,16 @@ public class RoomMapDialogTest
         manager.Queue.ProcessQueue(manager);
 
         // Pick the first walkable cell in any generated room so the player spawn is always
-        // valid regardless of room dimensions or interior layout.
+        // valid regardless of room dimensions or interior layout. Skip cells already taken
+        // by a connection or actor — terrain can be `CanMoveTo` but still host a feature
+        // (stairs, fountain, …) that conflicts with the new player position.
         var (room, spawn) = gameLevel.Rooms
             .SelectMany(r => Enumerable.Range(0, r.Height)
                 .SelectMany(y => Enumerable.Range(0, r.Width).Select(x => (r, new Point((byte)x, (byte)y)))))
-            .First(t => t.r.Terrain[t.Item2.X + t.Item2.Y * t.r.Width].CanMoveTo());
+            .First(t =>
+                t.r.Terrain[t.Item2.X + t.Item2.Y * t.r.Width].CanMoveTo()
+                && !t.r.Connections.ContainsKey(t.Item2)
+                && !t.r.Actors.ContainsKey(t.Item2));
         var player = PlayerRace.InstantiatePlayer("Tester", Sex.Male, room, spawn);
         manager.Queue.ProcessQueue(manager);
 

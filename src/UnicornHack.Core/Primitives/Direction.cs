@@ -94,6 +94,20 @@ public static class DirectionExtensions
         }
     }
 
+    /// <summary>
+    ///     Maps a cardinal <see cref="Direction" /> (N/S/E/W) to the matching
+    ///     <see cref="DirectionFlags" /> single-bit value. Returns
+    ///     <see cref="DirectionFlags.None" /> for ordinals and angleless directions.
+    /// </summary>
+    public static DirectionFlags AsCardinalFlag(this Direction direction) => direction switch
+    {
+        Direction.North => DirectionFlags.North,
+        Direction.South => DirectionFlags.South,
+        Direction.East => DirectionFlags.East,
+        Direction.West => DirectionFlags.West,
+        _ => DirectionFlags.None
+    };
+
     public static int AsOctants(this Direction direction)
     {
         var result = (int)direction;

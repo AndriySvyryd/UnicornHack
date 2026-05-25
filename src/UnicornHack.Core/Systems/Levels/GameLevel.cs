@@ -11,7 +11,7 @@ public class GameLevel : NotificationEntity
     private byte _depth;
     private int _difficulty;
     private SimpleRandom? _generationRandom;
-    private GenerationStats? _generationStats;
+    private LevelGenerationStats? _generationStats;
 
     public int GameId
     {
@@ -59,9 +59,9 @@ public class GameLevel : NotificationEntity
     ///     Diagnostic counters captured during level generation. Populated by
     ///     <see cref="LevelGenerator" /> and accessed by weight functions.
     /// </summary>
-    public GenerationStats GenerationStats
+    public LevelGenerationStats GenerationStats
     {
-        get => _generationStats ??= new GenerationStats();
+        get => _generationStats ??= new LevelGenerationStats();
         set => SetWithNotify(value, ref _generationStats);
     }
 

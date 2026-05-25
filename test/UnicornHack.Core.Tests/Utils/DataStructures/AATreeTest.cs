@@ -1,4 +1,4 @@
-﻿namespace UnicornHack.Utils.DataStructures;
+namespace UnicornHack.Utils.DataStructures;
 
 // ReSharper disable once InconsistentNaming
 public class AATreeTest

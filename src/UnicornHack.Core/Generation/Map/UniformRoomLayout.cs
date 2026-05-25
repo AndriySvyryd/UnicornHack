@@ -27,17 +27,12 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
         set;
     } = DefaultMinLotSize;
 
-    protected int LotPlacementAttempts
-    {
-        get;
-        set;
-    } = 16;
-
     public override List<Chunk>? Fill(
         RoomComponent room,
         Branch branch,
         DefiningMapFragment fragment,
-        Dictionary<Direction, int> doorwayDemand)
+        Dictionary<Direction, int> doorwayDemand,
+        RoomParameters roomParameters)
     {
         // Terrain has been allocated by the LevelLayout. Initialize it (default-fill)
         // and then place fragments into lots.
@@ -50,7 +45,7 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
             }
         }
 
-        var chunks = PlaceDefiningMapFragment(room, fragment);
+        var chunks = PlaceDefiningMapFragment(room, fragment, roomParameters);
 
         var remainingDemand = new Dictionary<Direction, int>(doorwayDemand);
         for (var i = 0; i < chunks.Count; i++)
@@ -58,62 +53,141 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
             DeductChunkDoorways(room, chunks[i], remainingDemand);
         }
 
-        PlaceSurroundingFragments(room, chunks, remainingDemand);
-
-        return SatisfiesDemand(room, chunks, doorwayDemand) ? chunks : null;
-    }
-
-    private static List<Chunk> PlaceDefiningMapFragment(RoomComponent room, DefiningMapFragment fragment)
-    {
-        var chunks = new List<Chunk>();
-        var chunk = fragment.TryPlace(room, room.BoundingRectangle);
-        if (chunk != null)
+        if (!PlaceSurroundingFragments(room, chunks, remainingDemand, roomParameters))
         {
-            chunks.Add(chunk);
+            // Connectivity could not be ensured — bail so the level generator restarts
+            // this room layout attempt.
+            RecordRoomFailure(room, fragment, chunks);
+            return null;
+        }
+
+        if (!SatisfiesDemand(room, chunks, doorwayDemand))
+        {
+            RecordRoomFailure(room, fragment, chunks);
+            return null;
         }
 
         return chunks;
     }
 
-    private void PlaceSurroundingFragments(
+    private static void RecordRoomFailure(RoomComponent room, DefiningMapFragment fragment, List<Chunk> chunks)
+    {
+        var stats = room.Level.GenerationStats;
+        stats.RecordFragmentRoomFailure(fragment.SourceName);
+        for (var i = 0; i < chunks.Count; i++)
+        {
+            var chunkFragment = chunks[i].Fragment;
+            if (chunkFragment.SourceName != fragment.SourceName)
+            {
+                stats.RecordFragmentRoomFailure(chunkFragment.SourceName);
+            }
+        }
+    }
+
+    /// <summary>
+    ///     Fills empty space around the defining chunk by iteratively allocating lots from
+    ///     <see cref="RectanglePartition" /> and asking <see cref="MapFragment.TryPlace" /> to
+    ///     place a weighted-pick fragment into each lot. Subclasses override this to inject
+    ///     placement-strategy variations (e.g. <c>DenseRoomLayout</c>'s wall-merge shift).
+    ///     Returns <c>false</c> when post-placement connectivity could not be ensured so the
+    ///     caller can declare the layout attempt failed and restart.
+    /// </summary>
+    protected virtual bool PlaceSurroundingFragments(
         RoomComponent room,
         List<Chunk> chunks,
-        Dictionary<Direction, int> remainingDemand)
+        Dictionary<Direction, int> remainingDemand,
+        RoomParameters roomParameters)
     {
         var levelBoundingRectangle = room.BoundingRectangle;
-        var partition = new RectanglePartition(levelBoundingRectangle);
+        using var emptySpace = new RectanglePartition(levelBoundingRectangle);
+        var placedChunkBounds = new RectangleIntervalTree(levelBoundingRectangle);
+        var preservedConditions = new Dictionary<Point, List<EdgeConditionKind>>();
         var filledArea = 0;
 
-        var placedChunk = chunks.FirstOrDefault();
-        if (placedChunk != null)
+        var definingChunk = chunks.FirstOrDefault();
+        if (definingChunk != null)
         {
-            partition.Insert(placedChunk.BoundingRectangle);
-            filledArea += placedChunk.BoundingRectangle.Area;
+            emptySpace.Insert(definingChunk.BoundingRectangle);
+            placedChunkBounds.Insert(definingChunk.BoundingRectangle);
+            MapFragment.RegisterPreservedConditions(definingChunk, room, emptySpace, preservedConditions, roomParameters);
+            filledArea += definingChunk.BoundingRectangle.Area;
         }
 
         var placingLevelConnection = NeedsLevelConnection(room);
         while (filledArea / (float)levelBoundingRectangle.Area < Coverage && chunks.Count < MaxChunkCount)
         {
-            var nextLot = SelectNextLot(partition, room.Level.GenerationRandom);
+            var nextLot = SelectNextLot(emptySpace, room.Level.GenerationRandom);
             if (nextLot == null)
             {
                 // Room is too small for more lots — done.
                 break;
             }
 
-            var lotMinDoorways = ComputeLotMinDoorways(room, nextLot.Value, remainingDemand);
+            room.Level.GenerationStats.LotPlacementAttempts++;
+
+            var lotDemandedDoorways = ComputeLotDemandedDoorways(room, nextLot.Value, remainingDemand);
+
+            // Build the per-lot placement context. The empty-space partition tracks unfilled
+            // cells and is updated each iteration by Insert(...) below; targetEdge is
+            // rederived per lot from the chunk-bounds interval tree. Subclasses can hook
+            // CreatePlacementContext to adjust the lot (e.g. DenseRoomLayout's wall-merge
+            // shift) before fragment selection.
+            var ctx = CreatePlacementContext(
+                nextLot.Value, emptySpace, placedChunkBounds, preservedConditions, chunks,
+                lotDemandedDoorways, roomParameters);
 
             var danglingConnection = room.IncomingConnections
                 .Select(c => c.Connection!).FirstOrDefault(c => c.TargetLevelX == null);
-            var sortedFragments = placingLevelConnection
+            IEnumerable<MapFragment> sortedFragments = placingLevelConnection
                 ? room.Level.GenerationRandom.WeightedOrder(
                     room.Level.Game.Services.Data.ConnectingMapFragments.GetAsList(),
-                    f => f.GetWeight(room, nextLot.Value, danglingConnection))
-                : (IEnumerable<MapFragment>)room.Level.GenerationRandom.WeightedOrder(
+                    f => f.GetWeight(room, ctx, danglingConnection))
+                : room.Level.GenerationRandom.WeightedOrder(
                     room.Level.Game.Services.Data.NormalMapFragments.GetAsList(),
-                    f => f.GetWeight(room, nextLot.Value));
+                    f => f.GetWeight(room, ctx));
 
-            placedChunk = TryPlace(room, nextLot.Value, sortedFragments, lotMinDoorways);
+            var placedChunk = TryPlace(room, ctx, sortedFragments);
+
+            // Fallback: when a level connection is needed but no ConnectingMapFragment
+            // fit this lot, *and* the lot is flush with the level perimeter on a side
+            // where the room itself is on the level graph edge, retry the placement
+            // with NormalMapFragments that carry the specific `door-{side}` tag for
+            // that perimeter side. The connection is then wired up to one of the
+            // placed chunk's perimeter doorway points (instead of a random inside
+            // point as a ConnectingMapFragment does).
+            Direction? fallbackLevelEdge = null;
+            if (placedChunk == null && placingLevelConnection)
+            {
+                var candidateEdges = ComputeLevelEdgeFlags(nextLot.Value, levelBoundingRectangle);
+                foreach (var edge in EnumerateCardinalEdges(candidateEdges, room.Level.GenerationRandom))
+                {
+                    if (!IsRoomOnLevelGraphEdge(room, edge))
+                    {
+                        continue;
+                    }
+
+                    var capturedCtx = ctx;
+                    var capturedEdge = edge;
+                    var normalCandidates = room.Level.Game.Services.Data.NormalMapFragments.GetAsList()
+                        .Where(f => HasDoorwayOnEdge(f, capturedEdge))
+                        .ToList();
+                    if (normalCandidates.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    var fallbackOrder = room.Level.GenerationRandom.WeightedOrder(
+                        normalCandidates, f => f.GetWeight(room, capturedCtx));
+                    var attempt = TryPlace(room, ctx, fallbackOrder);
+                    if (attempt != null)
+                    {
+                        placedChunk = attempt;
+                        fallbackLevelEdge = edge;
+                        break;
+                    }
+                }
+            }
+
             if (placedChunk == null)
             {
                 if (placingLevelConnection)
@@ -127,486 +201,247 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
             }
 
             chunks.Add(placedChunk);
-            partition.Insert(placedChunk.BoundingRectangle);
+            emptySpace.Insert(placedChunk.BoundingRectangle);
+            placedChunkBounds.Insert(placedChunk.BoundingRectangle);
+            MapFragment.RegisterPreservedConditions(placedChunk, room, emptySpace, preservedConditions, roomParameters);
             filledArea += placedChunk.BoundingRectangle.Area;
             DeductChunkDoorways(room, placedChunk, remainingDemand);
 
-            // Cap inter-level connections at one per room: as soon as the connection
-            // fragment is placed, switch the rest of the loop to NormalMapFragments.
-            if (placingLevelConnection && placedChunk.Fragment is ConnectingMapFragment)
+            // Cap inter-level connections at one per room. ConnectingMapFragments wire up
+            // the connection themselves inside BuildChunk; for NormalMapFragments placed
+            // by the fallback path above we wire it up here at one of the chunk's
+            // perimeter doorway points facing the level boundary.
+            if (placingLevelConnection)
             {
-                placingLevelConnection = false;
+                if (placedChunk.Fragment is ConnectingMapFragment)
+                {
+                    placingLevelConnection = false;
+                }
+                else if (placedChunk.Fragment is NormalMapFragment
+                    && fallbackLevelEdge is { } chosenEdge
+                    && TryPickLevelEdgeDoorway(
+                        placedChunk, levelBoundingRectangle, chosenEdge,
+                        room.Level.GenerationRandom, out var connectionCell))
+                {
+                    LevelConnection.CreateLevelConnection(room, connectionCell, connectionDefinition: null);
+                    placingLevelConnection = false;
+                }
             }
         }
+
+        // Once no more fragments fit, materialize any still-deferred edge conditions:
+        // empty cells next to placed chunks that carry preserved conditions are filled
+        // with a satisfying MapFeature. Cells whose conditions can only be honoured by
+        // leaving them empty (Unfilled / Edge) are skipped. The placement-time
+        // compatibility check in MapFragment.EvaluateEdgeAtAnchor rejects placements
+        // that would register contradictory deferred conditions, so the conflict
+        // branch in TryCollectSatisfyingFeatures can no longer be reached here.
+        chunks.AddRange(MapFragment.FixupDeferredConditions(
+            room, preservedConditions, room.Level.GenerationRandom, roomParameters));
 
         if (chunks.Count > 1)
         {
-            var connectedChunks = new List<Chunk> { chunks.First() };
-            var unconnectedChunks = new List<Chunk>(chunks.Skip(1));
-            while (unconnectedChunks.Count > 0)
+            if (!TryRepairConnectivity(room, chunks))
             {
-                var randomConnectedChunk = room.Level.GenerationRandom.Pick(connectedChunks);
-                var unconnectedChunk = randomConnectedChunk.GetOrthogonallyClosest(unconnectedChunks)!;
-                var closestConnectedChunk = unconnectedChunk.GetOrthogonallyClosest(connectedChunks)!;
-                if (!Connect(unconnectedChunk, closestConnectedChunk))
-                {
-                    throw new InvalidOperationException("Couldn't connect all chunks");
-                }
-
-                connectedChunks.Add(unconnectedChunk);
-                unconnectedChunks.Remove(unconnectedChunk);
+                room.Level.GenerationStats.RoomLayoutConnectivityRepairFailed++;
+                return false;
             }
         }
-    }
-
-    /// <summary>
-    ///     Returns whether <paramref name="room" /> needs a <see cref="ConnectingMapFragment" />
-    ///     placed during fill:
-    ///     <list type="bullet">
-    ///         <item>Entrance room with a pending incoming connection from the level above.</item>
-    ///         <item>Exit room on a non-terminal level (Depth &lt; Length).</item>
-    ///         <item>Exit room on a terminal level when the branch is not flagged
-    ///         <see cref="GameBranch.IsTerminal" />. The actual destination branch is
-    ///         picked randomly by <see cref="LevelConnection.CreateSourceConnection" /> using
-    ///         <see cref="Branch.GenerationWeight" />s.</item>
-    ///         <item>An exit room that already has an outgoing inter-level connection
-    ///         (placed by the defining fragment) is skipped.</item>
-    ///     </list>
-    /// </summary>
-    private static bool NeedsLevelConnection(RoomComponent room)
-    {
-        if ((room.Features & RoomFeatures.Entrance) != 0
-            && room.IncomingConnections.Count > 0)
-        {
-            return true;
-        }
-
-        if ((room.Features & RoomFeatures.Exit) != 0)
-        {
-            // Already has an outgoing inter-level connection from the defining fragment.
-            foreach (var connection in room.Connections.Values)
-            {
-                if (connection.Connection!.TargetLevelX == null)
-                {
-                    return false;
-                }
-            }
-
-            var branch = room.Level.Branch;
-            if (room.Level.Depth < branch.Length)
-            {
-                return true;
-            }
-
-            // Terminal level: only place a connection when the branch isn't terminal.
-            return !branch.IsTerminal;
-        }
-
-        return false;
-    }
-
-    private static Chunk? TryPlace(
-        RoomComponent room,
-        Rectangle nextLot,
-        IEnumerable<MapFragment> sortedFragments,
-        int minDoorways)
-    {
-        foreach (var nextFragment in sortedFragments)
-        {
-            var placedChunk = nextFragment.TryPlace(room, nextLot, minDoorways);
-            if (placedChunk == null)
-            {
-                continue;
-            }
-
-            IncrementInstanceCounts(room, nextFragment);
-            return placedChunk;
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    ///     Returns the per-fragment minimum doorway count for a lot at <paramref name="lot" />:
-    ///     the number of distinct room-perimeter directions the lot touches that have
-    ///     remaining unmet demand. A corner lot touching two unsatisfied edges needs at
-    ///     least two doorways from its fragment; a strictly interior lot or one on an
-    ///     already-satisfied edge demands none.
-    /// </summary>
-    /// <remarks>
-    ///     Cardinal directions are counted when the lot's bounding rectangle is flush
-    ///     with the matching room edge. Ordinal directions are counted only at the
-    ///     matching corner (lot flush with both adjacent cardinals) — a single-edge lot
-    ///     can serve a diagonal-edge graph connection through whichever cardinal it
-    ///     touches, so we don't bill it twice.
-    /// </remarks>
-    private static int ComputeLotMinDoorways(
-        RoomComponent room,
-        Rectangle lot,
-        Dictionary<Direction, int> remainingDemand)
-    {
-        if (remainingDemand.Count == 0)
-        {
-            return 0;
-        }
-
-        var touchesWest = lot.TopLeft.X == 0;
-        var touchesEast = lot.BottomRight.X == room.Width - 1;
-        var touchesNorth = lot.TopLeft.Y == 0;
-        var touchesSouth = lot.BottomRight.Y == room.Height - 1;
-
-        var min = 0;
-        foreach (var (direction, required) in remainingDemand)
-        {
-            if (required <= 0)
-            {
-                continue;
-            }
-
-            var touches = direction switch
-            {
-                Direction.West => touchesWest,
-                Direction.East => touchesEast,
-                Direction.North => touchesNorth,
-                Direction.South => touchesSouth,
-                Direction.Northwest => touchesNorth && touchesWest,
-                Direction.Northeast => touchesNorth && touchesEast,
-                Direction.Southwest => touchesSouth && touchesWest,
-                Direction.Southeast => touchesSouth && touchesEast,
-                _ => false
-            };
-
-            if (touches)
-            {
-                min++;
-            }
-        }
-
-        // Add one for the intra-room connection
-        return min + 1;
-    }
-
-    /// <summary>
-    ///     Subtracts the doorway contribution of <paramref name="chunk" /> from
-    ///     <paramref name="remainingDemand" />. Each doorway tile that is not already
-    ///     used by an existing connection decrements every direction it satisfies.
-    /// </summary>
-    private static void DeductChunkDoorways(
-        RoomComponent room,
-        Chunk chunk,
-        Dictionary<Direction, int> remainingDemand)
-    {
-        if (remainingDemand.Count == 0 || chunk.Room != room || chunk.DoorwayPoints.Count == 0)
-        {
-            return;
-        }
-
-        var centerX = room.Width / 2;
-        var centerY = room.Height / 2;
-
-        foreach (var p in chunk.DoorwayPoints)
-        {
-            if (room.Connections.ContainsKey(p))
-            {
-                continue;
-            }
-
-            var dx = p.X - centerX;
-            var dy = p.Y - centerY;
-
-            foreach (var direction in remainingDemand.Keys)
-            {
-                if (remainingDemand[direction] > 0 && direction.IsInDirection(dx, dy))
-                {
-                    remainingDemand[direction]--;
-                }
-            }
-        }
-    }
-
-    public static void IncrementInstanceCounts(RoomComponent room, MapFragment fragment)
-    {
-        // TODO: Increment fragment instance count on level, branch, game
-        // TODO: Increment each tag instance count on level, branch, game
-    }
-
-    private bool Connect(Chunk source, Chunk target,
-        bool allowDiagonals = false, int width = 1, bool addColumns = false)
-    {
-        var from = source.GetGoodConnectionPoint(target);
-        var to = target.GetGoodConnectionPoint(source);
-
-        // Both calls return the path in source→target order. The "alternative" runs the
-        // pathfinder with the endpoints swapped (which may discover a different route
-        // through the room's open space because Dijkstra tie-breaks on enqueue order)
-        // and asks FindCorridorPath to flip its output so Connect can treat both
-        // candidates uniformly.
-        var path = FindCorridorPath(from, to, source.Room, allowDiagonals, reverse: false);
-        var alternativePath = FindCorridorPath(to, from, source.Room, allowDiagonals, reverse: true);
-
-        var corridor =
-            path.FragmentFeaturesHit > alternativePath.FragmentFeaturesHit
-                ? alternativePath.Path
-                : path.Path;
-
-        corridor = TrimCorridorEndpoints(corridor, source, target);
-
-        WriteCorridor(corridor, source.Room, width, addColumns);
 
         return true;
     }
 
     /// <summary>
-    ///     Drops corridor tiles that already sit inside the source or target chunk's
-    ///     interior. Such tiles were written as floor by the fragment, so the corridor
-    ///     pass would otherwise either no-op on them (waste) or, more importantly,
-    ///     carve perimeter walls reached through the interior into redundant archways.
-    ///     The trimmed corridor begins immediately after the source chunk's interior
-    ///     ends and stops immediately before the target chunk's interior begins, so
-    ///     <see cref="WriteCorridor" /> only touches tiles that genuinely bridge the
-    ///     gap between the two chunks.
+    ///     Returns the cardinal sides on which <paramref name="lot" /> is flush with
+    ///     <paramref name="levelBounds" />. Used to decide whether a normal fragment can
+    ///     host an inter-level connection on this lot — the connection cell must lie on
+    ///     the level perimeter so the receiving side can locate it geometrically.
     /// </summary>
-    /// <remarks>
-    ///     <paramref name="path" /> must be in source→target order;
-    /// </remarks>
-    public static IReadOnlyList<Point> TrimCorridorEndpoints(
-        IReadOnlyList<Point> path, Chunk sourceChunk, Chunk targetChunk)
+    private static DirectionFlags ComputeLevelEdgeFlags(Rectangle lot, Rectangle levelBounds)
     {
-        if (path.Count < 2)
+        var flags = DirectionFlags.None;
+        if (lot.TopLeft.X == levelBounds.TopLeft.X)
         {
-            return path;
+            flags |= DirectionFlags.West;
         }
 
-        var sourceInside = sourceChunk.InsidePoints;
-        var targetInside = targetChunk.InsidePoints;
-
-        // Walk forward and remember the LAST index whose tile is in the source chunk's
-        // interior. The corridor only needs to start outside the source chunk because the
-        // chunk's fragment already made every interior tile walkable.
-        var dropUntil = -1;
-        for (var i = 0; i < path.Count; i++)
+        if (lot.BottomRight.X == levelBounds.BottomRight.X)
         {
-            if (sourceInside.Contains(path[i]))
-            {
-                dropUntil = i;
-            }
+            flags |= DirectionFlags.East;
         }
 
-        // Symmetrically walk backward from the end and remember the EARLIEST index in the
-        // target chunk's interior. dropUntil bounds the scan so a tile that's in both
-        // interiors (the chunks overlap edge-to-edge) isn't double-counted.
-        var dropFrom = path.Count;
-        for (var i = path.Count - 1; i > dropUntil; i--)
+        if (lot.TopLeft.Y == levelBounds.TopLeft.Y)
         {
-            if (targetInside.Contains(path[i]))
-            {
-                dropFrom = i;
-            }
+            flags |= DirectionFlags.North;
         }
 
-        var start = dropUntil + 1;
-        var end = dropFrom - 1;
-        if (start > end)
+        if (lot.BottomRight.Y == levelBounds.BottomRight.Y)
+        {
+            flags |= DirectionFlags.South;
+        }
+
+        return flags;
+    }
+
+    /// <summary>
+    ///     Returns true when <paramref name="fragment" /> carries the
+    ///     <c>door-{n|s|e|w}</c> tag matching <paramref name="edge" />. Doorway tags
+    ///     are emitted per-variant by <see cref="MapFragment.ApplyTagDerivations" />,
+    ///     so the tag set already reflects the variant's rotated geometry.
+    /// </summary>
+    private static bool HasDoorwayOnEdge(NormalMapFragment fragment, Direction edge)
+    {
+        var tags = fragment.Tags;
+        if (tags == null)
+        {
+            return false;
+        }
+
+        return edge switch
+        {
+            Direction.North => tags.Contains("door-n"),
+            Direction.South => tags.Contains("door-s"),
+            Direction.East => tags.Contains("door-e"),
+            Direction.West => tags.Contains("door-w"),
+            _ => false
+        };
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="room" />'s perimeter on <paramref name="edge" />
+    ///     coincides with the level's outer perimeter, i.e. <paramref name="room" /> is
+    ///     a level-graph-edge node on that side. Today every <see cref="RoomComponent" />
+    ///     spans its entire level so this is trivially true; once levels split into
+    ///     multiple per-room components this gates which rooms may host an inter-level
+    ///     connection on which side.
+    /// </summary>
+    private static bool IsRoomOnLevelGraphEdge(RoomComponent room, Direction edge)
+    {
+        _ = room;
+        _ = edge;
+        return true;
+    }
+
+    /// <summary>
+    ///     Returns the cardinal directions present in <paramref name="edges" /> in a
+    ///     random order so that corner lots don't systematically prefer one side over
+    ///     another when looking for a matching door-tagged fragment.
+    /// </summary>
+    private static Direction[] EnumerateCardinalEdges(DirectionFlags edges, SimpleRandom random)
+    {
+        if (edges == DirectionFlags.None)
         {
             return [];
         }
-        if (start == 0 && end == path.Count - 1)
+
+        var count = 0;
+        var buffer = new Direction[4];
+        if ((edges & DirectionFlags.North) != 0) { buffer[count++] = Direction.North; }
+        if ((edges & DirectionFlags.South) != 0) { buffer[count++] = Direction.South; }
+        if ((edges & DirectionFlags.East) != 0) { buffer[count++] = Direction.East; }
+        if ((edges & DirectionFlags.West) != 0) { buffer[count++] = Direction.West; }
+
+        // Fisher–Yates shuffle in place — count is at most 4.
+        for (var i = count - 1; i > 0; i--)
         {
-            return path;
+            var j = random.Next(i + 1);
+            (buffer[i], buffer[j]) = (buffer[j], buffer[i]);
         }
 
-        var trimmed = new Point[end - start + 1];
-        for (var i = 0; i < trimmed.Length; i++)
+        if (count == 4)
         {
-            trimmed[i] = path[start + i];
+            return buffer;
         }
 
-        return trimmed;
-    }
-
-    private static bool IsWall(Point location, RoomComponent room)
-    {
-        var feature = room.Terrain[room.PointToIndex![location.X, location.Y]];
-        return feature == MapFeature.StoneWall || feature == MapFeature.RockWall || feature == MapFeature.StoneArchway;
-    }
-
-    /// <summary>
-    ///     Dijkstra-style pathfinder from <paramref name="source" /> to
-    ///     <paramref name="target" />. Walkable tiles cost 1 step, walls cost a large
-    ///     penalty so corridors prefer existing open space but can still carve through
-    ///     adjacent chunk walls when no open route exists (e.g. tight-packed lots where
-    ///     two chunks share a wall column). The wall tiles on the resulting path are
-    ///     converted to archways by <see cref="WriteCorridor" />.
-    /// </summary>
-    /// <param name="reverse">
-    ///     When <c>false</c> (default), the returned <see cref="Corridor.Path" /> runs
-    ///     from <paramref name="source" /> to <paramref name="target" />. When <c>true</c>,
-    ///     the path is returned in the opposite order — useful for the "alternative
-    ///     path" probe in <see cref="Connect" />, which calls this with swapped endpoints
-    ///     but wants both candidates in the same source→target orientation for downstream
-    ///     processing.
-    /// </param>
-    private static Corridor FindCorridorPath(
-        Point source, Point target, RoomComponent room, bool allowDiagonals, bool reverse)
-    {
-        if (source.Equals(target))
-        {
-            return new Corridor([source], 0);
-        }
-
-        var width = room.Width;
-        var height = room.Height;
-        var pointToIndex = room.PointToIndex!;
-        var indexToPoint = room.IndexToPoint!;
-
-        var dist = new int[room.TileCount];
-        var parent = new short[room.TileCount];
-        for (var i = 0; i < dist.Length; i++)
-        {
-            dist[i] = int.MaxValue;
-            parent[i] = -1;
-        }
-
-        var sourceIdx = pointToIndex[source.X, source.Y];
-        var targetIdx = pointToIndex[target.X, target.Y];
-        dist[sourceIdx] = 0;
-
-        // Two priority "buckets" keyed by cost class: visit walkable neighbours first
-        // (cost 1), wall neighbours later (cost WallStepCost). The cap on dist guards
-        // against revisiting at a worse score.
-        const int WallStepCost = 1000;
-
-        var open = new PriorityQueue<short, int>();
-        open.Enqueue(sourceIdx, 0);
-
-        Span<(sbyte X, sbyte Y)> neighbours =
-        [
-            (1, 0),
-            (-1, 0),
-            (0, 1),
-            (0, -1),
-            (1, 1),
-            (1, -1),
-            (-1, 1),
-            (-1, -1),
-        ];
-        var neighbourCount = allowDiagonals ? 8 : 4;
-
-        while (open.TryDequeue(out var currentIdx, out var currentDist))
-        {
-            if (currentIdx == targetIdx)
-            {
-                break;
-            }
-
-            // Stale entry — a better cost has already been processed.
-            if (currentDist > dist[currentIdx])
-            {
-                continue;
-            }
-
-            var current = indexToPoint[currentIdx];
-            for (var i = 0; i < neighbourCount; i++)
-            {
-                var (dx, dy) = neighbours[i];
-                var nx = current.X + dx;
-                var ny = current.Y + dy;
-                if (nx < 0 || ny < 0 || nx >= width || ny >= height)
-                {
-                    continue;
-                }
-
-                var nIdx = pointToIndex[(byte)nx, (byte)ny];
-                var nPoint = new Point((byte)nx, (byte)ny);
-                var isTarget = nIdx == targetIdx;
-                var canWalk = isTarget || CanPlaceCorridor(nPoint, room);
-                var stepCost = canWalk ? 1 : WallStepCost;
-
-                var candidateDist = currentDist + stepCost;
-                if (candidateDist >= dist[nIdx])
-                {
-                    continue;
-                }
-
-                dist[nIdx] = candidateDist;
-                parent[nIdx] = currentIdx;
-                open.Enqueue(nIdx, candidateDist);
-            }
-        }
-
-        if (dist[targetIdx] == int.MaxValue)
-        {
-            // Truly unreachable (shouldn't happen with wall traversal allowed).
-            return new Corridor([source], 1);
-        }
-
-        // Walk the parent chain from target back to source. The natural reconstruction
-        // order is target→source; flipping to source→target is the default. The reverse
-        // flag suppresses the flip so the alternative-direction probe in Connect can
-        // line both candidates up in source→target order without an extra reverse pass.
-        // Number of wall tiles traversed by the chosen path becomes the "hit" score so
-        // Connect can prefer the direction with fewer carves.
-        var hits = 0;
-        var path = new List<Point>();
-        var cursor = targetIdx;
-        while (cursor != -1)
-        {
-            var point = indexToPoint[cursor];
-            if (!CanPlaceCorridor(point, room))
-            {
-                hits++;
-            }
-            path.Add(point);
-            if (cursor == sourceIdx)
-            {
-                break;
-            }
-
-            cursor = parent[cursor];
-        }
-        if (!reverse)
-        {
-            path.Reverse();
-        }
-
-        return new Corridor(path, hits);
+        var result = new Direction[count];
+        Array.Copy(buffer, result, count);
+        return result;
     }
 
     /// <summary>
-    ///     Returns whether <paramref name="location" /> may host an intermediate corridor
-    ///     tile. Walls are off-limits — the corridor algorithm in
-    ///     <see cref="FindCorridorPath" /> only allows stepping onto a wall when the wall
-    ///     tile is the corridor target itself (the door). All other tiles must be floor or
-    ///     unfilled <see cref="MapFeature.Default" />.
+    ///     Picks a doorway point on the placed chunk that lies on the level-edge side
+    ///     <paramref name="edge" />. The connection cell must coincide with the level
+    ///     perimeter so the matching receiving connection on the adjacent level can be
+    ///     wired up at a deterministic location.
     /// </summary>
-    public static bool CanPlaceCorridor(Point location, RoomComponent room)
+    private static bool TryPickLevelEdgeDoorway(
+        Chunk chunk, Rectangle levelBounds, Direction edge,
+        SimpleRandom random, out Point connectionCell)
     {
-        switch (room.Terrain[room.PointToIndex![location.X, location.Y]])
+        List<Point>? matches = null;
+        foreach (var p in chunk.DoorwayPoints)
         {
-            case MapFeature.Default:
-            case MapFeature.RockFloor:
-            case MapFeature.StoneFloor:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    private static void WriteCorridor(IReadOnlyList<Point> path, RoomComponent room, int width, bool addColumns)
-    {
-        foreach (var point in path)
-        {
-            var index = room.PointToIndex![point.X, point.Y];
-            var currentFeature = room.Terrain[index];
-            if (currentFeature != MapFeature.RockFloor && currentFeature != MapFeature.StoneFloor)
+            if (IsOnLevelEdge(p, levelBounds, edge))
             {
-                // TODO: Surround the corridor with walls matching the existing wall type
-                room.Terrain[index] = currentFeature == MapFeature.StoneWall
-                    ? MapFeature.StoneArchway
-                    : MapFeature.RockFloor;
+                matches ??= [];
+                matches.Add(p);
             }
         }
+
+        if (matches == null)
+        {
+            connectionCell = default;
+            return false;
+        }
+
+        connectionCell = matches.Count == 1 ? matches[0] : random.Pick(matches);
+        return true;
     }
+
+    private static bool IsOnLevelEdge(Point p, Rectangle levelBounds, Direction edge) => edge switch
+    {
+        Direction.West => p.X == levelBounds.TopLeft.X,
+        Direction.East => p.X == levelBounds.BottomRight.X,
+        Direction.North => p.Y == levelBounds.TopLeft.Y,
+        Direction.South => p.Y == levelBounds.BottomRight.Y,
+        _ => false
+    };
+
+    /// <summary>
+    ///     Builds the <see cref="LotPlacementContext" /> for the next chunk. Subclasses
+    ///     override this to adjust the lot before fragment selection runs — e.g.
+    ///     <c>DenseRoomLayout</c> shifts the lot by one tile toward an adjacent placed
+    ///     chunk so the two chunks' perimeter walls collapse into a single shared column.
+    ///     The default implementation just picks the target edge and forwards the lot
+    ///     unchanged.
+    /// </summary>
+    protected virtual LotPlacementContext CreatePlacementContext(
+        Rectangle lot,
+        RectanglePartition emptySpace,
+        RectangleIntervalTree placedChunkBounds,
+        Dictionary<Point, List<EdgeConditionKind>> preservedConditions,
+        IReadOnlyList<Chunk> placedChunks,
+        DirectionFlags lotDemandedDoorways,
+        RoomParameters roomParameters)
+    {
+        var targetEdge = PickTargetEdge(lot, placedChunkBounds);
+        // Subclass hook: e.g. DenseRoomLayout shifts the lot one tile toward an adjacent
+        // placed chunk to collapse the double-wall column into a single shared wall. The
+        // default implementation returns the lot unchanged.
+        var originalLot = lot;
+        lot = MaybeShiftLot(lot, targetEdge, placedChunks);
+        var lotShifted = !lot.Equals(originalLot);
+
+        // Force one baseline doorway per chunk for intra-room connectivity by OR-ing the
+        // target edge into the demanded directions. PickTargetEdge always returns a
+        // cardinal, so this is a safe widening.
+        var demanded = lotDemandedDoorways | (targetEdge?.AsCardinalFlag() ?? DirectionFlags.None);
+        return new LotPlacementContext(
+            lot, roomParameters, targetEdge, emptySpace, MinLotSize,
+            placedChunkBounds, preservedConditions, demanded, lotShifted);
+    }
+
+    /// <summary>
+    ///     Subclass hook called from <see cref="CreatePlacementContext" /> after the
+    ///     target edge is picked and before the placement context is built. Returns the
+    ///     lot to use for fragment selection — the default implementation forwards
+    ///     <paramref name="lot" /> unchanged. <c>DenseRoomLayout</c> overrides this to
+    ///     shift the lot by one tile toward an adjacent placed chunk so the two chunks'
+    ///     perimeter walls collapse into a single shared column.
+    /// </summary>
+    protected virtual Rectangle MaybeShiftLot(
+        Rectangle lot, Direction? targetEdge, IReadOnlyList<Chunk> placedChunks)
+        => lot;
 
     /// <summary>
     ///     Picks the next lot rectangle for fragment placement by querying the
@@ -638,7 +473,7 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
         return recalculated.Value;
     }
 
-    private Rectangle? FindLargestFitting(RectanglePartition partition)
+    protected Rectangle? FindLargestFitting(RectanglePartition partition)
     {
         // EmptyRectangles is sorted by area descending, so the first rectangle that fits
         // MinLotSize is the largest one that does. Once we reach a rectangle whose area
@@ -659,18 +494,6 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
         }
 
         return null;
-    }
-
-    private sealed class Corridor
-    {
-        public Corridor(IReadOnlyList<Point> path, int fragmentFeaturesHit)
-        {
-            Path = path;
-            FragmentFeaturesHit = fragmentFeaturesHit;
-        }
-
-        public IReadOnlyList<Point> Path { get; }
-        public int FragmentFeaturesHit { get; }
     }
 
     private static readonly CSScriptSerializer Serializer =

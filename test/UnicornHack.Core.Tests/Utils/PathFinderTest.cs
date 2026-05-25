@@ -37,12 +37,12 @@ public class PathFinderTest
 
     public static (RoomComponent, Point) TestPath(string expectedPathMap, Direction initialDirection)
     {
-        var seed = (uint)Environment.TickCount;
+        var seed = 1u;
         var map = expectedPathMap.Replace('*', '.');
         var level = TestHelper.BuildRoom(map, seed: seed);
 
         var expectedFragment = new NormalMapFragment { Map = expectedPathMap };
-        expectedFragment.EnsureInitialized(level.Game);
+        expectedFragment.EnsureInitialized();
         var expectedPathArray = new byte[level.TileCount];
         expectedFragment.WriteMap(
             new Point(0, 0),

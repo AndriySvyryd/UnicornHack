@@ -25,7 +25,7 @@ public partial class GameManager
         private set;
     } = null!;
 
-    public LookupEntityRelationship<GameEntity, Point, Dictionary<Point, GameEntity>>
+    public LookupEntityRelationship<GameEntity, Point, SortedDictionary<Point, GameEntity>>
         ConnectionsToCellRelationship
     {
         get;
@@ -84,7 +84,7 @@ public partial class GameManager
                     .With(component => ((PositionComponent)component).CellY, (int)EntityComponent.Position)
             ),
             (connectionEntity, _) => connectionEntity.RemoveComponent(EntityComponent.Position),
-            levelEntity => (Dictionary<Point, GameEntity>)levelEntity.Room!.Connections);
+            levelEntity => (SortedDictionary<Point, GameEntity>)levelEntity.Room!.Connections);
 
         IncomingConnectionsToRoomRelationship = new(
             nameof(IncomingConnectionsToRoomRelationship),

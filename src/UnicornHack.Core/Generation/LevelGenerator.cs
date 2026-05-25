@@ -52,7 +52,7 @@ public static class LevelGenerator
             try
             {
                 stats.RoomGraphAttempts++;
-                if (Generate(level, validateGraph: true) is not null)
+                if (Generate(level) is not null)
                 {
                     return true;
                 }
@@ -88,16 +88,25 @@ public static class LevelGenerator
     public static DefiningMapFragment PickFragmentForRoom(
         GameLevel level,
         RoomFeatures roomFeatures,
-        GenerationStats stats)
+        LevelGenerationStats stats)
     {
         stats.FragmentSelectionAttempts++;
 
-        // TODO: pass the correct instance counts
+        var game = level.Game;
+        var gameStats = game.GenerationStats;
         var picked = level.GenerationRandom.Pick(
-            level.Game.Services.Data.DefiningMapFragments.GetAsList(),
-            f => f.GetWeight(level.BranchName, level.Depth, roomFeatures, instances: 0, tagInstances: 0));
+            game.Services.Data.DefiningMapFragments.GetAsList(),
+            f => f.GetWeight(
+                level.BranchName, level.Depth, roomFeatures,
+                fragmentInstancesByName: stats.FragmentInstancesByName,
+                globalFragmentInstancesByName: gameStats.FragmentInstancesByName,
+                tagInstances: stats.FragmentInstancesByTag,
+                globalTagInstances: gameStats.FragmentInstancesByTag,
+                globalFeatureInstances: gameStats.FragmentInstancesByFeature));
 
-        stats.RecordFragmentInstance(picked.Name, picked.Tags, roomFeatures);
+        stats.RecordFragmentInstance(picked.SourceName, picked.Tags, roomFeatures);
+        gameStats.RecordFragmentInstance(picked.SourceName, picked.Tags, roomFeatures);
+        stats.RecordFragmentVariant(picked.Name);
         return picked;
     }
 
@@ -105,35 +114,25 @@ public static class LevelGenerator
     {
         foreach (var room in gameLevel.Rooms.ToList())
         {
-            LevelLayout.ReleaseTerrain(room);
-            ((Dictionary<Point, GameEntity>?)room.Connections)?.Clear();
+            room.Entity.RemoveComponent((int)EntityComponent.Room);
         }
+
+        gameLevel.Rooms.Clear();
     }
-
-    public static List<Chunk>? Generate(GameLevel gameLevel)
-        => Generate(gameLevel, validateGraph: false);
-
-    public static List<Chunk>? Generate(GameLevel gameLevel, bool validateGraph)
-        => Generate(gameLevel, branch: null, validateGraph);
 
     /// <summary>
     ///     The level-scope <see cref="LevelLayout" /> lives on <see cref="Branch.Layout" />.
-    ///     Production callers pass <paramref name="branch" /> as <c>null</c>; the branch is
-    ///     looked up via <see cref="Branch.Loader" /> using <see cref="GameLevel.BranchName" />.
-    ///     Tests that build a one-off branch (e.g. with a custom <see cref="LevelLayout" />)
-    ///     pass it directly. The level fragment is no longer a parameter — each room picks
-    ///     its own fragment via <see cref="PickFragmentForRoom" />.
+    ///     The branch definition is resolved by name from the data provider; tests that
+    ///     need a synthetic branch must register it in their <c>TestDataProvider.Branches</c>
+    ///     loader before calling <see cref="Generate" />.
     /// </summary>
-    public static List<Chunk>? Generate(
-        GameLevel level,
-        Branch? branch,
-        bool validateGraph)
+    public static List<Chunk>? Generate(GameLevel level)
     {
         // Each LevelLayout owns its own creature / item generation pipeline; single-room
         // layouts call the generators on their lone room, multi-room layouts call them
         // per-room from MaterializeGraph. Both paths resolve effective per-room values via
         // DefiningMapFragment.GetEffective* helpers, falling back to the branch defaults.
-        branch ??= level.Game.Services.Data.Branches.Get(level.BranchName);
+        var branch = level.Game.Services.Data.Branches.Get(level.BranchName);
         return branch.Layout.Fill(level, branch);
     }
 

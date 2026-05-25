@@ -20,7 +20,7 @@ public partial class GameManager
         private set;
     } = null!;
 
-    public LookupEntityRelationship<GameEntity, Point, Dictionary<Point, GameEntity>>
+    public LookupEntityRelationship<GameEntity, Point, SortedDictionary<Point, GameEntity>>
         RoomItemsToRoomCellRelationship
     {
         get;
@@ -85,7 +85,7 @@ public partial class GameManager
                     .With(component => ((PositionComponent)component).CellY, (int)EntityComponent.Position)
             ),
             (itemEntity, _) => itemEntity.RemoveComponent(EntityComponent.Position),
-            roomEntity => (Dictionary<Point, GameEntity>)roomEntity.Room!.Items);
+            roomEntity => (SortedDictionary<Point, GameEntity>)roomEntity.Room!.Items);
 
         EntityItemsToContainerRelationship = new(
             nameof(EntityItemsToContainerRelationship),

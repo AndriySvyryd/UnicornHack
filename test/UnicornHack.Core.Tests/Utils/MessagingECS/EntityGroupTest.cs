@@ -1,4 +1,4 @@
-﻿using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Levels;
 
 namespace UnicornHack.Utils.MessagingECS;

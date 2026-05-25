@@ -19,21 +19,20 @@ public class EmptyLevelLayout : LevelLayout, ICSScriptSerializable
         room.Features = RoomFeatures.Entrance | RoomFeatures.Exit;
         var fragment = LevelGenerator.PickFragmentForRoom(
             level, room.Features, level.GenerationStats);
-        var roomParameters = fragment.GetRoomParameters(branch);
+        using var roomParameters = fragment.GetRoomParameters(branch);
 
         AllocateTerrain(room, roomParameters.RoomWidth, roomParameters.RoomHeight,
             roomParameters.DefaultTerrain);
         // EmptyLevelLayout has no inter-room graph, so the room's only outgoing doorway
         // is whatever the level fragment authored. Pass an empty demand so the layout
         // doesn't reject the single hand-crafted chunk.
-        var chunks = branch.RoomLayout.Fill(room, branch, fragment, []);
+        var chunks = branch.RoomLayout.Fill(room, branch, fragment, [], roomParameters);
         if (chunks is null)
         {
             return null;
         }
 
-        roomParameters.CreatureGenerator.Fill(room,
-            chunks.Where(c => c.Fragment is not ConnectingMapFragment).ToList());
+        roomParameters.CreatureGenerator.Fill(room, chunks);
         roomParameters.ItemGenerator.Fill(room, chunks);
         return chunks;
     }

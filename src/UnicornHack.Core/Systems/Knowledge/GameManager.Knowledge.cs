@@ -18,21 +18,21 @@ public partial class GameManager
         private set;
     } = null!;
 
-    public LookupEntityRelationship<GameEntity, Point, Dictionary<Point, GameEntity>>
+    public LookupEntityRelationship<GameEntity, Point, SortedDictionary<Point, GameEntity>>
         KnownActorsToCellRelationship
     {
         get;
         private set;
     } = null!;
 
-    public LookupEntityRelationship<GameEntity, Point, Dictionary<Point, GameEntity>>
+    public LookupEntityRelationship<GameEntity, Point, SortedDictionary<Point, GameEntity>>
         KnownItemsToCellRelationship
     {
         get;
         private set;
     } = null!;
 
-    public LookupEntityRelationship<GameEntity, Point, Dictionary<Point, GameEntity>>
+    public LookupEntityRelationship<GameEntity, Point, SortedDictionary<Point, GameEntity>>
         KnownConnectionsToCellRelationship
     {
         get;
@@ -107,7 +107,7 @@ public partial class GameManager
                 knowledgeEntity.RemoveComponent(EntityComponent.Knowledge);
                 knowledgeEntity.RemoveComponent(EntityComponent.Position);
             },
-            roomEntity => (Dictionary<Point, GameEntity>)roomEntity.Room!.KnownActors,
+            roomEntity => (SortedDictionary<Point, GameEntity>)roomEntity.Room!.KnownActors,
             secondaryPrincipalGroup: RoomActors,
             secondaryPrincipalKeyValueGetter: new SimpleKeyValueGetter<GameEntity, int>(
                 component => ((KnowledgeComponent)component).KnownEntityId,
@@ -144,7 +144,7 @@ public partial class GameManager
                 knowledgeEntity.RemoveComponent(EntityComponent.Knowledge);
                 knowledgeEntity.RemoveComponent(EntityComponent.Position);
             },
-            roomEntity => (Dictionary<Point, GameEntity>)roomEntity.Room!.KnownItems,
+            roomEntity => (SortedDictionary<Point, GameEntity>)roomEntity.Room!.KnownItems,
             secondaryPrincipalGroup: RoomItems,
             secondaryPrincipalKeyValueGetter: new SimpleKeyValueGetter<GameEntity, int>(
                 component => ((KnowledgeComponent)component).KnownEntityId,
@@ -181,7 +181,7 @@ public partial class GameManager
                 knowledgeEntity.RemoveComponent(EntityComponent.Knowledge);
                 knowledgeEntity.RemoveComponent(EntityComponent.Position);
             },
-            roomEntity => (Dictionary<Point, GameEntity>)roomEntity.Room!.KnownConnections,
+            roomEntity => (SortedDictionary<Point, GameEntity>)roomEntity.Room!.KnownConnections,
             secondaryPrincipalGroup: Connections,
             secondaryPrincipalKeyValueGetter: new SimpleKeyValueGetter<GameEntity, int>(
                 component => ((KnowledgeComponent)component).KnownEntityId,

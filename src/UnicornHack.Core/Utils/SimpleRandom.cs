@@ -68,6 +68,12 @@ public class SimpleRandom : NotificationEntity
 
     public bool TryPick<TInput>(IReadOnlyCollection<TInput> items, Func<TInput, bool> condition, [NotNullWhen(true)] out TInput? item)
     {
+        if (items.Count == 0)
+        {
+            item = default;
+            return false;
+        }
+
         var index = Next(0, items.Count);
         var i = 0;
         foreach (var candidate in items)
@@ -101,6 +107,12 @@ public class SimpleRandom : NotificationEntity
 
     public bool TryPick<TInput>(IReadOnlyList<TInput> items, Func<TInput, bool> condition, [NotNullWhen(true)] out TInput? item)
     {
+        if (items.Count == 0)
+        {
+            item = default;
+            return false;
+        }
+
         var index = Next(0, items.Count);
         for (var i = index; i < items.Count; i++)
         {

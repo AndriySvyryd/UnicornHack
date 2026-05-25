@@ -16,11 +16,12 @@ public enum RoomFeatures
     WeaponStand = 1 << 9,
     ArmorStand = 1 << 10,
     ItemCase = 1 << 11,
-    Fountain = 1 << 12,
+    SmallFountain = 1 << 12,
     BigFountain = 1 << 13,
     MinorShrine = 1 << 14,
     MajorShrine = 1 << 15,
     RitualShrine = 1 << 16,
     Challenge = 1 << 17,
-    Boss = 1 << 18
+    Boss = 1 << 18,
+    Trapped = 1 << 19
 }

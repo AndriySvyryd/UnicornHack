@@ -1221,12 +1221,25 @@ public class EffectApplicationSystem :
         return effect;
     }
 
+    // Cache of the calculated-only subset of PropertyDescriptions, built lazily on the
+    // first <see cref="InitializeProperties" /> call. The underlying loader is immutable
+    // after load-time so the snapshot stays valid for the system's lifetime; using an
+    // array avoids the dict-enumerator allocation that <c>GetAll()</c> would otherwise
+    // pay per call (InitializeProperties fires for every entity created during gen).
+    private IReadOnlyList<PropertyDescription>? _calculatedPropertyDescriptions;
+
     private void InitializeProperties(GameEntity entity)
     {
-        foreach (var propertyDescription in entity.Manager.Game.Services.Data.PropertyDescriptions.GetAll())
+        var calculated = _calculatedPropertyDescriptions;
+        if (calculated == null)
         {
-            if (propertyDescription.IsCalculated
-                && entity.HasComponent(propertyDescription.ComponentId))
+            calculated = _calculatedPropertyDescriptions = entity.Manager.Game.Services.Data.PropertyDescriptions.GetAsList();
+        }
+
+        for (var i = 0; i < calculated.Count; i++)
+        {
+            var propertyDescription = calculated[i];
+            if (entity.HasComponent(propertyDescription.ComponentId))
             {
                 UpdateProperty(propertyDescription, entity, null);
             }
@@ -1471,7 +1484,7 @@ public class EffectApplicationSystem :
                 && otherEffect.EffectType == EffectType.ChangeProperty
                 && otherEffect.TargetName!.Equals(propertyDescription.Name))
             {
-                activeEffects = new List<EffectComponent> { otherEffect };
+                (activeEffects ??= []).Add(otherEffect);
             }
         }
 
@@ -1485,7 +1498,10 @@ public class EffectApplicationSystem :
             activeEffects.Add(effect);
         }
 
-        activeEffects.Sort(AppliedEffectComponentComparer.Instance);
+        if (activeEffects.Count > 1)
+        {
+            activeEffects.Sort(AppliedEffectComponentComparer.Instance);
+        }
         return activeEffects;
     }
 

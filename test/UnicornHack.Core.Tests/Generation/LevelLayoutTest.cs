@@ -14,11 +14,11 @@ namespace UnicornHack.Generation;
 ///         <item>Higher <c>Interconnectedness</c> → more edges.</item>
 ///     </list>
 /// </summary>
-public class LevelLayoutAlgorithmTest
+public class LevelLayoutTest
 {
     private readonly ITestOutputHelper _output;
 
-    public LevelLayoutAlgorithmTest(ITestOutputHelper output)
+    public LevelLayoutTest(ITestOutputHelper output)
     {
         _output = output;
     }
@@ -69,15 +69,12 @@ public class LevelLayoutAlgorithmTest
     }
 
     /// <summary>
-    ///     Regression: <see cref="LevelLayout.ReleaseTerrain" /> is invoked from
-    ///     <see cref="RoomComponent.Clean" /> during component-pool teardown, and tests that
-    ///     create a <see cref="RoomComponent" /> directly (bypassing
-    ///     <see cref="LevelLayout.CreateEmptyRoom" />) used to leave the terrain backing
-    ///     fields null and trigger NRE. The component now self-initialises terrain backing
-    ///     fields to <see cref="Array.Empty{T}" />, so this path is safe.
+    ///     Regression: <see cref="RoomComponent.Clean" /> may run during component-pool
+    ///     teardown on a room that never allocated terrain arrays. The component must
+    ///     safely handle this path by treating all arrays as <see cref="Array.Empty{T}" />.
     /// </summary>
     [Fact]
-    public void ReleaseTerrain_does_not_throw_on_uninitialised_room()
+    public void Removing_room_component_does_not_throw_on_uninitialised_room()
     {
         var manager = TestHelper.CreateGameManager();
         using var roomEntityReference = manager.CreateEntity();
@@ -92,26 +89,29 @@ public class LevelLayoutAlgorithmTest
         Assert.Empty(room.VisibleTerrain);
         Assert.Empty(room.KnownNeighbors);
 
-        LevelLayout.ReleaseTerrain(room);
+        roomEntityReference.Referenced.RemoveComponent((int)EntityComponent.Room);
 
         Assert.Empty(room.Terrain);
         Assert.Empty(room.KnownTerrain);
         Assert.Empty(room.Neighbors);
+        Assert.Empty(room.VisibleTerrain);
+        Assert.Empty(room.KnownNeighbors);
         Assert.Equal(0, room.Width);
         Assert.Equal(0, room.Height);
     }
 
     [Fact]
-    public void ReleaseTerrain_returns_pooled_arrays_and_resets_dimensions()
+    public void Removing_room_component_returns_pooled_arrays_and_resets_dimensions()
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
         var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
         var level = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
         var room = LevelLayout.CreateEmptyRoom(level, manager);
+        var roomEntity = room.Entity;
         LevelLayout.AllocateTerrain(room, width: 6, height: 6, MapFeature.StoneFloor);
 
-        LevelLayout.ReleaseTerrain(room);
+        roomEntity.RemoveComponent((int)EntityComponent.Room);
 
         Assert.Equal(0, room.Width);
         Assert.Equal(0, room.Height);
@@ -121,8 +121,8 @@ public class LevelLayoutAlgorithmTest
         Assert.Empty(room.VisibleTerrain);
         Assert.Empty(room.KnownNeighbors);
 
-        // Idempotent: calling again must not throw or attempt to return Array.Empty<T>() to the pool.
-        LevelLayout.ReleaseTerrain(room);
+        // Idempotent: removing again is a no-op.
+        roomEntity.RemoveComponent((int)EntityComponent.Room);
     }
 
     private const int SeedCount = 50;
@@ -209,11 +209,12 @@ public class LevelLayoutAlgorithmTest
         const int trials = 200;
         var successes = 0;
         var failureCounts = new Dictionary<string, int>();
-        var stats = new GenerationStats();
+        var stats = new LevelGenerationStats();
+        var gameStats = new GenerationStats();
         var prevSnapshot = stats.GraphFailureSnapshot();
         for (uint seed = 1; seed <= trials; seed++)
         {
-            var graph = layout.BuildGraph(GetParameters(layout), new SimpleRandom { Seed = seed }, stats);
+            var graph = layout.BuildGraph(layout.GetParameters(LevelGenerator.MaxDifficulty), new SimpleRandom { Seed = seed }, stats, gameStats);
             var snapshot = stats.GraphFailureSnapshot();
             if (graph is not null)
             {
@@ -235,7 +236,7 @@ public class LevelLayoutAlgorithmTest
     }
 
     /// <summary>
-    ///     Compares two <see cref="GenerationStats.GraphFailureSnapshot" /> dictionaries
+    ///     Compares two <see cref="LevelGenerationStatsTestExtensions.GraphFailureSnapshot" /> dictionaries
     ///     and returns the name of the single counter that grew between them. Falls back
     ///     to <c>"Unknown"</c> if no counter changed (should not happen when the call
     ///     returned null) or to a comma-joined list if more than one changed (multi-step
@@ -283,11 +284,12 @@ public class LevelLayoutAlgorithmTest
         var successes = 0;
         var failureCounts = new Dictionary<string, int>();
         var firstSeedByReason = new Dictionary<string, uint>();
-        var stats = new GenerationStats();
+        var stats = new LevelGenerationStats();
+        var gameStats = new GenerationStats();
         var prevSnapshot = stats.GraphFailureSnapshot();
         for (uint seed = 1; seed <= trials; seed++)
         {
-            var graph = layout.BuildGraph(GetParameters(layout), new SimpleRandom { Seed = seed }, stats);
+            var graph = layout.BuildGraph(layout.GetParameters(LevelGenerator.MaxDifficulty), new SimpleRandom { Seed = seed }, stats, gameStats);
             var snapshot = stats.GraphFailureSnapshot();
             if (graph is not null)
             {
@@ -607,29 +609,183 @@ public class LevelLayoutAlgorithmTest
     }
 
     private static RoomGraph? TryBuild(LevelLayout layout, uint seed)
-        => layout.BuildGraph(GetParameters(layout), new SimpleRandom { Seed = seed });
+        => layout.BuildGraph(
+            layout.GetParameters(LevelGenerator.MaxDifficulty), new SimpleRandom { Seed = seed },
+            new LevelGenerationStats(), new GenerationStats());
 
     private static RoomGraph? BuildWith(LevelLayout layout, uint seed, float interconnectedness)
     {
-        var p = GetParameters(layout);
+        var p = layout.GetParameters(LevelGenerator.MaxDifficulty);
         var pp = new LayoutParameters(p.GridWidth, p.GridHeight, interconnectedness,
             p.Density, p.Sinuosity, p.RewardRoomProbability, p.CurseRoomProbability,
-            p.HiddenConnectionProbability, p.MinRooms, p.MaxRooms);
-        return layout.BuildGraph(pp, new SimpleRandom { Seed = seed });
+            p.HiddenConnectionProbability, p.MinRooms, p.MaxRooms, p.Difficulty);
+        return layout.BuildGraph(pp, new SimpleRandom { Seed = seed }, new LevelGenerationStats(), new GenerationStats());
     }
 
-    private static LayoutParameters GetParameters(LevelLayout layout)
-        => layout switch
+    [Theory]
+    [MemberData(nameof(Layouts))]
+    public void Every_walkable_tile_is_reachable_from_an_entrance(LevelLayout layout)
+    {
+        // BFS from each room's connection tiles across walkable terrain and verify it
+        // reaches every other walkable tile in the room. Catches corridor-carving
+        // regressions that leave chunks disconnected.
+        var success = false;
+        for (uint seed = 1; seed <= 8 && !success; seed++)
         {
-            GridLevelLayout g => new LayoutParameters(g.GridWidth, g.GridHeight, g.Interconnectedness,
-                g.ComputeDensity(), g.Sinuosity, g.RewardRoomProbability, g.CurseRoomProbability,
-                g.HiddenConnectionProbability, g.MinRooms, g.MaxRooms),
-            HexLevelLayout h => new LayoutParameters(h.GridWidth, h.GridHeight, h.Interconnectedness,
-                h.ComputeDensity(), h.Sinuosity, h.RewardRoomProbability, h.CurseRoomProbability,
-                h.HiddenConnectionProbability, h.MinRooms, h.MaxRooms),
-            SpiralLevelLayout s => new LayoutParameters(s.GridWidth, s.GridHeight, s.Interconnectedness,
-                s.ComputeDensity(), s.Sinuosity, s.RewardRoomProbability, s.CurseRoomProbability,
-                s.HiddenConnectionProbability, s.MinRooms, s.MaxRooms),
-            _ => throw new ArgumentException($"Unknown layout {layout.GetType().Name}")
-        };
+            var game = TestHelper.CreateGame(seed);
+            var manager = game.Manager;
+            var branch = new Branch
+            {
+                Name = BranchData.Dungeon.Name,
+                Length = BranchData.Dungeon.Length,
+                Layout = layout
+            };
+            ((TestDataProvider)game.Services.Data).Branches.Add(branch);
+            var dungeon = branch.Instantiate(game);
+            var level = LevelGenerator.CreateEmpty(dungeon, depth: 2, seed, manager);
+
+            try
+            {
+                if (!LevelGenerator.EnsureGenerated(level))
+                {
+                    continue;
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                continue;
+            }
+
+            foreach (var room in level.Rooms)
+            {
+                AssertEveryWalkableTileReachable(room, layout, seed);
+            }
+
+            success = true;
+        }
+
+        Assert.True(success, $"{layout.GetType().Name} failed to produce a valid level in 8 seeds");
+    }
+
+    private static void AssertEveryWalkableTileReachable(RoomComponent room, LevelLayout layout, uint seed)
+    {
+        var starts = new List<Point>(room.Connections.Keys);
+        if (starts.Count == 0)
+        {
+            // Room with no inter-room connections — start the BFS from any walkable tile.
+            for (byte y = 0; y < room.Height && starts.Count == 0; y++)
+            {
+                for (byte x = 0; x < room.Width && starts.Count == 0; x++)
+                {
+                    var feature = room.Terrain[room.PointToIndex![x, y]];
+                    if (feature.CanMoveTo())
+                    {
+                        starts.Add(new Point(x, y));
+                    }
+                }
+            }
+        }
+
+        if (starts.Count == 0)
+        {
+            return;
+        }
+
+        var visited = new bool[room.TileCount];
+        var queue = new Queue<Point>();
+        foreach (var start in starts)
+        {
+            var startIdx = room.PointToIndex![start.X, start.Y];
+            if (!visited[startIdx])
+            {
+                visited[startIdx] = true;
+                queue.Enqueue(start);
+            }
+        }
+
+        while (queue.Count > 0)
+        {
+            var p = queue.Dequeue();
+            // 8-connected: actors can move diagonally between adjacent tiles, so any
+            // walkable tile reachable via diagonals counts as reachable. This matches
+            // TravelSystem.GetPossibleMovementDirections and the 8-connected flood fill
+            // in RoomLayout.EnsureConnectivity.
+            for (var d = 0; d < 8; d++)
+            {
+                var dx = d switch { 0 => 1, 1 => -1, 4 => 1, 5 => -1, 6 => 1, 7 => -1, _ => 0 };
+                var dy = d switch { 2 => 1, 3 => -1, 4 => 1, 5 => 1, 6 => -1, 7 => -1, _ => 0 };
+                var nx = p.X + dx;
+                var ny = p.Y + dy;
+                if (nx < 0 || ny < 0 || nx >= room.Width || ny >= room.Height)
+                {
+                    continue;
+                }
+
+                var nIdx = room.PointToIndex![(byte)nx, (byte)ny];
+                if (visited[nIdx])
+                {
+                    continue;
+                }
+
+                if (!room.Terrain[nIdx].CanMoveTo())
+                {
+                    continue;
+                }
+
+                visited[nIdx] = true;
+                queue.Enqueue(new Point((byte)nx, (byte)ny));
+            }
+        }
+
+        // Every walkable tile must have been visited.
+        for (byte y = 0; y < room.Height; y++)
+        {
+            for (byte x = 0; x < room.Width; x++)
+            {
+                var idx = room.PointToIndex![x, y];
+                if (room.Terrain[idx].CanMoveTo() && !visited[idx])
+                {
+                    Assert.Fail(
+                        $"{layout.GetType().Name} seed={seed}: walkable tile ({x},{y}) in room "
+                        + $"({room.GridX},{room.GridY}) is unreachable from any connection / start.\n"
+                        + DumpRoom(room, visited, starts));
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    ///     Renders the room's terrain as ASCII. Walkable but unvisited tiles render as
+    ///     <c>!</c> so a failing assertion shows exactly where the disconnect is.
+    /// </summary>
+    private static string DumpRoom(RoomComponent room, bool[] visited, IReadOnlyList<Point> starts)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append("Starts: ").AppendJoin(", ", starts.Select(p => $"({p.X},{p.Y})")).Append('\n');
+        for (byte y = 0; y < room.Height; y++)
+        {
+            for (byte x = 0; x < room.Width; x++)
+            {
+                var idx = room.PointToIndex![x, y];
+                var feature = room.Terrain[idx];
+                var glyph = feature switch
+                {
+                    MapFeature.Default => ' ',
+                    MapFeature.RockFloor => '.',
+                    MapFeature.StoneFloor => ',',
+                    MapFeature.RockWall => '#',
+                    MapFeature.StoneWall => '%',
+                    MapFeature.StoneArchway => '+',
+                    _ => '?'
+                };
+                if (feature.CanMoveTo() && !visited[idx])
+                {
+                    glyph = '!';
+                }
+                sb.Append(glyph);
+            }
+            sb.Append('\n');
+        }
+        return sb.ToString();
+    }
 }

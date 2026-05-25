@@ -1,5 +1,5 @@
 using System.Collections;
-using Microsoft.Extensions.Caching.Memory;
+using System.Collections.Concurrent;
 
 namespace UnicornHack.Utils.DataStructures;
 
@@ -79,7 +79,7 @@ public readonly struct Rectangle : IEnumerable<Point>, IEquatable<Rectangle>
     public bool Contains(Dimensions d) => Dimensions.Contains(d);
 
     public byte DistanceTo(Rectangle r)
-        => Math.Max(XProjection.DistanceTo(r.XProjection), YProjection.DistanceTo(YProjection));
+        => Math.Max(XProjection.DistanceTo(r.XProjection), YProjection.DistanceTo(r.YProjection));
 
     public byte DistanceTo(Point p) => Math.Max(XProjection.DistanceTo(p.X), YProjection.DistanceTo(p.Y));
 
@@ -207,28 +207,76 @@ public readonly struct Rectangle : IEnumerable<Point>, IEquatable<Rectangle>
 
     /// <summary>
     ///     Returns a random rectangle inside <paramref name="boundingRectangle" /> whose
-    ///     position is biased toward one of the four edges. Width and height are picked
-    ///     uniformly between <paramref name="minSize" /> and the bounding rectangle's
-    ///     dimensions; the X and Y offsets are biased independently by picking a side and
-    ///     keeping the offset closer to it (min/max of two uniform draws).
+    ///     position is biased toward one of the four edges supplied in
+    ///     <paramref name="preferredEdges" /> instead of picking a side randomly. When
+    ///     both edges of an axis are set the side is still chosen randomly (the result is
+    ///     equivalent to the no-preference call for that axis); when neither is set the
+    ///     axis behaves like the random-bias overload. <paramref name="flushEdges" /> is
+    ///     stricter than bias: a cardinal set in <paramref name="flushEdges" /> forces the
+    ///     carved rectangle to be flush against that edge of
+    ///     <paramref name="boundingRectangle" /> (i.e. the corresponding coordinate is
+    ///     pinned, not just biased). Used by dynamic placers
+    ///     (<see cref="DynamicMap.GetRoomPoints" />) when the layout has committed the
+    ///     fragment to overlap an existing chunk on that edge.
     /// </summary>
     public static Rectangle CreateRandomNearEdge(
-        SimpleRandom random, Rectangle boundingRectangle, Dimensions minSize)
+        SimpleRandom random, Rectangle boundingRectangle, Dimensions minSize,
+        DirectionFlags preferredEdges, DirectionFlags flushEdges)
     {
         var width = (byte)random.Next(minSize.Width, boundingRectangle.Width + 1);
         var height = (byte)random.Next(minSize.Height, boundingRectangle.Height + 1);
 
-        var x1 = (byte)PickBiasedTowardEdge(
-            random, boundingRectangle.TopLeft.X, boundingRectangle.BottomRight.X + 1 - width);
-        var y1 = (byte)PickBiasedTowardEdge(
-            random, boundingRectangle.TopLeft.Y, boundingRectangle.BottomRight.Y + 1 - height);
+        var preferWest = (preferredEdges & DirectionFlags.West) == DirectionFlags.West;
+        var preferEast = (preferredEdges & DirectionFlags.East) == DirectionFlags.East;
+        var preferNorth = (preferredEdges & DirectionFlags.North) == DirectionFlags.North;
+        var preferSouth = (preferredEdges & DirectionFlags.South) == DirectionFlags.South;
+
+        var flushWest = (flushEdges & DirectionFlags.West) == DirectionFlags.West;
+        var flushEast = (flushEdges & DirectionFlags.East) == DirectionFlags.East;
+        var flushNorth = (flushEdges & DirectionFlags.North) == DirectionFlags.North;
+        var flushSouth = (flushEdges & DirectionFlags.South) == DirectionFlags.South;
+
+        byte x1;
+        if (flushWest)
+        {
+            x1 = boundingRectangle.TopLeft.X;
+        }
+        else if (flushEast)
+        {
+            x1 = (byte)(boundingRectangle.BottomRight.X + 1 - width);
+        }
+        else
+        {
+            x1 = (byte)PickBiasedTowardEdge(
+                random, boundingRectangle.TopLeft.X, boundingRectangle.BottomRight.X + 1 - width,
+                preferMin: preferWest, preferMax: preferEast);
+        }
+
+        byte y1;
+        if (flushNorth)
+        {
+            y1 = boundingRectangle.TopLeft.Y;
+        }
+        else if (flushSouth)
+        {
+            y1 = (byte)(boundingRectangle.BottomRight.Y + 1 - height);
+        }
+        else
+        {
+            y1 = (byte)PickBiasedTowardEdge(
+                random, boundingRectangle.TopLeft.Y, boundingRectangle.BottomRight.Y + 1 - height,
+                preferMin: preferNorth, preferMax: preferSouth);
+        }
 
         return new Rectangle(new Point(x1, y1), width, height);
     }
 
-    // Picks an integer in [min, max] biased toward either min or max. Take min-of-two
-    // or max-of-two uniform draws depending on which side is favoured for this axis.
-    private static int PickBiasedTowardEdge(SimpleRandom random, int min, int max)
+    // Picks an integer in [min, max] biased toward either min or max. When both
+    // preferMin and preferMax are false the side is chosen at random (legacy random-bias
+    // behaviour); when exactly one is true the bias is forced toward that side; when both
+    // are true the side is also random (callers can't favour both ends of one axis at once).
+    private static int PickBiasedTowardEdge(SimpleRandom random, int min, int max,
+        bool preferMin = false, bool preferMax = false)
     {
         if (min >= max)
         {
@@ -237,32 +285,39 @@ public readonly struct Rectangle : IEnumerable<Point>, IEquatable<Rectangle>
 
         var a = random.Next(min, max + 1);
         var b = random.Next(min, max + 1);
-        return random.NextSingle(0f, 1f) < 0.5f ? Math.Min(a, b) : Math.Max(a, b);
+        var biasToMin = preferMin == preferMax
+            ? random.NextSingle(0f, 1f) < 0.5f
+            : preferMin;
+        return biasToMin ? Math.Min(a, b) : Math.Max(a, b);
     }
 
-    public static (short[,], Point[]) GetPointIndex(IMemoryCache cache, byte width, byte height)
-    {
-        var key = nameof(GetPointIndex).GetHashCode() ^ (width << 8 + height);
-        if (!cache.TryGetValue(key, out var result))
-        {
-            using var entry = cache.CreateEntry(key);
-            var pointToIndex = new short[width, height];
-            var indexToPoint = new Point[width * height];
-            short i = 0;
-            for (byte y = 0; y < height; y++)
-            {
-                for (byte x = 0; x < width; x++)
-                {
-                    pointToIndex[x, y] = i;
-                    indexToPoint[i++] = new Point(x, y);
-                }
-            }
+    /// <summary>
+    ///     Returns memoized <c>(pointToIndex, indexToPoint)</c> tables for a rectangle of
+    ///     the given dimensions. Tables are cached in a process-wide
+    ///     <see cref="ConcurrentDictionary{TKey,TValue}" /> keyed by
+    ///     <c>(width &lt;&lt; 8) | height</c>, so callers can rely on reference equality
+    ///     for the same dimensions across the lifetime of the process.
+    /// </summary>
+    public static (short[,], Point[]) GetPointIndex(byte width, byte height)
+        => _staticPointIndexCache.GetOrAdd(((uint)width << 8) | height, _ => BuildPointIndex(width, height));
 
-            result = (pointToIndex, indexToPoint);
-            entry.SetValue(result);
+    private static readonly ConcurrentDictionary<uint, (short[,], Point[])> _staticPointIndexCache = new();
+
+    private static (short[,], Point[]) BuildPointIndex(byte width, byte height)
+    {
+        var pointToIndex = new short[width, height];
+        var indexToPoint = new Point[width * height];
+        short i = 0;
+        for (byte y = 0; y < height; y++)
+        {
+            for (byte x = 0; x < width; x++)
+            {
+                pointToIndex[x, y] = i;
+                indexToPoint[i++] = new Point(x, y);
+            }
         }
 
-        return ((short[,], Point[]))result!;
+        return (pointToIndex, indexToPoint);
     }
 
     public override string ToString() => $"({TopLeft}, {BottomRight})";

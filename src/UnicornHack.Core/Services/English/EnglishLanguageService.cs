@@ -763,7 +763,7 @@ public class EnglishLanguageService : ILanguageService
         AppendIf(features, RoomFeatures.WeaponStand, "Weapon stand", parts);
         AppendIf(features, RoomFeatures.ArmorStand, "Armor stand", parts);
         AppendIf(features, RoomFeatures.ItemCase, "Item case", parts);
-        AppendIf(features, RoomFeatures.Fountain, "Fountain", parts);
+        AppendIf(features, RoomFeatures.SmallFountain, "Fountain", parts);
         AppendIf(features, RoomFeatures.BigFountain, "Big fountain", parts);
         AppendIf(features, RoomFeatures.MinorShrine, "Minor shrine", parts);
         AppendIf(features, RoomFeatures.MajorShrine, "Major shrine", parts);

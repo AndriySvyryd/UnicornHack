@@ -1,4 +1,4 @@
-﻿using UnicornHack.Data.Items;
+using UnicornHack.Data.Items;
 
 namespace UnicornHack.Systems.Beings;
 

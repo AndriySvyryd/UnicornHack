@@ -9,6 +9,7 @@ expression
    | <assoc=right> Left=expression '^' Right=expression              #powerExpression
    | Left=expression (ASTERISK | SLASH) Right=expression             #multiplicativeExpression
    | Left=expression (PLUS | MINUS) Right=expression                 #additiveExpression
+   | Left=expression (LSHIFT | RSHIFT) Right=expression              #shiftExpression
    | Left=expression (LT | GT | LE | GE | EQ | NEQ) Right=expression #relationalExpression
    | Left=expression '||' Right=expression                           #conditionalOrExpression
    | Left=expression '&&' Right=expression                           #conditionalAndExpression
@@ -21,6 +22,7 @@ primaryExpression
    | Float=FLOAT                                                     #floatLiteralExpression
    | String=STRING_LITERAL                                           #stringLiteralExpression
    | INFINITY                                                        #constantExpression
+   | '$' Variable=IDENTIFIER '[' Index=expression ']'                #indexedVariableExpression
    | '$' Variable=IDENTIFIER                                         #variableExpression
    | Function=IDENTIFIER '(' expression? (',' expression)* ')'       #invocationExpression
    | '(' Expression=expression ')'                                   #parenthesizedExpression
@@ -29,6 +31,14 @@ primaryExpression
 /*
  * Lexer Rules
  */
+
+LSHIFT
+   : '<<'
+   ;
+
+RSHIFT
+   : '>>'
+   ;
 
 LT
    : '<'

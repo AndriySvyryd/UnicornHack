@@ -29,7 +29,7 @@ public class RectangleRangeTreeTest
 
         var randomCount = 20;
         var initialRectangles = new List<Rectangle>(randomCount);
-        var seed = (uint)Environment.TickCount;
+        var seed = 1u;
         var random = new SimpleRandom { Seed = seed };
         for (var i = 0; i < randomCount; i++)
         {

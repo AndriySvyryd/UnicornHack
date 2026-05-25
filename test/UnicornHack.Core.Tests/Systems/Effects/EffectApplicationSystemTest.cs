@@ -1,4 +1,4 @@
-﻿using UnicornHack.Data.Items;
+using UnicornHack.Data.Items;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 
@@ -132,11 +132,11 @@ public class EffectApplicationSystemTest
         TestHelper.ActivateAbility(ItemData.PotionOfInhumanity.Name + ": Drink", playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(7, playerEntity.Physical.Size);
+        Assert.Equal(8, playerEntity.Physical.Size);
         //Assert.Equal(1000, playerEntity.Physical.Weight);
-        Assert.Equal(7, playerEntity.Being.Speed);
-        Assert.Equal(13, playerEntity.Being.Might);
-        Assert.Equal(8, playerEntity.Being.Perception);
+        Assert.Equal(8, playerEntity.Being.Speed);
+        Assert.Equal(12, playerEntity.Being.Might);
+        Assert.Equal(9, playerEntity.Being.Perception);
         Assert.Equal(9, playerEntity.Being.Focus);
     }
 }

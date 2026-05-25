@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Threading;
 using Microsoft.Extensions.Caching.Memory;
 using UnicornHack.Services;
@@ -48,6 +48,22 @@ public static class TestHelper
     public static RoomComponent BuildRoom(string map = "", Game? game = null, uint? seed = null, byte depth = 0)
         => BuildRoomWithChunks(map, game, seed, depth).Item1;
 
+    /// <summary>
+    ///     Builds a <see cref="RoomParameters" /> sized to
+    ///     <paramref name="room" /> with default terrain and trivial generators. Tests that
+    ///     construct <see cref="Chunk" />s directly should pass the result so
+    ///     <see cref="RoomParameters.ChunkCells" /> mirrors production
+    ///     bookkeeping (every authored chunk claims its cells on the room's ownership map).
+    /// </summary>
+    public static RoomParameters CreateRoomParameters(
+        RoomComponent room, MapFeature defaultTerrain = MapFeature.Default)
+        => new(
+            RoomWidth: room.Width == 0 ? (byte)1 : room.Width,
+            RoomHeight: room.Height == 0 ? (byte)1 : room.Height,
+            DefaultTerrain: defaultTerrain,
+            CreatureGenerator: new CreatureGenerator { ExpectedInitialCount = 0 },
+            ItemGenerator: new ItemGenerator { ExpectedInitialCount = 0 });
+
     public static (RoomComponent, IReadOnlyList<Chunk>) BuildRoomWithChunks(
         string map = "", Game? game = null, uint? seed = null, byte depth = 0)
     {
@@ -64,6 +80,17 @@ public static class TestHelper
             ItemGenerator = new ItemGenerator { ExpectedInitialCount = 0 }
         };
 
+        // Declare a connection definition for any explicit connection glyph present in
+        // the map so ConnectingMapFragment.BuildChunk doesn't add an extra anonymous
+        // random connection on top of the authored one.
+        foreach (var glyph in (ReadOnlySpan<char>)['<', '>'])
+        {
+            if (map.Contains(glyph))
+            {
+                fragment.Connections.Add(new LevelConnection { Glyph = glyph });
+            }
+        }
+
         return BuildRoom(fragment, game, depth);
     }
 
@@ -77,7 +104,8 @@ public static class TestHelper
     ///     then picks it for any room in that branch.
     /// </summary>
     public static (RoomComponent, IReadOnlyList<Chunk>) BuildRoom(
-        DefiningMapFragment fragment, Game game, byte depth = 0, byte branchLength = 10)
+        DefiningMapFragment fragment, Game game, byte depth = 0, byte branchLength = 10,
+        RoomLayout? roomLayout = null)
     {
         var id = Interlocked.Increment(ref _testBranchCounter);
         var branchName = "test branch " + id;
@@ -89,12 +117,16 @@ public static class TestHelper
             Difficulty = 1,
             Layout = new EmptyLevelLayout()
         };
+        if (roomLayout is not null)
+        {
+            testBranch.RoomLayout = roomLayout;
+        }
         var branchEntity = testBranch.Instantiate(game);
         game.Branches.Add(branchEntity);
 
         fragment.Name = string.IsNullOrEmpty(fragment.Name) ? "test fragment " + id : fragment.Name;
         fragment.GenerationWeight = $"$branch == '{branchName}' ? 1 : 0";
-        fragment.EnsureInitialized(game);
+        fragment.EnsureInitialized();
         if (fragment.Height != 0)
         {
             fragment.RoomHeight = fragment.Height;
@@ -111,9 +143,10 @@ public static class TestHelper
         // the default (static) provider keep that behaviour.
         var testProvider = (TestDataProvider)game.Services.Data;
         testProvider.DefiningMapFragments.Add(fragment);
+        testProvider.Branches.Add(testBranch);
 
         var gameLevel = LevelGenerator.CreateEmpty(branchEntity, depth, game.Random.Seed, game.Manager);
-        var chunks = LevelGenerator.Generate(gameLevel, testBranch, validateGraph: false);
+        var chunks = LevelGenerator.Generate(gameLevel);
         Assert.NotNull(chunks);
 
         return (gameLevel.Rooms.First(), chunks);
@@ -132,9 +165,9 @@ public static class TestHelper
 
     public static void AssertVisibility(RoomComponent level, string expectedVisibleMap, byte[] actualVisibility)
     {
-        var expectedFragment =
-            new NormalMapFragment { Map = expectedVisibleMap, Width = level.Width, Height = level.Height };
-        expectedFragment.EnsureInitialized(level.Game);
+        var expectedFragment = new TestNormalMapFragment { Map = expectedVisibleMap };
+        expectedFragment.SetDimensions(level.Width, level.Height);
+        expectedFragment.EnsureInitialized();
 
         var expectedVisibility = new byte[level.TileCount];
 
@@ -191,8 +224,9 @@ Seed: " + level.Game.Options.InitialSeed);
 
     public static void AssertTerrain(RoomComponent level, string expectedMap, MapFeature[] actualTerrain)
     {
-        var expectedFragment = new NormalMapFragment { Map = expectedMap, Width = level.Width, Height = level.Height };
-        expectedFragment.EnsureInitialized(level.Game);
+        var expectedFragment = new TestNormalMapFragment { Map = expectedMap };
+        expectedFragment.SetDimensions(level.Width, level.Height);
+        expectedFragment.EnsureInitialized();
 
         var expected = new MapFeature[level.TileCount];
         var matched = true;

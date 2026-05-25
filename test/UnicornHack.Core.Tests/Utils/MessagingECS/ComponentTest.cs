@@ -1,4 +1,4 @@
-﻿using UnicornHack.Systems.Items;
+using UnicornHack.Systems.Items;
 
 namespace UnicornHack.Utils.MessagingECS;
 

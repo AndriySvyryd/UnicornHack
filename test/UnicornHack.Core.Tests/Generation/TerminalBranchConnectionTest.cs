@@ -35,6 +35,11 @@ public class TerminalBranchConnectionTest
         };
 
         var testProvider = (TestDataProvider)game.Services.Data;
+        // Restrict the Branches loader to test-only entries so the inter-branch picker
+        // can only pick between the two synthetic branches; this isolates the test
+        // from the set of production branches and the order their per-source weights
+        // resolve to under the (deterministic) gen RNG.
+        testProvider.Branches.IncludeProduction = false;
         testProvider.Branches.Add(originBranch);
         testProvider.Branches.Add(nextBranch);
 

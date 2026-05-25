@@ -1,4 +1,4 @@
-﻿namespace UnicornHack.Utils.DataStructures;
+namespace UnicornHack.Utils.DataStructures;
 
 public class RectangleIntervalTreeTest
 {
@@ -29,7 +29,7 @@ public class RectangleIntervalTreeTest
 
         var randomCount = 20;
         var initialRectangles = new List<Rectangle>(randomCount);
-        var seed = (uint)Environment.TickCount;
+        var seed = 1u;
         var random = new SimpleRandom { Seed = seed };
         for (var i = 0; i < randomCount; i++)
         {
@@ -86,5 +86,54 @@ public class RectangleIntervalTreeTest
         tree.InsertRange(otherRectangles);
 
         TestAssert.Equal(expectedRectangles, tree.GetOverlapping(targetRectangle), $"Target: {targetRectangle}");
+    }
+
+    /// <summary>
+    ///     The dense room-layout shift-to-merge step inserts a chunk whose bounding rectangle
+    ///     overlaps a previously placed chunk's by a single shared wall column. Insertion of
+    ///     such a rectangle must succeed and both rectangles must remain queryable.
+    /// </summary>
+    [Fact]
+    public void Inserts_rectangles_that_share_a_single_column_with_a_placed_neighbour()
+    {
+        var bounds = new Rectangle(new Point(0, 0), new Point(10, 10));
+        var tree = new RectangleIntervalTree(bounds);
+
+        var anchor = new Rectangle(new Point(0, 0), new Point(4, 4));
+        var shifted = new Rectangle(new Point(4, 0), new Point(8, 4));
+
+        Assert.True(tree.Insert(anchor));
+        Assert.True(tree.Insert(shifted));
+
+        var queryColumn = new Rectangle(new Point(4, 0), new Point(4, 4));
+        var overlapping = tree.GetOverlapping(queryColumn).ToList();
+        Assert.Contains(anchor, overlapping);
+        Assert.Contains(shifted, overlapping);
+
+        Assert.True(tree.Remove(anchor));
+        Assert.True(tree.Remove(shifted));
+        Assert.Empty(tree.GetOverlapping(queryColumn));
+    }
+
+    /// <summary>
+    ///     A rectangle fully enclosed by a previously inserted one still inserts and is
+    ///     reported alongside the enclosing rectangle by <see cref="RectangleIntervalTree.GetOverlapping" />.
+    /// </summary>
+    [Fact]
+    public void Inserts_a_rectangle_fully_enclosed_by_a_placed_neighbour()
+    {
+        var bounds = new Rectangle(new Point(0, 0), new Point(10, 10));
+        var tree = new RectangleIntervalTree(bounds);
+
+        var outer = new Rectangle(new Point(0, 0), new Point(8, 8));
+        var inner = new Rectangle(new Point(2, 2), new Point(6, 6));
+
+        Assert.True(tree.Insert(outer));
+        Assert.True(tree.Insert(inner));
+
+        var probe = new Rectangle(new Point(3, 3), new Point(4, 4));
+        var overlapping = tree.GetOverlapping(probe).ToList();
+        Assert.Contains(outer, overlapping);
+        Assert.Contains(inner, overlapping);
     }
 }

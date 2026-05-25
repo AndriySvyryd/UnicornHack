@@ -24,7 +24,7 @@ public class RoomLayoutTest
         // Corridor of three tiles between the chunks; none are inside either chunk.
         var path = new[] { new Point(3, 1), new Point(4, 1), new Point(5, 1) };
 
-        var trimmed = UniformRoomLayout.TrimCorridorEndpoints(path, source, target);
+        var trimmed = RoomLayout.TrimCorridorEndpoints(path, source, target);
 
         Assert.Same(path, trimmed);
     }
@@ -55,7 +55,7 @@ public class RoomLayoutTest
             new Point(6, 1)
         };
 
-        var trimmed = UniformRoomLayout.TrimCorridorEndpoints(path, source, target);
+        var trimmed = RoomLayout.TrimCorridorEndpoints(path, source, target);
 
         Assert.Equal(new[]
         {
@@ -90,7 +90,7 @@ public class RoomLayoutTest
             new Point(9, 1)  // perimeter of target
         };
 
-        var trimmed = UniformRoomLayout.TrimCorridorEndpoints(path, source, target);
+        var trimmed = RoomLayout.TrimCorridorEndpoints(path, source, target);
 
         Assert.Equal(new[]
         {
@@ -127,7 +127,7 @@ public class RoomLayoutTest
             new Point(10, 1)
         };
 
-        var trimmed = UniformRoomLayout.TrimCorridorEndpoints(path, source, target);
+        var trimmed = RoomLayout.TrimCorridorEndpoints(path, source, target);
 
         Assert.Equal(new[]
         {
@@ -167,7 +167,7 @@ public class RoomLayoutTest
             new Point(5, 4)
         };
 
-        var trimmed = UniformRoomLayout.TrimCorridorEndpoints(path, source, target);
+        var trimmed = RoomLayout.TrimCorridorEndpoints(path, source, target);
 
         Assert.Equal(new[]
         {
@@ -202,7 +202,7 @@ public class RoomLayoutTest
             new Point(4, 1)
         };
 
-        var trimmed = UniformRoomLayout.TrimCorridorEndpoints(path, source, target);
+        var trimmed = RoomLayout.TrimCorridorEndpoints(path, source, target);
 
         Assert.Equal(new[]
         {
@@ -230,7 +230,7 @@ public class RoomLayoutTest
             new Point(4, 1)
         };
 
-        var trimmed = UniformRoomLayout.TrimCorridorEndpoints(path, source, target);
+        var trimmed = RoomLayout.TrimCorridorEndpoints(path, source, target);
 
         Assert.Empty(trimmed);
     }
@@ -258,15 +258,150 @@ public class RoomLayoutTest
                   ###
                   """
         };
-        fragment.EnsureInitialized(room.Game);
+        fragment.EnsureInitialized();
 
-        var chunk = fragment.TryPlace(room, new Rectangle(new Point(1, 1), 3, 3));
+        var chunk = fragment.TryPlace(room, new LotPlacementContext(new Rectangle(new Point(1, 1), 3, 3), TestHelper.CreateRoomParameters(room)));
 
         Assert.NotNull(chunk);
         // The 3x3 box has 8 wall tiles around a single interior floor.
         Assert.Equal(8, chunk!.PerimeterPoints.Count);
         Assert.Single(chunk.InsidePoints);
         Assert.Contains(new Point(2, 2), chunk.InsidePoints);
+    }
+
+    /// <summary>
+    ///     Verifies the inter-level connection wiring that happens when
+    ///     <see cref="UniformRoomLayout" /> falls back to picking a
+    ///     <see cref="NormalMapFragment" /> with a perimeter <c>door-*</c> tag
+    ///     because no <see cref="ConnectingMapFragment" /> could fit at a lot flush
+    ///     with the level edge. The connection cell is one of the placed chunk's
+    ///     <see cref="Chunk.DoorwayPoints" /> and is wired through
+    ///     <see cref="LevelConnection.CreateLevelConnection" />.
+    /// </summary>
+    [Fact]
+    public void Fallback_places_connection_at_perimeter_doorway_when_no_connecting_fragment_fits()
+    {
+        Chunk? hostingChunk = null;
+        ConnectionComponent? createdConnection = null;
+        RoomComponent? room = null;
+        var success = false;
+
+        for (uint seed = 1; seed <= 25 && !success; seed++)
+        {
+            var game = TestHelper.CreateGame(seed);
+            // Hermetic ConnectingMapFragments pool: nothing fits, forcing
+            // UniformRoomLayout's NormalMapFragments fallback to handle the
+            // outbound inter-level connection.
+            ((TestDataProvider)game.Services.Data).ConnectingMapFragments.IncludeProduction = false;
+
+            var branchName = "fallback-test-branch-" + seed;
+            var testBranch = new Branch
+            {
+                Name = branchName,
+                Length = 10,
+                Difficulty = 1,
+                Layout = new EmptyLevelLayout(),
+                RoomWidth = 25,
+                RoomHeight = 16
+            };
+            var branchEntity = testBranch.Instantiate(game);
+            game.Branches.Add(branchEntity);
+            ((TestDataProvider)game.Services.Data).Branches.Add(testBranch);
+
+            // A small defining fragment placed inside a much larger room so
+            // most of the level is empty lots — including lots flush with all
+            // four level perimeters where the fallback can fire.
+            var fragment = new DefiningMapFragment
+            {
+                Name = "fallback-defining-" + seed,
+                Map = ".....\n.....\n.....\n.....\n.....",
+                NoRandomDoorways = true,
+                CreatureGenerator = new CreatureGenerator { ExpectedInitialCount = 0 },
+                ItemGenerator = new ItemGenerator { ExpectedInitialCount = 0 },
+                GenerationWeight = $"$branch == '{branchName}' ? 1 : 0"
+            };
+            fragment.EnsureInitialized();
+            ((TestDataProvider)game.Services.Data).DefiningMapFragments.Add(fragment);
+
+            var gameLevel = LevelGenerator.CreateEmpty(branchEntity, depth: 0, seed, game.Manager);
+            IReadOnlyList<Chunk>? chunks;
+            try
+            {
+                chunks = LevelGenerator.Generate(gameLevel);
+            }
+            catch
+            {
+                continue;
+            }
+
+            if (chunks == null)
+            {
+                continue;
+            }
+
+            var candidateRoom = gameLevel.Rooms.FirstOrDefault();
+            if (candidateRoom == null)
+            {
+                continue;
+            }
+
+            foreach (var chunk in chunks)
+            {
+                if (chunk.Fragment is not NormalMapFragment)
+                {
+                    continue;
+                }
+
+                foreach (var (cell, connectionEntity) in candidateRoom.Connections)
+                {
+                    var connection = connectionEntity.Connection!;
+                    if (connection.TargetLevelX != null)
+                    {
+                        // Inbound connection from elsewhere — skip.
+                        continue;
+                    }
+
+                    if (!chunk.DoorwayPoints.Contains(cell))
+                    {
+                        continue;
+                    }
+
+                    // The doorway must lie on the level perimeter — the fallback
+                    // only fires for lots flush with a level edge.
+                    if (cell.X != 0 && cell.X != candidateRoom.Width - 1
+                        && cell.Y != 0 && cell.Y != candidateRoom.Height - 1)
+                    {
+                        continue;
+                    }
+
+                    hostingChunk = chunk;
+                    createdConnection = connection;
+                    room = candidateRoom;
+                    break;
+                }
+
+                if (hostingChunk != null)
+                {
+                    break;
+                }
+            }
+
+            if (hostingChunk != null)
+            {
+                success = true;
+            }
+        }
+
+        Assert.True(success,
+            "Expected at least one seed to wire a level connection at a perimeter doorway "
+            + "of a NormalMapFragment chunk when no ConnectingMapFragment is available.");
+        Assert.NotNull(hostingChunk);
+        Assert.NotNull(createdConnection);
+        Assert.NotNull(room);
+
+        // The connection must point at a target room — CreateSourceConnection
+        // created (or reused) a placeholder room on a freshly allocated level.
+        Assert.NotNull(createdConnection!.TargetRoomEntity);
     }
 
     private static Chunk BuildChunk(
@@ -280,12 +415,11 @@ public class RoomLayoutTest
         // the trim algorithm — use a trivial fragment whose only purpose is to satisfy
         // the type system.
         var fragment = new NormalMapFragment { Name = "trim-test-stub", Map = "." };
-        fragment.EnsureInitialized(room.Game);
-        return new Chunk(room, bounds,
+        fragment.EnsureInitialized();
+        return new Chunk(room, bounds, fragment,
             doorwayPoints: doorways != null ? new HashSet<Point>(doorways) : null,
             insidePoints: new HashSet<Point>(inside),
             perimeterPoints: perimeter != null ? new HashSet<Point>(perimeter) : null,
-            predefinedPoints: [],
-            fragment: fragment);
+            roomParameters: TestHelper.CreateRoomParameters(room));
     }
 }

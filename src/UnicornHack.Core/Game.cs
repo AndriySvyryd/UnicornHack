@@ -15,6 +15,7 @@ public class Game : NotificationEntity
     private GameOptions _options = new();
     private int? _actingPlayerId;
     private GameEntity? _actingPlayer;
+    private GenerationStats? _generationStats;
 
     public int Id
     {
@@ -77,6 +78,21 @@ public class Game : NotificationEntity
         get;
         set;
     } = new ObservableHashSet<GameBranch>();
+
+    /// <summary>
+    ///     Game-wide cumulative generation statistics. Populated alongside the per-level
+    ///     <see cref="GameLevel.GenerationStats" /> on every successful fragment / creature
+    ///     / item placement and persisted as an owned entity. Backs the
+    ///     <c>$globalInstances</c>, <c>$globalTagInstances</c>, and
+    ///     <c>$globalFeatureInstances</c> DSL parameters so weight expressions can
+    ///     throttle fragments / tags / room features that have already appeared in
+    ///     earlier levels of this run.
+    /// </summary>
+    public GenerationStats GenerationStats
+    {
+        get => _generationStats ??= new GenerationStats();
+        set => SetWithNotify(value, ref _generationStats);
+    }
 
     // Unmapped properties
     public GameServices Services

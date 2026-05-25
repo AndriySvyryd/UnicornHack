@@ -19,6 +19,11 @@ namespace UnicornHack.Generation.Map;
 /// <param name="HiddenConnectionProbability">Probability that an Optional (non-required) edge starts hidden.</param>
 /// <param name="MinRooms">Minimum total room count; below this the level is regenerated.</param>
 /// <param name="MaxRooms">Maximum total room count; the placement algorithm caps at this value.</param>
+/// <param name="Difficulty">
+///     Effective level difficulty (<see cref="GameLevel.Difficulty" />).
+///     Drives difficulty-scaled content choices such as the deep-tier reward gating in
+///     <see cref="LevelLayout.GetRewardFeatureWeight" />.
+/// </param>
 public readonly record struct LayoutParameters(
     byte GridWidth,
     byte GridHeight,
@@ -29,4 +34,5 @@ public readonly record struct LayoutParameters(
     float CurseRoomProbability,
     float HiddenConnectionProbability,
     byte MinRooms,
-    byte MaxRooms);
+    byte MaxRooms,
+    int Difficulty);

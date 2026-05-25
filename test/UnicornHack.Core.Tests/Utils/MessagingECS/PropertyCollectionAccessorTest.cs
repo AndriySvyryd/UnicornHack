@@ -1,4 +1,4 @@
-﻿namespace UnicornHack.Utils.MessagingECS;
+namespace UnicornHack.Utils.MessagingECS;
 
 public class PropertyCollectionAccessorTest
 {

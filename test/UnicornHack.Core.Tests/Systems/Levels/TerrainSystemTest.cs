@@ -1,4 +1,4 @@
-﻿namespace UnicornHack.Systems.Levels;
+namespace UnicornHack.Systems.Levels;
 
 public class TerrainSystemTest
 {

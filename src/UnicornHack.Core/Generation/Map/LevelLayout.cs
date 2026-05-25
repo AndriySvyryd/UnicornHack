@@ -87,26 +87,25 @@ public abstract class LevelLayout
     /// </returns>
     public virtual List<Chunk>? Fill(GameLevel level, Branch branch)
     {
-        var parameters = GetParameters(level);
-        var graph = BuildGraph(parameters, level.GenerationRandom, level.GenerationStats);
-        if (graph == null || graph.Rooms.Count < parameters.MinRooms)
-        {
-            return null;
-        }
-
-        return MaterializeGraph(level, graph, branch);
+        var parameters = GetParameters(level.Difficulty);
+        var gameStats = level.Game.GenerationStats;
+        var graph = BuildGraph(parameters, level.GenerationRandom, level.GenerationStats, gameStats);
+        return graph == null || graph.Rooms.Count < parameters.MinRooms
+            ? null
+            : MaterializeGraph(level, graph, branch);
     }
 
     /// <summary>
     ///     Returns the per-level <see cref="LayoutParameters" /> snapshot used by
-    ///     <see cref="BuildGraph" />. Default implementation returns the layout's instance
-    ///     properties verbatim; subclasses override this to return depth-dependent (or
-    ///     otherwise dynamic) values without mutating instance state.
+    ///     <see cref="BuildGraph" /> for a given <paramref name="difficulty" />. Default
+    ///     implementation returns the layout's instance properties verbatim; subclasses
+    ///     override this to return difficulty-dependent (or otherwise dynamic) values
+    ///     without mutating instance state.
     /// </summary>
-    public virtual LayoutParameters GetParameters(GameLevel level)
+    public virtual LayoutParameters GetParameters(int difficulty)
         => new(GridWidth, GridHeight, Interconnectedness, ComputeDensity(),
             Sinuosity, RewardRoomProbability, CurseRoomProbability, HiddenConnectionProbability,
-            MinRooms, MaxRooms);
+            MinRooms, MaxRooms, difficulty);
 
     /// <summary>
     ///     Computes the placement density from <see cref="GridWidth" />,
@@ -205,21 +204,20 @@ public abstract class LevelLayout
     ///         uncovered nodes — typically a degree-1 leaf the trim pass couldn't remove).
     ///         The caller retries with a fresh seed.
     ///     </para>
+    ///     <para>
+    ///         <paramref name="stats" />, when non-null, records the failure category for
+    ///         each early-return path so diagnostic tests can attribute null returns to
+    ///         the specific stage that rejected the seed. <paramref name="gameStats" />
+    ///         supplies the game-wide per-room-feature counts used by
+    ///         <see cref="GetRewardFeatureWeight" /> to throttle features already placed
+    ///         on previous levels; <c>null</c> falls back to a zero baseline.
+    ///     </para>
     /// </remarks>
-    public RoomGraph? BuildGraph(LayoutParameters parameters, SimpleRandom random)
-        => BuildGraph(parameters, random, stats: null);
-
-    /// <summary>
-    ///     <see cref="BuildGraph(LayoutParameters,SimpleRandom)" /> overload that records
-    ///     the failure category on <paramref name="stats" /> when the graph can't be
-    ///     built — each early-return path bumps the matching <c>RoomGraph*</c> counter
-    ///     so diagnostic tests can attribute null returns to the specific stage that
-    ///     rejected the seed. A <c>null</c> <paramref name="stats" /> disables recording.
-    /// </summary>
     public RoomGraph? BuildGraph(
         LayoutParameters parameters,
         SimpleRandom random,
-        GenerationStats? stats)
+        LevelGenerationStats stats,
+        GenerationStats gameStats)
     {
         var nodes = PlaceRooms(parameters, random);
         if (nodes is null || nodes.Count < 2)
@@ -337,7 +335,7 @@ public abstract class LevelLayout
             return null;
         }
 
-        return BuildFinalGraph(nodes, directedEdges, parameters, random);
+        return BuildFinalGraph(nodes, directedEdges, parameters, random, stats, gameStats);
     }
 
     /// <summary>
@@ -454,8 +452,18 @@ public abstract class LevelLayout
 
         var path = new List<RoomGraphNode>();
         RoomGraphNode? cursor = target;
+        // BFS builds an acyclic parent tree rooted at `source` (whose entry maps to null),
+        // so the walk must terminate within parent.Count steps. Cap to fail fast on any
+        // future regression that would otherwise spin until OOM.
+        var safetyBudget = parent.Count + 1;
         while (cursor != null)
         {
+            if (--safetyBudget < 0)
+            {
+                throw new InvalidOperationException(
+                    $"BfsShortestPath parent chain exceeded {parent.Count} iterations; likely cycle in parent[].");
+            }
+
             path.Add(cursor);
             cursor = parent[cursor];
         }
@@ -564,8 +572,17 @@ public abstract class LevelLayout
 
         var path = new List<RoomGraphNode>();
         RoomGraphNode? cursor = anchor2;
+        // Parent dictionary is an acyclic BFS tree rooted at `seed`; cap to fail fast
+        // on a future regression rather than grow the list until OOM.
+        var safetyBudget = parent.Count + 1;
         while (cursor != null)
         {
+            if (--safetyBudget < 0)
+            {
+                throw new InvalidOperationException(
+                    $"BfsThroughUncovered parent chain exceeded {parent.Count} iterations; likely cycle in parent[].");
+            }
+
             path.Add(cursor);
             cursor = parent[cursor];
         }
@@ -851,11 +868,13 @@ public abstract class LevelLayout
     ///     visible outgoing edge so a room is never displayed as completely sealed off,
     ///     even when its other edges roll hidden.
     /// </summary>
-    private static RoomGraph BuildFinalGraph(
+    private RoomGraph BuildFinalGraph(
         List<RoomGraphNode> nodes,
         HashSet<(RoomGraphNode Src, RoomGraphNode Tgt)> directedEdges,
         LayoutParameters parameters,
-        SimpleRandom random)
+        SimpleRandom random,
+        LevelGenerationStats stats,
+        GenerationStats gameStats)
     {
         var graph = new RoomGraph();
         graph.Rooms.AddRange(nodes);
@@ -913,11 +932,20 @@ public abstract class LevelLayout
         }
 
         // Apply Reward / Curse feature tags. Rooms with low total degree (one in + one
-        // out) are more likely to receive rewards as a "discovery prize".
+        // out) are more likely to receive rewards as a "discovery prize". Reward picks
+        // are made with knowledge of what has been assigned so far (both on this level
+        // and across the game), so subclasses can weight features dynamically (e.g.
+        // clamp a feature to a max count by zeroing its weight once the cap is reached).
+        // When stats is supplied the running counts are persisted (and shared with
+        // PickRewardFeature) via <see cref="GenerationStats.RoomCountsByFeature" />.
+        IReadOnlyDictionary<RoomFeatures, int> levelCounts = stats.RoomCountsByFeature;
+        IReadOnlyDictionary<RoomFeatures, int> globalCounts = gameStats.RoomCountsByFeature;
         foreach (var node in nodes)
         {
             if ((node.Features & (RoomFeatures.Entrance | RoomFeatures.Exit)) != 0)
             {
+                stats.RecordRoomFeature(node.Features);
+                gameStats.RecordRoomFeature(node.Features);
                 continue;
             }
 
@@ -928,17 +956,46 @@ public abstract class LevelLayout
                 : parameters.RewardRoomProbability;
             if (random.NextSingle(0f, 1f) < rewardChance)
             {
-                node.Features |= PickRewardFeature(random);
+                var reward = PickRewardFeature(levelCounts, globalCounts, parameters, random);
+                if (reward != RoomFeatures.Normal)
+                {
+                    node.Features |= reward;                    
+                    stats.RecordRoomFeature(reward);                    
+                    gameStats.RecordRoomFeature(reward);
+                }
             }
 
             if (random.NextSingle(0f, 1f) < parameters.CurseRoomProbability)
             {
                 node.Features |= RoomFeatures.Cursed;
+                stats.RecordRoomFeature(RoomFeatures.Cursed);
+                gameStats.RecordRoomFeature(RoomFeatures.Cursed);
             }
         }
 
         return graph;
     }
+
+    /// <summary>
+    ///     The reward <see cref="RoomFeatures" /> flags that <see cref="PickRewardFeature" />
+    ///     can assign, in the canonical order it iterates them when sampling a weighted pick.
+    /// </summary>
+    private static readonly RoomFeatures[] RewardFeatureCandidates =
+    [
+        RoomFeatures.SmallFountain,
+        RoomFeatures.BigFountain,
+        RoomFeatures.SkillPedestal,
+        RoomFeatures.TraitPedestal,
+        RoomFeatures.FeatPedestal,
+        RoomFeatures.RacePedestal,
+        RoomFeatures.DeityAltar,
+        RoomFeatures.WeaponStand,
+        RoomFeatures.ArmorStand,
+        RoomFeatures.ItemCase,
+        RoomFeatures.MinorShrine,
+        RoomFeatures.MajorShrine,
+        RoomFeatures.RitualShrine
+    ];
 
     private const int LongestPathAttempts = 4;
 
@@ -1416,20 +1473,73 @@ public abstract class LevelLayout
         }
     }
 
-    private static RoomFeatures PickRewardFeature(SimpleRandom random)
+    /// <summary>
+    ///     Picks the reward <see cref="RoomFeatures" /> flag assigned to a reward room by
+    ///     summing per-feature weights from <see cref="GetRewardFeatureWeight" /> and
+    ///     sampling proportionally. Subclasses tune the distribution by overriding the
+    ///     weight hook (e.g. zeroing out deep-tier features on the entrance level, or
+    ///     capping a feature by returning 0 once <paramref name="assignedCounts" /> shows
+    ///     it has already been placed enough times). Returns <see cref="RoomFeatures.Normal" />
+    ///     when every weight is zero so the caller leaves the room un-tagged.
+    /// </summary>
+    private RoomFeatures PickRewardFeature(
+        IReadOnlyDictionary<RoomFeatures, int> assignedCounts,
+        IReadOnlyDictionary<RoomFeatures, int> globalAssignedCounts,
+        LayoutParameters parameters,
+        SimpleRandom random)
+        => random.Pick(RewardFeatureCandidates, feature => Math.Max(0f, GetRewardFeatureWeight(
+            feature,
+            assignedCounts.GetValueOrDefault(feature),
+            globalAssignedCounts.GetValueOrDefault(feature),
+            parameters)));
+
+    /// <summary>
+    ///     Returns the relative selection weight for <paramref name="feature" /> on the
+    ///     current reward draw. Weights scale with <see cref="LayoutParameters.Difficulty" />
+    ///     so deeper levels see more deep-tier features (BigFountain, MajorShrine,
+    ///     RitualShrine) while shallow levels stay focused on simpler rewards. The
+    ///     <paramref name="countSoFar" /> argument is the per-level count (lets caps
+    ///     express themselves as zero weights — e.g. DeityAltar / RacePedestal cap at
+    ///     one per level on early floors). <paramref name="globalCountSoFar" /> is the
+    ///     game-wide count across all levels generated so far, useful for soft-throttling
+    ///     repeat appearances of premium features.
+    ///     Subclasses can override to skew the distribution further; negative return
+    ///     values are treated as 0.
+    /// </summary>
+    protected virtual float GetRewardFeatureWeight(
+        RoomFeatures feature,
+        int countSoFar,
+        int globalCountSoFar,
+        LayoutParameters parameters)
     {
-        var roll = random.Next(100);
-        return roll switch
+        var difficulty = parameters.Difficulty;
+        // TODO: Allow this to be overridden in the branch definition
+        var baseWeight = feature switch
         {
-            < 25 => RoomFeatures.Fountain,
-            < 40 => RoomFeatures.SkillPedestal,
-            < 55 => RoomFeatures.TraitPedestal,
-            < 70 => RoomFeatures.FeatPedestal,
-            < 80 => RoomFeatures.WeaponStand,
-            < 90 => RoomFeatures.ArmorStand,
-            < 95 => RoomFeatures.MinorShrine,
-            _ => RoomFeatures.ItemCase
+            // Common shallow rewards — available everywhere.
+            RoomFeatures.SmallFountain => 72f,
+            RoomFeatures.SkillPedestal => 48f,
+            RoomFeatures.TraitPedestal => 48f,
+            RoomFeatures.FeatPedestal => 48f,
+            RoomFeatures.WeaponStand => 32f,
+            RoomFeatures.ArmorStand => 32f,
+            RoomFeatures.ItemCase => 20f,
+            RoomFeatures.MinorShrine => 16f,
+            // Unique-per-level on the introductory floors so the first altar / race choice
+            // doesn't immediately duplicate; the cap relaxes once the dungeon proper begins.
+            RoomFeatures.DeityAltar => difficulty > 1 || countSoFar < 1 ? 32f : 0f,
+            RoomFeatures.RacePedestal => difficulty > 1 || countSoFar < 1 ? 24f : 0f,
+            // Deep-tier rewards — progressively unlocked with difficulty.
+            RoomFeatures.BigFountain => Math.Clamp((difficulty - 1) * 4f, 0f, 32f),
+            RoomFeatures.MajorShrine => Math.Clamp((difficulty - 1) / 2 * 4f, 0f, 24f),
+            RoomFeatures.RitualShrine => Math.Clamp((difficulty - 3) / 3 * 4f, 0f, 16f),
+            _ => 0f
         };
+
+        // Soft-throttle repeat appearances across the run: each prior placement halves the
+        // effective base weight. The (2 + n) >> 1 shape keeps the first two placements at
+        // full weight, then decays by integer halving — and never divides by zero.
+        return baseWeight / ((2 + globalCountSoFar) >> 1);
     }
 
     /// <summary>
@@ -1454,6 +1564,7 @@ public abstract class LevelLayout
         var allChunks = new List<Chunk>();
         // Per-room chunk lists drive chunk-aware door placement below.
         var chunksByRoom = new Dictionary<int, List<Chunk>>();
+        var roomGenerationData = new List<(RoomComponent Room, RoomParameters Parameters, List<Chunk> Chunks)>();
         var stats = gameLevel.GenerationStats;
 
         // Compute the directional doorway demand per node up-front. Each edge contributes
@@ -1463,90 +1574,110 @@ public abstract class LevelLayout
         // commits to a chunk arrangement.
         var doorwayDemand = ComputeDoorwayDemand(graph);
 
-        foreach (var node in graph.Rooms)
+        try
         {
-            var room = (node.Features & RoomFeatures.Entrance) != 0
-                ? GetEmptyEntranceRoom(gameLevel, manager)
-                : CreateEmptyRoom(gameLevel, manager);
-            room.GridX = node.GridX;
-            room.GridY = node.GridY;
-            room.Features = node.Features;
-            node.Room = room;
-
-            // Per-room fragment selection. Throws if no fragment matches the room's
-            // RoomFeatures — a data-set bug.
-            var roomFragment = LevelGenerator.PickFragmentForRoom(
-                gameLevel, node.Features, stats);
-            var roomParameters = roomFragment.GetRoomParameters(branch);
-
-            AllocateTerrain(room, roomParameters.RoomWidth, roomParameters.RoomHeight,
-                roomParameters.DefaultTerrain);
-
-            var demand = doorwayDemand.TryGetValue(node, out var d)
-                ? d
-                : [];
-            var chunks = branch.RoomLayout.Fill(room, branch, roomFragment, demand);
-            if (chunks is null)
+            foreach (var node in graph.Rooms)
             {
-                // Abort and let the outer retry try a different seed.
-                return null;
+                var room = (node.Features & RoomFeatures.Entrance) != 0
+                    ? GetEmptyEntranceRoom(gameLevel, manager)
+                    : CreateEmptyRoom(gameLevel, manager);
+                room.GridX = node.GridX;
+                room.GridY = node.GridY;
+                room.Features = node.Features;
+                node.Room = room;
+
+                // Per-room fragment selection. Throws if no fragment matches the room's
+                // RoomFeatures — a data-set bug.
+                var roomFragment = LevelGenerator.PickFragmentForRoom(
+                    gameLevel, node.Features, stats);
+                var roomParameters = roomFragment.GetRoomParameters(branch);
+
+                AllocateTerrain(room, roomParameters.RoomWidth, roomParameters.RoomHeight,
+                    roomParameters.DefaultTerrain);
+
+                var demand = doorwayDemand.TryGetValue(node, out var d)
+                    ? d
+                    : [];
+                var chunks = branch.RoomLayout.Fill(room, branch, roomFragment, demand, roomParameters);
+                if (chunks is null)
+                {
+                    // Abort and let the outer retry try a different seed. The roomParameters
+                    // local just constructed isn't in the list yet, so dispose it explicitly
+                    // before bailing; the finally block returns the rest.
+                    roomParameters.Dispose();
+                    return null;
+                }
+
+                allChunks.AddRange(chunks);
+                chunksByRoom[room.EntityId] = chunks;
+                roomGenerationData.Add((room, roomParameters, chunks));
             }
 
-            allChunks.AddRange(chunks);
-            chunksByRoom[room.EntityId] = chunks;
+            foreach (var (room, roomParameters, chunks) in roomGenerationData)
+            {
+                roomParameters.CreatureGenerator.Fill(room, chunks);
+                roomParameters.ItemGenerator.Fill(room, chunks);
+            }
 
-            roomParameters.CreatureGenerator.Fill(room,
-                chunks.Where(c => c.Fragment is not ConnectingMapFragment).ToList());
-            roomParameters.ItemGenerator.Fill(room, chunks);
+            // Materialise edges. Bidirectional pairs are present as two separate edges (A→B and
+            // B→A) and produce two ConnectionComponent entities — one per direction — with
+            // mirrored Hidden flags.
+            var usedDoors = new Dictionary<int, HashSet<Point>>();
+            foreach (var edge in graph.Connections)
+            {
+                var sourceRoom = edge.Source.Room!;
+                var targetRoom = edge.Target.Room!;
+
+                var sourceDir = GridDeltaToDirection(
+                    edge.Target.GridX - edge.Source.GridX, edge.Target.GridY - edge.Source.GridY);
+                var targetDir = GridDeltaToDirection(
+                    edge.Source.GridX - edge.Target.GridX, edge.Source.GridY - edge.Target.GridY);
+
+                if (!usedDoors.TryGetValue(sourceRoom.EntityId, out var sourceUsed))
+                {
+                    sourceUsed = [..sourceRoom.Connections.Keys];
+                    usedDoors[sourceRoom.EntityId] = sourceUsed;
+                }
+
+                if (!usedDoors.TryGetValue(targetRoom.EntityId, out var targetUsed))
+                {
+                    targetUsed = [..targetRoom.Connections.Keys];
+                    usedDoors[targetRoom.EntityId] = targetUsed;
+                }
+
+                chunksByRoom.TryGetValue(sourceRoom.EntityId, out var sourceChunksList);
+                chunksByRoom.TryGetValue(targetRoom.EntityId, out var targetChunksList);
+
+                var sourceDoor = FindDoorwayInDirection(sourceRoom, sourceDir, sourceUsed,
+                    sourceChunksList ?? (IReadOnlyList<Chunk>)Array.Empty<Chunk>());
+                var targetDoor = FindDoorwayInDirection(targetRoom, targetDir, targetUsed,
+                    targetChunksList ?? (IReadOnlyList<Chunk>)Array.Empty<Chunk>());
+                sourceUsed.Add(sourceDoor);
+                targetUsed.Add(targetDoor);
+
+                // Carve wall tiles at the chosen door positions to archways so that they are
+                // walkable and visually distinct. DoorwayPoints candidates are wall tiles;
+                // the fallback may also land on a wall if no walkable tile was closer.
+                CarveArchway(sourceRoom, sourceDoor);
+                CarveArchway(targetRoom, targetDoor);
+
+                var sourceOrientation = CardinalDirectionFromDoor(sourceRoom, sourceDoor);
+                CreateIntraLevelConnection(sourceRoom, sourceDoor, targetRoom, targetDoor, sourceOrientation, edge.Hidden, manager);
+            }
+
+            return allChunks;
         }
-
-        // Materialise edges. Bidirectional pairs are present as two separate edges (A→B and
-        // B→A) and produce two ConnectionComponent entities — one per direction — with
-        // mirrored Hidden flags.
-        var usedDoors = new Dictionary<int, HashSet<Point>>();
-        foreach (var edge in graph.Connections)
+        finally
         {
-            var sourceRoom = edge.Source.Room!;
-            var targetRoom = edge.Target.Room!;
-
-            var sourceDir = GridDeltaToDirection(
-                edge.Target.GridX - edge.Source.GridX, edge.Target.GridY - edge.Source.GridY);
-            var targetDir = GridDeltaToDirection(
-                edge.Source.GridX - edge.Target.GridX, edge.Source.GridY - edge.Target.GridY);
-
-            if (!usedDoors.TryGetValue(sourceRoom.EntityId, out var sourceUsed))
+            // Return every rented ChunkCells buffer to the pool. Safe to run on the
+            // success, abort, and exception paths alike — Dispose is idempotent and
+            // roomGenerationData only contains the parameters we successfully
+            // constructed (the abort path disposes the in-flight one inline).
+            foreach (var entry in roomGenerationData)
             {
-                sourceUsed = [..sourceRoom.Connections.Keys];
-                usedDoors[sourceRoom.EntityId] = sourceUsed;
+                entry.Parameters.Dispose();
             }
-
-            if (!usedDoors.TryGetValue(targetRoom.EntityId, out var targetUsed))
-            {
-                targetUsed = [..targetRoom.Connections.Keys];
-                usedDoors[targetRoom.EntityId] = targetUsed;
-            }
-
-            chunksByRoom.TryGetValue(sourceRoom.EntityId, out var sourceChunksList);
-            chunksByRoom.TryGetValue(targetRoom.EntityId, out var targetChunksList);
-
-            var sourceDoor = FindDoorwayInDirection(sourceRoom, sourceDir, sourceUsed,
-                sourceChunksList ?? (IReadOnlyList<Chunk>)Array.Empty<Chunk>());
-            var targetDoor = FindDoorwayInDirection(targetRoom, targetDir, targetUsed,
-                targetChunksList ?? (IReadOnlyList<Chunk>)Array.Empty<Chunk>());
-            sourceUsed.Add(sourceDoor);
-            targetUsed.Add(targetDoor);
-
-            // Carve wall tiles at the chosen door positions to archways so that they are
-            // walkable and visually distinct. DoorwayPoints candidates are wall tiles;
-            // the fallback may also land on a wall if no walkable tile was closer.
-            CarveArchway(sourceRoom, sourceDoor);
-            CarveArchway(targetRoom, targetDoor);
-
-            var sourceOrientation = CardinalDirectionFromDoor(sourceRoom, sourceDoor);
-            CreateIntraLevelConnection(sourceRoom, sourceDoor, targetRoom, targetDoor, sourceOrientation, edge.Hidden, manager);
         }
-
-        return allChunks;
     }
 
     /// <summary>
@@ -1787,6 +1918,7 @@ public abstract class LevelLayout
     {
         room.Width = width;
         room.Height = height;
+        room.BoundPlaceableFeatures = 0;
 
         var length = room.TileCount;
         room.Terrain = ArrayPool<MapFeature>.Shared.Rent(length);
@@ -1818,53 +1950,5 @@ public abstract class LevelLayout
         }
 
         room.EnsureInitialized();
-    }
-
-    /// <summary>
-    ///     Returns rented terrain arrays back to <see cref="ArrayPool{T}.Shared" /> and replaces them
-    ///     with <see cref="Array.Empty{T}" /> placeholders. Safe to call on a partially or never
-    ///     initialised <see cref="RoomComponent" /> — freshly-constructed components already
-    ///     hold empty placeholders, so the rent-return helpers see length 0 and skip the pool return.
-    /// </summary>
-    public static void ReleaseTerrain(RoomComponent room)
-    {
-        ReturnTerrainIfRented(room.Terrain);
-        ReturnTerrainIfRented(room.Neighbors);
-        ReturnTerrainIfRented(room.KnownNeighbors);
-        ReturnTerrainIfRented(room.VisibleTerrain);
-        ReturnTerrainIfRented(room.KnownTerrain);
-
-        room.Terrain = Array.Empty<MapFeature>();
-        room.Neighbors = Array.Empty<DirectionFlags>();
-        room.KnownNeighbors = Array.Empty<DirectionFlags>();
-        room.VisibleTerrain = Array.Empty<byte>();
-        room.KnownTerrain = Array.Empty<MapFeature>();
-        room.Width = 0;
-        room.Height = 0;
-    }
-
-    private static void ReturnTerrainIfRented(byte[] array)
-    {
-        // Array.Empty<T>() instances have length 0 and must not be returned to the pool.
-        if (array.Length > 0)
-        {
-            ArrayPool<byte>.Shared.Return(array);
-        }
-    }
-
-    private static void ReturnTerrainIfRented(MapFeature[] array)
-    {
-        if (array.Length > 0)
-        {
-            ArrayPool<MapFeature>.Shared.Return(array);
-        }
-    }
-
-    private static void ReturnTerrainIfRented(DirectionFlags[] array)
-    {
-        if (array.Length > 0)
-        {
-            ArrayPool<DirectionFlags>.Shared.Return(array);
-        }
     }
 }

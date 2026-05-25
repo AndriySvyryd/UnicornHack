@@ -1,4 +1,5 @@
 using UnicornHack.Data.Branches;
+using UnicornHack.Systems.Levels;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Generation;
@@ -15,7 +16,9 @@ public class TreeLevelLayoutTest
         var layout = new TreeLevelLayout();
         var random = new SimpleRandom { Seed = seed };
 
-        var graph = layout.GenerateRoomGraph(random);
+        var graph = layout.BuildGraph(
+            layout.GetParameters(LevelGenerator.MaxDifficulty), random,
+            new LevelGenerationStats(), new GenerationStats());
 
         Assert.NotNull(graph);
         Assert.True(LevelGenerator.ValidateRoomGraph(graph),
@@ -32,7 +35,9 @@ public class TreeLevelLayoutTest
         for (uint seed = 1; seed <= trials; seed++)
         {
             var random = new SimpleRandom { Seed = seed };
-            var graph = layout.GenerateRoomGraph(random);
+            var graph = layout.BuildGraph(
+                layout.GetParameters(LevelGenerator.MaxDifficulty), random,
+                new LevelGenerationStats(), new GenerationStats());
             if (graph is not null && LevelGenerator.ValidateRoomGraph(graph))
             {
                 validCount++;
@@ -49,7 +54,9 @@ public class TreeLevelLayoutTest
         var layout = new TreeLevelLayout();
         var random = new SimpleRandom { Seed = 1 };
 
-        var graph = layout.GenerateRoomGraph(random);
+        var graph = layout.BuildGraph(
+            layout.GetParameters(LevelGenerator.MaxDifficulty), random,
+            new LevelGenerationStats(), new GenerationStats());
 
         Assert.NotNull(graph);
         Assert.Contains(graph.Rooms, r => (r.Features & RoomFeatures.Entrance) != 0);
@@ -67,8 +74,10 @@ public class TreeLevelLayoutTest
 
         for (uint seed = 1; seed <= 20; seed++)
         {
-            sparseTotal += sparseLayout.GenerateRoomGraph(new SimpleRandom { Seed = seed })?.Connections.Count ?? 0;
-            denseTotal += denseLayout.GenerateRoomGraph(new SimpleRandom { Seed = seed })?.Connections.Count ?? 0;
+            sparseTotal += sparseLayout.BuildGraph(sparseLayout.GetParameters(LevelGenerator.MaxDifficulty),
+                new SimpleRandom { Seed = seed }, new LevelGenerationStats(), new GenerationStats())?.Connections.Count ?? 0;
+            denseTotal += denseLayout.BuildGraph(denseLayout.GetParameters(LevelGenerator.MaxDifficulty),
+                new SimpleRandom { Seed = seed }, new LevelGenerationStats(), new GenerationStats())?.Connections.Count ?? 0;
         }
 
         Assert.True(denseTotal > sparseTotal,
@@ -86,9 +95,11 @@ public class TreeLevelLayoutTest
 
         for (uint seed = 1; seed <= 20; seed++)
         {
-            noCurseTotal += noCurseLayout.GenerateRoomGraph(new SimpleRandom { Seed = seed })
+            noCurseTotal += noCurseLayout.BuildGraph(noCurseLayout.GetParameters(LevelGenerator.MaxDifficulty),
+                    new SimpleRandom { Seed = seed }, new LevelGenerationStats(), new GenerationStats())
                 ?.Rooms.Count(r => (r.Features & RoomFeatures.Cursed) != 0) ?? 0;
-            alwaysCurseTotal += alwaysCurseLayout.GenerateRoomGraph(new SimpleRandom { Seed = seed })
+            alwaysCurseTotal += alwaysCurseLayout.BuildGraph(alwaysCurseLayout.GetParameters(LevelGenerator.MaxDifficulty),
+                    new SimpleRandom { Seed = seed }, new LevelGenerationStats(), new GenerationStats())
                 ?.Rooms.Count(r => (r.Features & RoomFeatures.Cursed) != 0) ?? 0;
         }
 
@@ -105,7 +116,8 @@ public class TreeLevelLayoutTest
         var validated = 0;
         for (uint seed = 1; seed <= 20; seed++)
         {
-            var graph = layout.GenerateRoomGraph(new SimpleRandom { Seed = seed });
+            var graph = layout.BuildGraph(layout.GetParameters(LevelGenerator.MaxDifficulty),
+                new SimpleRandom { Seed = seed }, new LevelGenerationStats(), new GenerationStats());
             if (graph is null)
             {
                 // Graph generation can occasionally fail under extreme parameters; that's
@@ -131,7 +143,9 @@ public class TreeLevelLayoutTest
         var layout = new TreeLevelLayout { Interconnectedness = 0.0f };
         var random = new SimpleRandom { Seed = 1 };
 
-        var graph = layout.GenerateRoomGraph(random);
+        var graph = layout.BuildGraph(
+            layout.GetParameters(LevelGenerator.MaxDifficulty), random,
+            new LevelGenerationStats(), new GenerationStats());
 
         Assert.NotNull(graph);
         Assert.True(graph.Connections.Count <= 3 * graph.Rooms.Count,
@@ -222,6 +236,53 @@ public class TreeLevelLayoutTest
         Assert.True(LevelGenerator.ValidateRoomGraph(graph));
     }
 
+    [Fact]
+    public void Reward_distribution_covers_every_feature_flag()
+    {
+        // PickRewardFeature must be able to emit every RoomFeatures flag listed in the
+        // distribution; if a future refactor accidentally drops one this test catches it.
+        var layout = new TreeLevelLayout { RewardRoomProbability = 1.0f, CurseRoomProbability = 0.0f };
+
+        var expectedFlags = new[]
+        {
+            RoomFeatures.SmallFountain,
+            RoomFeatures.BigFountain,
+            RoomFeatures.SkillPedestal,
+            RoomFeatures.TraitPedestal,
+            RoomFeatures.FeatPedestal,
+            RoomFeatures.RacePedestal,
+            RoomFeatures.DeityAltar,
+            RoomFeatures.WeaponStand,
+            RoomFeatures.ArmorStand,
+            RoomFeatures.ItemCase,
+            RoomFeatures.MinorShrine,
+            RoomFeatures.MajorShrine,
+            RoomFeatures.RitualShrine
+        };
+
+        var observed = RoomFeatures.Normal;
+        for (uint seed = 1; seed <= 500 && observed != expectedFlags.Aggregate(RoomFeatures.Normal, (a, f) => a | f); seed++)
+        {
+            var graph = layout.BuildGraph(layout.GetParameters(LevelGenerator.MaxDifficulty),
+                new SimpleRandom { Seed = seed }, new LevelGenerationStats(), new GenerationStats());
+            if (graph is null)
+            {
+                continue;
+            }
+
+            foreach (var room in graph.Rooms)
+            {
+                observed |= room.Features;
+            }
+        }
+
+        foreach (var flag in expectedFlags)
+        {
+            Assert.True((observed & flag) != 0,
+                $"Reward distribution never produced {flag} across 500 seeds");
+        }
+    }
+
     [Theory]
     [InlineData(1u)]
     [InlineData(42u)]
@@ -297,15 +358,20 @@ public class TreeLevelLayoutTest
     {
         // Every dungeon level — including depth 1 — should use the full TreeLevelLayout
         // defaults; the introductory floor is now in the entrance branch.
+        var layout = (DungeonLevelLayout)BranchData.Dungeon.Layout;
+
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
         var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
-        var layout = (DungeonLevelLayout)BranchData.Dungeon.Layout;
-
         var firstLevel = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
         LevelGenerator.Generate(firstLevel);
 
-        var deepLevel = LevelGenerator.CreateEmpty(dungeon, depth: 5, seed: 1u, manager);
+        // Use a fresh game for the second generation to keep this test independent from
+        // queue backlog side effects between runs.
+        var deepGame = TestHelper.CreateGame(seed: 1u);
+        var deepManager = deepGame.Manager;
+        var deepDungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, deepGame);
+        var deepLevel = LevelGenerator.CreateEmpty(deepDungeon, depth: 5, seed: 1u, deepManager);
         LevelGenerator.Generate(deepLevel);
 
         Assert.Equal((byte)7, layout.GridWidth);

@@ -1,4 +1,4 @@
-﻿using UnicornHack.Data.Creatures;
+using UnicornHack.Data.Creatures;
 
 namespace UnicornHack.Systems.Levels;
 

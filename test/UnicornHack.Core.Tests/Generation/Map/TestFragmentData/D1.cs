@@ -1,27 +1,30 @@
-namespace UnicornHack.Data.Fragments;
+namespace UnicornHack.Generation.Map.TestFragments;
 
-public static partial class DefiningMapFragmentData
+/// <summary>
+///     Test-only defining fragments. Lives outside <c>UnicornHack.Data.Fragments.DefiningMapFragmentData</c>
+///     so the production fragment loader's reflection pass doesn't pick them up.
+/// </summary>
+public static partial class TestDefiningMapFragmentData
 {
     public static readonly DefiningMapFragment D1 = new DefiningMapFragment
     {
         Name = "d1",
-        GenerationWeight = "0",
         NoRandomDoorways = true,
         Map = @"
                      ###########                 #######
                      #..........,,,,,,,,,,,,,,,,,.......,,
  ########           ##..=......#,,   #####,      #.....# ,
- #......#            #..........,,,, #.B.#,      #.....# ,,,
+ #......#            #..........,,,, #.%.#,      #.....# ,,,
  #......#            #.........#,  , #>...,      ##.####   ,    ###########
  #......#  ,         ########.##,  ,,....#,,,,,,,,,,,,,,,,,,,,,,..........#
- #......., ,,,,,,,,,,,,,,,,,,,,,,   ,#####,        ,,,       ,  #......b..#
- #...b..#,                   ,      ,,,,  ,          ,       ,,,#.........#
+ #......., ,,,,,,,,,,,,,,,,,,,,,,   ,#####,        ,,,       ,  #......%..#
+ #...%..#,                   ,      ,,,,  ,          ,       ,,,#.........#
  #.$....#,                   ,         ,  ,          ,,,       ,.......(..#
  ######.#,,,                 ,         ,,,,            ,        #.........#
        ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,#    ###########
            ,,, ##############.#           , ###########.#####
              , #...............,,,,,,,,   , #..............#
-             ,,....b..........#           , #$#.....b...<..#
+             ,,....%..........#           , #$#.....%...<..#
                #........).....#           ,,...............#
                #..............#             ################
                #####.##########
@@ -45,7 +48,7 @@ public static partial class DefiningMapFragmentData
                         .#####
                         #....#
                         #....#
-                        #..B.#
+                        #..%.#
                         #....#
                         ######
 "

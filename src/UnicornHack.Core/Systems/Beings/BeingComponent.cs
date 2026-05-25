@@ -437,7 +437,7 @@ public class BeingComponent : GameComponent
     public IReadOnlyDictionary<int, GameEntity> SlottedAbilities
     {
         get;
-    } = new Dictionary<int, GameEntity>();
+    } = new SortedDictionary<int, GameEntity>();
 
     public IReadOnlyCollection<GameEntity> Races
     {
@@ -507,7 +507,7 @@ public class BeingComponent : GameComponent
         _primaryNaturalWeaponId = default;
         _secondaryNaturalWeaponId = default;
         _entropyState = default;
-        ((Dictionary<int, GameEntity>)SlottedAbilities).Clear();
+        ((SortedDictionary<int, GameEntity>)SlottedAbilities).Clear();
         ((HashSet<GameEntity>)Races).Clear();
         _abilities = default!;
         _appliedEffects = default!;

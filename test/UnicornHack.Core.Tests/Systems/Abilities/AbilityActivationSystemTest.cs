@@ -1,4 +1,4 @@
-﻿using UnicornHack.Data.Abilities;
+using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
 using UnicornHack.Systems.Actors;
@@ -228,13 +228,13 @@ public class AbilityActivationSystemTest
 
     [Fact]
     public void Targeting_line_pattern1_diagonal() => TestTargeting(@"
-O#.......#
+<#.......#
 #.#......#
 .#.#.....#
 ....#....#
 .........#
 ....#....#
-.....#T..#",
+.....#2..#",
         new byte[]
         {
             0, 254, 0, 0, 0, 0, 0, 0, 0, 0, 254, 76, 254, 0, 0, 0, 0, 0, 0, 0, 0, 254, 140, 254, 0, 0, 0, 0, 0, 0,
@@ -248,8 +248,8 @@ O#.......#
 
     [Fact]
     public void Targeting_line_pattern1_diagonal_near() => TestTargeting(@"
-O#.......#
-#T#......#
+<#.......#
+#2#......#
 .#.#.....#
 ....#....#
 .........#
@@ -268,7 +268,7 @@ O#.......#
 
     [Fact]
     public void Targeting_line_pattern1_diagonal_self() => TestTargeting(@"
-O#.......#
+<#.......#
 #.#......#
 .#.#.....#
 ....#....#
@@ -284,12 +284,13 @@ O#.......#
         6,
         TargetingShape.Line,
         1,
-        Direction.Southeast);
+        Direction.Southeast,
+        targetGlyph: '<');
 
     [Fact]
     public void Targeting_line_pattern2_diagonal_near() => TestTargeting(@"
-O........#
-.T.......#
+<........#
+.2.......#
 ..#......#
 ....#....#
 .........#
@@ -309,7 +310,7 @@ O........#
 
     [Fact]
     public void Targeting_line_pattern2_vertical_self() => TestTargeting(@"
-...O.....#
+...<.....#
 .........#
 ..#......#
 ....#....#
@@ -325,12 +326,13 @@ O........#
         6,
         TargetingShape.Line,
         1,
-        Direction.South);
+        Direction.South,
+        targetGlyph: '<');
 
     [Fact]
     public void Targeting_line_pattern2_vertical_near() => TestTargeting(@"
-..O......#
-..T......#
+..<......#
+..2......#
 ..#......#
 ....#....#
 .........#
@@ -353,16 +355,12 @@ O........#
         int range,
         TargetingShape targetingShape,
         int targetShapeSize,
-        Direction heading)
+        Direction heading,
+        char targetGlyph = '2')
     {
-        var (level, rooms) = TestHelper.BuildRoomWithChunks(map);
-        var room = rooms.Single();
-        var origin = room.PredefinedPoints.Single(p => p.Item2 == 'O').Item1;
-        var (target, targetChar) = room.PredefinedPoints.SingleOrDefault(p => p.Item2 == 'T');
-        if (targetChar != 'T')
-        {
-            target = origin;
-        }
+        var (level, _) = TestHelper.BuildRoomWithChunks(map);
+        var origin = level.Connections.Single().Key;
+        var target = targetGlyph == '<' ? origin : FindTargetPoint(map, targetGlyph, origin);
 
         var manager = level.Entity.Manager;
         var abilityActivationSystem = manager.AbilityActivationSystem;
@@ -383,6 +381,50 @@ O........#
         ((List<(Point, byte)>)targetedCells).Clear();
         manager.PointByteListArrayPool.Return((List<(Point, byte)>)targetedCells);
         TestHelper.AssertVisibility(level, expectedExposure, visibleTerrain);
+    }
+
+    /// <summary>
+    ///     Locates <paramref name="glyph" /> in the raw test map and converts its
+    ///     position to a world-space <see cref="Point" />. The fragment may be placed
+    ///     at a non-zero offset within the level, so the map→world translation is
+    ///     derived from the '&lt;' anchor in the map literal compared to the supplied
+    ///     <paramref name="origin" /> (the connection's world position).
+    /// </summary>
+    private static Point FindTargetPoint(string map, char glyph, Point origin)
+    {
+        var lines = map.Split('\n');
+        Point? originMap = null;
+        Point? targetMap = null;
+        for (var row = 0; row < lines.Length && (originMap is null || targetMap is null); row++)
+        {
+            var line = lines[row];
+            for (var col = 0; col < line.Length; col++)
+            {
+                var c = line[col];
+                if (originMap is null && c == '<')
+                {
+                    originMap = new Point((byte)col, (byte)row);
+                }
+                else if (targetMap is null && c == glyph)
+                {
+                    targetMap = new Point((byte)col, (byte)row);
+                }
+            }
+        }
+
+        if (targetMap is null)
+        {
+            throw new ArgumentException($"Glyph '{glyph}' not found in map.", nameof(glyph));
+        }
+
+        if (originMap is null)
+        {
+            throw new ArgumentException("Origin glyph '<' not found in map.", nameof(map));
+        }
+
+        return new Point(
+            (byte)(origin.X + targetMap.Value.X - originMap.Value.X),
+            (byte)(origin.Y + targetMap.Value.Y - originMap.Value.Y));
     }
 
     private class AbilityActivatedListener : IGameSystem<AbilityActivatedMessage>

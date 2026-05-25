@@ -12,20 +12,70 @@ public class Chunk
     public Chunk(
         RoomComponent room,
         Rectangle boundingRectangle,
+        MapFragment fragment,
         IReadOnlySet<Point>? doorwayPoints,
         IReadOnlySet<Point>? insidePoints,
         IReadOnlySet<Point>? perimeterPoints,
-        IReadOnlyList<(Point, char)> predefinedPoints,
-        MapFragment fragment)
+        RoomParameters roomParameters,
+        IReadOnlyList<(Point Point, RoomFeatures? Feature)>? featurePoints = null,
+        IReadOnlyList<Point>? creaturePoints = null,
+        IReadOnlyList<Point>? trapPoints = null)
     {
+        ArgumentNullException.ThrowIfNull(roomParameters);
+
         Room = room;
 
         BoundingRectangle = boundingRectangle;
+        Fragment = fragment;
         DoorwayPoints = doorwayPoints ?? new HashSet<Point>();
         InsidePoints = insidePoints ?? new HashSet<Point>();
         PerimeterPoints = perimeterPoints ?? new HashSet<Point>();
-        PredefinedPoints = predefinedPoints;
-        Fragment = fragment;
+        FeaturePoints = featurePoints ?? Array.Empty<(Point, RoomFeatures?)>();
+        CreaturePoints = creaturePoints ?? Array.Empty<Point>();
+        TrapPoints = trapPoints ?? Array.Empty<Point>();
+
+        DebugAssertPointsInRoom();
+
+        // Register every cell this chunk owns on the room's generation-time
+        // chunk-cell map (carried by RoomParameters) so the walkable-wins overlap
+        // rule in MapFragment.Write can distinguish chunk-placed terrain (which a
+        // later wall write must preserve when walkable) from the room's background
+        // default fill (which is freely overwritable). The map lives only for the
+        // duration of generation.
+        //
+        // Every fragment — including the <see cref="DefiningMapFragment" /> — claims
+        // its cells: by design the only cells NOT registered are those still
+        // carrying the room's <see cref="RoomParameters.DefaultTerrain" /> background
+        // fill. The defining fragment is the room's first chunk and establishes
+        // both its own floor/wall/feature payload and the room's default fill via
+        // <see cref="LevelLayout.AllocateTerrain" />.
+        //
+        // Last-write-wins when chunks overlap so the most-recently-placed chunk
+        // owns the cell.
+        foreach (var p in InsidePoints)
+        {
+            roomParameters[p] = this;
+        }
+        foreach (var p in PerimeterPoints)
+        {
+            roomParameters[p] = this;
+        }
+    }
+
+    [Conditional("DEBUG")]
+    private void DebugAssertPointsInRoom()
+    {
+        var bounds = Room.BoundingRectangle;
+        foreach (var p in InsidePoints)
+        {
+            Debug.Assert(bounds.Contains(p),
+                $"Chunk '{Fragment.Name}' has InsidePoint {p} outside room bounds {bounds}.");
+        }
+        foreach (var p in PerimeterPoints)
+        {
+            Debug.Assert(bounds.Contains(p),
+                $"Chunk '{Fragment.Name}' has PerimeterPoint {p} outside room bounds {bounds}.");
+        }
     }
 
     public RoomComponent Room
@@ -72,7 +122,30 @@ public class Chunk
         get;
     }
 
-    public IReadOnlyList<(Point, char)> PredefinedPoints
+    /// <summary>
+    ///     Cells whose payload glyph matched a key in <see cref="MapFragment.FeatureGlyphs" />.
+    /// </summary>
+    public IReadOnlyList<(Point Point, RoomFeatures? Feature)> FeaturePoints
+    {
+        get;
+    }
+
+    /// <summary>
+    ///     Cells whose payload glyph matched <see cref="MapFragment.CreatureWildcardGlyph" />,
+    ///     or that an annotation pass bound to a specific creature. The creature generator
+    ///     picks a difficulty-appropriate creature for each unannotated cell at spawn time.
+    /// </summary>
+    public IReadOnlyList<Point> CreaturePoints
+    {
+        get;
+    }
+
+    /// <summary>
+    ///     Cells whose payload glyph matched <c>^</c>. Recorded for a follow-up pass
+    ///     that materializes trap entities at these positions; until then the underlying
+    ///     tile is plain stone floor.
+    /// </summary>
+    public IReadOnlyList<Point> TrapPoints
     {
         get;
     }
@@ -113,10 +186,21 @@ public class Chunk
 
     public Point GetGoodConnectionPoint(Chunk chunk)
     {
-        if (DoorwayPoints.Count == 0)
+        // Doorway points are the preferred targets (carved openings facing outward),
+        // but open-perimeter chunks (e.g. corner pieces with no `+` doorways) connect
+        // through their open floor edge instead. Fall back to any inside point so the
+        // corridor system can still reach them — the corridor will exit the chunk via
+        // whichever floor cell the planner picks.
+        var candidates = DoorwayPoints;
+        if (candidates.Count == 0)
+        {
+            candidates = InsidePoints;
+        }
+
+        if (candidates.Count == 0)
         {
             throw new InvalidOperationException(
-                $"Chunk for fragment '{Fragment.Name}' at {BoundingRectangle} has no doorway points and cannot be connected.");
+                $"Chunk for fragment '{Fragment.Name}' at {BoundingRectangle} has no doorway or inside points and cannot be connected.");
         }
 
         var targetRect = chunk.BoundingRectangle;
@@ -124,9 +208,9 @@ public class Chunk
         // The closer points are much more likely to get chosen. Add 1 so the farthest
         // point still has positive weight — otherwise WeightedOrder yields nothing when
         // every doorway sits at maxDistance (e.g. a single doorway), and .First() throws.
-        var connectionPointDistances = new (Point Point, byte Distance)[DoorwayPoints.Count];
+        var connectionPointDistances = new (Point Point, byte Distance)[candidates.Count];
         var idx = 0;
-        foreach (var p in DoorwayPoints)
+        foreach (var p in candidates)
         {
             var d = targetRect.DistanceTo(p);
             if (d > maxDistance)

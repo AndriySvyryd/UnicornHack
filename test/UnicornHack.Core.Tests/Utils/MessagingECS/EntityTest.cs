@@ -1,4 +1,4 @@
-﻿using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Levels;

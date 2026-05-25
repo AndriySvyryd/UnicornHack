@@ -32,7 +32,9 @@ public class Program
 
         services.AddPooledDbContextFactory<GameDbContext>((_, options) =>
         {
-            options.UseSqlServer(configuration.GetConnectionString(name: "DefaultConnection")!)
+            options.UseSqlServer(
+                    configuration.GetConnectionString(name: "DefaultConnection")!,
+                    sql => sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
                 .ConfigureWarnings(w => w.Default(WarningBehavior.Throw)
                     .Log(CoreEventId.SensitiveDataLoggingEnabledWarning));
 

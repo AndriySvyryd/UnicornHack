@@ -22,6 +22,44 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
 
     public const string EquippedAbilityName = "equipped";
 
+    // Cached filtered subsets of the DefaultAttack templates, split by ItemType. Built
+    // lazily on first <see cref="RecalculateWeaponAbilities" /> call. The ability loader
+    // is immutable after load-time so the snapshot stays valid for the system's
+    // lifetime; using arrays avoids the per-call allocation plus the per-template ItemType
+    // filter check that would otherwise run for every creature spawn.
+    private WieldingAbility[]? _meleeDefaultAttackTemplates;
+    private WieldingAbility[]? _rangedDefaultAttackTemplates;
+
+    private WieldingAbility[] GetDefaultAttackTemplates(GameManager manager, bool melee)
+    {
+        var cached = melee ? _meleeDefaultAttackTemplates : _rangedDefaultAttackTemplates;
+        if (cached != null)
+        {
+            return cached;
+        }
+
+        var typeMask = melee ? ItemType.WeaponMelee : ItemType.WeaponRanged;
+        var list = new List<WieldingAbility>();
+        foreach (WieldingAbility template in manager.Game.Services.Data.Abilities.GetAllValues(AbilityType.DefaultAttack))
+        {
+            if ((template.ItemType & typeMask) != 0)
+            {
+                list.Add(template);
+            }
+        }
+
+        var array = list.ToArray();
+        if (melee)
+        {
+            _meleeDefaultAttackTemplates = array;
+        }
+        else
+        {
+            _rangedDefaultAttackTemplates = array;
+        }
+        return array;
+    }
+
     public MessageProcessingResult Process(ItemEquippedMessage message, GameManager manager)
     {
         if (message.Successful)
@@ -186,13 +224,9 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
             melee ? SecondaryMeleeWeaponAttackName : SecondaryRangedWeaponAttackName,
             actorEntity, secondaryWeapon, activation, manager);
 
-        foreach (WieldingAbility defaultAttackTemplate in manager.Game.Services.Data.Abilities.GetAllValues(AbilityType.DefaultAttack))
+        foreach (var defaultAttackTemplate in GetDefaultAttackTemplates(manager, melee))
         {
-            if ((melee && (defaultAttackTemplate.ItemType & ItemType.WeaponMelee) != 0)
-                || (!melee && (defaultAttackTemplate.ItemType & ItemType.WeaponRanged) != 0))
-            {
-                EnsureAbility(defaultAttackTemplate, actorEntity, manager);
-            }
+            EnsureAbility(defaultAttackTemplate, actorEntity, manager);
         }
 
         AbilityComponent? defaultAttackAbility = null;

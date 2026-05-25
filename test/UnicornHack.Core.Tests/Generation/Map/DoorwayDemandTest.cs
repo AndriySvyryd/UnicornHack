@@ -1,4 +1,3 @@
-using UnicornHack.Primitives;
 using UnicornHack.Systems.Levels;
 
 namespace UnicornHack.Generation.Map;
@@ -34,11 +33,11 @@ public class DoorwayDemandTest
             CreatureGenerator = new CreatureGenerator { ExpectedInitialCount = 0 },
             ItemGenerator = new ItemGenerator { ExpectedInitialCount = 0 }
         };
-        fragment.EnsureInitialized(game);
+        fragment.EnsureInitialized();
 
         var demand = new Dictionary<Direction, int> { { Direction.East, 1 } };
 
-        var result = new EmptyRoomLayout().Fill(room, branch, fragment, demand);
+        var result = new EmptyRoomLayout().Fill(room, branch, fragment, demand, fragment.GetRoomParameters(branch));
 
         Assert.Null(result);
     }
@@ -59,14 +58,14 @@ public class DoorwayDemandTest
             Map = """
                 #####
                 #...#
-                #..?#
+                #..>+
                 #...#
                 #####
                 """,
             CreatureGenerator = new CreatureGenerator { ExpectedInitialCount = 0 },
             ItemGenerator = new ItemGenerator { ExpectedInitialCount = 0 }
         };
-        fragment.EnsureInitialized(game);
+        fragment.EnsureInitialized();
 
         // Demand 2 doorways total — the fragment only has 1.
         var demand = new Dictionary<Direction, int>
@@ -75,7 +74,7 @@ public class DoorwayDemandTest
             { Direction.West, 1 }
         };
 
-        var result = new EmptyRoomLayout().Fill(room, branch, fragment, demand);
+        var result = new EmptyRoomLayout().Fill(room, branch, fragment, demand, fragment.GetRoomParameters(branch));
 
         Assert.Null(result);
     }
@@ -95,14 +94,14 @@ public class DoorwayDemandTest
             Map = """
                 #####
                 #...#
-                ?..?#
+                +...+
                 #...#
                 #####
                 """,
             CreatureGenerator = new CreatureGenerator { ExpectedInitialCount = 0 },
             ItemGenerator = new ItemGenerator { ExpectedInitialCount = 0 }
         };
-        fragment.EnsureInitialized(game);
+        fragment.EnsureInitialized();
 
         var demand = new Dictionary<Direction, int>
         {
@@ -110,14 +109,14 @@ public class DoorwayDemandTest
             { Direction.West, 1 }
         };
 
-        var result = new EmptyRoomLayout().Fill(room, branch, fragment, demand);
+        var result = new EmptyRoomLayout().Fill(room, branch, fragment, demand, fragment.GetRoomParameters(branch));
 
         Assert.NotNull(result);
     }
 
     /// <summary>
     ///     When all doorway points of a fragment are already consumed by existing
-    ///     connections on the room, <see cref="UniformRoomLayout.DeductChunkDoorways" />
+    ///     connections on the room, <see cref="RoomLayout.DeductChunkDoorways" />
     ///     skips them. This verifies that the remaining demand is not reduced when
     ///     doorways are already spoken for.
     /// </summary>
@@ -133,23 +132,23 @@ public class DoorwayDemandTest
             Map = """
                 #####
                 #...#
-                #..?#
+                #...+
                 #...#
                 #####
                 """,
             CreatureGenerator = new CreatureGenerator { ExpectedInitialCount = 0 },
             ItemGenerator = new ItemGenerator { ExpectedInitialCount = 0 }
         };
-        fragment.EnsureInitialized(game);
+        fragment.EnsureInitialized();
 
         // First, place with no demand to discover the doorway point.
-        var chunks = new EmptyRoomLayout().Fill(room, branch, fragment, []);
+        var chunks = new EmptyRoomLayout().Fill(room, branch, fragment, [], fragment.GetRoomParameters(branch));
         Assert.NotNull(chunks);
         Assert.Single(chunks);
         var doorwayPoint = Assert.Single(chunks[0].DoorwayPoints);
 
         // Simulate an existing connection at that doorway point.
-        var connections = (Dictionary<Point, GameEntity>)room.Connections;
+        var connections = (SortedDictionary<Point, GameEntity>)room.Connections;
         using var dummyEntity = game.Manager.CreateEntity();
         connections[doorwayPoint] = dummyEntity.Referenced;
 
@@ -164,7 +163,7 @@ public class DoorwayDemandTest
         // MaterializeGraph time. But SatisfiesDemand (total count) still passes here
         // because it doesn't account for connections — that's FindDoorwayInDirection's job.
         var demand = new Dictionary<Direction, int> { { Direction.East, 1 } };
-        var result = new EmptyRoomLayout().Fill(room, branch, fragment, demand);
+        var result = new EmptyRoomLayout().Fill(room, branch, fragment, demand, fragment.GetRoomParameters(branch));
 
         // SatisfiesDemand only checks total DoorwayPoints.Count >= total demand.
         // The doorway point exists (count=1 >= 1), so Fill succeeds.
@@ -194,10 +193,14 @@ public class DoorwayDemandTest
             Name = "dynamic-corner",
             DynamicMap = new RectangleMap { MinSize = new Dimensions(3, 3) }
         };
-        fragment.EnsureInitialized(game);
+        fragment.EnsureInitialized();
 
         var lot = new Rectangle(new Point(0, 0), 3, 3);
-        var chunk = fragment.TryPlace(room, lot, minDoorways: 3);
+        var ctx = new LotPlacementContext(lot, TestHelper.CreateRoomParameters(room)) with
+        {
+            DemandedDoorways = DirectionFlags.North | DirectionFlags.South | DirectionFlags.East
+        };
+        var chunk = fragment.TryPlace(room, ctx);
 
         Assert.Null(chunk);
     }
@@ -223,10 +226,11 @@ public class DoorwayDemandTest
                 ###
                 """
         };
-        fragment.EnsureInitialized(game);
+        fragment.EnsureInitialized();
 
         var lot = new Rectangle(new Point(2, 2), 3, 3);
-        var chunk = fragment.TryPlace(room, lot, minDoorways: 1);
+        var ctx = new LotPlacementContext(lot, TestHelper.CreateRoomParameters(room)) with { DemandedDoorways = DirectionFlags.North };
+        var chunk = fragment.TryPlace(room, ctx);
 
         Assert.NotNull(chunk);
         Assert.True(chunk!.DoorwayPoints.Count >= 1);
@@ -258,8 +262,13 @@ public class DoorwayDemandTest
     }
 
     /// <summary>
-    ///     Builds a square room filled with stone floor via the full pipeline and
-    ///     returns the room component for <see cref="MapFragment.TryPlace" /> calls.
+    ///     Builds a square room via the full pipeline (using a stone-floor defining
+    ///     fragment to simulate "surrounded by floor" semantics) and clears every
+    ///     cell to <see cref="MapFeature.Default" /> so the room behaves as a blank
+    ///     canvas for a subsequent <see cref="MapFragment.TryPlace" /> call. The
+    ///     defining-fragment chunk would otherwise own every cell and the
+    ///     walkable-wins overlap rule would preserve the floor against the
+    ///     to-be-placed fragment's wall writes.
     /// </summary>
     private static RoomComponent BuildFloorRoom(Game game, byte roomSize)
     {
@@ -270,7 +279,12 @@ public class DoorwayDemandTest
             rows[i] = rowLine;
         }
 
-        return TestHelper.BuildRoom(string.Join('\n', rows), game);
+        var room = TestHelper.BuildRoom(string.Join('\n', rows), game);
+        for (var i = 0; i < room.TileCount; i++)
+        {
+            room.Terrain[i] = MapFeature.Default;
+        }
+        return room;
     }
 
     /// <summary>

@@ -135,7 +135,8 @@ public class CollectionEntityRelationship<TEntity, TCollection> : EntityRelation
             return true;
         }
 
-        if (!OrphanedEntities.TryGetValue(key, out var orphanedEntities))
+        if (OrphanedEntities.Count == 0
+            || !OrphanedEntities.TryGetValue(key, out var orphanedEntities))
         {
             orphanedEntities = new HashSet<TEntity>(EntityEqualityComparer<TEntity>.Instance);
             OrphanedEntities.Add(key, orphanedEntities);
@@ -245,14 +246,16 @@ public class CollectionEntityRelationship<TEntity, TCollection> : EntityRelation
 
         public void OnEntityAdded(in EntityChange<TEntity> entityChange)
         {
-            var principal = entityChange.Entity;
+
             var key = entityChange.Entity.Id;
-            if (!_relationship.OrphanedEntities.TryGetValue(key, out var orphanedEntities)
+            if (_relationship.OrphanedEntities.Count == 0
+                || !_relationship.OrphanedEntities.TryGetValue(key, out var orphanedEntities)
                 || orphanedEntities.Count == 0)
             {
                 return;
             }
 
+            var principal = entityChange.Entity;
             var dependents = _relationship.Accessor.GetOrCreateDependents(principal);
             foreach (var orphanedEntity in orphanedEntities)
             {

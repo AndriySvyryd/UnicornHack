@@ -21,14 +21,14 @@ public partial class GameManager
         private set;
     } = null!;
 
-    public LookupEntityRelationship<GameEntity, Point, Dictionary<Point, GameEntity>>
+    public LookupEntityRelationship<GameEntity, Point, SortedDictionary<Point, GameEntity>>
         RoomActorsToRoomCellRelationship
     {
         get;
         private set;
     } = null!;
 
-    public LookupEntityRelationship<GameEntity, int, Dictionary<int, GameEntity>>
+    public LookupEntityRelationship<GameEntity, int, SortedDictionary<int, GameEntity>>
         SlottedAbilitiesToRoomActorsRelationship
     {
         get;
@@ -86,7 +86,7 @@ public partial class GameManager
                     .With(component => ((PositionComponent)component).CellY, (int)EntityComponent.Position)
             ),
             (actorEntity, _) => actorEntity.RemoveComponent(EntityComponent.Position),
-            roomEntity => (Dictionary<Point, GameEntity>)roomEntity.Room!.Actors);
+            roomEntity => (SortedDictionary<Point, GameEntity>)roomEntity.Room!.Actors);
 
         SlottedAbilitiesToRoomActorsRelationship = new(
             nameof(SlottedAbilitiesToRoomActorsRelationship),
@@ -99,7 +99,7 @@ public partial class GameManager
                 component => ((AbilityComponent)component).Slot,
                 (int)EntityComponent.Ability),
             (abilityEntity, _) => abilityEntity.RemoveComponent(EntityComponent.Ability),
-            actorEntity => (Dictionary<int, GameEntity>)actorEntity.Being!.SlottedAbilities);
+            actorEntity => (SortedDictionary<int, GameEntity>)actorEntity.Being!.SlottedAbilities);
 
         AISystem = new AISystem();
         queue.Register<PerformActionMessage>(AISystem, PerformActionMessage.AIName, 0);

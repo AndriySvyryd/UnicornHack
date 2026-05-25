@@ -18,6 +18,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
   </PropertyGroup>
+
   <ItemGroup>
     <Antlr4 Include="Generation\UnicornExpression.g">
       <Error>true</Error>

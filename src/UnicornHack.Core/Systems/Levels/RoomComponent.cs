@@ -1,4 +1,5 @@
-﻿using UnicornHack.Utils;
+﻿using System.Buffers;
+using UnicornHack.Utils;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Levels;
@@ -90,6 +91,20 @@ public class RoomComponent : GameComponent, IKeepAliveComponent
     {
         get => _features;
         set => SetWithNotify(value, ref _features);
+    }
+
+    /// <summary>
+    ///     Transient generation-only bitmask of <see cref="MapFragment.PlaceableFeatureBits" />
+    ///     entries that have already been assigned to a chunk in this room — either through
+    ///     a concrete feature glyph or through a wildcard binding performed by
+    ///     <see cref="MapFragment.TryPlace(RoomComponent, in LotPlacementContext)" />. Reset
+    ///     by <see cref="UnicornHack.Generation.Map.LevelLayout.AllocateTerrain" /> at the start
+    ///     of room generation and not persisted.
+    /// </summary>
+    public RoomFeatures BoundPlaceableFeatures
+    {
+        get;
+        set;
     }
 
     public RoomReveal Reveal
@@ -199,17 +214,17 @@ public class RoomComponent : GameComponent, IKeepAliveComponent
     public IReadOnlyDictionary<Point, GameEntity> Actors
     {
         get;
-    } = new Dictionary<Point, GameEntity>();
+    } = new SortedDictionary<Point, GameEntity>();
 
     public IReadOnlyDictionary<Point, GameEntity> Items
     {
         get;
-    } = new Dictionary<Point, GameEntity>();
+    } = new SortedDictionary<Point, GameEntity>();
 
     public IReadOnlyDictionary<Point, GameEntity> Connections
     {
         get;
-    } = new Dictionary<Point, GameEntity>();
+    } = new SortedDictionary<Point, GameEntity>();
 
     public IReadOnlyCollection<GameEntity> IncomingConnections
     {
@@ -219,17 +234,17 @@ public class RoomComponent : GameComponent, IKeepAliveComponent
     public IReadOnlyDictionary<Point, GameEntity> KnownActors
     {
         get;
-    } = new Dictionary<Point, GameEntity>();
+    } = new SortedDictionary<Point, GameEntity>();
 
     public IReadOnlyDictionary<Point, GameEntity> KnownItems
     {
         get;
-    } = new Dictionary<Point, GameEntity>();
+    } = new SortedDictionary<Point, GameEntity>();
 
     public IReadOnlyDictionary<Point, GameEntity> KnownConnections
     {
         get;
-    } = new Dictionary<Point, GameEntity>();
+    } = new SortedDictionary<Point, GameEntity>();
 
     public BeveledVisibilityCalculator? VisibilityCalculator
     {
@@ -267,7 +282,7 @@ public class RoomComponent : GameComponent, IKeepAliveComponent
         if (PointToIndex == null
             && Width != 0)
         {
-            (PointToIndex, IndexToPoint) = Rectangle.GetPointIndex(Game.Services.SharedCache, Width, Height);
+            (PointToIndex, IndexToPoint) = Rectangle.GetPointIndex(Width, Height);
             PathFinder = new PathFinder(PointToIndex, IndexToPoint);
             VisibilityCalculator = new BeveledVisibilityCalculator(GetVisibleNeighbors, this);
         }
@@ -283,15 +298,50 @@ public class RoomComponent : GameComponent, IKeepAliveComponent
 
     protected override void Clean()
     {
-        LevelLayout.ReleaseTerrain(this);
+        // Array.Empty<T>() instances have length 0 and must not be returned to pools.
+        if (Terrain.Length > 0)
+        {
+            ArrayPool<MapFeature>.Shared.Return(Terrain);
+        }
 
-        ((Dictionary<Point, GameEntity>?)Actors)?.Clear();
-        ((Dictionary<Point, GameEntity>?)Items)?.Clear();
-        ((Dictionary<Point, GameEntity>?)Connections)?.Clear();
+        if (Neighbors.Length > 0)
+        {
+            ArrayPool<DirectionFlags>.Shared.Return(Neighbors);
+        }
+
+        if (KnownNeighbors.Length > 0)
+        {
+            ArrayPool<DirectionFlags>.Shared.Return(KnownNeighbors);
+        }
+
+        if (VisibleTerrain.Length > 0)
+        {
+            ArrayPool<byte>.Shared.Return(VisibleTerrain);
+        }
+
+        if (KnownTerrain.Length > 0)
+        {
+            ArrayPool<MapFeature>.Shared.Return(KnownTerrain);
+        }
+
+        Terrain = Array.Empty<MapFeature>();
+        Neighbors = Array.Empty<DirectionFlags>();
+        KnownNeighbors = Array.Empty<DirectionFlags>();
+        VisibleTerrain = Array.Empty<byte>();
+        KnownTerrain = Array.Empty<MapFeature>();
+        Width = 0;
+        Height = 0;
+        TerrainChanges = null;
+        KnownTerrainChanges = null;
+        NeighborChanges = null;
+
+        ((SortedDictionary<Point, GameEntity>?)Actors)?.Clear();
+        ((SortedDictionary<Point, GameEntity>?)Items)?.Clear();
+        ((SortedDictionary<Point, GameEntity>?)Connections)?.Clear();
         ((HashSet<GameEntity>?)IncomingConnections)?.Clear();
-        ((Dictionary<Point, GameEntity>?)KnownActors)?.Clear();
-        ((Dictionary<Point, GameEntity>?)KnownItems)?.Clear();
-        ((Dictionary<Point, GameEntity>?)KnownConnections)?.Clear();
+        ((SortedDictionary<Point, GameEntity>?)KnownActors)?.Clear();
+        ((SortedDictionary<Point, GameEntity>?)KnownItems)?.Clear();
+        ((SortedDictionary<Point, GameEntity>?)KnownConnections)?.Clear();
 
         _branchName = default;
         _depth = default;

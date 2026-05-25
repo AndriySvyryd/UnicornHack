@@ -1,217 +1,249 @@
-using System.ComponentModel.DataAnnotations.Schema;
+using System.Collections.ObjectModel;
 using UnicornHack.Utils;
 
 namespace UnicornHack.Systems.Levels;
 
 /// <summary>
-///     Generation diagnostics captured per <see cref="GameLevel" />. Persisted counters
-///     are flat integer columns (mapped by EF as part of the owned
-///     <see cref="GameLevel.GenerationStats" /> projection); regions group them by stage.
-///     The in-memory dictionaries at the bottom are <see cref="NotMappedAttribute" /> —
-///     they exist to answer "how many X were generated, and how many with tag/feature Y"
-///     during a single generation run, and are not persisted.
+///     Persistable generation statistics shared between scopes. Owned by both
+///     <see cref="UnicornHack.Game" /> (game-wide cumulative aggregate, surfaced to
+///     weight expressions as <c>$globalInstances</c> / <c>$globalTagInstances</c>)
+///     and <see cref="LevelGenerationStats" /> which inherits from this type
+///     (per-level snapshot, surfaced as <c>$instances</c> / <c>$tagInstances</c>).
+///     <para>
+///         Each <see cref="Dictionary{TKey,TValue}" /> exposed on this entity is
+///         the in-memory source of truth; the corresponding private owned-collection
+///         field (<c>_*Entries</c>) is the relational projection EF Core persists.
+///         The two are kept in sync lazily — <see cref="SyncEntries" /> reconciles the
+///         backing <see cref="ObservableCollection{T}" /> against the dictionary during
+///         a SaveChanges flow, and <see cref="EnsureDictionariesInitialized" /> goes
+///         the other way on first dictionary access after EF materialization.
+///     </para>
 /// </summary>
 public class GenerationStats : NotificationEntity
 {
-    #region Level retry loop
+    private protected bool _dictionariesInitialized;
 
-    private int _levelAttempts;
-    private int _validationFailures;
+    private readonly ObservableCollection<KeyCountPair<string>> _fragmentInstancesByNameEntries = [];
+    private readonly ObservableCollection<KeyCountPair<string>> _fragmentInstancesByTagEntries = [];
+    private readonly ObservableCollection<KeyCountPair<RoomFeatures>> _fragmentInstancesByFeatureEntries = [];
+    private readonly ObservableCollection<KeyCountPair<string>> _creatureInstancesByNameEntries = [];
+    private readonly ObservableCollection<KeyCountPair<CreatureGenerationFlags>> _creatureInstancesByFlagEntries = [];
+    private readonly ObservableCollection<KeyCountPair<string>> _itemInstancesByNameEntries = [];
+    private readonly ObservableCollection<KeyCountPair<ItemType>> _itemInstancesByTypeEntries = [];
+    private readonly ObservableCollection<KeyCountPair<RoomFeatures>> _roomCountsByFeatureEntries = [];
 
-    /// <summary>
-    ///     Total <see cref="LevelGenerator.EnsureGenerated" /> attempts before success.
-    ///     Always &gt;= 1 on a generated level.
-    /// </summary>
-    public int LevelAttempts
+    private readonly Dictionary<string, int> _fragmentInstancesByName = [];
+    private readonly Dictionary<string, int> _fragmentInstancesByTag = [];
+    private readonly Dictionary<RoomFeatures, int> _fragmentInstancesByFeature = [];
+    private readonly Dictionary<string, int> _creatureInstancesByName = [];
+    private readonly Dictionary<CreatureGenerationFlags, int> _creatureInstancesByFlag = [];
+    private readonly Dictionary<string, int> _itemInstancesByName = [];
+    private readonly Dictionary<ItemType, int> _itemInstancesByType = [];
+    private readonly Dictionary<RoomFeatures, int> _roomCountsByFeature = [];
+
+    /// <summary>Map-fragment instance counts keyed by fragment source name.</summary>
+    public Dictionary<string, int> FragmentInstancesByName
     {
-        get => _levelAttempts;
-        set => SetWithNotify(value, ref _levelAttempts);
+        get { EnsureDictionariesInitialized(); return _fragmentInstancesByName; }
     }
-
-    /// <summary>
-    ///     Number of times a generated graph or lot layout failed validation and triggered
-    ///     a retry.
-    /// </summary>
-    public int ValidationFailures
-    {
-        get => _validationFailures;
-        set => SetWithNotify(value, ref _validationFailures);
-    }
-
-    #endregion
-
-    #region Room graph
-
-    private int _roomGraphAttempts;
-    private int _roomGraphPlacementTooSmall;
-    private int _roomGraphEntranceOrExitMissing;
-    private int _roomGraphTrimIsolatedEndpoint;
-    private int _roomGraphSpineNotFound;
-    private int _roomGraphEarNotFound;
-    private int _roomGraphMinDegreeViolated;
-    private int _roomGraphDagConnectivityBroken;
-
-    /// <summary>
-    ///     Number of full room-graph generation passes attempted (one per level attempt
-    ///     plus retries on validation failure).
-    /// </summary>
-    public int RoomGraphAttempts
-    {
-        get => _roomGraphAttempts;
-        set => SetWithNotify(value, ref _roomGraphAttempts);
-    }
-
-    /// <summary><c>PlaceRooms</c> returned fewer than two nodes.</summary>
-    public int RoomGraphPlacementTooSmall
-    {
-        get => _roomGraphPlacementTooSmall;
-        set => SetWithNotify(value, ref _roomGraphPlacementTooSmall);
-    }
-
-    /// <summary>No entrance or no exit in the post-place node set.</summary>
-    public int RoomGraphEntranceOrExitMissing
-    {
-        get => _roomGraphEntranceOrExitMissing;
-        set => SetWithNotify(value, ref _roomGraphEntranceOrExitMissing);
-    }
-
-    /// <summary>After leaf trimming, entrance / exit got isolated or fewer than two nodes survived.</summary>
-    public int RoomGraphTrimIsolatedEndpoint
-    {
-        get => _roomGraphTrimIsolatedEndpoint;
-        set => SetWithNotify(value, ref _roomGraphTrimIsolatedEndpoint);
-    }
-
-    /// <summary>No simple entrance→exit path exists on the post-trim adjacency.</summary>
-    public int RoomGraphSpineNotFound
-    {
-        get => _roomGraphSpineNotFound;
-        set => SetWithNotify(value, ref _roomGraphSpineNotFound);
-    }
-
-    /// <summary>Ear decomposition couldn't cover all nodes (and restoration was exhausted).</summary>
-    public int RoomGraphEarNotFound
-    {
-        get => _roomGraphEarNotFound;
-        set => SetWithNotify(value, ref _roomGraphEarNotFound);
-    }
-
-    /// <summary>Defence-in-depth: a non-endpoint room ended up with fewer than two undirected neighbours.</summary>
-    public int RoomGraphMinDegreeViolated
-    {
-        get => _roomGraphMinDegreeViolated;
-        set => SetWithNotify(value, ref _roomGraphMinDegreeViolated);
-    }
-
-    /// <summary>Defence-in-depth: the directed graph failed the entrance→all / all→exit reachability check.</summary>
-    public int RoomGraphDagConnectivityBroken
-    {
-        get => _roomGraphDagConnectivityBroken;
-        set => SetWithNotify(value, ref _roomGraphDagConnectivityBroken);
-    }
-
-    #endregion
-
-    #region Fragment placement
-
-    private int _lotPlacementAttempts;
-    private int _fragmentSelectionAttempts;
-
-    /// <summary>
-    ///     Number of attempts to place a fragment (lot) inside any room across the level.
-    /// </summary>
-    public int LotPlacementAttempts
-    {
-        get => _lotPlacementAttempts;
-        set => SetWithNotify(value, ref _lotPlacementAttempts);
-    }
-
-    /// <summary>
-    ///     Number of <see cref="UnicornHack.Generation.Map.DefiningMapFragment" /> selection attempts
-    ///     (per-room fragment picks; some rooms may need multiple tries).
-    /// </summary>
-    public int FragmentSelectionAttempts
-    {
-        get => _fragmentSelectionAttempts;
-        set => SetWithNotify(value, ref _fragmentSelectionAttempts);
-    }
-
-    #endregion
-
-    #region Corridor routing
-
-    private int _corridorRoutingAttempts;
-
-    /// <summary>
-    ///     Number of corridor-routing attempts (per pair of chunks needing connection).
-    /// </summary>
-    public int CorridorRoutingAttempts
-    {
-        get => _corridorRoutingAttempts;
-        set => SetWithNotify(value, ref _corridorRoutingAttempts);
-    }
-
-    #endregion
-
-    #region Instance counts (in-memory only)
-
-    /// <summary>Map-fragment instance counts keyed by fragment name.</summary>
-    [NotMapped]
-    public Dictionary<string, int> FragmentInstancesByName { get; } = new();
 
     /// <summary>Map-fragment instance counts keyed by tag (one increment per tag on the picked fragment).</summary>
-    [NotMapped]
-    public Dictionary<string, int> FragmentInstancesByTag { get; } = new();
+    public Dictionary<string, int> FragmentInstancesByTag
+    {
+        get { EnsureDictionariesInitialized(); return _fragmentInstancesByTag; }
+    }
 
     /// <summary>
     ///     Fragment instance counts keyed by the <see cref="RoomFeatures" /> bit they were
     ///     picked for. A pick for a room with multiple feature bits increments every one.
+    ///     At game scope this feeds the <c>$globalFeatureInstances</c> DSL parameter so
+    ///     weight expressions can throttle features that have already appeared on
+    ///     previous levels.
     /// </summary>
-    [NotMapped]
-    public Dictionary<RoomFeatures, int> FragmentInstancesByFeature { get; } = new();
+    public Dictionary<RoomFeatures, int> FragmentInstancesByFeature
+    {
+        get { EnsureDictionariesInitialized(); return _fragmentInstancesByFeature; }
+    }
 
     /// <summary>Creature instance counts keyed by variant name.</summary>
-    [NotMapped]
-    public Dictionary<string, int> CreatureInstancesByName { get; } = new();
+    public Dictionary<string, int> CreatureInstancesByName
+    {
+        get { EnsureDictionariesInitialized(); return _creatureInstancesByName; }
+    }
 
     /// <summary>
     ///     Creature instance counts keyed by each <see cref="CreatureGenerationFlags" />
     ///     bit set on the spawned variant.
     /// </summary>
-    [NotMapped]
-    public Dictionary<CreatureGenerationFlags, int> CreatureInstancesByFlag { get; } = new();
+    public Dictionary<CreatureGenerationFlags, int> CreatureInstancesByFlag
+    {
+        get { EnsureDictionariesInitialized(); return _creatureInstancesByFlag; }
+    }
 
     /// <summary>Item instance counts keyed by variant name. Stacks count once, not per unit.</summary>
-    [NotMapped]
-    public Dictionary<string, int> ItemInstancesByName { get; } = new();
+    public Dictionary<string, int> ItemInstancesByName
+    {
+        get { EnsureDictionariesInitialized(); return _itemInstancesByName; }
+    }
 
     /// <summary>
-    ///     Item instance counts keyed by <see cref="Generation.ItemType" />. Items without an
+    ///     Item instance counts keyed by <see cref="ItemType" />. Items without an
     ///     explicit type are skipped.
     /// </summary>
-    [NotMapped]
-    public Dictionary<ItemType, int> ItemInstancesByType { get; } = new();
-
-    #endregion
-
-    #region Recording helpers
+    public Dictionary<ItemType, int> ItemInstancesByType
+    {
+        get { EnsureDictionariesInitialized(); return _itemInstancesByType; }
+    }
 
     /// <summary>
-    ///     Returns a snapshot of every <c>RoomGraph*</c> failure counter keyed by counter
-    ///     name (without the <c>RoomGraph</c> prefix), so tests can diff two snapshots
-    ///     across a single <see cref="UnicornHack.Generation.Map.LevelLayout.BuildGraph" />
-    ///     call to attribute which failure happened.
+    ///     Room counts keyed by each <see cref="RoomFeatures" /> bit a placed room
+    ///     carries (entrance, exit, reward features, curse, etc.). Unlike
+    ///     <see cref="FragmentInstancesByFeature" /> which counts fragment picks, this
+    ///     counts rooms — one increment per set bit per room. Consumed by the level
+    ///     generator when selecting reward rooms so already-placed features are
+    ///     down-weighted (see <see cref="GenerationStats" />-aware overloads in
+    ///     <c>LevelLayout.BuildFinalGraph</c>).
     /// </summary>
-    public Dictionary<string, int> GraphFailureSnapshot() => new()
+    public Dictionary<RoomFeatures, int> RoomCountsByFeature
     {
-        [nameof(RoomGraphPlacementTooSmall)] = RoomGraphPlacementTooSmall,
-        [nameof(RoomGraphEntranceOrExitMissing)] = RoomGraphEntranceOrExitMissing,
-        [nameof(RoomGraphTrimIsolatedEndpoint)] = RoomGraphTrimIsolatedEndpoint,
-        [nameof(RoomGraphSpineNotFound)] = RoomGraphSpineNotFound,
-        [nameof(RoomGraphEarNotFound)] = RoomGraphEarNotFound,
-        [nameof(RoomGraphMinDegreeViolated)] = RoomGraphMinDegreeViolated,
-        [nameof(RoomGraphDagConnectivityBroken)] = RoomGraphDagConnectivityBroken
-    };
+        get { EnsureDictionariesInitialized(); return _roomCountsByFeature; }
+    }
+
+    // Each Dictionary<,> exposed above is in-memory state; persistence is handled by
+    // the sibling ObservableCollection<...Entries> fields below. EF Core discovers
+    // each navigation via the matching internal property (e.g. the navigation
+    // <c>FragmentInstancesByNameEntries</c> binds to the property of the same name,
+    // which simply returns the backing field). The GameDbContext fluent configuration
+    // calls <c>UsePropertyAccessMode(Field)</c> on each navigation so EF reads and
+    // writes the collection directly through the field rather than through the
+    // property getter. SyncEntries() is called from the SaveChanges override on
+    // GameDbContext to reconcile the backing collection against the in-memory
+    // dictionary just before the change tracker generates SQL;
+    // EnsureDictionariesInitialized() goes the other way on first dictionary access
+    // after EF materialization. The change tracker observes INotifyCollectionChanged
+    // on each ObservableCollection and INotifyPropertyChanged on individual entries.
+    internal ObservableCollection<KeyCountPair<string>> FragmentInstancesByNameEntries
+        => _fragmentInstancesByNameEntries;
+
+    internal ObservableCollection<KeyCountPair<string>> FragmentInstancesByTagEntries
+        => _fragmentInstancesByTagEntries;
+
+    internal ObservableCollection<KeyCountPair<RoomFeatures>> FragmentInstancesByFeatureEntries
+        => _fragmentInstancesByFeatureEntries;
+
+    internal ObservableCollection<KeyCountPair<string>> CreatureInstancesByNameEntries
+        => _creatureInstancesByNameEntries;
+
+    internal ObservableCollection<KeyCountPair<CreatureGenerationFlags>> CreatureInstancesByFlagEntries
+        => _creatureInstancesByFlagEntries;
+
+    internal ObservableCollection<KeyCountPair<string>> ItemInstancesByNameEntries
+        => _itemInstancesByNameEntries;
+
+    internal ObservableCollection<KeyCountPair<ItemType>> ItemInstancesByTypeEntries
+        => _itemInstancesByTypeEntries;
+
+    internal ObservableCollection<KeyCountPair<RoomFeatures>> RoomCountsByFeatureEntries
+        => _roomCountsByFeatureEntries;
+
+    /// <summary>
+    ///     Reconciles every <c>*Entries</c> backing collection against its dictionary.
+    ///     EF Core's SaveChanges override on <c>GameDbContext</c> calls this on every
+    ///     tracked <see cref="GenerationStats" /> so the change tracker sees the
+    ///     latest <see cref="System.Collections.Specialized.INotifyCollectionChanged" />
+    ///     events before the SQL is generated.
+    /// </summary>
+    public virtual void SyncEntries()
+    {
+        Reconcile(_fragmentInstancesByName, _fragmentInstancesByNameEntries);
+        Reconcile(_fragmentInstancesByTag, _fragmentInstancesByTagEntries);
+        Reconcile(_fragmentInstancesByFeature, _fragmentInstancesByFeatureEntries);
+        Reconcile(_creatureInstancesByName, _creatureInstancesByNameEntries);
+        Reconcile(_creatureInstancesByFlag, _creatureInstancesByFlagEntries);
+        Reconcile(_itemInstancesByName, _itemInstancesByNameEntries);
+        Reconcile(_itemInstancesByType, _itemInstancesByTypeEntries);
+        Reconcile(_roomCountsByFeature, _roomCountsByFeatureEntries);
+    }
+
+    /// <summary>
+    ///     Reconciles <paramref name="entries" /> with <paramref name="dict" />: updates
+    ///     <c>Count</c> on existing entries whose count has drifted (firing
+    ///     <see cref="System.ComponentModel.INotifyPropertyChanged" />), adds entries
+    ///     for new keys, and removes entries whose key is no longer in the dictionary
+    ///     (both firing <see cref="System.Collections.Specialized.INotifyCollectionChanged" />).
+    /// </summary>
+    private protected void Reconcile<TKey>(
+        Dictionary<TKey, int> dict,
+        ObservableCollection<KeyCountPair<TKey>> entries)
+        where TKey : notnull
+    {
+        if (!_dictionariesInitialized)
+        {
+            return;
+        }
+
+        var seen = new HashSet<TKey>(dict.Count);
+        for (var i = entries.Count - 1; i >= 0; i--)
+        {
+            var entry = entries[i];
+            if (dict.TryGetValue(entry.Key, out var count))
+            {
+                if (entry.Count != count)
+                {
+                    entry.Count = count;
+                }
+                seen.Add(entry.Key);
+            }
+            else
+            {
+                entries.RemoveAt(i);
+            }
+        }
+
+        foreach (var pair in dict)
+        {
+            if (!seen.Contains(pair.Key))
+            {
+                entries.Add(new KeyCountPair<TKey> { Key = pair.Key, Count = pair.Value });
+            }
+        }
+    }
+
+    /// <summary>
+    ///     Rebuilds every dictionary from its <c>*Entries</c> backing collection the
+    ///     first time anyone accesses a dictionary after EF Core has materialized the
+    ///     entity. The reload bypasses <see cref="Reconcile" /> so the freshly loaded
+    ///     values aren't pushed back into the already-correct entries.
+    /// </summary>
+    private protected virtual void EnsureDictionariesInitialized()
+    {
+        if (_dictionariesInitialized)
+        {
+            return;
+        }
+        _dictionariesInitialized = true;
+
+        LoadFromEntries(_fragmentInstancesByName, _fragmentInstancesByNameEntries);
+        LoadFromEntries(_fragmentInstancesByTag, _fragmentInstancesByTagEntries);
+        LoadFromEntries(_fragmentInstancesByFeature, _fragmentInstancesByFeatureEntries);
+        LoadFromEntries(_creatureInstancesByName, _creatureInstancesByNameEntries);
+        LoadFromEntries(_creatureInstancesByFlag, _creatureInstancesByFlagEntries);
+        LoadFromEntries(_itemInstancesByName, _itemInstancesByNameEntries);
+        LoadFromEntries(_itemInstancesByType, _itemInstancesByTypeEntries);
+        LoadFromEntries(_roomCountsByFeature, _roomCountsByFeatureEntries);
+    }
+
+    private protected static void LoadFromEntries<TKey>(
+        Dictionary<TKey, int> dict,
+        IEnumerable<KeyCountPair<TKey>> entries)
+        where TKey : notnull
+    {
+        dict.Clear();
+        foreach (var entry in entries)
+        {
+            dict[entry.Key] = entry.Count;
+        }
+    }
 
     /// <summary>
     ///     Records a placed map-fragment instance: bumps the per-name counter, the
@@ -231,7 +263,7 @@ public class GenerationStats : NotificationEntity
                 Increment(FragmentInstancesByTag, tag);
             }
         }
-        foreach (var feature in EnumerateSetBits(roomFeatures))
+        foreach (var feature in roomFeatures.GetFlags())
         {
             Increment(FragmentInstancesByFeature, feature);
         }
@@ -244,7 +276,7 @@ public class GenerationStats : NotificationEntity
     public void RecordCreatureInstance(string name, CreatureGenerationFlags flags)
     {
         Increment(CreatureInstancesByName, name);
-        foreach (var flag in EnumerateSetBits(flags))
+        foreach (var flag in flags.GetFlags())
         {
             Increment(CreatureInstancesByFlag, flag);
         }
@@ -252,8 +284,8 @@ public class GenerationStats : NotificationEntity
 
     /// <summary>
     ///     Records a placed item instance (one event per <c>Instantiate</c> call regardless
-    ///     of stack size). Variants without an <see cref="ItemType" /> contribute only to
-    ///     the per-name counter.
+    ///     of stack size). Variants without an <see cref="ItemType" /> contribute
+    ///     only to the per-name counter.
     /// </summary>
     public void RecordItemInstance(string name, ItemType? type)
     {
@@ -264,32 +296,21 @@ public class GenerationStats : NotificationEntity
         }
     }
 
-    #endregion
+    /// <summary>
+    ///     Records a placed room: bumps the per-feature counter for every set bit in
+    ///     <paramref name="features" />. Rooms with <see cref="RoomFeatures.Normal" />
+    ///     (no bits) are not recorded.
+    /// </summary>
+    public void RecordRoomFeature(RoomFeatures features)
+    {
+        foreach (var feature in features.GetFlags())
+        {
+            Increment(RoomCountsByFeature, feature);
+        }
+    }
 
     private static void Increment<TKey>(Dictionary<TKey, int> bucket, TKey key) where TKey : notnull
     {
         bucket[key] = bucket.TryGetValue(key, out var count) ? count + 1 : 1;
-    }
-
-    private static IEnumerable<RoomFeatures> EnumerateSetBits(RoomFeatures value)
-    {
-        foreach (RoomFeatures flag in Enum.GetValues(typeof(RoomFeatures)))
-        {
-            if (flag != RoomFeatures.Normal && (value & flag) == flag)
-            {
-                yield return flag;
-            }
-        }
-    }
-
-    private static IEnumerable<CreatureGenerationFlags> EnumerateSetBits(CreatureGenerationFlags value)
-    {
-        foreach (CreatureGenerationFlags flag in Enum.GetValues(typeof(CreatureGenerationFlags)))
-        {
-            if (flag != CreatureGenerationFlags.None && (value & flag) == flag)
-            {
-                yield return flag;
-            }
-        }
     }
 }

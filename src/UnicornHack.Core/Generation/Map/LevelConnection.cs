@@ -49,7 +49,7 @@ public class LevelConnection : ICSScriptSerializable
         }
         else if (sourceLevel.Depth >= sourceBranch.Length)
         {
-            var nextBranch = PickRandomNextBranch(game, sourceBranch.Name, sourceLevel.Depth);
+            var nextBranch = PickRandomNextBranch(sourceLevel, sourceBranch.Name, sourceLevel.Depth);
             targetBranchName = nextBranch.Name;
             resolvedBranch = nextBranch;
             targetDepth = connectionDefinition?.Depth ?? 1;
@@ -106,11 +106,11 @@ public class LevelConnection : ICSScriptSerializable
     ///     <paramref name="sourceBranchName" /> at <paramref name="sourceDepth" />, weighted
     ///     by each candidate branch's <see cref="Branch.GenerationWeight" />.
     /// </summary>
-    private static Branch PickRandomNextBranch(Game game, string sourceBranchName, int sourceDepth)
+    private static Branch PickRandomNextBranch(GameLevel sourceLevel, string sourceBranchName, int sourceDepth)
     {
-        var candidates = game.Services.Data.Branches.GetAsList();
+        var candidates = sourceLevel.Game.Services.Data.Branches.GetAsList();
         // WeightedOrder skips zero-weight items and yields nothing when every weight is 0.
-        var picked = game.Random.WeightedOrder(
+        var picked = sourceLevel.GenerationRandom.WeightedOrder(
             candidates,
             b => b.GetWeight(sourceBranchName, sourceDepth)).FirstOrDefault();
         return picked
@@ -141,6 +141,39 @@ public class LevelConnection : ICSScriptSerializable
         => first == null
            || second == null
            || first == GetInverse(second.Value);
+
+    /// <summary>
+    ///     Resolves an inter-level connection at <paramref name="cell" /> inside
+    ///     <paramref name="room" />. When the room has a pending incoming connection
+    ///     (<see cref="ConnectionComponent.TargetLevelX" /> still <c>null</c>) whose
+    ///     branch / depth / directionality matches the supplied
+    ///     <paramref name="connectionDefinition" />, the pending connection is wired up
+    ///     via <see cref="CreateReceivingConnection" />; otherwise a brand-new outgoing
+    ///     connection is created via <see cref="CreateSourceConnection" />.
+    /// </summary>
+    public static void CreateLevelConnection(
+        RoomComponent room, Point cell, LevelConnection? connectionDefinition)
+    {
+        foreach (var connectionEntity in room.IncomingConnections)
+        {
+            var connection = connectionEntity.Connection!;
+            if (connection.TargetLevelX == null)
+            {
+                var target = connection.TargetRoomEntity.Room!;
+                if ((connectionDefinition?.BranchName == null
+                     || connectionDefinition.BranchName == target.Level.BranchName)
+                    && (connectionDefinition?.Depth == null
+                        || connectionDefinition.Depth == target.Level.Depth)
+                    && AreMatchingDirectionality(connection.Directionality, connectionDefinition?.Direction))
+                {
+                    CreateReceivingConnection(room, cell, connection, connectionDefinition?.Direction);
+                    return;
+                }
+            }
+        }
+
+        CreateSourceConnection(room, cell, connectionDefinition);
+    }
 
     private static Directionality GetInverse(Directionality direction)
     {

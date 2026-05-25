@@ -1,4 +1,4 @@
-﻿using UnicornHack.Utils;
+using UnicornHack.Utils;
 
 namespace UnicornHack;
 

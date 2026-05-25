@@ -13,7 +13,8 @@ public sealed class EmptyRoomLayout : RoomLayout
         RoomComponent room,
         Branch branch,
         DefiningMapFragment fragment,
-        Dictionary<Direction, int> doorwayDemand)
+        Dictionary<Direction, int> doorwayDemand,
+        RoomParameters roomParameters)
     {
         var defaultTerrain = fragment.GetEffectiveDefaultTerrain(branch);
         if (defaultTerrain != MapFeature.Default)
@@ -24,12 +25,7 @@ public sealed class EmptyRoomLayout : RoomLayout
             }
         }
 
-        var chunks = new List<Chunk>();
-        var chunk = fragment.TryPlace(room, room.BoundingRectangle);
-        if (chunk != null)
-        {
-            chunks.Add(chunk);
-        }
+        var chunks = PlaceDefiningMapFragment(room, fragment, roomParameters);
 
         // Verify the single hand-crafted fragment supplies enough doorway tiles in every
         // requested direction. EmptyRoomLayout has no flexibility (no extra fragments

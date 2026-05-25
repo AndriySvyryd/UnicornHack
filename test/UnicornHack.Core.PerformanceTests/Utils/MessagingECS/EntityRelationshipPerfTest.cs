@@ -1,4 +1,4 @@
-﻿using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Attributes;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.MessagingECS;
 

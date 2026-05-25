@@ -1,4 +1,4 @@
-﻿using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Attributes;
 using UnicornHack.Utils;
 
 namespace UnicornHack.PerformanceTests.Utils;

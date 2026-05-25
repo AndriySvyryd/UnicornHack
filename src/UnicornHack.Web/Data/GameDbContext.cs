@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using UnicornHack.Hubs.ChangeTracking;
 using UnicornHack.Services;
@@ -192,6 +193,8 @@ public class GameDbContext : DbContext, IRepository
                 ob.Ignore(o => o.DisableSessionCache);
             });
             eb.Navigation(g => g.Options).IsRequired();
+            eb.OwnsOne(g => g.GenerationStats, ConfigureGenerationStats);
+            eb.Navigation(g => g.GenerationStats).IsRequired();
             eb.HasOne(g => g.ActingPlayer)
                 .WithOne()
                 .HasForeignKey<Game>(l => new { l.Id, l.ActingPlayerId })
@@ -282,7 +285,7 @@ public class GameDbContext : DbContext, IRepository
             eb.HasKey(l => new { l.GameId, l.BranchName, l.Depth });
             eb.OwnsOne(l => l.GenerationRandom);
             eb.Navigation(l => l.GenerationRandom).IsRequired();
-            eb.OwnsOne(l => l.GenerationStats);
+            eb.OwnsOne(l => l.GenerationStats, ConfigureLevelGenerationStats);
             eb.Navigation(l => l.GenerationStats).IsRequired();
             eb.HasMany(l => l.Rooms)
                 .WithOne(r => r.Level)
@@ -446,6 +449,7 @@ public class GameDbContext : DbContext, IRepository
             eb.Ignore(l => l.VisibleTerrainSnapshot);
             eb.Ignore(l => l.VisibleTerrainChanges);
             eb.Ignore(l => l.KnownNeighborsChanged);
+            eb.Ignore(l => l.BoundPlaceableFeatures);
             eb.Ignore(l => l.PathFinder);
             eb.Ignore(l => l.VisibilityCalculator);
             eb.Property("_tracked");
@@ -861,6 +865,32 @@ public class GameDbContext : DbContext, IRepository
         RoomChangeBuilder = null;
         Manager = null!;
     }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        SyncGenerationStatsEntries();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        SyncGenerationStatsEntries();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    /// <summary>
+    ///     Reconciles every tracked <see cref="GenerationStats" />' owned <c>*Entries</c>
+    ///     collections with their in-memory dictionaries so the change tracker observes
+    ///     the INotifyCollectionChanged / INotifyPropertyChanged events for pending edits
+    ///     before <see cref="DbContext.SaveChanges()" /> generates SQL.
+    /// </summary>
+    private void SyncGenerationStatsEntries()
+    {
+        foreach (var entry in ChangeTracker.Entries<GenerationStats>())
+        {
+            entry.Entity.SyncEntries();
+        }
+    }
     
     public static readonly ValueConverter<MapFeature[], byte[]> MapFeatureArrayConverter = CreateByteEnumArrayConverter<MapFeature>();
 
@@ -954,4 +984,76 @@ public class GameDbContext : DbContext, IRepository
 
         return hash.ToHashCode();
     }
+
+    #region GenerationStats owned-collection mapping
+
+    // Each Dictionary<,> on GenerationStats is persisted via a sibling
+    // private ObservableCollection<...Entry> field exposed through a private
+    // navigation property. EF accesses the navigation via PropertyAccessMode.Field
+    // (so materialization doesn't invoke the reconciling getter on an empty
+    // entries collection). The getter lazily reconciles the collection with the
+    // dictionary, firing INotifyCollectionChanged events for adds/removes and
+    // INotifyPropertyChanged events for Count updates. EnsureDictionariesInitialized()
+    // in GenerationStats does the reverse on first dictionary access after EF
+    // materializes the entity. SaveChanges overrides call GenerationStats.SyncEntries()
+    // on every tracked instance so the change tracker observes the latest events
+    // before SQL generation.
+
+    private static void ConfigureGenerationStats<TOwner, TStats>(
+        OwnedNavigationBuilder<TOwner, TStats> ob)
+        where TOwner : class
+        where TStats : GenerationStats
+    {
+        // Tell EF Core to ignore the public dictionary surface: that side
+        // is reconstructed in memory from the private *Entries collections.
+        ob.Ignore(s => s.FragmentInstancesByName);
+        ob.Ignore(s => s.FragmentInstancesByTag);
+        ob.Ignore(s => s.FragmentInstancesByFeature);
+        ob.Ignore(s => s.CreatureInstancesByName);
+        ob.Ignore(s => s.CreatureInstancesByFlag);
+        ob.Ignore(s => s.ItemInstancesByName);
+        ob.Ignore(s => s.ItemInstancesByType);
+        ob.Ignore(s => s.RoomCountsByFeature);
+
+        ConfigureCountBy<string, TOwner, TStats>(ob, "FragmentInstancesByNameEntries");
+        ConfigureCountBy<string, TOwner, TStats>(ob, "FragmentInstancesByTagEntries");
+        ConfigureCountBy<RoomFeatures, TOwner, TStats>(ob, "FragmentInstancesByFeatureEntries");
+        ConfigureCountBy<string, TOwner, TStats>(ob, "CreatureInstancesByNameEntries");
+        ConfigureCountBy<CreatureGenerationFlags, TOwner, TStats>(ob, "CreatureInstancesByFlagEntries");
+        ConfigureCountBy<string, TOwner, TStats>(ob, "ItemInstancesByNameEntries");
+        ConfigureCountBy<ItemType, TOwner, TStats>(ob, "ItemInstancesByTypeEntries");
+        ConfigureCountBy<RoomFeatures, TOwner, TStats>(ob, "RoomCountsByFeatureEntries");
+    }
+
+    private static void ConfigureLevelGenerationStats<TOwner>(
+        OwnedNavigationBuilder<TOwner, LevelGenerationStats> ob)
+        where TOwner : class
+    {
+        ConfigureGenerationStats(ob);
+
+        ob.Ignore(s => s.FragmentRoomFailures);
+        ob.Ignore(s => s.FragmentInstancesByVariant);
+
+        ConfigureCountBy<string, TOwner, LevelGenerationStats>(ob, "FragmentRoomFailuresEntries");
+        ConfigureCountBy<string, TOwner, LevelGenerationStats>(ob, "FragmentInstancesByVariantEntries");
+    }
+
+    private static void ConfigureCountBy<TKey, TOwner, TStats>(
+        OwnedNavigationBuilder<TOwner, TStats> ob,
+        string navigation)
+        where TKey : notnull
+        where TOwner : class
+        where TStats : GenerationStats
+    {
+        ob.OwnsMany<KeyCountPair<TKey>>(
+            navigation,
+            cb =>
+            {
+                cb.Property(e => e.Key);
+                cb.Property(e => e.Count);
+            });
+        ob.Navigation(navigation).UsePropertyAccessMode(PropertyAccessMode.Field);
+    }
+
+    #endregion
 }
