@@ -36,7 +36,7 @@ public class DenseRoomLayoutTest
     }
 
     [Fact]
-    public void TryShiftToMerge_shifts_lot_one_tile_west_toward_an_adjacent_neighbour()
+    public void TryShiftToMerge_shifts_lot_one_tile_west_toward_an_adjacent_neighbor()
     {
         var layout = new TestableDenseRoomLayout();
         var room = TestHelper.BuildRoom();
@@ -54,7 +54,7 @@ public class DenseRoomLayoutTest
     }
 
     [Fact]
-    public void TryShiftToMerge_rejects_when_neighbour_has_NoOverwrite()
+    public void TryShiftToMerge_rejects_when_neighbor_has_NoOverwrite()
     {
         var layout = new TestableDenseRoomLayout();
         var room = TestHelper.BuildRoom();
@@ -87,7 +87,7 @@ public class DenseRoomLayoutTest
     }
 
     [Fact]
-    public void TryShiftToMerge_allows_shift_when_neighbour_has_doorway_on_facing_perimeter()
+    public void TryShiftToMerge_allows_shift_when_neighbor_has_doorway_on_facing_perimeter()
     {
         var layout = new TestableDenseRoomLayout();
         var room = TestHelper.BuildRoom();
@@ -114,7 +114,7 @@ public class DenseRoomLayoutTest
         var room = TestHelper.BuildRoom(game: game);
 
         // Pre-write a Pool (a non-floor, non-wall feature) at (2, 1) to simulate the
-        // important content a neighbour's perimeter contributed, and register the
+        // important content a neighbor's perimeter contributed, and register the
         // owning chunk so the walkable-wins rule treats the cell as authored
         // content rather than freely-overwritable background fill.
         var poolPoint = new Point(2, 1);
@@ -213,10 +213,73 @@ public class DenseRoomLayoutTest
         Assert.False(IsReachable(room, leftInside.First(), rightInside.First()));
 
         var layout = new TestableDenseRoomLayout();
-        layout.InvokeTryRepairConnectivity(room, [leftChunk, rightChunk]);
+        layout.InvokeTryRepairConnectivity(room, [leftChunk, rightChunk], roomParameters);
 
         // After the carve at least one walkable path exists between the pockets.
         Assert.True(IsReachable(room, leftInside.First(), rightInside.First()));
+    }
+
+    [Fact]
+    public void Corridor_carving_seals_unfilled_neighbors_except_where_a_condition_forbids_a_wall()
+    {
+        var game = TestHelper.CreateGame(seed: 1u);
+        var branch = new Branch
+        {
+            Name = "corridor-walling-test",
+            Length = 1,
+            Difficulty = 1,
+            Layout = new EmptyLevelLayout()
+        };
+        var branchEntity = branch.Instantiate(game);
+        game.Branches.Add(branchEntity);
+        var gameLevel = LevelGenerator.CreateEmpty(branchEntity, depth: 1, seed: 1u, game.Manager);
+        var room = LevelLayout.GetEmptyEntranceRoom(gameLevel, game.Manager);
+        LevelLayout.AllocateTerrain(room, width: 9, height: 3, MapFeature.Default);
+
+        // Two 1x1 floor pockets on the interior mid-row, separated by unfilled background.
+        var left = new Point(1, 1);
+        var right = new Point(7, 1);
+        TerrainSystem.SetTerrain(MapFeature.StoneFloor, left, room);
+        TerrainSystem.SetTerrain(MapFeature.StoneFloor, right, room);
+
+        // A pre-existing StoneWall on the lower flank of the future corridor. The branch's
+        // default wall is RockWall, so this lets us verify that a sealed flank adopts the wall
+        // type of an existing adjacent wall (StoneWall here) instead of always using the default.
+        TerrainSystem.SetTerrain(MapFeature.StoneWall, new Point(5, 2), room);
+
+        var roomParameters = TestHelper.CreateRoomParameters(room);
+        var leftChunk = new Chunk(room, new Rectangle(left, 1, 1), new TestNormalMapFragment { Name = "left" },
+            new HashSet<Point> { left }, new HashSet<Point> { left }, perimeterPoints: null,
+            roomParameters: roomParameters);
+        var rightChunk = new Chunk(room, new Rectangle(right, 1, 1), new TestNormalMapFragment { Name = "right" },
+            new HashSet<Point> { right }, new HashSet<Point> { right }, perimeterPoints: null,
+            roomParameters: roomParameters);
+
+        // A deferred condition that forbids a wall on one flank cell of the future corridor.
+        var protectedCell = new Point(4, 0);
+        var preservedConditions = new Dictionary<Point, EdgeConditionKind[]>
+        {
+            [protectedCell] = [EdgeConditionKind.Unfilled]
+        };
+
+        var layout = new TestableDenseRoomLayout();
+        layout.InvokeTryRepairConnectivity(room, [leftChunk, rightChunk], roomParameters, preservedConditions);
+
+        // The gap between the pockets was carved into a walkable corridor.
+        Assert.True(room.Terrain[room.PointToIndex![4, 1]].CanMoveTo(),
+            "Expected the gap between the pockets to be carved into a walkable corridor.");
+
+        // Its unfilled flanks were sealed. A flank with no adjacent wall falls back to the
+        // branch's default wall (RockWall); (3,0) is isolated from the StoneWall seed by the
+        // protected Default cell at (4,0), so it keeps the default.
+        Assert.Equal(MapFeature.RockWall, room.Terrain[room.PointToIndex![3, 0]]);
+
+        // ...while a flank next to an existing wall adopts that wall's type (StoneWall at (5,2))
+        // so the seal extends the surrounding wall line instead of introducing a foreign type.
+        Assert.Equal(MapFeature.StoneWall, room.Terrain[room.PointToIndex![4, 2]]);
+
+        // ...except the cell whose deferred condition requires it to stay unfilled.
+        Assert.Equal(MapFeature.Default, room.Terrain[room.PointToIndex![protectedCell.X, protectedCell.Y]]);
     }
 
     private static bool IsReachable(RoomComponent room, Point from, Point to)
@@ -315,7 +378,10 @@ public class DenseRoomLayoutTest
             out Rectangle shiftedLot)
             => TryShiftToMerge(lot, targetEdge, placedChunks, out shiftedLot);
 
-        public void InvokeTryRepairConnectivity(RoomComponent room, List<Chunk> chunks)
-            => TryRepairConnectivity(room, chunks);
+        public void InvokeTryRepairConnectivity(
+            RoomComponent room, List<Chunk> chunks,
+            RoomParameters roomParameters,
+            Dictionary<Point, EdgeConditionKind[]>? preservedConditions = null)
+            => TryRepairConnectivity(room, chunks, preservedConditions, roomParameters);
     }
 }

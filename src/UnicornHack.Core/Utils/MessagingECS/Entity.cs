@@ -213,7 +213,12 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
         => Manager.OnPropertyValueChanged(propertyName, oldValue, newValue, componentId, component);
 
     public void HandlePropertyValuesChanged(IPropertyValueChanges changes)
-        => Manager.OnPropertyValuesChanged(this, changes);
+    {
+        Manager.OnPropertyValuesChanged(this, changes);
+
+        // The creator owns this instance and returns it now.
+        changes.Return();
+    }
 
     protected virtual string? GetComponentPropertyName(int componentId) => null;
 

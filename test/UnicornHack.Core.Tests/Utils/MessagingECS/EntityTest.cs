@@ -137,11 +137,18 @@ public class EntityTest
         Assert.Null(entity.Manager);
         Assert.Null(manager.FindEntity(id));
 
-        using (var entityReference = manager.CreateEntity())
+        GameEntity? reused = null;
+        for (var i = 0; i < 1024 && reused is null; i++)
         {
-            Assert.Same(entity, entityReference.Referenced);
-            Assert.NotEqual(id, entityReference.Referenced.Id);
+            using var entityReference = manager.CreateEntity();
+            if (ReferenceEquals(entityReference.Referenced, entity))
+            {
+                reused = entityReference.Referenced;
+                Assert.NotEqual(id, reused.Id);
+            }
         }
+
+        Assert.Same(entity, reused);
 
         Assert.Throws<InvalidOperationException>(() => entity.RemoveReference(manager));
     }
@@ -167,9 +174,23 @@ public class EntityTest
 
         Assert.Null(entity.Manager);
 
-        using (var entityReference = manager.CreateEntity())
+        Assert.True(PoolContainsEntity(manager, entity));
+    }
+
+    // The entity pool is FIFO, so a just-returned instance goes to the back of the queue and isn't
+    // handed back on the very next rent when other instances are already pooled. Rent (disposing
+    // each non-match back to the pool so the FIFO queue rotates) until the instance reappears.
+    private static bool PoolContainsEntity(GameManager manager, GameEntity target)
+    {
+        for (var i = 0; i < 1024; i++)
         {
-            Assert.Same(entity, entityReference.Referenced);
+            using var entityReference = manager.CreateEntity();
+            if (ReferenceEquals(entityReference.Referenced, target))
+            {
+                return true;
+            }
         }
+
+        return false;
     }
 }

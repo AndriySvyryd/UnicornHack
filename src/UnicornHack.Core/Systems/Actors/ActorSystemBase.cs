@@ -28,7 +28,21 @@ public abstract class ActorSystemBase
         else
         {
             targetCell = Point.Unpack(targetId)!.Value;
-            targetActor = actorEntity.Position!.RoomEntity.Room!.Actors.GetValueOrDefault(targetCell);
+            var room = actorEntity.Position!.RoomEntity.Room!;
+            if (!room.IsValid(targetCell))
+            {
+                if (actorEntity.HasComponent(EntityComponent.Player))
+                {
+                    manager.LoggingSystem.WriteLog(
+                        manager.Game.Services.Language.NoPath(), actorEntity, manager);
+                    return false;
+                }
+
+                throw new InvalidOperationException(
+                    "Actor " + actorEntity.Id + ". Target cell " + targetCell + " is outside the room.");
+            }
+
+            targetActor = room.Actors.GetValueOrDefault(targetCell);
         }
 
         GameEntity? abilityEntity;
@@ -178,8 +192,7 @@ public abstract class ActorSystemBase
     protected GameEntity? GetItem(int itemId, GameEntity actorEntity, GameManager manager)
     {
         var itemEntity = manager.FindEntity(itemId);
-        if (itemEntity == null
-            || itemEntity.Item!.ContainerId != actorEntity.Id)
+        if (itemEntity?.Item?.ContainerId != actorEntity.Id)
         {
             if (actorEntity.HasComponent(EntityComponent.Player))
             {

@@ -71,6 +71,16 @@ public class DefiningMapFragment : ConnectingMapFragment
     }
 
     /// <summary>
+    ///     Per-fragment override of <see cref="Branch.DefaultWall" />. Null = inherit from the
+    ///     branch.
+    /// </summary>
+    public MapFeature? DefaultWall
+    {
+        get;
+        set;
+    }
+
+    /// <summary>
     ///     Returns the effective <see cref="Map.RoomWidth" /> for this fragment in the supplied
     ///     branch — the per-fragment override if set, otherwise the branch default.
     /// </summary>
@@ -87,6 +97,19 @@ public class DefiningMapFragment : ConnectingMapFragment
     ///     override if set, otherwise the branch default.
     /// </summary>
     public MapFeature GetEffectiveDefaultTerrain(Branch branch) => DefaultTerrain ?? branch.DefaultTerrain;
+
+    /// <summary>
+    ///     Returns the effective <see cref="MapFeature" /> for carved path / corridor tiles —
+    ///     fragment override if set, otherwise the branch default.
+    /// </summary>
+    public MapFeature GetEffectiveDefaultPathTerrain(Branch branch)
+        => DefaultPathTerrain ?? branch.DefaultPathTerrain;
+
+    /// <summary>
+    ///     Returns the effective <see cref="MapFeature" /> for generator-placed walls — fragment
+    ///     override if set, otherwise the branch default.
+    /// </summary>
+    public MapFeature GetEffectiveDefaultWall(Branch branch) => DefaultWall ?? branch.DefaultWall;
 
     /// <summary>
     ///     Returns the effective <see cref="CreatureGenerator" /> — fragment override if set,
@@ -125,6 +148,8 @@ public class DefiningMapFragment : ConnectingMapFragment
             GetEffectiveRoomWidth(branch),
             GetEffectiveRoomHeight(branch),
             GetEffectiveDefaultTerrain(branch),
+            GetEffectiveDefaultPathTerrain(branch),
+            GetEffectiveDefaultWall(branch),
             creatures,
             items);
     }
@@ -162,6 +187,13 @@ public class DefiningMapFragment : ConnectingMapFragment
 
     protected override void ResetWeightFunction() => _weightFunction = null;
 
+    public override void EnsureWeightFunctionCompiled()
+        => _weightFunction ??= CompileWeightFunction<
+            Func<string, int, RoomFeatures, string,
+                IReadOnlyDictionary<string, int>, IReadOnlyDictionary<string, int>,
+                IReadOnlyDictionary<string, int>, IReadOnlyDictionary<string, int>,
+                IReadOnlyDictionary<RoomFeatures, int>, ConnectionComponent?, float>>(_translator);
+
     /// <summary>
     ///     Returns this fragment's selection weight for a level- or room-scoped pick. The
     ///     <paramref name="roomFeatures" /> argument is <see cref="RoomFeatures.Normal" /> for
@@ -179,22 +211,15 @@ public class DefiningMapFragment : ConnectingMapFragment
         IReadOnlyDictionary<string, int> globalTagInstances,
         IReadOnlyDictionary<RoomFeatures, int> globalFeatureInstances)
     {
-        if (_weightFunction == null)
-        {
-            _weightFunction = CompileWeightFunction<
-                Func<string, int, RoomFeatures, string,
-                    IReadOnlyDictionary<string, int>, IReadOnlyDictionary<string, int>,
-                    IReadOnlyDictionary<string, int>, IReadOnlyDictionary<string, int>,
-                    IReadOnlyDictionary<RoomFeatures, int>, ConnectionComponent?, float>>(_translator);
-        }
+        EnsureWeightFunctionCompiled();
 
         try
         {
-            return _weightFunction(
+            return _weightFunction!(
                     branchName, depth, roomFeatures, SourceName,
                     fragmentInstancesByName, globalFragmentInstancesByName,
                     tagInstances, globalTagInstances, globalFeatureInstances, null)
-                * WeightMultiplier;
+                * VariantMultiplier;
         }
         catch (Exception e)
         {
@@ -261,6 +286,7 @@ public class DefiningMapFragment : ConnectingMapFragment
         propertyConditions.Add(nameof(ItemGenerator), (_, v) => v != null);
         propertyConditions.Add(nameof(DefaultTerrain), (_, v) => v != null);
         propertyConditions.Add(nameof(DefaultPathTerrain), (_, v) => v != null);
+        propertyConditions.Add(nameof(DefaultWall), (_, v) => v != null);
         propertyConditions.Add(nameof(Map), mapCondition);
         return propertyConditions;
     }

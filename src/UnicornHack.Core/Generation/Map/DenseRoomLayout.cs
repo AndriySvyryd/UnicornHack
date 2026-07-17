@@ -17,26 +17,26 @@ namespace UnicornHack.Generation.Map;
 ///     <para>
 ///         <strong>Wall-merge shift.</strong> By default <see cref="UniformRoomLayout" />
 ///         leaves bounding rectangles touching (no gap) but with two perimeter wall columns
-///         side-by-side (the neighbour's right wall at column <c>X</c> and the candidate's
+///         side-by-side (the neighbor's right wall at column <c>X</c> and the candidate's
 ///         left wall at column <c>X+1</c>). DenseRoomLayout shifts the candidate lot one
-///         tile toward the neighbour so the candidate's perimeter wall column lands ON the
-///         neighbour's perimeter wall column (column <c>X</c>). Both fragments write
+///         tile toward the neighbor so the candidate's perimeter wall column lands ON the
+///         neighbor's perimeter wall column (column <c>X</c>). Both fragments write
 ///         <c>#</c> to that column, collapsing the double wall into a single shared wall.
 ///         The resulting chunk bounding rectangles overlap by exactly one column or row;
 ///         <see cref="Utils.DataStructures.RectangleIntervalTree" /> and
 ///         <see cref="Utils.DataStructures.RectanglePartition" /> both support overlap.
 ///     </para>
 ///     <para>
-///         <strong>Safety rules.</strong> The shift is rejected when the neighbour
+///         <strong>Safety rules.</strong> The shift is rejected when the neighbor
 ///         fragment carries <see cref="MapFragment.NoOverwrite" /> (authored statics that
-///         depend on exact wall thickness opt in). When the neighbour's facing perimeter
+///         depend on exact wall thickness opt in). When the neighbor's facing perimeter
 ///         contains important cells (doorways, features, etc.) the shift still proceeds —
 ///         <see cref="MapFragment.Write" /> preserves those cells by suppressing the
 ///         candidate's <c>#</c> write at any point where existing non-wall content lives.
 ///         The candidate's own <see cref="MapFragment.NoOverwrite" /> flag is irrelevant
-///         to the shift decision: it protects against neighbours shifting onto <em>this</em>
+///         to the shift decision: it protects against neighbors shifting onto <em>this</em>
 ///         fragment, not against <em>this</em> fragment shifting onto a (non-NoOverwrite)
-///         neighbour.
+///         neighbor.
 ///     </para>
 /// </remarks>
 public class DenseRoomLayout : UniformRoomLayout, ICSScriptSerializable
@@ -69,13 +69,13 @@ public class DenseRoomLayout : UniformRoomLayout, ICSScriptSerializable
     /// <summary>
     ///     Attempts to shift <paramref name="lot" /> one tile toward an adjacent placed
     ///     chunk on <paramref name="targetEdge" /> so the resulting candidate's perimeter
-    ///     wall column will overlap the neighbour's perimeter wall column, collapsing the
+    ///     wall column will overlap the neighbor's perimeter wall column, collapsing the
     ///     double wall into a single shared one.
     /// </summary>
     /// <returns>
     ///     <c>true</c> when a wall-merge shift is legal; <paramref name="shiftedLot" /> is
-    ///     then the lot translated by one tile toward the neighbour. <c>false</c> when the
-    ///     shift must be rejected (no adjacent neighbour found or neighbour has
+    ///     then the lot translated by one tile toward the neighbor. <c>false</c> when the
+    ///     shift must be rejected (no adjacent neighbor found or neighbor has
     ///     <see cref="MapFragment.NoOverwrite" />).
     /// </returns>
     protected virtual bool TryShiftToMerge(
@@ -86,18 +86,18 @@ public class DenseRoomLayout : UniformRoomLayout, ICSScriptSerializable
     {
         shiftedLot = lot;
 
-        var neighbour = FindAdjacentNeighbour(lot, targetEdge, placedChunks);
-        if (neighbour == null)
+        var neighbor = FindAdjacentNeighbor(lot, targetEdge, placedChunks);
+        if (neighbor == null)
         {
             return false;
         }
 
-        if (neighbour.Fragment.NoOverwrite)
+        if (neighbor.Fragment.NoOverwrite)
         {
             return false;
         }
 
-        // Overlap on the neighbour's facing perimeter is allowed even when that perimeter
+        // Overlap on the neighbor's facing perimeter is allowed even when that perimeter
         // carries important cells (doorways, features, etc.). The fragment-placing code
         // (MapFragment.Write) preserves existing non-wall content when its candidate
         // perimeter would write a plain wall over it.
@@ -111,7 +111,7 @@ public class DenseRoomLayout : UniformRoomLayout, ICSScriptSerializable
     ///     rectangles). When multiple chunks touch the same edge, the one with the longest
     ///     contact run is returned.
     /// </summary>
-    private static Chunk? FindAdjacentNeighbour(
+    private static Chunk? FindAdjacentNeighbor(
         Rectangle lot, Direction targetEdge, IReadOnlyList<Chunk> placedChunks)
     {
         Chunk? best = null;
@@ -190,11 +190,11 @@ public class DenseRoomLayout : UniformRoomLayout, ICSScriptSerializable
 
     /// <summary>
     ///     Returns the lot translated by one tile toward <paramref name="edge" />. The
-    ///     translated lot overlaps the placed neighbour's perimeter wall column/row by
+    ///     translated lot overlaps the placed neighbor's perimeter wall column/row by
     ///     exactly one cell — the shared wall after the merge.
     /// </summary>
     /// <remarks>
-    ///     Precondition: <paramref name="lot" /> sits flush against a neighbour on
+    ///     Precondition: <paramref name="lot" /> sits flush against a neighbor on
     ///     <paramref name="edge" /> with a non-zero <see cref="ContactLength" />. The
     ///     callers (<see cref="TryShiftToMerge" />) verify this first, so the
     ///     <c>(byte)(coord - 1)</c> on the West/North branches can never underflow and

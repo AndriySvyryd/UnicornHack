@@ -13,7 +13,7 @@ public sealed class EmptyRoomLayout : RoomLayout
         RoomComponent room,
         Branch branch,
         DefiningMapFragment fragment,
-        Dictionary<Direction, int> doorwayDemand,
+        IReadOnlyList<RoomDoorwayAnchor> doorwayDemand,
         RoomParameters roomParameters)
     {
         var defaultTerrain = fragment.GetEffectiveDefaultTerrain(branch);

@@ -14,7 +14,7 @@ namespace UnicornHack.Hubs.ChangeTracking;
 ///     <para>
 ///         Lifecycle per turn:
 ///         <c>RegisterOnGroups</c> (once) → listener events accumulate into <c>_changes</c> →
-///         <see cref="WriteTo" /> (once) → <see cref="Clear" />.
+///         <see cref="WriteTo" /> (once) → <see cref="Reset" />.
 ///     </para>
 ///     <para>State model:</para>
 ///     <list type="bullet">
@@ -64,7 +64,7 @@ namespace UnicornHack.Hubs.ChangeTracking;
 ///         <item>
 ///             <description>
 ///                 <see cref="WriteTo" /> followed by another <see cref="WriteTo" /> without an
-///                 intervening <see cref="Clear" /> is a caller bug — asserted in debug builds.
+///                 intervening <see cref="Reset" /> is a caller bug — asserted in debug builds.
 ///             </description>
 ///         </item>
 ///     </list>
@@ -128,8 +128,49 @@ public abstract class ChangeBuilder<TChange>
     private readonly Dictionary<int, TChange?> _snapshots = [];
     private bool _wroteWithoutClear;
 
-    /// <summary>True if any changes have been recorded since the last <see cref="Clear" />.</summary>
+    /// <summary>True if any changes have been recorded since the last <see cref="Reset" />.</summary>
     public bool HasChanges => _changes.Count > 0;
+
+    /// <summary>
+    ///     Removes every pending change whose entity currently lives in a room other than
+    ///     <paramref name="roomId" />, then reports whether any change remains. The builder is
+    ///     shared across the whole game and accumulates changes for entities in every room, but a
+    ///     change set is per-observer and a client only holds its current room; a delta for an
+    ///     entity it never received would fail to apply. Pruning here means a later
+    ///     serialization of the remaining entries needs no second room filter.
+    ///     <para>
+    ///         An entry whose entity is gone or has no position is a removal of an entity that was
+    ///         in the observer's room — those are always emitted and are kept.
+    ///     </para>
+    ///     <para>
+    ///         Mutates shared per-game state, scoping the builder to a single observer's room. With
+    ///         multiple observers in different rooms this is order-dependent and the per-observer
+    ///         copy-filtering approach would be required instead; the current model is single-observer.
+    ///     </para>
+    /// </summary>
+    public bool RemoveChangesNotInRoom(GameManager manager, int roomId)
+    {
+        List<int>? toRemove = null;
+        foreach (var id in _changes.Keys)
+        {
+            var entityRoomId = manager.FindEntity(id)?.Position?.RoomId;
+            if (entityRoomId != null && entityRoomId != roomId)
+            {
+                (toRemove ??= []).Add(id);
+            }
+        }
+
+        if (toRemove != null)
+        {
+            foreach (var id in toRemove)
+            {
+                _changes.Remove(id);
+                _snapshots.Remove(id);
+            }
+        }
+
+        return _changes.Count > 0;
+    }
 
     /// <summary>
     ///     The pending change entries, keyed by entity id. Exposed for subclasses that need
@@ -485,8 +526,8 @@ public abstract class ChangeBuilder<TChange>
 
     /// <summary>
     ///     Writes all pending changes into <paramref name="output" />. Contract: call at
-    ///     most once per <see cref="Clear" /> cycle. Calling twice without an intervening
-    ///     <see cref="Clear" /> would cause the same entries to be emitted into two
+    ///     most once per <see cref="Reset" /> cycle. Calling twice without an intervening
+    ///     <see cref="Reset" /> would cause the same entries to be emitted into two
     ///     different change sets, corrupting the client's view — asserted in debug builds.
     /// </summary>
     public void WriteTo(Dictionary<int, TChange> output, SerializationContext context)
@@ -577,7 +618,7 @@ public abstract class ChangeBuilder<TChange>
         }
     }
 
-    public void Clear()
+    public void Reset()
     {
         _changes.Clear();
         _snapshots.Clear();

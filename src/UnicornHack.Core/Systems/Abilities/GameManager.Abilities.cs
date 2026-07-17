@@ -47,7 +47,7 @@ public partial class GameManager
 
     private void InitializeAbilities(SequentialMessageQueue<GameManager> queue)
     {
-        Add<AbilityComponent>(EntityComponent.Ability, poolSize: 32);
+        Add<AbilityComponent>(EntityComponent.Ability, poolSize: 1024, maxPoolSize: 4096);
 
         AffectableEntities = CreateGroup(nameof(AffectableEntities),
             new EntityMatcher<GameEntity>().AnyOf(
@@ -57,7 +57,7 @@ public partial class GameManager
                 (int)EntityComponent.Sensor));
 
         Abilities = CreateGroup(nameof(Abilities),
-            new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Ability));
+            new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Ability), capacity: 4096);
 
         AffectableAbilitiesIndex = new(
             nameof(AffectableAbilitiesIndex),

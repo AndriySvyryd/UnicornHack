@@ -62,14 +62,14 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         }
 
         var targetCell = message.TargetCell;
-        var level = position.RoomEntity.Room!;
-        if (!CanMoveTo(targetCell, level))
+        var currentRoom = position.RoomEntity.Room!;
+        if (!CanMoveTo(targetCell, currentRoom))
         {
             return traveledMessage;
         }
 
-        var targetLevelEntity = position.RoomEntity;
-        var connectionEntity = level.Connections.GetValueOrDefault(targetCell);
+        var targetRoomEntity = position.RoomEntity;
+        var connectionEntity = currentRoom.Connections.GetValueOrDefault(targetCell);
         if (connectionEntity != null)
         {
             var connection = connectionEntity.Connection!;
@@ -83,10 +83,11 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
                 // via ActorActionType.TravelToRoom. Inter-level connections (stairs to a different
                 // branch/depth) auto-transition immediately as before.
                 var isIntraLevel = targetRoom != null
-                    && targetRoom.Level == level.Level;
+                    && targetRoom.Level == currentRoom.Level;
 
                 if (!isIntraLevel)
                 {
+                    targetRoomEntity = manager.Game.LoadRoom(connection.TargetRoomId)!;
                     if (connection.TargetCell == null)
                     {
                         throw new InvalidOperationException(
@@ -94,7 +95,6 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
                             + $"to {connection.TargetRoomId} has no TargetCell");
                     }
 
-                    targetLevelEntity = manager.Game.LoadRoom(connection.TargetRoomId)!;
                     targetCell = connection.TargetCell.Value;
 
                     if (pretend)
@@ -112,7 +112,7 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
             }
         }
 
-        var conflictingActor = targetLevelEntity.Room!.Actors.GetValueOrDefault(targetCell);
+        var conflictingActor = targetRoomEntity.Room!.Actors.GetValueOrDefault(targetCell);
         if (conflictingActor != null
             && (!message.MoveOffConflicting
                 || !MoveOffCell(conflictingActor, manager)))
@@ -126,21 +126,9 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
             return traveledMessage;
         }
 
-        if (position.RoomId != targetLevelEntity.Id)
+        if (position.RoomId != targetRoomEntity.Id)
         {
-            position.SetRoomPosition(targetLevelEntity.Id, targetCell);
-
-            // Reveal hidden connections from the new room.
-            var newRoom = targetLevelEntity.Room!;
-            foreach (var conn in newRoom.Connections.Values)
-            {
-                if (conn.Connection!.Hidden)
-                {
-                    conn.Connection.Hidden = false;
-                }
-            }
-
-            newRoom.IsVisited = true;
+            EnterRoom(message.ActorEntity, position, currentRoom, targetRoomEntity, targetCell, manager);
         }
         else
         {
@@ -170,7 +158,7 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
     {
         if (!message.BeingEntity.HasComponent(EntityComponent.Player))
         {
-            RemoveComponentMessage.Enqueue(message.BeingEntity, EntityComponent.Position, manager);
+            DeleteEntityMessage.Enqueue(message.BeingEntity, manager);
         }
 
         return MessageProcessingResult.ContinueProcessing;
@@ -221,19 +209,7 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         var initialCell = position.Cell;
         var initialHeading = position.Heading!.Value;
 
-        position.SetRoomPosition(targetRoomEntity.Id, targetDoorCell);
-
-        // Reveal hidden connections + mark visited.
-        var enteredRoom = targetRoomEntity.Room!;
-        foreach (var conn in enteredRoom.Connections.Values)
-        {
-            if (conn.Connection!.Hidden)
-            {
-                conn.Connection.Hidden = false;
-            }
-        }
-
-        enteredRoom.IsVisited = true;
+        EnterRoom(actorEntity, position, currentRoom, targetRoomEntity, targetDoorCell, manager);
 
         // Notify downstream systems (SensorySystem, KnowledgeSystem, ItemMovingSystem)
         // so visibility, the actor's own knowledge entity and pickup-on-move-over all
@@ -250,6 +226,139 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
 
         DelayMessage.Enqueue(actorEntity, position.MovementDelay, manager);
         return true;
+    }
+
+    /// <summary>
+    ///     Moves <paramref name="position" /> into <paramref name="targetRoomEntity" /> at
+    ///     <paramref name="targetCell" />, reveals the entered room's hidden connections and
+    ///     marks both the room being left (<paramref name="currentRoom" />) and the room being
+    ///     entered as visited. Shared by the step-onto-connection (<see cref="TryTravel" />) and
+    ///     explicit room-travel (<see cref="TravelToRoom" />) paths.
+    ///     <para>
+    ///         When the traveling actor is a player and no player remains behind, the abandoned
+    ///         room (intra-level move), level (inter-level move within the same branch) or whole
+    ///         branch (inter-branch move) is permanently deleted, since a visited room can never be
+    ///         revisited. See <see cref="DeleteRoomContents" />, <see cref="DeleteLevelContents" />
+    ///         and <see cref="DeleteBranchContents" />.
+    ///     </para>
+    /// </summary>
+    private void EnterRoom(
+        GameEntity actorEntity, PositionComponent position, RoomComponent currentRoom,
+        GameEntity targetRoomEntity, Point targetCell, GameManager manager)
+    {
+        var newRoom = targetRoomEntity.Room!;
+        var isIntraLevel = newRoom.Level == currentRoom.Level;
+
+        position.SetRoomPosition(targetRoomEntity.Id, targetCell);
+
+        foreach (var conn in newRoom.Connections.Values)
+        {
+            if (conn.Connection!.Hidden)
+            {
+                conn.Connection.Hidden = false;
+            }
+        }
+
+        currentRoom.IsVisited = true;
+        newRoom.IsVisited = true;
+
+        // Clean up the abandoned space once the player has left it and no other player remains
+        // behind, since a visited room/level/branch can never be revisited:
+        //   * same level        -> just clear the room the player left (the room stays in the graph);
+        //   * different level,
+        //     same branch        -> delete the whole abandoned level, keeping the rooms that still
+        //                           lead to other reachable levels;
+        //   * different branch   -> delete the entire previous branch, every level and all.
+        if (actorEntity.HasComponent(EntityComponent.Player)
+            && !manager.PlayerSystem.IsPlayerInRoom(currentRoom.Entity.Id, manager))
+        {
+            var currentLevel = currentRoom.Level;
+            if (isIntraLevel)
+            {
+                DeleteRoomContents(currentRoom, manager);
+            }
+            else if (newRoom.Level.BranchName == currentLevel.BranchName)
+            {
+                DeleteLevelContents(currentLevel, manager);
+            }
+            else
+            {
+                DeleteBranchContents(currentLevel.Branch, manager);
+            }
+        }
+    }
+
+    /// <summary>
+    ///     Deletes every non-player actor and every loose floor item in <paramref name="room" />.
+    ///     Called when the player abandons a room they can never return to, so its contents never
+    ///     need processing again. The player (and any other player sharing the room) is left
+    ///     untouched.
+    ///     <para>
+    ///         Deletion is deferred via <see cref="DeleteEntityMessage" /> (the same low-priority
+    ///         path as death) so the heavy teardown runs after the current cascade settles rather than
+    ///         re-entrantly mid-travel. Each queued message keeps its actor alive until processed, so a
+    ///         deferred actor survives any intervening room teardown and is then fully removed.
+    ///     </para>
+    /// </summary>
+    public void DeleteRoomContents(RoomComponent room, GameManager manager)
+    {
+        // Snapshot first: deleting mutates the room's Actors / Items dictionaries.
+        foreach (var actorEntity in room.Actors.Values)
+        {
+            if (!actorEntity.HasComponent(EntityComponent.Player))
+            {
+                DeleteEntityMessage.Enqueue(actorEntity, manager);
+            }
+        }
+
+        foreach (var itemEntity in room.Items.Values)
+        {
+            DeleteEntityMessage.Enqueue(itemEntity, manager);
+        }
+    }
+
+    /// <summary>
+    ///     Permanently deletes every room (and its contents) of a level the player has just left for
+    ///     a different level in the same branch. Since a visited level can never be revisited, all of
+    ///     it — including the room with the inter-level connection the player used — is freed so it
+    ///     never needs processing or persistence again.
+    /// </summary>
+    public void DeleteLevelContents(GameLevel level, GameManager manager)
+    {
+        foreach (var room in level.Rooms.ToList())
+        {
+            DeleteRoom(room, level, manager);
+        }
+    }
+
+    /// <summary>
+    ///     Permanently deletes every level in <paramref name="branch" />, rooms and all. Called when
+    ///     the player leaves a branch for a different one: a branch is traversed one-directionally,
+    ///     so once left none of its levels can ever be reached again and nothing in it needs further
+    ///     processing or persistence.
+    /// </summary>
+    public void DeleteBranchContents(GameBranch branch, GameManager manager)
+    {
+        foreach (var level in branch.Levels)
+        {
+            DeleteLevelContents(level, manager);
+        }
+
+        branch.Levels.Clear();
+    }
+
+    /// <summary>
+    ///     Deletes <paramref name="room" />'s contents (deferred) and tears the room entity down,
+    ///     removing it from <paramref name="level" />.
+    /// </summary>
+    private void DeleteRoom(RoomComponent room, GameLevel level, GameManager manager)
+    {
+        DeleteRoomContents(room, manager);
+
+        // Remove the Room component first so EF's NavigationFixer doesn't try to sever the required
+        // RoomComponent -> GameLevel relationship by nulling its non-nullable foreign key.
+        room.Entity.RemoveComponent(EntityComponent.Room);
+        level.Rooms.Remove(room);
     }
 
     private bool MoveOffCell(GameEntity entity, GameManager manager, bool pretend = false)

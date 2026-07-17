@@ -100,12 +100,20 @@ public class AISystem :
 
     private void DecideNextAction(GameEntity actorEntity, GameManager manager)
     {
+        var position = actorEntity.Position!;
+
+        // Stay dormant while no player can observe this room.
+        if (!manager.PlayerSystem.IsPlayerInRoom(position.RoomId, manager))
+        {
+            actorEntity.AI!.NextAction = ActorActionType.Wait;
+            return;
+        }
+
         if (TryAttackPlayerCharacter(actorEntity, manager))
         {
             return;
         }
 
-        var position = actorEntity.Position!;
         if (position.MovementDelay == 0)
         {
             return;

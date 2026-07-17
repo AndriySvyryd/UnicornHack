@@ -17,8 +17,8 @@ namespace UnicornHack.Generation.Map;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         Subclasses define the *topology* by overriding <see cref="GetNeighbourOffsets" />
-///         (4-/6-/8-neighbour and other variants) and <see cref="PlaceRooms" /> (initial cell
+///         Subclasses define the *topology* by overriding <see cref="GetNeighborOffsets" />
+///         (4-/6-/8-neighbor and other variants) and <see cref="PlaceRooms" /> (initial cell
 ///         placement, including entrance/exit). The shared <see cref="BuildGraph" /> algorithm
 ///         starts with a fully-bidirectional graph (every topology adjacency = two directed
 ///         edges) and prunes edges in random order, validating after each removal that
@@ -47,8 +47,16 @@ public abstract class LevelLayout
     /// <summary>Per-room probability of receiving the cursed feature.</summary>
     public float CurseRoomProbability { get; init; } = 0.1f;
 
-    /// <summary>Per-edge probability that a connection is hidden (player-discoverable).</summary>
-    public float HiddenConnectionProbability { get; init; } = 0.1f;
+    /// <summary>
+    ///     Expected number of concealed rooms per level. The value is spread across the
+    ///     hideable off-spine rooms (see <see cref="IsHideable" />), so each eligible room is
+    ///     hidden with probability <c>HiddenConnectionProbability / hideableRoomCount</c> and a
+    ///     bigger level doesn't get proportionally more secrets. A hidden room is concealed on
+    ///     the map until the player discovers it, and is always a reward room drawn from the
+    ///     premium-biased distribution (which unlocks the <see cref="RoomFeatures.Shortcut" />
+    ///     reward). <c>0</c> disables concealment entirely, keeping every connection visible.
+    /// </summary>
+    public float HiddenConnectionProbability { get; init; } = 0.3f;
 
     /// <summary>
     ///     How winding the entrance-to-exit path should be, in <c>[0, 1]</c>.
@@ -119,31 +127,31 @@ public abstract class LevelLayout
 
     /// <summary>
     ///     Returns the directed cell offsets from <paramref name="cell" /> that count as
-    ///     candidate-graph neighbours for this layout's topology. Examples:
+    ///     candidate-graph neighbors for this layout's topology. Examples:
     ///     <list type="bullet">
-    ///         <item>4-neighbour grid: <c>(±1, 0), (0, ±1)</c></item>
-    ///         <item>8-neighbour grid: <c>(±1, 0), (0, ±1), (±1, ±1)</c></item>
-    ///         <item>Offset hex: column-parity-dependent (no vertical-only neighbours)</item>
+    ///         <item>4-neighbor grid: <c>(±1, 0), (0, ±1)</c></item>
+    ///         <item>8-neighbor grid: <c>(±1, 0), (0, ±1), (±1, ±1)</c></item>
+    ///         <item>Offset hex: column-parity-dependent (no vertical-only neighbors)</item>
     ///     </list>
     ///     Default implementation throws — subclasses using <see cref="BuildGraph" /> must override.
     /// </summary>
-    public virtual IEnumerable<(int dx, int dy)> GetNeighbourOffsets(byte cellX, byte cellY)
+    public virtual IEnumerable<(int dx, int dy)> GetNeighborOffsets(byte cellX, byte cellY)
         => throw new NotImplementedException(
-            $"{GetType().Name} does not implement {nameof(GetNeighbourOffsets)}; override it or do not call {nameof(BuildGraph)}.");
+            $"{GetType().Name} does not implement {nameof(GetNeighborOffsets)}; override it or do not call {nameof(BuildGraph)}.");
 
     /// <summary>
-    ///     Counts how many neighbours emitted by <see cref="GetNeighbourOffsets" /> fall
+    ///     Counts how many neighbors emitted by <see cref="GetNeighborOffsets" /> fall
     ///     inside the <paramref name="gridWidth" /> × <paramref name="gridHeight" />
     ///     bounding box. Subclasses use this in <see cref="PlaceRooms" /> to skip cells
     ///     that can never have enough connections to satisfy the
-    ///     "every non-endpoint room has ≥ 2 undirected neighbours" invariant
+    ///     "every non-endpoint room has ≥ 2 undirected neighbors" invariant
     ///     <see cref="BuildGraph" /> requires; placing them just wastes the
     ///     <see cref="TrimRooms" /> budget and lowers the per-attempt success rate.
     /// </summary>
-    public int CountInGridNeighbours(byte cellX, byte cellY, byte gridWidth, byte gridHeight)
+    public int CountInGridNeighbors(byte cellX, byte cellY, byte gridWidth, byte gridHeight)
     {
         var count = 0;
-        foreach (var (dx, dy) in GetNeighbourOffsets(cellX, cellY))
+        foreach (var (dx, dy) in GetNeighborOffsets(cellX, cellY))
         {
             var nx = cellX + dx;
             var ny = cellY + dy;
@@ -158,7 +166,7 @@ public abstract class LevelLayout
     /// <summary>
     ///     Builds the room graph via <b>ear decomposition</b>. The result is a single-source
     ///     single-sink DAG (entrance → exit) where every non-endpoint node has at least
-    ///     two undirected neighbours and lies on a simple entrance-to-exit path — i.e.
+    ///     two undirected neighbors and lies on a simple entrance-to-exit path — i.e.
     ///     the player can always reach the exit from any room without revisiting an
     ///     already-entered room.
     /// </summary>
@@ -186,15 +194,17 @@ public abstract class LevelLayout
     ///                 forward through the node to the higher-order anchor, walk forward to
     ///                 exit. Forward walks in a topological order never revisit nodes.</item>
     ///             <item>Defence: every non-endpoint node must have at least two undirected
-    ///                 neighbours; otherwise the graph is rejected (the caller retries
+    ///                 neighbors; otherwise the graph is rejected (the caller retries
     ///                 with a fresh seed).</item>
     ///             <item>Add forward-oriented <b>cross-edges</b> from the adjacency up to
     ///                 the <see cref="LayoutParameters.Interconnectedness" /> target so the
     ///                 graph isn't strictly tree-shaped.</item>
-    ///             <item>Each non-mandatory edge is hidden with probability
-    ///                 <see cref="LayoutParameters.HiddenConnectionProbability" />; every
-    ///                 source keeps at least one visible outgoing edge so a room never
-    ///                 looks completely isolated on the map.</item>
+    ///             <item>Each eligible off-spine room is concealed with probability
+    ///                 <see cref="LayoutParameters.HiddenConnectionProbability" /> spread across
+    ///                 the hideable rooms (so it's the expected hidden-room count per level), and
+    ///                 every connection incident to a hidden room is marked hidden. Hiding never
+    ///                 strands a visible predecessor (each keeps a visible outgoing edge) and the
+    ///                 entrance→exit spine stays fully visible.</item>
     ///             <item>Reward / Curse features applied to non-entrance/non-exit rooms.</item>
     ///         </list>
     ///     </para>
@@ -252,8 +262,8 @@ public abstract class LevelLayout
 
         // Iteratively drop non-endpoint leaves (degree < 2 in undirected adjacency). A
         // leaf can't sit on a simple entrance→exit path through itself: it has at most
-        // one neighbour, so any path through it must back-track. Removing leaves can
-        // cascade (their sole neighbour may become a leaf in turn). If entrance or exit
+        // one neighbor, so any path through it must back-track. Removing leaves can
+        // cascade (their sole neighbor may become a leaf in turn). If entrance or exit
         // end up isolated the seed is unusable and we return null so the caller retries.
         TrimLeaves(nodes, entrance, exit, adjacency);
         if (adjacency[entrance].Count == 0 || adjacency[exit].Count == 0 || nodes.Count < 2)
@@ -262,11 +272,94 @@ public abstract class LevelLayout
             return null;
         }
 
-        var spine = FindSpine(entrance, exit, adjacency, parameters.Sinuosity, random);
-        if (spine is null || spine.Count < 2)
+        // Build the room connections (spine, ears, cross-edges) in an inner retry loop. Connections
+        // that visually overlap (two grid diagonals crossing like an X on the rendered map) are
+        // avoided three ways: each ear is re-rolled to dodge a crossing, crossing cross-edges are
+        // dropped, and any crossing that still slips through is untwisted afterwards (re-pair / bend).
+        // What survives all of that is almost always RNG-avoidable rather than structural — a
+        // different spine / ear arrangement simply doesn't produce the twist — so the loop samples
+        // many fresh arrangements (the phase is cheap relative to materializing rooms) and keeps the
+        // one with the fewest residual crossings, stopping early the moment a crossing-free layout
+        // appears. The early exit makes the high cap nearly free: only the rare seed that can't reach
+        // zero crossings actually runs all the attempts. Empirically a cap of 40 drives the
+        // production TreeLevelLayout from ~0.24 to ~0.01 residual crossings/level (Spiral to 0).
+        const int maxConnectionAttempts = 40;
+        HashSet<(RoomGraphNode Src, RoomGraphNode Tgt)>? bestEdges = null;
+        List<RoomGraphNode>? bestSpine = null;
+        List<RoomGraphNode>? bestNodes = null;
+        var bestCrossings = int.MaxValue;
+        for (var connectionAttempt = 0; connectionAttempt < maxConnectionAttempts; connectionAttempt++)
+        {
+            // The connection phase mutates its node / adjacency / removed-pool inputs (ear
+            // restoration can re-add a trimmed room), so each attempt works on fresh per-attempt
+            // copies and leaves the pristine post-trim state intact for the next attempt.
+            var attemptNodes = new List<RoomGraphNode>(nodes);
+            var attemptAdjacency = CloneAdjacency(adjacency);
+            var attemptRemovedPool = new HashSet<RoomGraphNode>(removedPool);
+
+            if (!TryConnectRooms(
+                    attemptNodes, entrance, exit, attemptAdjacency, attemptRemovedPool, fullAdjacency,
+                    parameters, random, stats, out var directedEdges, out var spine))
+            {
+                stats.RoomGraphConnectionRetries++;
+                continue;
+            }
+
+            var crossings = CountConnectionCrossings(directedEdges);
+            if (crossings < bestCrossings)
+            {
+                bestCrossings = crossings;
+                bestEdges = directedEdges;
+                bestSpine = spine;
+                bestNodes = attemptNodes;
+            }
+
+            if (crossings == 0)
+            {
+                break; // can't do better than a crossing-free layout
+            }
+
+            stats.RoomGraphConnectionRetries++;
+        }
+
+        return bestEdges is null
+            ? null
+            : BuildFinalGraph(bestNodes!, bestEdges, bestSpine!, parameters, random, stats, gameStats);
+    }
+
+    /// <summary>
+    ///     Runs one attempt of the connection phase on the post-trim node set: builds the
+    ///     entrance→exit spine, covers the remaining rooms with an ear decomposition, then adds
+    ///     <see cref="LayoutParameters.Interconnectedness" /> cross-edges — all while avoiding links
+    ///     that would visually overlap an already-placed one (the two diagonals of a grid
+    ///     unit-square form an X on the rendered map). Each ear is re-rolled a few times to dodge a
+    ///     crossing, and an optional cross-edge that would cross is dropped; a crossing that no
+    ///     re-roll avoids (an unavoidable one for that uncovered pocket) is accepted so generation
+    ///     never fails purely to dodge a crossing. Returns <c>true</c> with the directed edge set
+    ///     and spine on success; mutates <paramref name="nodes" />, <paramref name="adjacency" />
+    ///     and <paramref name="removedPool" /> (ear restoration), so callers pass per-attempt copies.
+    /// </summary>
+    private static bool TryConnectRooms(
+        List<RoomGraphNode> nodes,
+        RoomGraphNode entrance,
+        RoomGraphNode exit,
+        Dictionary<RoomGraphNode, HashSet<RoomGraphNode>> adjacency,
+        HashSet<RoomGraphNode> removedPool,
+        Dictionary<RoomGraphNode, HashSet<RoomGraphNode>> fullAdjacency,
+        LayoutParameters parameters,
+        SimpleRandom random,
+        LevelGenerationStats? stats,
+        out HashSet<(RoomGraphNode Src, RoomGraphNode Tgt)> directedEdges,
+        out List<RoomGraphNode> spine)
+    {
+        directedEdges = null!;
+        spine = null!;
+
+        var foundSpine = FindSpine(entrance, exit, adjacency, parameters.Sinuosity, random);
+        if (foundSpine is null || foundSpine.Count < 2)
         {
             if (stats is not null) { stats.RoomGraphSpineNotFound++; }
-            return null;
+            return false;
         }
 
         // Topological order. Spine nodes get integer positions; ear internals get
@@ -274,15 +367,24 @@ public abstract class LevelLayout
         // identical anchor orders fall back to GridX/GridY (via CompareNodes) so every
         // undirected edge has a deterministic orientation.
         var order = new Dictionary<RoomGraphNode, double>(nodes.Count);
-        for (var i = 0; i < spine.Count; i++)
+        for (var i = 0; i < foundSpine.Count; i++)
         {
-            order[spine[i]] = i;
+            order[foundSpine[i]] = i;
         }
 
-        var directedEdges = new HashSet<(RoomGraphNode Src, RoomGraphNode Tgt)>(nodes.Count * 2);
-        for (var i = 0; i < spine.Count - 1; i++)
+        // Tracks, per grid unit-square, which of its two diagonals an edge already occupies. A new
+        // diagonal whose square already holds the opposite diagonal would cross it (an X), so it's
+        // dropped (cross-edges) or re-rolled (ears). See <see cref="GetDiagonalKey" />.
+        var occupiedDiagonals = new HashSet<(int MinX, int MinY, bool MainDiagonal)>();
+
+        // The spine is a single (mostly cardinal) shortest path; record its diagonals so later ears
+        // and cross-edges steer around them. A spine that self-crosses is rare and unchangeable
+        // here (the path is fixed), so it's accepted rather than retried.
+        var directed = new HashSet<(RoomGraphNode Src, RoomGraphNode Tgt)>(nodes.Count * 2);
+        for (var i = 0; i < foundSpine.Count - 1; i++)
         {
-            directedEdges.Add((spine[i], spine[i + 1]));
+            TryRegisterEdge(occupiedDiagonals, foundSpine[i], foundSpine[i + 1], failOnCrossing: false);
+            directed.Add((foundSpine[i], foundSpine[i + 1]));
         }
 
         var uncovered = new HashSet<RoomGraphNode>(nodes.Count);
@@ -309,34 +411,449 @@ public abstract class LevelLayout
                     nodes, parameters.MaxRooms))
                 {
                     if (stats is not null) { stats.RoomGraphEarNotFound++; }
-                    return null;
+                    return false;
                 }
                 continue;
             }
-            AttachEar(ear, order, directedEdges, uncovered);
+
+            // Greedily prefer a non-crossing ear: re-roll FindEar (it samples a fresh ear from the
+            // RNG) a few times and keep the first one whose links cross nothing already placed. When
+            // every re-roll still crosses, the crossing is unavoidable for this pocket, so accept
+            // the last candidate rather than failing generation.
+            var earCrosses = EarIntroducesCrossing(occupiedDiagonals, ear);
+            for (var reroll = 0; earCrosses && reroll < MaxEarCrossingRerolls; reroll++)
+            {
+                var alternative = FindEar(uncovered, order, adjacency, random);
+                if (alternative is null)
+                {
+                    break;
+                }
+                ear = alternative;
+                earCrosses = EarIntroducesCrossing(occupiedDiagonals, ear);
+            }
+
+            if (earCrosses && stats is not null) { stats.RoomGraphConnectionCrossing++; }
+
+            for (var i = 0; i < ear.Count - 1; i++)
+            {
+                TryRegisterEdge(occupiedDiagonals, ear[i], ear[i + 1], failOnCrossing: false);
+            }
+
+            AttachEar(ear, order, directed, uncovered);
         }
 
         if (!HasMinDegree(nodes, entrance, exit, adjacency))
         {
             if (stats is not null) { stats.RoomGraphMinDegreeViolated++; }
-            return null;
+            return false;
         }
 
-        AddCrossEdges(adjacency, directedEdges, order, parameters.Interconnectedness, random);
+        AddCrossEdges(adjacency, directed, order, parameters.Interconnectedness, random, occupiedDiagonals);
+
+        // Some square-diagonal topologies leave crossings that no spine / ear / cross-edge choice
+        // could avoid. Untwist them: where a unit-square ended up holding both diagonals (a rendered
+        // X), re-pair its four corner rooms along the square's cardinal sides instead — provided the
+        // re-pairing keeps every invariant. This clears structurally-unavoidable crossings the
+        // earlier avoidance heuristics had to accept.
+        UntwistCrossings(directed, order, nodes, entrance, exit, occupiedDiagonals, stats);
 
         // Defence-in-depth: confirm the DAG is well-formed (entrance reaches every node
         // via forward edges and every node reaches exit via forward edges). The ear
         // decomposition guarantees this by construction; failing here means a corner-case
-        // bug — return null so the caller retries with a fresh seed rather than handing
-        // back a broken graph.
-        if (!ValidateDagConnectivity(nodes, entrance, exit, directedEdges))
+        // bug — return false so the caller retries rather than handing back a broken graph.
+        if (!ValidateDagConnectivity(nodes, entrance, exit, directed))
         {
             if (stats is not null) { stats.RoomGraphDagConnectivityBroken++; }
+            return false;
+        }
+
+        directedEdges = directed;
+        spine = foundSpine;
+        return true;
+    }
+
+    /// <summary>
+    ///     Deep-copies <paramref name="adjacency" /> (new outer dictionary and fresh neighbor
+    ///     sets) so a connection attempt can mutate its copy without disturbing the pristine
+    ///     post-trim adjacency reused by the next attempt.
+    /// </summary>
+    private static Dictionary<RoomGraphNode, HashSet<RoomGraphNode>> CloneAdjacency(
+        Dictionary<RoomGraphNode, HashSet<RoomGraphNode>> adjacency)
+    {
+        var clone = new Dictionary<RoomGraphNode, HashSet<RoomGraphNode>>(adjacency.Count);
+        foreach (var (node, neighbors) in adjacency)
+        {
+            clone[node] = [..neighbors];
+        }
+
+        return clone;
+    }
+
+    /// <summary>
+    ///     Maps a unit-length grid diagonal between <paramref name="a" /> and <paramref name="b" />
+    ///     to its unit-square (identified by the lower-left corner) and which of the square's two
+    ///     diagonals it occupies — main (lower-left ↔ upper-right) or anti (lower-right ↔
+    ///     upper-left). Returns <c>null</c> for a cardinal (axis-aligned) link, which can never
+    ///     cross another unit-length link. Hex layouts never make both diagonals of a square
+    ///     adjacent, so this stays inert for them; only true square grids (cardinal + diagonal
+    ///     topologies) can place crossing diagonals.
+    /// </summary>
+    private static (int MinX, int MinY, bool MainDiagonal)? GetDiagonalKey(RoomGraphNode a, RoomGraphNode b)
+    {
+        if (Math.Abs(a.GridX - b.GridX) != 1 || Math.Abs(a.GridY - b.GridY) != 1)
+        {
             return null;
         }
 
-        return BuildFinalGraph(nodes, directedEdges, parameters, random, stats, gameStats);
+        var minX = Math.Min(a.GridX, b.GridX);
+        var minY = Math.Min(a.GridY, b.GridY);
+        // An endpoint sits on the main diagonal iff "is its X the square's min" agrees with "is its
+        // Y the square's min" (lower-left: both true; upper-right: both false). The anti-diagonal's
+        // endpoints disagree (lower-right, upper-left).
+        var mainDiagonal = (a.GridX == minX) == (a.GridY == minY);
+        return (minX, minY, mainDiagonal);
     }
+
+    /// <summary>
+    ///     Records the diagonal occupied by link {<paramref name="a" />,<paramref name="b" />} in
+    ///     <paramref name="occupiedDiagonals" />. If the opposite diagonal of the same unit-square
+    ///     is already taken the two would visually cross: when <paramref name="failOnCrossing" /> is
+    ///     <c>true</c> this returns <c>false</c> without recording anything (the caller drops or
+    ///     rejects the link); when <c>false</c> the crossing is accepted but the diagonal is still
+    ///     recorded so later optional cross-edges steer clear of the now fully-occupied square.
+    ///     Cardinal links never cross, so they're accepted (and not recorded) immediately.
+    /// </summary>
+    private static bool TryRegisterEdge(
+        HashSet<(int MinX, int MinY, bool MainDiagonal)> occupiedDiagonals,
+        RoomGraphNode a,
+        RoomGraphNode b,
+        bool failOnCrossing = true)
+    {
+        if (GetDiagonalKey(a, b) is not { } diagonal)
+        {
+            return true;
+        }
+
+        if (failOnCrossing
+            && occupiedDiagonals.Contains((diagonal.MinX, diagonal.MinY, !diagonal.MainDiagonal)))
+        {
+            return false;
+        }
+
+        occupiedDiagonals.Add(diagonal);
+        return true;
+    }
+
+    /// <summary>
+    ///     How many times an ear is re-sampled from <see cref="FindEar" /> trying to find one whose
+    ///     links don't visually cross an already-placed link before the crossing is accepted as
+    ///     unavoidable. The connection phase is cheap, so a handful of re-rolls clears the vast
+    ///     majority of avoidable crossings without meaningfully slowing generation.
+    /// </summary>
+    private const int MaxEarCrossingRerolls = 8;
+
+    /// <summary>
+    ///     Returns whether attaching <paramref name="ear" /> would place a diagonal that crosses one
+    ///     already in <paramref name="occupiedDiagonals" /> or an earlier diagonal of the same ear.
+    ///     Pure test (records nothing), so a crossing ear can be discarded for a re-rolled one.
+    /// </summary>
+    private static bool EarIntroducesCrossing(
+        HashSet<(int MinX, int MinY, bool MainDiagonal)> occupiedDiagonals,
+        List<RoomGraphNode> ear)
+    {
+        HashSet<(int MinX, int MinY, bool MainDiagonal)>? earDiagonals = null;
+        for (var i = 0; i < ear.Count - 1; i++)
+        {
+            if (GetDiagonalKey(ear[i], ear[i + 1]) is not { } diagonal)
+            {
+                continue;
+            }
+
+            var opposite = (diagonal.MinX, diagonal.MinY, !diagonal.MainDiagonal);
+            if (occupiedDiagonals.Contains(opposite) || (earDiagonals?.Contains(opposite) ?? false))
+            {
+                return true;
+            }
+
+            (earDiagonals ??= []).Add(diagonal);
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    ///     Counts how many pairs of links in <paramref name="directedEdges" /> visually cross — i.e.
+    ///     grid unit-squares that hold both of their diagonals. Bidirectional pairs (two directed
+    ///     edges over the same geometry) collapse to one diagonal, so they're never miscounted as a
+    ///     crossing. Used to pick the cleanest of several sampled connection arrangements.
+    /// </summary>
+    private static int CountConnectionCrossings(HashSet<(RoomGraphNode Src, RoomGraphNode Tgt)> directedEdges)
+    {
+        var occupied = new HashSet<(int MinX, int MinY, bool MainDiagonal)>();
+        var crossings = 0;
+        foreach (var (src, tgt) in directedEdges)
+        {
+            if (GetDiagonalKey(src, tgt) is not { } diagonal)
+            {
+                continue;
+            }
+
+            if (occupied.Contains((diagonal.MinX, diagonal.MinY, !diagonal.MainDiagonal)))
+            {
+                crossings++;
+            }
+
+            occupied.Add(diagonal);
+        }
+
+        return crossings;
+    }
+
+    /// <summary>
+    ///     Post-processing "untwist" pass run after all links are placed: for every grid unit-square
+    ///     that still holds both of its diagonals (the two links render as a crossing X), tries to
+    ///     resolve the crossing via <see cref="TryUntwistSquare" /> — re-pairing the four corner rooms
+    ///     along the square's cardinal sides, or, failing that, bending one diagonal into a cardinal L
+    ///     while keeping the other. This resolves crossings that the placement-time avoidance had to
+    ///     accept as unavoidable.
+    ///     <para>
+    ///         The request's "select either the source rooms or the target rooms and swap the crossed
+    ///         edges between them" is realized by the re-pair strategy, which tries both cardinal
+    ///         matchings of the four corners (a main-diagonal corner is always cardinally adjacent to
+    ///         either anti-diagonal corner, so both matchings are crossing-free) and commits the first
+    ///         that preserves every invariant. Any fix is accepted only when the resulting directed
+    ///         graph still has the entrance forward-reaching every room and every room forward-reaching
+    ///         the exit; the new links are oriented along the topological <paramref name="order" />, so
+    ///         acyclicity (and, for any still-reachable interior room, its incoming + outgoing edge) is
+    ///         preserved by construction. A replacement link that duplicates an existing edge is
+    ///         allowed to collapse onto it. If no fix validates, the crossing is left untouched.
+    ///     </para>
+    /// </summary>
+    private static void UntwistCrossings(
+        HashSet<(RoomGraphNode Src, RoomGraphNode Tgt)> directed,
+        Dictionary<RoomGraphNode, double> order,
+        List<RoomGraphNode> nodes,
+        RoomGraphNode entrance,
+        RoomGraphNode exit,
+        HashSet<(int MinX, int MinY, bool MainDiagonal)> occupiedDiagonals,
+        LevelGenerationStats? stats)
+    {
+        // Index each diagonal link by its unit-square. A square that carries both its main and its
+        // anti diagonal is a crossing to untwist.
+        var bySquare =
+            new Dictionary<(int MinX, int MinY),
+                ((RoomGraphNode Src, RoomGraphNode Tgt)? Main, (RoomGraphNode Src, RoomGraphNode Tgt)? Anti)>();
+        foreach (var edge in directed)
+        {
+            if (GetDiagonalKey(edge.Src, edge.Tgt) is not { } diagonal)
+            {
+                continue;
+            }
+
+            var square = (diagonal.MinX, diagonal.MinY);
+            bySquare.TryGetValue(square, out var slot);
+            if (diagonal.MainDiagonal)
+            {
+                slot.Main = edge;
+            }
+            else
+            {
+                slot.Anti = edge;
+            }
+
+            bySquare[square] = slot;
+        }
+
+        foreach (var (square, slot) in bySquare)
+        {
+            if (slot is not { Main: { } mainEdge, Anti: { } antiEdge })
+            {
+                continue;
+            }
+
+            if (!TryUntwistSquare(
+                    directed, order, nodes, entrance, exit, square, occupiedDiagonals, mainEdge, antiEdge))
+            {
+                continue;
+            }
+
+            if (stats is not null) { stats.RoomGraphConnectionUntwisted++; }
+        }
+    }
+
+    /// <summary>
+    ///     Tries to untwist the crossing formed by <paramref name="mainEdge" /> and
+    ///     <paramref name="antiEdge" /> (the two diagonals of one unit-square), preferring the least
+    ///     disruptive fix:
+    ///     <list type="number">
+    ///         <item>
+    ///             <description>
+    ///                 <b>Re-pair</b> — remove both diagonals and reconnect the four corner rooms
+    ///                 along the square's cardinal sides, trying each of the two perfect matchings of
+    ///                 main-corners to anti-corners. This keeps the link count unchanged (or lower, if
+    ///                 a side collapses onto an existing edge).
+    ///             </description>
+    ///         </item>
+    ///         <item>
+    ///             <description>
+    ///                 <b>Bend</b> — when neither matching validates (re-pairing would strand a
+    ///                 corner that depended on a diagonal for its only incoming/outgoing edge),
+    ///                 reroute just one diagonal into a cardinal L through an off-diagonal corner and
+    ///                 keep the other diagonal (now alone in the square, it no longer crosses). A bend
+    ///                 preserves the rerouted link's endpoints' mutual connectivity exactly — they
+    ///                 stay joined through the waypoint corner — so it rescues crossings that
+    ///                 re-pairing cannot. It is tried second because it adds one link (two cardinal
+    ///                 sides replacing one diagonal).
+    ///             </description>
+    ///         </item>
+    ///     </list>
+    ///     A fix is committed only when the resulting directed graph still has the entrance
+    ///     forward-reaching every room and every room forward-reaching the exit; otherwise every
+    ///     tentative change is rolled back and the crossing is left untouched. The
+    ///     <paramref name="occupiedDiagonals" /> set is updated to release whichever diagonal(s) the
+    ///     committed fix vacated.
+    /// </summary>
+    private static bool TryUntwistSquare(
+        HashSet<(RoomGraphNode Src, RoomGraphNode Tgt)> directed,
+        Dictionary<RoomGraphNode, double> order,
+        List<RoomGraphNode> nodes,
+        RoomGraphNode entrance,
+        RoomGraphNode exit,
+        (int MinX, int MinY) square,
+        HashSet<(int MinX, int MinY, bool MainDiagonal)> occupiedDiagonals,
+        (RoomGraphNode Src, RoomGraphNode Tgt) mainEdge,
+        (RoomGraphNode Src, RoomGraphNode Tgt) antiEdge)
+    {
+        var (m1, m2) = mainEdge;
+        var (a1, a2) = antiEdge;
+
+        // Strategy 1 — re-pair: drop both diagonals and reconnect along the cardinal sides. Matching
+        // A pairs the corners one way ({m1,a1} + {m2,a2}); matching B the other ({m1,a2} + {m2,a1}).
+        // Both consist solely of cardinal links, so neither can re-introduce a crossing; they differ
+        // only in which rooms become directly connected, mirroring the "source-side vs target-side"
+        // choice.
+        directed.Remove(mainEdge);
+        directed.Remove(antiEdge);
+        if (TryCommitLinkPair(directed, order, nodes, entrance, exit, m1, a1, m2, a2)
+            || TryCommitLinkPair(directed, order, nodes, entrance, exit, m1, a2, m2, a1))
+        {
+            occupiedDiagonals.Remove((square.MinX, square.MinY, true));
+            occupiedDiagonals.Remove((square.MinX, square.MinY, false));
+            return true;
+        }
+
+        directed.Add(mainEdge);
+        directed.Add(antiEdge);
+
+        // Strategy 2 — bend one diagonal through an off-diagonal corner, keeping the other. Identify
+        // the four corners by position: the main diagonal joins LL=(minX,minY) and UR=(minX+1,minY+1)
+        // (LL has the smaller X); the anti diagonal joins LR=(minX+1,minY) and UL=(minX,minY+1) (LR
+        // has the larger X). Either off-diagonal corner is cardinally adjacent to both endpoints of
+        // the diagonal being bent, so the L-path's two sides are always cardinal.
+        var ll = m1.GridX < m2.GridX ? m1 : m2;
+        var ur = m1.GridX < m2.GridX ? m2 : m1;
+        var lr = a1.GridX > a2.GridX ? a1 : a2;
+        var ul = a1.GridX > a2.GridX ? a2 : a1;
+
+        // Bend the main diagonal (keep anti) via LR or UL.
+        if (TryBendDiagonal(directed, order, nodes, entrance, exit, mainEdge, ll, ur, lr)
+            || TryBendDiagonal(directed, order, nodes, entrance, exit, mainEdge, ll, ur, ul))
+        {
+            occupiedDiagonals.Remove((square.MinX, square.MinY, true));
+            return true;
+        }
+
+        // Bend the anti diagonal (keep main) via LL or UR.
+        if (TryBendDiagonal(directed, order, nodes, entrance, exit, antiEdge, lr, ul, ll)
+            || TryBendDiagonal(directed, order, nodes, entrance, exit, antiEdge, lr, ul, ur))
+        {
+            occupiedDiagonals.Remove((square.MinX, square.MinY, false));
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    ///     Reroutes the diagonal link {<paramref name="p" />,<paramref name="q" />} into a cardinal
+    ///     L-path through <paramref name="waypoint" /> (an off-diagonal corner adjacent to both
+    ///     endpoints): removes the diagonal and adds the two oriented sides {p,waypoint} and
+    ///     {waypoint,q} via <see cref="TryCommitLinkPair" />. Keeps the change only if the DAG stays
+    ///     fully connected; otherwise the sides are rolled back and the diagonal restored. Returns
+    ///     whether the bend was committed.
+    /// </summary>
+    private static bool TryBendDiagonal(
+        HashSet<(RoomGraphNode Src, RoomGraphNode Tgt)> directed,
+        Dictionary<RoomGraphNode, double> order,
+        List<RoomGraphNode> nodes,
+        RoomGraphNode entrance,
+        RoomGraphNode exit,
+        (RoomGraphNode Src, RoomGraphNode Tgt) diagonal,
+        RoomGraphNode p,
+        RoomGraphNode q,
+        RoomGraphNode waypoint)
+    {
+        directed.Remove(diagonal);
+        if (TryCommitLinkPair(directed, order, nodes, entrance, exit, p, waypoint, waypoint, q))
+        {
+            return true;
+        }
+
+        directed.Add(diagonal);
+        return false;
+    }
+
+    /// <summary>
+    ///     Adds the two cardinal links {<paramref name="a1" />,<paramref name="b1" />} and
+    ///     {<paramref name="a2" />,<paramref name="b2" />} — each oriented from its lower-order
+    ///     endpoint to its higher-order one (see <see cref="OrientEdge" />) — to
+    ///     <paramref name="directed" /> and keeps them only if the DAG stays fully connected;
+    ///     otherwise rolls back exactly the links it introduced (a link that merely collapsed onto an
+    ///     existing edge is left in place). Returns whether the pair was committed. Shared by the
+    ///     re-pair and bend untwist strategies.
+    /// </summary>
+    private static bool TryCommitLinkPair(
+        HashSet<(RoomGraphNode Src, RoomGraphNode Tgt)> directed,
+        Dictionary<RoomGraphNode, double> order,
+        List<RoomGraphNode> nodes,
+        RoomGraphNode entrance,
+        RoomGraphNode exit,
+        RoomGraphNode a1,
+        RoomGraphNode b1,
+        RoomGraphNode a2,
+        RoomGraphNode b2)
+    {
+        var edge1 = OrientEdge(a1, b1, order);
+        var edge2 = OrientEdge(a2, b2, order);
+        var added1 = directed.Add(edge1);
+        var added2 = directed.Add(edge2);
+
+        if (ValidateDagConnectivity(nodes, entrance, exit, directed))
+        {
+            return true;
+        }
+
+        if (added2)
+        {
+            directed.Remove(edge2);
+        }
+
+        if (added1)
+        {
+            directed.Remove(edge1);
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    ///     Orders the undirected link {<paramref name="a" />,<paramref name="b" />} from the
+    ///     lower-order endpoint to the higher-order one (ties broken by GridX then GridY), matching
+    ///     the orientation rule used throughout the DAG so an added link never forms a back edge.
+    /// </summary>
+    private static (RoomGraphNode Src, RoomGraphNode Tgt) OrientEdge(
+        RoomGraphNode a, RoomGraphNode b, Dictionary<RoomGraphNode, double> order)
+        => CompareNodes(a, b, order) < 0 ? (a, b) : (b, a);
 
     /// <summary>
     ///     Subclass hook: emits the initial set of nodes (with grid positions and the
@@ -429,19 +946,19 @@ public abstract class LevelLayout
         while (queue.Count > 0 && !found)
         {
             var current = queue.Dequeue();
-            foreach (var neighbour in adjacency[current])
+            foreach (var neighbor in adjacency[current])
             {
-                if (parent.ContainsKey(neighbour))
+                if (parent.ContainsKey(neighbor))
                 {
                     continue;
                 }
-                parent[neighbour] = current;
-                if (neighbour == target)
+                parent[neighbor] = current;
+                if (neighbor == target)
                 {
                     found = true;
                     break;
                 }
-                queue.Enqueue(neighbour);
+                queue.Enqueue(neighbor);
             }
         }
 
@@ -492,7 +1009,7 @@ public abstract class LevelLayout
 
         foreach (var seed in seeds)
         {
-            // Find anchor1: any covered neighbour of seed.
+            // Find anchor1: any covered neighbor of seed.
             RoomGraphNode? anchor1 = null;
             foreach (var n in adjacency[seed])
             {
@@ -543,25 +1060,25 @@ public abstract class LevelLayout
         while (queue.Count > 0 && anchor2 is null)
         {
             var current = queue.Dequeue();
-            foreach (var neighbour in adjacency[current])
+            foreach (var neighbor in adjacency[current])
             {
-                if (parent.ContainsKey(neighbour) || neighbour == excludedAnchor)
+                if (parent.ContainsKey(neighbor) || neighbor == excludedAnchor)
                 {
                     continue;
                 }
-                parent[neighbour] = current;
-                if (order.ContainsKey(neighbour))
+                parent[neighbor] = current;
+                if (order.ContainsKey(neighbor))
                 {
-                    anchor2 = neighbour;
+                    anchor2 = neighbor;
                     break;
                 }
-                if (!uncovered.Contains(neighbour))
+                if (!uncovered.Contains(neighbor))
                 {
                     // Covered but excluded — shouldn't happen since the only covered node
                     // we exclude is anchor1, but keep the guard for defensive clarity.
                     continue;
                 }
-                queue.Enqueue(neighbour);
+                queue.Enqueue(neighbor);
             }
         }
 
@@ -694,9 +1211,9 @@ public abstract class LevelLayout
 
     /// <summary>
     ///     Defence-in-depth check that every non-endpoint room has at least two undirected
-    ///     neighbours in the topology adjacency. Ear decomposition can't produce a violator
+    ///     neighbors in the topology adjacency. Ear decomposition can't produce a violator
     ///     on a well-formed adjacency (every covered internal of an ear is bracketed by
-    ///     two neighbours), but a bug in <see cref="PlaceRooms" /> or
+    ///     two neighbors), but a bug in <see cref="PlaceRooms" /> or
     ///     <see cref="TrimRooms" /> could leave a dangling leaf — fail loudly in
     ///     that case so the caller retries with a different seed.
     /// </summary>
@@ -721,11 +1238,11 @@ public abstract class LevelLayout
     }
 
     /// <summary>
-    ///     Iteratively drops non-endpoint nodes with fewer than two undirected neighbours
+    ///     Iteratively drops non-endpoint nodes with fewer than two undirected neighbors
     ///     from <paramref name="adjacency" /> and <paramref name="nodes" />. A degree-1
     ///     node can't lie on any simple entrance→exit path through itself, so it would
     ///     break the ear-decomposition invariant; removing one may turn its sole
-    ///     neighbour into a leaf in turn, so the trim cascades until the graph stabilises.
+    ///     neighbor into a leaf in turn, so the trim cascades until the graph stabilises.
     ///     Entrance and exit are kept regardless of their degree (BuildGraph short-circuits
     ///     to null afterwards if they ended up isolated).
     /// </summary>
@@ -753,14 +1270,14 @@ public abstract class LevelLayout
                 continue;
             }
 
-            foreach (var neighbour in adjacency[node])
+            foreach (var neighbor in adjacency[node])
             {
-                adjacency[neighbour].Remove(node);
-                if (neighbour != entrance && neighbour != exit
-                    && adjacency[neighbour].Count < 2
-                    && !toRemove.Contains(neighbour))
+                adjacency[neighbor].Remove(node);
+                if (neighbor != entrance && neighbor != exit
+                    && adjacency[neighbor].Count < 2
+                    && !toRemove.Contains(neighbor))
                 {
-                    queue.Enqueue(neighbour);
+                    queue.Enqueue(neighbor);
                 }
             }
             adjacency.Remove(node);
@@ -775,8 +1292,8 @@ public abstract class LevelLayout
     /// <summary>
     ///     Verifies the DAG is well-formed: every node is forward-reachable from
     ///     <paramref name="entrance" /> AND every node forward-reaches <paramref name="exit" />.
-    ///     Mirrors <see cref="LevelGenerator.ValidateRoomGraph" /> but operates on the
-    ///     pre-materialisation edge set so failures don't escape to the rendering layer.
+    ///     Mirrors the test-only room-graph connectivity check but operates on the
+    ///     pre-materialization edge set so failures don't escape to the rendering layer.
     /// </summary>
     private static bool ValidateDagConnectivity(
         List<RoomGraphNode> nodes,
@@ -833,14 +1350,15 @@ public abstract class LevelLayout
         HashSet<(RoomGraphNode Src, RoomGraphNode Tgt)> directedEdges,
         Dictionary<RoomGraphNode, double> order,
         float interconnectedness,
-        SimpleRandom random)
+        SimpleRandom random,
+        HashSet<(int MinX, int MinY, bool MainDiagonal)> occupiedDiagonals)
     {
         // Each undirected adjacency edge gives at most one directed cross-edge candidate:
         // the forward-orientation. Skip edges already on the DAG.
         var candidates = new List<(RoomGraphNode Src, RoomGraphNode Tgt)>();
-        foreach (var (u, neighbours) in adjacency)
+        foreach (var (u, neighbors) in adjacency)
         {
-            foreach (var v in neighbours)
+            foreach (var v in neighbors)
             {
                 if (CompareNodes(u, v, order) >= 0)
                 {
@@ -856,14 +1374,29 @@ public abstract class LevelLayout
 
         ShuffleInPlace(candidates, random);
         var toAdd = (int)Math.Round(candidates.Count * (double)interconnectedness);
-        for (var i = 0; i < toAdd; i++)
+        var added = 0;
+        foreach (var candidate in candidates)
         {
-            directedEdges.Add(candidates[i]);
+            if (added >= toAdd)
+            {
+                break;
+            }
+
+            // An optional cross-edge that would visually overlap an existing link is simply
+            // dropped (unlike a required spine/ear link, it isn't needed for connectivity), keeping
+            // the rendered map readable without failing the whole attempt.
+            if (!TryRegisterEdge(occupiedDiagonals, candidate.Src, candidate.Tgt))
+            {
+                continue;
+            }
+
+            directedEdges.Add(candidate);
+            added++;
         }
     }
 
     /// <summary>
-    ///     Materialises the directed edge set into a <see cref="RoomGraph" /> with hidden
+    ///     Materializes the directed edge set into a <see cref="RoomGraph" /> with hidden
     ///     flags and reward / curse features applied. Every source keeps at least one
     ///     visible outgoing edge so a room is never displayed as completely sealed off,
     ///     even when its other edges roll hidden.
@@ -871,64 +1404,43 @@ public abstract class LevelLayout
     private RoomGraph BuildFinalGraph(
         List<RoomGraphNode> nodes,
         HashSet<(RoomGraphNode Src, RoomGraphNode Tgt)> directedEdges,
+        List<RoomGraphNode> spine,
         LayoutParameters parameters,
         SimpleRandom random,
         LevelGenerationStats stats,
         GenerationStats gameStats)
     {
+        // A room can be concealed on the map only when (a) it sits off the entrance→exit
+        // spine (the shortest route to the exit must always stay visible) and (b) hiding it
+        // can't strand a predecessor — see IsHideable. Concealment is enabled only when
+        // HiddenConnectionProbability > 0 (a 0 draws no RNG, so generation is unchanged — e.g.
+        // the entrance level keeps every connection visible).
+        var onSpine = parameters.HiddenConnectionProbability > 0
+            ? new HashSet<RoomGraphNode>(spine)
+            : null;
         var graph = new RoomGraph();
         graph.Rooms.AddRange(nodes);
+
+        // Build every directed edge visible up-front and tally degrees. `degree` (in + out)
+        // drives the reward "discovery prize" boost for low-degree rooms. `visibleOutgoing`
+        // starts at each node's outgoing degree and is decremented as rooms are hidden (it's
+        // the live count of a node's still-visible outgoing edges); together with
+        // `incomingNeighbors` it drives the dead-end hideability test below.
         var degree = new Dictionary<RoomGraphNode, int>(nodes.Count);
-
-        // Group edges by source so each source can reserve one mandatory-visible edge.
-        var edgesBySource = new Dictionary<RoomGraphNode, List<RoomGraphNode>>(nodes.Count);
-        foreach (var (src, tgt) in directedEdges)
+        var visibleOutgoing = new Dictionary<RoomGraphNode, int>(nodes.Count);
+        var incomingNeighbors = new Dictionary<RoomGraphNode, List<RoomGraphNode>>(nodes.Count);
+        foreach (var (source, target) in directedEdges)
         {
-            if (!edgesBySource.TryGetValue(src, out var list))
+            graph.Connections.Add(new RoomGraphEdge { Source = source, Target = target, Hidden = false });
+            degree[source] = degree.GetValueOrDefault(source) + 1;
+            degree[target] = degree.GetValueOrDefault(target) + 1;
+            visibleOutgoing[source] = visibleOutgoing.GetValueOrDefault(source) + 1;
+            if (!incomingNeighbors.TryGetValue(target, out var predecessors))
             {
-                list = [];
-                edgesBySource[src] = list;
+                predecessors = [];
+                incomingNeighbors[target] = predecessors;
             }
-            list.Add(tgt);
-        }
-
-        var hideCandidates = new List<(RoomGraphNode Src, RoomGraphNode Tgt)>();
-        foreach (var (src, targets) in edgesBySource)
-        {
-            if (targets.Count == 0)
-            {
-                continue;
-            }
-            var keepIndex = random.Next(targets.Count);
-            for (var i = 0; i < targets.Count; i++)
-            {
-                var tgt = targets[i];
-                if (i == keepIndex)
-                {
-                    graph.Connections.Add(new RoomGraphEdge { Source = src, Target = tgt, Hidden = false });
-                    degree[src] = degree.GetValueOrDefault(src) + 1;
-                    degree[tgt] = degree.GetValueOrDefault(tgt) + 1;
-                }
-                else
-                {
-                    hideCandidates.Add((src, tgt));
-                }
-            }
-        }
-
-        var targetHidden = (int)Math.Round(hideCandidates.Count * (double)parameters.HiddenConnectionProbability);
-        ShuffleInPlace(hideCandidates, random);
-        for (var i = 0; i < hideCandidates.Count; i++)
-        {
-            var (src, tgt) = hideCandidates[i];
-            graph.Connections.Add(new RoomGraphEdge
-            {
-                Source = src,
-                Target = tgt,
-                Hidden = i < targetHidden
-            });
-            degree[src] = degree.GetValueOrDefault(src) + 1;
-            degree[tgt] = degree.GetValueOrDefault(tgt) + 1;
+            predecessors.Add(source);
         }
 
         // Apply Reward / Curse feature tags. Rooms with low total degree (one in + one
@@ -940,6 +1452,31 @@ public abstract class LevelLayout
         // PickRewardFeature) via <see cref="GenerationStats.RoomCountsByFeature" />.
         IReadOnlyDictionary<RoomFeatures, int> levelCounts = stats.RoomCountsByFeature;
         IReadOnlyDictionary<RoomFeatures, int> globalCounts = gameStats.RoomCountsByFeature;
+        var hiddenRooms = onSpine != null ? new HashSet<RoomGraphNode>() : null;
+
+        // Spread the configured probability across the hideable rooms so
+        // HiddenConnectionProbability is the expected NUMBER of hidden rooms per level rather
+        // than a per-room chance — a bigger level doesn't get proportionally more secrets. The
+        // hideable count is taken against the initial (nothing-hidden) state; hiding a room only
+        // ever shrinks the hideable set, so this is an upper bound and the realised hidden count
+        // stays at or below HiddenConnectionProbability. Computing the count draws no RNG
+        // (IsHideable is deterministic), so the per-room loop's random stream is unperturbed.
+        var hideChance = 0f;
+        if (onSpine != null)
+        {
+            var hideableCount = 0;
+            foreach (var node in nodes)
+            {
+                if ((node.Features & (RoomFeatures.Entrance | RoomFeatures.Exit)) == 0
+                    && IsHideable(node, onSpine, hiddenRooms!, visibleOutgoing, incomingNeighbors))
+                {
+                    hideableCount++;
+                }
+            }
+
+            hideChance = hideableCount > 0 ? parameters.HiddenConnectionProbability / hideableCount : 0f;
+        }
+
         foreach (var node in nodes)
         {
             if ((node.Features & (RoomFeatures.Entrance | RoomFeatures.Exit)) != 0)
@@ -949,18 +1486,30 @@ public abstract class LevelLayout
                 continue;
             }
 
+            // Decide concealment first: only a hideable room can be hidden, and only on the
+            // per-room hide roll (HiddenConnectionProbability spread across the hideable rooms —
+            // see hideChance above). A hidden room is always a reward room (a "secret" worth
+            // finding) and draws from the premium-biased reward set, which additionally unlocks
+            // the Shortcut reward (a hidden inter-level passage). The `&&` short-circuits before
+            // the RNG draw for non-hideable rooms, so disabling the feature (onSpine == null)
+            // consumes no randomness.
+            var hidden = hiddenRooms != null
+                && IsHideable(node, onSpine!, hiddenRooms, visibleOutgoing, incomingNeighbors)
+                && random.NextSingle(0f, 1f) < hideChance;
+
             var d = degree.GetValueOrDefault(node);
             var isDeadEnd = d <= 2;
             var rewardChance = isDeadEnd
                 ? Math.Min(1f, parameters.RewardRoomProbability * 1.5f)
                 : parameters.RewardRoomProbability;
-            if (random.NextSingle(0f, 1f) < rewardChance)
+            // A hidden room always rewards the detour; a visible room rolls the normal chance.
+            if (hidden || random.NextSingle(0f, 1f) < rewardChance)
             {
-                var reward = PickRewardFeature(levelCounts, globalCounts, parameters, random);
+                var reward = PickRewardFeature(levelCounts, globalCounts, parameters, random, hidden);
                 if (reward != RoomFeatures.Normal)
                 {
-                    node.Features |= reward;                    
-                    stats.RecordRoomFeature(reward);                    
+                    node.Features |= reward;
+                    stats.RecordRoomFeature(reward);
                     gameStats.RecordRoomFeature(reward);
                 }
             }
@@ -971,14 +1520,89 @@ public abstract class LevelLayout
                 stats.RecordRoomFeature(RoomFeatures.Cursed);
                 gameStats.RecordRoomFeature(RoomFeatures.Cursed);
             }
+
+            if (hidden)
+            {
+                hiddenRooms!.Add(node);
+                // Hiding this room hides every still-visible edge into it, dropping each
+                // non-hidden predecessor's visible-outgoing count. Maintaining the count here
+                // is what stops a predecessor of two hidden rooms from losing all its visible
+                // exits (a cumulative dead end the per-room check alone wouldn't catch).
+                if (incomingNeighbors.TryGetValue(node, out var predecessors))
+                {
+                    for (var i = 0; i < predecessors.Count; i++)
+                    {
+                        if (!hiddenRooms.Contains(predecessors[i]))
+                        {
+                            visibleOutgoing[predecessors[i]]--;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Conceal every hidden room: hide all connections incident to it (in both directions)
+        // so neither the room nor the passages to it appear on the map until the player
+        // discovers it by reaching an adjacent room (revealed via TravelSystem / SensorySystem).
+        // Hidden edges remain traversable and still count for graph reachability. No-op when
+        // concealment is disabled (hiddenRooms == null) or no room was hidden.
+        if (hiddenRooms is { Count: > 0 })
+        {
+            foreach (var edge in graph.Connections)
+            {
+                if (hiddenRooms.Contains(edge.Source) || hiddenRooms.Contains(edge.Target))
+                {
+                    edge.Hidden = true;
+                }
+            }
         }
 
         return graph;
     }
 
     /// <summary>
+    ///     Whether <paramref name="node" /> may be concealed on the map. A room is hideable
+    ///     only when it sits off the entrance→exit <paramref name="onSpine" /> spine (the
+    ///     shortest route to the exit must always be visible) and hiding it can't make a
+    ///     <em>visible</em> predecessor look like a dead end: every non-hidden room with an edge
+    ///     into it must keep at least one other visible outgoing edge
+    ///     (<paramref name="visibleOutgoing" /> &#8805; 2, so it stays &#8805; 1 after this room's
+    ///     incoming edge is hidden). Predecessors that are already hidden don't display, so they
+    ///     can't become visible dead ends and are skipped.
+    /// </summary>
+    private static bool IsHideable(
+        RoomGraphNode node,
+        HashSet<RoomGraphNode> onSpine,
+        HashSet<RoomGraphNode> hiddenRooms,
+        Dictionary<RoomGraphNode, int> visibleOutgoing,
+        Dictionary<RoomGraphNode, List<RoomGraphNode>> incomingNeighbors)
+    {
+        if (onSpine.Contains(node))
+        {
+            return false;
+        }
+
+        if (incomingNeighbors.TryGetValue(node, out var preds))
+        {
+            for (var i = 0; i < preds.Count; i++)
+            {
+                var pred = preds[i];
+                if (!hiddenRooms.Contains(pred) && visibleOutgoing.GetValueOrDefault(pred) < 2)
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
     ///     The reward <see cref="RoomFeatures" /> flags that <see cref="PickRewardFeature" />
     ///     can assign, in the canonical order it iterates them when sampling a weighted pick.
+    ///     <see cref="RoomFeatures.Shortcut" /> is reward-only and selectable exclusively for
+    ///     concealed (hidden) rooms — <see cref="GetRewardFeatureWeight" /> returns 0 for it
+    ///     on a visible room.
     /// </summary>
     private static readonly RoomFeatures[] RewardFeatureCandidates =
     [
@@ -994,16 +1618,17 @@ public abstract class LevelLayout
         RoomFeatures.ItemCase,
         RoomFeatures.MinorShrine,
         RoomFeatures.MajorShrine,
-        RoomFeatures.RitualShrine
+        RoomFeatures.RitualShrine,
+        RoomFeatures.Shortcut
     ];
 
     private const int LongestPathAttempts = 4;
 
     /// <summary>
     ///     Walks the graph from <paramref name="start" /> toward <paramref name="target" />
-    ///     using Warnsdorff's rule: at each step the next node is the unvisited neighbour
-    ///     with the fewest unvisited neighbours (ties broken at random). The target is
-    ///     held back until no other neighbour is available so the walk doesn't terminate
+    ///     using Warnsdorff's rule: at each step the next node is the unvisited neighbor
+    ///     with the fewest unvisited neighbors (ties broken at random). The target is
+    ///     held back until no other neighbor is available so the walk doesn't terminate
     ///     prematurely with many nodes still unvisited. Returns the resulting node path
     ///     (inclusive of both endpoints) or <c>null</c> if the walk dead-ends before
     ///     reaching the target.
@@ -1026,21 +1651,21 @@ public abstract class LevelLayout
             var tieCount = 0;
             var deferredTarget = false;
 
-            foreach (var neighbour in adjacency[current])
+            foreach (var neighbor in adjacency[current])
             {
-                if (visited.Contains(neighbour))
+                if (visited.Contains(neighbor))
                 {
                     continue;
                 }
 
-                if (neighbour == target && visited.Count < nodeCount - 1)
+                if (neighbor == target && visited.Count < nodeCount - 1)
                 {
                     deferredTarget = true;
                     continue;
                 }
 
                 var score = 0;
-                foreach (var nn in adjacency[neighbour])
+                foreach (var nn in adjacency[neighbor])
                 {
                     if (!visited.Contains(nn))
                     {
@@ -1051,7 +1676,7 @@ public abstract class LevelLayout
                 if (score < bestScore)
                 {
                     bestScore = score;
-                    bestNext = neighbour;
+                    bestNext = neighbor;
                     tieCount = 1;
                 }
                 else if (score == bestScore)
@@ -1060,7 +1685,7 @@ public abstract class LevelLayout
                     tieCount++;
                     if (random.Next(tieCount) == 0)
                     {
-                        bestNext = neighbour;
+                        bestNext = neighbor;
                     }
                 }
             }
@@ -1094,16 +1719,16 @@ public abstract class LevelLayout
     }
 
     /// <summary>
-    ///     Shuffle helper exposed to subclasses that want to randomise candidate placement
+    ///     Shuffle helper exposed to subclasses that want to randomize candidate placement
     ///     order.
     /// </summary>
     protected static void Shuffle<T>(IList<T> list, SimpleRandom random) => ShuffleInPlace(list, random);
 
     /// <summary>
-    ///     Builds a symmetrised undirected adjacency map over <paramref name="nodes" />
-    ///     using <see cref="GetNeighbourOffsets" />. Each node maps to the set of nodes
-    ///     in <paramref name="nodes" /> that are its topological neighbours; asymmetric
-    ///     offsets (e.g. hex parity) are symmetrised so each edge appears in both
+    ///     Builds a symmetrized undirected adjacency map over <paramref name="nodes" />
+    ///     using <see cref="GetNeighborOffsets" />. Each node maps to the set of nodes
+    ///     in <paramref name="nodes" /> that are its topological neighbors; asymmetric
+    ///     offsets (e.g. hex parity) are symmetrized so each edge appears in both
     ///     endpoints' sets.
     /// </summary>
     private Dictionary<RoomGraphNode, HashSet<RoomGraphNode>> BuildTopologyAdjacency(List<RoomGraphNode> nodes)
@@ -1122,7 +1747,7 @@ public abstract class LevelLayout
 
         foreach (var node in nodes)
         {
-            foreach (var (dx, dy) in GetNeighbourOffsets(node.GridX, node.GridY))
+            foreach (var (dx, dy) in GetNeighborOffsets(node.GridX, node.GridY))
             {
                 var nx = node.GridX + dx;
                 var ny = node.GridY + dy;
@@ -1131,10 +1756,10 @@ public abstract class LevelLayout
                     continue;
                 }
 
-                if (byCell.TryGetValue(((byte)nx, (byte)ny), out var neighbour))
+                if (byCell.TryGetValue(((byte)nx, (byte)ny), out var neighbor))
                 {
-                    adjacency[node].Add(neighbour);
-                    adjacency[neighbour].Add(node);
+                    adjacency[node].Add(neighbor);
+                    adjacency[neighbor].Add(node);
                 }
             }
         }
@@ -1147,16 +1772,16 @@ public abstract class LevelLayout
     ///     decomposition can't make progress (an uncovered region is cut off from the
     ///     covered graph, or no second covered anchor is reachable through other
     ///     uncovered nodes). Scores candidates in <paramref name="removedPool" /> by how
-    ///     useful their kept-graph neighbour set is for unblocking ear-finding:
+    ///     useful their kept-graph neighbor set is for unblocking ear-finding:
     ///     <list type="number">
-    ///         <item>Best: ≥ 2 currently covered neighbours — forms an instant ear
+    ///         <item>Best: ≥ 2 currently covered neighbors — forms an instant ear
     ///             <c>[covered, restored, covered']</c> at the next <see cref="FindEar" /> call.</item>
-    ///         <item>Good: ≥ 1 covered + ≥ 1 uncovered neighbour — creates a fresh
+    ///         <item>Good: ≥ 1 covered + ≥ 1 uncovered neighbor — creates a fresh
     ///             uncovered-region bridge to the covered graph.</item>
-    ///         <item>Useful: ≥ 2 uncovered neighbours — joins two uncovered components
+    ///         <item>Useful: ≥ 2 uncovered neighbors — joins two uncovered components
     ///             together (helps when there's currently no anchor1 at all).</item>
     ///     </list>
-    ///     Candidates with fewer than 2 live neighbours overall are skipped (restoring
+    ///     Candidates with fewer than 2 live neighbors overall are skipped (restoring
     ///     them would just create a leaf that the rest of the pipeline can't use).
     ///     Returns <c>false</c> when <see cref="LayoutParameters.MaxRooms" /> is hit or
     ///     no candidate qualifies; the caller then bumps
@@ -1232,22 +1857,22 @@ public abstract class LevelLayout
         removedPool.Remove(best);
         nodes.Add(best);
         uncovered.Add(best);
-        var newNeighbours = new HashSet<RoomGraphNode>();
+        var newNeighbors = new HashSet<RoomGraphNode>();
         foreach (var n in fullAdjacency[best])
         {
             if (adjacency.ContainsKey(n))
             {
-                newNeighbours.Add(n);
+                newNeighbors.Add(n);
                 adjacency[n].Add(best);
             }
         }
-        adjacency[best] = newNeighbours;
+        adjacency[best] = newNeighbors;
         return true;
     }
 
     /// <summary>
     ///     Builds the topology adjacency from the layout's
-    ///     <see cref="GetNeighbourOffsets" />, samples a target room count from a normal
+    ///     <see cref="GetNeighborOffsets" />, samples a target room count from a normal
     ///     distribution clamped to <c>[minRooms, maxRooms]</c>, and trims the placement
     ///     down to that target by repeatedly removing a randomly-chosen non-endpoint room
     ///     that satisfies two constraints:
@@ -1258,9 +1883,9 @@ public abstract class LevelLayout
     ///             edge-disjoint entrance→exit paths is preserved as much as possible.
     ///         </item>
     ///         <item>
-    ///             Every surviving topological neighbour keeps at least 2 neighbours of
+    ///             Every surviving topological neighbor keeps at least 2 neighbors of
     ///             its own — preserving the
-    ///             "every non-endpoint room has ≥ 2 undirected neighbours" invariant
+    ///             "every non-endpoint room has ≥ 2 undirected neighbors" invariant
     ///             <see cref="BuildGraph" /> relies on.
     ///         </item>
     ///     </list>
@@ -1270,8 +1895,8 @@ public abstract class LevelLayout
     ///     placement does.
     /// </summary>
     /// <returns>
-    ///     A symmetrised undirected adjacency map: each surviving <see cref="RoomGraphNode" />
-    ///     maps to the set of its topological neighbours that also survived the trim.
+    ///     A symmetrized undirected adjacency map: each surviving <see cref="RoomGraphNode" />
+    ///     maps to the set of its topological neighbors that also survived the trim.
     /// </returns>
     protected Dictionary<RoomGraphNode, HashSet<RoomGraphNode>> TrimRooms(
         List<RoomGraphNode> nodes,
@@ -1319,7 +1944,7 @@ public abstract class LevelLayout
                 {
                     continue;
                 }
-                if (!IsRemovalSafeForNeighbourDegrees(node, adjacency))
+                if (!IsRemovalSafeForNeighborDegrees(node, adjacency))
                 {
                     continue;
                 }
@@ -1330,9 +1955,9 @@ public abstract class LevelLayout
                 // biconnected (no cut vertices). If so, this is a "preserving"
                 // candidate and gets priority. We mutate adjacency in place and restore
                 // it afterwards to avoid copying the entire map per candidate.
-                var savedNeighbours = adjacency[node];
+                var savedNeighbors = adjacency[node];
                 adjacency.Remove(node);
-                foreach (var n in savedNeighbours)
+                foreach (var n in savedNeighbors)
                 {
                     adjacency[n].Remove(node);
                 }
@@ -1342,8 +1967,8 @@ public abstract class LevelLayout
                 var preservesBiconnectivity = postRemovalCutVertices.Count == 0;
 
                 nodes.Add(node);
-                adjacency[node] = savedNeighbours;
-                foreach (var n in savedNeighbours)
+                adjacency[node] = savedNeighbors;
+                foreach (var n in savedNeighbors)
                 {
                     adjacency[n].Add(node);
                 }
@@ -1361,9 +1986,9 @@ public abstract class LevelLayout
             }
 
             var victim = pool[random.Next(pool.Count)];
-            foreach (var neighbour in adjacency[victim])
+            foreach (var neighbor in adjacency[victim])
             {
-                adjacency[neighbour].Remove(victim);
+                adjacency[neighbor].Remove(victim);
             }
             adjacency.Remove(victim);
             nodes.Remove(victim);
@@ -1373,9 +1998,11 @@ public abstract class LevelLayout
     }
 
     /// <summary>
-    ///     Samples an integer target room count from a normal distribution centred on
-    ///     the midpoint of <paramref name="minRooms" /> .. <paramref name="maxRooms" />,
-    ///     clamped to that range. <c>min == max</c> short-circuits to that value.
+    ///     Samples an integer target room count biased toward the midpoint of
+    ///     <paramref name="minRooms" /> .. <paramref name="maxRooms" />. Averaging two
+    ///     uniform draws yields a triangular distribution peaking at the centre — a cheap,
+    ///     center-weighted approximation that doesn't need to be statistically precise.
+    ///     <c>min == max</c> short-circuits to that value.
     /// </summary>
     private static int SampleTargetRoomCount(byte minRooms, byte maxRooms, SimpleRandom random)
     {
@@ -1383,29 +2010,24 @@ public abstract class LevelLayout
         {
             return maxRooms;
         }
-        var mean = (minRooms + maxRooms) / 2.0;
-        var stddev = (maxRooms - minRooms) / 4.0;
-        // Box-Muller transform — one standard-normal sample from two uniform draws.
-        var u1 = Math.Max(random.NextSingle(0f, 1f), 1e-9f);
-        var u2 = random.NextSingle(0f, 1f);
-        var z = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Cos(2.0 * Math.PI * u2);
-        var sample = mean + stddev * z;
-        return (int)Math.Round(Math.Clamp(sample, minRooms, maxRooms));
+        var a = random.Next(minRooms, maxRooms + 1);
+        var b = random.Next(minRooms, maxRooms + 1);
+        return (a + b) / 2;
     }
 
     /// <summary>
     ///     Returns <c>true</c> when removing <paramref name="node" /> leaves every
-    ///     surviving neighbour with at least two of its own neighbours. Pure local check
+    ///     surviving neighbor with at least two of its own neighbors. Pure local check
     ///     using current adjacency counts — pair this with an articulation-point check
     ///     to guarantee the global connectivity invariant.
     /// </summary>
-    private static bool IsRemovalSafeForNeighbourDegrees(
+    private static bool IsRemovalSafeForNeighborDegrees(
         RoomGraphNode node,
         Dictionary<RoomGraphNode, HashSet<RoomGraphNode>> adjacency)
     {
-        foreach (var neighbour in adjacency[node])
+        foreach (var neighbor in adjacency[node])
         {
-            if (adjacency[neighbour].Count - 1 < 2)
+            if (adjacency[neighbor].Count - 1 < 2)
             {
                 return false;
             }
@@ -1479,19 +2101,47 @@ public abstract class LevelLayout
     ///     sampling proportionally. Subclasses tune the distribution by overriding the
     ///     weight hook (e.g. zeroing out deep-tier features on the entrance level, or
     ///     capping a feature by returning 0 once <paramref name="assignedCounts" /> shows
-    ///     it has already been placed enough times). Returns <see cref="RoomFeatures.Normal" />
-    ///     when every weight is zero so the caller leaves the room un-tagged.
+    ///     it has already been placed enough times). When <paramref name="hidden" /> is
+    ///     <c>true</c> the room is concealed on the map, which biases the draw toward
+    ///     premium features and unlocks the <see cref="RoomFeatures.Shortcut" /> reward.
+    ///     Returns <see cref="RoomFeatures.Normal" /> when every weight is zero so the
+    ///     caller leaves the room un-tagged.
     /// </summary>
     private RoomFeatures PickRewardFeature(
         IReadOnlyDictionary<RoomFeatures, int> assignedCounts,
         IReadOnlyDictionary<RoomFeatures, int> globalAssignedCounts,
         LayoutParameters parameters,
-        SimpleRandom random)
+        SimpleRandom random,
+        bool hidden)
         => random.Pick(RewardFeatureCandidates, feature => Math.Max(0f, GetRewardFeatureWeight(
             feature,
             assignedCounts.GetValueOrDefault(feature),
             globalAssignedCounts.GetValueOrDefault(feature),
-            parameters)));
+            parameters,
+            hidden)));
+
+    /// <summary>
+    ///     Relative "quality" of each reward feature, used to skew a concealed (hidden)
+    ///     room's reward draw toward better finds — a secret room should reward the detour.
+    ///     Higher is rarer / more desirable. Applied as a multiplier on the base weight only
+    ///     when the room is hidden; visible rooms use the unmodified base distribution.
+    ///     <see cref="RoomFeatures.Shortcut" /> is weighted directly in
+    ///     <see cref="GetRewardFeatureWeight" /> and isn't listed here.
+    /// </summary>
+    private static float GetHiddenRewardMultiplier(RoomFeatures feature)
+        => feature switch
+        {
+            RoomFeatures.RitualShrine => 4f,
+            RoomFeatures.MajorShrine => 3f,
+            RoomFeatures.BigFountain => 3f,
+            RoomFeatures.DeityAltar => 1.5f,
+            RoomFeatures.RacePedestal => 1.5f,
+            RoomFeatures.MinorShrine => 1.5f,
+            RoomFeatures.ItemCase => 1.5f,
+            RoomFeatures.WeaponStand => 1.5f,
+            RoomFeatures.ArmorStand => 1.5f,
+            _ => 1f
+        };
 
     /// <summary>
     ///     Returns the relative selection weight for <paramref name="feature" /> on the
@@ -1502,7 +2152,10 @@ public abstract class LevelLayout
     ///     express themselves as zero weights — e.g. DeityAltar / RacePedestal cap at
     ///     one per level on early floors). <paramref name="globalCountSoFar" /> is the
     ///     game-wide count across all levels generated so far, useful for soft-throttling
-    ///     repeat appearances of premium features.
+    ///     repeat appearances of premium features. When <paramref name="hidden" /> the
+    ///     room is concealed on the map: the <see cref="RoomFeatures.Shortcut" /> reward
+    ///     becomes available (and scales with difficulty) and every other feature's weight
+    ///     is multiplied by <see cref="GetHiddenRewardMultiplier" /> so premium finds dominate.
     ///     Subclasses can override to skew the distribution further; negative return
     ///     values are treated as 0.
     /// </summary>
@@ -1510,9 +2163,21 @@ public abstract class LevelLayout
         RoomFeatures feature,
         int countSoFar,
         int globalCountSoFar,
-        LayoutParameters parameters)
+        LayoutParameters parameters,
+        bool hidden)
     {
         var difficulty = parameters.Difficulty;
+
+        // Shortcut is a hidden-only reward (a concealed inter-level passage that skips a
+        // level). It scales with difficulty so deeper dungeons hold more shortcuts, and is
+        // soft-throttled on repeats like every other premium reward.
+        if (feature == RoomFeatures.Shortcut)
+        {
+            return hidden
+                ? Math.Clamp(difficulty * 4f, 4f, 48f) / ((2 + globalCountSoFar) >> 1)
+                : 0f;
+        }
+
         // TODO: Allow this to be overridden in the branch definition
         var baseWeight = feature switch
         {
@@ -1539,7 +2204,10 @@ public abstract class LevelLayout
         // Soft-throttle repeat appearances across the run: each prior placement halves the
         // effective base weight. The (2 + n) >> 1 shape keeps the first two placements at
         // full weight, then decays by integer halving — and never divides by zero.
-        return baseWeight / ((2 + globalCountSoFar) >> 1);
+        var weight = baseWeight / ((2 + globalCountSoFar) >> 1);
+
+        // A concealed room rewards the detour: bias its draw toward rarer, premium features.
+        return hidden ? weight * GetHiddenRewardMultiplier(feature) : weight;
     }
 
     /// <summary>
@@ -1581,45 +2249,78 @@ public abstract class LevelLayout
                 var room = (node.Features & RoomFeatures.Entrance) != 0
                     ? GetEmptyEntranceRoom(gameLevel, manager)
                     : CreateEmptyRoom(gameLevel, manager);
-                room.GridX = node.GridX;
-                room.GridY = node.GridY;
-                room.Features = node.Features;
-                node.Room = room;
+                // Shortcut is mutually exclusive with Entrance/Exit (each designates a
+                // distinct connection-sourcing role); if a graph node somehow carries both,
+                // the entrance/exit role wins and the shortcut bit is dropped.
+                if ((node.Features & (RoomFeatures.Entrance | RoomFeatures.Exit)) != 0)
+                {
+                    node.Features &= ~RoomFeatures.Shortcut;
+                }
 
-                // Per-room fragment selection. Throws if no fragment matches the room's
-                // RoomFeatures — a data-set bug.
-                var roomFragment = LevelGenerator.PickFragmentForRoom(
-                    gameLevel, node.Features, stats);
-                var roomParameters = roomFragment.GetRoomParameters(branch);
+                // A room's layout can fail (e.g. it couldn't bind a demanded placeable feature
+                // glyph) for a purely RNG-dependent reason. Retry just this room with a fresh
+                // fragment selection before throwing away the whole level — a failed room costs
+                // one room-fill, a level retry re-fills every room. Only a room that wired no
+                // inter-level connection during the failed attempt can be reset safely; one that
+                // already sourced/received a cross-level link (and may have created a placeholder
+                // target level) falls back to the whole-level retry so the link isn't orphaned.
+                const int maxRoomAttempts = 4;
+                List<Chunk>? chunks = null;
+                RoomParameters? roomParameters = null;
+                for (var roomAttempt = 0; roomAttempt < maxRoomAttempts; roomAttempt++)
+                {
+                    room.GridX = node.GridX;
+                    room.GridY = node.GridY;
+                    room.Features = node.Features;
+                    node.Room = room;
 
-                AllocateTerrain(room, roomParameters.RoomWidth, roomParameters.RoomHeight,
-                    roomParameters.DefaultTerrain);
+                    // Per-room fragment selection. Throws if no fragment matches the room's
+                    // RoomFeatures — a data-set bug.
+                    var roomFragment = LevelGenerator.PickFragmentForRoom(
+                        gameLevel, node.Features, stats);
+                    roomParameters = roomFragment.GetRoomParameters(branch);
 
-                var demand = doorwayDemand.TryGetValue(node, out var d)
-                    ? d
-                    : [];
-                var chunks = branch.RoomLayout.Fill(room, branch, roomFragment, demand, roomParameters);
+                    AllocateTerrain(room, roomParameters.RoomWidth, roomParameters.RoomHeight,
+                        roomParameters.DefaultTerrain);
+
+                    var demand = doorwayDemand.TryGetValue(node, out var d)
+                        ? d
+                        : [];
+                    chunks = branch.RoomLayout.Fill(room, branch, roomFragment, demand, roomParameters);
+                    if (chunks is not null)
+                    {
+                        break;
+                    }
+
+                    // This attempt's roomParameters isn't in roomGenerationData yet; dispose it
+                    // explicitly before retrying or bailing (the finally block returns the rest).
+                    roomParameters.Dispose();
+                    roomParameters = null;
+
+                    if (room.Connections.Count > 0)
+                    {
+                        // The room already wired a cross-level connection — fall back to the
+                        // whole-level retry rather than orphaning it.
+                        return null;
+                    }
+
+                    // Reset to a clean placeholder (returns pooled arrays, clears the partial
+                    // fill, preserves IncomingConnections) and retry with a fresh fragment.
+                    room.Reset();
+                }
+
                 if (chunks is null)
                 {
-                    // Abort and let the outer retry try a different seed. The roomParameters
-                    // local just constructed isn't in the list yet, so dispose it explicitly
-                    // before bailing; the finally block returns the rest.
-                    roomParameters.Dispose();
+                    // Exhausted the per-room retries — let the outer retry try a different seed.
                     return null;
                 }
 
                 allChunks.AddRange(chunks);
                 chunksByRoom[room.EntityId] = chunks;
-                roomGenerationData.Add((room, roomParameters, chunks));
+                roomGenerationData.Add((room, roomParameters!, chunks));
             }
 
-            foreach (var (room, roomParameters, chunks) in roomGenerationData)
-            {
-                roomParameters.CreatureGenerator.Fill(room, chunks);
-                roomParameters.ItemGenerator.Fill(room, chunks);
-            }
-
-            // Materialise edges. Bidirectional pairs are present as two separate edges (A→B and
+            // Materialize edges. Bidirectional pairs are present as two separate edges (A→B and
             // B→A) and produce two ConnectionComponent entities — one per direction — with
             // mirrored Hidden flags.
             var usedDoors = new Dictionary<int, HashSet<Point>>();
@@ -1665,6 +2366,26 @@ public abstract class LevelLayout
                 CreateIntraLevelConnection(sourceRoom, sourceDoor, targetRoom, targetDoor, sourceOrientation, edge.Hidden, manager);
             }
 
+            // Carving inter-room archways above turned perimeter walls into walkable cells, which
+            // can newly expose the unfilled background on their flanks. Re-seal each room's void so
+            // the room-enclosure invariant holds after the graph is fully wired.
+            foreach (var (room, roomParameters, _) in roomGenerationData)
+            {
+                // Wiring the intra-level connections can strand a region whose only link to the rest
+                // of the room ran through a tile that just became a connection.
+                // ForceConnectWalkableComponents treats connection
+                // tiles as non-traversable sinks, so it carves a real corridor to any such region.
+                RoomLayout.ForceConnectWalkableComponents(room, roomParameters);
+                RoomLayout.SealUnfilledAroundWalkables(room, roomParameters.DefaultWall);
+                RoomLayout.SealWalkableBoundary(room, roomParameters.DefaultWall);
+            }
+
+            foreach (var (room, roomParameters, chunks) in roomGenerationData)
+            {
+                roomParameters.CreatureGenerator.Fill(room, chunks);
+                roomParameters.ItemGenerator.Fill(room, chunks);
+            }
+
             return allChunks;
         }
         finally
@@ -1681,38 +2402,100 @@ public abstract class LevelLayout
     }
 
     /// <summary>
-    ///     Returns the per-room doorway demand: how many distinct doorway tiles each room
-    ///     needs to expose in each <see cref="Direction" />, based on the directed edges
-    ///     in <paramref name="graph" />. Every directed edge <c>(source, target)</c>
-    ///     demands one doorway on the <c>source</c> side facing the target and one on the
-    ///     <c>target</c> side facing the source; bidirectional pairs are present as two
-    ///     separate edges so the count naturally doubles where both endpoints need two
-    ///     doorways on the same side.
+    ///     Returns the per-room ordered list of <see cref="RoomDoorwayAnchor" />s: the perimeter
+    ///     anchors that bias lot selection and imply the doorway count, based on the directed edges in
+    ///     <paramref name="graph" />. Each directed edge <c>(source, target)</c> contributes one
+    ///     doorway-demand anchor on the <c>source</c> side facing the target and one on the
+    ///     <c>target</c> side facing the source; bidirectional pairs are present as two separate
+    ///     edges so the count naturally doubles where both endpoints need two doorways on the same
+    ///     side. Anchors are ordered incoming-first (the sides facing edges where the room is the
+    ///     target) then outgoing; a room with no incoming edge (the entrance) leads with
+    ///     positioning-only anchors opposite its outgoing edges so the outgoing connections spread
+    ///     toward those edges rather than crowding the central defining chunk. The facing direction
+    ///     is kept as-is (cardinal or ordinal) and only collapsed to cardinals when a lot's edge
+    ///     contact is tested.
     /// </summary>
-    private static Dictionary<RoomGraphNode, Dictionary<Direction, int>> ComputeDoorwayDemand(RoomGraph graph)
+    private static Dictionary<RoomGraphNode, IReadOnlyList<RoomDoorwayAnchor>> ComputeDoorwayDemand(RoomGraph graph)
     {
-        var demand = new Dictionary<RoomGraphNode, Dictionary<Direction, int>>(graph.Rooms.Count);
+        var incoming = new Dictionary<RoomGraphNode, List<Direction>>();
+        var outgoing = new Dictionary<RoomGraphNode, List<Direction>>();
         foreach (var edge in graph.Connections)
         {
             var dx = edge.Target.GridX - edge.Source.GridX;
             var dy = edge.Target.GridY - edge.Source.GridY;
-            AddDemand(demand, edge.Source, GridDeltaToDirection(dx, dy));
-            AddDemand(demand, edge.Target, GridDeltaToDirection(-dx, -dy));
+            AddFacing(outgoing, edge.Source, GridDeltaToDirection(dx, dy));
+            AddFacing(incoming, edge.Target, GridDeltaToDirection(-dx, -dy));
         }
-        return demand;
+
+        var result = new Dictionary<RoomGraphNode, IReadOnlyList<RoomDoorwayAnchor>>(graph.Rooms.Count);
+        foreach (var node in graph.Rooms)
+        {
+            var hasIncoming = incoming.TryGetValue(node, out var inDirections);
+            var hasOutgoing = outgoing.TryGetValue(node, out var outDirections);
+            if (!hasIncoming && !hasOutgoing)
+            {
+                continue;
+            }
+
+            var anchors = new List<RoomDoorwayAnchor>();
+
+            // Incoming connections demand a doorway on their facing side and are anchored first.
+            if (hasIncoming)
+            {
+                foreach (var direction in inDirections!)
+                {
+                    anchors.Add(new RoomDoorwayAnchor(direction, IsDoorwayDemand: true));
+                }
+            }
+            else
+            {
+                // Entrance-style room (no incoming edge): lead with positioning-only anchors
+                // opposite each outgoing connection so the first chunks stay clear of the outgoing
+                // side. Rotate(4) is the 180° (4-octant) opposite of a direction.
+                foreach (var direction in outDirections!)
+                {
+                    AddAnchorOnlyDistinct(anchors, direction.Rotate(4));
+                }
+            }
+
+            // Outgoing connections demand a doorway on their own facing side, anchored last.
+            if (hasOutgoing)
+            {
+                foreach (var direction in outDirections!)
+                {
+                    anchors.Add(new RoomDoorwayAnchor(direction, IsDoorwayDemand: true));
+                }
+            }
+
+            result[node] = anchors;
+        }
+
+        return result;
     }
 
-    private static void AddDemand(
-        Dictionary<RoomGraphNode, Dictionary<Direction, int>> demand,
+    private static void AddFacing(
+        Dictionary<RoomGraphNode, List<Direction>> facings,
         RoomGraphNode node,
         Direction direction)
     {
-        if (!demand.TryGetValue(node, out var perDir))
+        if (!facings.TryGetValue(node, out var list))
         {
-            perDir = [];
-            demand[node] = perDir;
+            list = [];
+            facings[node] = list;
         }
-        perDir[direction] = perDir.GetValueOrDefault(direction) + 1;
+        list.Add(direction);
+    }
+
+    private static void AddAnchorOnlyDistinct(List<RoomDoorwayAnchor> anchors, Direction side)
+    {
+        for (var i = 0; i < anchors.Count; i++)
+        {
+            if (anchors[i].Side == side)
+            {
+                return;
+            }
+        }
+        anchors.Add(new RoomDoorwayAnchor(side, IsDoorwayDemand: false));
     }
 
     public static Direction GridDeltaToDirection(int dx, int dy)
@@ -1735,6 +2518,17 @@ public abstract class LevelLayout
     ///     <paramref name="direction" /> — specifically a <see cref="Chunk.DoorwayPoints" />
     ///     entry that's most aligned with the direction. Falls back to a room-wide walkable
     ///     tile search when chunks are unavailable or have no usable doorway points.
+    ///     <para>
+    ///         Among the doorway candidates the best-aligned one is used <em>unless</em> turning it
+    ///         into a connection would strand part of the room: because stepping onto a connection
+    ///         teleports the actor to another room, a doorway that is the sole link between a region
+    ///         and the rest of the room is an articulation point (see
+    ///         <see cref="DoorwayKeepsRoomConnected" />). When the best-aligned doorway is such a
+    ///         point, the next best-aligned doorway that keeps the room connected is chosen instead;
+    ///         if every candidate strands something, the best-aligned one is used and the post-wiring
+    ///         <see cref="RoomLayout.ForceConnectWalkableComponents" /> pass carves a corridor to the
+    ///         stranded region.
+    ///     </para>
     /// </summary>
     /// <param name="usedTiles">
     ///     Tiles already claimed by other connections, including pre-existing inter-level
@@ -1749,11 +2543,12 @@ public abstract class LevelLayout
         var center = new Point((byte)(room.Width / 2), (byte)(room.Height / 2));
         var dirVec = direction.AsVector();
 
-        // Pick the doorway tile most aligned with the direction across all chunks of this
-        // room. The picker is permissive about side — it just returns the best-aligned
-        // unused doorway, no matter which chunk it belongs to. This mirrors what
-        // <see cref="RoomLayout.SatisfiesDemand" /> assumes: total unused doorway
-        // count is what matters, not per-chunk distribution.
+        // Collect every unused doorway candidate, tracking the best-aligned one (the original
+        // selection). The picker is permissive about side — it just returns the best-aligned unused
+        // doorway, no matter which chunk it belongs to. This mirrors what
+        // <see cref="RoomLayout.SatisfiesDemand" /> assumes: total unused doorway count is what
+        // matters, not per-chunk distribution.
+        var candidates = new List<(Point Point, int Score)>();
         Point? bestDoorway = null;
         var bestScore = int.MinValue;
         for (var i = 0; i < chunks.Count; i++)
@@ -1772,6 +2567,7 @@ public abstract class LevelLayout
                 }
 
                 var score = AlignmentScore(p.X, p.Y, center, dirVec);
+                candidates.Add((p, score));
                 if (score > bestScore)
                 {
                     bestScore = score;
@@ -1780,14 +2576,119 @@ public abstract class LevelLayout
             }
         }
 
-        if (bestDoorway is { } doorway)
+        if (bestDoorway is not { } best)
         {
-            return doorway;
+            throw new InvalidOperationException(
+                $"No usable doorway tile found in room {room.EntityId} facing {direction}. "
+                + "Ensure the room's fragments provide reachable DoorwayPoints.");
         }
 
-        throw new InvalidOperationException(
-            $"No usable doorway tile found in room {room.EntityId} facing {direction}. "
-            + "Ensure the room's fragments provide reachable DoorwayPoints.");
+        // Common case: the best-aligned doorway keeps the room connected once it becomes a
+        // (non-traversable) connection — use it, unchanged.
+        if (DoorwayKeepsRoomConnected(room, best, usedTiles))
+        {
+            return best;
+        }
+
+        // The best-aligned doorway is an articulation point. Prefer the next best-aligned doorway
+        // that preserves connectivity. Sort by score desc with a deterministic (X, Y) tie-break.
+        candidates.Sort(static (a, b) =>
+        {
+            var byScore = b.Score.CompareTo(a.Score);
+            if (byScore != 0)
+            {
+                return byScore;
+            }
+
+            var byX = a.Point.X.CompareTo(b.Point.X);
+            return byX != 0 ? byX : a.Point.Y.CompareTo(b.Point.Y);
+        });
+
+        foreach (var (p, _) in candidates)
+        {
+            if (!p.Equals(best) && DoorwayKeepsRoomConnected(room, p, usedTiles))
+            {
+                return p;
+            }
+        }
+
+        // Every candidate strands part of the room — fall back to the best-aligned one; the
+        // post-wiring ForceConnectWalkableComponents pass reconnects the stranded region.
+        return best;
+    }
+
+    /// <summary>
+    ///     Whether turning <paramref name="candidate" /> into a connection leaves every other
+    ///     walkable tile of <paramref name="room" /> mutually reachable without stepping through a
+    ///     connection. Connection tiles (the already-claimed <paramref name="usedTiles" /> plus the
+    ///     candidate) teleport the actor to another room, so they are treated as non-traversable
+    ///     sinks: a region reachable only through one of them is stranded.
+    /// </summary>
+    private static bool DoorwayKeepsRoomConnected(
+        RoomComponent room, Point candidate, HashSet<Point> usedTiles)
+    {
+        var pointToIndex = room.PointToIndex!;
+        var indexToPoint = room.IndexToPoint!;
+        var width = room.Width;
+        var height = room.Height;
+
+        bool IsSink(Point p) => candidate.Equals(p) || usedTiles.Contains(p);
+
+        Point? seed = null;
+        var total = 0;
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var p = new Point((byte)x, (byte)y);
+                if (room.Terrain[pointToIndex[x, y]].CanMoveTo() && !IsSink(p))
+                {
+                    total++;
+                    seed ??= p;
+                }
+            }
+        }
+
+        if (seed is not { } start)
+        {
+            return true;
+        }
+
+        var tileCount = room.TileCount;
+        var visited = ArrayPool<bool>.Shared.Rent(tileCount);
+        try
+        {
+            Array.Clear(visited, 0, tileCount);
+            var queue = new Queue<short>();
+            var startIdx = pointToIndex[start.X, start.Y];
+            visited[startIdx] = true;
+            queue.Enqueue(startIdx);
+            var reached = 1;
+
+            while (queue.Count > 0)
+            {
+                var p = indexToPoint[queue.Dequeue()];
+                foreach (var neighbor in RoomLayout.Neighbors8(room, p.X, p.Y))
+                {
+                    var nIdx = pointToIndex[neighbor.X, neighbor.Y];
+                    if (visited[nIdx] || !room.Terrain[nIdx].CanMoveTo() || IsSink(neighbor))
+                    {
+                        continue;
+                    }
+
+                    visited[nIdx] = true;
+                    reached++;
+                    queue.Enqueue(nIdx);
+                }
+            }
+
+            // Every relevant walkable tile must have been reached from the single seed.
+            return reached == total;
+        }
+        finally
+        {
+            ArrayPool<bool>.Shared.Return(visited, clearArray: false);
+        }
     }
 
     private static int AlignmentScore(int x, int y, Point center, Vector dirVec)
@@ -1804,10 +2705,10 @@ public abstract class LevelLayout
 
     /// <summary>
     ///     Returns the cardinal direction the player faces when entering through the door.
-    ///     Examines the four cardinal neighbours: if exactly one is walkable the player
+    ///     Examines the four cardinal neighbors: if exactly one is walkable the player
     ///     approaches from that side, so the orientation is the opposite direction (facing
     ///     into the wall). When the surroundings are ambiguous (0 or 2+ walkable
-    ///     neighbours) the direction from room centre to door is used as a tiebreaker.
+    ///     neighbors) the direction from room centre to door is used as a tiebreaker.
     /// </summary>
     private static Direction CardinalDirectionFromDoor(RoomComponent room, Point door)
     {
@@ -1887,9 +2788,9 @@ public abstract class LevelLayout
     /// <summary>
     ///     Returns the room to use as <paramref name="level" />'s entrance. If a
     ///     placeholder room was created earlier by
-    ///     <see cref="LevelConnection.CreateSourceConnection" /> from a neighbouring level
+    ///     <see cref="LevelConnection.CreateSourceConnection" /> from a neighboring level
     ///     that linked to this level before it existed, that placeholder is reused so its
-    ///     <see cref="RoomComponent.IncomingConnections" /> (the neighbour's outbound
+    ///     <see cref="RoomComponent.IncomingConnections" /> (the neighbor's outbound
     ///     <see cref="ConnectionComponent" />s) end up pointing at the real entrance room
     ///     rather than at an orphaned zero-width room.
     /// </summary>
@@ -1897,10 +2798,15 @@ public abstract class LevelLayout
     {
         foreach (var existing in level.Rooms)
         {
-            // Placeholder rooms have no terrain (Width == 0) but at least one incoming
-            // connection from a neighbouring level; reuse the first one we find.
+            // The placeholder pre-created by a neighboring level: no terrain yet
+            // (Width == 0) but at least one incoming connection from that level. Reuse it
+            // so the neighbor's outbound connection points at the real entrance room, and
+            // (re)assert the Entrance flag — preserved across generation retries by
+            // RoomComponent.Reset — so this room is unambiguously, and exclusively, the
+            // level's entrance.
             if (existing.Width == 0 && existing.IncomingConnections.Count > 0)
             {
+                existing.Features |= RoomFeatures.Entrance;
                 return existing;
             }
         }

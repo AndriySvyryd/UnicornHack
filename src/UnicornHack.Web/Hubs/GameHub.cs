@@ -645,8 +645,8 @@ public class GameHub : Hub
     private static void OnTracked(object? sender, EntityTrackedEventArgs args)
     {
         var entry = args.Entry;
-        if (entry.State == EntityState.Added
-            && entry.Entity is ITrackable trackable)
+        // This makes sure that the entity is deleted from the database when it's no longer needed..
+        if (entry.Entity is ITrackable trackable)
         {
             trackable.StartTracking(sender!);
         }

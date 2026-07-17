@@ -15,7 +15,7 @@ public partial class GameManager
 
     private void InitializeSenses(SequentialMessageQueue<GameManager> queue)
     {
-        Add<SensorComponent>(EntityComponent.Sensor, poolSize: 32);
+        Add<SensorComponent>(EntityComponent.Sensor, poolSize: 32, maxPoolSize: 512);
 
         SensorySystem = new SensorySystem();
         queue.Register<TraveledMessage>(SensorySystem, TraveledMessage.Name, 3);

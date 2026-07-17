@@ -67,7 +67,15 @@ public class EffectApplicationSystem :
         Dictionary<EffectType, (int Damage, GameEntity? EffectEntity)>? damageEffects = null;
         foreach (var effectEntity in message.EffectsToApply)
         {
-            var effect = effectEntity.Effect!;
+            // EffectsToApply is intentionally not reference-counted (see AbilityActivatedMessage),
+            // so an effect entity may have been removed — its containing ability destroyed
+            // between this message being enqueued and processed.
+            // Skip effects that are no longer alive instead of dereferencing a pooled entity.
+            if (effectEntity.Effect is not { } effect)
+            {
+                continue;
+            }
+
             if (!effectsAppliedMessage.SuccessfulApplication
                 && effect.EffectType != EffectType.Activate
                 && effect.EffectType != EffectType.Move)
@@ -672,8 +680,17 @@ public class EffectApplicationSystem :
             }
             else
             {
-                var appliedEffect = appliedEffects.Select(e => e.Effect!)
-                    .FirstOrDefault(e => e.SourceEffectId == effect.EntityId);
+                EffectComponent? appliedEffect = null;
+                foreach (var appliedEffectEntity in appliedEffects)
+                {
+                    var candidate = appliedEffectEntity.Effect!;
+                    if (candidate.SourceEffectId == effect.EntityId)
+                    {
+                        appliedEffect = candidate;
+                        break;
+                    }
+                }
+
                 if (appliedEffect == null)
                 {
                     return MessageProcessingResult.ContinueProcessing;
@@ -692,9 +709,23 @@ public class EffectApplicationSystem :
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        var targetEntity = effect.AffectedEntity ?? manager.FindEntity(effect.AffectedEntityId);
+        var targetEntity = effect.Entity == null
+            ? manager.FindEntity(effect.AffectedEntityId)
+            : effect.AffectedEntity;
         if (targetEntity == null)
         {
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        if (state == State.Removed
+            && targetEntity.Being == null
+            && targetEntity.Item == null
+            && targetEntity.Physical == null
+            && targetEntity.Sensor == null)
+        {
+            // The affected entity is no longer in affectable, so there is no longer anything to revert the effect on,
+            // so skip the un-application — reverting it would dereference the now-removed
+            // components (e.g. ChangeRace reading Being.Races) or resurrect a half-deleted being.
             return MessageProcessingResult.ContinueProcessing;
         }
 
@@ -1137,8 +1168,7 @@ public class EffectApplicationSystem :
         var manager = entity.Manager;
         var abilityEntity = GetOrAddPermanentAbility(entity, abilityName, manager);
 
-        var effect = abilityEntity.Ability!.Effects.Select(e => e.Effect!)
-            .FirstOrDefault(e => e.EffectType == EffectType.ChangeProperty && e.TargetName == propertyName);
+        var effect = FindChangePropertyEffect(abilityEntity, propertyName);
         if (effect != null)
         {
             effect.AppliedAmount = amount;
@@ -1158,10 +1188,26 @@ public class EffectApplicationSystem :
         var manager = entity.Manager;
         var abilityEntity = GetOrAddPermanentAbility(entity, containingAbilityName, manager);
 
-        return abilityEntity.Ability!.Effects.Select(e => e.Effect!)
-                   .FirstOrDefault(e => e.EffectType == EffectType.ChangeProperty
-                                        && e.TargetName == abilityName)
+        return FindChangePropertyEffect(abilityEntity, abilityName)
                ?? AddAbilityEffect(abilityEntity.Id, abilityName, manager);
+    }
+
+    // Returns the first ChangeProperty effect on the ability whose TargetName matches, or null.
+    // A plain loop over the ability's Effects avoids the Select-iterator + predicate-delegate +
+    // closure allocations a LINQ Select().FirstOrDefault() would incur on this hot effect-setup path.
+    private static EffectComponent? FindChangePropertyEffect(GameEntity abilityEntity, string targetName)
+    {
+        foreach (var effectEntity in abilityEntity.Ability!.Effects)
+        {
+            var effect = effectEntity.Effect!;
+            if (effect.EffectType == EffectType.ChangeProperty
+                && effect.TargetName == targetName)
+            {
+                return effect;
+            }
+        }
+
+        return null;
     }
 
     private GameEntity GetOrAddPermanentAbility(GameEntity entity, string abilityName, GameManager manager)
@@ -1469,10 +1515,18 @@ public class EffectApplicationSystem :
         summandCount = 1;
     }
 
+    // Reused scratch list for GetSortedAppliedEffects. The returned list is fully consumed by the
+    // caller (iterated, then discarded) before the next call, and property writes triggered
+    // afterwards only enqueue messages rather than re-entering this method synchronously, so a
+    // single reusable instance is safe and avoids a per-calculated-property allocation during the
+    // generation drain (InitializeProperties runs for every entity created).
+    private readonly List<EffectComponent> _appliedEffectsScratch = [];
+
     private List<EffectComponent>? GetSortedAppliedEffects(GameEntity targetEntity,
         PropertyDescription propertyDescription, EffectComponent? effect)
     {
-        List<EffectComponent>? activeEffects = null;
+        var activeEffects = _appliedEffectsScratch;
+        activeEffects.Clear();
         var appliedEffects = targetEntity.Physical?.AppliedEffects
                              ?? targetEntity.Item?.AppliedEffects
                              ?? targetEntity.Sensor?.AppliedEffects
@@ -1484,11 +1538,11 @@ public class EffectApplicationSystem :
                 && otherEffect.EffectType == EffectType.ChangeProperty
                 && otherEffect.TargetName!.Equals(propertyDescription.Name))
             {
-                (activeEffects ??= []).Add(otherEffect);
+                activeEffects.Add(otherEffect);
             }
         }
 
-        if (activeEffects == null)
+        if (activeEffects.Count == 0)
         {
             return null;
         }

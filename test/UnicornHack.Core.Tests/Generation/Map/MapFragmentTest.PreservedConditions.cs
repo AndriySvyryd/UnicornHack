@@ -23,7 +23,7 @@ public partial class MapFragmentTest
 
         var lot = new Rectangle(new Point(2, 3), 3, 2);
         var emptySpace = OpenPartition(room, lot);
-        var preserved = new Dictionary<Point, List<EdgeConditionKind>>();
+        var preserved = new Dictionary<Point, EdgeConditionKind[]>();
         var ctx = new LotPlacementContext(
             lot,
             TestRoomParameters(room),
@@ -57,7 +57,7 @@ public partial class MapFragmentTest
 
         var lot = new Rectangle(new Point(2, 3), 3, 3);
         var emptySpace = OpenPartition(room, lot);
-        var preserved = new Dictionary<Point, List<EdgeConditionKind>>();
+        var preserved = new Dictionary<Point, EdgeConditionKind[]>();
         var ctx = new LotPlacementContext(
             lot,
             TestRoomParameters(room),
@@ -88,7 +88,7 @@ public partial class MapFragmentTest
 
         var anchorLot = new Rectangle(new Point(2, 3), 3, 2);
         var emptySpace = OpenPartition(room, anchorLot);
-        var preserved = new Dictionary<Point, List<EdgeConditionKind>>();
+        var preserved = new Dictionary<Point, EdgeConditionKind[]>();
         var anchorCtx = new LotPlacementContext(
             anchorLot,
             TestRoomParameters(room),
@@ -142,7 +142,7 @@ public partial class MapFragmentTest
 
         var anchorLot = new Rectangle(new Point(2, 3), 3, 2);
         var emptySpace = OpenPartition(room, anchorLot);
-        var preserved = new Dictionary<Point, List<EdgeConditionKind>>();
+        var preserved = new Dictionary<Point, EdgeConditionKind[]>();
         var anchorCtx = new LotPlacementContext(
             anchorLot,
             TestRoomParameters(room),
@@ -176,5 +176,51 @@ public partial class MapFragmentTest
             PreservedConditions: preserved);
 
         Assert.Equal(0f, candidate.GetEdgeMatchMultiplier(room, ctxAdjacent));
+    }
+
+    [Fact]
+    public void Floor_edge_condition_seeds_a_wall_condition_behind_the_outside_cell()
+    {
+        var (room, _) = BuildRoom(roomSize: 9, fill: MapFeature.Default);
+        // South edge demands StoneFloor (forces a walkable fill); N/W/E use U so they
+        // stay trivially satisfied against the Default-filled room. The two rows below
+        // the chunk are empty, leaving room for the forced floor and its buffer wall.
+        var fragment = InitializeFragment(@"
+~UUU~
+U...U
+U...U
+~...~");
+
+        var lot = new Rectangle(new Point(3, 3), 3, 2);
+        var emptySpace = OpenPartition(room, lot);
+        var preserved = new Dictionary<Point, EdgeConditionKind[]>();
+        var ctx = new LotPlacementContext(
+            lot,
+            TestRoomParameters(room),
+            TargetEdge: Direction.South,
+            EmptySpace: emptySpace,
+            MinLotSize: new Dimensions(1, 1),
+            PlacedChunks: null,
+            PreservedConditions: preserved);
+        var chunk = fragment.TryPlace(room, ctx);
+        Assert.NotNull(chunk);
+
+        MapFragment.RegisterPreservedConditions(chunk!, room, emptySpace, preserved, TestRoomParameters(room));
+
+        var outsideY = chunk!.BoundingRectangle.BottomRight.Y + 1;
+        for (var x = chunk.BoundingRectangle.TopLeft.X; x <= chunk.BoundingRectangle.BottomRight.X; x++)
+        {
+            // The cell directly outside the south edge carries the StoneFloor condition...
+            var outside = new Point((byte)x, (byte)outsideY);
+            Assert.True(preserved.TryGetValue(outside, out var outsideConditions),
+                $"Expected a forced-floor condition at {outside}.");
+            Assert.Contains(EdgeConditionKind.StoneFloor, outsideConditions!);
+
+            // ...and the cell one step further out carries the StoneWall buffer condition.
+            var behind = new Point((byte)x, (byte)(outsideY + 1));
+            Assert.True(preserved.TryGetValue(behind, out var behindConditions),
+                $"Expected a buffer-wall condition at {behind}.");
+            Assert.Contains(EdgeConditionKind.StoneWall, behindConditions!);
+        }
     }
 }

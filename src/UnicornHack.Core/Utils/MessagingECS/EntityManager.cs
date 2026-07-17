@@ -5,21 +5,27 @@ namespace UnicornHack.Utils.MessagingECS;
 public abstract class EntityManager<TEntity> : IEntityManager
     where TEntity : Entity, new()
 {
-    private readonly SnapshotableDictionary<int, TEntity> _entities = new(new Dictionary<int, TEntity>(), e => e.Id);
+    private readonly SnapshotableDictionary<int, TEntity> _entities;
 
     private readonly List<EntityGroup<TEntity>>?[] _groupsByComponentId;
     private readonly ListObjectPool<TEntity> _entityPool;
     private readonly IObjectPool?[] _componentPools;
 
-    protected EntityManager(int componentCount, int entityPoolSize)
+    // entityPoolSize is the eager initial fill; entityMaxPoolSize caps retained instances for reuse;
+    // entityDictionaryCapacity pre-sizes the per-game entity store so it doesn't grow-and-realloc its
+    // backing arrays repeatedly as a level's entities are added.
+    protected EntityManager(int componentCount, int entityPoolSize, int entityMaxPoolSize, int entityDictionaryCapacity)
     {
         ComponentCount = componentCount;
 
         _entityPool =
-            new ListObjectPool<TEntity>(() => new TEntity(), entityPoolSize, entityPoolSize, entityPoolSize);
+            new ListObjectPool<TEntity>(() => new TEntity(), entityPoolSize, entityMaxPoolSize, entityPoolSize);
         _componentPools = new IObjectPool[ComponentCount];
 
         _groupsByComponentId = new List<EntityGroup<TEntity>>?[ComponentCount];
+
+        _entities = new SnapshotableDictionary<int, TEntity>(
+            new Dictionary<int, TEntity>(entityDictionaryCapacity), e => e.Id);
 
         Queue = null!;
     }
@@ -62,12 +68,20 @@ public abstract class EntityManager<TEntity> : IEntityManager
 
     protected virtual void Add<TComponent>(int componentId, int poolSize)
         where TComponent : Component, new()
-        => _componentPools[componentId] =
-            new ListObjectPool<TComponent>(() => new TComponent(), poolSize, poolSize, poolSize);
+        => Add<TComponent>(componentId, poolSize, poolSize);
 
-    protected EntityGroup<TEntity> CreateGroup(string name, EntityMatcher<TEntity> matcher)
+    // poolSize is the eager-preallocation / initial-fill count; maxPoolSize caps how many returned
+    // instances the pool retains for reuse. They differ for component types with a large per-level
+    // working set (effects, abilities): a small poolSize avoids a big up-front allocation while a
+    // large maxPoolSize lets the per-level create-and-free churn be recycled instead of GC'd.
+    protected virtual void Add<TComponent>(int componentId, int poolSize, int maxPoolSize)
+        where TComponent : Component, new()
+        => _componentPools[componentId] =
+            new ListObjectPool<TComponent>(() => new TComponent(), poolSize, maxPoolSize, poolSize);
+
+    protected EntityGroup<TEntity> CreateGroup(string name, EntityMatcher<TEntity> matcher, int capacity = 8)
     {
-        var group = new EntityGroup<TEntity>(name, matcher);
+        var group = new EntityGroup<TEntity>(name, matcher, capacity);
 
         foreach (var id in matcher.GetAllIds())
         {
@@ -150,13 +164,16 @@ public abstract class EntityManager<TEntity> : IEntityManager
         var groups = _groupsByComponentId[componentId];
         if (groups != null)
         {
-            var entityChange = new EntityChange<TEntity>((TEntity)component.Entity!,
-                IPropertyValueChanges.Create(
-                    new PropertyValueChange<T>(component, propertyName, oldValue, newValue)));
+            var changes = IPropertyValueChanges.Create(
+                new PropertyValueChange<T>(component, propertyName, oldValue, newValue));
+            var entityChange = new EntityChange<TEntity>((TEntity)component.Entity!, changes);
             foreach (var group in groups)
             {
                 group.HandlePropertyValuesChanged(entityChange);
             }
+
+            // The creator owns this instance and returns it now that the synchronous group loop is done.
+            changes.Return();
         }
     }
 

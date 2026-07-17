@@ -50,7 +50,7 @@ public partial class GameManager
     private void InitializeActors(SequentialMessageQueue<GameManager> queue)
     {
         Add<PlayerComponent>(EntityComponent.Player, poolSize: 1);
-        Add<AIComponent>(EntityComponent.AI, poolSize: 32);
+        Add<AIComponent>(EntityComponent.AI, poolSize: 64, maxPoolSize: 512);
 
         Players = CreateGroup(nameof(Players),
             new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Player));

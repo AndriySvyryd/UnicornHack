@@ -1,190 +1,98 @@
 # UnicornHack - GitHub Copilot Instructions
 
-This document provides guidance for GitHub Copilot when generating code for the UnicornHack project. Follow these guidelines to ensure that generated code aligns with the project's coding standards and architectural principles.
-
-If you are not sure, do not guess, just tell that you don't know or ask clarifying questions. Don't copy code that follows the same pattern in a different context. Don't rely just on names, evaluate the code based on the implementation and usage. Verify that the generated code is correct and compilable.
+Guidance for generating code for UnicornHack. If unsure, don't guess: say you don't know or ask. Don't copy a pattern into a different context; evaluate code by implementation and usage, not names. Verify generated code is correct and compilable.
 
 ## Project Overview
 
-UnicornHack is a traditional roguelike game built on .NET, featuring:
-- Web-based architecture with ASP.NET Core Razor Pages
-- Real-time multiplayer support using SignalR
-- Turn-based gameplay with deep character customization
-- Procedural level generation
-- Entity Component System (ECS) architecture
-- Message-driven system architecture
+Traditional turn-based roguelike on .NET: ASP.NET Core Razor Pages web frontend, SignalR multiplayer, procedural level generation, Entity Component System (ECS) with message-driven systems.
 
-### Architecture Overview
+Projects: `UnicornHack.Core` (game engine/ECS/logic), `UnicornHack.Web` (Razor Pages + SignalR), `UnicornHack.Editor` (content editing/serialization tools), `UnicornHack.Core.Tests`, `UnicornHack.Core.PerformanceTests`.
 
-The project follows a modular architecture with clear separation of concerns:
-
-#### Core Projects
-- **UnicornHack.Core**: Game engine with ECS architecture, systems, and game logic
-- **UnicornHack.Web**: Web frontend using Razor Pages and SignalR for real-time communication
-- **UnicornHack.Editor**: Development tools for game content editing and serialization
-- **UnicornHack.Core.Tests**: Unit tests for the core game logic
-- **UnicornHack.Core.PerformanceTests**: Performance benchmarks
-
-#### Key Architectural Patterns
-
-1. **Entity Component System (ECS)**
-   - Entities are game objects (players, monsters, items, levels)
-   - Components store data (BeingComponent, PhysicalComponent, ItemComponent, etc.)
-   - Systems process entities with specific component combinations
-   - Message-driven communication between systems
-
-2. **Messaging System**
-   - `IMessageQueue` and `SequentialMessageQueue<T>` for ordered message processing
-   - Messages implement `IMessage` interface
-   - Systems implement `IMessageConsumer<TMessage, TState>` interface
-   - Message processing results control flow
-
-3. **Game State Management**
-   - Game entities persist through `IRepository` interface
-   - Entity lifecycle managed through `GameManager`
-   - Turn-based processing with tick-based timing
+Key patterns:
+- ECS: entities (players, monsters, items, levels) hold components (data); systems process entities by component combination; systems communicate via messages.
+- Messaging: `IMessageQueue`/`SequentialMessageQueue<T>` for ordered processing; messages implement `IMessage`; systems implement `IMessageConsumer<TMessage, TState>`; results control flow.
+- State: entities persist via `IRepository`; lifecycle via `GameManager`; turn-based tick timing.
 
 ## Game Mechanics
 
-### Core Game Concepts
+Roguelike dungeon crawler. Attributes: Might, Focus, Perception, Speed. Systems for skills/abilities, equipment, magic (energy-point abilities), and races/traits/feats customization.
 
-- **Roguelike Gameplay**: Traditional turn-based dungeon crawler
-- **Character Attributes**: Might, Focus, Perception, Speed affect combat and abilities
-- **Skill System**: Players can learn abilities and improve skills
-- **Equipment System**: Items can be equipped, carried, or used
-- **Magic System**: Spell-like abilities with energy point costs
-- **Races, Traits and Feats**: Character customization through races, traits and feats
+Core components: `BeingComponent` (living creatures: HP/EP/attributes), `PlayerComponent` (skill/trait points), `PhysicalComponent` (size/weight/material), `ItemComponent` (type/equipment slots), `AbilityComponent`, `LevelComponent` (levels/terrain), `PositionComponent` (location/movement), `SensorComponent` (vision/sensing), `KnowledgeComponent` (world knowledge).
 
-### Entity Components
-
-The game uses the following core components:
-- `BeingComponent`: Living creatures with stats (HP, EP, attributes)
-- `PlayerComponent`: Player-specific data (skill points, trait points)
-- `PhysicalComponent`: Physical properties (size, weight, material)
-- `ItemComponent`: Item-specific properties (type, equipment slots)
-- `AbilityComponent`: Abilities and spells
-- `LevelComponent`: Dungeon levels and terrain
-- `PositionComponent`: Spatial location and movement
-- `SensorComponent`: Vision and sensing capabilities
-- `KnowledgeComponent`: What entities know about the world
-
-### Game Systems
-
-Key systems include:
-- `LivingSystem`: Health, energy, and attribute management
-- `PlayerSystem`: Turn processing and player actions
-- `AbilityActivationSystem`: Spell/ability casting
-- `ItemMovingSystem`: Inventory and equipment management
-- `TerrainSystem`: Level geometry and visibility
-- `KnowledgeSystem`: Information tracking and discovery
-- `TimeSystem`: Turn scheduling and timing
+Key systems: `LivingSystem` (health/energy/attributes), `PlayerSystem` (turn processing/player actions), `AbilityActivationSystem` (casting), `ItemMovingSystem` (inventory/equipment), `TerrainSystem` (geometry/visibility), `KnowledgeSystem` (discovery), `TimeSystem` (turn scheduling).
 
 ### Per-Turn Change Set Architecture
 
-When a player performs an action, the server processes all turns until the player can act again. Instead of sending a single delta covering all accumulated changes, the server collects changes **per turn** (one entity's action + cascading effects) and sends them as a list of `TurnChangeSet` objects via the `ReceiveChangeSets` SignalR method. The client applies them sequentially with a configurable delay to animate what happened.
+When a player acts, the server processes all turns until the player can act again. Instead of one delta covering all accumulated changes, the server collects changes per turn (one entity's action + cascading effects) and sends them as a list of `TurnChangeSet` via the `ReceiveChangeSets` SignalR method. The client applies them sequentially with a configurable delay to animate what happened.
 
-**Server flow** (`GameStateManager.Turn`):
-1. For each turn: clear terrain dicts → capture visible terrain snapshot → `TimeSystem.AdvanceSingleTurn()` → compute visible terrain changes
-2. For each registered `PlayerChangeListener`: if `HasObservableChanges` → `BuildChangeSet()` → append to that player's list (a forced emit also happens on the terminating `PlayerTurn` tick to keep the last state aligned)
-3. `levelChangeBuilder.Clear()` → repeat until `TurnResult.PlayerTurn` or `GameOver`
-4. Returns `Dictionary<int, List<TurnChangeSet>>` keyed by player entity id; the hub sends each player their list in one `ReceiveChangeSets` call
+Server flow (`GameStateManager.Turn`):
+1. Per turn: clear terrain dicts -> capture visible terrain snapshot -> `TimeSystem.AdvanceSingleTurn()` -> compute visible terrain changes.
+2. Per registered `PlayerChangeListener`: if `HasObservableChanges` -> `BuildChangeSet()` -> append to that player's list (a forced emit also happens on the terminating `PlayerTurn` tick to keep the last state aligned).
+3. `levelChangeBuilder.Clear()` -> repeat until `TurnResult.PlayerTurn` or `GameOver`.
+4. Returns `Dictionary<int, List<TurnChangeSet>>` keyed by player entity id; the hub sends each player their list in one `ReceiveChangeSets` call.
 
-**Change detection** — organized under [src/UnicornHack.Web/Hubs/ChangeTracking/](src/UnicornHack.Web/Hubs/ChangeTracking):
+Change detection - under [src/UnicornHack.Web/Hubs/ChangeTracking/](../src/UnicornHack.Web/Hubs/ChangeTracking):
 - `LevelChangeBuilder`: shared per-game aggregator. Owns the level-scope builders (`ActorChangeBuilder`, `ItemChangeBuilder`, `ConnectionChangeBuilder`) and a list of `PlayerChangeListener`s. Registered once on the ECS groups; `RegisterPlayerListener` is idempotent.
-- `PlayerChangeListener`: per-player. Owns `RaceChangeBuilder`, `AbilityChangeBuilder`, `LogChangeBuilder`. Implements `IEntityChangeListener` on `LevelActors` to capture the player entity's scalar property changes (HP/EP/XP/…) into an internal `_pendingChange: PlayerChange`. `BuildChangeSet` assembles the final `PlayerChange` by combining level, races, abilities, log, terrain, and scalar bits.
-- `ChangeBuilder<TChange>` (abstract): shared state machine for the five entity-scope builders (Actor/Item/Connection/Race/Ability). Encapsulates Added/Modified/Removed tracking and serialization emission. Subclasses override only: which groups to subscribe to, how to filter relevant entities, how to translate property changes onto the DTO, and how to produce full snapshots. See [ChangeBuilder.cs](src/UnicornHack.Web/Hubs/ChangeTracking/ChangeBuilder.cs) for the state-transition table.
+- `PlayerChangeListener`: per-player. Owns `RaceChangeBuilder`, `AbilityChangeBuilder`, `LogChangeBuilder`. Implements `IEntityChangeListener` on `LevelActors` to capture the player entity's scalar property changes (HP/EP/XP/...) into an internal `_pendingChange: PlayerChange`. `BuildChangeSet` assembles the final `PlayerChange` from level, races, abilities, log, terrain, and scalar bits.
+- `ChangeBuilder<TChange>` (abstract): shared state machine for the five entity-scope builders (Actor/Item/Connection/Race/Ability). Handles Added/Modified/Removed tracking and serialization emission. Subclasses override only: which groups to subscribe to, how to filter relevant entities, how to translate property changes onto the DTO, and how to produce full snapshots. See [ChangeBuilder.cs](../src/UnicornHack.Web/Hubs/ChangeTracking/ChangeBuilder.cs) for the state-transition table.
 - `TerrainChangeBuilder`: static helper. Diffs the dictionaries `LevelComponent` maintains (`KnownTerrainChanges`, `TerrainChanges`, `WallNeighborsChanges`, `VisibleTerrainChanges`) into a full `LevelMap` or sparse `LevelMapChanges`.
-- `LogChangeBuilder`: high-water-mark on log-entry id. Intentionally not a `ChangeBuilder` subclass — ordered append-only event streams don't need the state machine.
+- `LogChangeBuilder`: high-water-mark on log-entry id. Not a `ChangeBuilder` subclass - ordered append-only event streams don't need the state machine.
 
-**Invariants** enforced by `ChangeBuilder<TChange>`:
-- `IChangeWithState.LastState` is assigned once when an entry is created and never mutated afterward.
+Invariants enforced by `ChangeBuilder<TChange>`:
+- `IChangeWithState.LastState` is assigned once when an entry is created, never mutated after.
 - Add-then-Remove within a turn cancels iff `LastState == EntityState.Added` (client never knew the entity).
-- `WriteTo` must be called at most once per `Clear` cycle — asserted in debug builds. A duplicate `PlayerChangeListener` registration would violate this; `LevelChangeBuilder.RegisterPlayerListener` is idempotent.
+- `WriteTo` must be called at most once per `Clear` cycle - asserted in debug builds; a duplicate `PlayerChangeListener` registration would violate this, so `RegisterPlayerListener` is idempotent.
 
-**Adding a property to a `*Change` DTO**: (1) append `[Key(n)]` with the next integer, bump `PropertyCount`, (2) handle the property in the builder's `TrackPropertyChanges` (`ItemChangeBuilder`, `ActorChangeBuilder`, `AbilityChangeBuilder`) — or nothing for re-serialize-from-scratch builders (`ConnectionChangeBuilder`, `RaceChangeBuilder`), (3) assign the value in the static `SerializeX` full-snapshot method, (4) add a case to the client-side `Client*.ExpandToCollection` property switch and `Deserialize`.
+Adding a property to a `*Change` DTO: (1) append `[Key(n)]` with the next integer, bump `PropertyCount`; (2) handle it in the builder's `TrackPropertyChanges` (`ItemChangeBuilder`, `ActorChangeBuilder`, `AbilityChangeBuilder`) - or nothing for re-serialize-from-scratch builders (`ConnectionChangeBuilder`, `RaceChangeBuilder`); (3) assign the value in the static `SerializeX` full-snapshot method; (4) add a case to the client-side `Client*.ExpandToCollection` property switch and `Deserialize`.
 
-**Initial load** (`GetState`): uses `PlayerChangeListener.SerializePlayer` — a full snapshot with `ChangedProperties = null` on every DTO.
+Initial load (`GetState`): uses `PlayerChangeListener.SerializePlayer` - a full snapshot with `ChangedProperties = null` on every DTO.
 
-**`TurnChangeSet`**: Contains `Tick` (game tick), `PlayerState` (same serialized format as `GetState`), and `Events` (placeholder for future structured event DTOs).
+`TurnChangeSet`: `Tick` (game tick), `PlayerState` (same format as `GetState`), and `Events` (placeholder for future structured event DTOs).
 
 ## Code Style
 
 ### General Guidelines
 
-- Follow the [.NET coding guidelines](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/coding-style.md) unless explicitly overridden below
-- Use the rules defined in the .editorconfig file in the root of the repository for any ambiguous cases
-- Write code that is clean, maintainable, and easy to understand
-- Favor readability over brevity, but keep methods focused and concise
-- Only add comments rarely to explain why a non-intuitive solution was used. The code should be self-explanatory otherwise
-- Don't add the UTF-8 BOM to files unless they have non-ASCII characters
-- All types should be public by default
+- Follow the [.NET coding guidelines](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/coding-style.md) unless overridden below; use the root .editorconfig for ambiguous cases.
+- Write clean, maintainable, self-explanatory code; favor readability but keep methods focused. Comment only to explain non-intuitive choices.
+- Don't add a UTF-8 BOM unless the file has non-ASCII characters. All types public by default.
 
 ### Formatting
 
-- Use spaces for indentation (4 spaces)
-- Use braces for all blocks including single-line blocks
-- Place braces on new lines
-- Limit line length to 140 characters
-- Trim trailing whitespace
-- All declarations must begin on a new line
-- Use a single blank line to separate logical sections of code when appropriate
-- Insert a final newline at the end of files
+- 4-space indentation; braces on new lines for all blocks (including single-line); max line length 140; trim trailing whitespace; final newline at EOF.
+- Each declaration on a new line; blank line to separate logical sections.
 
 ### C# Specific Guidelines
 
-- File scoped namespace declarations
-- Use `var` for local variables
-- Use expression-bodied members where appropriate
-- Prefer using collection expressions when possible
-- Use `is` pattern matching instead of `as` and null checks
-- Prefer `switch` expressions over `switch` statements when appropriate
-- Prefer field-backed property declarations using field contextual keyword instead of an explicit field.
-- Prefer range and index from end operators for indexer access
-- The projects use implicit namespaces, so do not add `using` directives for namespaces that are already imported by the project
-- When verifying that a file doesn't produce compiler errors rebuild the whole project
+- File-scoped namespaces; `var` for locals; expression-bodied members where appropriate; collection expressions where possible.
+- `is` pattern matching over `as`/null checks; `switch` expressions over statements where appropriate.
+- Field-backed properties via the `field` contextual keyword instead of an explicit field; range/index-from-end operators for indexer access.
+- Implicit namespaces are on - don't add `using` for already-imported namespaces.
+- To verify a file compiles, rebuild the whole project.
 
 ### Naming Conventions
 
-- Use PascalCase for:
-  - Classes, structs, enums, properties, methods, events, namespaces, delegates
-  - Public fields
-  - Static private fields
-  - Constants
-- Use camelCase for:
-  - Parameters
-  - Local variables
-- Use `_camelCase` for instance private fields
-- Prefix interfaces with `I`
-- Prefix type parameters with `T`
-- Use meaningful and descriptive names
+- PascalCase: classes, structs, enums, properties, methods, events, namespaces, delegates, public fields, static private fields, constants.
+- camelCase: parameters, local variables. `_camelCase`: instance private fields.
+- Prefix interfaces with `I`, type parameters with `T`. Use meaningful names and American English spelling.
 
 ### Nullability
 
-- Use nullable reference types
-- Use proper null-checking patterns
-- Use the null-conditional operator (`?.`) and null-coalescing operator (`??`) when appropriate
+- Use nullable reference types and proper null-checking; use `?.` and `??` where appropriate.
 
 ### Asynchronous Programming
 
-- Use the `Async` suffix for asynchronous methods
-- Return `Task` or `ValueTask` from asynchronous methods
-- Avoid async void methods except for event handlers
-- Call `ConfigureAwait(false)` on awaited calls to avoid deadlocks
+- `Async` suffix; return `Task`/`ValueTask`; avoid `async void` except event handlers; `ConfigureAwait(false)` on awaited calls.
 
 ## Performance Considerations
 
-- Be mindful of performance implications, especially for database operations
-- Avoid unnecessary allocations
-- Consider using more efficient code that is expected to be on the hot path, even if it is less readable
-- Use object pooling where appropriate
-- Be aware of garbage collection pressure in game loops
+- Mind performance, especially for database operations; avoid unnecessary allocations and GC pressure in game loops.
+- On hot paths, prefer more efficient code even if less readable; use object pooling where appropriate.
 
 ## ECS Architecture Guidelines
 
 ### Entity Management
-- Entities are created through `GameManager.CreateEntity()`
-- Components are added/removed through entity properties or methods
-- Entity relationships are managed through specialized relationship classes
+- Create entities via `GameManager.CreateEntity()`; add/remove components through entity properties or methods; manage relationships via specialized relationship classes.
 
 ### Navigation Properties
 Relationships maintain navigation properties on components for efficient access to related entities. Always use these instead of `FindEntity(fkId)` or group lookups:
@@ -202,84 +110,44 @@ Relationships maintain navigation properties on components for efficient access 
 | `EffectComponent.ContainingAbilityId` | `effect.ContainingAbility` | Containing ability entity |
 
 Collections maintained by relationships:
-- `level.Actors/Items/Connections` — `Dictionary<Point, GameEntity>` of actors/items/connections on this level
-- `level.KnownActors/KnownItems/KnownConnections` — knowledge entities keyed by position
-- `level.IncomingConnections` — connections targeting this level
-- `being.Races/Abilities/AppliedEffects/Items/SlottedAbilities` — related entity collections
-- `ability.Effects` — effects belonging to this ability
-- `position.Knowledge` — back-reference from a level entity to its knowledge entity
+- `level.Actors/Items/Connections` - `Dictionary<Point, GameEntity>` of actors/items/connections on this level
+- `level.KnownActors/KnownItems/KnownConnections` - knowledge entities keyed by position
+- `level.IncomingConnections` - connections targeting this level
+- `being.Races/Abilities/AppliedEffects/Items/SlottedAbilities` - related entity collections
+- `ability.Effects` - effects belonging to this ability
+- `position.Knowledge` - back-reference from a level entity to its knowledge entity
 
 ### Component Design
-- Components inherit from `GameComponent` for game-specific functionality
-- Use property change notifications via `SetWithNotify()` for data binding
-- Implement `IKeepAliveComponent` for components that should persist
-- Clean up resources in the `Clean()` method
+- Inherit from `GameComponent`; use `SetWithNotify()` for change notifications; implement `IKeepAliveComponent` to persist; release resources in `Clean()`.
 
 ### System Implementation
-- Systems implement `IGameSystem<TMessage>` interface
-- Register message handlers in `GameManager.InitializeSystems()`
-- Use `MessageProcessingResult` to control message flow
-- Process entities through entity groups, not direct iteration
+- Implement `IGameSystem<TMessage>`; register handlers in `GameManager.InitializeSystems()`; use `MessageProcessingResult` to control flow; process entities through entity groups, not direct iteration.
 
 ### Message Handling
-- Messages are lightweight data carriers
-- Use specific message types for different events
-- Process messages in order through the sequential message queue
-- Return appropriate `MessageProcessingResult` values
+- Messages are lightweight data carriers; use specific types per event; process in order through the sequential message queue; return appropriate `MessageProcessingResult` values.
 
 ## Game-Specific Guidelines
 
-### Entity Creation Patterns
-- Use the appropriate manager methods for creating game entities
-- Initialize components with proper game references
-- Set up entity relationships through the appropriate relationship objects
-
-### Ability and Effect System
-- Abilities define what entities can do
-- Effects modify entity properties temporarily or permanently
-- Use the effect application system for consistent property modification
-
-### Level Generation
-- Levels are procedurally generated using map fragments
-- Fragment composition creates complex level layouts
-- Use the appropriate generators for creatures, items, and terrain
-
-### Data Loading
-- Game data is loaded through CS script loaders
-- Use attribute-based configuration for data objects
-- Follow the established patterns for data definition files
+- Entity creation: use the appropriate manager methods, initialize components with proper game references, wire relationships through relationship objects.
+- Abilities/effects: abilities define what entities can do; effects modify properties temporarily/permanently via the effect application system.
+- Level generation: levels are procedurally generated from map fragments; use the appropriate generators for creatures, items, and terrain.
+- Data loading: game data loads through CS script loaders using attribute-based configuration; follow established data-definition patterns.
 
 ## Implementation Guidelines
 
-- Write code that is secure by default. Avoid exposing potentially private or sensitive data
-- Make code NativeAOT compatible when possible. This means avoiding dynamic code generation, reflection, and other features that are not compatible with NativeAOT. If not possible, mark the code with an appropriate annotation or throw an exception
-- Follow established patterns for similar functionality in the codebase
-- Use the existing utility classes and helper methods where appropriate
-- Maintain consistency with the existing error handling and logging patterns
+- Write secure-by-default code; don't expose private/sensitive data.
+- Make code NativeAOT compatible when possible (avoid dynamic codegen/reflection); otherwise annotate appropriately or throw.
+- Follow established patterns, utilities, and error-handling/logging conventions in the codebase.
 
 ## Testing Guidelines
 
-- Write unit tests for new functionality in the Core.Tests project
-- Use the `TestHelper` class for common test setup
-- Mock dependencies appropriately using the established patterns
-- Test edge cases and error conditions
-- Use performance tests for critical path optimizations
-
-### Web.Tests Project
-- Tests change tracking and serialization correctness without a database
-- `WebTestHelper` creates an in-memory game, builds levels, and wires up the necessary services
+- Write unit tests in Core.Tests using `TestHelper`; mock dependencies via established patterns; cover edge cases; use performance tests for critical paths.
+- Web.Tests: tests change tracking and serialization without a database; `WebTestHelper` creates an in-memory game, builds levels, and wires up services.
 
 ## Web Layer Guidelines
 
-- Razor Pages should follow ASP.NET Core best practices
-- Use SignalR for real-time game state updates
-- Serialize data efficiently for network transmission
-- Handle connection failures gracefully
-- Use proper authentication and authorization patterns
+- Follow ASP.NET Core best practices; use SignalR for real-time state; serialize efficiently; handle connection failures gracefully; use proper auth patterns.
 
 ## Editor and Tooling
 
-- Editor tools should use the established serialization patterns
-- Code generation tools should follow the existing templates
-- Use the `CSClassSerializer` for automated code generation
-- Maintain backwards compatibility for saved game data
+- Use established serialization patterns and existing templates; use `CSClassSerializer` for codegen; maintain backwards compatibility for saved game data.

@@ -64,14 +64,14 @@ public class EventBuilder : IGameSystem<SteppedOnConnectionMessage>
 
     /// <summary>
     ///     Returns the events recorded for the given player since the last
-    ///     <see cref="Clear" />, or <c>null</c> if there are none.
+    ///     <see cref="Reset" />, or <c>null</c> if there are none.
     /// </summary>
     public List<object?>? GetEvents(int playerEntityId)
         => _pendingByPlayer.TryGetValue(playerEntityId, out var list) && list.Count > 0
             ? list
             : null;
 
-    public void Clear()
+    public void Reset()
         => _pendingByPlayer.Clear();
 
     public void RegisterOnGroups(GameManager manager)

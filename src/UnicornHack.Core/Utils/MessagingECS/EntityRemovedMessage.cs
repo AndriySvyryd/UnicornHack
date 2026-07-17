@@ -6,6 +6,7 @@ public class EntityRemovedMessage<TEntity> : IMessage
     private TEntity? _entity;
     private Component? _removedComponent;
     private TEntity? _principalEntity;
+    private IPropertyValueChanges _propertyChanges = PropertyValueChanges.Instance;
 
     public TEntity Entity
     {
@@ -31,9 +32,13 @@ public class EntityRemovedMessage<TEntity> : IMessage
 
     public IPropertyValueChanges PropertyChanges
     {
-        get;
-        set;
-    } = null!;
+        get => _propertyChanges;
+        set
+        {
+            _propertyChanges.Return();
+            _propertyChanges = value.Clone();
+        }
+    }
 
     public TEntity? PrincipalEntity
     {
@@ -61,7 +66,8 @@ public class EntityRemovedMessage<TEntity> : IMessage
     public void Clean()
     {
         RemovedComponent = default;
-        PropertyChanges = default!;
+        // Return the owned clone to the pool and reset to the shared empty singleton.
+        _propertyChanges = PropertyValueChanges.Instance;
         Entity = default!;
         Group = default!;
         PrincipalEntity = default;

@@ -23,7 +23,7 @@ namespace UnicornHack.Generation.Map;
 ///         indexer) records, for each room cell, which authored chunk has written to
 ///         it (or <c>null</c> for cells still carrying the room's
 ///         <see cref="DefaultTerrain" /> background fill). The walkable-wins overlap
-///         rule consults this map so a neighbour's wall write can't seal an adjacent
+///         rule consults this map so a neighbor's wall write can't seal an adjacent
 ///         chunk's authored floor or doorway. The defining fragment intentionally
 ///         leaves the map empty for its own cells: it merely establishes the room's
 ///         background terrain, which is already captured by <see cref="DefaultTerrain" />.
@@ -37,6 +37,8 @@ public sealed record RoomParameters : IDisposable
         byte RoomWidth,
         byte RoomHeight,
         MapFeature DefaultTerrain,
+        MapFeature DefaultPathTerrain,
+        MapFeature DefaultWall,
         CreatureGenerator CreatureGenerator,
         ItemGenerator ItemGenerator)
     {
@@ -51,6 +53,8 @@ public sealed record RoomParameters : IDisposable
         this.RoomWidth = RoomWidth;
         this.RoomHeight = RoomHeight;
         this.DefaultTerrain = DefaultTerrain;
+        this.DefaultPathTerrain = DefaultPathTerrain;
+        this.DefaultWall = DefaultWall;
         this.CreatureGenerator = CreatureGenerator;
         this.ItemGenerator = ItemGenerator;
 
@@ -67,6 +71,22 @@ public sealed record RoomParameters : IDisposable
     public byte RoomWidth { get; init; }
     public byte RoomHeight { get; init; }
     public MapFeature DefaultTerrain { get; init; }
+
+    /// <summary>
+    ///     Effective <see cref="MapFeature" /> used for carved corridor / path tiles (from
+    ///     <see cref="DefiningMapFragment.GetEffectiveDefaultPathTerrain" />, falling back to
+    ///     <see cref="Branch.DefaultPathTerrain" />). Defaults to <see cref="MapFeature.RockFloor" />.
+    /// </summary>
+    public MapFeature DefaultPathTerrain { get; init; }
+
+    /// <summary>
+    ///     Effective <see cref="MapFeature" /> used for walls the generator places to enclose
+    ///     carved corridors and the room background (from
+    ///     <see cref="DefiningMapFragment.GetEffectiveDefaultWall" />, falling back to
+    ///     <see cref="Branch.DefaultWall" />). Defaults to <see cref="MapFeature.RockWall" />.
+    /// </summary>
+    public MapFeature DefaultWall { get; init; }
+
     public CreatureGenerator CreatureGenerator { get; init; }
     public ItemGenerator ItemGenerator { get; init; }
 
@@ -130,6 +150,8 @@ public sealed record RoomParameters : IDisposable
             && RoomWidth == other.RoomWidth
             && RoomHeight == other.RoomHeight
             && DefaultTerrain == other.DefaultTerrain
+            && DefaultPathTerrain == other.DefaultPathTerrain
+            && DefaultWall == other.DefaultWall
             && ReferenceEquals(CreatureGenerator, other.CreatureGenerator)
             && ReferenceEquals(ItemGenerator, other.ItemGenerator)
             && ReferenceEquals(_chunkCells, other._chunkCells);
@@ -137,6 +159,7 @@ public sealed record RoomParameters : IDisposable
     public override int GetHashCode()
         => HashCode.Combine(
             RoomWidth, RoomHeight, DefaultTerrain,
+            DefaultPathTerrain, DefaultWall,
             CreatureGenerator, ItemGenerator,
             RuntimeHelpers.GetHashCode(_chunkCells!));
 }

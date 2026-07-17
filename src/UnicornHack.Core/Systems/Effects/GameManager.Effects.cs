@@ -40,10 +40,10 @@ public partial class GameManager
 
     private void InitializeEffects(SequentialMessageQueue<GameManager> queue)
     {
-        Add<EffectComponent>(EntityComponent.Effect, poolSize: 32);
+        Add<EffectComponent>(EntityComponent.Effect, poolSize: 1024, maxPoolSize: 16384);
 
         Effects = CreateGroup(nameof(Effects),
-            new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Effect));
+            new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Effect), capacity: 16384);
 
         AppliedEffectsToAffectableEntityRelationship = new(
             nameof(AppliedEffectsToAffectableEntityRelationship),

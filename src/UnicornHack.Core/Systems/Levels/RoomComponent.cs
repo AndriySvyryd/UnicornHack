@@ -296,57 +296,83 @@ public class RoomComponent : GameComponent, IKeepAliveComponent
     public bool IsValid(Point point)
         => point.X < Width && point.Y < Height; // Since byte is unsigned there is no need to compare with 0
 
-    protected override void Clean()
+    /// <summary>
+    ///     Reverts this room to its pre-allocation placeholder state: returns terrain
+    ///     arrays to their pools, clears generated content (actors / items / outgoing
+    ///     connections / known terrain), and resets <see cref="Width" />/<see cref="Height" />
+    ///     to zero so <see cref="Map.LevelLayout.GetEmptyEntranceRoom" /> recognises it
+    ///     as reusable on the next generation attempt. Crucially, <see cref="IncomingConnections" />
+    ///     is left intact: it's the only handle a neighboring level has on this room
+    ///     and re-creating it requires re-running the neighbor's generation. Used by
+    ///     <see cref="LevelGenerator.ResetGeneratedState" /> when a generation attempt
+    ///     fails and the level needs a clean slate without orphaning cross-level links.
+    /// </summary>
+    public void Reset()
     {
-        // Array.Empty<T>() instances have length 0 and must not be returned to pools.
         if (Terrain.Length > 0)
         {
             ArrayPool<MapFeature>.Shared.Return(Terrain);
+            Terrain = Array.Empty<MapFeature>();
         }
 
         if (Neighbors.Length > 0)
         {
             ArrayPool<DirectionFlags>.Shared.Return(Neighbors);
+            Neighbors = Array.Empty<DirectionFlags>();
         }
 
         if (KnownNeighbors.Length > 0)
         {
             ArrayPool<DirectionFlags>.Shared.Return(KnownNeighbors);
+            KnownNeighbors = Array.Empty<DirectionFlags>();
         }
 
         if (VisibleTerrain.Length > 0)
         {
             ArrayPool<byte>.Shared.Return(VisibleTerrain);
+            VisibleTerrain = Array.Empty<byte>();
         }
 
         if (KnownTerrain.Length > 0)
         {
             ArrayPool<MapFeature>.Shared.Return(KnownTerrain);
+            KnownTerrain = Array.Empty<MapFeature>();
         }
 
-        Terrain = Array.Empty<MapFeature>();
-        Neighbors = Array.Empty<DirectionFlags>();
-        KnownNeighbors = Array.Empty<DirectionFlags>();
-        VisibleTerrain = Array.Empty<byte>();
-        KnownTerrain = Array.Empty<MapFeature>();
         Width = 0;
         Height = 0;
+        BoundPlaceableFeatures = 0;
+        Features = 0;
         TerrainChanges = null;
         KnownTerrainChanges = null;
         NeighborChanges = null;
+        PointToIndex = null;
+        IndexToPoint = null;
+        PathFinder = null;
+        VisibilityCalculator = null;
 
         ((SortedDictionary<Point, GameEntity>?)Actors)?.Clear();
         ((SortedDictionary<Point, GameEntity>?)Items)?.Clear();
         ((SortedDictionary<Point, GameEntity>?)Connections)?.Clear();
-        ((HashSet<GameEntity>?)IncomingConnections)?.Clear();
         ((SortedDictionary<Point, GameEntity>?)KnownActors)?.Clear();
         ((SortedDictionary<Point, GameEntity>?)KnownItems)?.Clear();
         ((SortedDictionary<Point, GameEntity>?)KnownConnections)?.Clear();
+        // IncomingConnections intentionally preserved.
+    }
+
+    protected override void Clean()
+    {
+        // Reset intentionally preserves IncomingConnections because it's
+        // called between generation attempts where the cross-level link must survive;
+        // Clean runs at full component disposal so it additionally clears that and the
+        // identity / position fields that uniquely tie the component to a level.
+        Reset();
+
+        ((HashSet<GameEntity>?)IncomingConnections)?.Clear();
 
         _branchName = default;
         _depth = default;
         _level = default;
-        _features = default;
         _reveal = default;
         _gridX = default;
         _gridY = default;

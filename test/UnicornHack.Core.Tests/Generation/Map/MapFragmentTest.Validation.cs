@@ -15,6 +15,7 @@ public partial class MapFragmentTest
     {
         var ex = Assert.Throws<ArgumentException>(() => new RoomParameters(
             RoomWidth: 0, RoomHeight: 5, MapFeature.Default,
+            MapFeature.RockFloor, MapFeature.RockWall,
             new CreatureGenerator(), new ItemGenerator()));
         Assert.Contains("positive width/height", ex.Message);
     }
@@ -24,6 +25,7 @@ public partial class MapFragmentTest
     {
         Assert.Throws<ArgumentException>(() => new RoomParameters(
             RoomWidth: 5, RoomHeight: 0, MapFeature.Default,
+            MapFeature.RockFloor, MapFeature.RockWall,
             new CreatureGenerator(), new ItemGenerator()));
     }
 
@@ -32,6 +34,7 @@ public partial class MapFragmentTest
     {
         Assert.Throws<ArgumentNullException>(() => new RoomParameters(
             RoomWidth: 5, RoomHeight: 5, MapFeature.Default,
+            MapFeature.RockFloor, MapFeature.RockWall,
             CreatureGenerator: null!, new ItemGenerator()));
     }
 
@@ -40,6 +43,7 @@ public partial class MapFragmentTest
     {
         Assert.Throws<ArgumentNullException>(() => new RoomParameters(
             RoomWidth: 5, RoomHeight: 5, MapFeature.Default,
+            MapFeature.RockFloor, MapFeature.RockWall,
             new CreatureGenerator(), ItemGenerator: null!));
     }
 

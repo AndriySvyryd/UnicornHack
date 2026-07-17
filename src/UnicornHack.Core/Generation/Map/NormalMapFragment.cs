@@ -35,6 +35,13 @@ public class NormalMapFragment : MapFragment
 
     protected override void ResetWeightFunction() => _weightFunction = null;
 
+    public override void EnsureWeightFunctionCompiled()
+        => _weightFunction ??= CompileWeightFunction<
+            Func<string, int, string,
+                IReadOnlyDictionary<string, int>, IReadOnlyDictionary<string, int>,
+                IReadOnlyDictionary<string, int>, IReadOnlyDictionary<string, int>,
+                IReadOnlyDictionary<RoomFeatures, int>, float>>(_translator);
+
     public float GetWeight(RoomComponent room, in LotPlacementContext ctx)
     {
         // Cheapest gates first. The doorway-capability check is two field reads
@@ -58,23 +65,38 @@ public class NormalMapFragment : MapFragment
             return 0;
         }
 
-        var stats = room.Level.GenerationStats;
-        var gameStats = room.Level.Game.GenerationStats;
-        return GetWeight(
-                room.Level.Branch.Name,
-                room.Level.Depth,
-                stats.FragmentInstancesByName,
-                gameStats.FragmentInstancesByName,
-                stats.FragmentInstancesByTag,
-                gameStats.FragmentInstancesByTag,
-                gameStats.FragmentInstancesByFeature)
-            * edgeMultiplier * demandMultiplier;
+        var level = room.Level;
+        var stats = level.GenerationStats;
+        var gameStats = level.Game.GenerationStats;
+        var baseWeight = GetWeight(
+            level.Branch.Name,
+            level.Depth,
+            stats.FragmentInstancesByName,
+            gameStats.FragmentInstancesByName,
+            stats.FragmentInstancesByTag,
+            gameStats.FragmentInstancesByTag,
+            gameStats.FragmentInstancesByFeature);
+
+        if (baseWeight <= 0f)
+        {
+            // A fragment the author disabled here (DSL weight 0) stays disabled — the size
+            // bonus must never resurrect it.
+            return 0f;
+        }
+
+        // Bias selection toward larger authored fragments so rooms are filled with fewer,
+        // bigger chunks: add the static payload's tile count (scaled by SizeWeightBonus) to
+        // the base weight. Dynamic fragments have an empty static payload (area 0) and are
+        // unaffected. VariantMultiplier normalizes the D4 orbit so the source fragment's
+        // total pick probability is unchanged by the expansion.
+        var sizeBonus = PayloadArea.Width * PayloadArea.Height * SizeWeightBonus;
+        return (baseWeight + sizeBonus) * edgeMultiplier * demandMultiplier * VariantMultiplier;
     }
 
     /// <summary>
     ///     Evaluates the raw <see cref="MapFragment.GenerationWeight" /> DSL for this
     ///     fragment against the supplied stats, lazy-parsing on first use and
-    ///     multiplying by <see cref="MapFragment.WeightMultiplier" />. No room/placement
+    ///     multiplying by <see cref="MapFragment.VariantMultiplier" />. No room/placement
     ///     gating is applied — placement code should prefer the room/context overload
     ///     so the cheap geometric gates run before the DSL evaluation. Used by
     ///     diagnostic probes that sample raw weights across many fragments without
@@ -89,18 +111,11 @@ public class NormalMapFragment : MapFragment
         IReadOnlyDictionary<string, int> globalTagInstances,
         IReadOnlyDictionary<RoomFeatures, int> globalFeatureInstances)
     {
-        if (_weightFunction == null)
-        {
-            _weightFunction = CompileWeightFunction<
-                Func<string, int, string,
-                    IReadOnlyDictionary<string, int>, IReadOnlyDictionary<string, int>,
-                    IReadOnlyDictionary<string, int>, IReadOnlyDictionary<string, int>,
-                    IReadOnlyDictionary<RoomFeatures, int>, float>>(_translator);
-        }
+        EnsureWeightFunctionCompiled();
 
         try
         {
-            return _weightFunction(
+            return _weightFunction!(
                     branchName,
                     depth,
                     SourceName,
@@ -108,8 +123,7 @@ public class NormalMapFragment : MapFragment
                     globalFragmentInstancesByName,
                     tagInstances,
                     globalTagInstances,
-                    globalFeatureInstances)
-                * WeightMultiplier;
+                    globalFeatureInstances);
         }
         catch (Exception e)
         {

@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Collections.Frozen;
 using System.Linq.Expressions;
 using System.Reflection;
 using CSharpScriptSerialization;
@@ -50,7 +51,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///         match conditions.
     ///     </para>
     /// </summary>
-    public static readonly IReadOnlyDictionary<char, RoomFeatures?> FeatureGlyphs =
+    public static readonly FrozenDictionary<char, RoomFeatures?> FeatureGlyphs =
         new Dictionary<char, RoomFeatures?>
         {
             ['_'] = RoomFeatures.DeityAltar,
@@ -68,7 +69,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             [')'] = RoomFeatures.WeaponStand,
             [TrapGlyph] = RoomFeatures.Trapped,
             [FeatureWildcardGlyph] = null
-        };
+        }.ToFrozenDictionary();
 
     /// <summary>
     ///     Maps each placeable <see cref="RoomFeatures" /> bit to the <see cref="MapFeature" />
@@ -78,7 +79,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///     does <em>not</em> register these bits as walkable or visibility-blocking — the
     ///     feature acts purely as a tile-level identity tag on top of the underlying floor.
     /// </summary>
-    public static readonly IReadOnlyDictionary<RoomFeatures, MapFeature> RoomFeatureToMapFeature =
+    public static readonly FrozenDictionary<RoomFeatures, MapFeature> RoomFeatureToMapFeature =
         new Dictionary<RoomFeatures, MapFeature>
         {
             [RoomFeatures.DeityAltar] = MapFeature.DeityAltar,
@@ -94,7 +95,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             [RoomFeatures.ArmorStand] = MapFeature.ArmorStand,
             [RoomFeatures.ItemCase] = MapFeature.ItemCase,
             [RoomFeatures.WeaponStand] = MapFeature.WeaponStand
-        };
+        }.ToFrozenDictionary();
 
     /// <summary>
     ///     The non-placeable subset of <see cref="RoomFeatures" /> — features that describe
@@ -134,17 +135,17 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///     in <see cref="GetDemandMultiplier" /> looks up tag names through this table.
     ///     <para>
     ///         <see cref="RoomFeatures.Entrance" /> and <see cref="RoomFeatures.Exit" /> map
-    ///         to <c>stairs-up</c> and <c>stairs-down</c> respectively — the connection
+    ///         to <c>entrance</c> and <c>exit</c> respectively — the connection
     ///         glyphs <c>&lt;</c> / <c>&gt;</c> emit those tags directly from the
     ///         auto-tag pass in <see cref="ApplyTagDerivations" />, and a fragment with a
     ///         dynamic stairs provider can author them explicitly.
     ///     </para>
     /// </summary>
-    public static readonly IReadOnlyDictionary<RoomFeatures, string> FeatureTagNames =
+    public static readonly FrozenDictionary<RoomFeatures, string> FeatureTagNames =
         new Dictionary<RoomFeatures, string>
         {
-            [RoomFeatures.Entrance] = "stairs-up",
-            [RoomFeatures.Exit] = "stairs-down",
+            [RoomFeatures.Entrance] = "entrance",
+            [RoomFeatures.Exit] = "exit",
             [RoomFeatures.SkillPedestal] = "skill-pedestal",
             [RoomFeatures.TraitPedestal] = "trait-pedestal",
             [RoomFeatures.FeatPedestal] = "feat-pedestal",
@@ -162,8 +163,9 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             [RoomFeatures.Secret] = "secret",
             [RoomFeatures.Cursed] = "cursed",
             [RoomFeatures.Challenge] = "challenge",
-            [RoomFeatures.Boss] = "boss"
-        };
+            [RoomFeatures.Boss] = "boss",
+            [RoomFeatures.Shortcut] = "shortcut"
+        }.ToFrozenDictionary();
 
     /// <summary>
     ///     Tag added by the auto-derivation pass for the feature wildcard glyph
@@ -180,14 +182,14 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///     the lot's demanded intra-level connection directions. Only cardinal directions
     ///     have an entry.
     /// </summary>
-    public static readonly IReadOnlyDictionary<Direction, string> DoorDirectionTag =
+    public static readonly FrozenDictionary<Direction, string> DoorDirectionTag =
         new Dictionary<Direction, string>
         {
             [Direction.North] = "door-n",
             [Direction.South] = "door-s",
             [Direction.East] = "door-e",
             [Direction.West] = "door-w"
-        };
+        }.ToFrozenDictionary();
 
     /// <summary>
     ///     Single source of truth for the payload glyph &#8594; <see cref="MapFeature" />
@@ -249,19 +251,14 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     }
 
     /// <summary>
-    ///     Multiplier applied to a fragment's weight per matching demand tag (room demands
-    ///     a feature this fragment provides, or an intra-level connection at a direction
-    ///     this fragment can door). Repeated stacking is multiplicative — a fragment that
-    ///     matches two outstanding demands is favoured twice over.
+    ///     Shared linear strength for both demand and anti-tag matching. A demand match pulls a
+    ///     fragment's weight up toward this factor and an anti-tag match pulls it down by the
+    ///     reciprocal (<c>1 / DemandTagBonus</c>), so the two are exact opposites. Matches
+    ///     accumulate linearly — a fragment matching <c>k</c> demands is favoured by
+    ///     <c>1 + k * (DemandTagBonus - 1)</c>, so a single match yields this value and
+    ///     additional matches add to it rather than compounding (<c>DemandTagBonus^k</c>).
     /// </summary>
-    public const float DemandTagBonus = 4f;
-
-    /// <summary>
-    ///     Multiplier applied to a fragment's weight per <see cref="AntiTags" /> entry
-    ///     that matches a currently outstanding demand tag. Strictly below <c>1</c> so the
-    ///     fragment is de-prioritised but not entirely rejected.
-    /// </summary>
-    public const float AntiTagPenalty = 0.25f;
+    public const float DemandTagBonus = 5f;
 
     /// <summary>
     ///     Multiplier applied to a fragment carrying the <see cref="RoomFeatures.Trapped" />
@@ -272,7 +269,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///     get a sub-unit weight bias rather than the hard exclusion applied to other
     ///     undemanded placeable features.
     /// </summary>
-    public const float UndemandedTrapPenalty = 0.25f;
+    public const float UndemandedTrapPenalty = 0.2f;
 
     /// <summary>
     ///     Tile-count threshold (inclusive) below which a fragment is tagged
@@ -287,7 +284,44 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     /// </summary>
     public const int SizeMediumMaxTiles = 49;
 
+    /// <summary>
+    ///     Per-tile weight added to a fragment's selection weight so that larger authored
+    ///     fragments are picked more often, filling rooms with fewer, bigger chunks. The
+    ///     fragment's static payload tile count (<see cref="PayloadArea" /> area) is
+    ///     multiplied by this factor and added to the fragment's base DSL weight before the
+    ///     edge / demand / variant multipliers. Dynamic fragments have an empty static payload (area 0), so
+    ///     they receive no bonus.
+    /// </summary>
+    public const float SizeWeightBonus = 0.5f;
+
     private string? _generationWeight;
+
+    /// <summary>
+    ///     Synchronizes <see cref="EnsureInitialized" /> across concurrent first-touch
+    ///     callers. Fragment instances returned by the production loaders are singletons
+    ///     shared across tests / sessions; without this lock two threads racing the
+    ///     <c>ByteMap == null</c> check would both run the parser and interleave their
+    ///     writes to <see cref="Width" />, <see cref="Height" />, <see cref="PointToIndex" />,
+    ///     <see cref="IndexToPoint" />, and <see cref="ByteMap" />, leaving an inconsistent
+    ///     (size, lookup-table, payload) tuple.
+    ///     <para>
+    ///         <see cref="CreateVariant" /> uses <c>MemberwiseClone</c>, so variants
+    ///         inherit the source's lock object. That's intentional and harmless: by the
+    ///         time the clone exists the source is initialized, the variant's own
+    ///         post-clone fields are reassigned by <see cref="ApplyTransformInPlace" />,
+    ///         and <see cref="_initialized" /> is copied as <c>true</c> so the variant's
+    ///         <see cref="EnsureInitialized" /> short-circuits.
+    ///     </para>
+    /// </summary>
+    private readonly object _initLock = new();
+
+    /// <summary>
+    ///     Set to <c>true</c> as the very last write of a successful
+    ///     <see cref="EnsureInitialized" /> call. Volatile so the fast-path lock-free
+    ///     read has acquire semantics — once a thread observes <c>true</c>, it's
+    ///     guaranteed to see every field that was written inside the lock.
+    /// </summary>
+    private volatile bool _initialized;
 
     public string Name
     {
@@ -441,12 +475,12 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     /// <summary>
     ///     When <c>true</c> a <see cref="DenseRoomLayout" /> (or any layout that performs
     ///     wall-merge shifts between adjacent chunks) treats this fragment as an immovable
-    ///     anchor: a neighbouring chunk's candidate shift is rejected unconditionally if it
-    ///     would move that neighbour on top of any cell of this fragment, regardless of
+    ///     anchor: a neighboring chunk's candidate shift is rejected unconditionally if it
+    ///     would move that neighbor on top of any cell of this fragment, regardless of
     ///     which cells would be overwritten. Authored statics that depend on exact wall
     ///     thickness (vaults, shrines, altar rooms with framed walls) opt in. Transform
     ///     variants inherit the flag from their source fragment via
-    ///     <see cref="CreateVariant" />'s memberwise clone.
+    ///     <see cref="CreateVariant" />'s member-wise clone.
     /// </summary>
     public bool NoOverwrite
     {
@@ -479,7 +513,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///     probability of an expanded orbit equals the source fragment's authored weight.
     ///     Computed as <c>1 / <see cref="VariantCount" /></c>.
     /// </summary>
-    protected float WeightMultiplier => 1f / VariantCount;
+    protected float VariantMultiplier => 1f / VariantCount;
 
     public bool ConditionalFirstRow
     {
@@ -563,10 +597,10 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///         <item>
     ///             Static fragments with no <c>?</c> markers and
     ///             <see cref="NoRandomDoorways" /> set to <c>false</c> store the number of
-    ///             payload-perimeter wall tiles whose inward neighbour resolves to a floor
+    ///             payload-perimeter wall tiles whose inward neighbor resolves to a floor
     ///             feature — a structural upper bound on what
     ///             <see cref="FindStaticMapDoorwayPoints" /> can ultimately pick. Cells
-    ///             whose corridor-side neighbour ends up blocked at placement time are
+    ///             whose corridor-side neighbor ends up blocked at placement time are
     ///             still counted here; <see cref="TryPlaceStaticMap" /> rechecks.
     ///         </item>
     ///         <item>
@@ -729,20 +763,65 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
 
     protected abstract void ResetWeightFunction();
 
-    // TODO: Characters that can be used as conditions for neighbors:
-    // ~ - marks the edge row and/or column as conditional
-    // X - should be outside the level
+    /// <summary>
+    ///     Forces compilation of this fragment's <see cref="GenerationWeight" /> delegate when
+    ///     it hasn't been compiled yet. <see cref="MapFragmentLoader{T}" /> calls this on each
+    ///     source fragment BEFORE expanding its D4 orbit, so the compiled delegate is shared by
+    ///     every variant through <see cref="CreateVariant" />'s member-wise clone .
+    /// </summary>
+    public virtual void EnsureWeightFunctionCompiled()
+    {
+    }
 
     /// <summary>
     ///     Parses <see cref="Map" /> into <see cref="ByteMap" /> on first call and lazily
     ///     populates <see cref="PointToIndex" /> / <see cref="IndexToPoint" />. The lookup
     ///     tables are memoized by <c>(Width, Height)</c> in a process-wide cache shared
     ///     across all <see cref="Game" /> instances.
+    ///     <para>
+    ///         Thread-safe via double-checked locking on <see cref="_initLock" />: the
+    ///         volatile <see cref="_initialized" /> flag short-circuits the fast path once
+    ///         any thread has finished initialization. Production fragments are shared
+    ///         singletons across tests / game sessions, so concurrent first-touch is
+    ///         possible (and was the source of intermittent test failures from interleaved
+    ///         writes to <see cref="Width" />, <see cref="Height" />,
+    ///         <see cref="PointToIndex" />, and <see cref="ByteMap" />).
+    ///     </para>
     /// </summary>
     [MemberNotNull(nameof(ByteMap))]
     [MemberNotNull(nameof(PointToIndex))]
     [MemberNotNull(nameof(IndexToPoint))]
     public void EnsureInitialized()
+    {
+        if (_initialized)
+        {
+            Debug.Assert(ByteMap is not null);
+            Debug.Assert(PointToIndex is not null);
+            Debug.Assert(IndexToPoint is not null);
+            return;
+        }
+
+        lock (_initLock)
+        {
+            if (_initialized)
+            {
+                Debug.Assert(ByteMap is not null);
+                Debug.Assert(PointToIndex is not null);
+                Debug.Assert(IndexToPoint is not null);
+                return;
+            }
+
+            InitializeCore();
+            // Final write under the lock; the volatile semantics publish every preceding
+            // field assignment to readers that observe _initialized == true.
+            _initialized = true;
+        }
+    }
+
+    [MemberNotNull(nameof(ByteMap))]
+    [MemberNotNull(nameof(PointToIndex))]
+    [MemberNotNull(nameof(IndexToPoint))]
+    private void InitializeCore()
     {
         if (ByteMap == null)
         {
@@ -929,10 +1008,10 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     /// <summary>
     ///     Asserts that a static fragment intended for surrounding-chunk placement (i.e.
     ///     anything other than a <see cref="DefiningMapFragment" />) can actually supply
-    ///     doorways or dock against neighbours. A static fragment with <c>0</c>
+    ///     doorways or dock against neighbors. A static fragment with <c>0</c>
     ///     <see cref="PossibleDoorwayCount" /> and no <see cref="HasOpenPerimeter" /> can
     ///     never satisfy a <see cref="LotPlacementContext.MinDoorways" /> &gt; 0 lot and
-    ///     never connects to a neighbour through an open edge \u2014 the weight gate in
+    ///     never connects to a neighbor through an open edge - the weight gate in
     ///     <c>NormalMapFragment.GetWeight</c> / <c>ConnectingMapFragment.GetWeight</c>
     ///     silently returns <c>0</c>, so the fragment would be loaded but never picked.
     ///     Failing at load makes the authoring bug visible.
@@ -963,7 +1042,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             throw new InvalidOperationException(
                 $"'{Name}': fragment has no authored doorways ('+'), "
                 + "NoRandomDoorways=true (or no wall-floor pair on its perimeter), "
-                + "and no open perimeter. It can never connect to a neighbour or satisfy "
+                + "and no open perimeter. It can never connect to a neighbor or satisfy "
                 + "a doorway demand, so layouts will never pick it. Author at least one "
                 + "'+', clear NoRandomDoorways, or open one perimeter edge.");
         }
@@ -974,7 +1053,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///     <see cref="Tags" /> entries prefixed with <c>!</c> into <see cref="AntiTags" />,
     ///     normalises positive tags to case-insensitive, and adds the auto-derived tag set:
     ///     <c>size-*</c> from the payload's tile count and content tags (<c>altar</c>,
-    ///     <c>pedestal</c>, <c>stand</c>, <c>stairs-up</c>, <c>stairs-down</c>) derived
+    ///     <c>pedestal</c>, <c>stand</c>, <c>entrance</c>, <c>exit</c>) derived
     ///     from feature & connection glyphs in the payload. Auto tags that depend on the
     ///     variant's orientation (door directions, axis-named symmetry) remain deferred.
     /// </summary>
@@ -1042,7 +1121,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             {
                 var glyph = (char)ByteMap![PointToIndex![x, y]];
                 // Generic family tag (e.g. `fountain`, `stand`, `pedestal`, `shrine`,
-                // `altar`, `stairs-up`, `stairs-down`, `trap`); the feature wildcard
+                // `altar`, `entrance`, `exit`, `trap`); the feature wildcard
                 // glyph contributes the wildcard demand tag.
                 var generic = glyph switch
                 {
@@ -1051,12 +1130,13 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                     '{' or '}' => "fountain",
                     '?' or '!' or '"' or '=' => "pedestal",
                     '[' or '(' or ')' => "stand",
-                    '<' => "stairs-up",
-                    '>' => "stairs-down",
+                    '<' => "entrance",
+                    '>' when !positives.Contains("shortcut") => "exit",
                     '^' => "trap",
                     FeatureWildcardGlyph => WildcardFeatureTag,
                     _ => null
                 };
+
                 if (generic is not null)
                 {
                     positives.Add(generic);
@@ -1404,7 +1484,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///     Translates an <c>S</c> edge symbol to the tile-specific
     ///     <see cref="EdgeConditionKind" /> that matches the payload feature at the
     ///     given coordinates. <c>S</c> is the only authoring symbol whose semantic
-    ///     ("neighbour must equal this fragment's payload edge tile feature") is
+    ///     ("neighbor must equal this fragment's payload edge tile feature") is
     ///     context-dependent, so it's resolved at parse time against the payload tile
     ///     immediately inward from the conditional row/column. The result has the
     ///     same numeric value as the matching <see cref="MapFeature" />.
@@ -1432,7 +1512,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     /// <summary>
     ///     Mirrors <see cref="FindStaticMapDoorwayPoints" />'s structural test against the
     ///     payload-only view of the static map: counts payload-perimeter <c>#</c> tiles whose
-    ///     inward orthogonal neighbour resolves to a floor feature (StoneFloor or RockFloor)
+    ///     inward orthogonal neighbor resolves to a floor feature (StoneFloor or RockFloor)
     ///     and skips the four payload corners. Outside-cell corridor reachability isn't known
     ///     at load time, so this is an upper bound — <see cref="TryPlaceStaticMap" /> performs
     ///     the runtime check.
@@ -1532,12 +1612,20 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///     tie-breaker bias.
     /// </summary>
     /// <remarks>
-    ///     Anchor selection is described in detail at <see cref="TryComputeAnchor" />.
+    ///     Anchor selection is described in detail at <see cref="TryComputeAnchor" />. When
+    ///     <see cref="LotPlacementContext.AnchorCache" /> is set the computed anchor is stored so a
+    ///     subsequent <see cref="TryPlaceStaticMap" /> for the winning fragment can reuse it.
     /// </remarks>
     public float GetEdgeMatchMultiplier(RoomComponent room, in LotPlacementContext ctx)
-        => TryComputeAnchor(room, ctx, random: null, out _, out var matched)
-            ? 1f + matched * EdgeMatchTieBreakerAlpha
-            : 0f;
+    {
+        if (!TryComputeAnchor(room, ctx, random: null, out var anchor, out var matched))
+        {
+            return 0f;
+        }
+
+        ctx.AnchorCache?.Store(this, anchor);
+        return 1f + matched * EdgeMatchTieBreakerAlpha;
+    }
 
     /// <summary>
     ///     Multiplier applied to the base generation weight that favours fragments aligned
@@ -1549,7 +1637,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///             this fragment's <see cref="Tags" /> contain the canonical feature tag
     ///             from <see cref="FeatureTagNames" />, the weight is multiplied by
     ///             <see cref="DemandTagBonus" />. If <see cref="AntiTags" /> contain it,
-    ///             the weight is multiplied by <see cref="AntiTagPenalty" />.
+    ///             the weight is divided by <see cref="DemandTagBonus" />.
     ///         </item>
     ///         <item>
     ///             For every non-placeable room-level bit in <see cref="NonPlaceableFeatures" />
@@ -1567,14 +1655,20 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///             <see cref="DoorDirectionTag" /> entry.
     ///         </item>
     ///     </list>
-    ///     The bonus stacks multiplicatively across matches so a fragment that satisfies
-    ///     two outstanding demands beats one that satisfies a single demand. <c>1</c> is
-    ///     returned when no demand is outstanding or the fragment carries no relevant
-    ///     tags / anti-tags.
+    ///     Demand and anti-tag matches share a single signed counter: each demand match
+    ///     increments it and each anti-tag match decrements it. A non-negative net <c>n</c>
+    ///     favours the fragment linearly by <c>1 + n * (DemandTagBonus - 1)</c>; a negative net
+    ///     penalises it by the reciprocal <c>1 / (1 + |n| * (DemandTagBonus - 1))</c>, so a
+    ///     single net demand match multiplies by <see cref="DemandTagBonus" /> and a single net
+    ///     anti-tag match divides by it. Matches accumulate linearly instead of compounding as
+    ///     <c>DemandTagBonus^n</c>. The undemanded-trap
+    ///     penalty is applied once and stays multiplicative. <c>1</c> is returned when no demand
+    ///     is outstanding or the fragment carries no relevant tags / anti-tags.
     /// </summary>
     public float GetDemandMultiplier(RoomComponent room, in LotPlacementContext ctx)
     {
         var multiplier = 1f;
+        var matches = 0;
         var tags = Tags;
         var antiTags = AntiTags;
         var hasWildcard = tags is not null && tags.Contains(WildcardFeatureTag);
@@ -1584,7 +1678,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         // fragment must not be picked — placing it would saddle the room with themed
         // contents it never asked for. Wildcard-only fragments carry no specific
         // feature tag and pass through unaffected; fragments that exclusively advertise
-        // non-placeable capabilities (e.g. `stairs-up`, which isn't in
+        // non-placeable capabilities (e.g. `entrance`, which isn't in
         // <see cref="FeatureGlyphs" />) are likewise unaffected. Trapped is exempt:
         // traps overlay floor without claiming the room's theme, so trap-bearing
         // fragments are allowed anywhere but receive <see cref="UndemandedTrapPenalty" />
@@ -1613,7 +1707,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             }
         }
 
-        var outstandingPlaceable = (room.Features & PlaceableFeaturesMask) & ~room.BoundPlaceableFeatures;
+        var outstandingPlaceable = room.Features & PlaceableFeaturesMask & ~room.BoundPlaceableFeatures;
         var outstandingNonPlaceable = room.Features & NonPlaceableFeatures;
         var outstanding = outstandingPlaceable | outstandingNonPlaceable;
         if (outstanding != 0)
@@ -1629,29 +1723,43 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                 var wildcardApplies = hasWildcard && (outstandingPlaceable & bit) == bit;
                 if (hasTag || wildcardApplies)
                 {
-                    multiplier *= DemandTagBonus;
+                    matches++;
                 }
                 if (antiTags is not null && antiTags.Contains(tagName))
                 {
-                    multiplier *= AntiTagPenalty;
+                    matches--;
                 }
             }
         }
 
         if (ctx.DemandedDoorways != DirectionFlags.None)
         {
-            ApplyDoorDirectionDemand(ctx.DemandedDoorways, DirectionFlags.North, Direction.North, ref multiplier, tags, antiTags);
-            ApplyDoorDirectionDemand(ctx.DemandedDoorways, DirectionFlags.South, Direction.South, ref multiplier, tags, antiTags);
-            ApplyDoorDirectionDemand(ctx.DemandedDoorways, DirectionFlags.East, Direction.East, ref multiplier, tags, antiTags);
-            ApplyDoorDirectionDemand(ctx.DemandedDoorways, DirectionFlags.West, Direction.West, ref multiplier, tags, antiTags);
+            ApplyDoorDirectionDemand(ctx.DemandedDoorways, DirectionFlags.North, Direction.North, ref matches, tags, antiTags);
+            ApplyDoorDirectionDemand(ctx.DemandedDoorways, DirectionFlags.South, Direction.South, ref matches, tags, antiTags);
+            ApplyDoorDirectionDemand(ctx.DemandedDoorways, DirectionFlags.East, Direction.East, ref matches, tags, antiTags);
+            ApplyDoorDirectionDemand(ctx.DemandedDoorways, DirectionFlags.West, Direction.West, ref matches, tags, antiTags);
         }
 
-        return multiplier;
+        // Fast path: most fragments match no outstanding demand, so skip the arithmetic.
+        if (matches == 0)
+        {
+            return multiplier;
+        }
+
+        // Demand and anti-tag matches are unified into a single signed counter: each demand
+        // match increments it, each anti-tag match decrements it. A positive net favours the
+        // fragment linearly (1 + n * (DemandTagBonus - 1)); a negative net penalises it by the
+        // reciprocal (1 / (1 + |n| * (DemandTagBonus - 1))), so a single net demand multiplies
+        // by DemandTagBonus and a single net anti-tag divides by it. The once-applied
+        // undemanded-trap penalty stays in `multiplier`.
+        return matches > 0
+            ? multiplier * (1f + matches * (DemandTagBonus - 1f))
+            : multiplier / (1f - matches * (DemandTagBonus - 1f));
     }
 
     private static void ApplyDoorDirectionDemand(
         DirectionFlags demanded, DirectionFlags flag, Direction direction,
-        ref float multiplier, ICollection<string>? tags, ICollection<string>? antiTags)
+        ref int matches, ICollection<string>? tags, ICollection<string>? antiTags)
     {
         if ((demanded & flag) != flag)
         {
@@ -1661,11 +1769,11 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         var tagName = DoorDirectionTag[direction];
         if (tags is not null && tags.Contains(tagName))
         {
-            multiplier *= DemandTagBonus;
+            matches++;
         }
         if (antiTags is not null && antiTags.Contains(tagName))
         {
-            multiplier *= AntiTagPenalty;
+            matches--;
         }
     }
 
@@ -1701,16 +1809,12 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///     </para>
     ///     <para>
     ///         <b>Step 3 — Per-slot evaluation</b> classifies each conditional slot's
-    ///         neighbour cell as (A) out-of-room, (B) in-room already filled, or (C)
+    ///         neighbor cell as (A) out-of-room, (B) in-room already filled, or (C)
     ///         in-room still empty and applies the rules described on
     ///         <see cref="EvaluateEdgeAtAnchor" />.
     ///     </para>
     /// </remarks>
-    public bool TryComputePlacementAnchor(
-        RoomComponent room, in LotPlacementContext ctx, SimpleRandom? random, out Point anchor)
-        => TryComputeAnchor(room, ctx, random, out anchor, out _);
-
-    private bool TryComputeAnchor(
+    public bool TryComputeAnchor(
         RoomComponent room, in LotPlacementContext ctx,
         SimpleRandom? random, out Point anchor, out int matched)
     {
@@ -1732,7 +1836,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         // every flush-to-lot-edge (tightness == 1) anchor lives and where most
         // "slide one cell off the wall" deferred placements land. If the rim yields
         // no feasible candidate, fall back to the interior so a fragment whose
-        // conditional edges only line up against deep in-room neighbours still has
+        // conditional edges only line up against deep in-room neighbors still has
         // a chance to place. The two-pass split keeps the common case cheap (a 5×5
         // payload in a 20×16 lot has 16×12 = 192 anchors; the rim is 80) while
         // preserving completeness.
@@ -1919,7 +2023,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
 
                 var existingFeature = room.Terrain[room.PointToIndex![roomX, roomY]];
                 // Background default-terrain (the fill from AllocateTerrain) is not
-                // "placed by a neighbour" — only cells that differ from the room's
+                // "placed by a neighbor" — only cells that differ from the room's
                 // default terrain represent actual chunk content we might overlap with.
                 if (existingFeature == ctx.DefaultTerrain)
                 {
@@ -1954,10 +2058,10 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
 
     /// <summary>
     ///     Evaluates this fragment's own <see cref="GetEdge" /> array in
-    ///     <paramref name="direction" /> against the neighbour cells
+    ///     <paramref name="direction" /> against the neighbor cells
     ///     <paramref name="anchor" /> would place each payload edge tile against.
     ///     Each non-<see cref="EdgeConditionKind.Default" /> slot is classified by its
-    ///     neighbour cell:
+    ///     neighbor cell:
     ///     <list type="bullet">
     ///         <item>
     ///             <b>(A) Out-of-room:</b> <see cref="EdgeConditionKind.Edge" />,
@@ -2043,7 +2147,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             var neighborPoint = new Point((byte)neighborX, (byte)neighborY);
             var neighborFeature = room.Terrain[room.PointToIndex![neighborX, neighborY]];
 
-            // (B) Evaluate the condition against the actual terrain at the neighbour
+            // (B) Evaluate the condition against the actual terrain at the neighbor
             // cell — works whether the cell carries a chunk-written feature or the
             // room's background fill.
             if (EvaluateCondition(condition, constrained: neighborFeature,
@@ -2065,6 +2169,30 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                 return false;
             }
 
+            // A condition that can't be satisfied by a wall (e.g. StoneFloor / Doorway)
+            // forces FixupDeferredConditions to fill the neighbor cell with walkable
+            // terrain. That floor could be exposed to unfilled cells unless a
+            // wall can be placed directly behind it (one cell further out). Reserve that
+            // space now: reject the placement unless the cell two out — in this edge's
+            // outward direction — is still in-room, leaving a 2-cell gap between this
+            // edge and the room border.
+            if (RequiresNonWallFill(condition))
+            {
+                var (outwardX, outwardY) = direction switch
+                {
+                    Direction.North => (0, -1),
+                    Direction.South => (0, 1),
+                    Direction.West => (-1, 0),
+                    _ => (1, 0)
+                };
+                var behindX = neighborX + outwardX;
+                var behindY = neighborY + outwardY;
+                if (behindX < 0 || behindY < 0 || behindX >= room.Width || behindY >= room.Height)
+                {
+                    return false;
+                }
+            }
+
             // The condition is deferrable. Verify it remains compatible with any
             // preserved conditions already registered on the cell — if a later
             // fragment couldn't satisfy them all simultaneously, reject now so the
@@ -2079,6 +2207,29 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     }
 
     /// <summary>
+    ///     Whether a deferred <paramref name="condition" /> can only be satisfied by a
+    ///     <em>walkable</em> (non-wall) feature, so <see cref="FixupDeferredConditions" />
+    ///     must fill the cell with floor rather than a wall. These are the conditions that
+    ///     drive the 2-cell boundary gap (in <see cref="EvaluateEdgeAtAnchor" />) and the
+    ///     StoneWall buffer condition seeded behind them (in <see cref="RegisterPreservedConditions" />):
+    ///     <see cref="EdgeConditionKind.Doorway" /> and every tile-specific condition whose
+    ///     <see cref="MapFeature" /> is not a wall. <see cref="EdgeConditionKind.Filled" />
+    ///     accepts a wall, and <see cref="EdgeConditionKind.Unfilled" /> /
+    ///     <see cref="EdgeConditionKind.Edge" /> ask the cell to stay empty, so none of
+    ///     those force a floor fill.
+    /// </summary>
+    private static bool RequiresNonWallFill(EdgeConditionKind condition)
+        => condition switch
+        {
+            EdgeConditionKind.Default
+                or EdgeConditionKind.Filled
+                or EdgeConditionKind.Unfilled
+                or EdgeConditionKind.Edge 
+                or EdgeConditionKind.Doorway => false,
+            _ => !IsWallFeature((MapFeature)condition)
+        };
+
+    /// <summary>
     ///     Returns <c>true</c> when adding <paramref name="condition" /> to any conditions
     ///     already preserved on <paramref name="cell" /> (via
     ///     <see cref="LotPlacementContext.PreservedConditions" />) still admits at least
@@ -2091,18 +2242,24 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         EdgeConditionKind condition, Point cell, in LotPlacementContext ctx)
     {
         var preserved = ctx.PreservedConditions;
-        if (preserved == null || !preserved.TryGetValue(cell, out var existing) || existing.Count == 0)
+        if (preserved == null || !preserved.TryGetValue(cell, out var existing) || existing.Length == 0)
         {
             return true;
         }
 
-        // Use a pooled scratch list to merge existing + new and run the same
-        // intersection logic the fixup pass uses.
-        var merged = new List<EdgeConditionKind>(existing.Count + 1);
-        merged.AddRange(existing);
-        merged.Add(condition);
+        // Merge existing + the new condition on the stack (the set is tiny and deduplicated) and
+        // run the same intersection logic the fixup pass uses.
+        Span<EdgeConditionKind> merged = stackalloc EdgeConditionKind[existing.Length + 1];
+        existing.CopyTo(merged);
+        merged[^1] = condition;
 
-        var candidates = new List<MapFeature>();
+        // Reuse a per-thread scratch list instead of allocating a List<MapFeature> per call:
+        // this is a hot placement-time check (one call per deferred edge slot per anchor
+        // candidate). The list is fully consumed before this method returns and the method
+        // never re-enters itself, so a single instance is safe; thread-static keeps parallel
+        // level generation race-free.
+        var candidates = _compatibilityCandidatesScratch ??= [];
+        candidates.Clear();
         // TryCollectSatisfyingFeatures returns false in two cases — both acceptable
         // here: (i) any Unfilled/Edge entry, in which case all entries must agree that
         // the cell stays empty; (ii) positive constraints intersect to the empty set,
@@ -2113,7 +2270,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         }
 
         // Unfilled/Edge-only is compatible: every entry asks the cell to stay empty.
-        for (var i = 0; i < merged.Count; i++)
+        for (var i = 0; i < merged.Length; i++)
         {
             if (merged[i] is not (EdgeConditionKind.Unfilled
                 or EdgeConditionKind.Edge
@@ -2156,7 +2313,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                     : GlyphToFeature((char)ByteMap![PointToIndex![
                         payloadOrigin.X + dx, payloadOrigin.Y + dy]]);
 
-                for (var conditionIndex = 0; conditionIndex < conditionsAtCell.Count; conditionIndex++)
+                for (var conditionIndex = 0; conditionIndex < conditionsAtCell.Length; conditionIndex++)
                 {
                     var condition = conditionsAtCell[conditionIndex];
                     if (!EvaluateCondition(condition, constrained: fragmentFeature,
@@ -2171,7 +2328,10 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         return true;
     }
 
-    private static bool EvaluateCondition(
+    /// <summary>
+    ///     Evaluates an edge condition against a given map feature.
+    /// </summary>
+    public static bool EvaluateCondition(
         EdgeConditionKind condition, MapFeature constrained,
         bool neighborInRoom, ref int matched)
     {
@@ -2228,7 +2388,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         Chunk chunk,
         RoomComponent room,
         RectanglePartition emptySpace,
-        Dictionary<Point, List<EdgeConditionKind>> preservedConditions,
+        Dictionary<Point, EdgeConditionKind[]> preservedConditions,
         RoomParameters roomParameters)
     {
         ArgumentNullException.ThrowIfNull(emptySpace);
@@ -2244,13 +2404,31 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             room, emptySpace, preservedConditions);
     }
 
+    // Shared, immutable single-element preserved-condition arrays keyed by the byte enum value,
+    // so the common case (a cell carrying exactly one condition) reuses a cached array instead of
+    // allocating a List<EdgeConditionKind> + its backing array. Multi-condition cells (rare) get a
+    // freshly grown array. Cached entries are never mutated — RegisterPreservedEdge replaces the
+    // dictionary value with a new array when a second distinct condition arrives. Sized to the
+    // compacted EdgeConditionKind range (Doorway is the highest value).
+    private static readonly EdgeConditionKind[]?[] _singleConditionArrays =
+        new EdgeConditionKind[(int)EdgeConditionKind.Doorway + 1][];
+
+    // Per-thread scratch list reused by IsConditionCompatibleWithPreserved to avoid a
+    // List<MapFeature> allocation on every placement-time compatibility check. Thread-static
+    // because level generation may run concurrently across threads.
+    [ThreadStatic]
+    private static List<MapFeature>? _compatibilityCandidatesScratch;
+
+    private static EdgeConditionKind[] GetSingleConditionArray(EdgeConditionKind condition)
+        => _singleConditionArrays[(byte)condition] ??= [condition];
+
     private static void RegisterPreservedEdge(
         EdgeConditionKind[]? edge,
         Direction edgeDirection,
         Rectangle chunkBounds,
         RoomComponent room,
         RectanglePartition emptySpace,
-        Dictionary<Point, List<EdgeConditionKind>> preservedConditions)
+        Dictionary<Point, EdgeConditionKind[]> preservedConditions)
     {
         if (edge == null)
         {
@@ -2265,7 +2443,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             {
                 // Default has nothing to preserve; Edge is a self-constraint on the
                 // fragment's own edge tile, not a requirement that transfers to the
-                // neighbour cell.
+                // neighbor cell.
                 continue;
             }
 
@@ -2307,14 +2485,45 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
 
             if (!preservedConditions.TryGetValue(outsidePoint, out var conditionsAtCell))
             {
-                conditionsAtCell = new List<EdgeConditionKind>(capacity: 1);
-                preservedConditions[outsidePoint] = conditionsAtCell;
+                // First condition on this cell: store the shared cached single-element array.
+                preservedConditions[outsidePoint] = GetSingleConditionArray(condition);
             }
-            // Deduplicate: an identical condition repeated by an adjacent chunk
-            // constrains nothing further, so keep the list small.
-            if (!conditionsAtCell.Contains(condition))
+            else if (Array.IndexOf(conditionsAtCell, condition) < 0)
             {
-                conditionsAtCell.Add(condition);
+                // Second+ distinct condition (rare): grow into a fresh owned array. Deduplicate
+                // — an identical condition repeated by an adjacent chunk constrains nothing further.
+                var grown = new EdgeConditionKind[conditionsAtCell.Length + 1];
+                Array.Copy(conditionsAtCell, grown, conditionsAtCell.Length);
+                grown[^1] = condition;
+                preservedConditions[outsidePoint] = grown;
+            }
+
+            // A condition that can only be satisfied by walkable terrain forces
+            // FixupDeferredConditions to fill this outside cell with floor. Register a
+            // StoneWall condition on the cell directly behind it (one step further out)
+            // so the same fixup pass walls it off and the floor isn't exposed to the
+            // unfilled cells. EvaluateEdgeAtAnchor's 2-cell gap check already
+            // guaranteed that behind cell is in-room; only seed the wall where the cell
+            // is still empty space and carries no condition of its own.
+            if (RequiresNonWallFill(condition))
+            {
+                var (behindDx, behindDy) = edgeDirection switch
+                {
+                    Direction.North => (0, -1),
+                    Direction.South => (0, 1),
+                    Direction.West => (-1, 0),
+                    _ => (1, 0)
+                };
+                var behindX = outsideX + behindDx;
+                var behindY = outsideY + behindDy;
+                if (behindX >= 0 && behindY >= 0 && behindX < room.Width && behindY < room.Height)
+                {
+                    var behindPoint = new Point((byte)behindX, (byte)behindY);
+                    if (emptySpace.Contains(behindPoint) && !preservedConditions.ContainsKey(behindPoint))
+                    {
+                        preservedConditions[behindPoint] = GetSingleConditionArray(EdgeConditionKind.StoneWall);
+                    }
+                }
             }
         }
     }
@@ -2344,20 +2553,20 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///         Selection preference when multiple features satisfy the conditions:
     ///         (1) a wall (<see cref="MapFeature.StoneWall" /> preferred over
     ///         <see cref="MapFeature.RockWall" />); (2) a feature already carried by one
-    ///         of the four cardinal neighbours; (3) a uniformly random satisfying feature.
+    ///         of the four cardinal neighbors; (3) a uniformly random satisfying feature.
     ///     </para>
     ///     <para>
     ///         TODO: close these cells off with walls more intelligently — e.g. only
-    ///         place a wall when at least one neighbour is already a wall so the new
+    ///         place a wall when at least one neighbor is already a wall so the new
     ///         cells extend an existing wall line, otherwise prefer the dominant
-    ///         neighbour feature to keep the room visually contiguous. The current pass
+    ///         neighbor feature to keep the room visually contiguous. The current pass
     ///         is the minimum needed to keep deferred conditions from leaving raw
     ///         <see cref="MapFeature.Default" /> holes in the level.
     ///     </para>
     /// </summary>
     public static List<Chunk> FixupDeferredConditions(
         RoomComponent room,
-        Dictionary<Point, List<EdgeConditionKind>> preservedConditions,
+        Dictionary<Point, EdgeConditionKind[]> preservedConditions,
         SimpleRandom random,
         RoomParameters roomParameters)
     {
@@ -2373,7 +2582,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             if (room.Terrain[room.PointToIndex![point.X, point.Y]] != roomParameters.DefaultTerrain)
             {
                 // A later chunk landed on this cell (or the cell was filled by an
-                // earlier fixup neighbour); the preserved conditions were already
+                // earlier fixup neighbor); the preserved conditions were already
                 // evaluated against the chunk's payload during TryPlace.
                 continue;
             }
@@ -2384,12 +2593,20 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                 continue;
             }
 
-            var picked = PickPreferredFixupFeature(candidates, point, room, random);
+            var picked = PickPreferredFixupFeature(candidates, point, room, random, roomParameters.DefaultWall);
             TerrainSystem.SetTerrain(picked, point, room);
             filled.Add(point);
         }
 
-        // Connectivity rescue: deferred-fill cells whose only neighbours are walls
+        // Perimeter enclosure: a cell filled with walkable terrain (its conditions
+        // forbade a wall) exposes floor to the unfilled cells on any side the
+        // chunk's edge conditions didn't reach — typically near the chunk corners. The
+        // cell directly outward is already covered by a StoneWall buffer condition
+        // seeded in RegisterPreservedEdge; this seals the remaining unfilled cells
+        // around every walkable condition cell.
+        WallAroundConditionCells(room, preservedConditions, roomParameters, filled);
+
+        // Connectivity rescue: deferred-fill cells whose only neighbors are walls
         // (no real-chunk floor adjacent) become isolated walkable pockets that the
         // corridor system can't connect, because deferred-fill chunks author no
         // doorways. Identify the connected component of walkable cells reachable
@@ -2403,11 +2620,85 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     }
 
     /// <summary>
+    ///     Seals the unfilled cells around every walkable cell that the fixup
+    ///     itself filled. Edge conditions only constrain the single cell directly outside a
+    ///     chunk edge, so a cell filled with walkable terrain can still face background on
+    ///     the sides its edge didn't reach — typically near the chunk corners. For each such
+    ///     fill, this walls every surrounding cell (8-directional) that is still
+    ///     <see cref="RoomParameters.DefaultTerrain" /> and carries no preserved condition of
+    ///     its own (a cell with its own condition is resolved by the fixup and must not be
+    ///     pre-sealed). Only cells the fixup filled are considered — terrain a real chunk
+    ///     placed is enclosed by that chunk's own structure. Newly walled cells are appended
+    ///     to <paramref name="filled" /> so the chunk grouping owns them.
+    /// </summary>
+    private static void WallAroundConditionCells(
+        RoomComponent room,
+        Dictionary<Point, EdgeConditionKind[]> preservedConditions,
+        RoomParameters roomParameters,
+        List<Point> filled)
+    {
+        var pointToIndex = room.PointToIndex!;
+        // Snapshot the count: WallBackgroundNeighbor appends the sealing walls to `filled`,
+        // and those walls must not themselves spawn another ring of sealing.
+        var filledCount = filled.Count;
+        for (var i = 0; i < filledCount; i++)
+        {
+            var point = filled[i];
+            if (!room.Terrain[pointToIndex[point.X, point.Y]].CanMoveTo())
+            {
+                continue;
+            }
+
+            // Match an existing adjacent wall so the seal extends the surrounding wall line
+            // instead of introducing a foreign wall type.
+            var wall = RoomLayout.PickAdjacentWall(room, point, roomParameters.DefaultWall);
+
+            for (var directionIndex = 0; directionIndex < 8; directionIndex++)
+            {
+                var direction = Vector.MovementDirections[directionIndex];
+                WallOffNeighbor(room, point.X + direction.X, point.Y + direction.Y,
+                    preservedConditions, roomParameters, wall, filled);
+            }
+        }
+    }
+
+    private static void WallOffNeighbor(
+        RoomComponent room, int x, int y,
+        Dictionary<Point, EdgeConditionKind[]> preservedConditions,
+        RoomParameters roomParameters,
+        MapFeature wall,
+        List<Point> filled)
+    {
+        if (x < 0 || y < 0 || x >= room.Width || y >= room.Height)
+        {
+            Debug.Assert(false, "Neighbor out of bounds");
+            return;
+        }
+
+        if (room.Terrain[room.PointToIndex![x, y]] != roomParameters.DefaultTerrain)
+        {
+            // Already filled.
+            return;
+        }
+
+        var cell = new Point((byte)x, (byte)y);
+        if (preservedConditions.ContainsKey(cell))
+        {
+            // Has its own condition — the fixup may fill it with walkable terrain, so
+            // sealing it here would be wrong.
+            return;
+        }
+
+        TerrainSystem.SetTerrain(wall, cell, room);
+        filled.Add(cell);
+    }
+
+    /// <summary>
     ///     Removes walkable cells from <paramref name="filledCells" /> (and converts the
     ///     room terrain at those cells to <see cref="MapFeature.StoneWall" />) when
     ///     they're unreachable from any walkable cell that wasn't placed by the fixup
     ///     pass. Preserves any fixup cell adjacent (8-directionally) to a real chunk's
-    ///     floor / archway / pool — those are reachable through their neighbour's
+    ///     floor / archway / pool — those are reachable through their neighbor's
     ///     authored doorway.
     /// </summary>
     private static void ConvertIsolatedFixupCellsToWalls(RoomComponent room, List<Point> filledCells, RoomParameters roomParameters)
@@ -2433,10 +2724,6 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             }
 
             var rect = room.BoundingRectangle;
-            var minX = rect.TopLeft.X;
-            var minY = rect.TopLeft.Y;
-            var maxX = rect.BottomRight.X;
-            var maxY = rect.BottomRight.Y;
 
             // Seed BFS from every walkable cell that's OWNED by a real (non-fixup) chunk
             // — those are the cells the corridor system already routes to via the
@@ -2474,14 +2761,18 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             while (queue.Count > 0)
             {
                 var p = queue.Dequeue();
-                TryExpandWalkable(p.X - 1, p.Y, minX, minY, maxX, maxY, room, pointToIndex, reached, queue);
-                TryExpandWalkable(p.X + 1, p.Y, minX, minY, maxX, maxY, room, pointToIndex, reached, queue);
-                TryExpandWalkable(p.X, p.Y - 1, minX, minY, maxX, maxY, room, pointToIndex, reached, queue);
-                TryExpandWalkable(p.X, p.Y + 1, minX, minY, maxX, maxY, room, pointToIndex, reached, queue);
-                TryExpandWalkable(p.X - 1, p.Y - 1, minX, minY, maxX, maxY, room, pointToIndex, reached, queue);
-                TryExpandWalkable(p.X + 1, p.Y - 1, minX, minY, maxX, maxY, room, pointToIndex, reached, queue);
-                TryExpandWalkable(p.X - 1, p.Y + 1, minX, minY, maxX, maxY, room, pointToIndex, reached, queue);
-                TryExpandWalkable(p.X + 1, p.Y + 1, minX, minY, maxX, maxY, room, pointToIndex, reached, queue);
+                foreach (var neighbor in RoomLayout.Neighbors8(rect, p.X, p.Y))
+                {
+                    if (!room.Terrain[pointToIndex[neighbor.X, neighbor.Y]].CanMoveTo())
+                    {
+                        continue;
+                    }
+
+                    if (reached.Add(neighbor))
+                    {
+                        queue.Enqueue(neighbor);
+                    }
+                }
             }
 
             // Any fixup cell still walkable but not reached is isolated — wall it off
@@ -2501,31 +2792,16 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                     // grouping still owns the cell, but no walling needed.
                     continue;
                 }
-                TerrainSystem.SetTerrain(MapFeature.StoneWall, p, room);
+
+                // Match an existing adjacent wall so the seal extends the surrounding wall
+                // line instead of introducing a foreign wall type.
+                var wall = RoomLayout.PickAdjacentWall(room, p, roomParameters.DefaultWall);
+                TerrainSystem.SetTerrain(wall, p, room);
             }
         }
         finally
         {
             ArrayPool<bool>.Shared.Return(fixupMask, clearArray: false);
-        }
-    }
-
-    private static void TryExpandWalkable(
-        int x, int y, int minX, int minY, int maxX, int maxY,
-        RoomComponent room, short[,] pointToIndex, HashSet<Point> reached, Queue<Point> queue)
-    {
-        if (x < minX || x > maxX || y < minY || y > maxY)
-        {
-            return;
-        }
-        if (!room.Terrain[pointToIndex[x, y]].CanMoveTo())
-        {
-            return;
-        }
-        var pt = new Point((byte)x, (byte)y);
-        if (reached.Add(pt))
-        {
-            queue.Enqueue(pt);
         }
     }
 
@@ -2650,10 +2926,10 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///     </list>
     /// </summary>
     private static bool TryCollectSatisfyingFeatures(
-        List<EdgeConditionKind> conditions, List<MapFeature> result)
+        ReadOnlySpan<EdgeConditionKind> conditions, List<MapFeature> result)
     {
         // Unfilled / Edge entries require the cell to stay Default; skip filling.
-        for (var i = 0; i < conditions.Count; i++)
+        for (var i = 0; i < conditions.Length; i++)
         {
             if (conditions[i] is EdgeConditionKind.Unfilled or EdgeConditionKind.Edge)
             {
@@ -2666,7 +2942,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         // non-empty.
         AppendAllPlaceableFeatures(result);
 
-        for (var i = 0; i < conditions.Count; i++)
+        for (var i = 0; i < conditions.Length; i++)
         {
             var condition = conditions[i];
             switch (condition)
@@ -2726,8 +3002,20 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     }
 
     private static MapFeature PickPreferredFixupFeature(
-        List<MapFeature> candidates, Point point, RoomComponent room, SimpleRandom random)
+        List<MapFeature> candidates, Point point, RoomComponent room, SimpleRandom random, MapFeature defaultWall)
     {
+        // Prefer an existing adjacent wall's material when the conditions allow a wall, so the
+        // synthesized fill extends the surrounding wall line instead of introducing a foreign
+        // wall material; fall back to the branch's default wall, then any wall.
+        var adjacentWall = RoomLayout.PickAdjacentWall(room, point, defaultWall);
+        if (candidates.Contains(adjacentWall))
+        {
+            return adjacentWall;
+        }
+        if (candidates.Contains(defaultWall))
+        {
+            return defaultWall;
+        }
         if (candidates.Contains(MapFeature.StoneWall))
         {
             return MapFeature.StoneWall;
@@ -2737,7 +3025,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             return MapFeature.RockWall;
         }
 
-        // Try a feature already carried by a cardinal neighbour so the fixup cell
+        // Try a feature already carried by a cardinal neighbor so the fixup cell
         // visually extends the adjacent terrain instead of introducing an isolated tile.
         var pointToIndex = room.PointToIndex!;
         var width = room.Width;
@@ -2899,7 +3187,13 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     protected virtual Chunk? TryPlaceStaticMap(RoomComponent room, in LotPlacementContext ctx, int minDoorways)
     {
         Point target;
-        if (!TryComputePlacementAnchor(room, ctx, room.Level.GenerationRandom, out target))
+        // Reuse the anchor the weighting pass already computed for this fragment in this lot
+        // (see GetEdgeMatchMultiplier) when available, instead of sweeping for it again.
+        if (ctx.AnchorCache is { } anchorCache && anchorCache.TryGet(this, out target))
+        {
+            // Cached anchor reused as-is.
+        }
+        else if (!TryComputeAnchor(room, ctx, room.Level.GenerationRandom, out target, out _))
         {
             // Fall back to the unconstrained random placement so callers that previously
             // relied on the no-context path still work (e.g. defining-fragment placement).
@@ -3061,7 +3355,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         {
             // A previously placed chunk owns this cell and its terrain is walkable
             // (floor / archway / pool) or otherwise important. Skip the wall write so
-            // a neighbour can't seal off the chunk's open perimeter, doorway, or
+            // a neighbor can't seal off the chunk's open perimeter, doorway, or
             // themed feature. The cell is still recorded as part of THIS chunk's
             // outline (via points / perimeterPoints above) so corridor logic treats it
             // as a shared wall on this chunk's side.
@@ -3071,7 +3365,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         TerrainSystem.SetTerrain(feature, point, room);
     }
 
-    private static bool IsWallFeature(MapFeature feature)
+    internal static bool IsWallFeature(MapFeature feature)
         => feature is MapFeature.StoneWall or MapFeature.RockWall;
 
     /// <summary>
@@ -3090,9 +3384,20 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///     <para>
     ///         Connection cells (stairs / portals) are always preserved.
     ///     </para>
+    ///     <para>
+    ///         The dynamic-map path registers the chunk's perimeter cells with
+    ///         <see cref="LotPlacementContext.RoomParameters" /> during
+    ///         <see cref="Chunk" /> construction (which happens inside
+    ///         <see cref="BuildChunk" /> BEFORE the caller's wall writes). Without
+    ///         <paramref name="currentChunk" /> the predicate would see the chunk
+    ///         owning its own perimeter cells and incorrectly skip them, leaving the
+    ///         room with default-terrain gaps where walls should be. Callers in the
+    ///         dynamic path pass the chunk they're writing so its own perimeter
+    ///         registration doesn't suppress the wall write.
+    ///     </para>
     /// </summary>
     private static bool ShouldPreserveAgainstWallWrite(
-        RoomComponent room, Point point, in LotPlacementContext ctx)
+        RoomComponent room, Point point, in LotPlacementContext ctx, Chunk? currentChunk = null)
     {
         if (room.Connections.ContainsKey(point))
         {
@@ -3101,8 +3406,11 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
 
         // RoomParameters knows exactly which cells belong to a chunk. Cells whose
         // entry is null are background default terrain, freely overwritable by the
-        // new chunk's wall write.
-        return ctx.GetChunkAt(point) is not null;
+        // new chunk's wall write. Cells owned by `currentChunk` are this chunk's
+        // own outline and must not be skipped — they are precisely what we're
+        // writing now.
+        var owner = ctx.GetChunkAt(point);
+        return owner is not null && !ReferenceEquals(owner, currentChunk);
     }
 
     /// <summary>
@@ -3110,7 +3418,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///     terrain feature (a pool, archway, etc.) or a connection placed by a previously
     ///     written chunk. Used by <see cref="Write" /> and the dynamic-map perimeter action
     ///     so a candidate's wall write doesn't overwrite content contributed by a
-    ///     dense-layout neighbour whose perimeter the candidate overlaps. Plain
+    ///     dense-layout neighbor whose perimeter the candidate overlaps. Plain
     ///     <see cref="MapFeature.StoneFloor" />/<see cref="MapFeature.RockFloor" /> tiles
     ///     are not treated as important — they're the default tiling and may legitimately
     ///     be walled over by later chunks.
@@ -3163,7 +3471,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
 
         foreach (var p in chunk.PerimeterPoints)
         {
-            if (ShouldPreserveAgainstWallWrite(room, p, ctx))
+            if (ShouldPreserveAgainstWallWrite(room, p, ctx, chunk))
             {
                 // A previously-placed chunk owns this cell with walkable content;
                 // preserve it instead of sealing it with a wall.
@@ -3268,7 +3576,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             return null;
         }
 
-        // Compute perimeter and doorway points from the neighbour map. No terrain is
+        // Compute perimeter and doorway points from the neighbor map. No terrain is
         // touched here; the caller writes terrain after we return the shape.
         var perimeterPoints = new HashSet<Point>();
         var perimeter = WalkPerimeter(firstPoint, neighbors, room.PointToIndex!, perimeterPoints);
@@ -3290,7 +3598,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
 
     /// <summary>
     ///     Scans the perimeter of <paramref name="chunkBounds" /> for wall tiles whose inward
-    ///     orthogonal neighbour is floor and whose outward neighbour is corridor-able
+    ///     orthogonal neighbor is floor and whose outward neighbor is corridor-able
     ///     (default-fill or floor). Such tiles can host a door connecting the chunk to the
     ///     surrounding empty space.
     /// </summary>
@@ -3325,7 +3633,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
 
     /// <summary>
     ///     Enumerates each non-corner cell on <paramref name="bounds" />'s perimeter together
-    ///     with its inward and outward orthogonal neighbours. Corner cells (where two axes
+    ///     with its inward and outward orthogonal neighbors. Corner cells (where two axes
     ///     coincide with the boundary) are skipped since their inward direction is ambiguous.
     /// </summary>
     private static IEnumerable<(Point Edge, Point Inside, Point Outside)> EnumeratePerimeterEdgeCells(Rectangle bounds)

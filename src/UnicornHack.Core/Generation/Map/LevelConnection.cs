@@ -42,22 +42,30 @@ public class LevelConnection : ICSScriptSerializable
         Branch? resolvedBranch = null;
         if (connectionDefinition?.BranchName != null)
         {
+            // The connecting fragment authored an explicit destination — use it verbatim.
             targetBranchName = connectionDefinition.BranchName;
             targetDepth = connectionDefinition.BranchName == sourceBranch.Name
                 ? (byte)(sourceLevel.Depth + 1)
                 : connectionDefinition.Depth ?? 1;
         }
-        else if (sourceLevel.Depth >= sourceBranch.Length)
-        {
-            var nextBranch = PickRandomNextBranch(sourceLevel, sourceBranch.Name, sourceLevel.Depth);
-            targetBranchName = nextBranch.Name;
-            resolvedBranch = nextBranch;
-            targetDepth = connectionDefinition?.Depth ?? 1;
-        }
         else
         {
-            targetBranchName = sourceBranch.Name;
-            targetDepth = connectionDefinition?.Depth ?? (byte)(sourceLevel.Depth + 1);
+            // A Shortcut room skips one level ahead (Depth + 2); a normal Exit advances by one.
+            var depthDelta = (room.Features & RoomFeatures.Shortcut) != 0 ? 2 : 1;
+            var sameBranchDepth = sourceLevel.Depth + depthDelta;
+            if (sameBranchDepth <= sourceBranch.Length)
+            {
+                targetBranchName = sourceBranch.Name;
+                targetDepth = connectionDefinition?.Depth ?? (byte)sameBranchDepth;
+            }
+            else
+            {
+                // The target depth runs past the end of this branch: skip into the next branch.
+                var nextBranch = PickRandomNextBranch(sourceLevel);
+                targetBranchName = nextBranch.Name;
+                resolvedBranch = nextBranch;
+                targetDepth = connectionDefinition?.Depth ?? 1;
+            }
         }
 
         var direction = connectionDefinition?.Direction;
@@ -65,7 +73,10 @@ public class LevelConnection : ICSScriptSerializable
                      (resolvedBranch ?? game.Services.Data.Branches.Get(targetBranchName)).Instantiate(game);
 
         var targetGameLevel = branch.Levels.FirstOrDefault(l => l.Depth == targetDepth);
-        var targetRoom = targetGameLevel?.Rooms.FirstOrDefault();
+        // Prefer the target level's entrance room: when the exit (or shortcut) room already
+        // sourced a connection to this level, it created that entrance and points at it.
+        var targetRoom = targetGameLevel?.Rooms.FirstOrDefault(r => (r.Features & RoomFeatures.Entrance) != 0)
+                         ?? targetGameLevel?.Rooms.FirstOrDefault();
         Point? targetCell = null;
         if (targetRoom != null)
         {
@@ -93,9 +104,12 @@ public class LevelConnection : ICSScriptSerializable
         else
         {
             var newGameLevel = LevelGenerator.CreateEmpty(branch, targetDepth, room.Level.GenerationRandom.Seed, manager);
-            // Create a placeholder room so the connection has a target entity ID.
-            // It will be replaced when the target level is generated (by the layout's Fill).
+            // Create a placeholder room so the connection has a target entity ID. The room a
+            // cross-level connection lands on is, by definition, the target level's entrance,
+            // so mark it now: GetEmptyEntranceRoom reuses this exact room when the level is
+            // generated.
             targetRoom = LevelLayout.CreateEmptyRoom(newGameLevel, manager);
+            targetRoom.Features = RoomFeatures.Entrance;
         }
 
         return CreateConnection(room, cell, targetRoom.EntityId, targetCell, direction, Primitives.Direction.Down);
@@ -103,11 +117,13 @@ public class LevelConnection : ICSScriptSerializable
 
     /// <summary>
     ///     Picks a destination branch for an inter-branch connection sourced from
-    ///     <paramref name="sourceBranchName" /> at <paramref name="sourceDepth" />, weighted
-    ///     by each candidate branch's <see cref="Branch.GenerationWeight" />.
+    ///     <paramref name="sourceLevel" />, weighted by each candidate branch's
+    ///     <see cref="Branch.GenerationWeight" /> evaluated for the source branch / depth.
     /// </summary>
-    private static Branch PickRandomNextBranch(GameLevel sourceLevel, string sourceBranchName, int sourceDepth)
+    private static Branch PickRandomNextBranch(GameLevel sourceLevel)
     {
+        var sourceBranchName = sourceLevel.Branch.Name;
+        var sourceDepth = sourceLevel.Depth;
         var candidates = sourceLevel.Game.Services.Data.Branches.GetAsList();
         // WeightedOrder skips zero-weight items and yields nothing when every weight is 0.
         var picked = sourceLevel.GenerationRandom.WeightedOrder(
@@ -143,15 +159,15 @@ public class LevelConnection : ICSScriptSerializable
            || first == GetInverse(second.Value);
 
     /// <summary>
-    ///     Resolves an inter-level connection at <paramref name="cell" /> inside
-    ///     <paramref name="room" />. When the room has a pending incoming connection
+    ///     If <paramref name="room" /> has a still-dangling incoming connection
     ///     (<see cref="ConnectionComponent.TargetLevelX" /> still <c>null</c>) whose
-    ///     branch / depth / directionality matches the supplied
-    ///     <paramref name="connectionDefinition" />, the pending connection is wired up
-    ///     via <see cref="CreateReceivingConnection" />; otherwise a brand-new outgoing
-    ///     connection is created via <see cref="CreateSourceConnection" />.
+    ///     branch / depth / directionality matches <paramref name="connectionDefinition" />,
+    ///     wires it up via <see cref="CreateReceivingConnection" /> and returns <c>true</c>.
+    ///     Returns <c>false</c> when no matching dangling incoming exists, leaving it to the
+    ///     caller to decide whether to source a new connection instead. A <c>null</c>
+    ///     <paramref name="connectionDefinition" /> matches the first dangling incoming.
     /// </summary>
-    public static void CreateLevelConnection(
+    public static bool TryCreateReceivingConnection(
         RoomComponent room, Point cell, LevelConnection? connectionDefinition)
     {
         foreach (var connectionEntity in room.IncomingConnections)
@@ -167,12 +183,12 @@ public class LevelConnection : ICSScriptSerializable
                     && AreMatchingDirectionality(connection.Directionality, connectionDefinition?.Direction))
                 {
                     CreateReceivingConnection(room, cell, connection, connectionDefinition?.Direction);
-                    return;
+                    return true;
                 }
             }
         }
 
-        CreateSourceConnection(room, cell, connectionDefinition);
+        return false;
     }
 
     private static Directionality GetInverse(Directionality direction)

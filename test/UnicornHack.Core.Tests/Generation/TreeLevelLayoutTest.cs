@@ -21,7 +21,7 @@ public class TreeLevelLayoutTest
             new LevelGenerationStats(), new GenerationStats());
 
         Assert.NotNull(graph);
-        Assert.True(LevelGenerator.ValidateRoomGraph(graph),
+        Assert.True(graph.HasValidConnectivity(),
             $"Generated graph for seed {seed} failed validation");
     }
 
@@ -38,7 +38,7 @@ public class TreeLevelLayoutTest
             var graph = layout.BuildGraph(
                 layout.GetParameters(LevelGenerator.MaxDifficulty), random,
                 new LevelGenerationStats(), new GenerationStats());
-            if (graph is not null && LevelGenerator.ValidateRoomGraph(graph))
+            if (graph is not null && graph.HasValidConnectivity())
             {
                 validCount++;
             }
@@ -125,7 +125,7 @@ public class TreeLevelLayoutTest
                 continue;
             }
 
-            Assert.True(LevelGenerator.ValidateRoomGraph(graph),
+            Assert.True(graph.HasValidConnectivity(),
                 $"Graph with seed {seed} failed validation when all extras are hidden");
             validated++;
         }
@@ -166,7 +166,7 @@ public class TreeLevelLayoutTest
         graph.Rooms.Add(orphan);
         graph.Connections.Add(new RoomGraphEdge { Source = entrance, Target = exit });
 
-        Assert.False(LevelGenerator.ValidateRoomGraph(graph));
+        Assert.False(graph.HasValidConnectivity());
     }
 
     [Fact]
@@ -188,7 +188,7 @@ public class TreeLevelLayoutTest
         graph.Connections.Add(new RoomGraphEdge { Source = middle, Target = exit });
         graph.Connections.Add(new RoomGraphEdge { Source = entrance, Target = deadEnd });
 
-        Assert.False(LevelGenerator.ValidateRoomGraph(graph));
+        Assert.False(graph.HasValidConnectivity());
     }
 
     [Fact]
@@ -202,7 +202,7 @@ public class TreeLevelLayoutTest
         graph.Rooms.Add(exit);
         graph.Connections.Add(new RoomGraphEdge { Source = room, Target = exit });
 
-        Assert.False(LevelGenerator.ValidateRoomGraph(graph));
+        Assert.False(graph.HasValidConnectivity());
     }
 
     [Fact]
@@ -216,7 +216,7 @@ public class TreeLevelLayoutTest
         graph.Rooms.Add(room);
         graph.Connections.Add(new RoomGraphEdge { Source = entrance, Target = room });
 
-        Assert.False(LevelGenerator.ValidateRoomGraph(graph));
+        Assert.False(graph.HasValidConnectivity());
     }
 
     [Fact]
@@ -233,7 +233,7 @@ public class TreeLevelLayoutTest
         graph.Connections.Add(new RoomGraphEdge { Source = entrance, Target = middle });
         graph.Connections.Add(new RoomGraphEdge { Source = middle, Target = exit });
 
-        Assert.True(LevelGenerator.ValidateRoomGraph(graph));
+        Assert.True(graph.HasValidConnectivity());
     }
 
     [Fact]
@@ -358,7 +358,7 @@ public class TreeLevelLayoutTest
     {
         // Every dungeon level — including depth 1 — should use the full TreeLevelLayout
         // defaults; the introductory floor is now in the entrance branch.
-        var layout = (DungeonLevelLayout)BranchData.Dungeon.Layout;
+        var layout = (TreeLevelLayout)BranchData.Dungeon.Layout;
 
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;

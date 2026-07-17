@@ -61,6 +61,8 @@ public class PlayerRace : Being, ICSScriptSerializable, ILoadable
 
             playerEntity.Position = position;
 
+            room.IsVisited = true;
+
             var defaultRace = PlayerRaceData.Human;
 
             using (var innateAbilityReference = manager.CreateEntity())

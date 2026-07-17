@@ -68,5 +68,5 @@ public class GameLevel : NotificationEntity
     public ICollection<RoomComponent> Rooms
     {
         get;
-    } = new ObservableHashSet<RoomComponent>();
+    } = new ObservableHashSet<RoomComponent>(ReferenceEqualityComparer.Instance);
 }

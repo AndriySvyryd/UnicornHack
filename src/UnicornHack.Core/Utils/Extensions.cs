@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using UnicornHack.Utils.MessagingECS;
 
 // ReSharper disable once CheckNamespace
@@ -26,6 +27,62 @@ public static class Extensions
         }
 
         return values;
+    }
+
+    /// <summary>
+    ///     Enumerates the individual set bits of a 32-bit <c>[Flags]</c> enum without boxing or
+    ///     allocating, yielding each single-bit flag value once. Unlike <see cref="GetFlags{T}" />
+    ///     it does <em>not</em> yield composite (multi-bit) enum members, so it's only equivalent
+    ///     for enums whose every member is a single bit — which is why it's a distinct method
+    ///     rather than an optimization of <see cref="GetFlags{T}" /> (the latter backs
+    ///     <see cref="GetNonRedundantFlags{T}" />, which relies on composite members).
+    ///     Returns a struct enumerator so a <c>foreach</c> over it stays allocation-free.
+    /// </summary>
+    public static FlagBitEnumerable<T> GetSetBits<T>(this T flags)
+        where T : struct, Enum
+        => new(flags);
+
+    public readonly struct FlagBitEnumerable<T>
+        where T : struct, Enum
+    {
+        private readonly int _bits;
+
+        public FlagBitEnumerable(T flags)
+        {
+            Debug.Assert(Unsafe.SizeOf<T>() == sizeof(int),
+                $"{typeof(T)} must be a 32-bit enum to enumerate its flags without boxing.");
+            _bits = Unsafe.As<T, int>(ref flags);
+        }
+
+        public Enumerator GetEnumerator() => new(_bits);
+
+        public struct Enumerator
+        {
+            private int _remaining;
+            private T _current;
+
+            public Enumerator(int bits)
+            {
+                _remaining = bits;
+                _current = default;
+            }
+
+            public readonly T Current => _current;
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                {
+                    return false;
+                }
+
+                // Isolate and clear the lowest set bit, reinterpreting it as the enum value.
+                var lowestBit = _remaining & -_remaining;
+                _remaining &= _remaining - 1;
+                _current = Unsafe.As<int, T>(ref lowestBit);
+                return true;
+            }
+        }
     }
 
     public static IReadOnlyCollection<T> GetNonRedundantFlags<T>(this T flags, bool removeComposites)

@@ -9,7 +9,7 @@ public class LogChangeBuilder
     public bool HasChanges(GameEntity playerEntity)
         => playerEntity.Player!.LogEntries.Any(e => e.Id > _lastSentLogId);
 
-    public void Initialize(GameEntity playerEntity)
+    public void Reset(GameEntity playerEntity)
     {
         var logEntries = playerEntity.Player!.LogEntries;
         if (logEntries.Count > 0)

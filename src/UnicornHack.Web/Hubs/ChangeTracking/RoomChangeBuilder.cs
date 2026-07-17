@@ -15,62 +15,108 @@ public class RoomChangeBuilder
     public EventBuilder EventBuilder => _eventBuilder;
 
     public bool HasChanges(RoomComponent? room)
-        => _actorBuilder.HasChanges || _itemBuilder.HasChanges || _connectionBuilder.HasChanges
-           || (room != null && TerrainChangeBuilder.HasChanges(room));
+    {
+        if (room == null)
+        {
+            return false;
+        }
+
+        var manager = room.Entity.Manager;
+        var roomId = room.Entity.Id;
+
+        // Prune cross-room entries from every builder (don't short-circuit — all three must be
+        // visited). HasObservableChanges always calls it before
+        // BuildChangeSet, so GetSerializedRoom can serialize the already-scoped builders directly.
+        var hasActorChanges = _actorBuilder.RemoveChangesNotInRoom(manager, roomId);
+        var hasItemChanges = _itemBuilder.RemoveChangesNotInRoom(manager, roomId);
+        var hasConnectionChanges = _connectionBuilder.RemoveChangesNotInRoom(manager, roomId);
+
+        return hasActorChanges || hasItemChanges || hasConnectionChanges
+               || TerrainChangeBuilder.HasChanges(room);
+    }
 
     public RoomChange? GetSerializedRoom(
         GameEntity? roomEntity, GameEntity observer, GameServices services)
     {
         var room = roomEntity?.Room;
-        var hasTerrainChanges = room != null && TerrainChangeBuilder.HasChanges(room);
-        if (!_actorBuilder.HasChanges && !_itemBuilder.HasChanges
-            && !_connectionBuilder.HasChanges && !hasTerrainChanges)
+        if (room == null)
         {
             return null;
         }
 
+        // Cross-room entries were already pruned by HasObservableChanges (which always runs and
+        // prunes before this is reached), so the builders hold only this room's entries.
+        var hasTerrainChanges = TerrainChangeBuilder.HasChanges(room);
+
         var context = new SerializationContext(null!, observer, services);
         var change = new RoomChange();
+        var hasChanges = false;
 
         if (_actorBuilder.HasChanges)
         {
             var serializedActors = new Dictionary<int, ActorChange>();
             _actorBuilder.WriteTo(serializedActors, context);
-            change.Actors = serializedActors;
+            if (serializedActors.Count > 0)
+            {
+                change.Actors = serializedActors;
+                hasChanges = true;
+            }
         }
 
         if (_itemBuilder.HasChanges)
         {
             var serializedItems = new Dictionary<int, ItemChange>();
             _itemBuilder.WriteTo(serializedItems, context);
-            change.Items = serializedItems;
+            if (serializedItems.Count > 0)
+            {
+                change.Items = serializedItems;
+                hasChanges = true;
+            }
         }
 
         if (_connectionBuilder.HasChanges)
         {
             var serializedConnections = new Dictionary<int, ConnectionChange>();
             _connectionBuilder.WriteTo(serializedConnections, context);
-            change.Connections = serializedConnections;
+            if (serializedConnections.Count > 0)
+            {
+                change.Connections = serializedConnections;
+                hasChanges = true;
+            }
         }
 
         if (hasTerrainChanges)
         {
-            TerrainChangeBuilder.WriteToRoomChange(room!, change);
+            TerrainChangeBuilder.WriteToRoomChange(room, change);
+            hasChanges = true;
         }
 
-        return change;
+        return hasChanges ? change : null;
     }
 
-    public void Clear()
+    /// <summary>
+    ///     Discards every accumulated per-turn delta (actor / item / connection diffs and
+    ///     buffered events) and realigns each registered <see cref="PlayerBuilders" />
+    ///     entry's baseline against the current world state via
+    ///     <see cref="PlayerChangeBuilder.Reset" />.
+    ///     <para>
+    ///         Must not be called from a read endpoint (e.g. <c>GetState</c>) — multiple
+    ///         clients may share a builder, so a read that advanced the log high-water
+    ///         mark would skip entries for the other clients.
+    ///     </para>
+    /// </summary>
+    public void Reset(GameEntity roomEntity)
     {
-        _actorBuilder.Clear();
-        _itemBuilder.Clear();
-        _connectionBuilder.Clear();
-        _eventBuilder.Clear();
+        _actorBuilder.Reset();
+        _itemBuilder.Reset();
+        _connectionBuilder.Reset();
+        _eventBuilder.Reset();
 
+        var manager = roomEntity.Manager;
         foreach (var builder in PlayerBuilders)
         {
-            builder.Clear();
+            var playerEntity = manager.FindEntity(builder.PlayerEntityId)!;
+            builder.Reset(playerEntity);
         }
     }
 
@@ -202,11 +248,26 @@ public class RoomChangeBuilder
         }
     }
 
+    /// <summary>
+    ///     Ensures a <see cref="PlayerChangeBuilder" /> is registered for
+    ///     <paramref name="playerEntity" />. When no builder exists for the player's id,
+    ///     a fresh one is constructed and wired onto <paramref name="manager" />'s groups.
+    ///     When one already exists, its baseline is realigned against
+    ///     <paramref name="playerEntity" /> via <see cref="PlayerChangeBuilder.Reset" /> —
+    ///     the same alignment <see cref="Reset" /> performs on every registered builder.
+    ///     This makes the call idempotent in a "freshly registered" sense: after it
+    ///     returns, the matching builder's "what the client knows" baseline matches the
+    ///     current world state regardless of whether it was created here or earlier.
+    /// </summary>
     public void RegisterPlayerBuilder(GameEntity playerEntity, GameManager manager)
     {
-        if (PlayerBuilders.Any(existing => existing.PlayerEntityId == playerEntity.Id))
+        foreach (var existing in PlayerBuilders)
         {
-            return;
+            if (existing.PlayerEntityId == playerEntity.Id)
+            {
+                existing.Reset(playerEntity);
+                return;
+            }
         }
 
         var builder = new PlayerChangeBuilder(playerEntity, this);

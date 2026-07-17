@@ -38,6 +38,7 @@ public static class TerrainSystem
                 break;
             case MapFeature.StoneArchway:
             case MapFeature.StoneWall:
+            case MapFeature.RockWall:
                 ModifyNeighbors(room, room.Neighbors,
                     room.NeighborChanges, point, add: true);
 

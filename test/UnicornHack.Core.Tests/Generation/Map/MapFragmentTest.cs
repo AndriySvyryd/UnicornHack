@@ -9,7 +9,8 @@ public partial class MapFragmentTest
     ///     drive placement primitives directly (no real defining-fragment metadata).
     /// </summary>
     internal static RoomParameters TestRoomParameters(MapFeature defaultTerrain = MapFeature.Default)
-        => new(1, 1, defaultTerrain, new CreatureGenerator(), new ItemGenerator());
+        => new(1, 1, defaultTerrain, MapFeature.RockFloor, MapFeature.RockWall,
+            new CreatureGenerator(), new ItemGenerator());
 
     /// <summary>
     ///     <see cref="RoomParameters" /> sized to <paramref name="room" />, suitable for
@@ -22,6 +23,8 @@ public partial class MapFragmentTest
             room.Width == 0 ? (byte)1 : room.Width,
             room.Height == 0 ? (byte)1 : room.Height,
             defaultTerrain,
+            MapFeature.RockFloor,
+            MapFeature.RockWall,
             new CreatureGenerator(),
             new ItemGenerator());
 
@@ -517,7 +520,7 @@ PP
     ///     and returns the room together with a bounding rectangle the caller can pass to
     ///     <see cref="MapFragment.TryPlace" /> to deterministically place a fragment of
     ///     the requested size at the requested top-left. The surrounding floor stays
-    ///     in place so doorway derivation sees floor neighbours on every side; the
+    ///     in place so doorway derivation sees floor neighbors on every side; the
     ///     candidate fragment's wall writes inside the lot go through because the
     ///     bare placement context's <see cref="LotPlacementContext.ChunkCells" /> is
     ///     the empty shared sentinel (no cell looks owned).

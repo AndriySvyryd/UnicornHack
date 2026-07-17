@@ -6,7 +6,7 @@ public static partial class BranchData
     {
         Name = "dungeon",
         Length = 10,
-        Layout = new DungeonLevelLayout(),
+        Layout = new TreeLevelLayout(),
         RoomLayout = new DenseRoomLayout()
     };
 }

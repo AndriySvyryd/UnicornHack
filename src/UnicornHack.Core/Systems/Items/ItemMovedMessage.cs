@@ -11,6 +11,7 @@ public class ItemMovedMessage : IMessage
 
     private GameEntity? _itemEntity;
     private GameEntity? _initialContainer;
+    private GameEntity? _initialRoomEntity;
 
     public GameEntity ItemEntity
     {
@@ -34,7 +35,26 @@ public class ItemMovedMessage : IMessage
         }
     }
 
-    public Point? InitialLevelCell
+    /// <summary>
+    ///     The room the item started in (the room owning <see cref="InitialRoomCell" /> for a
+    ///     ground item, or the room of the top container for an item moved out of an
+    ///     inventory). Needed because <see cref="InitialRoomCell" /> is only a
+    ///     <see cref="Point" />: a sensor must verify the cell belongs to its own room before
+    ///     testing visibility, otherwise the coordinates would be indexed against an unrelated
+    ///     room's visibility map and yield false positives.
+    /// </summary>
+    public GameEntity? InitialRoomEntity
+    {
+        get => _initialRoomEntity;
+        set
+        {
+            _initialRoomEntity?.RemoveReference(this);
+            _initialRoomEntity = value;
+            _initialRoomEntity?.AddReference(this);
+        }
+    }
+
+    public Point? InitialRoomCell
     {
         get;
         set;
@@ -68,7 +88,8 @@ public class ItemMovedMessage : IMessage
     {
         ItemEntity = default!;
         InitialContainer = default;
-        InitialLevelCell = default;
+        InitialRoomEntity = default;
+        InitialRoomCell = default;
         InitialCount = default;
         Successful = default;
         SuppressLog = default;

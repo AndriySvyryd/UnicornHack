@@ -2,7 +2,10 @@
 
 public class PropertyValueChanges<T1> : IPropertyValueChanges
 {
-    private readonly PropertyValueChange<T1> _change0;
+    private PropertyValueChange<T1> _change0;
+#if DEBUG
+    private bool _pooled;
+#endif
 
     public PropertyValueChanges(
         in PropertyValueChange<T1> change0)
@@ -10,7 +13,34 @@ public class PropertyValueChanges<T1> : IPropertyValueChanges
         _change0 = change0;
     }
 
+    public static PropertyValueChanges<T1> Rent(in PropertyValueChange<T1> change0)
+    {
+        var pooled = PropertyValueChangesPool<PropertyValueChanges<T1>>.TryRent();
+        if (pooled == null)
+        {
+            return new PropertyValueChanges<T1>(change0);
+        }
+
+        pooled._change0 = change0;
+#if DEBUG
+        pooled._pooled = false;
+#endif
+        return pooled;
+    }
+
     public int Count => 1;
+
+    public IPropertyValueChanges Clone() => Rent(_change0);
+
+    public void Return()
+    {
+#if DEBUG
+        Debug.Assert(!_pooled, "PropertyValueChanges returned to the pool twice");
+        _pooled = true;
+#endif
+        _change0 = PropertyValueChange<T1>.Empty;
+        PropertyValueChangesPool<PropertyValueChanges<T1>>.Return(this);
+    }
 
     public Component GetChangedComponent(int index) => index switch
     {

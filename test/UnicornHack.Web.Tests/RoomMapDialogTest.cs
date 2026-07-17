@@ -25,6 +25,10 @@ public class RoomMapDialogTest
         var entry = result.Rooms[0];
         Assert.Equal(room.EntityId, entry.Id);
         Assert.Equal(room.Features, entry.Features);
+
+        // The server bakes the localized header into the tooltip. The player is standing in
+        // this room, so it's the current room.
+        Assert.StartsWith("<b>Current room</b>", entry.Tooltip ?? "");
     }
 
     [Fact]

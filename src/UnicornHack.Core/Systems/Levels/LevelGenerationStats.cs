@@ -48,6 +48,9 @@ public class LevelGenerationStats : GenerationStats
     private int _roomGraphEarNotFound;
     private int _roomGraphMinDegreeViolated;
     private int _roomGraphDagConnectivityBroken;
+    private int _roomGraphConnectionCrossing;
+    private int _roomGraphConnectionRetries;
+    private int _roomGraphConnectionUntwisted;
 
     /// <summary>
     ///     Number of full room-graph generation passes attempted (one per level attempt
@@ -94,7 +97,7 @@ public class LevelGenerationStats : GenerationStats
         set => SetWithNotify(value, ref _roomGraphEarNotFound);
     }
 
-    /// <summary>Defence-in-depth: a non-endpoint room ended up with fewer than two undirected neighbours.</summary>
+    /// <summary>Defence-in-depth: a non-endpoint room ended up with fewer than two undirected neighbors.</summary>
     public int RoomGraphMinDegreeViolated
     {
         get => _roomGraphMinDegreeViolated;
@@ -106,6 +109,37 @@ public class LevelGenerationStats : GenerationStats
     {
         get => _roomGraphDagConnectivityBroken;
         set => SetWithNotify(value, ref _roomGraphDagConnectivityBroken);
+    }
+
+    /// <summary>
+    ///     A connection attempt was abandoned because a required (spine / ear) link would have
+    ///     visually overlapped an already-placed one (two grid diagonals crossing like an X).
+    /// </summary>
+    public int RoomGraphConnectionCrossing
+    {
+        get => _roomGraphConnectionCrossing;
+        set => SetWithNotify(value, ref _roomGraphConnectionCrossing);
+    }
+
+    /// <summary>
+    ///     Number of failed connection-phase attempts (spine / ear / cross-edge selection) that
+    ///     triggered an inner retry before either succeeding or falling back to a full graph retry.
+    /// </summary>
+    public int RoomGraphConnectionRetries
+    {
+        get => _roomGraphConnectionRetries;
+        set => SetWithNotify(value, ref _roomGraphConnectionRetries);
+    }
+
+    /// <summary>
+    ///     Number of crossing diagonal link-pairs that the post-processing "untwist" pass resolved
+    ///     by re-pairing the four corner rooms along the unit-square's cardinal sides instead of its
+    ///     diagonals, removing the visual overlap without failing generation.
+    /// </summary>
+    public int RoomGraphConnectionUntwisted
+    {
+        get => _roomGraphConnectionUntwisted;
+        set => SetWithNotify(value, ref _roomGraphConnectionUntwisted);
     }
 
     #endregion

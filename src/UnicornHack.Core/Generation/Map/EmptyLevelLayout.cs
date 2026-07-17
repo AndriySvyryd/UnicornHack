@@ -34,6 +34,11 @@ public class EmptyLevelLayout : LevelLayout, ICSScriptSerializable
 
         roomParameters.CreatureGenerator.Fill(room, chunks);
         roomParameters.ItemGenerator.Fill(room, chunks);
+
+        // Single-room path: there is no MaterializeGraph pass to seal the room, so wall off any
+        // unfilled void left flush against walkable terrain here (the "chunks walled off" invariant).
+        RoomLayout.SealUnfilledAroundWalkables(room, roomParameters.DefaultWall);
+
         return chunks;
     }
 

@@ -45,8 +45,8 @@ These commit a `MapFeature` to the terrain when the chunk is placed. The mapping
 | `~` | `Pool` | Authored pool tile **inside** the payload. At the four payload corners `~` has a different meaning (see §3). |
 | `+` | doorway candidate | Perimeter doorway. Counted into `PossibleDoorwayCount`. Auto-emits `door-n/s/e/w` tags by edge. |
 | `^` | trap point | Recorded into `Chunk.TrapPoints` (materialization deferred). Auto-tag `trap`. |
-| `<` | connection | Connection up (entrance/up stairs). Picks a `LevelConnection` whose `Glyph == '<'`, or an anonymous one when none authored. Auto-tag `stairs-up`. |
-| `>` | connection | Connection down (exit/down stairs). Auto-tag `stairs-down`. |
+| `<` | connection | Connection up (entrance/up stairs). Picks a `LevelConnection` whose `Glyph == '<'`, or an anonymous one when none authored. Auto-tag `entrance`. |
+| `>` | connection | Connection down (exit/down stairs). Auto-tag `exit` (suppressed when the fragment is authored with the `shortcut` role tag — see §5). |
 | `%` | creature point | Recorded into `Chunk.CreaturePoints` so `CreatureGenerator` spawns a difficulty-appropriate creature here. |
 | `$` | wildcard feature point | Bound at chunk placement time by `BindWildcardFeatures` to one of the room's still-outstanding placeable features. Auto-tag `wildcard-feature`. |
 
@@ -104,7 +104,7 @@ enforce that.
 ## 3. Conditional edges (the `~` corner marker)
 
 A `~` placed in a **payload corner** is one half of a marker pair — an edge becomes a
-*conditional edge* (metadata describing what the fragment expects on the neighbour side)
+*conditional edge* (metadata describing what the fragment expects on the neighbor side)
 only when **both** of its corners carry `~`. A single-corner `~` is treated as an
 authored Pool tile at that corner.
 
@@ -125,14 +125,14 @@ Inside a conditional row/column each cell uses one of these symbols:
 |---|---|---|
 | ` ` (space) | `Default` | No constraint. |
 | `S` | *resolved at parse time* | Mirror condition: replaced during parsing with the tile-specific `EdgeConditionKind` that matches the payload's adjacent edge-tile feature (e.g. `S` next to a `.` becomes `StoneFloor`; next to a `#` becomes `StoneWall`). The adjacent payload glyph must have a concrete `MapFeature` — a doorway-candidate / wildcard / trap / creature / padding glyph throws at load. |
-| `F` | `Filled` | Neighbour cell must already be a non-`Default` tile (anything previously written). |
-| `U` | `Unfilled` | Neighbour cell is still `Default` (empty space inside the room or outside the room). |
-| `E` | `Edge` | The payload edge tile must coincide with the room boundary (neighbour lies outside the room). |
-| `#` | `StoneWall` | Neighbour cell must equal `StoneWall`. |
-| `,` | `RockFloor` | Neighbour cell must equal `RockFloor`. |
-| `.` | `StoneFloor` | Neighbour cell must equal `StoneFloor`. |
-| `+` | `Doorway` | Neighbour cell must be `StoneFloor` or `StoneArchway` — mirrors the payload `+` doorway-glyph semantic so a payload-edge `+` aligns with a walkable threshold on the other side. |
-| `A` | `StoneArchway` | Neighbour cell must equal `StoneArchway`. |
+| `F` | `Filled` | Neighbor cell must already be a non-`Default` tile (anything previously written). |
+| `U` | `Unfilled` | Neighbor cell is still `Default` (empty space inside the room or outside the room). |
+| `E` | `Edge` | The payload edge tile must coincide with the room boundary (neighbor lies outside the room). |
+| `#` | `StoneWall` | Neighbor cell must equal `StoneWall`. |
+| `,` | `RockFloor` | Neighbor cell must equal `RockFloor`. |
+| `.` | `StoneFloor` | Neighbor cell must equal `StoneFloor`. |
+| `+` | `Doorway` | Neighbor cell must be `StoneFloor` or `StoneArchway` — mirrors the payload `+` doorway-glyph semantic so a payload-edge `+` aligns with a walkable threshold on the other side. |
+| `A` | `StoneArchway` | Neighbor cell must equal `StoneArchway`. |
 
 Any other character (including feature glyphs like `_` or annotation glyphs) throws
 `InvalidOperationException` at load time — feature semantics belong in the payload, not
@@ -222,23 +222,42 @@ demand-aware weight bonus. After `EnsureInitialized` the collection contains:
 3. **Auto-derived tags** (`MapFragment.ApplyTagDerivations`):
    - `size-small` if payload tile count ≤ 15, `size-medium` if ≤ 49, else `size-large`.
    - Generic content tag for each feature/connection/trap glyph in the payload (`altar`,
-     `shrine`, `fountain`, `pedestal`, `stand`, `stairs-up`, `stairs-down`, `trap`,
+     `shrine`, `fountain`, `pedestal`, `stand`, `entrance`, `exit`, `trap`,
      `wildcard-feature`).
    - Specific feature tag for each feature glyph (`small-fountain`, `weapon-stand`, …) —
      see `FeatureTagNames`.
    - `door-n` / `door-s` / `door-e` / `door-w` for each payload edge that hosts at least
      one `+` doorway glyph. Re-derived per variant by `CreateVariant`.
 
+#### Connection tags (`entrance` / `exit` / `shortcut`)
+
+The three connection-sourcing roles each have a canonical tag in `FeatureTagNames`. A
+`ConnectingMapFragment` that carries the tag matching the room's current need (`entrance`
+while receiving a dangling incoming connection, otherwise `exit` for an exit room or
+`shortcut` for a hidden shortcut room) gets a selection-weight bonus (`RoleTagWeightBonus`
+in `UniformRoomLayout`) — but an **untagged** connecting fragment stays selectable for any
+role, so the tag is a preference, never a requirement. `entrance` / `exit` are auto-derived
+from the `<` / `>` glyphs; `shortcut` has no exclusive glyph and must be authored explicitly. When a
+fragment is authored `shortcut`, the auto `exit` tag from a `>` glyph is **suppressed** so a
+shortcut fragment that draws down-stairs for flavour isn't mistaken for a general exit
+fragment.
+
 The full canonical tag list for `RoomFeatures` is in `MapFragment.FeatureTagNames`.
 
 ### 5.1 Demand-aware weight
 
-`GetDemandMultiplier(room, ctx)` stacks multiplicatively for each match:
+`GetDemandMultiplier(room, ctx)` tracks a single signed match counter and scales the
+weight linearly from it:
 
-- `DemandTagBonus = 4f` per outstanding placeable `RoomFeatures` bit whose canonical tag
-  is in `Tags` (or per outstanding non-placeable bit; or per cardinal direction in
-  `ctx.DemandedDoorways` whose `door-*` tag is in `Tags`).
-- `AntiTagPenalty = 0.25f` per outstanding feature/door whose tag is in `AntiTags`.
+- A **demand match** increments the counter: an outstanding placeable `RoomFeatures` bit
+  whose canonical tag is in `Tags` (or an outstanding non-placeable bit; or a cardinal
+  direction in `ctx.DemandedDoorways` whose `door-*` tag is in `Tags`).
+- An **anti-tag match** decrements the counter: an outstanding feature/door whose tag is
+  in `AntiTags`.
+- The final multiplier is `1 + n * (DemandTagBonus - 1)` for a non-negative net `n`, or
+  `1 / (1 + |n| * (DemandTagBonus - 1))` for a negative net — so one net demand match
+  multiplies the weight by `DemandTagBonus` (`4f`) and one net anti-tag match divides by
+  it. Matches accumulate linearly, not exponentially.
 - A `Tags` entry of `wildcard-feature` matches every outstanding placeable bit (bonus
   applied per outstanding bit not already matched directly). Wildcard does not cover
   non-placeable bits.
@@ -274,7 +293,6 @@ candidates.
 | `$instances` | `int` | Number of times this source fragment (across all variants) has been placed on this level. From `GenerationStats.FragmentInstancesByName[SourceName]`. |
 | `$tagInstances` | `IReadOnlyDictionary<string,int>` | Per-tag placement count on this level. Use indexer: `$tagInstances["altar"]`. Missing keys return `0`. |
 | `$roomFeatures` | `RoomFeatures` | The owning room's feature bitmask (only on `DefiningMapFragment`-flavoured calls). |
-| `$connection` | `ConnectionComponent?` | The target connection being satisfied (only on `ConnectingMapFragment` weight calls). May be `null` for room-internal placements. |
 
 ### 6.2 Operators & built-ins
 
@@ -316,7 +334,7 @@ These are on `MapFragment` unless otherwise noted.
 
 `DenseRoomLayout` may shift a candidate lot one tile toward an adjacent placed chunk so
 their perimeter walls collapse into a single shared column (wall-merge). Setting
-`NoOverwrite = true` on a fragment forbids any neighbour from shifting onto **this** chunk
+`NoOverwrite = true` on a fragment forbids any neighbor from shifting onto **this** chunk
 afterward — useful for vaults, framed shrines, and altar rooms that depend on exact wall
 thickness. Default `false` preserves the old `UniformRoomLayout` behaviour and lets
 dense layouts share walls freely.
@@ -337,9 +355,10 @@ When adding or editing a fragment:
    doorway-candidate / wildcard / trap / creature / padding glyph throws.
 4. Decide transform flags. Asymmetric → leave default (full D4). Reflection-symmetric →
    `NoMirror`. C4-symmetric → `NoTurnOver`. Hand-tuned single variant → `NoTransform`.
-5. Audit tags. Auto-tags cover size, content glyphs, and (per-variant) `door-*`. Add
-   `provides-*` only for non-placeable features (`secret` / `cursed` / `challenge` /
-   `boss`). Add `!{feature}` opt-outs where the fragment must never appear.
+5. Audit tags. Auto-tags cover size, content glyphs, and (per-variant) `door-*`. Add the
+   canonical non-placeable feature tag (`secret` / `cursed` / `challenge` / `boss`) only
+   when the fragment is built for that room kind. Add `!{feature}` opt-outs where the
+   fragment must never appear.
 6. Set `NoRandomDoorways = true` if you've authored exactly the doorways you want (or
    none).
 7. Set `NoOverwrite = true` if exact wall thickness matters.

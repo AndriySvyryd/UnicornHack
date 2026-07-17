@@ -19,7 +19,7 @@ public class BeveledVisibilityCalculator
     ///     Creates a new instance of <see cref="BeveledVisibilityCalculator" />
     /// </summary>
     /// <param name="getUnconnectedNeighbors">
-    ///     A function that returns which neighbours the opaque tile at the given X and Y coordinates is not connected to.
+    ///     A function that returns which neighbors the opaque tile at the given X and Y coordinates is not connected to.
     ///     The function also returns the index of the tile if it's within valid range.
     /// </param>
     /// <remarks>

@@ -3,7 +3,7 @@ using UnicornHack.Utils;
 namespace UnicornHack.Generation.Map;
 
 /// <summary>
-///     8-neighbour spiral layout. Rooms are placed along an outward Archimedean spiral starting
+///     8-neighbor spiral layout. Rooms are placed along an outward Archimedean spiral starting
 ///     near the centre of the grid; the entrance is the first room emitted and the exit is the
 ///     last. Diagonal connections are allowed, producing dense graphs with cross-shortcut
 ///     potential.
@@ -30,7 +30,7 @@ public class SpiralLevelLayout : LevelLayout
     /// <summary>Spiral placement doesn't use density — all cells along the spiral are placed.</summary>
     public override float ComputeDensity() => 1f;
 
-    public override IEnumerable<(int dx, int dy)> GetNeighbourOffsets(byte cellX, byte cellY)
+    public override IEnumerable<(int dx, int dy)> GetNeighborOffsets(byte cellX, byte cellY)
     {
         for (var dy = -1; dy <= 1; dy++)
         {

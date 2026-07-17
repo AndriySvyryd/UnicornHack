@@ -62,9 +62,7 @@ public class ComponentTest
 
         Assert.Null(component.Entity);
 
-        var anotherComponent = manager.CreateComponent<ItemComponent>(EntityComponent.Item);
-
-        Assert.Same(component, anotherComponent);
+        Assert.True(PoolContainsComponent(manager, component));
     }
 
     [Fact]
@@ -83,9 +81,7 @@ public class ComponentTest
 
         Assert.Null(component.Count);
 
-        var anotherComponent = manager.CreateComponent<ItemComponent>(EntityComponent.Item);
-
-        Assert.Same(component, anotherComponent);
+        Assert.True(PoolContainsComponent(manager, component));
     }
 
     [Fact]
@@ -104,8 +100,22 @@ public class ComponentTest
 
         ((IReferenceable)component).RemoveReference(entity);
 
-        anotherComponent = manager.CreateComponent<ItemComponent>(EntityComponent.Item);
+        Assert.True(PoolContainsComponent(manager, component));
+    }
 
-        Assert.Same(component, anotherComponent);
+    // The component pool is FIFO, so a just-returned instance goes to the back of the queue and
+    // isn't handed back on the very next rent when other instances are already pooled. Rent until
+    // the instance reappears (bounded by an ample cap) to assert it was returned to the pool.
+    private static bool PoolContainsComponent(GameManager manager, GameComponent target)
+    {
+        for (var i = 0; i < 1024; i++)
+        {
+            if (ReferenceEquals(manager.CreateComponent<ItemComponent>(EntityComponent.Item), target))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

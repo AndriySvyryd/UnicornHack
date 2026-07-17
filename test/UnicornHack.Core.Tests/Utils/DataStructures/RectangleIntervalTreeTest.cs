@@ -94,7 +94,7 @@ public class RectangleIntervalTreeTest
     ///     such a rectangle must succeed and both rectangles must remain queryable.
     /// </summary>
     [Fact]
-    public void Inserts_rectangles_that_share_a_single_column_with_a_placed_neighbour()
+    public void Inserts_rectangles_that_share_a_single_column_with_a_placed_neighbor()
     {
         var bounds = new Rectangle(new Point(0, 0), new Point(10, 10));
         var tree = new RectangleIntervalTree(bounds);
@@ -120,7 +120,7 @@ public class RectangleIntervalTreeTest
     ///     reported alongside the enclosing rectangle by <see cref="RectangleIntervalTree.GetOverlapping" />.
     /// </summary>
     [Fact]
-    public void Inserts_a_rectangle_fully_enclosed_by_a_placed_neighbour()
+    public void Inserts_a_rectangle_fully_enclosed_by_a_placed_neighbor()
     {
         var bounds = new Rectangle(new Point(0, 0), new Point(10, 10));
         var tree = new RectangleIntervalTree(bounds);

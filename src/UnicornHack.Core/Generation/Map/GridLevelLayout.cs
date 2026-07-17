@@ -3,22 +3,22 @@ using UnicornHack.Utils;
 namespace UnicornHack.Generation.Map;
 
 /// <summary>
-///     4-neighbour grid layout. Rooms occupy cells of a <see cref="LayoutParameters.GridWidth" />
+///     4-neighbor grid layout. Rooms occupy cells of a <see cref="LayoutParameters.GridWidth" />
 ///     × <see cref="LayoutParameters.GridHeight" /> rectangle and are connected only to their
-///     N/E/S/W neighbours. Most common topology — cardinal corridors, no diagonal traversal.
+///     N/E/S/W neighbors. Most common topology — cardinal corridors, no diagonal traversal.
 /// </summary>
 public class GridLevelLayout : LevelLayout
 {
     public GridLevelLayout()
     {
-        GridHeight = 3;
+        GridHeight = 4;
         GridWidth = 5;
         Interconnectedness = 0.75f;
-        MinRooms = 15;
+        MinRooms = 16;
         MaxRooms = 20;
     }
 
-    public override IEnumerable<(int dx, int dy)> GetNeighbourOffsets(byte cellX, byte cellY)
+    public override IEnumerable<(int dx, int dy)> GetNeighborOffsets(byte cellX, byte cellY)
     {
         yield return (1, 0);
         yield return (-1, 0);
@@ -31,9 +31,9 @@ public class GridLevelLayout : LevelLayout
     ///     random rows. Every other cell is sampled with <see cref="Density" /> in
     ///     shuffled order, then the resulting set is capped at
     ///     <see cref="LayoutParameters.MaxRooms" /> via
-    ///     <see cref="LevelLayout.TrimRooms" />. The cap honours the neighbour-degree
-    ///     rule (a node is only dropped if every surviving neighbour keeps at least two
-    ///     neighbours), so connectivity between entrance and exit is preserved without an
+    ///     <see cref="LevelLayout.TrimRooms" />. The cap honours the neighbor-degree
+    ///     rule (a node is only dropped if every surviving neighbor keeps at least two
+    ///     neighbors), so connectivity between entrance and exit is preserved without an
     ///     explicit backbone reservation.
     /// </summary>
     protected override List<RoomGraphNode> PlaceRooms(LayoutParameters parameters, SimpleRandom random)
@@ -53,7 +53,7 @@ public class GridLevelLayout : LevelLayout
         nodes.Add(exit);
 
         // Optional cells, shuffled so the MaxRooms cap doesn't bias retained rooms to one
-        // corner of the grid. Cells with fewer than two in-grid topology neighbours are
+        // corner of the grid. Cells with fewer than two in-grid topology neighbors are
         // skipped — placing them would just create dead-ends that BuildGraph rejects.
         var optional = new List<(byte x, byte y)>();
         for (byte x = 0; x < parameters.GridWidth; x++)
@@ -61,7 +61,7 @@ public class GridLevelLayout : LevelLayout
             for (byte y = 0; y < parameters.GridHeight; y++)
             {
                 if (byCell[x, y] is null
-                    && CountInGridNeighbours(x, y, parameters.GridWidth, parameters.GridHeight) >= 2)
+                    && CountInGridNeighbors(x, y, parameters.GridWidth, parameters.GridHeight) >= 2)
                 {
                     optional.Add((x, y));
                 }

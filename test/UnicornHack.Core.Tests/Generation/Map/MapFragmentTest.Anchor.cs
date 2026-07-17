@@ -17,7 +17,7 @@ public partial class MapFragmentTest
 
         var lot = new Rectangle(new Point(2, 2), 3, 5);
         var ctx = OpenCtx(room, lot, target: Direction.North);
-        Assert.True(fragment.TryComputePlacementAnchor(room, ctx, random: null, out var anchor));
+        Assert.True(fragment.TryComputeAnchor(room, ctx, random: null, out var anchor, out _));
         Assert.Equal(new Point(2, 2), anchor);
     }
 
@@ -32,7 +32,7 @@ public partial class MapFragmentTest
 
         var lot = new Rectangle(new Point(1, 2), 5, 3);
         var ctx = OpenCtx(room, lot, target: Direction.East);
-        Assert.True(fragment.TryComputePlacementAnchor(room, ctx, random: null, out var anchor));
+        Assert.True(fragment.TryComputeAnchor(room, ctx, random: null, out var anchor, out _));
         // Lot.X = 1..5 (width 5); payload width 3 → flush east means anchor.X = 5-3+1 = 3.
         Assert.Equal(new Point(3, 2), anchor);
     }
@@ -65,7 +65,7 @@ public partial class MapFragmentTest
             PlacedChunks: null,
             PreservedConditions: null);
 
-        Assert.True(fragment.TryComputePlacementAnchor(room, ctx, random: null, out var anchor));
+        Assert.True(fragment.TryComputeAnchor(room, ctx, random: null, out var anchor, out _));
         Assert.Equal(new Point(2, 3), anchor);
     }
 
@@ -84,6 +84,6 @@ public partial class MapFragmentTest
         // settle anywhere along the lot's height where the payload fits.
         var lot = new Rectangle(new Point(2, 0), 3, 9);
         var ctx = OpenCtx(room, lot);
-        Assert.True(fragment.TryComputePlacementAnchor(room, ctx, random: null, out _));
+        Assert.True(fragment.TryComputeAnchor(room, ctx, random: null, out _, out _));
     }
 }

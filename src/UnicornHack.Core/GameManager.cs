@@ -7,12 +7,14 @@ public partial class GameManager :
     EntityManager<GameEntity>,
     IMessageQueue,
     IGameSystem<RemoveComponentMessage>,
-    IGameSystem<EntityReferenceMessage<GameEntity>>
+    IGameSystem<EntityReferenceMessage<GameEntity>>,
+    IGameSystem<DeleteEntityMessage>
 {
     private readonly string[] _componentPropertyNames;
 
     public GameManager()
-        : base((int)EntityComponent.ComponentCount, entityPoolSize: 32)
+        : base((int)EntityComponent.ComponentCount,
+         entityPoolSize: 1024, entityMaxPoolSize: 16384, entityDictionaryCapacity: 16384)
     {
         _componentPropertyNames = new string[(int)EntityComponent.ComponentCount];
     }
@@ -45,6 +47,7 @@ public partial class GameManager :
         var gameQueue = (SequentialMessageQueue<GameManager>)queue;
         gameQueue.Register<RemoveComponentMessage>(this, RemoveComponentMessage.Name, order: 0);
         gameQueue.Register<EntityReferenceMessage<GameEntity>>(this, EntityReferenceMessage<GameEntity>.Name, order: 0);
+        gameQueue.Register<DeleteEntityMessage>(this, DeleteEntityMessage.Name, order: 0);
 
         InitializeLevels(gameQueue);
         InitializeBeings(gameQueue);
@@ -75,10 +78,14 @@ public partial class GameManager :
         where TComponent : Component, new()
         => Add<TComponent>((int)componentId, poolSize);
 
-    protected override void Add<TComponent>(int componentId, int poolSize)
+    protected void Add<TComponent>(EntityComponent componentId, int poolSize, int maxPoolSize)
+        where TComponent : Component, new()
+        => Add<TComponent>((int)componentId, poolSize, maxPoolSize);
+
+    protected override void Add<TComponent>(int componentId, int poolSize, int maxPoolSize)
     {
         _componentPropertyNames[componentId] = ((EntityComponent)componentId).ToString();
-        base.Add<TComponent>(componentId, poolSize);
+        base.Add<TComponent>(componentId, poolSize, maxPoolSize);
     }
 
     public string GetComponentPropertyName(int componentId)
@@ -108,6 +115,36 @@ public partial class GameManager :
         message.Entity.RemoveComponent(message.Component);
 
         return MessageProcessingResult.ContinueProcessing;
+    }
+
+    MessageProcessingResult IMessageConsumer<DeleteEntityMessage, GameManager>.Process(
+        DeleteEntityMessage message, GameManager manager)
+    {
+        RemoveAllComponents(message.Entity);
+
+        return MessageProcessingResult.ContinueProcessing;
+    }
+
+    /// <summary>
+    ///     Removes every component from <paramref name="entity" />.
+    ///     Removing the last keep-alive component drops the entity's reference count to zero,
+    ///     tearing it (and everything kept alive solely by it) down. Stops early if the entity is
+    ///     disposed mid-way; safe to call on an already-disposed entity.
+    /// </summary>
+    private static void RemoveAllComponents(GameEntity entity)
+    {
+        for (var componentId = (int)EntityComponent.Knowledge; componentId >= 0; componentId--)
+        {
+            if (entity.Id == 0)
+            {
+                return;
+            }
+
+            if (entity.HasComponent(componentId))
+            {
+                entity.RemoveComponent((EntityComponent)componentId);
+            }
+        }
     }
 
     MessageProcessingResult IMessageConsumer<EntityReferenceMessage<GameEntity>, GameManager>.Process(

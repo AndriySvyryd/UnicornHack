@@ -294,12 +294,18 @@ public readonly struct Rectangle : IEnumerable<Point>, IEquatable<Rectangle>
     /// <summary>
     ///     Returns memoized <c>(pointToIndex, indexToPoint)</c> tables for a rectangle of
     ///     the given dimensions. Tables are cached in a process-wide
-    ///     <see cref="ConcurrentDictionary{TKey,TValue}" /> keyed by
-    ///     <c>(width &lt;&lt; 8) | height</c>, so callers can rely on reference equality
-    ///     for the same dimensions across the lifetime of the process.
+    ///     <see cref="ConcurrentDictionary{TKey,TValue}" /> keyed by <c>(width &lt;&lt; 8) | height</c>,
+    ///     so callers can rely on reference equality for the same dimensions across the lifetime of
+    ///     the process. The cached tables are immutable after construction, so sharing them across
+    ///     threads is safe; <see cref="ConcurrentDictionary{TKey,TValue}.GetOrAdd(TKey,System.Func{TKey,TValue})" />
+    ///     keeps lookups lock-free on this hot generation path. A benign race may build the same
+    ///     tables twice on first touch, but only one instance is ever published.
     /// </summary>
     public static (short[,], Point[]) GetPointIndex(byte width, byte height)
-        => _staticPointIndexCache.GetOrAdd(((uint)width << 8) | height, _ => BuildPointIndex(width, height));
+    {
+        var key = ((uint)width << 8) | height;
+        return _staticPointIndexCache.GetOrAdd(key, static k => BuildPointIndex((byte)(k >> 8), (byte)k));
+    }
 
     private static readonly ConcurrentDictionary<uint, (short[,], Point[])> _staticPointIndexCache = new();
 

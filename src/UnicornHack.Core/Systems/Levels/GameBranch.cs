@@ -54,5 +54,5 @@ public class GameBranch : NotificationEntity
     public ICollection<GameLevel> Levels
     {
         get;
-    } = new ObservableHashSet<GameLevel>();
+    } = new ObservableHashSet<GameLevel>(ReferenceEqualityComparer.Instance);
 }

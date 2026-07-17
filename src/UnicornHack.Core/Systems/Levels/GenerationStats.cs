@@ -263,7 +263,7 @@ public class GenerationStats : NotificationEntity
                 Increment(FragmentInstancesByTag, tag);
             }
         }
-        foreach (var feature in roomFeatures.GetFlags())
+        foreach (var feature in roomFeatures.GetSetBits())
         {
             Increment(FragmentInstancesByFeature, feature);
         }
@@ -276,7 +276,7 @@ public class GenerationStats : NotificationEntity
     public void RecordCreatureInstance(string name, CreatureGenerationFlags flags)
     {
         Increment(CreatureInstancesByName, name);
-        foreach (var flag in flags.GetFlags())
+        foreach (var flag in flags.GetSetBits())
         {
             Increment(CreatureInstancesByFlag, flag);
         }
@@ -303,7 +303,7 @@ public class GenerationStats : NotificationEntity
     /// </summary>
     public void RecordRoomFeature(RoomFeatures features)
     {
-        foreach (var feature in features.GetFlags())
+        foreach (var feature in features.GetSetBits())
         {
             Increment(RoomCountsByFeature, feature);
         }

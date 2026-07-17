@@ -25,4 +25,11 @@ public class PropertyValueChanges : IPropertyValueChanges
     public void EnqueuePropertyValueChangedMessage<TEntity>(int index, string messageName)
         where TEntity : Entity, new()
         => throw new IndexOutOfRangeException(nameof(index));
+
+    // The empty singleton is shared and never pooled: it clones to itself and ignores Return.
+    public IPropertyValueChanges Clone() => this;
+
+    public void Return()
+    {
+    }
 }

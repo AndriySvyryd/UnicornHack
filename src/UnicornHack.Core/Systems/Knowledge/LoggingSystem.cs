@@ -35,8 +35,10 @@ public class LoggingSystem :
             var initialTopContainer = message.InitialContainer != null
                 ? manager.ItemMovingSystem.GetTopContainer(message.InitialContainer, manager)
                 : itemEntity;
-            var initialPosition = message.InitialLevelCell ?? initialTopContainer.Position?.Cell;
+            var initialPosition = message.InitialRoomCell ?? initialTopContainer.Position?.Cell;
+            var initialRoomId = message.InitialRoomEntity?.Id ?? initialTopContainer.Position?.RoomId;
             var initialSensed = initialPosition != null
+                && playerEntity.Position!.RoomId == initialRoomId
                 ? manager.SensorySystem.CanSense(playerEntity, initialTopContainer, initialPosition.Value)
                 : SenseType.None;
 
@@ -68,7 +70,7 @@ public class LoggingSystem :
                     // Changed container
                 }
             }
-            else if (message.InitialLevelCell != null)
+            else if (message.InitialRoomCell != null)
             {
                 if (item.ContainerId != null)
                 {

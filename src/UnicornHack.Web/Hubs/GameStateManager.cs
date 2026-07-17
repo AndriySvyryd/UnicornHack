@@ -9,7 +9,9 @@ namespace UnicornHack.Hubs;
 public static class GameStateManager
 {
     /// <summary>
-    ///     Pure read of the current player/level state. Safe to call from any thread.
+    ///     Pure read of the current player/level state. Safe to call from any thread and
+    ///     does not mutate any change-tracking baseline: multiple clients (or repeat calls)
+    ///     must observe identical state.
     /// </summary>
     public static PlayerChange GetState(GameEntity playerEntity, GameServices services)
         => PlayerChangeBuilder.SerializePlayer(
@@ -87,7 +89,7 @@ public static class GameStateManager
                 }
             }
 
-            roomChangeBuilder.Clear();
+            roomChangeBuilder.Reset(currentPlayer.Entity.Position!.RoomEntity);
 
             if (result is TurnResult.PlayerTurn or TurnResult.GameOver)
             {

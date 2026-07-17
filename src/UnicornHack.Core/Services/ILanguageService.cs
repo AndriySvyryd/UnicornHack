@@ -31,6 +31,7 @@ public interface ILanguageService
     string AbilityNotUsable(AbilityComponent ability);
     string NotEnoughEnergy(AbilityComponent ability);
     string ItemNotInInventory();
+    string NothingToPickUp();
     string Welcome(GameEntity playerEntity);
     string UnableToMove(Direction direction);
     string NoPath();
@@ -42,8 +43,8 @@ public interface ILanguageService
     ///     touching the client.
     /// </summary>
     /// <param name="features">Active <see cref="RoomFeatures" /> on the room.</param>
-    /// <param name="isCurrent">The room is the player's current room.</param>
-    /// <param name="isVisited">The room has been visited at least once.</param>
+    /// <param name="isCurrent">Whether this is the player's current room.</param>
+    /// <param name="isVisited">Whether the player has visited this room.</param>
     /// <param name="revealedActorCount">
     ///     Revealed creature count, or <c>-1</c> when not revealed at the player's current
     ///     closeness to the room.

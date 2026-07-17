@@ -61,8 +61,30 @@ public static class TestHelper
             RoomWidth: room.Width == 0 ? (byte)1 : room.Width,
             RoomHeight: room.Height == 0 ? (byte)1 : room.Height,
             DefaultTerrain: defaultTerrain,
+            DefaultPathTerrain: MapFeature.RockFloor,
+            DefaultWall: MapFeature.RockWall,
             CreatureGenerator: new CreatureGenerator { ExpectedInitialCount = 0 },
             ItemGenerator: new ItemGenerator { ExpectedInitialCount = 0 });
+
+    /// <summary>
+    ///     Builds a demand-only anchor list (every direction is a real doorway demand, no
+    ///     positioning-only anchors) by unstacking <paramref name="demand" /> into one
+    ///     anchor per required doorway. Test convenience for callers that only have a per-direction
+    ///     count; production code builds anchored demands directly in <c>LevelLayout</c>.
+    /// </summary>
+    public static List<RoomDoorwayAnchor> FromDemand(IReadOnlyDictionary<Direction, int> demand)
+    {
+        var anchors = new List<RoomDoorwayAnchor>();
+        foreach (var (direction, count) in demand)
+        {
+            for (var i = 0; i < count; i++)
+            {
+                anchors.Add(new RoomDoorwayAnchor(direction, IsDoorwayDemand: true));
+            }
+        }
+
+        return anchors;
+    }
 
     public static (RoomComponent, IReadOnlyList<Chunk>) BuildRoomWithChunks(
         string map = "", Game? game = null, uint? seed = null, byte depth = 0)

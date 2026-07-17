@@ -78,6 +78,8 @@ public static class ChangeSetAssert
         Assert.True(expected.Depth == actual.Depth, $"Level Depth expected {expected.Depth}, actual {actual.Depth}");
         Assert.True(expected.Width == actual.Width, $"Level Width expected {expected.Width}, actual {actual.Width}");
         Assert.True(expected.Height == actual.Height, $"Level Height expected {expected.Height}, actual {actual.Height}");
+        Assert.True(expected.GridX == actual.GridX, $"Room GridX expected {expected.GridX}, actual {actual.GridX}");
+        Assert.True(expected.GridY == actual.GridY, $"Room GridY expected {expected.GridY}, actual {actual.GridY}");
 
         AssertActorsEqual(expected.Actors!, actual.Actors!);
         AssertItemsEqual(expected.Items!, actual.Items!);

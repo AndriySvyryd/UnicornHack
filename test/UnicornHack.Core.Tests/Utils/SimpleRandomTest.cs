@@ -60,6 +60,23 @@ namespace UnicornHack.Utils
             TestPick(itemWeights, weightSum);
         }
 
+        [Fact]
+        public void WeightedOrder_handles_cumulative_weights_exceeding_int_max()
+        {
+            // Regression: WeightedOrder used to pick its threshold via NextSingle(0, sum),
+            // which threw ArgumentOutOfRangeException once the cumulative weight sum exceeded
+            // int.MaxValue. Large per-fragment weights (size bonus stacked with the
+            // multiplicative demand bonus) push the sum past that limit, so the picker must
+            // handle an arbitrarily large finite sum without throwing.
+            var random = new SimpleRandom { Seed = 1 };
+            var itemWeights = new[] { 2e9f, 2e9f, 2e9f };
+
+            var order = random.WeightedOrder(itemWeights, f => f).ToList();
+
+            Assert.Equal(itemWeights.Length, order.Count);
+            Assert.Equal(itemWeights.OrderBy(w => w), order.OrderBy(w => w));
+        }
+
         private void TestPick(float[] itemWeights, float weightSum)
         {
             const uint seed = 1;

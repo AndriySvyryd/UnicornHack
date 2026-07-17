@@ -6,7 +6,8 @@ namespace UnicornHack.Generation.Map;
 ///     Direct tests for <see cref="MapFragment.FixupDeferredConditions" /> — previously
 ///     only exercised through full level generation. Covers the early-exit shortcut, the
 ///     simple Filled-fill path, the Unfilled/Edge "skip the cell" path, the wall
-///     preference, and the isolated-pocket connectivity-rescue pass.
+///     preference, the isolated-pocket connectivity-rescue pass, and the
+///     background-sealing pass around walkable condition cells.
 /// </summary>
 public partial class MapFragmentTest
 {
@@ -14,7 +15,7 @@ public partial class MapFragmentTest
     public void FixupDeferredConditions_returns_empty_when_no_preserved_conditions()
     {
         var (room, _) = BuildRoom(roomSize: 7, fill: MapFeature.Default);
-        var preserved = new Dictionary<Point, List<EdgeConditionKind>>();
+        var preserved = new Dictionary<Point, EdgeConditionKind[]>();
 
         var chunks = MapFragment.FixupDeferredConditions(
             room, preserved, room.Level.GenerationRandom, TestRoomParameters(room));
@@ -27,7 +28,7 @@ public partial class MapFragmentTest
     {
         var (room, _) = BuildRoom(roomSize: 7, fill: MapFeature.Default);
         var cell = new Point(3, 3);
-        var preserved = new Dictionary<Point, List<EdgeConditionKind>>
+        var preserved = new Dictionary<Point, EdgeConditionKind[]>
         {
             // StoneFloor is the only feature that satisfies a tile-specific StoneFloor
             // demand, so the fixup must pick it (the wall-preference path doesn't apply
@@ -44,8 +45,9 @@ public partial class MapFragmentTest
             room, preserved, room.Level.GenerationRandom, roomParameters);
 
         Assert.Equal(MapFeature.StoneFloor, room.Terrain[room.PointToIndex![cell.X, cell.Y]]);
-        Assert.Single(chunks);
-        Assert.Contains(cell, chunks[0].InsidePoints);
+        // The fixup emits the walkable fill (plus separate perimeter chunks for the walls
+        // it seals around it); the fill cell is owned by one of the emitted chunks.
+        Assert.Contains(chunks, c => c.InsidePoints.Contains(cell));
     }
 
     [Fact]
@@ -53,7 +55,7 @@ public partial class MapFragmentTest
     {
         var (room, _) = BuildRoom(roomSize: 7, fill: MapFeature.Default);
         var cell = new Point(3, 3);
-        var preserved = new Dictionary<Point, List<EdgeConditionKind>>
+        var preserved = new Dictionary<Point, EdgeConditionKind[]>
         {
             // Unfilled / Edge demand the cell stay Default. Fixup must skip it.
             [cell] = [EdgeConditionKind.Unfilled]
@@ -71,17 +73,17 @@ public partial class MapFragmentTest
     {
         var (room, _) = BuildRoom(roomSize: 7, fill: MapFeature.Default);
         var cell = new Point(3, 3);
-        var preserved = new Dictionary<Point, List<EdgeConditionKind>>
+        var preserved = new Dictionary<Point, EdgeConditionKind[]>
         {
             // Filled accepts any non-Default feature; PickPreferredFixupFeature should
-            // pick StoneWall over RockWall over a neighbour feature.
+            // pick the branch's default wall (RockWall) over a neighbor feature.
             [cell] = [EdgeConditionKind.Filled]
         };
 
         var chunks = MapFragment.FixupDeferredConditions(
             room, preserved, room.Level.GenerationRandom, TestRoomParameters(room));
 
-        Assert.Equal(MapFeature.StoneWall, room.Terrain[room.PointToIndex![cell.X, cell.Y]]);
+        Assert.Equal(MapFeature.RockWall, room.Terrain[room.PointToIndex![cell.X, cell.Y]]);
         // A pure-wall fixup cell is a perimeter cell, not inside, but it still produces
         // a chunk so the level-generation pipeline can attribute it.
         Assert.Single(chunks);
@@ -93,10 +95,10 @@ public partial class MapFragmentTest
     {
         // A StoneFloor fixup cell with no adjacent real-chunk floor is unreachable
         // by the corridor system (deferred-fill chunks author no doorways). The
-        // ConvertIsolatedFixupCellsToWalls rescue pass must demote it to StoneWall.
+        // ConvertIsolatedFixupCellsToWalls rescue pass must demote it to the default wall.
         var (room, _) = BuildRoom(roomSize: 7, fill: MapFeature.Default);
         var cell = new Point(3, 3);
-        var preserved = new Dictionary<Point, List<EdgeConditionKind>>
+        var preserved = new Dictionary<Point, EdgeConditionKind[]>
         {
             [cell] = [EdgeConditionKind.StoneFloor]
         };
@@ -104,7 +106,7 @@ public partial class MapFragmentTest
         var chunks = MapFragment.FixupDeferredConditions(
             room, preserved, room.Level.GenerationRandom, TestRoomParameters(room));
 
-        Assert.Equal(MapFeature.StoneWall, room.Terrain[room.PointToIndex![cell.X, cell.Y]]);
+        Assert.Equal(MapFeature.RockWall, room.Terrain[room.PointToIndex![cell.X, cell.Y]]);
         // Chunk grouping still owns the cell; the wall demotion happens after fill but
         // before grouping cares which cells are inside vs perimeter.
         Assert.Single(chunks);
@@ -118,7 +120,7 @@ public partial class MapFragmentTest
         var cell = new Point(3, 3);
         // Simulate a later chunk having landed on the cell (terrain no longer = Default).
         TerrainSystem.SetTerrain(MapFeature.StoneArchway, cell, room);
-        var preserved = new Dictionary<Point, List<EdgeConditionKind>>
+        var preserved = new Dictionary<Point, EdgeConditionKind[]>
         {
             [cell] = [EdgeConditionKind.StoneFloor]
         };
@@ -141,7 +143,7 @@ public partial class MapFragmentTest
         TerrainSystem.SetTerrain(MapFeature.StoneFloor, new Point(2, 4), room);
         var roomParameters = TestRoomParameters(room);
         roomParameters[2, 4] = new TestChunkStub(room);
-        var preserved = new Dictionary<Point, List<EdgeConditionKind>>
+        var preserved = new Dictionary<Point, EdgeConditionKind[]>
         {
             [new Point(2, 3)] = [EdgeConditionKind.StoneFloor],
             [new Point(3, 3)] = [EdgeConditionKind.StoneFloor]
@@ -150,8 +152,47 @@ public partial class MapFragmentTest
         var chunks = MapFragment.FixupDeferredConditions(
             room, preserved, room.Level.GenerationRandom, roomParameters);
 
-        Assert.Single(chunks);
-        Assert.Equal(2, chunks[0].InsidePoints.Count);
+        // The two contiguous floor cells are grouped into a single chunk; the background
+        // cells the fixup seals around them form their own perimeter chunks.
+        var floorChunk = Assert.Single(chunks, c => c.InsidePoints.Contains(new Point(2, 3)));
+        Assert.Contains(new Point(3, 3), floorChunk.InsidePoints);
+        Assert.Equal(2, floorChunk.InsidePoints.Count);
+    }
+
+    /// <summary>
+    ///     A walkable deferred-fill cell exposes floor to the unrendered background on the
+    ///     sides its edge conditions didn't reach — typically near the chunk corners. The
+    ///     fixup must seal every surrounding background cell (default terrain, no condition
+    ///     of its own) with a wall, while leaving real-chunk floor untouched.
+    /// </summary>
+    [Fact]
+    public void FixupDeferredConditions_walls_background_around_a_walkable_condition_cell()
+    {
+        var (room, _) = BuildRoom(roomSize: 8, fill: MapFeature.Default);
+        var cell = new Point(3, 3);
+        var preserved = new Dictionary<Point, EdgeConditionKind[]>
+        {
+            // StoneFloor can't be a wall, so the fixup fills this cell with floor.
+            [cell] = [EdgeConditionKind.StoneFloor]
+        };
+        // Adjacent real-chunk floor to the west so the fill cell isn't classified as
+        // isolated and demoted by the connectivity-rescue pass.
+        TerrainSystem.SetTerrain(MapFeature.StoneFloor, new Point(2, 3), room);
+        var roomParameters = TestRoomParameters(room);
+        roomParameters[2, 3] = new TestChunkStub(room);
+
+        var chunks = MapFragment.FixupDeferredConditions(
+            room, preserved, room.Level.GenerationRandom, roomParameters);
+
+        Assert.Equal(MapFeature.StoneFloor, room.Terrain[room.PointToIndex![cell.X, cell.Y]]);
+        // The background cells around the floor cell are sealed with walls...
+        Assert.Equal(MapFeature.RockWall, room.Terrain[room.PointToIndex![3, 2]]);
+        Assert.Equal(MapFeature.RockWall, room.Terrain[room.PointToIndex![3, 4]]);
+        Assert.Equal(MapFeature.RockWall, room.Terrain[room.PointToIndex![4, 3]]);
+        // ...but the adjacent real-chunk floor (not background) is left intact.
+        Assert.Equal(MapFeature.StoneFloor, room.Terrain[room.PointToIndex![2, 3]]);
+        // A sealing wall is owned by a fixup chunk so the grouping accounts for it.
+        Assert.Contains(chunks, c => c.PerimeterPoints.Contains(new Point(4, 3)));
     }
 
     /// <summary>

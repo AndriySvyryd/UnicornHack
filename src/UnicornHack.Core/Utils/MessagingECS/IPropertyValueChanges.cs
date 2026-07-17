@@ -14,11 +14,27 @@ public interface IPropertyValueChanges
     void EnqueuePropertyValueChangedMessage<TEntity>(int index, string messageName)
         where TEntity : Entity, new();
 
+    /// <summary>
+    ///     Returns an independent copy backed by the per-thread pool. A holder that outlives the
+    ///     creator takes a clone so it owns its instance
+    ///     exclusively and can <see cref="Return" /> it when cleaned, without the creator and the
+    ///     message sharing (and racing to pool) the same instance. The shared empty singleton
+    ///     clones to itself.
+    /// </summary>
+    IPropertyValueChanges Clone();
+
+    /// <summary>
+    ///     Resets the captured state and returns this instance to the per-thread pool. Each owner
+    ///     (the creator, and every message holding a clone) returns exactly its own instance once.
+    ///     A no-op on the shared empty singleton.
+    /// </summary>
+    void Return();
+
     static IPropertyValueChanges Create<T1>(
         in PropertyValueChange<T1> change1)
         => change1.IsEmpty
             ? PropertyValueChanges.Instance
-            : new PropertyValueChanges<T1>(change1);
+            : PropertyValueChanges<T1>.Rent(change1);
 
     static IPropertyValueChanges Create<T1, T2>(
         in PropertyValueChange<T1> change1,
@@ -30,8 +46,8 @@ public interface IPropertyValueChanges
         }
 
         return change2.IsEmpty
-            ? new PropertyValueChanges<T1>(change1)
-            : new PropertyValueChanges<T1, T2>(change1, change2);
+            ? PropertyValueChanges<T1>.Rent(change1)
+            : PropertyValueChanges<T1, T2>.Rent(change1, change2);
     }
 
     static IPropertyValueChanges Create<T1, T2, T3>(
@@ -47,12 +63,12 @@ public interface IPropertyValueChanges
         if (change2.IsEmpty)
         {
             return change3.IsEmpty
-                ? new PropertyValueChanges<T1>(change1)
-                : new PropertyValueChanges<T1, T3>(change1, change3);
+                ? PropertyValueChanges<T1>.Rent(change1)
+                : PropertyValueChanges<T1, T3>.Rent(change1, change3);
         }
 
         return change3.IsEmpty
-            ? new PropertyValueChanges<T1, T2>(change1, change2)
-            : new PropertyValueChanges<T1, T2, T3>(change1, change2, change3);
+            ? PropertyValueChanges<T1, T2>.Rent(change1, change2)
+            : PropertyValueChanges<T1, T2, T3>.Rent(change1, change2, change3);
     }
 }

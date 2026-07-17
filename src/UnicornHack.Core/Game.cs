@@ -77,7 +77,7 @@ public class Game : NotificationEntity
     {
         get;
         set;
-    } = new ObservableHashSet<GameBranch>();
+    } = new ObservableHashSet<GameBranch>(ReferenceEqualityComparer.Instance);
 
     /// <summary>
     ///     Game-wide cumulative generation statistics. Populated alongside the per-level

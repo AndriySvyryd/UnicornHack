@@ -254,9 +254,7 @@ internal static class StateApplier
         }
         if (!store.TryGetValue(id, out var current))
         {
-            // Delta arrived without prior snapshot (rare re-emission case): adopt as-is.
-            store[id] = delta;
-            return;
+            throw OrphanDelta("Actor", id);
         }
         for (var i = 1; i < bits.Length; i++)
         {
@@ -300,8 +298,7 @@ internal static class StateApplier
         if (bits.Length <= 1) { store.Remove(id); return; }
         if (!store.TryGetValue(id, out var current))
         {
-            store[id] = delta;
-            return;
+            throw OrphanDelta("Item", id);
         }
         for (var i = 1; i < bits.Length; i++)
         {
@@ -329,8 +326,7 @@ internal static class StateApplier
             if (bits.Length <= 1) { room.Connections.Remove(id); continue; }
             if (!room.Connections.TryGetValue(id, out var current))
             {
-                room.Connections[id] = child;
-                continue;
+                throw OrphanDelta("Connection", id);
             }
             for (var i = 1; i < bits.Length; i++)
             {
@@ -356,8 +352,7 @@ internal static class StateApplier
             if (bits.Length <= 1) { player.Races.Remove(id); continue; }
             if (!player.Races.TryGetValue(id, out var current))
             {
-                player.Races[id] = child;
-                continue;
+                throw OrphanDelta("Race", id);
             }
             for (var i = 1; i < bits.Length; i++)
             {
@@ -382,8 +377,7 @@ internal static class StateApplier
             if (bits.Length <= 1) { player.Abilities.Remove(id); continue; }
             if (!player.Abilities.TryGetValue(id, out var current))
             {
-                player.Abilities[id] = child;
-                continue;
+                throw OrphanDelta("Ability", id);
             }
             for (var i = 1; i < bits.Length; i++)
             {
@@ -412,4 +406,18 @@ internal static class StateApplier
             player.Log[id] = child;
         }
     }
+
+    /// <summary>
+    ///     Builds the exception thrown when a modify delta (non-null <c>ChangedProperties</c>
+    ///     with more than the reserved bit) references an id the client never received as an
+    ///     <c>Added</c> snapshot. This mirrors the strictness of the Unity client's
+    ///     <c>*Change.ExpandToCollection</c> ("Actor &lt;id&gt; not found") and the Web.Tests
+    ///     <c>ClientStateHelpers.ExpandActor</c> — silently adopting such an orphan delta (the
+    ///     diagnostic client's previous behavior) hid real protocol violations such as a server
+    ///     leaking a change for an entity outside the observer's current room.
+    /// </summary>
+    private static InvalidOperationException OrphanDelta(string kind, int id)
+        => new($"{kind} {id} not found: received a modify delta for an entity the client was never told "
+             + "about (missing prior Added emission). This usually means the server leaked a change for an "
+             + "entity outside the observer's current room.");
 }

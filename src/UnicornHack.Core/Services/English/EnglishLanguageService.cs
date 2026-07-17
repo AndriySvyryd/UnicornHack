@@ -635,6 +635,9 @@ public class EnglishLanguageService : ILanguageService
     public string ItemNotInInventory()
         => "You don't have that item.";
 
+    public string NothingToPickUp()
+        => "There's nothing to pick up here.";
+
     public string NoPath() => "No path to target!";
 
     #endregion
@@ -711,34 +714,29 @@ public class EnglishLanguageService : ILanguageService
         var header = isCurrent ? "Current room"
             : isVisited ? "Visited room"
             : "Unexplored room";
-        sb.Append("<b>").Append(header).AppendLine("</b>");
+        sb.Append("<b>").Append(header).Append("</b>");
 
         var featureNames = GetRoomFeatureNames(features);
         if (featureNames.Length > 0)
         {
-            sb.Append("Features: ").AppendLine(featureNames);
+            sb.AppendLine().Append("Features: ").Append(featureNames);
         }
 
         if (revealedActorCount >= 0)
         {
-            sb.Append("Creatures: ").Append(revealedActorCount.ToString(Culture)).AppendLine();
+            sb.AppendLine().Append("Creatures: ").Append(revealedActorCount.ToString(Culture));
         }
 
         if (revealedItemCount >= 0)
         {
-            sb.Append("Items: ").Append(revealedItemCount.ToString(Culture)).AppendLine();
+            sb.AppendLine().Append("Items: ").Append(revealedItemCount.ToString(Culture));
         }
 
         if (!string.IsNullOrEmpty(strongestActorName))
         {
-            sb.Append("Strongest: ").AppendLine(strongestActorName);
+            sb.AppendLine().Append("Strongest: ").Append(strongestActorName);
         }
 
-        // Trim the trailing newline.
-        while (sb.Length > 0 && (sb[sb.Length - 1] == '\n' || sb[sb.Length - 1] == '\r'))
-        {
-            sb.Length--;
-        }
         return sb.ToString();
     }
 
@@ -768,6 +766,7 @@ public class EnglishLanguageService : ILanguageService
         AppendIf(features, RoomFeatures.MinorShrine, "Minor shrine", parts);
         AppendIf(features, RoomFeatures.MajorShrine, "Major shrine", parts);
         AppendIf(features, RoomFeatures.RitualShrine, "Ritual shrine", parts);
+        AppendIf(features, RoomFeatures.Shortcut, "Shortcut", parts);
         AppendIf(features, RoomFeatures.Secret, "Secret", parts);
         return string.Join(", ", parts);
 

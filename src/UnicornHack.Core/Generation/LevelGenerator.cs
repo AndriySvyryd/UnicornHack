@@ -54,6 +54,14 @@ public static class LevelGenerator
                 stats.RoomGraphAttempts++;
                 if (Generate(level) is not null)
                 {
+                    // Generation enqueues entity-lifecycle and property-change messages for every
+                    // room, connection, creature and item it creates. Nothing drains them until a
+                    // game turn ticks, so generating several levels back-to-back (descending
+                    // without acting, or a batch tool) would otherwise overflow the message queue.
+                    // Process them now so each generated level leaves the queue clean and
+                    // self-contained.
+                    var manager = level.Game.Manager;
+                    manager.Queue.ProcessQueue(manager);
                     return true;
                 }
 
@@ -110,14 +118,39 @@ public static class LevelGenerator
         return picked;
     }
 
+    /// <summary>
+    ///     Removes all generated rooms from <paramref name="gameLevel" /> so a fresh
+    ///     attempt can run from a clean slate. Placeholder rooms created by a
+    ///     neighboring level's <see cref="Map.LevelConnection.CreateSourceConnection" />
+    ///     to host a cross-level <see cref="ConnectionComponent" />'s target are
+    ///     reset in place via <see cref="RoomComponent.Reset" />:
+    ///     destroying their Room component would fire the
+    ///     <c>IncomingConnectionsToRoomRelationship</c> cleanup which detaches the
+    ///     neighbor's outbound connection (its <see cref="PositionComponent" />)
+    ///     from its source room, breaking the cross-level link permanently. A
+    ///     placeholder is identified by having at least one entry in
+    ///     <see cref="RoomComponent.IncomingConnections" />; attempt 1 may have
+    ///     allocated terrain on it (so the <c>Width == 0</c> half of
+    ///     <see cref="LevelLayout.GetEmptyEntranceRoom" />'s discriminator no
+    ///     longer holds), and <c>ResetToPlaceholder</c> re-establishes the zero-width
+    ///     state in place.
+    /// </summary>
     private static void ResetGeneratedState(GameLevel gameLevel)
     {
         foreach (var room in gameLevel.Rooms.ToList())
         {
-            room.Entity.RemoveComponent((int)EntityComponent.Room);
-        }
+            if (room.IncomingConnections.Count > 0)
+            {
+                room.Reset();
+                continue;
+            }
 
-        gameLevel.Rooms.Clear();
+            // Remove the Room component first. Removing from the collection first would
+            // make EF's NavigationFixer sever the required RoomComponent -> GameLevel
+            // relationship by nulling the non-nullable BranchName foreign key, which throws.
+            room.Entity.RemoveComponent((int)EntityComponent.Room);
+            gameLevel.Rooms.Remove(room);
+        }
     }
 
     /// <summary>
@@ -134,70 +167,5 @@ public static class LevelGenerator
         // DefiningMapFragment.GetEffective* helpers, falling back to the branch defaults.
         var branch = level.Game.Services.Data.Branches.Get(level.BranchName);
         return branch.Layout.Fill(level, branch);
-    }
-
-    /// <summary>
-    ///     Verifies that every room is reachable from the entrance and that an exit is reachable
-    ///     from every room, following directed edges.
-    /// </summary>
-    public static bool ValidateRoomGraph(RoomGraph graph)
-    {
-        var entrances = graph.Rooms.Where(r => (r.Features & RoomFeatures.Entrance) != 0).ToList();
-        var exits = graph.Rooms.Where(r => (r.Features & RoomFeatures.Exit) != 0).ToList();
-        if (entrances.Count == 0 || exits.Count == 0)
-        {
-            return false;
-        }
-
-        var forward = graph.Connections
-            .GroupBy(e => e.Source)
-            .ToDictionary(g => g.Key, g => g.Select(e => e.Target).ToList());
-
-        var reachableFromEntrance = BreadthFirstReach(entrances, forward);
-        if (reachableFromEntrance.Count != graph.Rooms.Count)
-        {
-            return false;
-        }
-
-        // To check "an exit is reachable from every room", reverse the edges and BFS from every exit.
-        var backward = graph.Connections
-            .GroupBy(e => e.Target)
-            .ToDictionary(g => g.Key, g => g.Select(e => e.Source).ToList());
-        var canReachExit = BreadthFirstReach(exits, backward);
-        return canReachExit.Count == graph.Rooms.Count;
-    }
-
-    private static HashSet<RoomGraphNode> BreadthFirstReach(
-        IEnumerable<RoomGraphNode> sources,
-        Dictionary<RoomGraphNode, List<RoomGraphNode>> adjacency)
-    {
-        var visited = new HashSet<RoomGraphNode>();
-        var queue = new Queue<RoomGraphNode>();
-        foreach (var source in sources)
-        {
-            if (visited.Add(source))
-            {
-                queue.Enqueue(source);
-            }
-        }
-
-        while (queue.Count > 0)
-        {
-            var node = queue.Dequeue();
-            if (!adjacency.TryGetValue(node, out var neighbours))
-            {
-                continue;
-            }
-
-            foreach (var neighbour in neighbours)
-            {
-                if (visited.Add(neighbour))
-                {
-                    queue.Enqueue(neighbour);
-                }
-            }
-        }
-
-        return visited;
     }
 }

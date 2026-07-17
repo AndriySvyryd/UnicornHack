@@ -1,4 +1,4 @@
-﻿using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Faculties;
 using UnicornHack.Systems.Items;

@@ -39,7 +39,7 @@ public partial class MapFragmentTest
     {
         var (room, _) = BuildRoom(roomSize: 7, fill: MapFeature.Default);
         // Only the top edge is conditional under the both-corners rule; the U
-        // constraint at every N slot matches the Default-filled neighbour row above
+        // constraint at every N slot matches the Default-filled neighbor row above
         // the lot.
         var fragment = InitializeFragment(@"
 ~UUU~
@@ -103,7 +103,7 @@ public partial class MapFragmentTest
 .....
 .....");
 
-        // North #-cells match the StoneWall neighbour row above the lot; only the
+        // North #-cells match the StoneWall neighbor row above the lot; only the
         // north edge is conditional under the both-corners rule.
         var lot = FlushNorthLot(room, fragment);
         Assert.Equal(1f + 3 * MapFragment.EdgeMatchTieBreakerAlpha,
@@ -122,7 +122,7 @@ public partial class MapFragmentTest
 .....
 .....");
 
-        // 3 N (Same resolves to StoneFloor and matches the StoneFloor neighbour row);
+        // 3 N (Same resolves to StoneFloor and matches the StoneFloor neighbor row);
         // only the north edge is conditional.
         var lot = FlushNorthLot(room, fragment);
         Assert.Equal(1f + 3 * MapFragment.EdgeMatchTieBreakerAlpha,
@@ -183,7 +183,7 @@ public partial class MapFragmentTest
     public void Filled_edge_against_boundary_fails_but_anchor_slides_inward()
     {
         // A conditional Filled edge that lands flush against the room boundary fails
-        // honestly (out-of-room neighbours don't satisfy Filled). The anchor sweep
+        // honestly (out-of-room neighbors don't satisfy Filled). The anchor sweep
         // slides the fragment one row inward where the F slots face in-room StoneFloor
         // terrain and match. 4-corner map: 3 N (F) + 3 S (StoneFloor) + 1 W + 1 E.
         var (room, _) = BuildRoom(roomSize: 9, fill: MapFeature.StoneFloor);

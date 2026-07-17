@@ -186,7 +186,7 @@ public class SimpleRandom : NotificationEntity
                     yield break;
                 }
 
-                selectedIndex = BinarySearch(cumulativeWeights, NextSingle(0, sum));
+                selectedIndex = BinarySearch(cumulativeWeights, NextSingleUpTo(sum));
             }
 
             yield return selector(items[selectedIndex], selectedIndex);
@@ -286,6 +286,17 @@ public class SimpleRandom : NotificationEntity
 
         return minValue + IntToFloat * (NextInt() - 1) * range;
     }
+
+    /// <summary>
+    ///     Returns a random float in <c>[0, <paramref name="maxValue" />)</c>. Unlike
+    ///     <see cref="NextSingle(float, float)" /> this does not cap the range at
+    ///     <see cref="int.MaxValue" />, so it is safe for weighted sampling over a large
+    ///     cumulative-weight sum (e.g. when fragment weights are boosted by size and stacked
+    ///     demand multipliers). Uses the same underlying draw as
+    ///     <see cref="NextSingle(float, float)" /> with <c>minValue == 0</c>, so RNG streams
+    ///     are identical for a given <paramref name="maxValue" />.
+    /// </summary>
+    private float NextSingleUpTo(float maxValue) => IntToFloat * (NextInt() - 1) * maxValue;
 
     private int NextInt() => (int)(int.MaxValue & NextUInt());
 

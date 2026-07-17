@@ -314,7 +314,8 @@ public sealed class ReadTools
             return $"hub={_conn.ConnectionState} state_ready={_conn.StateReady} last_tick={_store.LastTick} last_log_id={_store.LastObservedLogId} "
                  + $"races={_store.Player?.Races?.Count ?? 0} abilities={_store.Player?.Abilities?.Count ?? 0} "
                  + $"actors={_store.Player?.Room?.Actors?.Count ?? 0} items={_store.Player?.Room?.Items?.Count ?? 0} "
-                 + $"events={_store.LastEvents.Count}";
+                 + $"events={_store.LastEvents.Count}"
+                 + (_store.LastApplyError is { } err ? $" apply_error=\"{err}\"" : "");
         }
     }
 

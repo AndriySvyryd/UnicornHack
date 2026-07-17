@@ -46,9 +46,9 @@ public partial class GameManager
 
     private void InitializeLevels(SequentialMessageQueue<GameManager> queue)
     {
-        Add<RoomComponent>(EntityComponent.Room, poolSize: 4);
-        Add<ConnectionComponent>(EntityComponent.Connection, poolSize: 8);
-        Add<PositionComponent>(EntityComponent.Position, poolSize: 32);
+        Add<RoomComponent>(EntityComponent.Room, poolSize: 4, maxPoolSize: 48);
+        Add<ConnectionComponent>(EntityComponent.Connection, poolSize: 8, maxPoolSize: 96);
+        Add<PositionComponent>(EntityComponent.Position, poolSize: 32, maxPoolSize: 512);
 
         Rooms = CreateGroup(nameof(Rooms),
             new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Room));

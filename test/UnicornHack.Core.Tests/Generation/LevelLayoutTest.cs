@@ -6,13 +6,18 @@ namespace UnicornHack.Generation;
 
 /// <summary>
 ///     Tests the prune-from-full algorithm in <see cref="LevelLayout.BuildGraph" /> across
-///     the three concrete topologies (4-/6-/8-neighbour). The invariants asserted are:
+///     the three concrete topologies (4-/6-/8-neighbor). The invariants asserted are:
 ///     <list type="bullet">
 ///         <item>The entrance reaches every node via directed edges.</item>
 ///         <item>Every node reaches the exit via directed edges.</item>
-///         <item>Every edge respects the layout's <see cref="LevelLayout.GetNeighbourOffsets" />.</item>
+///         <item>Every edge respects the layout's <see cref="LevelLayout.GetNeighborOffsets" />.</item>
 ///         <item>Higher <c>Interconnectedness</c> → more edges.</item>
 ///     </list>
+///     Also covers the connectivity invariant of a materialised level: intra-level connections
+///     are one-directional (the travel system blocks returning to a visited room), and every room
+///     must lie on a simple directed entrance→exit path — you can reach the exit from the entrance
+///     passing through that room without traversing any room twice. That is what keeps a room from
+///     being a dead end even though doors are one-way.
 /// </summary>
 public class LevelLayoutTest
 {
@@ -146,7 +151,7 @@ public class LevelLayoutTest
                 continue;
             }
 
-            Assert.True(LevelGenerator.ValidateRoomGraph(graph),
+            Assert.True(graph.HasValidConnectivity(),
                 $"{layout.GetType().Name} seed {seed}: graph failed strong-connectivity validation");
         }
     }
@@ -427,11 +432,11 @@ public class LevelLayoutTest
                 return dist[current];
             }
             var d = dist[current];
-            foreach (var neighbour in adj[current])
+            foreach (var neighbor in adj[current])
             {
-                if (dist.TryAdd(neighbour, d + 1))
+                if (dist.TryAdd(neighbor, d + 1))
                 {
-                    queue.Enqueue(neighbour);
+                    queue.Enqueue(neighbor);
                 }
             }
         }
@@ -461,16 +466,98 @@ public class LevelLayoutTest
                 return dist[current];
             }
             var d = dist[current];
-            foreach (var neighbour in outgoing[current])
+            foreach (var neighbor in outgoing[current])
             {
-                if (dist.TryAdd(neighbour, d + 1))
+                if (dist.TryAdd(neighbor, d + 1))
                 {
-                    queue.Enqueue(neighbour);
+                    queue.Enqueue(neighbor);
                 }
             }
         }
 
         return -1;
+    }
+
+    /// <summary>
+    ///     The level map must avoid connections that visually overlap (two diagonals of a grid
+    ///     unit-square crossing like an X). Cardinal-only (<see cref="GridLevelLayout" />) and
+    ///     hex-offset (<see cref="HexLevelLayout" />) topologies can never place both diagonals of a
+    ///     square, so their maps are always overlap-free; the square diagonal topologies
+    ///     (<see cref="TreeLevelLayout" />, <see cref="SpiralLevelLayout" />) can, but the generator
+    ///     both avoids them during placement and untwists any residual crossing afterwards (re-pairing
+    ///     a crossed square's four corner rooms along its cardinal sides, or, failing that, bending
+    ///     one diagonal into a cardinal L through a corner while keeping the other); whatever still
+    ///     survives is almost always RNG-avoidable, so the connection phase samples many arrangements
+    ///     and keeps the cleanest. Only a negligible residue remains — far below the unconstrained
+    ///     baseline (~9.6 crossings/level for the production TreeLevelLayout).
+    /// </summary>
+    [Fact]
+    public void Connections_avoid_visual_overlaps()
+    {
+        const int seeds = 200;
+        foreach (var (layout, maxAveragePerLevel) in new (LevelLayout Layout, double Budget)[]
+                 {
+                     (new GridLevelLayout(), 0.0),
+                     (new HexLevelLayout(), 0.0),
+                     (new TreeLevelLayout(), 0.1),
+                     (new SpiralLevelLayout(), 0.1),
+                 })
+        {
+            var total = 0;
+            var built = 0;
+            for (uint seed = 1; seed <= seeds; seed++)
+            {
+                var graph = TryBuild(layout, seed);
+                if (graph == null)
+                {
+                    continue;
+                }
+                built++;
+                total += CountCrossingPairs(graph);
+            }
+
+            Assert.True(built > 0, $"{layout.GetType().Name}: no graphs built across {seeds} seeds");
+            var average = (double)total / built;
+            _output.WriteLine(
+                $"{layout.GetType().Name}: {total} crossings over {built} levels (avg {average:F2}/level)");
+            Assert.True(average <= maxAveragePerLevel,
+                $"{layout.GetType().Name}: {average:F2} crossings/level exceeds budget {maxAveragePerLevel:F2}");
+        }
+    }
+
+    private static int CountCrossingPairs(RoomGraph graph)
+    {
+        var main = new HashSet<(int, int)>();
+        var anti = new HashSet<(int, int)>();
+        foreach (var edge in graph.Connections)
+        {
+            int ax = edge.Source.GridX, ay = edge.Source.GridY;
+            int bx = edge.Target.GridX, by = edge.Target.GridY;
+            if (Math.Abs(ax - bx) != 1 || Math.Abs(ay - by) != 1)
+            {
+                continue;
+            }
+            int minX = Math.Min(ax, bx), minY = Math.Min(ay, by);
+            if ((ax == minX) == (ay == minY))
+            {
+                main.Add((minX, minY));
+            }
+            else
+            {
+                anti.Add((minX, minY));
+            }
+        }
+
+        var crossings = 0;
+        foreach (var sq in main)
+        {
+            if (anti.Contains(sq))
+            {
+                crossings++;
+            }
+        }
+
+        return crossings;
     }
 
     [Theory]
@@ -489,7 +576,7 @@ public class LevelLayoutTest
             {
                 var dx = edge.Target.GridX - edge.Source.GridX;
                 var dy = edge.Target.GridY - edge.Source.GridY;
-                var validOffsets = layout.GetNeighbourOffsets(edge.Source.GridX, edge.Source.GridY).ToList();
+                var validOffsets = layout.GetNeighborOffsets(edge.Source.GridX, edge.Source.GridY).ToList();
                 Assert.Contains((dx, dy), validOffsets);
             }
         }
@@ -520,16 +607,16 @@ public class LevelLayoutTest
     }
 
     [Fact]
-    public void Hex_layout_has_six_neighbours_per_cell()
+    public void Hex_layout_has_six_neighbors_per_cell()
     {
         // Offset-hex grids stagger columns vertically by half a row, so each cell has six
-        // neighbours: two purely vertical (same column ± row) and four "diagonals" whose
+        // neighbors: two purely vertical (same column ± row) and four "diagonals" whose
         // grid-coordinate offset depends on column parity. There are no purely horizontal
-        // neighbours in screen space.
+        // neighbors in screen space.
         var hex = new HexLevelLayout();
         for (byte x = 0; x < 4; x++)
         {
-            var offsets = hex.GetNeighbourOffsets(x, 2).ToList();
+            var offsets = hex.GetNeighborOffsets(x, 2).ToList();
             Assert.Equal(6, offsets.Count);
             Assert.Contains((0, 1), offsets);
             Assert.Contains((0, -1), offsets);
@@ -540,7 +627,7 @@ public class LevelLayoutTest
     public void Spiral_layout_includes_all_eight_diagonals()
     {
         var spiral = new SpiralLevelLayout();
-        var offsets = spiral.GetNeighbourOffsets(3, 3).ToList();
+        var offsets = spiral.GetNeighborOffsets(3, 3).ToList();
         Assert.Equal(8, offsets.Count);
         Assert.Contains((1, 1), offsets);
         Assert.Contains((-1, -1), offsets);
@@ -549,10 +636,10 @@ public class LevelLayoutTest
     }
 
     [Fact]
-    public void Grid_layout_is_four_neighbour_only()
+    public void Grid_layout_is_four_neighbor_only()
     {
         var grid = new GridLevelLayout();
-        var offsets = grid.GetNeighbourOffsets(2, 2).ToList();
+        var offsets = grid.GetNeighborOffsets(2, 2).ToList();
         Assert.Equal(4, offsets.Count);
         Assert.DoesNotContain((1, 1), offsets);
         Assert.DoesNotContain((-1, -1), offsets);
@@ -566,9 +653,9 @@ public class LevelLayoutTest
     {
         // Sanity check that diagonal-capable topologies don't merely *permit* diagonal
         // edges but actually produce them when generating graphs across many seeds.
-        // (Plain GridLevelLayout is 4-neighbour and cannot produce diagonals — verified
-        // by Grid_layout_is_four_neighbour_only. TreeLevelLayout overrides that to be
-        // 8-neighbour and is exercised separately.)
+        // (Plain GridLevelLayout is 4-neighbor and cannot produce diagonals — verified
+        // by Grid_layout_is_four_neighbor_only. TreeLevelLayout overrides that to be
+        // 8-neighbor and is exercised separately.)
         var layout = (LevelLayout)Activator.CreateInstance(layoutType)!;
         var seedsWithDiagonals = 0;
         var totalDiagonalEdges = 0;
@@ -709,7 +796,7 @@ public class LevelLayoutTest
             // 8-connected: actors can move diagonally between adjacent tiles, so any
             // walkable tile reachable via diagonals counts as reachable. This matches
             // TravelSystem.GetPossibleMovementDirections and the 8-connected flood fill
-            // in RoomLayout.EnsureConnectivity.
+            // in RoomLayout.FloodFillReachable.
             for (var d = 0; d < 8; d++)
             {
                 var dx = d switch { 0 => 1, 1 => -1, 4 => 1, 5 => -1, 6 => 1, 7 => -1, _ => 0 };
@@ -787,5 +874,194 @@ public class LevelLayoutTest
             sb.Append('\n');
         }
         return sb.ToString();
+    }
+
+    [Theory]
+    [InlineData(1u)]
+    [InlineData(7u)]
+    [InlineData(42u)]
+    public void Every_room_lies_on_a_simple_entrance_to_exit_path(uint seed)
+    {
+        var level = GenerateLevel(seed);
+        var (adjacency, entrance, exit) = BuildAdjacency(level);
+
+        foreach (var room in level.Rooms)
+        {
+            Assert.True(HasSimplePathThrough(room.EntityId, entrance, exit, adjacency),
+                $"Seed {seed}: room {room.EntityId} ({room.GridX},{room.GridY}, {room.Features}) "
+                + "has no simple entrance→exit path through it.");
+        }
+    }
+
+    [Theory]
+    [InlineData(1u)]
+    [InlineData(7u)]
+    [InlineData(42u)]
+    public void Intra_level_connections_are_one_directional(uint seed)
+    {
+        var level = GenerateLevel(seed);
+        var (adjacency, _, _) = BuildAdjacency(level);
+
+        var oneWayExists = false;
+        foreach (var (source, targets) in adjacency)
+        {
+            foreach (var target in targets)
+            {
+                if (!adjacency[target].Contains(source))
+                {
+                    oneWayExists = true;
+                }
+            }
+        }
+
+        Assert.True(oneWayExists, $"Seed {seed}: expected at least one one-directional connection.");
+    }
+
+    [Fact]
+    public void Every_seed_keeps_every_room_on_a_simple_entrance_to_exit_path()
+    {
+        for (uint seed = 1; seed <= 20; seed++)
+        {
+            var level = GenerateLevel(seed);
+            var (adjacency, entrance, exit) = BuildAdjacency(level);
+
+            foreach (var room in level.Rooms)
+            {
+                Assert.True(HasSimplePathThrough(room.EntityId, entrance, exit, adjacency),
+                    $"Seed {seed}: room {room.EntityId} ({room.GridX},{room.GridY}, {room.Features}) "
+                    + "has no simple entrance→exit path through it.");
+            }
+        }
+    }
+
+    /// <summary>
+    ///     Same invariant on the production entrance level (the surface→entrance flow, the one
+    ///     the player sees first). Generated exactly as <c>GameHub.CreatePlayer</c> does.
+    /// </summary>
+    [Fact]
+    public void Entrance_level_keeps_every_room_on_a_simple_entrance_to_exit_path()
+    {
+        var game = TestHelper.CreateGame(seed: 1u);
+        var manager = game.Manager;
+
+        var surfaceBranch = BranchData.Surface.Instantiate(game);
+        BranchData.Entrance.Instantiate(game);
+        BranchData.Dungeon.Instantiate(game);
+
+        var surfaceLevel = LevelGenerator.CreateEmpty(surfaceBranch, depth: 1, seed: 1u, manager);
+        LevelGenerator.EnsureGenerated(surfaceLevel);
+
+        var entranceRoom = surfaceLevel.Rooms.First().Connections.Single().Value.Connection!.TargetRoomEntity.Room!;
+        LevelGenerator.EnsureGenerated(entranceRoom);
+
+        var level = entranceRoom.Level;
+        var (adjacency, entrance, exit) = BuildAdjacency(level);
+
+        foreach (var room in level.Rooms)
+        {
+            Assert.True(HasSimplePathThrough(room.EntityId, entrance, exit, adjacency),
+                $"Entrance room {room.EntityId} ({room.GridX},{room.GridY}, {room.Features}) "
+                + "has no simple entrance→exit path through it.");
+        }
+    }
+
+    private static (Dictionary<int, List<int>> Adjacency, int Entrance, int Exit) BuildAdjacency(GameLevel level)
+    {
+        var roomIds = level.Rooms.Select(r => r.EntityId).ToHashSet();
+        var adjacency = new Dictionary<int, List<int>>();
+        foreach (var room in level.Rooms)
+        {
+            adjacency[room.EntityId] = [];
+        }
+
+        foreach (var room in level.Rooms)
+        {
+            foreach (var entity in room.Connections.Values)
+            {
+                var targetId = entity.Connection!.TargetRoomId;
+                if (roomIds.Contains(targetId))
+                {
+                    adjacency[room.EntityId].Add(targetId);
+                }
+            }
+        }
+
+        var entrance = level.Rooms.Single(r => (r.Features & RoomFeatures.Entrance) != 0).EntityId;
+        var exit = level.Rooms.Single(r => (r.Features & RoomFeatures.Exit) != 0).EntityId;
+        return (adjacency, entrance, exit);
+    }
+
+    private static bool HasSimplePathThrough(
+        int through, int entrance, int exit, Dictionary<int, List<int>> adjacency)
+    {
+        // Simple path entrance→through using DFS, then through→exit avoiding the first half.
+        var firstHalf = FindSimplePath(entrance, through, adjacency, []);
+        if (firstHalf == null)
+        {
+            return false;
+        }
+
+        var blocked = new HashSet<int>(firstHalf);
+        blocked.Remove(through);
+        return FindSimplePath(through, exit, adjacency, blocked) != null;
+    }
+
+    private static List<int>? FindSimplePath(
+        int from, int to, Dictionary<int, List<int>> adjacency, HashSet<int> blocked)
+    {
+        var path = new List<int>();
+        var visited = new HashSet<int>(blocked);
+        return Dfs(from, to, adjacency, visited, path) ? path : null;
+
+        static bool Dfs(int node, int target, Dictionary<int, List<int>> adj, HashSet<int> visited, List<int> path)
+        {
+            if (!visited.Add(node))
+            {
+                return false;
+            }
+
+            path.Add(node);
+            if (node == target)
+            {
+                return true;
+            }
+
+            foreach (var next in adj[node])
+            {
+                if (Dfs(next, target, adj, visited, path))
+                {
+                    return true;
+                }
+            }
+
+            path.RemoveAt(path.Count - 1);
+            return false;
+        }
+    }
+
+    private static GameLevel GenerateLevel(uint seed)
+    {
+        var game = TestHelper.CreateGame(seed);
+        var manager = game.Manager;
+        var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
+
+        for (var attempt = 0; attempt < 20; attempt++)
+        {
+            var attemptSeed = seed + (uint)attempt;
+            var level = LevelGenerator.CreateEmpty(dungeon, depth: 2, attemptSeed, manager);
+            try
+            {
+                if (LevelGenerator.Generate(level) is not null)
+                {
+                    return level;
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // Pipeline failure (e.g. doorway exhaustion) — try the next seed.
+            }
+        }
+
+        throw new InvalidOperationException($"Could not generate level for seed {seed}");
     }
 }

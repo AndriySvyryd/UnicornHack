@@ -12,6 +12,13 @@ public class LoggingSystemTest
 {
     // TODO: Test explosion
 
+    private const string PickupMap = @"
+.....
+.....
+.....
+.....
+.....";
+
     [Fact]
     public void AttackEvent()
     {
@@ -416,6 +423,75 @@ public class LoggingSystemTest
 
         Assert.Equal("You pick up 11 gold coins.", languageService.GetString(new ItemPickUpEvent(
             player, player, coins, 11, SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Sound)));
+    }
+
+    /// <summary>
+    ///     Regression: an item picked up in a room the player can't perceive must not be
+    ///     logged. The initial-cell visibility check used to index the player's own room
+    ///     visibility map with a cell from the picker's room, spuriously reporting the item
+    ///     as seen and logging "Something picks up X".
+    /// </summary>
+    [Fact]
+    public void Pickup_in_another_room_is_not_logged()
+    {
+        var game = TestHelper.CreateGame(seed: 1u);
+
+        var playerRoom = TestHelper.BuildRoom(PickupMap, game);
+        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, playerRoom, new Point(0, 0));
+        var manager = playerEntity.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        // A second, separate room (different level/branch) where an NPC picks up an item.
+        var otherRoom = TestHelper.BuildRoom(PickupMap, game, depth: 1);
+        var npc = CreatureData.Human.Instantiate(otherRoom, new Point(0, 0));
+        ItemData.GoldCoin.Instantiate(otherRoom, new Point(0, 0));
+        manager.Queue.ProcessQueue(manager);
+
+        var goldEntity = otherRoom.Items[new Point(0, 0)];
+        playerEntity.Player!.LogEntries.Clear();
+
+        var moveMessage = MoveItemMessage.Create(manager);
+        moveMessage.ItemEntity = goldEntity;
+        moveMessage.TargetContainerEntity = npc;
+        manager.Enqueue(moveMessage);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.DoesNotContain(playerEntity.Player.LogEntries, e => e.Message.Contains("picks up"));
+    }
+
+    /// <summary>
+    ///     Guards against over-suppression: a pickup the player can perceive (same room, in
+    ///     view) is still logged.
+    /// </summary>
+    [Fact]
+    public void Pickup_in_view_is_logged()
+    {
+        var game = TestHelper.CreateGame(seed: 1u);
+
+        var room = TestHelper.BuildRoom(PickupMap, game);
+        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(2, 2));
+        playerEntity.Position!.Heading = Direction.North;
+        var manager = playerEntity.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        var npc = CreatureData.Human.Instantiate(room, new Point(2, 1));
+        ItemData.GoldCoin.Instantiate(room, new Point(2, 1));
+        manager.Queue.ProcessQueue(manager);
+
+        var goldEntity = room.Items[new Point(2, 1)];
+
+        // Sanity: the player actually perceives the pickup cell, so a logged message is expected.
+        Assert.NotEqual(SenseType.None, manager.SensorySystem.CanSense(playerEntity, npc));
+
+        playerEntity.Player!.LogEntries.Clear();
+
+        var moveMessage = MoveItemMessage.Create(manager);
+        moveMessage.ItemEntity = goldEntity;
+        moveMessage.TargetContainerEntity = npc;
+        manager.Enqueue(moveMessage);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Contains(playerEntity.Player.LogEntries, e => e.Message.Contains("picks up"));
     }
 
     [Fact]

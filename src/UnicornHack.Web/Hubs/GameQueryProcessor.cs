@@ -460,7 +460,7 @@ public static class GameQueryProcessor
             entry.Tooltip = languageService.GetRoomTooltip(
                 entry.Features,
                 isCurrent,
-                entry.IsVisited,
+                room.IsVisited,
                 entry.RevealedActorCount,
                 entry.RevealedItemCount,
                 entry.StrongestActorName);

@@ -49,7 +49,7 @@ namespace UnicornHack.Generation.Map;
 /// <param name="LotShifted">
 ///     <c>true</c> when the lot was translated by the room layout (e.g. <c>DenseRoomLayout</c>'s
 ///     wall-merge shift) onto cells already occupied by a previously placed chunk, so the
-///     candidate fragment's payload can overlap that neighbour's terrain. The placement
+///     candidate fragment's payload can overlap that neighbor's terrain. The placement
 ///     pipeline gates the payload-overlap compatibility check on this flag — when the lot
 ///     was not shifted, overlap with placed terrain is impossible by construction.
 /// </param>
@@ -60,10 +60,23 @@ public readonly record struct LotPlacementContext(
     RectanglePartition? EmptySpace = null,
     Dimensions MinLotSize = default,
     RectangleIntervalTree? PlacedChunks = null,
-    Dictionary<Point, List<EdgeConditionKind>>? PreservedConditions = null,
+    Dictionary<Point, EdgeConditionKind[]>? PreservedConditions = null,
     DirectionFlags DemandedDoorways = DirectionFlags.None,
     bool LotShifted = false)
 {
+    /// <summary>
+    ///     Optional per-lot anchor cache. When set, <see cref="MapFragment.GetEdgeMatchMultiplier" />
+    ///     stores the anchor it computes for each evaluated fragment and
+    ///     <see cref="MapFragment.TryPlaceStaticMap" /> reuses it for the winning fragment, avoiding
+    ///     a redundant anchor sweep. <c>null</c> (the default) restores the recompute-on-placement
+    ///     behavior used by callers that place a fragment without a preceding weighting pass.
+    /// </summary>
+    public LotAnchorCache? AnchorCache
+    {
+        get;
+        init;
+    }
+
     /// <summary>
     ///     The room's background fill, taken from <see cref="RoomParameters" />.
     /// </summary>

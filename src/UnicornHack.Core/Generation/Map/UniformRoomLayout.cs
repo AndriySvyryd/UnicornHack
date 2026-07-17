@@ -31,7 +31,7 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
         RoomComponent room,
         Branch branch,
         DefiningMapFragment fragment,
-        Dictionary<Direction, int> doorwayDemand,
+        IReadOnlyList<RoomDoorwayAnchor> doorwayDemand,
         RoomParameters roomParameters)
     {
         // Terrain has been allocated by the LevelLayout. Initialize it (default-fill)
@@ -47,13 +47,13 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
 
         var chunks = PlaceDefiningMapFragment(room, fragment, roomParameters);
 
-        var remainingDemand = new Dictionary<Direction, int>(doorwayDemand);
-        for (var i = 0; i < chunks.Count; i++)
-        {
-            DeductChunkDoorways(room, chunks[i], remainingDemand);
-        }
+        // remainingAnchors starts as the full demand and is mutated in place by
+        // PlaceSurroundingFragments: DeductChunkDoorways retires each anchor as it's satisfied, so on
+        // return the list holds only the still-unmet demand. It is the layout's single source of
+        // truth for both lot steering and the acceptance gate below.
+        var remainingAnchors = new List<RoomDoorwayAnchor>(doorwayDemand);
 
-        if (!PlaceSurroundingFragments(room, chunks, remainingDemand, roomParameters))
+        if (!PlaceSurroundingFragments(room, chunks, remainingAnchors, roomParameters))
         {
             // Connectivity could not be ensured — bail so the level generator restarts
             // this room layout attempt.
@@ -61,7 +61,10 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
             return null;
         }
 
-        if (!SatisfiesDemand(room, chunks, doorwayDemand))
+        // A surviving doorway-demand anchor means the directional demand wasn't met. That check plus
+        // the placeable-feature binding check is the whole of the room's acceptance gate — no need to
+        // recount the doorway supply from scratch the way SatisfiesDemand does.
+        if (!DoorwayDemandSatisfied(room, remainingAnchors) || !AllPlaceableFeaturesBound(room))
         {
             RecordRoomFailure(room, fragment, chunks);
             return null;
@@ -85,23 +88,35 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
     }
 
     /// <summary>
+    ///     Weight multiplier applied to a connecting fragment that carries the room's active
+    ///     role tag (entrance / exit / shortcut), so a fragment specialised for the room's
+    ///     connection need is preferred over a general-purpose one. Untagged fragments stay
+    ///     selectable (multiplier 1), so the tag is a preference, never a requirement.
+    /// </summary>
+    private const float ConnectionTagWeightBonus = 4f;
+
+    /// <summary>
     ///     Fills empty space around the defining chunk by iteratively allocating lots from
     ///     <see cref="RectanglePartition" /> and asking <see cref="MapFragment.TryPlace" /> to
     ///     place a weighted-pick fragment into each lot. Subclasses override this to inject
     ///     placement-strategy variations (e.g. <c>DenseRoomLayout</c>'s wall-merge shift).
     ///     Returns <c>false</c> when post-placement connectivity could not be ensured so the
-    ///     caller can declare the layout attempt failed and restart.
+    ///     caller can declare the layout attempt failed and restart. <paramref name="remainingAnchors" />
+    ///     is both input and output: it enters as the room's full demand and is mutated in place
+    ///     (each anchor retired by <see cref="DeductChunkDoorways" /> as it's satisfied), so on return
+    ///     it holds only the still-unmet demand — any surviving doorway-demand anchor means a
+    ///     directional doorway demand could not be met.
     /// </summary>
     protected virtual bool PlaceSurroundingFragments(
         RoomComponent room,
         List<Chunk> chunks,
-        Dictionary<Direction, int> remainingDemand,
+        List<RoomDoorwayAnchor> remainingAnchors,
         RoomParameters roomParameters)
     {
         var levelBoundingRectangle = room.BoundingRectangle;
         using var emptySpace = new RectanglePartition(levelBoundingRectangle);
         var placedChunkBounds = new RectangleIntervalTree(levelBoundingRectangle);
-        var preservedConditions = new Dictionary<Point, List<EdgeConditionKind>>();
+        var preservedConditions = new Dictionary<Point, EdgeConditionKind[]>();
         var filledArea = 0;
 
         var definingChunk = chunks.FirstOrDefault();
@@ -111,12 +126,47 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
             placedChunkBounds.Insert(definingChunk.BoundingRectangle);
             MapFragment.RegisterPreservedConditions(definingChunk, room, emptySpace, preservedConditions, roomParameters);
             filledArea += definingChunk.BoundingRectangle.Area;
+            // The defining chunk can already supply some demanded doorways; retire the matching
+            // anchors so the loop only chases (and only steers chunks toward) the still-unmet demand.
+            DeductChunkDoorways(room, definingChunk, remainingAnchors);
         }
 
-        var placingLevelConnection = NeedsLevelConnection(room);
+        // A room can carry several inter-level connection needs at once: it may receive one or
+        // more dangling incoming connections (entrance — a level can be targeted by both an exit
+        // A room can carry several inter-level connection needs at once: it may receive one or
+        // more dangling incoming connections (entrance — a level can be targeted by both an exit
+        // from the level above and a shortcut from two levels above) while also sourcing an
+        // outgoing one (exit / shortcut). Each connecting fragment satisfies a single need, so the
+        // loop keeps placing them while any need remains.
+        //
+        // Receiving is count-driven: it is re-derived each iteration from the room's still-dangling
+        // incoming connections, so wiring one (which resolves its target cell) naturally drops the
+        // need. Sourcing is decided once and cleared after a single placement: the current model
+        // sources at most one outgoing connection per room, and re-deriving it would be unreliable
+        // because a connection sourced into an already-generated target level is wired immediately
+        // (its target cell is not left dangling). A connecting fragment placed while a receive is
+        // still pending wires the receive first, so the source is satisfied only on a later
+        // receive-free iteration. Once a lot can host no connecting fragment the remaining needs
+        // are abandoned so the loop terminates.
+        var sourcingRemaining = NeedsSourceConnection(room);
         while (filledArea / (float)levelBoundingRectangle.Area < Coverage && chunks.Count < MaxChunkCount)
         {
-            var nextLot = SelectNextLot(emptySpace, room.Level.GenerationRandom);
+            // Steer the next chunk onto the room's leading connection anchor edge so a perimeter
+            // chunk hosts that connection's doorway. The front
+            // anchor stays queued until it's actually satisfied (DeductChunkDoorways for a
+            // doorway-demand anchor, ConsumeResolvedConnectionAnchors for a positioning-only one), so
+            // a chunk that lands on the side without meeting its demand doesn't prematurely retire it.
+            Rectangle? nextLot;
+            if (remainingAnchors.Count > 0)
+            {
+                var anchored = FindLargestFittingTouchingEdge(emptySpace, levelBoundingRectangle, remainingAnchors[0].Side);
+                nextLot = anchored ?? SelectNextLot(emptySpace, room.Level.GenerationRandom);
+            }
+            else
+            {
+                nextLot = SelectNextLot(emptySpace, room.Level.GenerationRandom);
+            }
+
             if (nextLot == null)
             {
                 // Room is too small for more lots — done.
@@ -125,7 +175,11 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
 
             room.Level.GenerationStats.LotPlacementAttempts++;
 
-            var lotDemandedDoorways = ComputeLotDemandedDoorways(room, nextLot.Value, remainingDemand);
+            var needsReceivingConnection = NeedsReceivingConnection(room);
+            var needsSourceConnection = sourcingRemaining;
+            var placingLevelConnection = needsReceivingConnection || needsSourceConnection;
+
+            var lotDemandedDoorways = ComputeLotDemandedDoorways(room, nextLot.Value, remainingAnchors);
 
             // Build the per-lot placement context. The empty-space partition tracks unfilled
             // cells and is updated each iteration by Insert(...) below; targetEdge is
@@ -138,13 +192,26 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
 
             var danglingConnection = room.IncomingConnections
                 .Select(c => c.Connection!).FirstOrDefault(c => c.TargetLevelX == null);
-            IEnumerable<MapFragment> sortedFragments = placingLevelConnection
-                ? room.Level.GenerationRandom.WeightedOrder(
+            IEnumerable<MapFragment> sortedFragments;
+            if (placingLevelConnection)
+            {
+                // Any connecting fragment is selectable; a fragment carrying the room's role
+                // tag (entrance / exit / shortcut) is preferred via a weight bonus. Untagged
+                // general-purpose fragments stay selectable, so this never excludes a fragment.
+                var roleTag = GetConnectingRoleTag(room);
+                sortedFragments = room.Level.GenerationRandom.WeightedOrder(
                     room.Level.Game.Services.Data.ConnectingMapFragments.GetAsList(),
-                    f => f.GetWeight(room, ctx, danglingConnection))
-                : room.Level.GenerationRandom.WeightedOrder(
+                    f => f.GetWeight(room, ctx, danglingConnection)
+                        * (roleTag != null && f.Tags is not null && f.Tags.Contains(roleTag)
+                            ? ConnectionTagWeightBonus
+                            : 1f));
+            }
+            else
+            {
+                sortedFragments = room.Level.GenerationRandom.WeightedOrder(
                     room.Level.Game.Services.Data.NormalMapFragments.GetAsList(),
                     f => f.GetWeight(room, ctx));
+            }
 
             var placedChunk = TryPlace(room, ctx, sortedFragments);
 
@@ -190,12 +257,6 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
 
             if (placedChunk == null)
             {
-                if (placingLevelConnection)
-                {
-                    placingLevelConnection = false;
-                    continue;
-                }
-
                 // Room is too small for any fragment — done.
                 break;
             }
@@ -205,28 +266,42 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
             placedChunkBounds.Insert(placedChunk.BoundingRectangle);
             MapFragment.RegisterPreservedConditions(placedChunk, room, emptySpace, preservedConditions, roomParameters);
             filledArea += placedChunk.BoundingRectangle.Area;
-            DeductChunkDoorways(room, placedChunk, remainingDemand);
 
-            // Cap inter-level connections at one per room. ConnectingMapFragments wire up
-            // the connection themselves inside BuildChunk; for NormalMapFragments placed
-            // by the fallback path above we wire it up here at one of the chunk's
-            // perimeter doorway points facing the level boundary.
+            // A connecting fragment satisfies one connection need. A receive takes priority: a
+            // ConnectingMapFragment wires the receive itself inside BuildChunk (and the count-based
+            // receive need drops on the next iteration); a NormalMapFragment placed by the fallback
+            // path above is wired here on one of its perimeter doorway points facing the level
+            // boundary. The source is taken only on a receive-free iteration, and is cleared after
+            // a single placement (at most one outgoing connection is sourced per room).
             if (placingLevelConnection)
             {
-                if (placedChunk.Fragment is ConnectingMapFragment)
-                {
-                    placingLevelConnection = false;
-                }
-                else if (placedChunk.Fragment is NormalMapFragment
+                if (placedChunk.Fragment is NormalMapFragment
                     && fallbackLevelEdge is { } chosenEdge
                     && TryPickLevelEdgeDoorway(
                         placedChunk, levelBoundingRectangle, chosenEdge,
                         room.Level.GenerationRandom, out var connectionCell))
                 {
-                    LevelConnection.CreateLevelConnection(room, connectionCell, connectionDefinition: null);
-                    placingLevelConnection = false;
+                    if (needsReceivingConnection && danglingConnection != null)
+                    {
+                        LevelConnection.CreateReceivingConnection(
+                            room, connectionCell, danglingConnection, direction: null);
+                    }
+                    else if (needsSourceConnection)
+                    {
+                        LevelConnection.CreateSourceConnection(
+                            room, connectionCell, connectionDefinition: null);
+                    }
+                }
+
+                if (needsSourceConnection && !needsReceivingConnection)
+                {
+                    // This receive-free iteration satisfied the room's single source need (either
+                    // the ConnectingMapFragment self-wired it or the fallback wired it above).
+                    sourcingRemaining = false;
                 }
             }
+
+            DeductChunkDoorways(room, placedChunk, remainingAnchors);
         }
 
         // Once no more fragments fit, materialize any still-deferred edge conditions:
@@ -241,7 +316,7 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
 
         if (chunks.Count > 1)
         {
-            if (!TryRepairConnectivity(room, chunks))
+            if (!TryRepairConnectivity(room, chunks, preservedConditions, roomParameters))
             {
                 room.Level.GenerationStats.RoomLayoutConnectivityRepairFailed++;
                 return false;
@@ -409,7 +484,7 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
         Rectangle lot,
         RectanglePartition emptySpace,
         RectangleIntervalTree placedChunkBounds,
-        Dictionary<Point, List<EdgeConditionKind>> preservedConditions,
+        Dictionary<Point, EdgeConditionKind[]> preservedConditions,
         IReadOnlyList<Chunk> placedChunks,
         DirectionFlags lotDemandedDoorways,
         RoomParameters roomParameters)
@@ -494,6 +569,63 @@ public class UniformRoomLayout : RoomLayout, ICSScriptSerializable
         }
 
         return null;
+    }
+
+    /// <summary>
+    ///     Returns the largest empty rectangle that fits <see cref="MinLotSize" /> and touches the
+    ///     <paramref name="anchor" /> side of <paramref name="bounds" />, or <c>null</c> when no
+    ///     such lot exists. An ordinal anchor is collapsed to its constituent cardinals, so a lot
+    ///     flush with either matching edge qualifies. Used to bias the first chunks onto the room's
+    ///     connection anchor edges.
+    /// </summary>
+    protected Rectangle? FindLargestFittingTouchingEdge(
+        RectanglePartition partition, Rectangle bounds, Direction anchor)
+    {
+        // EmptyRectangles is sorted by area descending, so the first touching rectangle that fits
+        // is the largest one that does.
+        var minSize = MinLotSize;
+        var minArea = minSize.Width * minSize.Height;
+        foreach (var empty in partition.EmptyRectangles)
+        {
+            if (empty.Area < minArea)
+            {
+                break;
+            }
+
+            if (empty.Width >= minSize.Width
+                && empty.Height >= minSize.Height
+                && LotTouchesAnchor(empty, bounds, anchor))
+            {
+                return empty;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="lot" /> is flush with the <paramref name="anchor" /> side of
+    ///     <paramref name="bounds" />. An ordinal anchor collapses to its two adjacent cardinals,
+    ///     so touching either edge qualifies.
+    /// </summary>
+    private static bool LotTouchesAnchor(Rectangle lot, Rectangle bounds, Direction anchor)
+    {
+        var touchesWest = lot.TopLeft.X == bounds.TopLeft.X;
+        var touchesEast = lot.BottomRight.X == bounds.BottomRight.X;
+        var touchesNorth = lot.TopLeft.Y == bounds.TopLeft.Y;
+        var touchesSouth = lot.BottomRight.Y == bounds.BottomRight.Y;
+        return anchor switch
+        {
+            Direction.West => touchesWest,
+            Direction.East => touchesEast,
+            Direction.North => touchesNorth,
+            Direction.South => touchesSouth,
+            Direction.Northwest => touchesNorth || touchesWest,
+            Direction.Northeast => touchesNorth || touchesEast,
+            Direction.Southwest => touchesSouth || touchesWest,
+            Direction.Southeast => touchesSouth || touchesEast,
+            _ => false
+        };
     }
 
     private static readonly CSScriptSerializer Serializer =

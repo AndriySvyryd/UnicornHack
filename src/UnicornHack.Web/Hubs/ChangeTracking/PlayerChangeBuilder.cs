@@ -48,29 +48,26 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
 
         _raceBuilder = new RaceChangeBuilder(playerEntity.Id);
         _abilityBuilder = new AbilityChangeBuilder(playerEntity.Id);
-        _logBuilder.Initialize(playerEntity);
+        _logBuilder.Reset(playerEntity);
     }
 
     public bool HasObservableChanges(GameManager manager)
     {
-        if (HasScalarChanges() || _raceBuilder.HasChanges || _abilityBuilder.HasChanges)
+        var playerEntity = manager.FindEntity(_playerEntityId);
+        if (RoomChangeBuilder.HasChanges(playerEntity?.Position?.RoomEntity.Room)
+            || HasScalarChanges() || _raceBuilder.HasChanges || _abilityBuilder.HasChanges)
         {
             return true;
         }
 
-        var playerEntity = manager.FindEntity(_playerEntityId);
         if (playerEntity != null && _logBuilder.HasChanges(playerEntity))
         {
             return true;
         }
 
+        // Defensive check: if the player is in a different room, other changes should have been detected before this.
         var currentRoomId = playerEntity?.Position?.RoomId ?? 0;
-        if (currentRoomId != LastSentRoomId)
-        {
-            return true;
-        }
-
-        return RoomChangeBuilder.HasChanges(playerEntity?.Position?.RoomEntity.Room);
+        return currentRoomId != LastSentRoomId;
     }
 
     public PlayerChange BuildChangeSet(GameManager manager, GameServices services)
@@ -177,11 +174,14 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
         return change;
     }
 
-    public void Clear()
+    public void Reset(GameEntity playerEntity)
     {
-        _raceBuilder.Clear();
-        _abilityBuilder.Clear();
         _pendingChange = new PlayerChange();
+        _raceBuilder.Reset();
+        _abilityBuilder.Reset();
+
+        LastSentRoomId = playerEntity.Position?.RoomId ?? 0;
+        _logBuilder.Reset(playerEntity);
     }
 
     public static PlayerChange SerializePlayer(

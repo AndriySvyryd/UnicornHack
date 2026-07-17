@@ -8,7 +8,7 @@ public class EntranceLevelLayoutTest
     [Fact]
     public void Never_assigns_deep_tier_rewards()
     {
-        var layout = new EntranceLevelLayout();
+        var layout = Data.Branches.BranchData.Entrance.Layout;
         var parameters = layout.GetParameters(EntranceDifficulty);
 
         for (uint seed = 1; seed <= 200; seed++)
@@ -35,7 +35,7 @@ public class EntranceLevelLayoutTest
     [Fact]
     public void Caps_at_most_one_altar_and_one_race_pedestal_per_level()
     {
-        var layout = new EntranceLevelLayout();
+        var layout = Data.Branches.BranchData.Entrance.Layout;
         var parameters = layout.GetParameters(EntranceDifficulty);
 
         for (uint seed = 1; seed <= 200; seed++)
@@ -62,7 +62,7 @@ public class EntranceLevelLayoutTest
     {
         // EntranceLevelLayout sets CurseRoomProbability to zero; covered here so a future
         // regression that bumps the default is caught immediately.
-        var layout = new EntranceLevelLayout();
+        var layout = Data.Branches.BranchData.Entrance.Layout;
         var parameters = layout.GetParameters(EntranceDifficulty);
 
         for (uint seed = 1; seed <= 100; seed++)

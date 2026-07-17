@@ -168,6 +168,8 @@ public static class ClientStateHelpers
             Depth = data.Depth,
             Width = data.Width,
             Height = data.Height,
+            GridX = data.GridX,
+            GridY = data.GridY,
             Actors = new Dictionary<int, ActorChange>(),
             Items = new Dictionary<int, ItemChange>(),
             Connections = new Dictionary<int, ConnectionChange>(),

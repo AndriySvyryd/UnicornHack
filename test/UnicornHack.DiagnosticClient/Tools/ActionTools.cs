@@ -53,9 +53,13 @@ public sealed class ActionTools
     public Task<string> move_to(int x, int y, CancellationToken cancellationToken = default)
         => Invoke(ActorActionType.MoveToCell, PackPoint(x, y), null, cancellationToken);
 
-    [McpServerTool, Description("Pick up the item with the given id from the current tile.")]
-    public Task<string> pickup(int item_id, CancellationToken cancellationToken = default)
-        => Invoke(ActorActionType.PickupItem, item_id, null, cancellationToken);
+    [McpServerTool, Description(
+        "Pick up the item at the current tile. There can be at most one item per cell, so " +
+        "the action carries no item id. Optional `slot` targets the ability slot the " +
+        "picked-up item's primary ability should land in; omit to let the server auto-pick " +
+        "the first free slot.")]
+    public Task<string> pickup(int? slot = null, CancellationToken cancellationToken = default)
+        => Invoke(ActorActionType.PickupItem, slot, null, cancellationToken);
 
     [McpServerTool, Description("Drop an item by id onto the current tile.")]
     public Task<string> drop(int item_id, CancellationToken cancellationToken = default)
@@ -73,9 +77,9 @@ public sealed class ActionTools
     public Task<string> set_ability_slot(int slot, int? ability_id, CancellationToken cancellationToken = default)
         => Invoke(ActorActionType.SetAbilitySlot, ability_id, slot, cancellationToken);
 
-    [McpServerTool, Description("Activate the ability currently in the given slot. Optional target_id for targeted abilities; target2 is shape-dependent.")]
-    public Task<string> use_ability_slot(int slot, int? target_id = null, int? target2 = null, CancellationToken cancellationToken = default)
-        => Invoke(ActorActionType.UseAbilitySlot, slot, target_id, cancellationToken);
+    [McpServerTool, Description("Activate the ability in the given slot. Optional target_id is the ACTOR id to target (e.g. from get_known_actors); the tool sends it using the server's negative-id actor-target convention. Omit target_id for self/untargeted abilities.")]
+    public Task<string> use_ability_slot(int slot, int? target_id = null, CancellationToken cancellationToken = default)
+        => Invoke(ActorActionType.UseAbilitySlot, slot, target_id is { } id ? -Math.Abs(id) : null, cancellationToken);
 
     [McpServerTool, Description("Travel to a known target room by id (see get_connections / LevelMap.AvailableTargets).")]
     public Task<string> travel_to_room(int room_id, CancellationToken cancellationToken = default)

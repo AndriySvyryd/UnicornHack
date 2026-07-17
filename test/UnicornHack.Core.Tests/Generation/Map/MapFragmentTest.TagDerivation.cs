@@ -162,16 +162,39 @@ public partial class MapFragmentTest
             #<#
             ###
             """);
-        Assert.Contains("stairs-up", up.Tags!);
-        Assert.DoesNotContain("stairs-down", up.Tags!);
+        Assert.Contains("entrance", up.Tags!);
+        Assert.DoesNotContain("exit", up.Tags!);
 
         var down = NewFragment("""
             ###
             #>#
             ###
             """);
-        Assert.Contains("stairs-down", down.Tags!);
-        Assert.DoesNotContain("stairs-up", down.Tags!);
+        Assert.Contains("exit", down.Tags!);
+        Assert.DoesNotContain("entrance", down.Tags!);
+    }
+
+    [Fact]
+    public void Exit_auto_tag_suppressed_when_fragment_authored_as_shortcut()
+    {
+        // A shortcut fragment may draw down-stairs ('>') for flavour without being a general
+        // exit fragment: the auto 'exit' tag is suppressed so the role-tag bias keeps it for
+        // shortcut rooms instead of regular exit rooms.
+        var shortcutDown = NewFragment("""
+            ###
+            #>#
+            ###
+            """, authoredTags: ["shortcut"]);
+        Assert.Contains("shortcut", shortcutDown.Tags!);
+        Assert.DoesNotContain("exit", shortcutDown.Tags!);
+
+        // Without the shortcut tag, '>' still auto-emits 'exit'.
+        var plainDown = NewFragment("""
+            ###
+            #>#
+            ###
+            """);
+        Assert.Contains("exit", plainDown.Tags!);
     }
 
     [Fact]
@@ -185,8 +208,8 @@ public partial class MapFragmentTest
         Assert.DoesNotContain("altar", f.Tags!);
         Assert.DoesNotContain("pedestal", f.Tags!);
         Assert.DoesNotContain("stand", f.Tags!);
-        Assert.DoesNotContain("stairs-up", f.Tags!);
-        Assert.DoesNotContain("stairs-down", f.Tags!);
+        Assert.DoesNotContain("entrance", f.Tags!);
+        Assert.DoesNotContain("exit", f.Tags!);
     }
 
     [Fact]
@@ -288,8 +311,8 @@ public partial class MapFragmentTest
     [Fact]
     public void FeatureTagNames_maps_stairs_directions_to_entrance_and_exit()
     {
-        // stairs-up = Entrance, stairs-down = Exit per design.
-        Assert.Equal("stairs-up", MapFragment.FeatureTagNames[RoomFeatures.Entrance]);
-        Assert.Equal("stairs-down", MapFragment.FeatureTagNames[RoomFeatures.Exit]);
+        // Entrance and Exit map to the `entrance` / `exit` tags per design.
+        Assert.Equal("entrance", MapFragment.FeatureTagNames[RoomFeatures.Entrance]);
+        Assert.Equal("exit", MapFragment.FeatureTagNames[RoomFeatures.Exit]);
     }
 }

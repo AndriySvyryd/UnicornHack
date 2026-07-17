@@ -6,12 +6,13 @@ namespace UnicornHack.Utils.MessagingECS;
 public class EntityGroup<TEntity> : EntityGroupBase<TEntity>, IEnumerable<TEntity>
     where TEntity : Entity, new()
 {
-    private readonly Dictionary<int, TEntity> _entities = new();
+    private readonly Dictionary<int, TEntity> _entities;
 
-    public EntityGroup(string name, EntityMatcher<TEntity> matcher)
+    public EntityGroup(string name, EntityMatcher<TEntity> matcher, int capacity = 8)
         : base(name)
     {
         Matcher = matcher;
+        _entities = new Dictionary<int, TEntity>(capacity);
     }
 
     public EntityMatcher<TEntity> Matcher

@@ -52,7 +52,7 @@ public class IrregularBlobMap : DynamicMap
         }
 
         // When a side is flush-pinned, force a full edge run so the chunk abuts the
-        // existing neighbour along that side and doorway carving has a continuous wall to
+        // existing neighbor along that side and doorway carving has a continuous wall to
         // work against.
         if ((flushEdges & DirectionFlags.North) != 0)
         {

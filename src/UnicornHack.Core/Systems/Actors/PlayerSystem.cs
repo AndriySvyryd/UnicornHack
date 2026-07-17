@@ -122,6 +122,81 @@ public class PlayerSystem :
 
                 manager.Enqueue(dropMessage);
                 break;
+            case ActorActionType.PickupItem:
+                // There can be at most one item per cell, so the action carries no item
+                // id; `target`, when supplied, is the ability slot the picked-up item's
+                // primary ability should land in. A null target accepts the auto-slot
+                // pick from AbilitySlottingSystem (first free slot).
+                var itemToPickUp = position.RoomEntity.Room!.Items.GetValueOrDefault(position.Cell);
+                if (itemToPickUp == null)
+                {
+                    manager.LoggingSystem.WriteLog(
+                        manager.Game.Services.Language.NothingToPickUp(), playerEntity, manager);
+                    return false;
+                }
+
+                var requestedSlot = target;
+
+                // If a specific slot is requested and is already occupied, clear it
+                // synchronously up-front so AbilitySlottingSystem's auto-slot lands the
+                // new pickup ability directly into the now-free target slot. Without
+                // this, the displaced ability would only be unslotted as a side effect
+                // of the follow-up SetAbilitySlot below, which works but produces a
+                // less intuitive event ordering for animations.
+                if (requestedSlot.HasValue
+                    && playerEntity.Being!.SlottedAbilities.TryGetValue(requestedSlot.Value, out var conflictingAbility))
+                {
+                    var clearSlotMessage = SetAbilitySlotMessage.Create(manager);
+                    clearSlotMessage.AbilityEntity = conflictingAbility;
+                    manager.Process(clearSlotMessage);
+
+                    // Clearing an item ability's slot only *enqueues* the drop of the
+                    // displaced item; drain the queue now so the "drop" is logged before
+                    // the pickup below logs "pick up". Otherwise the synchronously-processed
+                    // pickup would log first and the order would read backwards.
+                    manager.Queue.ProcessQueue(manager);
+                }
+
+                // Process the pickup synchronously and drain the cascading effects
+                // (container change -> WhilePossessed activation -> AddAbility ->
+                // AbilitySlottingSystem auto-slot) so the player's SlottedAbilities
+                // map reflects the post-pickup state before we inspect it. The
+                // recursive ProcessQueue call is safe: the queue's own secondary
+                // drain uses the same recursion, and the parent drain loop sees an
+                // empty queue on return and continues normally.
+                var slotsBefore = requestedSlot.HasValue
+                    ? new HashSet<int>(playerEntity.Being!.SlottedAbilities.Keys)
+                    : null;
+
+                var pickupMessage = MoveItemMessage.Create(manager);
+                pickupMessage.ItemEntity = itemToPickUp;
+                pickupMessage.TargetContainerEntity = playerEntity;
+
+                manager.Process(pickupMessage);
+                manager.Queue.ProcessQueue(manager);
+
+                // If a specific slot was requested and the auto-slot still landed the
+                // new ability somewhere else (e.g. the requested slot was beyond the
+                // first free slot), move it. A pickup adds at most one item-typed
+                // ability, so any new entry in SlottedAbilities relative to
+                // `slotsBefore` is the one to move.
+                if (requestedSlot.HasValue && slotsBefore != null)
+                {
+                    foreach (var (pickupSlot, pickupAbilityEntity) in playerEntity.Being!.SlottedAbilities)
+                    {
+                        if (slotsBefore.Contains(pickupSlot) || pickupSlot == requestedSlot.Value)
+                        {
+                            continue;
+                        }
+
+                        var movePickupToSlotMessage = SetAbilitySlotMessage.Create(manager);
+                        movePickupToSlotMessage.AbilityEntity = pickupAbilityEntity;
+                        movePickupToSlotMessage.Slot = requestedSlot.Value;
+                        manager.Process(movePickupToSlotMessage);
+                        break;
+                    }
+                }
+                break;
             case ActorActionType.EquipItem:
                 var itemToEquip = GetItem(target!.Value, playerEntity, manager);
                 var slot = (EquipmentSlot)target2!.Value;
@@ -184,6 +259,23 @@ public class PlayerSystem :
         player.NextActionTarget = null;
         player.NextActionTarget2 = null;
         player.QueuedAction = false;
+    }
+
+    /// <summary>
+    ///     Returns <c>true</c> when at least one player occupies the room identified by
+    ///     <paramref name="roomId" />.
+    /// </summary>
+    public bool IsPlayerInRoom(int roomId, GameManager manager)
+    {
+        foreach (var playerEntity in manager.Players)
+        {
+            if (playerEntity.Position!.RoomId == roomId)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected override bool ActivateAbility(

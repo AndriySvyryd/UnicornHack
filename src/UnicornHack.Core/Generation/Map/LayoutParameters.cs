@@ -16,7 +16,7 @@ namespace UnicornHack.Generation.Map;
 /// </param>
 /// <param name="RewardRoomProbability">Probability that a non-entrance/non-exit room is tagged with a reward feature.</param>
 /// <param name="CurseRoomProbability">Probability that a non-entrance/non-exit room is tagged Cursed.</param>
-/// <param name="HiddenConnectionProbability">Probability that an Optional (non-required) edge starts hidden.</param>
+/// <param name="HiddenConnectionProbability">Expected number of concealed rooms per level.</param>
 /// <param name="MinRooms">Minimum total room count; below this the level is regenerated.</param>
 /// <param name="MaxRooms">Maximum total room count; the placement algorithm caps at this value.</param>
 /// <param name="Difficulty">

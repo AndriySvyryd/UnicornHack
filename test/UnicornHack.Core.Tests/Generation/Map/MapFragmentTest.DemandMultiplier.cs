@@ -8,7 +8,7 @@ namespace UnicornHack.Generation.Map;
 public partial class MapFragmentTest
 {
     private const float Bonus = MapFragment.DemandTagBonus;
-    private const float Penalty = MapFragment.AntiTagPenalty;
+    private const float Penalty = 1f / MapFragment.DemandTagBonus;
 
     [Fact]
     public void Returns_one_when_room_has_no_outstanding_feature_demand()
@@ -113,8 +113,8 @@ public partial class MapFragmentTest
         room.Features = RoomFeatures.SmallFountain | RoomFeatures.WeaponStand;
         var fragment = NewFragment(tags: [MapFragment.WildcardFeatureTag]);
 
-        // Two outstanding bits, each multiplied by the bonus.
-        Assert.Equal(Bonus * Bonus, fragment.GetDemandMultiplier(room, Ctx()));
+        // Two outstanding bits: the bonus accumulates linearly, not exponentially.
+        Assert.Equal(1f + 2 * (Bonus - 1f), fragment.GetDemandMultiplier(room, Ctx()));
     }
 
     [Fact]
@@ -125,6 +125,17 @@ public partial class MapFragmentTest
         var fragment = NewFragment(tags: ["custom"], antiTags: ["small-fountain"]);
 
         Assert.Equal(Penalty, fragment.GetDemandMultiplier(room, Ctx()));
+    }
+
+    [Fact]
+    public void Multiple_anti_tags_stack_linearly()
+    {
+        var (room, _) = BuildRoom();
+        room.Features = RoomFeatures.SmallFountain | RoomFeatures.WeaponStand;
+        var fragment = NewFragment(tags: ["custom"], antiTags: ["small-fountain", "weapon-stand"]);
+
+        // Two anti-tag matches: the penalty deepens linearly (reciprocal), not exponentially.
+        Assert.Equal(1f / (1f + 2 * (1f / Penalty - 1f)), fragment.GetDemandMultiplier(room, Ctx()));
     }
 
     [Fact]
@@ -159,13 +170,14 @@ public partial class MapFragmentTest
     }
 
     [Fact]
-    public void Multiple_demands_stack_multiplicatively()
+    public void Multiple_demands_stack_linearly()
     {
         var (room, _) = BuildRoom();
         room.Features = RoomFeatures.SmallFountain;
         var fragment = NewFragment(tags: ["small-fountain", "door-e"]);
 
-        Assert.Equal(Bonus * Bonus, fragment.GetDemandMultiplier(room, Ctx(DirectionFlags.East)));
+        // A feature match and a doorway match: two demands accumulate linearly.
+        Assert.Equal(1f + 2 * (Bonus - 1f), fragment.GetDemandMultiplier(room, Ctx(DirectionFlags.East)));
     }
 
     private static LotPlacementContext Ctx(DirectionFlags demandedDoorways = DirectionFlags.None)

@@ -177,7 +177,7 @@ public class Branch : ILoadable, ICSScriptSerializable
     {
         get;
         set;
-    }
+    } = MapFeature.Default;
 
     /// <summary>
     ///     Default <see cref="MapFeature" /> for path/corridor tiles in this branch.
@@ -186,7 +186,19 @@ public class Branch : ILoadable, ICSScriptSerializable
     {
         get;
         set;
-    }
+    } = MapFeature.RockFloor;
+
+    /// <summary>
+    ///     Default <see cref="MapFeature" /> for walls the generator places to enclose carved
+    ///     corridors and the room background in this branch. Authored fragment walls are
+    ///     unaffected — this is only the fallback the layout uses when it adds a wall itself.
+    ///     Fragments may override per-fragment via <see cref="DefiningMapFragment.DefaultWall" />.
+    /// </summary>
+    public MapFeature DefaultWall
+    {
+        get;
+        set;
+    } = MapFeature.RockWall;
 
     /// <summary>
     ///     Creates a per-game <see cref="GameBranch" /> for this template and registers it on
@@ -241,7 +253,8 @@ public class Branch : ILoadable, ICSScriptSerializable
         { nameof(RoomWidth), (_, v) => (byte)v! != DefaultRoomWidth },
         { nameof(RoomHeight), (_, v) => (byte)v! != DefaultRoomHeight },
         { nameof(DefaultTerrain), (_, v) => (MapFeature)v! != MapFeature.Default },
-        { nameof(DefaultPathTerrain), (_, v) => (MapFeature)v! != MapFeature.Default },
+        { nameof(DefaultPathTerrain), (_, v) => (MapFeature)v! != MapFeature.RockFloor },
+        { nameof(DefaultWall), (_, v) => (MapFeature)v! != MapFeature.RockWall },
         { nameof(IsTerminal), (_, v) => (bool)v! }
     };
 }

@@ -59,6 +59,17 @@ public class AbilityActivatedMessage : IMessage
         set;
     }
 
+    /// <summary>
+    ///     The effect entities to apply. Unlike the entity references on this message, these
+    ///     are intentionally <em>not</em> reference-counted: the list is shared by reference
+    ///     across <see cref="Clone" />d messages and is built up immutably, so per-message
+    ///     <see cref="Clean" /> can't own the elements' lifetimes. The effects are kept alive
+    ///     by their containing ability (via <c>EffectsToContainingAbilityRelationship</c>) only
+    ///     while that ability exists. Because this message is enqueued and processed later, a
+    ///     containing ability — and thus its effect entities — may be removed in the interim
+    ///     (e.g. a consumed or shattered item). Consumers must therefore check each entry is
+    ///     still alive (<c>effectEntity.Effect is { }</c>) before using it.
+    /// </summary>
     public ImmutableList<GameEntity> EffectsToApply
     {
         get;

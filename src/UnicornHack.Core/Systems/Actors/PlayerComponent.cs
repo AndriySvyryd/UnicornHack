@@ -42,7 +42,7 @@ public class PlayerComponent : GameComponent, IKeepAliveComponent
     public ICollection<PlayerCommand> CommandHistory
     {
         get;
-    } = new ObservableHashSet<PlayerCommand>();
+    } = new ObservableHashSet<PlayerCommand>(ReferenceEqualityComparer.Instance);
 
     public string ProperName
     {

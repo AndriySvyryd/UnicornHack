@@ -34,9 +34,9 @@ public partial class GameManager
 
     private void InitializeBeings(SequentialMessageQueue<GameManager> queue)
     {
-        Add<BeingComponent>(EntityComponent.Being, poolSize: 32);
-        Add<PhysicalComponent>(EntityComponent.Physical, poolSize: 32);
-        Add<RaceComponent>(EntityComponent.Race, poolSize: 32);
+        Add<BeingComponent>(EntityComponent.Being, poolSize: 64, maxPoolSize: 512);
+        Add<PhysicalComponent>(EntityComponent.Physical, poolSize: 64, maxPoolSize: 512);
+        Add<RaceComponent>(EntityComponent.Race, poolSize: 64, maxPoolSize: 512);
 
         Beings = CreateGroup(nameof(Beings), new EntityMatcher<GameEntity>()
             .AllOf((int)EntityComponent.Being, (int)EntityComponent.Physical, (int)EntityComponent.Sensor));

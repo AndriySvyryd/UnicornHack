@@ -23,5 +23,6 @@ public enum RoomFeatures
     RitualShrine = 1 << 16,
     Challenge = 1 << 17,
     Boss = 1 << 18,
-    Trapped = 1 << 19
+    Trapped = 1 << 19,
+    Shortcut = 1 << 20
 }

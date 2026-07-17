@@ -99,10 +99,6 @@ public class FragmentCompositionDistributionProbe(ITestOutputHelper output)
                 {
                     SampleFragmentWeights(allFragments, level, totals, weightSamples);
                 }
-
-                // Drain the ECS message queue between level generations so it doesn't
-                // accumulate to the hard cap across many depths on the same manager.
-                game.Manager.Queue.ProcessQueue(game.Manager);
             }
         }
 

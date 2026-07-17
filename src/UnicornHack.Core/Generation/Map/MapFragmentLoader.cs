@@ -13,7 +13,7 @@ namespace UnicornHack.Generation.Map;
 ///         non-identity transform in the orbit as a sibling entry keyed by the variant's
 ///         transformed name. No geometry-based deduplication is performed — authors that
 ///         want to collapse symmetric payloads must set the matching exclusion flag.
-///         <see cref="MapFragment.WeightMultiplier" /> is derived dynamically from
+///         <see cref="MapFragment.VariantMultiplier" /> is derived dynamically from
 ///         <see cref="MapFragment.VariantCount" /> so the sum of the orbit's pick weights
 ///         equals the source's authored weight.
 ///     </para>
@@ -37,6 +37,9 @@ public class MapFragmentLoader<T> : CSScriptLoader<T> where T : MapFragment
         {
             source.EnsureInitialized();
             source.ValidatePlacementCapability();
+            // Compile the weight delegate once on the source before cloning, so every variant
+            // in the orbit shares it through CreateVariant's member-wise clone.
+            source.EnsureWeightFunctionCompiled();
             expanded[source.Name] = source;
 
             var orbit = MapFragmentTransforms.GetOrbit(source.NoMirror, source.NoTurnOver, source.NoTransform);

@@ -12,17 +12,17 @@ namespace UnicornHack.Generation.Map;
 /// </summary>
 /// <remarks>
 ///     Inherits the topology-agnostic algorithm from <see cref="LevelLayout.BuildGraph" /> via
-///     <see cref="GridLevelLayout" /> but overrides <see cref="GetNeighbourOffsets" /> to use
-///     all 8 neighbours, so the prune-from-full algorithm can keep diagonal cross-shortcuts
+///     <see cref="GridLevelLayout" /> but overrides <see cref="GetNeighborOffsets" /> to use
+///     all 8 neighbors, so the prune-from-full algorithm can keep diagonal cross-shortcuts
 ///     between rooms in addition to the cardinal backbone. <see cref="PlaceRooms" /> is also
 ///     overridden to bias the spanning tree left-to-right via a column frontier.
 /// </remarks>
 public class TreeLevelLayout : GridLevelLayout, ICSScriptSerializable
 {
     /// <summary>
-    ///     8-neighbour topology (cardinals + diagonals).
+    ///     8-neighbor topology (cardinals + diagonals).
     /// </summary>
-    public override IEnumerable<(int dx, int dy)> GetNeighbourOffsets(byte cellX, byte cellY)
+    public override IEnumerable<(int dx, int dy)> GetNeighborOffsets(byte cellX, byte cellY)
     {
         for (var dy = -1; dy <= 1; dy++)
         {

@@ -79,8 +79,11 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
         var position = itemEntity.Position!;
         var itemMovedMessage = ItemMovedMessage.Create(manager);
         itemMovedMessage.ItemEntity = itemEntity;
-        itemMovedMessage.InitialLevelCell = position?.Cell;
+        itemMovedMessage.InitialRoomCell = position?.Cell;
         itemMovedMessage.InitialContainer = item.ContainerEntity;
+        itemMovedMessage.InitialRoomEntity = position != null
+            ? position.RoomEntity
+            : null;
         itemMovedMessage.InitialCount = item.GetQuantity();
         itemMovedMessage.SuppressLog = message.SuppressLog;
 
@@ -114,7 +117,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
             }
 
             GameEntity? initialTopContainer = null;
-            var initialPosition = itemMovedMessage.InitialLevelCell;
+            var initialPosition = itemMovedMessage.InitialRoomCell;
             if (initialPosition == null)
             {
                 initialTopContainer = itemMovedMessage.InitialContainer != null

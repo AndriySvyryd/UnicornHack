@@ -47,7 +47,7 @@ public partial class GameManager
 
     private void InitializeItems(SequentialMessageQueue<GameManager> queue)
     {
-        Add<ItemComponent>(EntityComponent.Item, poolSize: 32);
+        Add<ItemComponent>(EntityComponent.Item, poolSize: 32, maxPoolSize: 256);
 
         ContainedItems = CreateGroup(nameof(ContainedItems),
             new EntityMatcher<GameEntity>()

@@ -1,13 +1,13 @@
 using UnicornHack.Data.Branches;
 using UnicornHack.Data.Fragments;
 using UnicornHack.Systems.Levels;
+using UnicornHack.Utils;
 
 namespace UnicornHack.Generation;
 
 public class LevelGeneratorTest
 {
     private static readonly IReadOnlyDictionary<string, int> EmptyTagInstances = new Dictionary<string, int>();
-
 
     /// <summary>
     ///     Regression: with an initial seed of 0, every generated level had the same
@@ -42,6 +42,52 @@ public class LevelGeneratorTest
 
         Assert.False(TerrainEquals(firstTerrain, secondTerrain),
             $"Depth 1 and depth 2 produced identical terrain for initial seed {seed}.");
+    }
+
+    /// <summary>
+    ///     Regression for the generation queue overflow: generating many levels back-to-back with a
+    ///     single <see cref="GameManager" /> and no intervening game turn used to overflow the ECS
+    ///     message queue (limit 16384) around the third level, because each generation enqueues
+    ///     entity-lifecycle / property-change messages that only a turn would drain.
+    ///     <see cref="LevelGenerator.EnsureGenerated(GameLevel)" /> now drains its own messages, so
+    ///     a deep descent completes without any manual <c>ProcessQueue</c>.
+    /// </summary>
+    [Theory]
+    [InlineData(1u)]
+    [InlineData(42u)]
+    public void Deep_descent_does_not_overflow_the_message_queue(uint seed)
+    {
+        var game = TestHelper.CreateGame(seed);
+        var manager = game.Manager;
+
+        var surfaceBranch = BranchData.Surface.Instantiate(game);
+        BranchData.Entrance.Instantiate(game);
+        BranchData.Dungeon.Instantiate(game);
+
+        var surfaceLevel = LevelGenerator.CreateEmpty(surfaceBranch, depth: 1, seed, manager);
+        LevelGenerator.EnsureGenerated(surfaceLevel);
+
+        var room = surfaceLevel.Rooms.First().Connections.Single().Value.Connection!.TargetRoomEntity.Room!;
+        var levelsGenerated = 0;
+
+        // Deliberately never call ProcessQueue: the fix makes each EnsureGenerated self-draining.
+        for (var i = 0; i < 8 && room != null; i++)
+        {
+            LevelGenerator.EnsureGenerated(room);
+            levelsGenerated++;
+
+            // After generation the queue is drained, so it must be empty.
+            Assert.Equal(0, manager.Queue.QueuedCount);
+
+            room = room.Level.Rooms
+                .FirstOrDefault(r => (r.Features & RoomFeatures.Exit) != 0)?.Connections.Values
+                .Select(c => c.Connection!)
+                .FirstOrDefault(c => c.Orientation == Direction.Down)?.TargetRoomEntity.Room;
+        }
+
+        // Must have descended well past the ~3-level point where the queue used to overflow.
+        Assert.True(levelsGenerated >= 5,
+            $"Seed {seed}: only descended {levelsGenerated} levels; expected at least 5.");
     }
 
     private static byte[] SnapshotTerrain(RoomComponent level)
@@ -217,5 +263,242 @@ public class LevelGeneratorTest
     {
         public void AssignSourceName(string name)
             => SourceName = name;
+    }
+
+    /// <summary>
+    ///     Whatever rooms end up concealed (with <see cref="LevelLayout.HiddenConnectionProbability"/>
+    ///     spread across the hideable rooms), concealment must stay off the shortest entrance→exit
+    ///     path and must never strand a visible predecessor (the cumulative-hiding guard keeps each
+    ///     visible room with at least one visible outgoing edge).
+    /// </summary>
+    [Fact]
+    public void Hidden_rooms_stay_off_the_spine_and_never_strand_a_visible_predecessor()
+    {
+        // A high probability maximises the number of concealed rooms so the invariants below are
+        // exercised across many hidden rooms; the exact count is spread by the hideable-room count.
+        var layout = new TreeLevelLayout
+        {
+            HiddenConnectionProbability = 1.0f,
+            CurseRoomProbability = 0.0f,
+            Sinuosity = 0.0f
+        };
+
+        var checkedSeeds = 0;
+        for (var seed = 1u; seed <= 20; seed++)
+        {
+            var graph = layout.BuildGraph(
+                layout.GetParameters(LevelGenerator.MaxDifficulty),
+                new SimpleRandom { Seed = seed }, new LevelGenerationStats(), new GenerationStats());
+            if (graph is null)
+            {
+                continue;
+            }
+
+            checkedSeeds++;
+            var entrance = graph.Rooms.Single(r => (r.Features & RoomFeatures.Entrance) != 0);
+            var exit = graph.Rooms.Single(r => (r.Features & RoomFeatures.Exit) != 0);
+
+            // A room is hidden iff every connection incident to it is hidden (and it has at
+            // least one). Build the per-room incident-edge view.
+            var incidentVisible = new Dictionary<RoomGraphNode, int>();
+            var incidentTotal = new Dictionary<RoomGraphNode, int>();
+            var visibleOutgoing = new Dictionary<RoomGraphNode, int>();
+            foreach (var edge in graph.Connections)
+            {
+                incidentTotal[edge.Source] = incidentTotal.GetValueOrDefault(edge.Source) + 1;
+                incidentTotal[edge.Target] = incidentTotal.GetValueOrDefault(edge.Target) + 1;
+                if (!edge.Hidden)
+                {
+                    incidentVisible[edge.Source] = incidentVisible.GetValueOrDefault(edge.Source) + 1;
+                    incidentVisible[edge.Target] = incidentVisible.GetValueOrDefault(edge.Target) + 1;
+                    visibleOutgoing[edge.Source] = visibleOutgoing.GetValueOrDefault(edge.Source) + 1;
+                }
+            }
+
+            bool IsHidden(RoomGraphNode r)
+                => incidentTotal.GetValueOrDefault(r) > 0 && incidentVisible.GetValueOrDefault(r) == 0;
+
+            var spine = ShortestDirectedPath(graph, entrance, exit).ToHashSet();
+
+            // Entrance and exit are never hidden.
+            Assert.False(IsHidden(entrance), "Entrance must never be hidden.");
+            Assert.False(IsHidden(exit), "Exit must never be hidden.");
+
+            foreach (var node in graph.Rooms)
+            {
+                if (IsHidden(node))
+                {
+                    Assert.DoesNotContain(node, spine);
+                }
+
+                // Dead-end invariant: a visible (non-hidden) room other than the exit must
+                // retain at least one visible outgoing edge — the cumulative-hiding guard.
+                if (!IsHidden(node) && node != exit)
+                {
+                    Assert.True(visibleOutgoing.GetValueOrDefault(node) >= 1,
+                        $"Seed {seed}: visible room ({node.GridX},{node.GridY}) has no visible exit.");
+                }
+            }
+        }
+
+        Assert.True(checkedSeeds > 0, "Expected at least one seed to produce a graph.");
+    }
+
+    [Fact]
+    public void Shortcut_is_a_hidden_only_reward_that_scales_with_difficulty()
+    {
+        var probe = new RewardWeightProbe();
+
+        // Visible rooms can never receive the Shortcut reward.
+        Assert.Equal(0f, probe.Weight(RoomFeatures.Shortcut, countSoFar: 0, globalCountSoFar: 0, hidden: false));
+
+        // Hidden rooms can, and the weight grows with difficulty (before the clamp).
+        var shallow = probe.WeightAtDifficulty(RoomFeatures.Shortcut, 0, 0, hidden: true, difficulty: 1);
+        var deep = probe.WeightAtDifficulty(RoomFeatures.Shortcut, 0, 0, hidden: true, difficulty: 8);
+        Assert.True(shallow > 0f, "Shortcut must be selectable in a hidden room.");
+        Assert.True(deep > shallow, "Shortcut weight must grow with difficulty.");
+    }
+
+    [Fact]
+    public void Hidden_rooms_bias_their_reward_draw_toward_premium_features()
+    {
+        var probe = new RewardWeightProbe();
+
+        // A premium feature (RitualShrine) is weighted higher in a hidden room than the same
+        // feature in a visible room (the quality multiplier only applies when hidden).
+        var visible = probe.Weight(RoomFeatures.RitualShrine, 0, 0, hidden: false);
+        var hidden = probe.Weight(RoomFeatures.RitualShrine, 0, 0, hidden: true);
+        Assert.True(visible > 0f, "RitualShrine should be available at max difficulty.");
+        Assert.True(hidden > visible, "A hidden room must bias toward premium rewards.");
+    }
+
+    [Fact]
+    public void MaterializeGraph_drops_shortcut_when_combined_with_entrance_or_exit()
+    {
+        var game = TestHelper.CreateGame(seed: 1u);
+        var manager = game.Manager;
+
+        var branch = new Branch
+        {
+            Name = "test-sanitize-branch",
+            Length = 5,
+            Difficulty = 1,
+            Layout = new FixedShortcutGraphLayout(),
+            RoomLayout = new UniformRoomLayout()
+        };
+        var testProvider = (TestDataProvider)game.Services.Data;
+        testProvider.DefiningMapFragments.Add(new DefiningMapFragment
+        {
+            Name = "test-sanitize-defining",
+            GenerationWeight = $"$branch == '{branch.Name}' ? 1 : 0",
+            NoRandomDoorways = true
+        });
+
+        var branchEntity = branch.Instantiate(game);
+
+        GameLevel? generated = null;
+        for (var attempt = 0; attempt < 20 && generated == null; attempt++)
+        {
+            var level = LevelGenerator.CreateEmpty(branchEntity, depth: 1, seed: 1u + (uint)attempt, manager);
+            if (branch.Layout.Fill(level, branch) != null)
+            {
+                generated = level;
+            }
+        }
+
+        Assert.NotNull(generated);
+
+        // The exit node was authored Exit | Shortcut; the sanitize drops the shortcut bit.
+        var exitRoom = generated!.Rooms.Single(r => (r.Features & RoomFeatures.Exit) != 0);
+        Assert.True((exitRoom.Features & RoomFeatures.Shortcut) == 0,
+            "Exit | Shortcut must collapse to Exit.");
+
+        // The standalone shortcut room keeps the feature (and isn't entrance/exit).
+        var shortcutRoom = Assert.Single(generated.Rooms, r => (r.Features & RoomFeatures.Shortcut) != 0);
+        Assert.True((shortcutRoom.Features & (RoomFeatures.Entrance | RoomFeatures.Exit)) == 0);
+    }
+
+    private static List<RoomGraphNode> ShortestDirectedPath(
+        RoomGraph graph, RoomGraphNode source, RoomGraphNode target)
+    {
+        var adjacency = graph.Connections
+            .GroupBy(e => e.Source)
+            .ToDictionary(g => g.Key, g => g.Select(e => e.Target).ToList());
+        var parent = new Dictionary<RoomGraphNode, RoomGraphNode?> { [source] = null };
+        var queue = new Queue<RoomGraphNode>();
+        queue.Enqueue(source);
+        while (queue.Count > 0)
+        {
+            var node = queue.Dequeue();
+            if (node == target)
+            {
+                break;
+            }
+
+            if (!adjacency.TryGetValue(node, out var neighbors))
+            {
+                continue;
+            }
+
+            foreach (var next in neighbors)
+            {
+                if (parent.TryAdd(next, node))
+                {
+                    queue.Enqueue(next);
+                }
+            }
+        }
+
+        var path = new List<RoomGraphNode>();
+        for (RoomGraphNode? n = target; n != null; n = parent.GetValueOrDefault(n))
+        {
+            path.Add(n);
+        }
+
+        path.Reverse();
+        return path;
+    }
+
+    /// <summary>
+    ///     Exposes the protected <see cref="LevelLayout.GetRewardFeatureWeight"/> hook so the
+    ///     hidden-room reward weighting can be asserted directly.
+    /// </summary>
+    private sealed class RewardWeightProbe : TreeLevelLayout
+    {
+        public float Weight(RoomFeatures feature, int countSoFar, int globalCountSoFar, bool hidden)
+            => GetRewardFeatureWeight(feature, countSoFar, globalCountSoFar,
+                GetParameters(LevelGenerator.MaxDifficulty), hidden);
+
+        public float WeightAtDifficulty(
+            RoomFeatures feature, int countSoFar, int globalCountSoFar, bool hidden, int difficulty)
+            => GetRewardFeatureWeight(feature, countSoFar, globalCountSoFar,
+                GetParameters(difficulty), hidden);
+    }
+
+    /// <summary>
+    ///     Materialises a fixed 3-room graph (entrance → shortcut, entrance → exit). The exit
+    ///     node is authored with the mutually-exclusive <c>Exit | Shortcut</c> combo to verify
+    ///     the sanitize in <c>MaterializeGraph</c>.
+    /// </summary>
+    private sealed class FixedShortcutGraphLayout : LevelLayout
+    {
+        public override List<Chunk>? Fill(GameLevel level, Branch branch)
+        {
+            var entrance = new RoomGraphNode { GridX = 0, GridY = 0, Features = RoomFeatures.Entrance };
+            var shortcut = new RoomGraphNode { GridX = 0, GridY = 1, Features = RoomFeatures.Shortcut };
+            var exit = new RoomGraphNode
+            {
+                GridX = 1,
+                GridY = 0,
+                Features = RoomFeatures.Exit | RoomFeatures.Shortcut
+            };
+
+            var graph = new RoomGraph();
+            graph.Rooms.AddRange([entrance, shortcut, exit]);
+            graph.Connections.Add(new RoomGraphEdge { Source = entrance, Target = shortcut });
+            graph.Connections.Add(new RoomGraphEdge { Source = entrance, Target = exit });
+
+            return MaterializeGraph(level, graph, branch);
+        }
     }
 }

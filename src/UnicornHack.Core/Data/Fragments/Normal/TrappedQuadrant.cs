@@ -16,7 +16,7 @@ public static partial class NormalMapFragmentData
 +....S
 #....S
 #.1..S
-.....S
+#....S
 ~SSSS~"
     };
 }

@@ -49,12 +49,18 @@ public class KnowledgeSystem :
         else if (message.Entity.HasComponent(EntityComponent.Player))
         {
             var room = message.Entity.Position!.RoomEntity.Room!;
-            var index = room.PointToIndex![message.TargetCell.X, message.TargetCell.Y];
+            var targetCell = message.TargetCell;
 
-            var tilesExplored = RevealTerrain(index, room);
-            if (tilesExplored > 0)
+            // A blocked move into an in-room wall reveals that wall tile.
+            if (targetCell.X < room.Width && targetCell.Y < room.Height)
             {
-                KnownTerrainChangedMessage.Enqueue(room.Entity, tilesExplored, manager);
+                var index = room.PointToIndex![targetCell.X, targetCell.Y];
+
+                var tilesExplored = RevealTerrain(index, room);
+                if (tilesExplored > 0)
+                {
+                    KnownTerrainChangedMessage.Enqueue(room.Entity, tilesExplored, manager);
+                }
             }
         }
 
@@ -200,7 +206,7 @@ public class KnowledgeSystem :
             if (room != null)
             {
                 UpdateEntityKnowledge(itemEntity, room.KnownItems, manager, room,
-                    additionalCellToTest: message.InitialLevelCell);
+                    additionalCellToTest: message.InitialRoomCell);
             }
         }
 

@@ -43,6 +43,13 @@ public class ConnectingMapFragment : MapFragment
 
     protected override void ResetWeightFunction() => _weightFunction = null;
 
+    public override void EnsureWeightFunctionCompiled()
+        => _weightFunction ??= CompileWeightFunction<
+            Func<string, int, string,
+                IReadOnlyDictionary<string, int>, IReadOnlyDictionary<string, int>,
+                IReadOnlyDictionary<string, int>, IReadOnlyDictionary<string, int>,
+                IReadOnlyDictionary<RoomFeatures, int>, ConnectionComponent?, float>>(_translator);
+
     public float GetWeight(RoomComponent room, in LotPlacementContext ctx, ConnectionComponent? target)
     {
         var edgeMultiplier = GetEdgeMatchMultiplier(room, ctx);
@@ -56,25 +63,27 @@ public class ConnectingMapFragment : MapFragment
             return 0;
         }
 
-        if (_weightFunction == null)
-        {
-            _weightFunction = CompileWeightFunction<
-                Func<string, int, string,
-                    IReadOnlyDictionary<string, int>, IReadOnlyDictionary<string, int>,
-                    IReadOnlyDictionary<string, int>, IReadOnlyDictionary<string, int>,
-                    IReadOnlyDictionary<RoomFeatures, int>, ConnectionComponent?, float>>(_translator);
-        }
+        EnsureWeightFunctionCompiled();
 
-        var stats = room.Level.GenerationStats;
-        var gameStats = room.Level.Game.GenerationStats;
+        var level = room.Level;
+        var stats = level.GenerationStats;
+        var gameStats = level.Game.GenerationStats;
         try
         {
-            return _weightFunction(
-                    room.Level.Branch.Name, room.Level.Depth, SourceName,
-                    stats.FragmentInstancesByName, gameStats.FragmentInstancesByName,
-                    stats.FragmentInstancesByTag, gameStats.FragmentInstancesByTag,
-                    gameStats.FragmentInstancesByFeature, target)
-                * edgeMultiplier * GetDemandMultiplier(room, ctx) * WeightMultiplier;
+            var baseWeight = _weightFunction!(
+                level.Branch.Name, level.Depth, SourceName,
+                stats.FragmentInstancesByName, gameStats.FragmentInstancesByName,
+                stats.FragmentInstancesByTag, gameStats.FragmentInstancesByTag,
+                gameStats.FragmentInstancesByFeature, target);
+
+            if (baseWeight <= 0f)
+            {
+                return 0f;
+            }
+
+            var sizeBonus = PayloadArea.Width * PayloadArea.Height * SizeWeightBonus;
+            return (baseWeight + sizeBonus)
+                * edgeMultiplier * GetDemandMultiplier(room, ctx) * VariantMultiplier;
         }
         catch (Exception e)
         {
@@ -113,7 +122,15 @@ public class ConnectingMapFragment : MapFragment
 
     protected virtual void CreateConnection(
         RoomComponent room, Point point, LevelConnection? connectionDefinition)
-        => LevelConnection.CreateLevelConnection(room, point, connectionDefinition);
+    {
+        // The fragment was selected for this room by its tags / the layout's connection need,
+        // so every connection it declares should be created. Receive a matching dangling
+        // incoming first; otherwise source a new one — no role gate is needed here.
+        if (!LevelConnection.TryCreateReceivingConnection(room, point, connectionDefinition))
+        {
+            LevelConnection.CreateSourceConnection(room, point, connectionDefinition);
+        }
+    }
 
     public static readonly MapFragmentLoader<ConnectingMapFragment> Loader =
         new(@"Data\Fragments\Connecting\", typeof(ConnectingMapFragmentData));

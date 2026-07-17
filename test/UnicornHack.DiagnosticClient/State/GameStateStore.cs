@@ -28,6 +28,14 @@ public sealed class GameStateStore
     /// </summary>
     public IReadOnlyList<object> LastEvents { get; private set; } = Array.Empty<object>();
 
+    /// <summary>
+    ///     Message of the most recent change-set application failure, or <c>null</c> if the last
+    ///     batch applied cleanly. Surfaced by <c>get_diagnostics</c> so an agent driving the
+    ///     client can observe protocol violations (e.g. an orphan modify delta) that would
+    ///     otherwise only reach stderr. Cleared on the next clean snapshot or change-set batch.
+    /// </summary>
+    public string? LastApplyError { get; private set; }
+
     public void ApplyInitialSnapshot(PlayerChange snapshot)
     {
         lock (Sync)
@@ -36,6 +44,7 @@ public sealed class GameStateStore
             LastTick = Player.CurrentTick;
             LastObservedLogId = Player.Log is { Count: > 0 } log ? MaxKey(log) : -1;
             LastEvents = Array.Empty<object>();
+            LastApplyError = null;
         }
     }
 
@@ -49,21 +58,31 @@ public sealed class GameStateStore
             }
 
             List<object>? events = null;
-            foreach (var set in sets)
+            try
             {
-                StateApplier.ApplyDelta(Player, set.PlayerState);
-                if (set.Events is not { Count: > 0 } rawEvents)
+                foreach (var set in sets)
                 {
-                    continue;
-                }
-                foreach (var raw in rawEvents)
-                {
-                    if (EventDecoder.TryDecode(raw) is { } decoded)
+                    StateApplier.ApplyDelta(Player, set.PlayerState);
+                    if (set.Events is not { Count: > 0 } rawEvents)
                     {
-                        (events ??= []).Add(decoded);
+                        continue;
+                    }
+                    foreach (var raw in rawEvents)
+                    {
+                        if (EventDecoder.TryDecode(raw) is { } decoded)
+                        {
+                            (events ??= []).Add(decoded);
+                        }
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                LastApplyError = $"tick {Player.CurrentTick}: {ex.Message}";
+                throw;
+            }
+
+            LastApplyError = null;
             LastEvents = (IReadOnlyList<object>?)events ?? Array.Empty<object>();
 
             LastTick = Player.CurrentTick;
