@@ -3,75 +3,70 @@
 public enum EffectType
 {
     Default = 0,
-    Activate,
-    AddAbility,
-    AddDuplicateAbility,
+
+    // Damage
+    AcidDamage,
+    BleedDamage,
+    ToxinDamage,
+    FireDamage,
+    DrainEnergy,
+    DrainLife,
+    ColdDamage,
+    LightDamage,
+    PhysicalDamage,
+    PsychicDamage,
+    ShockDamage,
+    WaterDamage,
+    SonicDamage,
+    Wither,
+
+    // Status
     Bind,
-    Bleed,
-    Blight,
     Blind,
-    Burn,
-    ChangeProperty,
-    ChangeRace,
-    ConferLycanthropy,
+    Cancel,
+    Chill,
     Confuse,
     Corrode,
     Cripple,
-    Curse,
+    Daze,
     Deafen,
-    DisableItem,
+    Decay,
     Disarm,
-    DrainEnergy,
-    DrainLife,
+    Doom,
+    Enervate,
     Engulf,
-    EquipItem,
-    Freeze,
-    GainXP,
-    Heal,
-    LevelTeleport,
-    LightDamage,
-    Move,
+    Expose,
+    Fascinate,
+    Frighten,
+    Mute,
+    Overcharge,
     Paralyze,
-    PhysicalDamage,
-    PsychicDamage,
-    Recharge,
-    RemoveItem,
     Sedate,
-    Shock,
-    Slime,
     Slow,
-    Soak,
-    SonicDamage,
+    Stagger,
     Stick,
-    Stone,
     Stun,
     Suffocate,
-    Teleport,
-    Wither
-}
+    Taunt,
+    Topple,
+    Wet,
 
-public static class EffectTypeExtensions
-{
-    public static bool IsDamage(this EffectType effectType)
-    {
-        switch (effectType)
-        {
-            case EffectType.Burn:
-            case EffectType.Bleed:
-            case EffectType.Blight:
-            case EffectType.Corrode:
-            case EffectType.Freeze:
-            case EffectType.LightDamage:
-            case EffectType.PsychicDamage:
-            case EffectType.Shock:
-            case EffectType.Soak:
-            case EffectType.SonicDamage:
-            case EffectType.Wither:
-            case EffectType.PhysicalDamage:
-            case EffectType.DrainLife:
-                return true;
-            default:
-                return false;
-        }
-    }
+    // Structural
+    AddAbility,
+    DecreaseAbilityLevel,
+    ConferLycanthropy,
+    DisableItem,
+    EquipItem,
+    Polymorph,
+    RemoveItem,
+
+    // Other
+    Activate,
+    ChangeProperty,
+    GainXP,
+    Heal,
+    Recharge,
+    Move,
+    LevelTeleport,
+    Teleport
 }

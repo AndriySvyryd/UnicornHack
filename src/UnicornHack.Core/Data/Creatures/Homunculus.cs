@@ -5,11 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Homunculus = new Creature
     {
         Name = "homunculus",
-        Species = Species.Homunculus,
-        Abilities = new HashSet<Ability>
+        SpeciesClass = SpeciesClass.Demon,
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "homunculus ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -18,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "10*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage(), new Daze { Amount = "250*FocusModifier()" } }
             },
             new Ability
             {
+                Name = "homunculus ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -30,7 +34,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Sedate { Duration = EffectDuration.UntilTimeout, DurationAmount = "2" } }
+                Effects = new List<Effect> { new Sedate() }
             }
         },
         InitialLevel = 2,
@@ -39,10 +43,10 @@ public static partial class CreatureData
         Sex = Sex.None,
         Size = 2,
         Weight = 60,
-        Perception = -8,
-        Might = -8,
-        Speed = -8,
-        Focus = -4,
+        PerceptionBonus = -8,
+        MightBonus = -8,
+        SpeedBonus = -8,
+        FocusBonus = -4,
         Regeneration = 3,
         Armor = 2,
         MagicResistance = 5,

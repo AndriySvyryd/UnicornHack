@@ -1,16 +1,20 @@
 using CSharpScriptSerialization;
-using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
 
-public class Cripple : DurationEffect
+public class Cripple : ResistedEffect
 {
-    protected override void ConfigureEffect(EffectComponent effect)
-    {
-        base.ConfigureEffect(effect);
+    private static readonly EffectMetadata _metadata =
+        EffectMetadata.Default(
+            EffectType.Cripple, AbilityData.Crippled.Name,
+            statusCategory: StatusCategory.Physical,
+            resistanceProperty: nameof(Systems.Beings.BeingComponent.CrippleResistance),
+            statusAbilityDuration: "100*MightModifier()", defaultAmount: "600*MightModifier()");
 
-        effect.EffectType = EffectType.Cripple;
-    }
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void RegisterMetadataProvider() => _ = _metadata;
+
+    public override EffectMetadata Metadata => _metadata;
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<Cripple>(GetPropertyConditions<Cripple>());

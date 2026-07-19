@@ -20,16 +20,16 @@ public class
         Expression<Func<TEntity, TEntity?>>? getPrincipal = null)
     {
         var (get, componentGet, set) = getDependent.GetPropertyAccessors();
-        _getDependent = (Func<TEntity, TCollection?>)get;
-        _componentGetDependent = (Func<Component, TCollection?>)componentGet;
-        _setDependent = (Action<TEntity, TCollection?>?)set;
+        _getDependent = get;
+        _componentGetDependent = componentGet;
+        _setDependent = set;
 
         if (getPrincipal != null)
         {
-            (get, componentGet, set) = getPrincipal.GetPropertyAccessors();
-            _getPrincipal = (Func<TEntity, TEntity?>)get;
-            _componentGetPrincipal = (Func<Component, TEntity?>)componentGet;
-            _setPrincipal = (Action<TEntity, TEntity?>?)set;
+            var (principalGet, principalComponentGet, principalSet) = getPrincipal.GetPropertyAccessors();
+            _getPrincipal = principalGet;
+            _componentGetPrincipal = principalComponentGet;
+            _setPrincipal = principalSet;
         }
     }
 

@@ -71,10 +71,10 @@ public partial class GameManager
 
     private void InitializeKnowledge(SequentialMessageQueue<GameManager> queue)
     {
-        Add<KnowledgeComponent>(EntityComponent.Knowledge, poolSize: 32);
+        Add<KnowledgeComponent>(EntityComponent.Knowledge, poolSize: 32, maxPoolSize: 64);
 
         KnownPositions = CreateGroup(nameof(KnownPositions),
-            new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Knowledge, (int)EntityComponent.Position));
+            new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Knowledge, (int)EntityComponent.Position), capacity: 32);
 
         KnownActorsToCellRelationship = new(
             nameof(KnownActorsToCellRelationship),
@@ -83,25 +83,7 @@ public partial class GameManager
             new SimpleKeyValueGetter<GameEntity, int>(
                 component => ((PositionComponent)component).RoomId,
                 (int)EntityComponent.Position),
-            new KeyValueGetter<GameEntity, Point>(
-                (change, matcher, valueType) =>
-                {
-                    if (!matcher.TryGetValue<byte>(
-                            change, (int)EntityComponent.Position, nameof(PositionComponent.CellX), valueType,
-                            out var levelX)
-                        || !matcher.TryGetValue<byte>(
-                            change, (int)EntityComponent.Position, nameof(PositionComponent.CellY), valueType,
-                            out var levelY))
-                    {
-                        return (new Point(0, 0), false);
-                    }
-
-                    return (new Point(levelX, levelY), true);
-                },
-                new PropertyMatcher<GameEntity>()
-                    .With(component => ((PositionComponent)component).CellX, (int)EntityComponent.Position)
-                    .With(component => ((PositionComponent)component).CellY, (int)EntityComponent.Position)
-            ),
+            CreateCellKeyValueGetter(),
             (knowledgeEntity, _) =>
             {
                 knowledgeEntity.RemoveComponent(EntityComponent.Knowledge);
@@ -111,7 +93,8 @@ public partial class GameManager
             secondaryPrincipalGroup: RoomActors,
             secondaryPrincipalKeyValueGetter: new SimpleKeyValueGetter<GameEntity, int>(
                 component => ((KnowledgeComponent)component).KnownEntityId,
-                (int)EntityComponent.Knowledge));
+                (int)EntityComponent.Knowledge),
+            keepDependentAlive: true);
 
         KnownItemsToCellRelationship = new(
             nameof(KnownItemsToCellRelationship),
@@ -120,25 +103,7 @@ public partial class GameManager
             new SimpleKeyValueGetter<GameEntity, int>(
                 component => ((PositionComponent)component).RoomId,
                 (int)EntityComponent.Position),
-            new KeyValueGetter<GameEntity, Point>(
-                (change, matcher, valueType) =>
-                {
-                    if (!matcher.TryGetValue<byte>(
-                            change, (int)EntityComponent.Position, nameof(PositionComponent.CellX), valueType,
-                            out var levelX)
-                        || !matcher.TryGetValue<byte>(
-                            change, (int)EntityComponent.Position, nameof(PositionComponent.CellY), valueType,
-                            out var levelY))
-                    {
-                        return (new Point(0, 0), false);
-                    }
-
-                    return (new Point(levelX, levelY), true);
-                },
-                new PropertyMatcher<GameEntity>()
-                    .With(component => ((PositionComponent)component).CellX, (int)EntityComponent.Position)
-                    .With(component => ((PositionComponent)component).CellY, (int)EntityComponent.Position)
-            ),
+            CreateCellKeyValueGetter(),
             (knowledgeEntity, _) =>
             {
                 knowledgeEntity.RemoveComponent(EntityComponent.Knowledge);
@@ -148,7 +113,8 @@ public partial class GameManager
             secondaryPrincipalGroup: RoomItems,
             secondaryPrincipalKeyValueGetter: new SimpleKeyValueGetter<GameEntity, int>(
                 component => ((KnowledgeComponent)component).KnownEntityId,
-                (int)EntityComponent.Knowledge));
+                (int)EntityComponent.Knowledge),
+            keepDependentAlive: true);
 
         KnownConnectionsToCellRelationship = new(
             nameof(KnownConnectionsToCellRelationship),
@@ -157,25 +123,7 @@ public partial class GameManager
             new SimpleKeyValueGetter<GameEntity, int>(
                 component => ((PositionComponent)component).RoomId,
                 (int)EntityComponent.Position),
-            new KeyValueGetter<GameEntity, Point>(
-                (change, matcher, valueType) =>
-                {
-                    if (!matcher.TryGetValue<byte>(
-                            change, (int)EntityComponent.Position, nameof(PositionComponent.CellX), valueType,
-                            out var levelX)
-                        || !matcher.TryGetValue<byte>(
-                            change, (int)EntityComponent.Position, nameof(PositionComponent.CellY), valueType,
-                            out var levelY))
-                    {
-                        return (new Point(0, 0), false);
-                    }
-
-                    return (new Point(levelX, levelY), true);
-                },
-                new PropertyMatcher<GameEntity>()
-                    .With(component => ((PositionComponent)component).CellX, (int)EntityComponent.Position)
-                    .With(component => ((PositionComponent)component).CellY, (int)EntityComponent.Position)
-            ),
+            CreateCellKeyValueGetter(),
             (knowledgeEntity, _) =>
             {
                 knowledgeEntity.RemoveComponent(EntityComponent.Knowledge);
@@ -185,7 +133,8 @@ public partial class GameManager
             secondaryPrincipalGroup: Connections,
             secondaryPrincipalKeyValueGetter: new SimpleKeyValueGetter<GameEntity, int>(
                 component => ((KnowledgeComponent)component).KnownEntityId,
-                (int)EntityComponent.Knowledge));
+                (int)EntityComponent.Knowledge),
+            keepDependentAlive: true);
 
         RoomKnowledgeToRoomRelationship = new(
             nameof(RoomKnowledgeToRoomRelationship),
@@ -216,18 +165,9 @@ public partial class GameManager
                         return (change.Entity.Id, true);
                     }
 
-                    if (matcher.TryGetValue<int?>(
-                            change, (int)EntityComponent.Effect, nameof(EffectComponent.ExpirationXp), valueType,
-                            out var effectXp)
-                        && effectXp.HasValue)
-                    {
-                        return (change.Entity.Id, true);
-                    }
-
                     return (0, false);
                 },
                 new PropertyMatcher<GameEntity>()
-                    .With(component => ((EffectComponent)component).ExpirationXp, (int)EntityComponent.Effect)
                     .With(component => ((AbilityComponent)component).CooldownXpLeft, (int)EntityComponent.Ability)
             )
         );
@@ -236,19 +176,18 @@ public partial class GameManager
         queue.Register<VisibleTerrainChangedMessage>(KnowledgeSystem, VisibleTerrainChangedMessage.Name, 0);
         queue.Register<TraveledMessage>(KnowledgeSystem, TraveledMessage.Name, 4);
         queue.Register<ItemMovedMessage>(KnowledgeSystem, ItemMovedMessage.Name, 0);
-        queue.Register<EffectsAppliedMessage>(KnowledgeSystem, EffectsAppliedMessage.Name, 1);
+        queue.Register<AttackResultMessage>(KnowledgeSystem, AttackResultMessage.Name, 1);
+        queue.Register<SoundMessage>(KnowledgeSystem, SoundMessage.Name, 0);
 
         XPSystem = new XPSystem();
         queue.Register<KnownTerrainChangedMessage>(XPSystem, KnownTerrainChangedMessage.Name, 1);
         queue.Register<DiedMessage>(XPSystem, DiedMessage.Name, 3);
-        queue.Register<EntityAddedMessage<GameEntity>>(XPSystem, Races.GetEntityAddedMessageName(), 0);
-        queue.Register<EntityRemovedMessage<GameEntity>>(XPSystem, Races.GetEntityRemovedMessageName(), 0);
 
         LoggingSystem = new LoggingSystem();
         queue.Register<ItemMovedMessage>(LoggingSystem, ItemMovedMessage.Name, 1);
         queue.Register<ItemEquippedMessage>(LoggingSystem, ItemEquippedMessage.Name, 1);
-        queue.Register<EffectsAppliedMessage>(LoggingSystem, EffectsAppliedMessage.Name, 2);
+        queue.Register<AttackResultMessage>(LoggingSystem, AttackResultMessage.Name, 2);
+        queue.Register<ItemActivationResultMessage>(LoggingSystem, ItemActivationResultMessage.Name, 2);
         queue.Register<DiedMessage>(LoggingSystem, DiedMessage.Name, 1);
-        queue.Register<LeveledUpMessage>(LoggingSystem, LeveledUpMessage.Name, 1);
     }
 }

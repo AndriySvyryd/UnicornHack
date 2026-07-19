@@ -21,12 +21,9 @@ public sealed class GameStateStore
     public int LastObservedLogId { get; private set; } = -1;
 
     /// <summary>
-    ///     Strongly-typed event DTOs from the most recent <c>ReceiveChangeSets</c> batch.
-    ///     Cleared at the start of every batch. Each element is a server-side event DTO
-    ///     (e.g. <see cref="SteppedOnConnectionEvent" />) decoded from the wire format's
-    ///     typeless <see cref="object" /> array via <see cref="EventDecoder" />.
+    ///     Strongly-typed events from the most recent <c>ReceiveChangeSets</c> batch.
     /// </summary>
-    public IReadOnlyList<object> LastEvents { get; private set; } = Array.Empty<object>();
+    public IReadOnlyList<TurnEvent> LastEvents { get; private set; } = Array.Empty<TurnEvent>();
 
     /// <summary>
     ///     Message of the most recent change-set application failure, or <c>null</c> if the last
@@ -43,7 +40,7 @@ public sealed class GameStateStore
             Player = StateApplier.AdoptFullSnapshot(snapshot);
             LastTick = Player.CurrentTick;
             LastObservedLogId = Player.Log is { Count: > 0 } log ? MaxKey(log) : -1;
-            LastEvents = Array.Empty<object>();
+            LastEvents = Array.Empty<TurnEvent>();
             LastApplyError = null;
         }
     }
@@ -57,23 +54,18 @@ public sealed class GameStateStore
                 return;
             }
 
-            List<object>? events = null;
+            List<TurnEvent>? events = null;
             try
             {
                 foreach (var set in sets)
                 {
                     StateApplier.ApplyDelta(Player, set.PlayerState);
-                    if (set.Events is not { Count: > 0 } rawEvents)
+                    if (set.Events is not { Count: > 0 } turnEvents)
                     {
                         continue;
                     }
-                    foreach (var raw in rawEvents)
-                    {
-                        if (EventDecoder.TryDecode(raw) is { } decoded)
-                        {
-                            (events ??= []).Add(decoded);
-                        }
-                    }
+
+                    (events ??= []).AddRange(turnEvents);
                 }
             }
             catch (Exception ex)
@@ -83,7 +75,7 @@ public sealed class GameStateStore
             }
 
             LastApplyError = null;
-            LastEvents = (IReadOnlyList<object>?)events ?? Array.Empty<object>();
+            LastEvents = (IReadOnlyList<TurnEvent>?)events ?? Array.Empty<TurnEvent>();
 
             LastTick = Player.CurrentTick;
             if (Player.Log is { Count: > 0 } log)

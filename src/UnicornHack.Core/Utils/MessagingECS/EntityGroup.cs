@@ -25,8 +25,10 @@ public class EntityGroup<TEntity> : EntityGroupBase<TEntity>, IEnumerable<TEntit
     public override TEntity? FindEntity(int id) => _entities.TryGetValue(id, out var entity) ? entity : null;
     public override bool ContainsEntity(int id) => _entities.ContainsKey(id);
 
-    public void HandleEntityComponentChanged(TEntity entity, Component? removedComponent)
+    public void HandleEntityComponentChanged(TEntity entity, Component component, bool removed)
     {
+        var removedComponent = removed ? component : null;
+        var addedComponent = removed ? null : component;
         if (!Matcher.Matches(entity))
         {
             if (_entities.Remove(entity.Id))
@@ -38,7 +40,16 @@ public class EntityGroup<TEntity> : EntityGroupBase<TEntity>, IEnumerable<TEntit
         {
             if (_entities.TryAdd(entity.Id, entity))
             {
-                OnAdded(new EntityChange<TEntity>(entity, removedComponent: removedComponent), principal: null);
+                OnAdded(new EntityChange<TEntity>(
+                    entity, removedComponent: removedComponent, addedComponent: addedComponent), principal: null);
+            }
+            else
+            {
+                // The entity can remain in an AnyOf group after gaining or losing a matched component.
+                // Let indexes recompute in case that component supplied part of their composite key.
+                OnPropertyValuesChanged(
+                    new EntityChange<TEntity>(
+                        entity, removedComponent: removedComponent, addedComponent: addedComponent));
             }
         }
     }

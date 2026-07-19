@@ -20,13 +20,15 @@ namespace UnicornHack.Generation.Map;
 /// </summary>
 public class MapFragmentLoader<T> : CSScriptLoader<T> where T : MapFragment
 {
-    public MapFragmentLoader(string relativePath, Type dataType) : base(relativePath, dataType)
+    public MapFragmentLoader(
+        string relativePath,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type dataType)
+        : base(relativePath, dataType)
     {
     }
 
-    protected override Dictionary<string, T> Load()
+    protected override Dictionary<string, T> Process(Dictionary<string, T> sources)
     {
-        var sources = base.Load();
         if (sources.Count == 0)
         {
             return sources;
@@ -41,6 +43,11 @@ public class MapFragmentLoader<T> : CSScriptLoader<T> where T : MapFragment
             // in the orbit shares it through CreateVariant's member-wise clone.
             source.EnsureWeightFunctionCompiled();
             expanded[source.Name] = source;
+
+            if (string.IsNullOrEmpty(source.Map))
+            {
+                continue;
+            }
 
             var orbit = MapFragmentTransforms.GetOrbit(source.NoMirror, source.NoTurnOver, source.NoTransform);
             foreach (var transform in orbit)

@@ -1,10 +1,11 @@
+using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
-using UnicornHack.Services.English;
-using UnicornHack.Services.LogEvents;
 using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
+using UnicornHack.Systems.Time;
 
 namespace UnicornHack.Systems.Knowledge;
 
@@ -27,6 +28,7 @@ public class LoggingSystemTest
 ...
 ...");
         var wizard = CreatureData.WizardOfYendor.Instantiate(level, new Point(0, 0));
+        TestHelper.AddSpellAbility(wizard);
 
         var undine = CreatureData.Undine.Instantiate(level, new Point(0, 1));
 
@@ -55,7 +57,7 @@ public class LoggingSystemTest
         playerEntity.Player!.LogEntries.Clear();
         player2Entity.Player!.LogEntries.Clear();
 
-        var wizardPunch = wizard.Being!.Abilities
+        var wizardPunch = wizard.ActiveEffects!.Abilities
             .Single(a => a.Ability!.Action == AbilityAction.Punch);
 
         var activateMessage = ActivateAbilityMessage.Create(manager);
@@ -72,7 +74,7 @@ public class LoggingSystemTest
 
         Verify(wizard, undine, playerEntity, player2Entity,
             wizardPunch, success: true,
-            "The Wizard of Yendor punches the undine. (<damage physical='97'>97</damage> pts.)",
+            "The Wizard of Yendor punches the undine. (<damage 9='97'>97</damage> pts.)",
             "The Wizard of Yendor punches something.",
             manager);
 
@@ -83,9 +85,9 @@ public class LoggingSystemTest
             manager);
 
         Verify(playerEntity, wizard, playerEntity, player2Entity,
-            playerEntity.Being.SlottedAbilities[AbilitySlottingSystem.DefaultMeleeAttackSlot], success: false, // For players success is inverted
-            "You slash the Wizard of Yendor. (<damage physical='90'>90</damage> pts.)",
-            "Dudley slashes the Wizard of Yendor. (<damage physical='90'>90</damage> pts.)",
+            playerEntity.Being.SlottedAbilities[AbilitySlottingSystem.DefaultMeleeAttackSlot], success: false,
+            "You slash the Wizard of Yendor. (<damage 9='90'>90</damage> pts.)",
+            "Dudley slashes the Wizard of Yendor. (<damage 9='90'>90</damage> pts.)",
             manager);
 
         Verify(playerEntity, wizard, playerEntity, player2Entity,
@@ -94,7 +96,7 @@ public class LoggingSystemTest
             "Dudley tries to slash the Wizard of Yendor, but misses.",
             manager);
 
-        var wizardSpell = wizard.Being.Abilities
+        var wizardSpell = wizard.ActiveEffects!.Abilities
             .Single(a => a.Ability!.Action == AbilityAction.Spell);
         Verify(wizard, playerEntity, playerEntity, player2Entity,
             wizardSpell, success: true,
@@ -108,120 +110,152 @@ public class LoggingSystemTest
             "The Wizard of Yendor tries to cast a spell at Dudley, but misses.",
             manager);
 
-        Verify(wizard, playerEntity, player2Entity, SenseType.Sight, SenseType.Sight, AbilityAction.Spell,
-            manager, null,
-            expectedMessage: "The Wizard of Yendor tries to cast a spell at Dudley, but misses.");
+        VerifyCreatureAttack(
+            CreatureData.Firefly, "fire sting", success: true,
+            "The firefly stings you! [<damage 4='11'>11</damage> pts.]",
+            "The firefly stings Dudley. (<damage 4='11'>11</damage> pts.)");
+        VerifyCreatureAttack(
+            CreatureData.Undine, "undine ability #1", success: true,
+            "The undine punches you! [<damage 9='238'>238</damage> pts.]",
+            "The undine punches Dudley. (<damage 9='238'>238</damage> pts.)");
+        VerifyCreatureAttack(
+            CreatureData.GiantSpider, "web", success: false,
+            "The giant spider tries to spit at you, but misses.",
+            "The giant spider tries to spit at Dudley, but misses.");
+        VerifyCreatureAttack(
+            CreatureData.Anaconda, "anaconda ability #2", success: true,
+            "The anaconda squeezes you! [<damage 9='70'>70</damage> pts.]",
+            "The anaconda squeezes Dudley. (<damage 9='70'>70</damage> pts.)");
+        VerifyCreatureAttack(
+            CreatureData.Antlar, "antlar ability #1", success: true,
+            "The antlar claws you! [<damage 9='98'>98</damage> pts.]",
+            "The antlar claws Dudley. (<damage 9='98'>98</damage> pts.)");
+        VerifyCreatureAttack(
+            CreatureData.CentaurWarrior, "centaur warrior ability #2", success: true,
+            "The centaur warrior kicks you! [<damage 9='56'>56</damage> pts.]",
+            "The centaur warrior kicks Dudley. (<damage 9='56'>56</damage> pts.)");
+        VerifyCreatureAttack(
+            CreatureData.MyconidSentry, "myconid sentry ability #1", success: false,
+            "The myconid sentry tries to scream at you, but misses.",
+            "The myconid sentry tries to scream at Dudley, but misses.");
 
-        Verify(wizard, undine, playerEntity, SenseType.Sound, SenseType.Sight, AbilityAction.Sting, manager, 11,
-            expectedMessage: "You hear a noise.");
+        VerifyRangedWeaponAttack(
+            ItemData.Shortbow, EquipmentSlot.GraspBothRanged,
+            "You hit the undine. (<damage 9='40'>40</damage> pts.)");
+        VerifyRangedWeaponAttack(
+            ItemData.ThrowingKnives, EquipmentSlot.GraspPrimaryRanged,
+            "You hit the undine. (<damage 9='37'>37</damage> pts.)");
+    }
 
-        Verify(undine, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch,
-            SenseType.Sight | SenseType.Touch,
-            AbilityAction.Punch, manager, 11,
-            expectedMessage: "The undine punches you! [<damage physical='11'>11</damage> pts.]");
+    [Fact]
+    public void Revealed_room_logs_a_creature_intercepting_an_attack()
+    {
+        var game = TestHelper.CreateGame(seed: 1u);
+        game.Options.RevealRooms = true;
+        var room = TestHelper.BuildRoom(".....", game);
+        var attacker = CreatureData.RedDragon.Instantiate(room, new Point(0, 0));
+        var interceptor = CreatureData.Firefly.Instantiate(room, new Point(2, 0));
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(4, 0));
+        player.Position!.Heading = Direction.East;
+        var manager = game.Manager;
+        manager.Queue.ProcessQueue(manager);
 
-        Verify(undine, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch,
-            SenseType.Sight | SenseType.Touch,
-            AbilityAction.Spit, manager, null,
-            expectedMessage: "The undine tries to spit at you, but misses.");
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            10000, nameof(BeingComponent.HitPointMaximum), "test health", interceptor);
+        manager.Queue.ProcessQueue(manager);
+        interceptor.Being!.HitPoints = interceptor.Being.HitPointMaximum;
+        var interceptorHitPoints = interceptor.Being.HitPoints;
+        var playerHitPoints = player.Being!.HitPoints;
+        player.Player!.LogEntries.Clear();
 
-        Verify(playerEntity, wizard, playerEntity, SenseType.Sight | SenseType.Touch, SenseType.Sight,
-            AbilityAction.Hug, manager, 11,
-            expectedMessage: "You squeeze the Wizard of Yendor. (<damage physical='11'>11</damage> pts.)");
+        var breath = attacker.ActiveEffects!.Abilities.Single(
+            ability => ability.Ability!.Name == "red dragon ability #1");
+        breath.Ability!.Slot ??= 9;
+        var activation = ActivateAbilityMessage.Create(manager);
+        activation.AbilityEntity = breath;
+        activation.ActivatorEntity = attacker;
+        activation.TargetEntity = player;
+        activation.TargetCell = player.Position.Cell;
+        manager.Enqueue(activation);
+        ((TestRandom)manager.Game.Random).EnqueueNextBool(false);
+        manager.Queue.ProcessQueue(manager);
 
-        Verify(playerEntity, wizard, playerEntity, SenseType.Sight | SenseType.Touch,
-            SenseType.Telepathy | SenseType.Touch,
-            AbilityAction.Trample, manager, null,
-            expectedMessage: "You try to trample the Wizard of Yendor, but miss.");
+        Assert.True(interceptor.Being.HitPoints < interceptorHitPoints);
+        Assert.Equal(playerHitPoints, player.Being.HitPoints);
+        Assert.Contains(
+            player.Player.LogEntries,
+            entry => entry.Message.Contains("red dragon", StringComparison.OrdinalIgnoreCase)
+                     && entry.Message.Contains("firefly", StringComparison.OrdinalIgnoreCase));
+    }
 
-        Verify(wizard, wizard, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Claw, manager,
-            11,
-            expectedMessage: "The Wizard of Yendor claws himself. (<damage physical='11'>11</damage> pts.)");
+    private static void VerifyRangedWeaponAttack(
+        Item weaponTemplate, EquipmentSlot slot, string expectedMessage)
+    {
+        var level = TestHelper.BuildRoom("...");
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+        var target = CreatureData.Undine.Instantiate(level, new Point(2, 0));
+        var manager = player.Manager;
+        weaponTemplate.Instantiate(player);
+        manager.Queue.ProcessQueue(manager);
 
-        Verify(playerEntity, playerEntity, playerEntity, SenseType.Sight | SenseType.Touch,
-            SenseType.Sight | SenseType.Touch,
-            AbilityAction.Kick, manager, 12,
-            expectedMessage: "You kick yourself! [<damage physical='12'>12</damage> pts.]");
+        var weapon = player.Being!.Items.Single(
+            item => item.Item!.TemplateName == weaponTemplate.Name);
+        var equipMessage = EquipItemMessage.Create(manager);
+        equipMessage.ActorEntity = player;
+        equipMessage.ItemEntity = weapon;
+        equipMessage.Slot = slot;
+        manager.Enqueue(equipMessage);
+        manager.Queue.ProcessQueue(manager);
 
-        Verify(undine, playerEntity, playerEntity, SenseType.Sight | SenseType.Sound,
-            SenseType.Sight | SenseType.Touch,
-            AbilityAction.Scream, manager, 0,
-            expectedMessage: "The undine screams at you! You are unaffected.");
+        RemovePhysicalDefense(target, manager);
+        player.Player!.LogEntries.Clear();
+        var attackName = slot == EquipmentSlot.GraspBothRanged
+            ? AbilityData.TwoHandedRangedAttack.Name
+            : AbilityData.OneHandedRangedAttack.Name;
+        var attack = manager.AffectableAbilitiesIndex[(player.Id, attackName)]!;
+        var activation = ActivateAbilityMessage.Create(manager);
+        activation.AbilityEntity = attack;
+        activation.ActivatorEntity = player;
+        activation.TargetCell = target.Position!.Cell;
+        manager.Enqueue(activation);
+        ((TestRandom)manager.Game.Random).EnqueueNextBool(true);
+        manager.Queue.ProcessQueue(manager);
 
-        Verify(undine, undine, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Scream, manager, 0,
-            expectedMessage: "The undine screams at herself. She is unaffected.");
+        AssertLog(player, expectedMessage);
+    }
 
-        Verify(undine, undine, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Scream, manager, null,
-            expectedMessage: "You hear a scream.");
+    private static void VerifyCreatureAttack(
+        Creature attackerTemplate, string abilityName, bool success,
+        string expectedMessage, string expectedObserverMessage)
+    {
+        var level = TestHelper.BuildRoom("...");
+        var attacker = attackerTemplate.Instantiate(level, new Point(0, 0));
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(1, 0));
+        var observer = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, level, new Point(2, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
 
-        var dagger = ItemData.Dagger.Instantiate(playerEntity.Manager).Referenced;
+        RemovePhysicalDefense(player, manager);
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            10000, nameof(BeingComponent.HitPointMaximum), "test health", player);
+        manager.Queue.ProcessQueue(manager);
+        player.Being!.HitPoints = player.Being.HitPointMaximum;
+        var ability = attacker.ActiveEffects!.Abilities.Single(
+            candidate => candidate.Ability!.Name == abilityName);
+        ability.Ability!.Slot ??= 9;
+        Verify(
+            attacker, player, player, observer, ability, success,
+            expectedMessage, expectedObserverMessage, manager);
+    }
 
-        Verify(playerEntity, null, playerEntity, SenseType.Touch | SenseType.Telepathy, SenseType.Sight,
-            AbilityAction.Slash, manager, null,
-            weapon: dagger,
-            expectedMessage: "You slash the air.");
-
-        var bow = ItemData.Shortbow.Instantiate(playerEntity.Manager).Referenced;
-        var arrow = ItemData.Arrow.Instantiate(playerEntity.Manager).Referenced;
-
-        Verify(undine, playerEntity, playerEntity, SenseType.Sight, SenseType.None, AbilityAction.Shoot, manager,
-            null, weapon: bow,
-            expectedMessage: null);
-
-        Verify(undine, playerEntity, playerEntity, SenseType.None, SenseType.Sight, AbilityAction.Hit, manager, 11,
-            weapon: arrow,
-            expectedMessage: "Something hits you! [<damage physical='11'>11</damage> pts.]");
-
-        Verify(undine, playerEntity, playerEntity, SenseType.SoundDistant, SenseType.None, AbilityAction.Shoot,
-            manager, null,
-            weapon: bow,
-            expectedMessage: null);
-
-        Verify(undine, playerEntity, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager,
-            null, weapon: arrow,
-            expectedMessage: "An arrow misses you.");
-
-        Verify(playerEntity, wizard, playerEntity, SenseType.Sight, SenseType.None, AbilityAction.Shoot,
-            manager, null, weapon: bow,
-            expectedMessage: null);
-
-        Verify(playerEntity, wizard, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager,
-            11, weapon: arrow,
-            expectedMessage: "An arrow hits the Wizard of Yendor. (<damage physical='11'>11</damage> pts.)");
-
-        Verify(undine, wizard, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Shoot, manager, null,
-            weapon: bow,
-            expectedMessage: "You hear a noise.");
-
-        Verify(undine, wizard, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager, 2,
-            weapon: arrow,
-            expectedMessage: "An arrow hits the Wizard of Yendor. (<damage physical='2'>2</damage> pts.)");
-
-        var throwingKnife = ItemData.ThrowingKnife.Instantiate(playerEntity.Manager).Referenced;
-
-        Verify(undine, playerEntity, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Throw,
-            manager,
-            null,
-            weapon: throwingKnife,
-            expectedMessage: null);
-
-        Verify(undine, playerEntity, playerEntity, SenseType.Sight, SenseType.Sight, AbilityAction.Hit, manager,
-            11,
-            weapon: throwingKnife,
-            expectedMessage: "A throwing knife hits you! [<damage physical='11'>11</damage> pts.]");
-
-        Verify(playerEntity, null, playerEntity, SenseType.None, SenseType.None, AbilityAction.Hit, manager, null,
-            weapon: throwingKnife,
-            expectedMessage: null);
-
-        Verify(undine, wizard, playerEntity, SenseType.Sound, SenseType.None, AbilityAction.Throw, manager, null,
-            weapon: throwingKnife,
-            expectedMessage: "You hear a noise.");
-
-        Verify(undine, wizard, playerEntity, SenseType.None, SenseType.SoundDistant, AbilityAction.Hit, manager,
-            2,
-            weapon: throwingKnife,
-            expectedMessage: "You hear a distant noise.");
+    private static void RemovePhysicalDefense(GameEntity target, GameManager manager)
+    {
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            -target.Being!.Armor, nameof(BeingComponent.Armor), "test armor", target);
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            -target.Being.PhysicalResistance, nameof(BeingComponent.PhysicalResistance),
+            "test physical resistance", target);
+        manager.Queue.ProcessQueue(manager);
     }
 
     private static void Verify(
@@ -233,8 +267,12 @@ public class LoggingSystemTest
         bool success,
         string expectedMessage1,
         string expectedMessage2,
-        GameManager manager)
+        GameManager manager,
+        bool enqueueOutcome = true)
     {
+        player1.Player!.LogEntries.Clear();
+        player2.Player!.LogEntries.Clear();
+
         var activationMessage = ActivateAbilityMessage.Create(manager);
         activationMessage.AbilityEntity = ability;
         activationMessage.ActivatorEntity = attacker;
@@ -243,186 +281,375 @@ public class LoggingSystemTest
 
         manager.Enqueue(activationMessage);
 
-        ((TestRandom)manager.Game.Random).EnqueueNextBool(!success);
+        if (enqueueOutcome)
+        {
+            ((TestRandom)manager.Game.Random).EnqueueNextBool(!success);
+        }
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(expectedMessage1,
-            player1.Player!.LogEntries.Single().Message);
+        Assert.Equal(
+            [expectedMessage1],
+            player1.Player.LogEntries.Select(entry => entry.Message));
         player1.Player.LogEntries.Clear();
-        Assert.Equal(expectedMessage2,
-            player2.Player!.LogEntries.Single().Message);
+        Assert.Equal(
+            [expectedMessage2],
+            player2.Player!.LogEntries.Select(entry => entry.Message));
         player2.Player.LogEntries.Clear();
-    }
-
-    private void Verify(
-        GameEntity attacker,
-        GameEntity? victim,
-        GameEntity sensor,
-        SenseType attackerSensed,
-        SenseType victimSensed,
-        AbilityAction abilityAction,
-        GameManager manager,
-        int? damage,
-        GameEntity? weapon = null,
-        string? expectedMessage = "")
-    {
-        var languageService = manager.Game.Services.Language;
-
-        var appliedEffects = new List<GameEntity>();
-        if (damage.HasValue)
-        {
-            using (var damageEffectEntity = manager.CreateEntity())
-            {
-                var entity = damageEffectEntity.Referenced;
-
-                var appliedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                appliedEffect.AppliedAmount = damage.Value;
-                appliedEffect.EffectType = EffectType.PhysicalDamage;
-                appliedEffect.AffectedEntityId = victim!.Id;
-
-                entity.Effect = appliedEffect;
-
-                appliedEffects.Add(entity);
-            }
-
-            if (weapon != null)
-            {
-                using (var weaponEffectEntity = manager.CreateEntity())
-                {
-                    var entity = weaponEffectEntity.Referenced;
-
-                    var appliedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                    appliedEffect.AppliedAmount = damage.Value;
-                    appliedEffect.EffectType = EffectType.Activate;
-                    appliedEffect.TargetEntityId = weapon.Id;
-                    appliedEffect.AffectedEntityId = victim.Id;
-
-                    entity.Effect = appliedEffect;
-
-                    appliedEffects.Add(entity);
-                }
-            }
-        }
-
-        var attackEvent = new AttackEvent(sensor, attacker, victim, attackerSensed, victimSensed,
-            appliedEffects, abilityAction, weapon,
-            ranged: weapon != null && (weapon.Item!.Type & ItemType.WeaponRanged) != 0, hit: damage.HasValue);
-
-        Assert.Equal(expectedMessage, languageService.GetString(attackEvent));
     }
 
     [Fact]
     public void DeathEvent()
     {
         var level = TestHelper.BuildRoom();
-        var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
+        var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 1));
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
+        player.Position!.Heading = Direction.North;
         var manager = level.Entity.Manager;
-        var languageService = manager.Game.Services.Language;
+        manager.Queue.ProcessQueue(manager);
+        player.Player!.LogEntries.Clear();
 
-        Assert.Equal("The acid blob dies.",
-            languageService.GetString(new DeathEvent(player, blob, SenseType.Sight)));
+        DiedMessage.Enqueue(blob, manager);
+        manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal("You die!",
-            languageService.GetString(new DeathEvent(player, player, SenseType.Sight | SenseType.Touch)));
+        Assert.Equal(
+            ["The acid blob dies."],
+            player.Player.LogEntries.Select(entry => entry.Message));
+
+        player.Player.LogEntries.Clear();
+        DiedMessage.Enqueue(player, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(
+            ["You die!"],
+            player.Player.LogEntries.Select(entry => entry.Message));
     }
 
     [Fact]
-    public void ItemEquipmentEvent()
+    public void Status_taking_hold_is_logged()
     {
-        var level = TestHelper.BuildRoom();
-        var armor = ItemData.MailArmor.Instantiate(level.Entity.Manager).Referenced;
-        var nymph = CreatureData.Undine.Instantiate(level, new Point(0, 1));
-        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
-        var manager = level.Entity.Manager;
-        var languageService = manager.Game.Services.Language;
+        var level = TestHelper.BuildRoom("..");
+        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+        var blob = CreatureData.AcidBlob.Instantiate(level, new Point(1, 0));
+        var manager = playerEntity.Manager;
+        manager.Queue.ProcessQueue(manager);
+        playerEntity.Player!.LogEntries.Clear();
 
-        Assert.Equal("The undine equips something on the torso.",
-            languageService.GetString(new ItemEquipmentEvent(
-                player, nymph, armor, SenseType.Sight, SenseType.Sound, EquipmentSlot.Torso)));
+        // A full-strength stun takes hold at once; the moment it does is announced to the afflicted player.
+        manager.EffectApplicationSystem.ApplyStatus(EffectApplicationContext.CreateStatus(
+            EffectType.Stun, playerEntity, amount: 200));
+        manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal("Something equips a mail armor.", languageService.GetString(new ItemEquipmentEvent(
-            player, nymph, armor, SenseType.Sound, SenseType.Sight, EquipmentSlot.Torso)));
+        Assert.True(EffectApplicationSystem.GetAbilityLevel(playerEntity, "stunned") > 0);
+        var message = Assert.Single(playerEntity.Player.LogEntries).Message;
+        Assert.StartsWith("You are stunned!", message);
 
-        Assert.Equal("You equip something on the torso.", languageService.GetString(new ItemEquipmentEvent(
-            player, player, armor, SenseType.Sight | SenseType.Touch, SenseType.Touch, EquipmentSlot.Torso)));
+        playerEntity.Player.LogEntries.Clear();
+        manager.EffectApplicationSystem.ApplyStatus(EffectApplicationContext.CreateStatus(
+            EffectType.Stun, blob, amount: 200));
+        manager.Queue.ProcessQueue(manager);
 
-        var sword = ItemData.LongSword.Instantiate(level.Entity.Manager).Referenced;
-
-        Assert.Equal("You equip the long sword in the main hand for melee.", languageService.GetString(
-            new ItemEquipmentEvent(
-                player, player, sword, SenseType.Sight | SenseType.Touch,
-                SenseType.Sight | SenseType.Touch, EquipmentSlot.GraspPrimaryMelee)));
+        AssertLog(playerEntity, "The acid blob is stunned.");
     }
 
     [Fact]
-    public void ItemUnequipmentEvent()
+    public void Instant_damage_does_not_log_a_resource_effect()
     {
-        var level = TestHelper.BuildRoom();
-        var armor = ItemData.MailArmor.Instantiate(level.Entity.Manager).Referenced;
-        var nymph = CreatureData.Undine.Instantiate(level, new Point(0, 1));
-        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
-        var manager = level.Entity.Manager;
-        var languageService = manager.Game.Services.Language;
+        var level = TestHelper.BuildRoom(".");
+        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = playerEntity.Manager;
+        manager.Queue.ProcessQueue(manager);
+        playerEntity.Player!.LogEntries.Clear();
 
-        Assert.Equal("The undine unequips something.", languageService.GetString(new ItemEquipmentEvent(
-            player, nymph, armor, SenseType.Sight, SenseType.Sound, EquipmentSlot.None)));
+        EffectTestHelper.ApplyInstantDamageEffect(
+            playerEntity, EffectType.PhysicalDamage, amount: 10, manager);
 
-        Assert.Equal("Something unequips a mail armor.", languageService.GetString(new ItemEquipmentEvent(
-            player, nymph, armor, SenseType.Sound, SenseType.Sight, EquipmentSlot.None)));
-
-        Assert.Equal("You unequip something.", languageService.GetString(new ItemEquipmentEvent(
-            player, player, armor, SenseType.Sight | SenseType.Touch, SenseType.Touch, EquipmentSlot.None)));
-
-        var sword = ItemData.LongSword.Instantiate(level.Entity.Manager).Referenced;
-
-        Assert.Equal("You unequip the long sword.", languageService.GetString(new ItemEquipmentEvent(
-            player, player, sword, SenseType.Sight | SenseType.Touch,
-            SenseType.Sight | SenseType.Touch, EquipmentSlot.None)));
+        Assert.Empty(playerEntity.Player.LogEntries);
     }
 
     [Fact]
-    public void ItemConsumptionEvent()
+    public void Damage_over_time_effects_are_logged_once_per_turn()
     {
-        var level = TestHelper.BuildRoom();
-        var flask = ItemData.FlaskOfHealing.Instantiate(level.Entity.Manager).Referenced;
-        var potion = ItemData.PotionOfExperience.Instantiate(level.Entity.Manager).Referenced;
-        var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
-        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
-        var manager = level.Entity.Manager;
-        var languageService = manager.Game.Services.Language;
+        var level = TestHelper.BuildRoom("..");
+        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = playerEntity.Manager;
+        manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal("The acid blob drinks from a flask of healing.", languageService.GetString(
-            new ItemActivationEvent(player, flask, blob, blob,
-                SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Sound,
-                SenseType.Sight | SenseType.Sound, consumed: false, successful: true)));
+        var being = playerEntity.Being!;
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            1000, nameof(BeingComponent.HitPointMaximum), "test", playerEntity);
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            1000, nameof(BeingComponent.EnergyPointMaximum), "test", playerEntity);
+        manager.Queue.ProcessQueue(manager);
+        being.HitPoints = 1000;
+        being.EnergyPoints = 1000;
 
-        Assert.Equal("You drink from the flask of healing.", languageService.GetString(
-            new ItemActivationEvent(player, flask, player, player,
-                SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Touch,
-                SenseType.Sight | SenseType.Touch, consumed: false, successful: true)));
+        var effects = playerEntity.ActiveEffects!.PropertyEffects;
+        AddDamageOverTimeEffect(EffectType.BleedDamage, 5);
+        AddDamageOverTimeEffect(EffectType.FireDamage, 3);
+        AddDamageOverTimeEffect(EffectType.FireDamage, 2);
+        AddDamageOverTimeEffect(EffectType.ToxinDamage, 7);
+        AddDamageOverTimeEffect(EffectType.AcidDamage, 3);
+        AddDamageOverTimeEffect(EffectType.ShockDamage, 4);
+        AddDamageOverTimeEffect(EffectType.Wither, 4);
+        AddDamageOverTimeEffect(EffectType.DrainEnergy, 2);
+        AddDamageOverTimeEffect(EffectType.Heal, 10, ValueCombinationFunction.Sum);
+        AddDamageOverTimeEffect(EffectType.Recharge, 2, ValueCombinationFunction.Sum);
+        AddDamageOverTimeEffect(EffectType.GainXP, 10, ValueCombinationFunction.Sum);
+        being.HitPoints = 900;
+        being.EnergyPoints = 900;
+        playerEntity.Player!.LogEntries.Clear();
 
-        Assert.Equal("You drink the potion of experience.", languageService.GetString(
-            new ItemActivationEvent(player, potion, player, player,
-                SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Touch,
-                SenseType.Sight | SenseType.Touch, consumed: true, successful: true)));
+        manager.EffectApplicationSystem.ApplyLingeringResourceEffects(
+            playerEntity, TimeSystem.DefaultActionDelay);
+        manager.Queue.ProcessQueue(manager);
+
+        var message = Assert.Single(playerEntity.Player.LogEntries).Message;
+        Assert.Equal(
+            "You take <damage 2='5' 4='5' 3='7' 1='3' 11='4'>24</damage> damage"
+            + " and lose <damage 14='4' 5='2'>6</damage> energy"
+            + " and restore 10 health and restore 2 energy and gain 10 experience.",
+            message);
+
+        void AddDamageOverTimeEffect(
+            EffectType effectType, int amount,
+            ValueCombinationFunction combinationFunction = ValueCombinationFunction.Subtract)
+            => effects.Add(new ActivePropertyEffect(0, 0, effects.Count, effectType, targetName: null)
+            {
+                CombinationFunction = combinationFunction,
+                MagnitudePrimary = amount
+            });
     }
 
     [Fact]
-    public void ItemPickUpEvent()
+    public void Damage_over_time_to_another_actor_is_logged_in_the_third_person()
     {
-        var level = TestHelper.BuildRoom();
-        var coins = ItemData.GoldCoin.Instantiate(level.Entity.Manager).Referenced;
-        var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
-        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
+        var level = TestHelper.BuildRoom("..");
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+        var blob = CreatureData.AcidBlob.Instantiate(level, new Point(1, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        blob.ActiveEffects!.PropertyEffects.Add(new ActivePropertyEffect(
+            0, 0, blob.ActiveEffects.PropertyEffects.Count, EffectType.ToxinDamage, targetName: null)
+        {
+            CombinationFunction = ValueCombinationFunction.Subtract,
+            MagnitudePrimary = 7
+        });
+        player.Player!.LogEntries.Clear();
+
+        manager.EffectApplicationSystem.ApplyLingeringResourceEffects(
+            blob, TimeSystem.DefaultActionDelay);
+        manager.Queue.ProcessQueue(manager);
+
+        AssertLog(player, "The acid blob takes <damage 3='7'>7</damage> damage.");
+    }
+
+    [Fact]
+    public void Instant_and_periodic_healing_are_logged()
+    {
+        var level = TestHelper.BuildRoom(".");
+        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = playerEntity.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        var being = playerEntity.Being!;
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            1000, nameof(BeingComponent.HitPointMaximum), "test", playerEntity);
+        manager.Queue.ProcessQueue(manager);
+        being.HitPoints = 1;
+        playerEntity.Player!.LogEntries.Clear();
+
+        using (var effectReference = manager.CreateEntity())
+        {
+            var effectEntity = effectReference.Referenced;
+            var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+            effect.EffectType = EffectType.Heal;
+            effect.Duration = EffectDuration.Instant;
+            effect.Amount = "20";
+            effectEntity.Effect = effect;
+
+            TestHelper.ApplyEffect(effectEntity, playerEntity, playerEntity, manager);
+            manager.Queue.ProcessQueue(manager);
+        }
+
+        Assert.Equal(
+            ["You restore 20 health."],
+            playerEntity.Player.LogEntries.Select(entry => entry.Message));
+
+        playerEntity.Player.LogEntries.Clear();
+        playerEntity.ActiveEffects!.PropertyEffects.Add(new ActivePropertyEffect(0, 0, playerEntity.ActiveEffects.PropertyEffects.Count, EffectType.Heal, null)
+        {
+            MagnitudePrimary = 20
+        });
+
+        manager.EffectApplicationSystem.ApplyLingeringResourceEffects(
+            playerEntity, TimeSystem.DefaultActionDelay);
+
+        Assert.Equal(
+            ["You restore 20 health."],
+            playerEntity.Player.LogEntries.Select(entry => entry.Message));
+    }
+
+    [Fact]
+    public void Instant_inverted_healing_does_not_log_a_resource_effect()
+    {
+        var level = TestHelper.BuildRoom(".");
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            1000, nameof(BeingComponent.HitPointMaximum), "test maximum", player);
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            150, nameof(BeingComponent.HealingResistance), "test healing resistance", player);
+        manager.Queue.ProcessQueue(manager);
+        player.Being!.HitPoints = 100;
+        player.Player!.LogEntries.Clear();
+
+        using (var effectReference = manager.CreateEntity())
+        {
+            var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+            effect.EffectType = EffectType.Heal;
+            effect.Duration = EffectDuration.Instant;
+            effect.Amount = "20";
+            effectReference.Referenced.Effect = effect;
+            TestHelper.ApplyEffect(effectReference.Referenced, player, player, manager);
+            manager.Queue.ProcessQueue(manager);
+        }
+
+        Assert.Equal(90, player.Being.HitPoints);
+        Assert.Empty(player.Player.LogEntries);
+    }
+
+    [Fact]
+    public void Item_equipment_and_unequipment_are_logged()
+    {
+        var level = TestHelper.BuildRoom(".");
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+        ItemData.LongSword.Instantiate(player);
         var manager = level.Entity.Manager;
-        var languageService = manager.Game.Services.Language;
+        manager.Queue.ProcessQueue(manager);
+        player.Player!.LogEntries.Clear();
+        var sword = player.Being!.Items.Single(item => item.Item!.TemplateName == ItemData.LongSword.Name);
 
-        Assert.Equal("The acid blob picks up 11 gold coins.", languageService.GetString(new ItemPickUpEvent(
-            player, blob, coins, 11, SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Sound)));
+        var equipped = EquipItemMessage.Create(manager);
+        equipped.ActorEntity = player;
+        equipped.ItemEntity = sword;
+        equipped.Slot = EquipmentSlot.GraspPrimaryMelee;
+        manager.Enqueue(equipped);
+        manager.Queue.ProcessQueue(manager);
+        AssertLog(player, "You equip the long sword in the main hand for melee.");
 
-        Assert.Equal("You pick up 11 gold coins.", languageService.GetString(new ItemPickUpEvent(
-            player, player, coins, 11, SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Sound)));
+        var unequipped = EquipItemMessage.Create(manager);
+        unequipped.ActorEntity = player;
+        unequipped.ItemEntity = sword;
+        unequipped.Slot = EquipmentSlot.None;
+        manager.Enqueue(unequipped);
+        manager.Queue.ProcessQueue(manager);
+        AssertLog(player, "You unequip the long sword.");
+    }
+
+    [Fact]
+    public void Npc_item_activation_is_logged()
+    {
+        var level = TestHelper.BuildRoom("..");
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+        var blob = CreatureData.AcidBlob.Instantiate(level, new Point(1, 0));
+        var manager = player.Manager;
+        Assert.True(ItemData.FlaskOfHealing.Instantiate(blob));
+        manager.Queue.ProcessQueue(manager);
+        player.Player!.LogEntries.Clear();
+
+        TestHelper.ActivateAbility(ItemData.FlaskOfHealing.Name + ": Drink", blob, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        AssertLog(player, "The acid blob drinks from a flask of healing.");
+    }
+
+    [Fact]
+    public void Consumed_item_ability_is_logged_without_an_activate_effect()
+    {
+        var level = TestHelper.BuildRoom(".");
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.True(ItemData.PotionOfExperience.Instantiate(player, 13));
+        manager.Queue.ProcessQueue(manager);
+        Assert.Contains(player.Being!.Items,
+            item => item.Item!.TemplateName == ItemData.PotionOfExperience.Name);
+        Assert.Contains(player.ActiveEffects!.Abilities,
+            ability => ability.Ability!.Name == ItemData.PotionOfExperience.Name + ": Drink");
+        player.Player!.LogEntries.Clear();
+
+        TestHelper.ActivateAbility(ItemData.PotionOfExperience.Name + ": Drink", player, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(
+            ["You drink the potion of experience."],
+            player.Player.LogEntries.Select(entry => entry.Message));
+    }
+
+    [Fact]
+    public void Activate_target_resolution_overrides_attack_fallback_for_item_abilities()
+    {
+        var level = TestHelper.BuildRoom(".");
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.True(ItemData.FlaskOfHealing.Instantiate(player));
+        manager.Queue.ProcessQueue(manager);
+        var flask = player.Being!.Items.Single(
+            item => item.Item!.TemplateName == ItemData.FlaskOfHealing.Name);
+        flask.Item!.Abilities.Single(
+            ability => ability.Ability!.Name == "Drink").Ability!.Action = AbilityAction.Slash;
+        player.Being.HitPoints = player.Being.HitPointMaximum;
+        player.Player!.LogEntries.Clear();
+
+        TestHelper.ActivateAbility(ItemData.FlaskOfHealing.Name + ": Drink", player, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(
+            ["You drink from the flask of healing."],
+            player.Player.LogEntries.Select(entry => entry.Message));
+    }
+
+    [Theory]
+    [InlineData(AbilityAction.Default, 0)]
+    [InlineData(AbilityAction.Spell, 1)]
+    public void Change_property_does_not_classify_the_activation_result(
+        AbilityAction action, int expectedLogCount)
+    {
+        var level = TestHelper.BuildRoom(".");
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        using var abilityReference = manager.CreateEntity();
+        var abilityEntity = abilityReference.Referenced;
+        var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+        ability.Name = "test property change";
+        ability.Activation = ActivationType.Manual;
+        ability.Action = action;
+        ability.OwnerEntity = player;
+        abilityEntity.Ability = ability;
+
+        using var effectReference = manager.CreateEntity();
+        var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+        effect.EffectType = EffectType.ChangeProperty;
+        effect.Duration = EffectDuration.UntilTimeout;
+        effect.DurationAmount = "100";
+        effect.TargetName = nameof(BeingComponent.Armor);
+        effect.Amount = "1";
+        effect.ContainingAbilityId = abilityEntity.Id;
+        effectReference.Referenced.Effect = effect;
+
+        player.Player!.LogEntries.Clear();
+        TestHelper.ApplyEffect(effectReference.Referenced, player, player, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(expectedLogCount, player.Player.LogEntries.Count);
     }
 
     /// <summary>
@@ -443,7 +670,7 @@ public class LoggingSystemTest
 
         // A second, separate room (different level/branch) where an NPC picks up an item.
         var otherRoom = TestHelper.BuildRoom(PickupMap, game, depth: 1);
-        var npc = CreatureData.Human.Instantiate(otherRoom, new Point(0, 0));
+        var npc = CreatureData.HumanWarrior.Instantiate(otherRoom, new Point(0, 0));
         ItemData.GoldCoin.Instantiate(otherRoom, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
 
@@ -456,7 +683,7 @@ public class LoggingSystemTest
         manager.Enqueue(moveMessage);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.DoesNotContain(playerEntity.Player.LogEntries, e => e.Message.Contains("picks up"));
+        Assert.Empty(playerEntity.Player.LogEntries);
     }
 
     /// <summary>
@@ -474,8 +701,8 @@ public class LoggingSystemTest
         var manager = playerEntity.Manager;
         manager.Queue.ProcessQueue(manager);
 
-        var npc = CreatureData.Human.Instantiate(room, new Point(2, 1));
-        ItemData.GoldCoin.Instantiate(room, new Point(2, 1));
+        var npc = CreatureData.AcidBlob.Instantiate(room, new Point(2, 1));
+        ItemData.GoldCoin.Instantiate(room, new Point(2, 1), quantity: 11);
         manager.Queue.ProcessQueue(manager);
 
         var goldEntity = room.Items[new Point(2, 1)];
@@ -491,56 +718,50 @@ public class LoggingSystemTest
         manager.Enqueue(moveMessage);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Contains(playerEntity.Player.LogEntries, e => e.Message.Contains("picks up"));
+        AssertLog(playerEntity, "The acid blob picks up 11 gold coins.");
+
+        moveMessage = MoveItemMessage.Create(manager);
+        moveMessage.ItemEntity = goldEntity;
+        moveMessage.TargetRoomEntity = room.Entity;
+        moveMessage.TargetCell = npc.Position!.Cell;
+        manager.Enqueue(moveMessage);
+        manager.Queue.ProcessQueue(manager);
+
+        AssertLog(playerEntity, "The acid blob drops 11 gold coins.");
     }
 
     [Fact]
-    public void ItemDropEvent()
+    public void Player_item_pickup_and_drop_are_logged()
     {
-        var level = TestHelper.BuildRoom();
-        var coins = ItemData.GoldCoin.Instantiate(level.Entity.Manager).Referenced;
-        var blob = CreatureData.AcidBlob.Instantiate(level, new Point(0, 0));
-        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 2));
+        var level = TestHelper.BuildRoom(".");
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
         var manager = level.Entity.Manager;
-        var languageService = manager.Game.Services.Language;
+        Assert.True(ItemData.GoldCoin.Instantiate(level, player.Position!.Cell!.Value, quantity: 11));
+        manager.Queue.ProcessQueue(manager);
+        var coins = level.Items[player.Position.Cell.Value];
+        player.Player!.LogEntries.Clear();
 
-        Assert.Equal("The acid blob drops 11 gold coins.", languageService.GetString(new ItemDropEvent(
-            player, blob, coins, 11, SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Sound)));
+        var moveMessage = MoveItemMessage.Create(manager);
+        moveMessage.ItemEntity = coins;
+        moveMessage.TargetContainerEntity = player;
+        manager.Enqueue(moveMessage);
+        manager.Queue.ProcessQueue(manager);
+        AssertLog(player, "You pick up 11 gold coins.");
 
-        Assert.Equal("You drop 11 gold coins.", languageService.GetString(new ItemDropEvent(
-            player, player, coins, 11, SenseType.Sight | SenseType.Sound, SenseType.Sight | SenseType.Sound)));
+        moveMessage = MoveItemMessage.Create(manager);
+        moveMessage.ItemEntity = coins;
+        moveMessage.TargetRoomEntity = level.Entity;
+        moveMessage.TargetCell = player.Position.Cell;
+        manager.Enqueue(moveMessage);
+        manager.Queue.ProcessQueue(manager);
+        AssertLog(player, "You drop 11 gold coins.");
     }
 
-    [Fact]
-    public void LeveledUpEvent()
+    private static void AssertLog(GameEntity playerEntity, string expectedMessage)
     {
-        var level = TestHelper.BuildRoom();
-        var player1 = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var player2 = PlayerRace.InstantiatePlayer("Cudley", Sex.Female, level, new Point(0, 1));
-        var manager = level.Entity.Manager;
-        var languageService = manager.Game.Services.Language;
-
-        Assert.Equal("You level up! You gain 2 SP 1 TP 0 MP.",
-            languageService.GetString(new LeveledUpEvent(
-                player1, player1, player1.Being!.Races.Single().Race!, 2, 1, 0)));
-
-        Assert.Equal("Cudley levels up! She gains 3 SP 2 TP 1 MP.",
-            languageService.GetString(new LeveledUpEvent(
-                player1, player2, player2.Being!.Races.Single().Race!, 3, 2, 1)));
+        Assert.Equal(
+            [expectedMessage],
+            playerEntity.Player!.LogEntries.Select(entry => entry.Message));
+        playerEntity.Player.LogEntries.Clear();
     }
-
-    [Fact]
-    public void Welcome()
-    {
-        var level = TestHelper.BuildRoom();
-        var player = PlayerRace.InstantiatePlayer("Conan the Barbarian", Sex.Male, level, new Point(0, 0));
-        var manager = level.Entity.Manager;
-        var languageService = manager.Game.Services.Language;
-
-        var message = languageService.Welcome(player);
-
-        Assert.Equal($"Welcome to the {level.Level.BranchName}, Conan the Barbarian!", message);
-    }
-
-    protected EnglishLanguageService CreateLanguageService() => new EnglishLanguageService();
 }

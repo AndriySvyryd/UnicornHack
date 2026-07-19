@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Imp = new Creature
     {
         Name = "imp",
-        Species = Species.Imp,
         SpeciesClass = SpeciesClass.Demon,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "imp ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,7 +20,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "20*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "20*MightModifier()" } }
             }
         },
         InitialLevel = 3,
@@ -28,10 +29,10 @@ public static partial class CreatureData
         Noise = ActorNoiseType.Cuss,
         Size = 1,
         Weight = 100,
-        Perception = -8,
-        Might = -8,
-        Speed = -8,
-        Focus = -8,
+        PerceptionBonus = -8,
+        MightBonus = -8,
+        SpeedBonus = -8,
+        FocusBonus = -8,
         Regeneration = 3,
         Armor = 4,
         MagicResistance = 10,

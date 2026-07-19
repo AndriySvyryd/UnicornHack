@@ -1,3 +1,4 @@
+using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
 using UnicornHack.Systems.Abilities;
@@ -57,104 +58,137 @@ public class XPSystemTest
     }
 
     [Fact]
-    public void Races_level_up()
+    public void Race_carrier_exposes_template_identity_and_innate_effects_have_no_carrier()
+    {
+        var level = TestHelper.BuildRoom("..");
+        var undine = CreatureData.Undine.Instantiate(level, new Point(0, 0));
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(1, 0));
+        var manager = player.Manager;
+
+        manager.Queue.ProcessQueue(manager);
+
+        // A creature's single race carrier reports the creature template through its Race ability.
+        var undineRace = undine.Being!.Races.Single();
+        Assert.Equal(CreatureData.Undine.InitialLevel, undineRace.Ability!.Level);
+        Assert.Equal(
+            CreatureData.Undine.InitialLevel,
+            undine.ActiveEffects!.ComponentEffects.Single(effect => effect is
+                { EffectType: EffectType.AddAbility, TargetName: "undine race" }).Level);
+        Assert.Equal(AbilityType.Race, undineRace.Ability!.Type);
+        Assert.Equal("undine race", undineRace.Ability.Template!.Name);
+        Assert.Null(undineRace.Being);
+        Assert.Null(undineRace.ActiveEffects);
+
+        // A player's starting race is represented by the same bare Race ability carrier.
+        var humanRace = player.Being!.Races.Single();
+        Assert.Equal(1, humanRace.Ability!.Level);
+        Assert.Equal(
+            1,
+            player.ActiveEffects!.ComponentEffects.Single(effect => effect is
+                { EffectType: EffectType.AddAbility, TargetName: "human race" }).Level);
+        Assert.Equal(AbilityType.Race, humanRace.Ability!.Type);
+        Assert.Equal("human race", humanRace.Ability.Template!.Name);
+        Assert.Null(humanRace.Being);
+        Assert.Null(humanRace.ActiveEffects);
+        Assert.Same(humanRace, manager.AffectableAbilitiesIndex[(player.Id, "human race")]);
+        Assert.Null(manager.AffectableAbilitiesIndex[
+            (player.Id, EffectApplicationSystem.InnateAbilityName)]);
+
+        var innateEffects = player.ActiveEffects.PropertyEffects
+            .Where(effect => effect is
+            {
+                SourceAbilityEntityId: null,
+                SourceAbilityType: AbilityType.Innate
+            })
+            .ToList();
+        Assert.Equal(AbilityData.Innate.Effects!.Count, innateEffects.Count);
+
+        var hitPointMaximumEffect = Assert.Single(innateEffects,
+            effect => effect.TargetName == nameof(BeingComponent.HitPointMaximum));
+        var initialMagnitude = hitPointMaximumEffect.MagnitudePrimary;
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            1, nameof(BeingComponent.Might), "test might", player);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.True(hitPointMaximumEffect.MagnitudePrimary > initialMagnitude);
+    }
+
+    [Fact]
+    public void Player_race_applies_shared_being_properties()
+    {
+        var level = TestHelper.BuildRoom(".");
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        var movementDelay = player.Position!.MovementDelay;
+        var turningDelay = player.Position.TurningDelay;
+        var might = player.Being!.Might;
+        var regeneration = player.Being.Regeneration;
+        var energyRegeneration = player.Being.EnergyRegeneration;
+        var hitPointMaximum = player.Being.HitPointMaximum;
+        var accuracy = player.Being.Accuracy;
+        var armor = player.Being.Armor;
+        var physicalResistance = player.Being.PhysicalResistance;
+        var fireResistance = player.Being.FireResistance;
+        var bindResistance = player.Being.BindResistance;
+        var race = new PlayerRace
+        {
+            Name = "test race",
+            Material = Material.Steel,
+            MovementDelay = 10,
+            TurningDelay = 20,
+            MightBonus = 2,
+            Regeneration = 3,
+            EnergyRegeneration = 8,
+            BonusHitPoints = 10,
+            Accuracy = 4,
+            Armor = 5,
+            PhysicalResistance = 6,
+            FireResistance = 7,
+            BindResistance = 9,
+            Infravisible = true,
+            Infravision = true,
+            InvisibilityDetection = true
+        };
+
+        manager.EffectApplicationSystem.AddAbilityEffect(
+            player, race.GetRaceAbilityTemplate());
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(Material.Steel, player.Physical!.Material);
+        Assert.Equal(movementDelay + 10, player.Position.MovementDelay);
+        Assert.Equal(turningDelay + 20, player.Position.TurningDelay);
+        Assert.Equal(might + 2, player.Being.Might);
+        Assert.Equal(regeneration + 3, player.Being.Regeneration);
+        Assert.Equal(energyRegeneration + 8, player.Being.EnergyRegeneration);
+        Assert.Equal(hitPointMaximum + 30, player.Being.HitPointMaximum);
+        Assert.Equal(accuracy + 4, player.Being.Accuracy);
+        Assert.Equal(armor + 5, player.Being.Armor);
+        Assert.Equal(physicalResistance + 6, player.Being.PhysicalResistance);
+        Assert.Equal(fireResistance + 7, player.Being.FireResistance);
+        Assert.Equal(bindResistance + 9, player.Being.BindResistance);
+        Assert.True(player.Physical.Infravisible);
+        Assert.True(player.Being.Infravision);
+        Assert.True(player.Being.InvisibilityDetection);
+    }
+
+    [Fact]
+    public void Xp_accumulates_without_leveling_races()
     {
         var level = TestHelper.BuildRoom(".");
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
-        var player = playerEntity.Player!;
         var manager = playerEntity.Manager;
-
         manager.Queue.ProcessQueue(manager);
 
-        ItemData.PotionOfExperience.Instantiate(playerEntity, 13);
-        ItemData.PotionOfElfness.Instantiate(playerEntity);
+        var initialXp = playerEntity.Being!.ExperiencePoints;
+        var raceLevels = playerEntity.Being.Races.ToDictionary(race => race.Id, race => race.Ability!.Level);
 
+        manager.XPSystem.AddPlayerXP(5000, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(0, player.SkillPoints);
-        Assert.Equal(0, player.TraitPoints);
-        Assert.Equal(0, player.MutationPoints);
-        Assert.Equal(1000, player.NextLevelXP);
-        Assert.Equal(15, playerEntity.Being!.Abilities.Count);
-        Assert.Equal(2, playerEntity.Being.Items.Count);
-
-        TestHelper.ActivateAbility(ItemData.PotionOfExperience.Name + ": Drink", playerEntity, manager);
-        manager.Queue.ProcessQueue(manager);
-
-        Assert.Equal(2, manager.XPSystem.GetXPLevel(playerEntity));
-        Assert.Equal(3, player.SkillPoints);
-        Assert.Equal(3, player.TraitPoints);
-        Assert.Equal(0, player.MutationPoints);
-        Assert.Equal(2000, player.NextLevelXP);
-        var experienceAbility =
-            manager.AffectableAbilitiesIndex[(playerEntity.Id, ItemData.PotionOfExperience.Name + ": Drink")]!;
-        Assert.Equal(4, experienceAbility.Ability!.Slot);
-
-        var humanEntity = playerEntity.Being.Races.Single();
-        TestHelper.ActivateAbility(ItemData.PotionOfElfness.Name + ": Drink", playerEntity, manager);
-        manager.Queue.ProcessQueue(manager);
-
-        Assert.Single(playerEntity.Being.Items);
-        Assert.DoesNotContain(playerEntity.Being.Abilities,
-            a => a.Ability!.Name!.Contains(ItemData.PotionOfElfness.Name));
-        Assert.Equal(2, playerEntity.Being.Races.Count);
-        var elfEntity = playerEntity.Being.Races.Single(r => r != humanEntity);
-        Assert.Equal(2, humanEntity.Race!.Level);
-        Assert.Equal(1, elfEntity.Race!.Level);
-        Assert.Equal(3, manager.XPSystem.GetXPLevel(playerEntity));
-        Assert.Equal(3, player.SkillPoints);
-        Assert.Equal(3, player.TraitPoints);
-        Assert.Equal(0, player.MutationPoints);
-        Assert.Equal(3000, player.NextLevelXP);
-
-        ItemData.PotionOfInhumanity.Instantiate(playerEntity);
-        for (var i = 0; i < 4; i++)
-        {
-            TestHelper.ActivateAbility(ItemData.PotionOfExperience.Name + ": Drink", playerEntity, manager);
-            manager.Queue.ProcessQueue(manager);
-        }
-
-        Assert.Equal(4, manager.XPSystem.GetXPLevel(playerEntity));
-        Assert.Equal(17, playerEntity.Being.Abilities.Count);
-        Assert.Equal(2, humanEntity.Race.Level);
-        Assert.Equal(2, elfEntity.Race.Level);
-        Assert.Equal(5, player.SkillPoints);
-        Assert.Equal(6, player.TraitPoints);
-        Assert.Equal(1, player.MutationPoints);
-        Assert.Equal(4500, player.NextLevelXP);
-
-        for (var i = 0; i < 4; i++)
-        {
-            TestHelper.ActivateAbility(ItemData.PotionOfExperience.Name + ": Drink", playerEntity, manager);
-            manager.Queue.ProcessQueue(manager);
-        }
-
-        Assert.Equal(3, humanEntity.Race.Level);
-        Assert.Equal(18, playerEntity.Being.Abilities.Count);
-
-        TestHelper.ActivateAbility(ItemData.PotionOfInhumanity.Name + ": Drink", playerEntity, manager);
-
-        manager.Queue.ProcessQueue(manager);
-
-        Assert.Single(playerEntity.Being.Races);
-        Assert.Equal(17, playerEntity.Being.Abilities.Count);
-        Assert.Equal(2, manager.XPSystem.GetXPLevel(playerEntity));
-        Assert.Equal(2, elfEntity.Race.Level);
-        Assert.Equal(2, player.SkillPoints);
-        Assert.Equal(3, player.TraitPoints);
-        Assert.Equal(1, player.MutationPoints);
-        Assert.Equal(3000, player.NextLevelXP);
-
-        for (var i = 0; i < 4; i++)
-        {
-            TestHelper.ActivateAbility(ItemData.PotionOfExperience.Name + ": Drink", playerEntity, manager);
-            manager.Queue.ProcessQueue(manager);
-        }
-
-        Assert.Equal(16, playerEntity.Being.Abilities.Count);
-        Assert.Empty(playerEntity.Being.Items);
-        Assert.Equal(3, manager.XPSystem.GetXPLevel(playerEntity));
-        Assert.Equal(2000, player.NextLevelXP);
+        Assert.Equal(initialXp + 5000, playerEntity.Being.ExperiencePoints);
+        Assert.All(playerEntity.Being.Races, race => Assert.Equal(raceLevels[race.Id], race.Ability!.Level));
     }
 
     [Fact]
@@ -189,13 +223,33 @@ public class XPSystemTest
 
         Assert.Null(flaskAbilityEntity.Ability.CooldownXpLeft);
         Assert.Null(flaskAbilityEntity.Ability.CooldownTick);
-        Assert.NotEqual(50, playerEntity.Being.HitPoints);
-        playerEntity.Being.HitPoints = 50;
+        Assert.Equal(50, playerEntity.Being.HitPoints);
 
         TestHelper.ActivateAbility(flaskAbilityEntity, playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
         Assert.NotEqual(50, playerEntity.Being.HitPoints);
+    }
+
+    [Fact]
+    public void Slowed_doubles_new_xp_cooldowns()
+    {
+        var level = TestHelper.BuildRoom(".");
+        var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = playerEntity.Manager;
+
+        manager.Queue.ProcessQueue(manager);
+        ItemData.FlaskOfHealing.Instantiate(playerEntity);
+        manager.Queue.ProcessQueue(manager);
+
+        EffectTestHelper.ApplyStatus(playerEntity, EffectType.Slow, duration: 100, manager);
+
+        var flaskAbilityEntity =
+            TestHelper.ActivateAbility(ItemData.FlaskOfHealing.Name + ": Drink", playerEntity, manager);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(flaskAbilityEntity.Ability!.XPCooldown * 2, flaskAbilityEntity.Ability.CooldownXpLeft);
+        Assert.Null(flaskAbilityEntity.Ability.CooldownTick);
     }
 
     [Fact]
@@ -227,7 +281,7 @@ public class XPSystemTest
                 var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                 effect.EffectType = EffectType.ChangeProperty;
                 effect.TargetName = nameof(BeingComponent.Might);
-                effect.AppliedAmount = -1;
+                effect.Amount = "-1";
                 effect.Duration = EffectDuration.UntilXPGained;
                 effect.DurationAmount = "200";
                 effect.ContainingAbilityId = ability.EntityId;
@@ -239,16 +293,20 @@ public class XPSystemTest
         TestHelper.ActivateAbility(debuffAbilityEntity, playerEntity, manager, 3);
         manager.Queue.ProcessQueue(manager);
 
-        var appliedEffect = manager.AppliedEffectsToSourceAbilityRelationship.GetDependents(debuffAbilityEntity)
-            .Single();
+        // The debuff is carried by a self-expiring ActivePropertyEffect budgeted in XP, not a cloned
+        // applied effect entity.
+        var debuff = playerEntity.ActiveEffects!.PropertyEffects
+            .Single(i => i.TargetName == nameof(BeingComponent.Might)
+                         && i.ExpirationEvent == EffectDuration.UntilXPGained);
 
-        Assert.Equal(200, appliedEffect.Effect!.ExpirationXp);
+        Assert.Equal(200, debuff.ExpirationTarget);
         Assert.Equal(9, playerEntity.Being!.Might);
 
         TestHelper.ActivateAbility(ItemData.PotionOfExperience.Name + ": Drink", playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
-        Assert.Equal(0, appliedEffect.Id);
+        Assert.DoesNotContain(
+            playerEntity.ActiveEffects.PropertyEffects, i => i.TargetName == nameof(BeingComponent.Might));
         Assert.Equal(10, playerEntity.Being.Might);
     }
 }

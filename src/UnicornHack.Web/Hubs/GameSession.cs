@@ -8,46 +8,33 @@ namespace UnicornHack.Hubs;
 ///     Long-lived per-character handle that owns a <see cref="GameDbContext" /> across
 ///     hub invocations. Cached in <c>GameServices.SharedCache</c> with a sliding
 ///     1-hour expiration; eviction (expiry / capacity) disposes the session, returning
-///     the pooled <see cref="GameDbContext" /> to its pool. An explicit
-///     <c>cache.Remove</c> by the safety-check path is intentionally NOT disposed by
-///     the eviction callback so the caller can decide whether to dispose.
-///     <para>
-///         Pure value-bag: the change-tracker subscriptions and the
-///         <see cref="RoomChangeBuilder" /> group registration live on the
-///         <see cref="GameDbContext" /> and the cached game's <see cref="GameManager" />
-///         respectively; <c>GameHub</c> wires them before constructing the session and
-///         unwires them before disposing it. The per-game
-///         <see cref="GameDbContext.RoomChangeBuilder" /> is the single source of truth
-///         for the builder; this session exposes a convenience accessor over it.
-///     </para>
+///     the pooled <see cref="GameDbContext" /> to its pool. Explicit cache removals
+///     await disposal of their materialized session at the removal site; their
+///     eviction callback deliberately does nothing to avoid duplicate or deferred cleanup.
+///     Owns all runtime state associated with the loaded game: the game graph, player,
+///     change builder, database context and synchronization boundary.
 /// </summary>
-public sealed class GameSession : IDisposable
+public sealed class GameSession
 {
     private int _disposed;
 
-    public GameSession(GameDbContext dbContext, PlayerComponent player)
+    public GameSession(
+        GameDbContext dbContext, PlayerComponent player, RoomChangeBuilder roomChangeBuilder)
     {
         DbContext = dbContext;
         Player = player;
+        RoomChangeBuilder = roomChangeBuilder;
     }
 
     public GameDbContext DbContext { get; }
     public PlayerComponent Player { get; }
-
-    /// <summary>Convenience accessor; equivalent to <c>DbContext.RoomChangeBuilder!</c>.</summary>
-    public RoomChangeBuilder RoomChangeBuilder => DbContext.RoomChangeBuilder!;
-
-    /// <summary>Convenience accessor; equivalent to <c>Player.Game</c>.</summary>
-    public Game Game => Player.Game;
+    public RoomChangeBuilder RoomChangeBuilder { get; }
 
     /// <summary>
-    ///     Serializes hub invocations against this session. EF Core <see cref="DbContext" />
-    ///     and the game's <see cref="GameManager" /> are not thread-safe, so all mutating
-    ///     operations against a session must run under this semaphore. Read-only queries
-    ///     (e.g. <see cref="GameHub.QueryGameAsync" />) may run lock-free since they only
-    ///     touch in-memory ECS state.
+    ///     Serializes turns and disposal, including their asynchronous database work.
+    ///     Read-only serialization does not acquire this lock.
     /// </summary>
-    public SemaphoreSlim Sync { get; } = new(1, 1);
+    public SemaphoreSlim MutationLock { get; } = new(1, 1);
 
     public bool IsDisposed => Volatile.Read(ref _disposed) != 0;
 
@@ -61,24 +48,28 @@ public sealed class GameSession : IDisposable
         => !IsDisposed
            && string.Equals(Player.ProperName, requestedPlayerName, StringComparison.OrdinalIgnoreCase);
 
-    public void Dispose()
+    internal void MarkDisposed() => Volatile.Write(ref _disposed, 1);
+
+    internal async ValueTask DisposeContextAsync()
     {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        try
         {
-            return;
+            RoomChangeBuilder.UnregisterFromGroups(Player.Game.Manager);
+        }
+        catch
+        {
+            // Tolerate partially initialized or already-unregistered builders.
         }
 
         try
         {
             // Disposing the pooled DbContext returns it to the pool.
-            DbContext.Dispose();
+            await DbContext.DisposeAsync().ConfigureAwait(false);
         }
         catch
         {
             // Same defensive handling as elsewhere — dispose ordering can race with
             // ChangeTracker.Tracked unsubscription on the GameHub side.
         }
-
-        Sync.Dispose();
     }
 }

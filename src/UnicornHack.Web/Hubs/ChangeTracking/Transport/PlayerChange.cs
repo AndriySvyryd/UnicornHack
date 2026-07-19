@@ -48,7 +48,7 @@ public partial class PlayerChange
         }
     }
     [Key(5)]
-    public RoomChange? Room
+    public int NextActionTick
     {
         get => field; set
         {
@@ -57,7 +57,7 @@ public partial class PlayerChange
         }
     }
     [Key(6)]
-    public Dictionary<int, RaceChange>? Races
+    public RoomChange? Room
     {
         get => field; set
         {
@@ -75,7 +75,7 @@ public partial class PlayerChange
         }
     }
     [Key(8)]
-    public Dictionary<int, LogEntryChange>? Log
+    public Dictionary<int, EffectChange>? Effects
     {
         get => field; set
         {
@@ -84,7 +84,7 @@ public partial class PlayerChange
         }
     }
     [Key(9)]
-    public int NextActionTick
+    public Dictionary<int, LogEntryChange>? Log
     {
         get => field; set
         {

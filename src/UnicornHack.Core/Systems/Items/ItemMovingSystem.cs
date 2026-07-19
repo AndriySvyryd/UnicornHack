@@ -22,6 +22,15 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
     public MessageProcessingResult Process(MoveItemMessage message, GameManager manager)
     {
         var moved = TryMove(message, manager);
+        // A room target accompanying a container target is its fallback when the container can't accept the item.
+        if (!moved.Successful
+            && message.TargetContainerEntity != null
+            && message.TargetRoomEntity != null)
+        {
+            manager.ReturnMessage(moved);
+            message.TargetContainerEntity = null;
+            moved = TryMove(message, manager);
+        }
 
         manager.Enqueue(moved);
 
@@ -32,13 +41,13 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
     public MessageProcessingResult Process(TraveledMessage message, GameManager manager)
     {
         var position = message.Entity.Position!;
-        if (message.Entity.Physical!.Capacity == 0)
+        if (message.Entity.Physical!.Capacity == 0
+            || position.Cell is not { } cell)
         {
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        var roomItem =
-            position.RoomEntity.Room!.Items.GetValueOrDefault(new Point(position.CellX, position.CellY));
+        var roomItem = position.RoomEntity.Room!.Items.GetValueOrDefault(cell);
         if (roomItem != null)
         {
             // Pickup item on move over
@@ -56,12 +65,21 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
 
     public MessageProcessingResult Process(DiedMessage message, GameManager manager)
     {
-        var position = message.BeingEntity.Position!;
-        foreach (var item in message.BeingEntity.Being!.Items)
+        var beingEntity = message.BeingEntity;
+        var engulfer = manager.EngulferToVictimRelationship.GetEngulfer(beingEntity);
+        var position = GetTopContainer(beingEntity, manager).Position;
+        if (position?.Cell is not { } cell)
+        {
+            // The whole container chain is off the map: there is nowhere to drop onto.
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        foreach (var item in beingEntity.Being!.Items)
         {
             var moveItemMessage = MoveItemMessage.Create(manager);
             moveItemMessage.ItemEntity = item;
-            moveItemMessage.TargetCell = position.Cell;
+            moveItemMessage.TargetContainerEntity = engulfer;
+            moveItemMessage.TargetCell = cell;
             moveItemMessage.TargetRoomEntity = position.RoomEntity;
             moveItemMessage.SuppressLog = true;
             moveItemMessage.Force = true;
@@ -76,14 +94,12 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
     {
         var itemEntity = message.ItemEntity;
         var item = itemEntity.Item!;
-        var position = itemEntity.Position!;
+        var position = itemEntity.Position;
         var itemMovedMessage = ItemMovedMessage.Create(manager);
         itemMovedMessage.ItemEntity = itemEntity;
         itemMovedMessage.InitialRoomCell = position?.Cell;
         itemMovedMessage.InitialContainer = item.ContainerEntity;
-        itemMovedMessage.InitialRoomEntity = position != null
-            ? position.RoomEntity
-            : null;
+        itemMovedMessage.InitialRoomEntity = position?.RoomEntity;
         itemMovedMessage.InitialCount = item.GetQuantity();
         itemMovedMessage.SuppressLog = message.SuppressLog;
 
@@ -95,8 +111,24 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
                 $"Invalid target container '{message.TargetContainerEntity?.Id}' for item '{itemEntity.Id}'");
         }
 
-        if (message.TargetRoomEntity != null)
+        if (!message.Force)
         {
+            var sourceActor = item.ContainerEntity is { } sourceContainer
+                ? manager.ItemMovingSystem.GetTopContainer(sourceContainer, manager).Being?.Entity
+                : null;
+            var targetActor = message.TargetContainerEntity is { } targetContainer
+                ? manager.ItemMovingSystem.GetTopContainer(targetContainer, manager).Being?.Entity
+                : null;
+            if ((sourceActor != null && !sourceActor.Being!.CanMoveItems)
+                || (targetActor != null && !targetActor.Being!.CanMoveItems))
+            {
+                return itemMovedMessage;
+            }
+        }
+
+        if (message.TargetContainerEntity == null)
+        {
+            Debug.Assert(message.TargetRoomEntity != null);
             if (item.ContainerId != null
                 && item.EquippedSlot != EquipmentSlot.None)
             {
@@ -126,7 +158,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
                 initialPosition = initialTopContainer.Position?.Cell;
             }
 
-            var spilloverDirection = Direction.South;
+            Direction? spilloverDirection = null;
             if (initialPosition != null
                 && initialPosition != message.TargetCell!.Value)
             {
@@ -134,49 +166,57 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
                     .AsDirection();
             }
 
-            ItemComponent? leftover = null;
-            foreach (var targetPoint in TerrainSystem.GetAdjacentPoints(
-                         message.TargetRoomEntity.Room!, message.TargetCell!.Value, spilloverDirection,
-                         includeInitial: true))
-            {
-                if (!manager.TravelSystem.CanMoveTo(targetPoint, message.TargetRoomEntity.Room!))
+            // Settle the item onto the target cell, spilling over to the nearest cell along the spillover
+            // direction when it is blocked or occupied and stacking with a matching item along the way.
+            var placeOnEmpty = false;
+            var freeCell = manager.TravelSystem.FindCell(
+                message.TargetRoomEntity.Room!,
+                (cell, room) =>
                 {
-                    continue;
-                }
-
-                var existingItem = message.TargetRoomEntity.Room!.Items.GetValueOrDefault(targetPoint);
-                if (existingItem == null)
-                {
-                    itemMovedMessage.Successful = true;
-                    if (pretend)
+                    if (!manager.TravelSystem.CanMoveTo(cell, room))
                     {
-                        return itemMovedMessage;
+                        return false;
                     }
 
-                    item.ContainerId = null;
-                    position ??= manager.CreateComponent<PositionComponent>(EntityComponent.Position);
+                    var existingItem = room.Items.GetValueOrDefault(cell);
+                    if (existingItem == null)
+                    {
+                        placeOnEmpty = true;
+                        return true;
+                    }
 
-                    position.SetRoomPosition(message.TargetRoomEntity.Id, targetPoint);
+                    var remaining = TryStackWith(itemMovedMessage, existingItem.Item!, pretend);
+                    if (remaining == null)
+                    {
+                        return true;
+                    }
 
-                    itemEntity.Position = position;
+                    itemMovedMessage.ItemEntity = remaining.Entity;
+                    return false;
+                },
+                origin: message.TargetCell!.Value,
+                direction: spilloverDirection);
 
-                    leftover = null;
-                    break;
-                }
-
-                leftover = TryStackWith(itemMovedMessage, existingItem.Item!, pretend);
-                if (leftover == null)
-                {
-                    break;
-                }
-
-                itemMovedMessage.ItemEntity = leftover.Entity;
-            }
-
-            if (leftover != null)
+            if (freeCell is not { } targetPoint)
             {
                 // TODO: Create a sack
                 return itemMovedMessage;
+            }
+
+            if (placeOnEmpty)
+            {
+                itemMovedMessage.Successful = true;
+                if (pretend)
+                {
+                    return itemMovedMessage;
+                }
+
+                item.ContainerId = null;
+                position ??= manager.CreateComponent<PositionComponent>(EntityComponent.Position);
+
+                position.SetRoomPosition(message.TargetRoomEntity.Id, targetPoint);
+
+                itemEntity.Position = position;
             }
 
             if (initialTopContainer != null
@@ -226,14 +266,48 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
 
                 if (!pretend)
                 {
-                    leftover.Entity.RemoveComponent(EntityComponent.Position);
-                    leftover.ContainerId = targetContainer.EntityId;
+                    MoveIntoContainer(leftover, targetContainer.Entity);
                 }
             }
 
             itemMovedMessage.Successful = true;
             return itemMovedMessage;
         }
+    }
+
+    // Anchors an off-the-map item to a room without a cell of its own - a contained item or a natural weapon -
+    // so it joins the RoomItems group and the room-load query finds it through its RoomId. Creates the Position
+    // component (with the room already set, so the item never joins the group with an unset room) when it
+    // doesn't have one yet.
+    public static void SetItemRoom(GameEntity itemEntity, int roomId)
+    {
+        if (itemEntity.Position is { } position)
+        {
+            position.Cell = null;
+            position.RoomId = roomId;
+        }
+        else
+        {
+            position = itemEntity.Manager.CreateComponent<PositionComponent>(EntityComponent.Position);
+            position.RoomId = roomId;
+            itemEntity.Position = position;
+        }
+    }
+
+    // Puts an item into a container: it keeps its PositionComponent (so the room-load query still finds it
+    // through its RoomId) but loses its cell, and its RoomId is realigned to the container's current room.
+    private static void MoveIntoContainer(ItemComponent item, GameEntity container)
+    {
+        if (container.Position is { } containerPosition)
+        {
+            SetItemRoom(item.Entity, containerPosition.RoomId);
+        }
+        else if (item.Entity.Position is { } position)
+        {
+            position.Cell = null;
+        }
+
+        item.ContainerId = container.Id;
     }
 
     private static ItemComponent? TryStackWith(
@@ -292,8 +366,7 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
 
         if (!pretend)
         {
-            item.Entity.RemoveComponent(EntityComponent.Position);
-            item.ContainerId = existingItem.EntityId;
+            MoveIntoContainer(item, existingItem.Entity);
         }
 
         return null;
@@ -364,13 +437,15 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
 
     public GameEntity GetTopContainer(GameEntity target, GameManager manager)
     {
-        var container = target.Item?.ContainerEntity;
-        while (container != null)
+        while (true)
         {
-            target = container;
-            container = target.Item?.ContainerEntity;
-        }
+            if (target.Item?.ContainerEntity is { } container)
+            {
+                target = container;
+                continue;
+            }
 
-        return target;
+            return target;
+        }
     }
 }

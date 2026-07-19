@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Wolfwere = new Creature
     {
         Name = "wolfwere",
-        Species = Species.Wolf,
         SpeciesClass = SpeciesClass.Canine | SpeciesClass.ShapeChanger,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "wolfwere ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "70*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "70*MightModifier()" } }
             },
             new Ability
             {
+                Name = "wolfwere ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -31,7 +34,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 250,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new ConferLycanthropy { VariantName = "wolfwere" } }
+                Effects = new List<Effect> { new ConferLycanthropy { CreatureName = "wolfwere" } }
             }
         },
         InitialLevel = 5,
@@ -39,10 +42,10 @@ public static partial class CreatureData
         GenerationFlags = CreatureGenerationFlags.NonGenocidable | CreatureGenerationFlags.NonPolymorphable,
         Noise = ActorNoiseType.Bark,
         Weight = 500,
-        Perception = -7,
-        Might = -8,
-        Speed = -7,
-        Focus = -8,
+        PerceptionBonus = -7,
+        MightBonus = -8,
+        SpeedBonus = -7,
+        FocusBonus = -8,
         Regeneration = 3,
         Armor = 3,
         MagicResistance = 10,

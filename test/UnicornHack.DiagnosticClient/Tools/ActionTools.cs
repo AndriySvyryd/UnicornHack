@@ -77,9 +77,28 @@ public sealed class ActionTools
     public Task<string> set_ability_slot(int slot, int? ability_id, CancellationToken cancellationToken = default)
         => Invoke(ActorActionType.SetAbilitySlot, ability_id, slot, cancellationToken);
 
-    [McpServerTool, Description("Activate the ability in the given slot. Optional target_id is the ACTOR id to target (e.g. from get_known_actors); the tool sends it using the server's negative-id actor-target convention. Omit target_id for self/untargeted abilities.")]
-    public Task<string> use_ability_slot(int slot, int? target_id = null, CancellationToken cancellationToken = default)
-        => Invoke(ActorActionType.UseAbilitySlot, slot, target_id is { } id ? -Math.Abs(id) : null, cancellationToken);
+    [McpServerTool, Description(
+        "Activate the ability in the given slot. Optional target_id is the actor id from get_known_actors. "
+        + "Omit target_id for self/untargeted abilities.")]
+    public Task<string> use_ability_slot(
+        int slot, int? target_id = null, CancellationToken cancellationToken = default)
+    {
+        int? targetCell = null;
+        if (target_id is { } actorId)
+        {
+            lock (_store.Sync)
+            {
+                if (_store.Player?.Room?.Actors?.GetValueOrDefault(actorId) is not { } actor)
+                {
+                    return Task.FromResult($"error: actor {actorId} is not known in the current room");
+                }
+
+                targetCell = PackPoint(actor.LevelX, actor.LevelY);
+            }
+        }
+
+        return Invoke(ActorActionType.UseAbilitySlot, slot, targetCell, cancellationToken);
+    }
 
     [McpServerTool, Description("Travel to a known target room by id (see get_connections / LevelMap.AvailableTargets).")]
     public Task<string> travel_to_room(int room_id, CancellationToken cancellationToken = default)
@@ -88,7 +107,7 @@ public sealed class ActionTools
     private async Task<string> Invoke(ActorActionType type, int? target, int? target2, CancellationToken cancellationToken)
     {
         // Two independent budgets:
-        //  - InvokeTimeoutMs caps the server-side processing (hub method round-trip).
+        //  - InvokeTimeoutMs caps the server-side hub invocation.
         //  - WaitTimeoutMs caps how long we wait for the post-action ReceiveChangeSets
         //    *after* the hub returned. Sharing one budget (the old behavior) made a slow
         //    invoke leave zero room for the wait, surfacing a misleading "timed out"
@@ -117,7 +136,7 @@ public sealed class ActionTools
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
-                // Soft timeout: server confirmed the action; the change set may still arrive
+                // Soft timeout: the server completed the action; the change set may still arrive
                 // before the next tool call. Continue with whatever state we already have.
             }
         }

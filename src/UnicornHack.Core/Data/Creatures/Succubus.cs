@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Succubus = new Creature
     {
         Name = "succubus",
-        Species = Species.Succubus,
         SpeciesClass = SpeciesClass.Demon,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "succubus ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,10 +20,26 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Sedate { Duration = EffectDuration.UntilTimeout, DurationAmount = "5" } }
+                Effects = new List<Effect> { new Sedate() }
             },
             new Ability
             {
+                Name = "succubus ability #2",
+                Type = AbilityType.MeleeAttack,
+                Activation = ActivationType.Targeted,
+                Trigger = ActivationType.OnMeleeAttack,
+                Range = 1,
+                Action = AbilityAction.Touch,
+                SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                Accuracy = "5+PerceptionModifier()",
+                Cooldown = 100,
+                Delay = "100*SpeedModifier()",
+                Effects = new List<Effect> { new Mute() }
+            },
+            new Ability
+            {
+                Name = "succubus ability #3",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -31,10 +48,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "20*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "20*MightModifier()" } }
             },
             new Ability
             {
+                Name = "succubus ability #4",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -43,7 +62,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "20*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "20*MightModifier()" } }
             }
         },
         InitialLevel = 6,
@@ -52,12 +71,13 @@ public static partial class CreatureData
         Behavior = AIBehavior.Stalking | AIBehavior.WeaponCollector,
         Noise = ActorNoiseType.Seduction,
         Weight = 1400,
-        Perception = -6,
-        Might = -6,
-        Speed = -6,
-        Focus = -6,
+        PerceptionBonus = -6,
+        MightBonus = -6,
+        SpeedBonus = -6,
+        FocusBonus = -6,
         MagicResistance = 35,
         FireResistance = 75,
+        FascinateResistance = 100,
         TorsoType = TorsoType.Humanoid,
         UpperExtremities = ExtremityType.GraspingFingers,
         LowerExtremities = ExtremityType.Fingers,

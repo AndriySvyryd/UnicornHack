@@ -8,12 +8,11 @@ public enum EntityComponent
     Ability,
     Being,
     Physical,
-    Race,
     Item,
     Room,
     Connection,
     Position,
-    Sensor,
     Knowledge,
+    ActiveEffects,
     ComponentCount // Has to be last
 }

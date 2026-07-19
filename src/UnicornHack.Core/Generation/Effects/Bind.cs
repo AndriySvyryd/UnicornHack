@@ -1,16 +1,21 @@
 using CSharpScriptSerialization;
-using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
 
-public class Bind : DurationEffect
+public class Bind : ResistedEffect
 {
-    protected override void ConfigureEffect(EffectComponent effect)
-    {
-        base.ConfigureEffect(effect);
+    private static readonly EffectMetadata _metadata =
+        EffectMetadata.Default(
+            EffectType.Bind, AbilityData.Bound.Name,
+            statusCategory: StatusCategory.Physical,
+            resistanceProperty: nameof(Systems.Beings.BeingComponent.BindResistance),
+            statusAbilityDuration: "100*MightModifier()",
+            defaultAmount: "200*MightModifier()");
 
-        effect.EffectType = EffectType.Bind;
-    }
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void RegisterMetadataProvider() => _ = _metadata;
+
+    public override EffectMetadata Metadata => _metadata;
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<Bind>(GetPropertyConditions<Bind>());

@@ -153,7 +153,7 @@ public abstract class EntityManager<TEntity> : IEntityManager
         {
             foreach (var group in groups)
             {
-                group.HandleEntityComponentChanged(entity, removed ? component : null);
+                group.HandleEntityComponentChanged(entity, component, removed);
             }
         }
     }
@@ -175,6 +175,85 @@ public abstract class EntityManager<TEntity> : IEntityManager
             // The creator owns this instance and returns it now that the synchronous group loop is done.
             changes.Return();
         }
+    }
+
+    public void OnCollectionChanged(
+        Component component,
+        string propertyName,
+        in EntityCollectionChange oldValue,
+        in EntityCollectionChange newValue)
+    {
+        var groups = _groupsByComponentId[component.ComponentId];
+        if (groups == null)
+        {
+            return;
+        }
+
+        var entity = (TEntity)component.Entity;
+        var hasSubscribers = false;
+        foreach (var group in groups)
+        {
+            if (group.Matcher.Matches(entity)
+                && group.HasPropertyValueSubscribersFor(propertyName, null))
+            {
+                hasSubscribers = true;
+                break;
+            }
+        }
+
+        if (!hasSubscribers)
+        {
+            return;
+        }
+
+        var changes = IPropertyValueChanges.Create(
+            new PropertyValueChange<EntityCollectionChange>(component, propertyName, oldValue, newValue));
+        var entityChange = new EntityChange<TEntity>(entity, changes);
+        foreach (var group in groups)
+        {
+            group.HandlePropertyValuesChanged(entityChange);
+        }
+
+        changes.Return();
+    }
+
+    public void OnNestedPropertyValueChanged<T>(
+        Component component, string propertyName, string nestedPropertyName,
+        object nestedItem, T oldValue, T newValue)
+    {
+        var groups = _groupsByComponentId[component.ComponentId];
+        if (groups == null)
+        {
+            return;
+        }
+
+        var entity = (TEntity)component.Entity;
+        var hasSubscribers = false;
+        foreach (var group in groups)
+        {
+            if (group.Matcher.Matches(entity)
+                && group.HasPropertyValueSubscribersFor(propertyName, nestedPropertyName))
+            {
+                hasSubscribers = true;
+                break;
+            }
+        }
+
+        if (!hasSubscribers)
+        {
+            return;
+        }
+
+        var changes = IPropertyValueChanges.Create(
+            new PropertyValueChange<T>(
+                component, propertyName, oldValue, newValue, nestedItem, nestedPropertyName));
+        var entityChange = new EntityChange<TEntity>(entity, changes);
+        foreach (var group in groups)
+        {
+            group.HandlePropertyValuesChanged(entityChange);
+        }
+
+        changes.Return();
     }
 
     public void OnPropertyValuesChanged(Entity entity, IPropertyValueChanges changes)

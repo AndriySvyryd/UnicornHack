@@ -11,7 +11,7 @@ using UnicornHack.Utils.DataLoading;
 
 namespace UnicornHack.Generation;
 
-public class Item : Affectable, ICSScriptSerializable, ILoadable
+public class Item : ICSScriptSerializable, ILoadable
 {
     private ItemType? _itemType;
     private ItemComplexity? _itemComplexity;
@@ -54,11 +54,11 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
         }
     }
 
-    public ISet<Ability> Abilities
+    public List<Ability> Abilities
     {
         get;
         set;
-    } = new HashSet<Ability>();
+    } = new List<Ability>();
 
     public ItemType? Type
     {
@@ -80,7 +80,7 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
 
     public int? Weight
     {
-        get => _weight ?? BaseItem?.Weight;
+        get => _weight ?? BaseItem?.Weight ?? 1;
         set => _weight = value;
     }
 
@@ -248,42 +248,32 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
 
         var physical = manager.CreateComponent<PhysicalComponent>(EntityComponent.Physical);
 
-        var capacity = 0;
-        if ((item.Type & ItemType.Container) != 0)
-        {
-            capacity = Capacity ?? ItemMovingSystem.DefaultInventorySize;
-        }
-        else if (StackSize > 1)
-        {
-            capacity = StackSize.Value - 1;
-        }
-
         itemEntity.Physical = physical;
+
+        itemEntity.ActiveEffects =
+            manager.CreateComponent<ActiveEffectsComponent>(EntityComponent.ActiveEffects);
 
         using (var innateAbilityReference = manager.CreateEntity())
         {
             var innateAbilityEntity = innateAbilityReference.Referenced;
-            var appliedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-            appliedEffect.EffectType = EffectType.AddAbility;
-            appliedEffect.Duration = EffectDuration.Infinite;
+            var abilityEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+            abilityEffect.EffectType = EffectType.AddAbility;
+            abilityEffect.CombinationFunction = ValueCombinationFunction.Sum;
+            abilityEffect.Duration = EffectDuration.Infinite;
 
-            innateAbilityEntity.Effect = appliedEffect;
+            innateAbilityEntity.Effect = abilityEffect;
 
             var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
             ability.Name = EffectApplicationSystem.InnateAbilityName;
             ability.Activation = ActivationType.Always;
             ability.SuccessCondition = AbilitySuccessCondition.Always;
+            abilityEffect.TargetName = ability.Name;
 
             innateAbilityEntity.Ability = ability;
 
-            AddPropertyEffect(nameof(PhysicalComponent.Weight), Weight ?? 0, innateAbilityEntity.Id, manager,
-                ValueCombinationFunction.MeanRoundDown);
-            AddPropertyEffect(nameof(PhysicalComponent.Material), (int?)(Material ?? Primitives.Material.Default),
-                innateAbilityEntity.Id, manager, ValueCombinationFunction.Override);
-            AddPropertyEffect(nameof(PhysicalComponent.Capacity), capacity, innateAbilityEntity.Id, manager);
+            ApplyBaseStats(itemEntity, manager);
 
             ability.OwnerEntity = itemEntity;
-            appliedEffect.AffectedEntity = itemEntity;
         }
 
         var activateAdded = false;
@@ -294,14 +284,15 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
                 var abilityEntity = abilityEntityReference.Referenced;
                 var abilityEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
                 abilityEffect.EffectType = EffectType.AddAbility;
+                abilityEffect.CombinationFunction = ValueCombinationFunction.Sum;
                 abilityEffect.Duration = EffectDuration.Infinite;
 
                 abilityEntity.Effect = abilityEffect;
 
-                var ability = abilityDefinition.AddToEffect(abilityEntity);
+                var ability = abilityDefinition.AddToEffect(abilityEntity)!;
+                abilityEffect.TargetName = ability.Name;
 
                 ability.OwnerEntity = itemEntity;
-                abilityEffect.AffectedEntity = itemEntity;
 
                 if ((abilityDefinition.Activation & ActivationType.Slottable) != 0)
                 {
@@ -330,6 +321,48 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
         return item;
     }
 
+    /// <summary>
+    ///     Adds this item template's innate physical stats as the entity's first modifier instances.
+    /// </summary>
+    public void ApplyBaseStats(GameEntity itemEntity, GameManager manager)
+    {
+        var item = itemEntity.Item!;
+        var activeEffects = itemEntity.ActiveEffects!;
+
+        var capacity = 0;
+        if ((item.Type & ItemType.Container) != 0)
+        {
+            capacity = Capacity ?? ItemMovingSystem.DefaultInventorySize;
+        }
+        else if (StackSize > 1)
+        {
+            capacity = StackSize.Value - 1;
+        }
+
+        activeEffects.AddPropertyEffect(
+            EffectType.ChangeProperty, nameof(PhysicalComponent.Weight),
+            ValueCombinationFunction.MeanRoundDown,
+            sourceAbilityType: AbilityType.Innate,
+            sourceAbilityActivation: ActivationType.Always,
+            magnitudePrimary: Weight ?? 1);
+        activeEffects.AddPropertyEffect(
+            EffectType.ChangeProperty, nameof(PhysicalComponent.Material),
+            ValueCombinationFunction.Override,
+            sourceAbilityType: AbilityType.Innate,
+            sourceAbilityActivation: ActivationType.Always,
+            magnitudePrimary: (int)(Material ?? Primitives.Material.Default));
+        if (capacity != 0)
+        {
+            activeEffects.AddPropertyEffect(
+                EffectType.ChangeProperty, nameof(PhysicalComponent.Capacity),
+                ValueCombinationFunction.Sum,
+                sourceAbilityType: AbilityType.Innate,
+                sourceAbilityActivation: ActivationType.Always,
+                magnitudePrimary: capacity);
+        }
+
+    }
+
     private void AddPossessedAbility(
         AbilityComponent? itemAbility, ActivationType itemCondition, ItemComponent item, GameManager manager)
     {
@@ -338,6 +371,7 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
 
         var possessedEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
         possessedEffect.EffectType = EffectType.AddAbility;
+        possessedEffect.CombinationFunction = ValueCombinationFunction.Sum;
         possessedEffect.Duration = EffectDuration.Infinite;
 
         possessedAbilityEntity.Effect = possessedEffect;
@@ -347,6 +381,7 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
         possessedAbility.Activation = itemCondition == ActivationType.Default
             ? ActivationType.WhilePossessed
             : itemCondition;
+        possessedEffect.TargetName = possessedAbility.Name;
 
         possessedAbilityEntity.Ability = possessedAbility;
 
@@ -356,6 +391,7 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
 
             var addUseAbilityEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
             addUseAbilityEffect.EffectType = EffectType.AddAbility;
+            addUseAbilityEffect.CombinationFunction = ValueCombinationFunction.Sum;
             addUseAbilityEffect.Duration = EffectDuration.Infinite;
 
             addUseAbilityEntity.Effect = addUseAbilityEffect;
@@ -401,10 +437,11 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
 
                 useEffectEntityReference.Referenced.Effect = useEffect;
             }
+
+            addUseAbilityEffect.TargetName = addUseAbilityEntity.Ability!.Name;
         }
 
         possessedAbility.OwnerEntity = item.Entity;
-        possessedEffect.AffectedEntity = item.Entity;
     }
 
     private Func<string, int, int, float>? _weightFunction;
@@ -461,12 +498,12 @@ public class Item : Affectable, ICSScriptSerializable, ILoadable
     {
         { nameof(Name), (_, v) => v != null },
         { nameof(BaseName), (_, v) => v != null },
-        { nameof(Abilities), (_, v) => ((ICollection<Ability>)v!).Count != 0 },
+        { nameof(Abilities), (_, v) => ((IReadOnlyList<Ability>)v!).Count != 0 },
         { nameof(Type), (o, v) => (ItemType?)v != (o.BaseItem?.Type ?? ItemType.None) },
         { nameof(Complexity), (o, v) => (ItemComplexity?)v != o.BaseItem?.Complexity },
         { nameof(GenerationWeight), (_, v) => v != null && (string)v != DefaultGenerationWeight },
         { nameof(Material), (o, v) => (Material?)v != o.BaseItem?.Material },
-        { nameof(Weight), (o, v) => (int?)v != o.BaseItem?.Weight },
+        { nameof(Weight), (o, v) => (int?)v != (o.BaseItem?.Weight ?? 1) },
         { nameof(StackSize), (o, v) => (int?)v != (o.BaseItem?.StackSize ?? 1) },
         { nameof(Countable), (o, v) => (bool?)v != o.BaseItem?.Countable },
         { nameof(Nameable), (o, v) => (bool?)v != o.BaseItem?.Nameable },

@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Antlar = new Creature
     {
         Name = "antlar",
-        Species = Species.Antlar,
         SpeciesClass = SpeciesClass.MagicalBeast,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "antlar ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "70*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "70*MightModifier()" } }
             },
             new Ability
             {
+                Name = "antlar ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -31,10 +34,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "70*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "70*MightModifier()" } }
             },
             new Ability
             {
+                Name = "antlar ability #3",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -43,10 +48,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "60*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "60*MightModifier()" } }
             },
             new Ability
             {
+                Name = "antlar ability #4",
+                Type = AbilityType.RangedAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnRangedAttack,
                 Range = 20,
@@ -55,7 +62,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Confuse { Duration = EffectDuration.UntilTimeout, DurationAmount = "4" } }
+                Effects = new List<Effect> { new Confuse() }
             }
         },
         InitialLevel = 9,
@@ -63,10 +70,10 @@ public static partial class CreatureData
         Weight = 1300,
         MovementDelay = 100,
         TurningDelay = 100,
-        Perception = -5,
-        Might = -6,
-        Speed = -5,
-        Focus = -6,
+        PerceptionBonus = -5,
+        MightBonus = -6,
+        SpeedBonus = -5,
+        FocusBonus = -6,
         Armor = 4,
         MagicResistance = 12,
         TorsoType = TorsoType.Quadruped,

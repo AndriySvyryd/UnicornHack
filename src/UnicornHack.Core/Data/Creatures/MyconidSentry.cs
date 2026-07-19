@@ -5,11 +5,13 @@ public static partial class CreatureData
     public static readonly Creature MyconidSentry = new Creature
     {
         Name = "myconid sentry",
-        Species = Species.Fungus,
-        Abilities = new HashSet<Ability>
+        SpeciesClass = SpeciesClass.Plant,
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "myconid sentry ability #1",
+                Type = AbilityType.RangedAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnRangedAttack,
                 Range = 20,
@@ -18,7 +20,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Deafen { Duration = EffectDuration.UntilTimeout, DurationAmount = "3" } }
+                Effects = new List<Effect> { new Deafen() }
             }
         },
         InitialLevel = 3,
@@ -28,11 +30,14 @@ public static partial class CreatureData
         Weight = 100,
         MovementDelay = 1100,
         TurningDelay = 1100,
-        Perception = -8,
-        Might = -8,
-        Speed = -8,
-        Focus = -4,
+        PerceptionBonus = -8,
+        MightBonus = -8,
+        SpeedBonus = -8,
+        FocusBonus = -4,
         Armor = 1,
+        BlindResistance = 100,
+        FascinateResistance = 100,
+        SuffocateResistance = 100,
         HeadType = HeadType.None,
         UpperExtremities = ExtremityType.None,
         LowerExtremities = ExtremityType.None,

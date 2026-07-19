@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Undine = new Creature
     {
         Name = "undine",
-        Species = Species.Elemental,
         SpeciesClass = SpeciesClass.Extraplanar,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "undine ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "170*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "170*MightModifier()" } }
             },
             new Ability
             {
+                Name = "undine ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -31,15 +34,17 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Soak { Damage = "30*MightModifier()" } }
+                Effects = new List<Effect> { new WaterDamage { Amount = "30*MightModifier()" } }
             },
             new Ability
             {
+                Name = "undine ability #3",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.OnMeleeHit,
                 Action = AbilityAction.Touch,
                 SuccessCondition = AbilitySuccessCondition.UnblockableAttack,
                 Accuracy = "10+PerceptionModifier()",
-                Effects = new List<Effect> { new Soak { Damage = "30*MightModifier()" } }
+                Effects = new List<Effect> { new WaterDamage { Amount = "30*MightModifier()" } }
             }
         },
         InitialLevel = 8,
@@ -50,15 +55,13 @@ public static partial class CreatureData
         MovementDelay = 100,
         TurningDelay = 100,
         Material = Material.Water,
-        Perception = -5,
-        Might = -6,
-        Speed = -5,
+        PerceptionBonus = -5,
+        MightBonus = -6,
+        SpeedBonus = -5,
         BonusHitPoints = 70,
         Armor = 4,
         MagicResistance = 15,
         WaterResistance = 200,
-        SlimingImmune = true,
-        StoningImmune = true,
         HeadType = HeadType.None,
         UpperExtremities = ExtremityType.None,
         LowerExtremities = ExtremityType.None,

@@ -5,11 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Kraken = new Creature
     {
         Name = "Kraken",
-        Species = Species.Squid,
-        Abilities = new HashSet<Ability>
+        SpeciesClass = SpeciesClass.Aquatic,
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "Kraken ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -18,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "50*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "50*MightModifier()" } }
             },
             new Ability
             {
+                Name = "Kraken ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -30,10 +34,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "50*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "50*MightModifier()" } }
             },
             new Ability
             {
+                Name = "Kraken ability #3",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -42,10 +48,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "120*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "120*MightModifier()" } }
             },
             new Ability
             {
+                Name = "Kraken ability #4",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -54,7 +62,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Bind { Duration = EffectDuration.UntilTimeout, DurationAmount = "7" } }
+                Effects = new List<Effect> { new Bind() }
             }
         },
         InitialLevel = 20,
@@ -64,8 +72,8 @@ public static partial class CreatureData
         Weight = 2000,
         MovementDelay = 300,
         TurningDelay = 300,
-        Perception = 1,
-        Speed = 1,
+        PerceptionBonus = 1,
+        SpeedBonus = 1,
         Armor = 2,
         UpperExtremities = ExtremityType.None,
         LowerExtremities = ExtremityType.None,

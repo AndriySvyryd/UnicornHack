@@ -1,34 +1,22 @@
 using CSharpScriptSerialization;
 using UnicornHack.Data.Players;
-using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Systems.Senses;
 using UnicornHack.Utils.DataLoading;
 
 namespace UnicornHack.Generation;
 
 public class PlayerRace : Being, ICSScriptSerializable, ILoadable
 {
-    public int SkillPointRate
+    public IReadOnlyDictionary<int, IReadOnlyList<Effect>> Effects
     {
         get;
         set;
-    }
+    } = new Dictionary<int, IReadOnlyList<Effect>>();
 
-    public int TraitPointRate
-    {
-        get;
-        set;
-    }
-
-    public int MutationPointRate
-    {
-        get;
-        set;
-    }
+    public override PlayerRace? BaseBeing => BaseName == null ? null : Loader.Find(BaseName);
 
     public static GameEntity InstantiatePlayer(string name, Sex sex, RoomComponent room, Point cell)
     {
@@ -39,6 +27,7 @@ public class PlayerRace : Being, ICSScriptSerializable, ILoadable
 
             var player = manager.CreateComponent<PlayerComponent>(EntityComponent.Player);
             player.NextActionTick = manager.Game.CurrentTick;
+            player.PreviousActionTick = manager.Game.CurrentTick;
             player.ProperName = name;
 
             playerEntity.Player = player;
@@ -48,11 +37,11 @@ public class PlayerRace : Being, ICSScriptSerializable, ILoadable
 
             playerEntity.Being = being;
 
-            var sensor = manager.CreateComponent<SensorComponent>(EntityComponent.Sensor);
-            playerEntity.Sensor = sensor;
-
             var physical = manager.CreateComponent<PhysicalComponent>(EntityComponent.Physical);
             playerEntity.Physical = physical;
+
+            playerEntity.ActiveEffects =
+                manager.CreateComponent<ActiveEffectsComponent>(EntityComponent.ActiveEffects);
 
             var position = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
             position.RoomId = room.EntityId;
@@ -65,65 +54,35 @@ public class PlayerRace : Being, ICSScriptSerializable, ILoadable
 
             var defaultRace = PlayerRaceData.Human;
 
-            using (var innateAbilityReference = manager.CreateEntity())
-            {
-                var innateAbilityEntity = innateAbilityReference.Referenced;
-                var innateEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                innateEffect.EffectType = EffectType.AddAbility;
-                innateEffect.Duration = EffectDuration.Infinite;
+            manager.EffectApplicationSystem.ApplyAbilityWithoutCarrier(AbilityData.Innate, playerEntity);
 
-                innateAbilityEntity.Effect = innateEffect;
-
-                var innateAbility = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
-                innateAbility.Name = EffectApplicationSystem.InnateAbilityName;
-                innateAbility.Activation = ActivationType.Always;
-                innateAbility.SuccessCondition = AbilitySuccessCondition.Always;
-
-                innateAbilityEntity.Ability = innateAbility;
-
-                defaultRace.AddPropertyEffect(nameof(PhysicalComponent.Material), (int?)Material.Flesh,
-                    innateAbilityEntity.Id, manager, ValueCombinationFunction.Override);
-                defaultRace.AddPropertyEffect(nameof(PhysicalComponent.Capacity),
-                    AbilitySlottingSystem.DefaultSlotCapacity + 2, innateAbilityEntity.Id, manager);
-
-                innateAbility.OwnerEntity = playerEntity;
-                innateEffect.AffectedEntity = playerEntity;
-            }
-
-            using (var raceEntityReference = manager.CreateEntity())
-            {
-                var raceEffectEntity = raceEntityReference.Referenced;
-                var raceEffect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-                raceEffect.EffectType = EffectType.ChangeRace;
-                raceEffect.Duration = EffectDuration.Infinite;
-
-                raceEffectEntity.Effect = raceEffect;
-
-                defaultRace.AddToAppliedEffect(raceEffectEntity, playerEntity);
-
-                raceEffect.AffectedEntity = playerEntity;
-            }
+            manager.EffectApplicationSystem.AddAbilityEffect(
+                playerEntity, defaultRace.GetRaceAbilityTemplate());
 
             return playerEntity;
         }
     }
 
-    public static readonly CSScriptLoader<PlayerRace> Loader = new(@"Data\Players\", typeof(PlayerRaceData));
+    public override int GetTemplateId() => Loader.GetId(Name);
+
+    protected override Dictionary<int, IReadOnlyList<Effect>> GetRaceLeveledEffects()
+        => (Dictionary<int, IReadOnlyList<Effect>>)Effects;
+
+    public static readonly IndexedCSScriptLoader<string, PlayerRace> Loader =
+        new(@"Data\Players\", typeof(PlayerRaceData), race => race.GetRaceAbilityName(),
+            StringComparer.OrdinalIgnoreCase);
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<PlayerRace>(GetPropertyConditions<PlayerRace>());
 
-    protected static Dictionary<string, Func<TPlayerRace, object?, bool>> GetPropertyConditions<TPlayerRace>()
-        where TPlayerRace : PlayerRace => new()
+    protected static new Dictionary<string, Func<TPlayerRace, object?, bool>> GetPropertyConditions<TPlayerRace>()
+        where TPlayerRace : PlayerRace
     {
-        { nameof(Name), (_, v) => v != null },
-        { nameof(Species), (_, v) => v != null },
-        { nameof(SpeciesClass), (_, v) => v != null },
-        { nameof(Abilities), (_, v) => ((ICollection<Ability>)v!).Count != 0 },
-        { nameof(SkillPointRate), (_, v) => (int)v! != 0 },
-        { nameof(TraitPointRate), (_, v) => (int)v! != 0 },
-        { nameof(MutationPointRate), (_, v) => (int)v! != 0 }
-    };
+        var propertyConditions = Being.GetPropertyConditions<TPlayerRace>();
+        propertyConditions.Add(
+            nameof(Effects), (_, value) => ((IReadOnlyDictionary<int, IReadOnlyList<Effect>>)value!).Count != 0);
+        return propertyConditions;
+    }
 
     ICSScriptSerializer ICSScriptSerializable.GetSerializer() => Serializer;
 }

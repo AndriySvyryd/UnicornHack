@@ -3,13 +3,35 @@ using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
 
-public class Engulf : DurationEffect
+public class Engulf : ResistedEffect
 {
-    protected override void ConfigureEffect(EffectComponent effect)
-    {
-        base.ConfigureEffect(effect);
+    private static readonly EffectMetadata _metadata = EffectMetadata.Default(
+            EffectType.Engulf, AbilityData.Engulfed.Name, applicationHandler: Apply,
+            statusCategory: StatusCategory.Physical,
+            resistanceProperty: nameof(Systems.Beings.BeingComponent.EngulfResistance),
+            statusAbilityDuration: "100*MightModifier()",
+            combinationFunction: ValueCombinationFunction.BuildUpPerSource,
+            defaultAmount: "200*MightModifier()");
 
-        effect.EffectType = EffectType.Engulf;
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void RegisterMetadataProvider() => _ = _metadata;
+
+    public override EffectMetadata Metadata => _metadata;
+
+    private static void Apply(in EffectApplicationContext context)
+    {
+        if (context.TargetEntity is not { } target
+            || context.Manager.EngulferToVictimRelationship.GetVictim(context.ActivatorEntity) != null
+            || context.Manager.EngulferToVictimRelationship.GetEngulfer(target) != null
+            || context.ActivatorEntity.Position is not { Cell: { } activatorCell } activatorPosition
+            || target.Position is not { Cell: { } targetCell } targetPosition
+            || activatorPosition.RoomId != targetPosition.RoomId
+            || activatorCell.DistanceTo(targetCell) != 1)
+        {
+            return;
+        }
+
+        context.System.ApplyStatus(context);
     }
 
     private static readonly CSScriptSerializer Serializer =

@@ -29,7 +29,7 @@ namespace UnicornHack.Web.PerformanceTests;
 public class ChangeDetectionPerfTest
 {
     /// <summary>Number of NPCs placed around the player (one per available cell).</summary>
-    [Params(8, 24)]
+    [Params(8, 24, 64)]
     public int NpcCount;
 
     private const string Map = @"
@@ -65,7 +65,7 @@ public class ChangeDetectionPerfTest
     [IterationSetup]
     public void Setup()
     {
-        _game = WebTestHelper.CreateGame();
+        _game = TestHelper.CreateGame();
         _room = TestHelper.BuildRoom(Map, _game);
         var manager = _game.Manager;
 
@@ -99,7 +99,7 @@ public class ChangeDetectionPerfTest
                         continue;
                     }
 
-                    CreatureData.Human.Instantiate(_room, new Point((byte)x, (byte)y));
+                    CreatureData.HumanWarrior.Instantiate(_room, new Point((byte)x, (byte)y));
                     placed++;
                 }
             }
@@ -108,7 +108,7 @@ public class ChangeDetectionPerfTest
         manager.Queue.ProcessQueue(manager);
 
         _builder = WebTestHelper.SetupListeners(manager);
-        WebTestHelper.RegisterPlayer(_playerEntity, _builder, manager);
+        _builder.RegisterPlayerBuilder(_playerEntity, manager);
         _player = _playerEntity.Player!;
         _services = _game.Services;
     }

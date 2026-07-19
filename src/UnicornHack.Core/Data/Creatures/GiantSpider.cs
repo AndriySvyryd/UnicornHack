@@ -5,13 +5,13 @@ public static partial class CreatureData
     public static readonly Creature GiantSpider = new Creature
     {
         Name = "giant spider",
-        Species = Species.Spider,
         SpeciesClass = SpeciesClass.Vermin,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
                 Name = "posion bite",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -20,11 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Blight { Damage = "50*MightModifier()" } }
+                Effects = new List<Effect> { new ToxinDamage { Duration = EffectDuration.UntilTimeout, Amount = "50*MightModifier()" } }
             },
             new Ability
             {
                 Name = "weakening bite",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -33,7 +34,24 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new ChangeProperty<int> { Duration = EffectDuration.UntilTimeout, DurationAmount = "5", PropertyName = "Might", Value = -1 } }
+                Effects = new List<Effect>
+                {
+                    new ChangeProperty<int> { Duration = EffectDuration.UntilTimeout, DurationAmount = "5*MightModifier()", Amount = "-1", PropertyName = "Might" }
+                }
+            },
+            new Ability
+            {
+                Name = "web",
+                Type = AbilityType.RangedAttack,
+                Activation = ActivationType.Targeted,
+                Trigger = ActivationType.OnRangedAttack,
+                Range = 5,
+                Action = AbilityAction.Spit,
+                SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                Accuracy = "5+PerceptionModifier()",
+                Cooldown = 200,
+                Delay = "100*SpeedModifier()",
+                Effects = new List<Effect> { new Cripple() }
             }
         },
         InitialLevel = 1,
@@ -41,11 +59,13 @@ public static partial class CreatureData
         Weight = 150,
         MovementDelay = -20,
         TurningDelay = -20,
-        Perception = -7,
-        Might = -8,
-        Speed = -7,
-        Focus = -8,
+        PerceptionBonus = -7,
+        MightBonus = -8,
+        SpeedBonus = -7,
+        FocusBonus = -8,
         Armor = 3,
+        DecayResistance = 50,
+        ToppleResistance = 25,
         TorsoType = TorsoType.Quadruped,
         UpperExtremities = ExtremityType.None,
         LowerExtremities = ExtremityType.Claws,

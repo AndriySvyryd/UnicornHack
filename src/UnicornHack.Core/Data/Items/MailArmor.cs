@@ -5,9 +5,14 @@ public static partial class ItemData
     public static readonly Item MailArmor = new Item
     {
         Name = "mail armor",
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
-            new Ability { Activation = ActivationType.WhileEquipped, Effects = new List<Effect> { new ChangeProperty<int> { PropertyName = "Armor", Value = 5 } } }
+            new Ability
+            {
+                Name = "mail armor ability #1",
+                Activation = ActivationType.WhileEquipped,
+                Effects = new List<Effect> { new ChangeProperty<int> { Amount = "5", PropertyName = "Armor" } }
+            }
         },
         Type = ItemType.ArmorTorso,
         Material = Material.Steel,

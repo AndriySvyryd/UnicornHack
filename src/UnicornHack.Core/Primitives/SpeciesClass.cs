@@ -18,5 +18,10 @@ public enum SpeciesClass
     MagicalBeast = 1 << 11,
     Aberration = 1 << 12,
     Extraplanar = 1 << 13,
-    Undead = 1 << 14
+    Undead = 1 << 14,
+    Humanoid = 1 << 15,
+    Aquatic = 1 << 16,
+    Ooze = 1 << 17,
+    Construct = 1 << 18,
+    Plant = 1 << 19
 }

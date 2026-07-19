@@ -21,9 +21,15 @@ public abstract class NotificationEntity : INotifyPropertyChanged, INotifyProper
             return;
         }
 
-        FirePropertyChanging(propertyName);
+        var oldValue = field;
+        PropertyChanging?.Invoke(this, new PropertyChangingEventArgs(propertyName));
         field = value;
-        FirePropertyChanged(propertyName);
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        OnPropertyValueChanged(propertyName, oldValue, value);
+    }
+
+    protected virtual void OnPropertyValueChanged<T>(string propertyName, T oldValue, T newValue)
+    {
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

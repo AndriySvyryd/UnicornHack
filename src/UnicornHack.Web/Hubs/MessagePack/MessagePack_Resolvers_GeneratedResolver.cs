@@ -7,6 +7,7 @@
 #pragma warning disable SA1649 // File name should match first type name
 
 using MessagePack.Formatters;
+using UnicornHack.Hubs;
 using UnicornHack.Hubs.ChangeTracking;
 using UnicornHack.Hubs.MessagePack;
 
@@ -57,26 +58,22 @@ namespace MessagePack.Resolvers
                 { typeof(DirectionFlags), 6 },
                 { typeof(DirectionFlags[]), 7 },
                 { typeof(MapFeature[]), 8 },
-                { typeof(Dictionary<int, List<object>>), 9 },
                 { typeof(Dictionary<string, int>), 10 },
                 { typeof(MapFeature), 11 },
                 { typeof(List<(short, byte)>), 13 },
                 { typeof(List<(short, DirectionFlags)>), 14 },
                 { typeof(List<(short, MapFeature)>), 15 },
-                { typeof(object), 16 },
                 { typeof(PlayerChange), 17 },
                 { typeof(RoomChange), 18 },
                 { typeof(ActorChange), 19 },
                 { typeof(ItemChange), 20 },
                 { typeof(ConnectionChange), 21 },
-                { typeof(RaceChange), 22 },
                 { typeof(AbilityChange), 23 },
                 { typeof(LogEntryChange), 24 },
                 { typeof(TurnChangeSet), 25 },
                 { typeof(Dictionary<int, ActorChange>), 26 },
                 { typeof(Dictionary<int, ItemChange>), 27 },
                 { typeof(Dictionary<int, ConnectionChange>), 28 },
-                { typeof(Dictionary<int, RaceChange>), 29 },
                 { typeof(Dictionary<int, AbilityChange>), 30 },
                 { typeof(Dictionary<int, LogEntryChange>), 31 },
                 { typeof(List<TurnChangeSet>), 32 },
@@ -88,7 +85,27 @@ namespace MessagePack.Resolvers
                 { typeof(RoomEntry), 38 },
                 { typeof(List<RoomEntry>), 39 },
                 { typeof(List<int>), 40 },
-                { typeof(SteppedOnConnectionEvent), 41 }
+                { typeof(TurnEvent), 41 },
+                { typeof(EffectChange), 42 },
+                { typeof(Dictionary<int, EffectChange>), 43 },
+                { typeof(DialogData), 44 },
+                { typeof(PlayerInventory), 45 },
+                { typeof(UnicornHack.Hubs.Item), 46 },
+                { typeof(EquippableSlot), 47 },
+                { typeof(PlayerAdaptations), 48 },
+                { typeof(PlayerSkills), 49 },
+                { typeof(ActorAttributes), 50 },
+                { typeof(AbilityAttributes), 51 },
+                { typeof(EffectAttributes), 52 },
+                { typeof(SubAbilityAttributes), 53 },
+                { typeof(ItemAttributes), 54 },
+                { typeof(PostGameStatistics), 55 },
+                { typeof(List<TurnEvent>), 56 },
+                { typeof(Dictionary<int, UnicornHack.Hubs.Item>), 57 },
+                { typeof(Dictionary<int, EquippableSlot>), 58 },
+                { typeof(Dictionary<int, EffectAttributes>), 59 },
+                { typeof(List<SubAbilityAttributes>), 60 },
+                { typeof(List<AbilityAttributes>), 61 }
             };
         }
 
@@ -119,8 +136,6 @@ namespace MessagePack.Resolvers
                     return new ArrayFormatter<DirectionFlags>();
                 case 8:
                     return new ArrayFormatter<MapFeature>();
-                case 9:
-                    return new DictionaryFormatter<int, List<object>>();
                 case 10:
                     return new DictionaryFormatter<string, int>();
                 case 11:
@@ -131,8 +146,6 @@ namespace MessagePack.Resolvers
                     return new ListFormatter<(short, DirectionFlags)>();
                 case 15:
                     return new ListFormatter<(short, MapFeature)>();
-                case 16:
-                    return new CastingFormatter();
                 case 17:
                     return PlayerChangeFormatter.Instance;
                 case 18:
@@ -143,8 +156,6 @@ namespace MessagePack.Resolvers
                     return ItemChangeFormatter.Instance;
                 case 21:
                     return ConnectionChangeFormatter.Instance;
-                case 22:
-                    return RaceChangeFormatter.Instance;
                 case 23:
                     return AbilityChangeFormatter.Instance;
                 case 24:
@@ -157,8 +168,6 @@ namespace MessagePack.Resolvers
                     return new DictionaryFormatter<int, ItemChange>();
                 case 28:
                     return new DictionaryFormatter<int, ConnectionChange>();
-                case 29:
-                    return new DictionaryFormatter<int, RaceChange>();
                 case 30:
                     return new DictionaryFormatter<int, AbilityChange>();
                 case 31:
@@ -182,7 +191,47 @@ namespace MessagePack.Resolvers
                 case 40:
                     return new ListFormatter<int>();
                 case 41:
-                    return SteppedOnConnectionEventFormatter.Instance;
+                    return TurnEventFormatter.Instance;
+                case 42:
+                    return EffectChangeFormatter.Instance;
+                case 43:
+                    return new DictionaryFormatter<int, EffectChange>();
+                case 44:
+                    return DialogDataFormatter.Instance;
+                case 45:
+                    return PlayerInventoryFormatter.Instance;
+                case 46:
+                    return DialogItemFormatter.Instance;
+                case 47:
+                    return EquippableSlotFormatter.Instance;
+                case 48:
+                    return PlayerAdaptationsFormatter.Instance;
+                case 49:
+                    return PlayerSkillsFormatter.Instance;
+                case 50:
+                    return ActorAttributesFormatter.Instance;
+                case 51:
+                    return AbilityAttributesFormatter.Instance;
+                case 52:
+                    return EffectAttributesFormatter.Instance;
+                case 53:
+                    return SubAbilityAttributesFormatter.Instance;
+                case 54:
+                    return ItemAttributesFormatter.Instance;
+                case 55:
+                    return PostGameStatisticsFormatter.Instance;
+                case 56:
+                    return new ListFormatter<TurnEvent>();
+                case 57:
+                    return new DictionaryFormatter<int, UnicornHack.Hubs.Item>();
+                case 58:
+                    return new DictionaryFormatter<int, EquippableSlot>();
+                case 59:
+                    return new DictionaryFormatter<int, EffectAttributes>();
+                case 60:
+                    return new ListFormatter<SubAbilityAttributes>();
+                case 61:
+                    return new ListFormatter<AbilityAttributes>();
                 default:
                     return null;
             }

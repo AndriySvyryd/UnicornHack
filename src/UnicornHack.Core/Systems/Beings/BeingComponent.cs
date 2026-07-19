@@ -1,4 +1,6 @@
-﻿using UnicornHack.Utils.MessagingECS;
+﻿using System.Buffers;
+using UnicornHack.Systems.Effects;
+using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Beings;
 
@@ -6,50 +8,12 @@ namespace UnicornHack.Systems.Beings;
 public class BeingComponent : GameComponent
 {
     private Sex _sex;
-    private int _energyPointMaximum;
     private int _energyPoints;
-    private int _reservedEnergyPoints;
-    private int _hitPointMaximum;
     private int _hitPoints;
-    private int _perception;
-    private int _might;
-    private int _speed;
-    private int _focus;
-    private int _energyRegeneration;
-    private int _regeneration;
-    private int _hindrance;
-    private int _accuracy;
-    private int _evasion;
-    private int _deflection;
-    private int _armor;
-    private int _physicalResistance;
-    private int _magicResistance;
-    private int _acidResistance;
-    private int _bleedingResistance;
-    private int _coldResistance;
-    private int _electricityResistance;
-    private int _fireResistance;
-    private int _lightResistance;
-    private int _psychicResistance;
-    private int _sonicResistance;
-    private int _stunResistance;
-    private int _toxinResistance;
-    private int _voidResistance;
-    private int _waterResistance;
-    private HeadType _headType;
-    private TorsoType _torsoType;
-    private ExtremityType _upperExtremities;
-    private ExtremityType _lowerExtremities;
-    private ExtremityType _backExtremities;
-    private int _visibility;
     private int _experiencePoints;
-    private float _leftoverHPRegenerationXP;
-    private float _leftoverEPRegenerationXP;
     private int? _primaryNaturalWeaponId;
     private int? _secondaryNaturalWeaponId;
     private int _entropyState;
-    private IReadOnlyCollection<GameEntity>? _abilities;
-    private IReadOnlyCollection<GameEntity>? _appliedEffects;
     private IReadOnlyCollection<GameEntity>? _items;
 
     public BeingComponent()
@@ -63,12 +27,11 @@ public class BeingComponent : GameComponent
         set => SetWithNotify(value, ref _sex);
     }
 
-    [Property]
-    public int EnergyPointMaximum
-    {
-        get => _energyPointMaximum;
-        set => SetWithNotify(value, ref _energyPointMaximum);
-    }
+    [Property<int>]
+    public int EnergyPointMaximum =>
+        Entity is { ActiveEffects: { } activeEffects }
+            ? activeEffects.ResolveInt(nameof(EnergyPointMaximum))
+            : int.MaxValue;
 
     public int EnergyPoints
     {
@@ -91,38 +54,17 @@ public class BeingComponent : GameComponent
         }
     }
 
-    public int ReservedEnergyPoints
-    {
-        get => _reservedEnergyPoints;
-        set
-        {
-            var newReservedEP = value;
-            if (newReservedEP < 0)
-            {
-                newReservedEP = 0;
-            }
+    [Property<int>(MinValue = 0)]
+    public int ReservedEnergyPoints =>
+        Entity is { ActiveEffects: { } activeEffects }
+            ? Math.Min(EnergyPointMaximum, activeEffects.ResolveInt(nameof(ReservedEnergyPoints)))
+            : 0;
 
-            if (newReservedEP > EnergyPointMaximum)
-            {
-                newReservedEP = EnergyPointMaximum;
-            }
-
-            SetWithNotify(newReservedEP, ref _reservedEnergyPoints);
-
-            var maxEP = EnergyPointMaximum - newReservedEP;
-            if (EnergyPoints > maxEP)
-            {
-                EnergyPoints = maxEP;
-            }
-        }
-    }
-
-    [Property]
-    public int HitPointMaximum
-    {
-        get => _hitPointMaximum;
-        set => SetWithNotify(value, ref _hitPointMaximum);
-    }
+    [Property<int>]
+    public int HitPointMaximum =>
+        Entity is { ActiveEffects: { } activeEffects }
+            ? activeEffects.ResolveInt(nameof(HitPointMaximum))
+            : int.MaxValue;
 
     public int HitPoints
     {
@@ -130,250 +72,302 @@ public class BeingComponent : GameComponent
         set
         {
             var newHP = value;
-            if (newHP > HitPointMaximum)
+            var maxHP = HitPointMaximum - ReservedHitPoints;
+            if (newHP > maxHP)
             {
-                newHP = HitPointMaximum;
+                newHP = maxHP;
             }
 
             SetWithNotify(newHP, ref _hitPoints);
         }
     }
 
+    [Property<int>(MinValue = 0)]
+    public int ReservedHitPoints =>
+        Entity is { ActiveEffects: { } activeEffects }
+            ? Math.Min(HitPointMaximum, activeEffects.ResolveInt(nameof(ReservedHitPoints)))
+            : 0;
+
     public bool IsAlive => HitPoints > 0;
 
-    [Property(DefaultValue = 10, MinValue = 0)]
-    public int Perception
+    [Property<int>(DefaultValue = 10, MinValue = 0)]
+    public int Perception => Entity.ActiveEffects!.ResolveInt(nameof(Perception));
+
+    [Property<int>(DefaultValue = 10, MinValue = 0)]
+    public int Might => Entity.ActiveEffects!.ResolveInt(nameof(Might));
+
+    [Property<int>(DefaultValue = 10, MinValue = 0)]
+    public int Speed => Entity.ActiveEffects!.ResolveInt(nameof(Speed));
+
+    [Property<int>(DefaultValue = 10, MinValue = 0)]
+    public int Focus => Entity.ActiveEffects!.ResolveInt(nameof(Focus));
+
+    [Property<int>(DefaultValue = 100, MinValue = 1)]
+    public int CooldownFactor => Entity.ActiveEffects!.ResolveInt(nameof(CooldownFactor));
+
+    [Property<int>(DefaultValue = 1, MinValue = 0)]
+    public int EnergyRegeneration => Entity.ActiveEffects!.ResolveInt(nameof(EnergyRegeneration));
+
+    [Property<int>]
+    public int Regeneration => Entity.ActiveEffects!.ResolveInt(nameof(Regeneration));
+
+    [Property<int>]
+    public int HealingResistance => Entity.ActiveEffects!.ResolveInt(nameof(HealingResistance));
+
+    [Property<int>]
+    public int EnergyRestorationResistance => Entity.ActiveEffects!.ResolveInt(nameof(EnergyRestorationResistance));
+
+    [Property<bool>(DefaultValue = true, DefaultCombinationFunction = ValueCombinationFunction.Override)]
+    public bool CanMove => Entity.ActiveEffects!.ResolveBool(nameof(CanMove));
+
+    [Property<bool>(DefaultValue = true, DefaultCombinationFunction = ValueCombinationFunction.Override)]
+    public bool CanMoveItems => Entity.ActiveEffects!.ResolveBool(nameof(CanMoveItems));
+
+    [Property<int>(MinValue = 0, MaxValue = 100)]
+    public int UnableToActPercent => Entity.ActiveEffects!.ResolveInt(nameof(UnableToActPercent));
+
+    [Property<bool>(DefaultValue = true, DefaultCombinationFunction = ValueCombinationFunction.Override)]
+    public bool CanCastSpells => Entity.ActiveEffects!.ResolveBool(nameof(CanCastSpells));
+
+    [Property<bool>(DefaultValue = true, DefaultCombinationFunction = ValueCombinationFunction.Override)]
+    public bool CanUseVerbalAbilities => Entity.ActiveEffects!.ResolveBool(nameof(CanUseVerbalAbilities));
+
+    [Property<bool>(DefaultValue = true, DefaultCombinationFunction = ValueCombinationFunction.Override)]
+    public bool CanPerceiveIntention => Entity.ActiveEffects!.ResolveBool(nameof(CanPerceiveIntention));
+
+    [Property<bool>(DefaultValue = true, DefaultCombinationFunction = ValueCombinationFunction.Override)]
+    public bool CanUseDefaultAttacks => Entity.ActiveEffects!.ResolveBool(nameof(CanUseDefaultAttacks));
+
+    [Property<bool>(DefaultValue = true, DefaultCombinationFunction = ValueCombinationFunction.Override)]
+    public bool CanUseComplexAbilities => Entity.ActiveEffects!.ResolveBool(nameof(CanUseComplexAbilities));
+
+    [Property<bool>(DefaultValue = true, DefaultCombinationFunction = ValueCombinationFunction.Override)]
+    public bool CanUseNonDefaultAbilities => Entity.ActiveEffects!.ResolveBool(nameof(CanUseNonDefaultAbilities));
+
+    [Property<bool>(DefaultValue = true, DefaultCombinationFunction = ValueCombinationFunction.Override)]
+    public bool CanUseNonAttackAbilities => Entity.ActiveEffects!.ResolveBool(nameof(CanUseNonAttackAbilities));
+
+    [Property<int>(MinValue = 0, MaxValue = 100)]
+    public int RandomMovementPercent => Entity.ActiveEffects!.ResolveInt(nameof(RandomMovementPercent));
+
+    [Property<int>(MinValue = 0, MaxValue = 100)]
+    public int RandomActionPercent => Entity.ActiveEffects!.ResolveInt(nameof(RandomActionPercent));
+
+    [Property<bool>(DefaultValue = true, DefaultCombinationFunction = ValueCombinationFunction.Override)]
+    public bool CanUseDivineAbilities => Entity.ActiveEffects!.ResolveBool(nameof(CanUseDivineAbilities));
+
+    [Property<bool>(DefaultValue = true, DefaultCombinationFunction = ValueCombinationFunction.Override)]
+    public bool CanUseComplexFollowerCommands =>
+        Entity.ActiveEffects!.ResolveBool(nameof(CanUseComplexFollowerCommands));
+
+    [Property<bool>(DefaultValue = true, DefaultCombinationFunction = ValueCombinationFunction.Override)]
+    public bool CanUseFollowerCommands => Entity.ActiveEffects!.ResolveBool(nameof(CanUseFollowerCommands));
+
+    [Property<int>(MinValue = 0, MaxValue = 100)]
+    public int RandomMoveAfterActionPercent =>
+        Entity.ActiveEffects!.ResolveInt(nameof(RandomMoveAfterActionPercent));
+
+    [Property<bool>(DefaultCombinationFunction = ValueCombinationFunction.Override)]
+    public bool EmitsSmoke => Entity.ActiveEffects!.ResolveBool(nameof(EmitsSmoke));
+
+    [Property<int>(MinValue = 0, MaxValue = 100)]
+    public int FollowerCommandFailurePercent =>
+        Entity.ActiveEffects!.ResolveInt(nameof(FollowerCommandFailurePercent));
+
+    [Property<int>(MinValue = 0)]
+    public int Hindrance => Entity.ActiveEffects!.ResolveInt(nameof(Hindrance));
+
+    [Property<int>]
+    public int Accuracy => Entity.ActiveEffects!.ResolveInt(nameof(Accuracy));
+
+    [Property<int>]
+    public int Evasion => Entity.ActiveEffects!.ResolveInt(nameof(Evasion));
+
+    [Property<int>]
+    public int Deflection => Entity.ActiveEffects!.ResolveInt(nameof(Deflection));
+
+    [Property<int>(MinValue = 0)]
+    public int Armor => Entity.ActiveEffects!.ResolveInt(nameof(Armor));
+
+    [Property<int>]
+    public int PhysicalResistance => Entity.ActiveEffects!.ResolveInt(nameof(PhysicalResistance));
+
+    [Property<int>]
+    public int PhysicalStatusResistance => Entity.ActiveEffects!.ResolveInt(nameof(PhysicalStatusResistance));
+
+    [Property<int>]
+    public int MagicResistance => Entity.ActiveEffects!.ResolveInt(nameof(MagicResistance));
+
+    [Property<int>]
+    public int MentalStatusResistance => Entity.ActiveEffects!.ResolveInt(nameof(MentalStatusResistance));
+
+    [Property<int>]
+    public int BindResistance => Entity.ActiveEffects!.ResolveInt(nameof(BindResistance));
+
+    [Property<int>]
+    public int BlindResistance => Entity.ActiveEffects!.ResolveInt(nameof(BlindResistance));
+
+    [Property<int>]
+    public int CorrodeResistance => Entity.ActiveEffects!.ResolveInt(nameof(CorrodeResistance));
+
+    [Property<int>]
+    public int CrippleResistance => Entity.ActiveEffects!.ResolveInt(nameof(CrippleResistance));
+
+    [Property<int>]
+    public int DazeResistance => Entity.ActiveEffects!.ResolveInt(nameof(DazeResistance));
+
+    [Property<int>]
+    public int DeafenResistance => Entity.ActiveEffects!.ResolveInt(nameof(DeafenResistance));
+
+    [Property<int>]
+    public int DecayResistance => Entity.ActiveEffects!.ResolveInt(nameof(DecayResistance));
+
+    [Property<int>]
+    public int DisorientResistance => Entity.ActiveEffects!.ResolveInt(nameof(DisorientResistance));
+
+    [Property<int>]
+    public int EnervateResistance => Entity.ActiveEffects!.ResolveInt(nameof(EnervateResistance));
+
+    [Property<int>]
+    public int EngulfResistance => Entity.ActiveEffects!.ResolveInt(nameof(EngulfResistance));
+
+    [Property<int>]
+    public int ExposeResistance => Entity.ActiveEffects!.ResolveInt(nameof(ExposeResistance));
+
+    [Property<int>]
+    public int FascinateResistance => Entity.ActiveEffects!.ResolveInt(nameof(FascinateResistance));
+
+    [Property<int>]
+    public int FrightenResistance => Entity.ActiveEffects!.ResolveInt(nameof(FrightenResistance));
+
+    [Property<int>]
+    public int MuteResistance => Entity.ActiveEffects!.ResolveInt(nameof(MuteResistance));
+
+    [Property<int>]
+    public int ParalyzeResistance => Entity.ActiveEffects!.ResolveInt(nameof(ParalyzeResistance));
+
+    [Property<int>]
+    public int SedateResistance => Entity.ActiveEffects!.ResolveInt(nameof(SedateResistance));
+
+    [Property<int>]
+    public int SlowResistance => Entity.ActiveEffects!.ResolveInt(nameof(SlowResistance));
+
+    [Property<int>]
+    public int StaggerResistance => Entity.ActiveEffects!.ResolveInt(nameof(StaggerResistance));
+
+    [Property<int>]
+    public int StickResistance => Entity.ActiveEffects!.ResolveInt(nameof(StickResistance));
+
+    [Property<int>]
+    public int SuffocateResistance => Entity.ActiveEffects!.ResolveInt(nameof(SuffocateResistance));
+
+    [Property<int>]
+    public int TauntResistance => Entity.ActiveEffects!.ResolveInt(nameof(TauntResistance));
+
+    [Property<int>]
+    public int ToppleResistance => Entity.ActiveEffects!.ResolveInt(nameof(ToppleResistance));
+
+    [Property<int>]
+    public int WetResistance => Entity.ActiveEffects!.ResolveInt(nameof(WetResistance));
+
+    [Property<int>]
+    public int AcidResistance => Entity.ActiveEffects!.ResolveInt(nameof(AcidResistance));
+
+    [Property<int>]
+    public int BleedingResistance => Entity.ActiveEffects!.ResolveInt(nameof(BleedingResistance));
+
+    [Property<int>]
+    public int ColdResistance => Entity.ActiveEffects!.ResolveInt(nameof(ColdResistance));
+
+    [Property<int>]
+    public int ElectricityResistance => Entity.ActiveEffects!.ResolveInt(nameof(ElectricityResistance));
+
+    [Property<int>]
+    public int FireResistance => Entity.ActiveEffects!.ResolveInt(nameof(FireResistance));
+
+    [Property<int>(DefaultValue = 100)]
+    public int LightResistance => Entity.ActiveEffects!.ResolveInt(nameof(LightResistance));
+
+    [Property<int>]
+    public int PsychicResistance => Entity.ActiveEffects!.ResolveInt(nameof(PsychicResistance));
+
+    [Property<int>]
+    public int SonicResistance => Entity.ActiveEffects!.ResolveInt(nameof(SonicResistance));
+
+    [Property<int>]
+    public int StunResistance => Entity.ActiveEffects!.ResolveInt(nameof(StunResistance));
+
+    [Property<int>]
+    public int DoomResistance => Entity.ActiveEffects!.ResolveInt(nameof(DoomResistance));
+
+    [Property<int>]
+    public int ToxinResistance => Entity.ActiveEffects!.ResolveInt(nameof(ToxinResistance));
+
+    [Property<int>]
+    public int VoidResistance => Entity.ActiveEffects!.ResolveInt(nameof(VoidResistance));
+
+    [Property<int>(DefaultValue = 100)]
+    public int WaterResistance => Entity.ActiveEffects!.ResolveInt(nameof(WaterResistance));
+
+    [Property<HeadType>(DefaultCombinationFunction = ValueCombinationFunction.Override)]
+    public HeadType HeadType => (HeadType)Entity.ActiveEffects!.ResolveInt(nameof(HeadType));
+
+    [Property<TorsoType>(DefaultCombinationFunction = ValueCombinationFunction.Override)]
+    public TorsoType TorsoType => (TorsoType)Entity.ActiveEffects!.ResolveInt(nameof(TorsoType));
+
+    [Property<ExtremityType>]
+    public ExtremityType UpperExtremities => (ExtremityType)Entity.ActiveEffects!.ResolveInt(nameof(UpperExtremities));
+
+    [Property<ExtremityType>]
+    public ExtremityType LowerExtremities => (ExtremityType)Entity.ActiveEffects!.ResolveInt(nameof(LowerExtremities));
+
+    [Property<ExtremityType>]
+    public ExtremityType BackExtremities => (ExtremityType)Entity.ActiveEffects!.ResolveInt(nameof(BackExtremities));
+
+    [Property<int>(DefaultValue = 100, MinValue = 0)]
+    public int Visibility => Entity.ActiveEffects!.ResolveInt(nameof(Visibility));
+
+    [Property<int>(DefaultValue = 1)]
+    public int PrimaryFOVQuadrants => Entity.ActiveEffects!.ResolveInt(nameof(PrimaryFOVQuadrants));
+
+    [Property<int>(DefaultValue = 2)]
+    public int TotalFOVQuadrants => Entity.ActiveEffects!.ResolveInt(nameof(TotalFOVQuadrants));
+
+    [Property<int>(DefaultValue = 16)]
+    public int PrimaryVisionRange => Entity.ActiveEffects!.ResolveInt(nameof(PrimaryVisionRange));
+
+    [Property<int>(DefaultValue = 8)]
+    public int SecondaryVisionRange => Entity.ActiveEffects!.ResolveInt(nameof(SecondaryVisionRange));
+
+    [Property<int>(MinValue = 0, MaxValue = 254)]
+    public int HearingLevel => Entity.ActiveEffects!.ResolveInt(nameof(HearingLevel));
+
+    [Property<int>(MinValue = 0, MaxValue = 254)]
+    public int Quietness => Entity.ActiveEffects!.ResolveInt(nameof(Quietness));
+
+    [Property<bool>(DefaultCombinationFunction = ValueCombinationFunction.Override)]
+    public bool Infravision => Entity.ActiveEffects!.ResolveBool(nameof(Infravision));
+
+    [Property<bool>(DefaultCombinationFunction = ValueCombinationFunction.Override)]
+    public bool InvisibilityDetection => Entity.ActiveEffects!.ResolveBool(nameof(InvisibilityDetection));
+
+    /// <summary>The per-tile visibility the being currently perceives; transient (pooled array), not persisted.</summary>
+    public byte[]? VisibleTerrain
     {
-        get => _perception;
-        set => SetWithNotify(value, ref _perception);
+        get;
+        set;
     }
 
-    [Property(DefaultValue = 10, MinValue = 0)]
-    public int Might
+    public bool VisibleTerrainIsCurrent
     {
-        get => _might;
-        set => SetWithNotify(value, ref _might);
-    }
-
-    [Property(DefaultValue = 10, MinValue = 0)]
-    public int Speed
-    {
-        get => _speed;
-        set => SetWithNotify(value, ref _speed);
-    }
-
-    [Property(DefaultValue = 10, MinValue = 0)]
-    public int Focus
-    {
-        get => _focus;
-        set => SetWithNotify(value, ref _focus);
-    }
-
-    [Property]
-    public int EnergyRegeneration
-    {
-        get => _energyRegeneration;
-        set => SetWithNotify(value, ref _energyRegeneration);
-    }
-
-    [Property]
-    public int Regeneration
-    {
-        get => _regeneration;
-        set => SetWithNotify(value, ref _regeneration);
-    }
-
-    [Property(MinValue = 0)]
-    public int Hindrance
-    {
-        get => _hindrance;
-        set => SetWithNotify(value, ref _hindrance);
-    }
-
-    [Property]
-    public int Accuracy
-    {
-        get => _accuracy;
-        set => SetWithNotify(value, ref _accuracy);
-    }
-
-    [Property]
-    public int Evasion
-    {
-        get => _evasion;
-        set => SetWithNotify(value, ref _evasion);
-    }
-
-    [Property]
-    public int Deflection
-    {
-        get => _deflection;
-        set => SetWithNotify(value, ref _deflection);
-    }
-
-    [Property(MinValue = 0)]
-    public int Armor
-    {
-        get => _armor;
-        set => SetWithNotify(value, ref _armor);
-    }
-
-    [Property]
-    public int PhysicalResistance
-    {
-        get => _physicalResistance;
-        set => SetWithNotify(value, ref _physicalResistance);
-    }
-
-    [Property]
-    public int MagicResistance
-    {
-        get => _magicResistance;
-        set => SetWithNotify(value, ref _magicResistance);
-    }
-
-    [Property]
-    public int AcidResistance
-    {
-        get => _acidResistance;
-        set => SetWithNotify(value, ref _acidResistance);
-    }
-
-    [Property]
-    public int BleedingResistance
-    {
-        get => _bleedingResistance;
-        set => SetWithNotify(value, ref _bleedingResistance);
-    }
-
-    [Property]
-    public int ColdResistance
-    {
-        get => _coldResistance;
-        set => SetWithNotify(value, ref _coldResistance);
-    }
-
-    [Property]
-    public int ElectricityResistance
-    {
-        get => _electricityResistance;
-        set => SetWithNotify(value, ref _electricityResistance);
-    }
-
-    [Property]
-    public int FireResistance
-    {
-        get => _fireResistance;
-        set => SetWithNotify(value, ref _fireResistance);
-    }
-
-    [Property(DefaultValue = 100)]
-    public int LightResistance
-    {
-        get => _lightResistance;
-        set => SetWithNotify(value, ref _lightResistance);
-    }
-
-    [Property]
-    public int PsychicResistance
-    {
-        get => _psychicResistance;
-        set => SetWithNotify(value, ref _psychicResistance);
-    }
-
-    [Property]
-    public int SonicResistance
-    {
-        get => _sonicResistance;
-        set => SetWithNotify(value, ref _sonicResistance);
-    }
-
-    [Property]
-    public int StunResistance
-    {
-        get => _stunResistance;
-        set => SetWithNotify(value, ref _stunResistance);
-    }
-
-    [Property]
-    public int ToxinResistance
-    {
-        get => _toxinResistance;
-        set => SetWithNotify(value, ref _toxinResistance);
-    }
-
-    [Property]
-    public int VoidResistance
-    {
-        get => _voidResistance;
-        set => SetWithNotify(value, ref _voidResistance);
-    }
-
-    [Property(DefaultValue = 100)]
-    public int WaterResistance
-    {
-        get => _waterResistance;
-        set => SetWithNotify(value, ref _waterResistance);
-    }
-
-    [Property]
-    public HeadType HeadType
-    {
-        get => _headType;
-        set => SetWithNotify(value, ref _headType);
-    }
-
-    [Property]
-    public TorsoType TorsoType
-    {
-        get => _torsoType;
-        set => SetWithNotify(value, ref _torsoType);
-    }
-
-    [Property]
-    public ExtremityType UpperExtremities
-    {
-        get => _upperExtremities;
-        set => SetWithNotify(value, ref _upperExtremities);
-    }
-
-    [Property]
-    public ExtremityType LowerExtremities
-    {
-        get => _lowerExtremities;
-        set => SetWithNotify(value, ref _lowerExtremities);
-    }
-
-    [Property]
-    public ExtremityType BackExtremities
-    {
-        get => _backExtremities;
-        set => SetWithNotify(value, ref _backExtremities);
-    }
-
-    [Property(DefaultValue = 100, MinValue = 0)]
-    public int Visibility
-    {
-        get => _visibility;
-        set => SetWithNotify(value, ref _visibility);
+        get;
+        set;
     }
 
     public int ExperiencePoints
     {
         get => _experiencePoints;
         set => SetWithNotify(value, ref _experiencePoints);
-    }
-
-    public float LeftoverHPRegenerationXP
-    {
-        get => _leftoverHPRegenerationXP;
-        set => SetWithNotify(value, ref _leftoverHPRegenerationXP);
-    }
-
-    public float LeftoverEPRegenerationXP
-    {
-        get => _leftoverEPRegenerationXP;
-        set => SetWithNotify(value, ref _leftoverEPRegenerationXP);
     }
 
     public int? PrimaryNaturalWeaponId
@@ -394,43 +388,45 @@ public class BeingComponent : GameComponent
         set => SetWithNotify(value, ref _entropyState);
     }
 
-    public IReadOnlyCollection<GameEntity> Abilities
+    /// <summary>
+    ///     The being's current form as a creature/player-race template id: while a polymorph transformation
+    ///     is in force it resolves to the assumed form, otherwise to the being's own single innate race (null
+    ///     for a being with no single race - e.g. a player - or for a race carrier). Reverts automatically
+    ///     once the transformation lapses and its identity marker expires.
+    /// </summary>
+    public int? Species
     {
         get
         {
-            if (_abilities == null)
+            if (Entity.ActiveEffects is { } activeEffects)
             {
-                _abilities = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
-                var abilities = Entity.Item?.Abilities
-                                ?? Entity.Physical?.Abilities
-                                ?? Entity.Sensor?.Abilities;
-                if (abilities != null)
+                foreach (var instance in activeEffects.PropertyEffects)
                 {
-                    _abilities = abilities;
+                    if (instance.EffectType == EffectType.Polymorph
+                        && instance.TargetName == null)
+                    {
+                        return instance.MagnitudeSecondary;
+                    }
                 }
             }
 
-            return _abilities;
-        }
-    }
-
-    public IReadOnlyCollection<GameEntity> AppliedEffects
-    {
-        get
-        {
-            if (_appliedEffects == null)
+            // A player is not a single fixed species; only a single-race creature reports its innate form.
+            if (Entity.Player != null
+                || Races.Count != 1)
             {
-                _appliedEffects = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
-                var appliedEffects = Entity.Item?.AppliedEffects
-                                     ?? Entity.Physical?.AppliedEffects
-                                     ?? Entity.Sensor?.AppliedEffects;
-                if (appliedEffects != null)
-                {
-                    _appliedEffects = appliedEffects;
-                }
+                return null;
             }
 
-            return _appliedEffects;
+            foreach (var raceEntity in Races)
+            {
+                var raceName = raceEntity.Ability?.Template?.Name ?? raceEntity.Ability?.Name;
+                return raceName != null
+                       && Entity.Manager.Game.Services.Data.Creatures.FindByIndex(raceName) is { } creature
+                    ? creature.GetTemplateId()
+                    : null;
+            }
+
+            return null;
         }
     }
 
@@ -439,10 +435,45 @@ public class BeingComponent : GameComponent
         get;
     } = new SortedDictionary<int, GameEntity>();
 
+    public IReadOnlyCollection<GameEntity> Abilities => Entity.ActiveEffects!.Abilities;
+
+    /// <summary>
+    ///     The race carriers this being currently gained, derived from its AddAbility structural directives
+    ///     (<see cref="ActiveComponentEffect" /> entries in its <see cref="ActiveEffectsComponent" />). Only
+    ///     each race's authoritative unsuffixed carrier is exposed; supplemental level carriers remain internal.
+    ///     Empty on a race carrier itself.
+    /// </summary>
     public IReadOnlyCollection<GameEntity> Races
     {
-        get;
-    } = new HashSet<GameEntity>();
+        get
+        {
+            if (Entity?.ActiveEffects is not { } activeEffects)
+            {
+                return Array.Empty<GameEntity>();
+            }
+
+            HashSet<GameEntity>? races = null;
+            foreach (var record in activeEffects.ComponentEffects)
+            {
+                if (record.EffectType == EffectType.AddAbility
+                    && record.CarrierId != 0
+                    && Entity.Manager.FindEntity(record.CarrierId) is
+                    {
+                        Ability:
+                        {
+                            Type: AbilityType.Race,
+                            IsLeveledSupplement: false,
+                            Level: > 0
+                        }
+                    } carrier)
+                {
+                    (races ??= new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance)).Add(carrier);
+                }
+            }
+
+            return (IReadOnlyCollection<GameEntity>?)races ?? Array.Empty<GameEntity>();
+        }
+    }
 
     public IReadOnlyCollection<GameEntity> Items
     {
@@ -452,8 +483,7 @@ public class BeingComponent : GameComponent
             {
                 _items = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
                 var items = Entity.Item?.Items
-                            ?? Entity.Physical?.Items
-                            ?? Entity.Sensor?.Items;
+                            ?? Entity.Physical?.Items;
                 if (items != null)
                 {
                     _items = items;
@@ -467,51 +497,22 @@ public class BeingComponent : GameComponent
     protected override void Clean()
     {
         _sex = default;
-        _energyPointMaximum = default;
         _energyPoints = default;
-        _hitPointMaximum = default;
         _hitPoints = default;
-        _perception = default;
-        _might = default;
-        _speed = default;
-        _focus = default;
-        _energyRegeneration = default;
-        _regeneration = default;
-        _hindrance = default;
-        _accuracy = default;
-        _evasion = default;
-        _deflection = default;
-        _armor = default;
-        _physicalResistance = default;
-        _magicResistance = default;
-        _acidResistance = default;
-        _bleedingResistance = default;
-        _coldResistance = default;
-        _electricityResistance = default;
-        _fireResistance = default;
-        _lightResistance = default;
-        _psychicResistance = default;
-        _sonicResistance = default;
-        _stunResistance = default;
-        _toxinResistance = default;
-        _voidResistance = default;
-        _waterResistance = default;
-        _headType = default;
-        _torsoType = default;
-        _upperExtremities = default;
-        _lowerExtremities = default;
-        _backExtremities = default;
-        _visibility = default;
         _experiencePoints = default;
-        _leftoverHPRegenerationXP = default;
         _primaryNaturalWeaponId = default;
         _secondaryNaturalWeaponId = default;
         _entropyState = default;
         ((SortedDictionary<int, GameEntity>)SlottedAbilities).Clear();
-        ((HashSet<GameEntity>)Races).Clear();
-        _abilities = default!;
-        _appliedEffects = default!;
         _items = default!;
+
+        if (VisibleTerrain != null)
+        {
+            ArrayPool<byte>.Shared.Return(VisibleTerrain);
+        }
+
+        VisibleTerrain = default;
+        VisibleTerrainIsCurrent = default;
 
         base.Clean();
     }

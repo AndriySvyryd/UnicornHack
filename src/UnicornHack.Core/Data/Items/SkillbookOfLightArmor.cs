@@ -5,14 +5,14 @@ public static partial class ItemData
     public static readonly Item SkillbookOfLightArmor = new Item
     {
         Name = "skillbook of light armor",
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
                 Name = "Consult",
                 Activation = ActivationType.WhileToggled,
                 Delay = "100",
-                Effects = new List<Effect> { new AddAbility { Duration = EffectDuration.Infinite, Name = "light armor", Level = 1 } }
+                Effects = new List<Effect> { new AddAbility { Name = "light armor" } }
             }
         },
         Type = ItemType.SkillBook,

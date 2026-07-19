@@ -82,6 +82,69 @@ public sealed class AbilityChangeFormatter : IMessagePackFormatter<AbilityChange
         {
             writer.Write(value.TargetingShapeSize);
         }
+
+        if (values == null || values[8])
+        {
+            writer.Write(value.Type);
+        }
+
+        if (values == null || values[9])
+        {
+            if (value.Accumulator.HasValue)
+            {
+                writer.Write(value.Accumulator.Value);
+            }
+            else
+            {
+                writer.WriteNil();
+            }
+        }
+
+        if (values == null || values[10])
+        {
+            writer.Write(value.Level);
+        }
+
+        if (values == null || values[11])
+        {
+            writer.Write(value.LevelReduction);
+        }
+
+        if (values == null || values[12])
+        {
+            if (value.ExpirationTarget.HasValue)
+            {
+                writer.Write(value.ExpirationTarget.Value);
+            }
+            else
+            {
+                writer.WriteNil();
+            }
+        }
+
+        if (values == null || values[13])
+        {
+            if (value.ExpirationEvent.HasValue)
+            {
+                writer.Write(value.ExpirationEvent.Value);
+            }
+            else
+            {
+                writer.WriteNil();
+            }
+        }
+
+        if (values == null || values[14])
+        {
+            if (value.Noise.HasValue)
+            {
+                writer.Write(value.Noise.Value);
+            }
+            else
+            {
+                writer.WriteNil();
+            }
+        }
     }
 
     public AbilityChange? Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
@@ -134,6 +197,27 @@ public sealed class AbilityChangeFormatter : IMessagePackFormatter<AbilityChange
                     break;
                 case 7:
                     result.TargetingShapeSize = reader.ReadInt32();
+                    break;
+                case 8:
+                    result.Type = reader.ReadInt32();
+                    break;
+                case 9:
+                    result.Accumulator = reader.TryReadNil() ? null : reader.ReadInt32();
+                    break;
+                case 10:
+                    result.Level = reader.ReadInt32();
+                    break;
+                case 11:
+                    result.LevelReduction = reader.ReadInt32();
+                    break;
+                case 12:
+                    result.ExpirationTarget = reader.TryReadNil() ? null : reader.ReadInt32();
+                    break;
+                case 13:
+                    result.ExpirationEvent = reader.TryReadNil() ? null : reader.ReadInt32();
+                    break;
+                case 14:
+                    result.Noise = reader.TryReadNil() ? null : reader.ReadInt32();
                     break;
                 default:
                     reader.Skip();

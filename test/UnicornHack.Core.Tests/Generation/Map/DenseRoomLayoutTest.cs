@@ -382,6 +382,6 @@ public class DenseRoomLayoutTest
             RoomComponent room, List<Chunk> chunks,
             RoomParameters roomParameters,
             Dictionary<Point, EdgeConditionKind[]>? preservedConditions = null)
-            => TryRepairConnectivity(room, chunks, preservedConditions, roomParameters);
+            => TryRepairConnectivity(room, chunks, preservedConditions ?? [], roomParameters);
     }
 }

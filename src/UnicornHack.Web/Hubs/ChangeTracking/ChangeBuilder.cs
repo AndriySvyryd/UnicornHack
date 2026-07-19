@@ -1,4 +1,5 @@
 using System.Collections;
+using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Hubs.ChangeTracking;
@@ -28,12 +29,9 @@ namespace UnicornHack.Hubs.ChangeTracking;
 ///         </item>
 ///         <item>
 ///             <description>
-///                 The pre-cycle "did the client know this entity" bit is tracked
-///                 out-of-band by <c>_snapshots</c>: snapshot key presence ⇔ the client knew
-///                 this entity at the start of the cycle. Snapshots are populated lazily on
-///                 the first event for an entity that was previously known (Property or
-///                 Remove); the <see cref="HandleAdded" /> path explicitly does <i>not</i>
-///                 capture a snapshot because the entity is brand-new this cycle.
+///                 Whether the client knew an entity before the cycle is supplied by
+///                 <see cref="WasKnownAtCycleStart" />. Most builders use snapshot-key presence;
+///                 builders with an existing client baseline may override it and disable snapshots.
 ///             </description>
 ///         </item>
 ///         <item>
@@ -57,7 +55,7 @@ namespace UnicornHack.Hubs.ChangeTracking;
 ///         <item>
 ///             <description>
 ///                 Add-followed-by-Remove inside one cycle cancels iff the client never saw
-///                 the entity (no snapshot). Implemented by removing the entry from
+///                 the entity. Implemented by removing the entry from
 ///                 <c>_changes</c> in <see cref="HandleRemoved" />.
 ///             </description>
 ///         </item>
@@ -126,6 +124,7 @@ public abstract class ChangeBuilder<TChange>
 {
     private readonly Dictionary<int, TChange> _changes = [];
     private readonly Dictionary<int, TChange?> _snapshots = [];
+    private readonly Dictionary<int, (int OldRoomId, int NewRoomId)> _roomMoves = [];
     private bool _wroteWithoutClear;
 
     /// <summary>True if any changes have been recorded since the last <see cref="Reset" />.</summary>
@@ -153,6 +152,44 @@ public abstract class ChangeBuilder<TChange>
         List<int>? toRemove = null;
         foreach (var id in _changes.Keys)
         {
+            if (_roomMoves.TryGetValue(id, out var move))
+            {
+                var tracked = _changes[id];
+                if (move.OldRoomId == move.NewRoomId)
+                {
+                    if (move.NewRoomId != roomId)
+                    {
+                        (toRemove ??= []).Add(id);
+                    }
+
+                    continue;
+                }
+
+                if (move.OldRoomId == roomId)
+                {
+                    if (tracked.State == EntityState.Added && !WasKnownAtCycleStart(id))
+                    {
+                        (toRemove ??= []).Add(id);
+                    }
+                    else
+                    {
+                        tracked.State = EntityState.Deleted;
+                    }
+
+                    continue;
+                }
+
+                if (move.NewRoomId == roomId)
+                {
+                    tracked.State = EntityState.Added;
+                    _snapshots.Remove(id);
+                    continue;
+                }
+
+                (toRemove ??= []).Add(id);
+                continue;
+            }
+
             var entityRoomId = manager.FindEntity(id)?.Position?.RoomId;
             if (entityRoomId != null && entityRoomId != roomId)
             {
@@ -166,6 +203,7 @@ public abstract class ChangeBuilder<TChange>
             {
                 _changes.Remove(id);
                 _snapshots.Remove(id);
+                _roomMoves.Remove(id);
             }
         }
 
@@ -180,12 +218,18 @@ public abstract class ChangeBuilder<TChange>
     protected Dictionary<int, TChange> Changes => _changes;
 
     /// <summary>
-    ///     Per-cycle snapshot dictionary. Key presence ⇔ "the client knew this entity at
-    ///     the start of the current cycle". Snapshot values are populated by
+    ///     Per-cycle snapshot dictionary. By default key presence means the client knew this
+    ///     entity at the start of the current cycle. Snapshot values are populated by
     ///     <see cref="CaptureSnapshot" /> for builders that need property-by-property
     ///     reconciliation; otherwise the value is <c>null</c> and only key presence is used.
     /// </summary>
     protected Dictionary<int, TChange?> Snapshots => _snapshots;
+
+    /// <summary>Whether this builder needs per-cycle snapshots to establish its client baseline.</summary>
+    protected virtual bool CaptureSnapshots => true;
+
+    /// <summary>Returns whether the client knew the entity before the current change cycle.</summary>
+    protected virtual bool WasKnownAtCycleStart(int id) => _snapshots.ContainsKey(id);
 
     #region Subscription hooks
 
@@ -326,7 +370,7 @@ public abstract class ChangeBuilder<TChange>
     /// </summary>
     protected void EnsureSnapshot(GameEntity entity, IPropertyValueChanges? changes = null)
     {
-        if (_snapshots.ContainsKey(entity.Id))
+        if (!CaptureSnapshots || _snapshots.ContainsKey(entity.Id))
         {
             return;
         }
@@ -342,10 +386,15 @@ public abstract class ChangeBuilder<TChange>
             switch (tracked.State)
             {
                 case EntityState.Deleted:
-                    Debug.Assert(_snapshots.ContainsKey(entity.Id),
-                        "Deleted state implies HandleRemoved/Property ran, which captures a snapshot.");
-                    OnReconcileAfterReAdd(entity, tracked);
-                    tracked.State = EntityState.Modified;
+                    if (WasKnownAtCycleStart(entity.Id))
+                    {
+                        OnReconcileAfterReAdd(entity, tracked);
+                        tracked.State = EntityState.Modified;
+                    }
+                    else
+                    {
+                        tracked.State = EntityState.Added;
+                    }
                     break;
                 case EntityState.Modified:
                 case EntityState.Added:
@@ -370,7 +419,7 @@ public abstract class ChangeBuilder<TChange>
         if (_changes.TryGetValue(entity.Id, out var tracked))
         {
             tracked.Entity = entity;
-            if (tracked.State == EntityState.Added && !_snapshots.ContainsKey(entity.Id))
+            if (tracked.State == EntityState.Added && !WasKnownAtCycleStart(entity.Id))
             {
                 // Add-then-Remove on a brand-new entity: cancel.
                 _changes.Remove(entity.Id);
@@ -459,6 +508,14 @@ public abstract class ChangeBuilder<TChange>
             return;
         }
 
+        if (HasRoomIdChange(entityChange.PropertyChanges)
+            && entity.Position?.RoomId is { } newRoomId)
+        {
+            _roomMoves[entity.Id] = _roomMoves.TryGetValue(entity.Id, out var existingMove)
+                ? (existingMove.OldRoomId, newRoomId)
+                : (principal.Id, newRoomId);
+        }
+
         HandleRemoved(entity);
     }
 
@@ -544,7 +601,7 @@ public abstract class ChangeBuilder<TChange>
                 continue;
             }
 
-            var hasSnapshot = _snapshots.ContainsKey(id);
+            var hasSnapshot = WasKnownAtCycleStart(id);
             var dispatchedState = change.State.Value;
             TChange? emitted = null;
 
@@ -607,7 +664,7 @@ public abstract class ChangeBuilder<TChange>
                     // Only send a removal if the client actually knew the entity.
                     if (hasSnapshot)
                     {
-                        emitted = new TChange { ChangedProperties = new BitArray(1) };
+                        emitted = new TChange { ChangedProperties = SerializationContext.DeletedBitArray };
                         output[id] = emitted;
                     }
 
@@ -622,6 +679,7 @@ public abstract class ChangeBuilder<TChange>
     {
         _changes.Clear();
         _snapshots.Clear();
+        _roomMoves.Clear();
         _wroteWithoutClear = false;
     }
 
@@ -639,5 +697,19 @@ public abstract class ChangeBuilder<TChange>
         var hasAny = bits.HasAnySet();
         bits[0] = hadFirstBit;
         return hasAny;
+    }
+
+    private static bool HasRoomIdChange(IPropertyValueChanges changes)
+    {
+        for (var i = 0; i < changes.Count; i++)
+        {
+            if (changes.GetChangedComponent(i).ComponentId == (int)EntityComponent.Position
+                && changes.GetChangedPropertyName(i) == nameof(PositionComponent.RoomId))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

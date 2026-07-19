@@ -59,11 +59,14 @@ namespace UnicornHack.DiagnosticClient
     internal sealed class ConnectionBootstrap : IHostedService
     {
         private readonly GameConnection _conn;
+        private readonly DiagnosticOptions _options;
         private readonly ILogger<ConnectionBootstrap> _logger;
 
-        public ConnectionBootstrap(GameConnection conn, ILogger<ConnectionBootstrap> logger)
+        public ConnectionBootstrap(
+            GameConnection conn, DiagnosticOptions options, ILogger<ConnectionBootstrap> logger)
         {
             _conn = conn;
+            _options = options;
             _logger = logger;
         }
 
@@ -77,13 +80,15 @@ namespace UnicornHack.DiagnosticClient
                 try
                 {
                     using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                    cts.CancelAfter(TimeSpan.FromSeconds(60));
+                    cts.CancelAfter(_options.ActionTimeoutMs);
                     await _conn.EnsureReadyAsync(cts.Token).ConfigureAwait(false);
                     _logger.LogInformation("Initial GetState complete; MCP tools are ready.");
                 }
                 catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                 {
-                    _logger.LogWarning("Bootstrap timed out after 60s. MCP server stays up; tools will retry on demand.");
+                    _logger.LogWarning(
+                        "Bootstrap timed out after {TimeoutMs}ms. MCP server stays up; tools will retry on demand.",
+                        _options.ActionTimeoutMs);
                 }
                 catch (Exception ex)
                 {

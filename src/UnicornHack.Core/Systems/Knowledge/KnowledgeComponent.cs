@@ -23,6 +23,9 @@ public class KnowledgeComponent : GameComponent
         }
     }
 
+    /// <summary>
+    ///     The most recently recorded way the known entity was sensed. When the entity performs an action.
+    /// </summary>
     public SenseType SensedType
     {
         get => _sensedType;

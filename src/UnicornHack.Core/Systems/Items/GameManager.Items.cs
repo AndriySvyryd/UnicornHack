@@ -14,12 +14,6 @@ public partial class GameManager
         private set;
     } = null!;
 
-    public EntityGroup<GameEntity> ContainedItems
-    {
-        get;
-        private set;
-    } = null!;
-
     public LookupEntityRelationship<GameEntity, Point, SortedDictionary<Point, GameEntity>>
         RoomItemsToRoomCellRelationship
     {
@@ -47,16 +41,11 @@ public partial class GameManager
 
     private void InitializeItems(SequentialMessageQueue<GameManager> queue)
     {
-        Add<ItemComponent>(EntityComponent.Item, poolSize: 32, maxPoolSize: 256);
-
-        ContainedItems = CreateGroup(nameof(ContainedItems),
-            new EntityMatcher<GameEntity>()
-                .AllOf((int)EntityComponent.Item, (int)EntityComponent.Physical)
-                .NoneOf((int)EntityComponent.Position));
+        Add<ItemComponent>(EntityComponent.Item, poolSize: 256, maxPoolSize: 512);
 
         RoomItems = CreateGroup(nameof(RoomItems),
             new EntityMatcher<GameEntity>()
-                .AllOf((int)EntityComponent.Item, (int)EntityComponent.Physical, (int)EntityComponent.Position));
+                .AllOf((int)EntityComponent.Item, (int)EntityComponent.Physical, (int)EntityComponent.Position), capacity: 256);
 
         RoomItemsToRoomCellRelationship = new(
             nameof(RoomItemsToRoomCellRelationship),
@@ -65,31 +54,14 @@ public partial class GameManager
             new SimpleKeyValueGetter<GameEntity, int>(
                 component => ((PositionComponent)component).RoomId,
                 (int)EntityComponent.Position),
-            new KeyValueGetter<GameEntity, Point>(
-                (change, matcher, valueType) =>
-                {
-                    if (!matcher.TryGetValue<byte>(
-                            change, (int)EntityComponent.Position, nameof(PositionComponent.CellX), valueType,
-                            out var levelX)
-                        || !matcher.TryGetValue<byte>(
-                            change, (int)EntityComponent.Position, nameof(PositionComponent.CellY), valueType,
-                            out var levelY))
-                    {
-                        return (new Point(0, 0), false);
-                    }
-
-                    return (new Point(levelX, levelY), true);
-                },
-                new PropertyMatcher<GameEntity>()
-                    .With(component => ((PositionComponent)component).CellX, (int)EntityComponent.Position)
-                    .With(component => ((PositionComponent)component).CellY, (int)EntityComponent.Position)
-            ),
+            CreateCellKeyValueGetter(),
             (itemEntity, _) => itemEntity.RemoveComponent(EntityComponent.Position),
-            roomEntity => (SortedDictionary<Point, GameEntity>)roomEntity.Room!.Items);
+            roomEntity => (SortedDictionary<Point, GameEntity>)roomEntity.Room!.Items,
+            keepDependentAlive: true);
 
         EntityItemsToContainerRelationship = new(
             nameof(EntityItemsToContainerRelationship),
-            ContainedItems,
+            RoomItems,
             AffectableEntities,
             new SimpleKeyValueGetter<GameEntity, int>(
                 component => ((ItemComponent)component).ContainerId,
@@ -97,8 +69,7 @@ public partial class GameManager
             (effectEntity, _) => effectEntity.RemoveComponent((int)EntityComponent.Item),
             containerEntity => (HashSet<GameEntity>)(containerEntity.Being!.Items
                                                      ?? containerEntity.Item!.Items
-                                                     ?? containerEntity.Physical!.Items
-                                                     ?? containerEntity.Sensor!.Items),
+                                                     ?? containerEntity.Physical!.Items),
             keepPrincipalAlive: false,
             keepDependentAlive: true);
 

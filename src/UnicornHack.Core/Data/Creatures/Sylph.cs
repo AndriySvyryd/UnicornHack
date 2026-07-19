@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Sylph = new Creature
     {
         Name = "sylph",
-        Species = Species.Elemental,
         SpeciesClass = SpeciesClass.Extraplanar,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "sylph ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,14 +20,17 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Engulf { Duration = EffectDuration.UntilTimeout, DurationAmount = "5" } }
+                Effects = new List<Effect> { new Engulf { Amount = "400" } }
             },
             new Ability
             {
-                Activation = ActivationType.OnDigestion,
+                Name = "sylph ability #2",
+                Activation = ActivationType.Targeted,
+                Trigger = ActivationType.OnMeleeAttack,
+                Range = 1,
                 Action = AbilityAction.Digestion,
-                Cooldown = 100,
-                Effects = new List<Effect> { new Deafen { Duration = EffectDuration.UntilTimeout, DurationAmount = "2" } }
+                Delay = "100*SpeedModifier()",
+                Effects = new List<Effect> { new Deafen() }
             }
         },
         InitialLevel = 8,
@@ -37,13 +41,14 @@ public static partial class CreatureData
         MovementDelay = -67,
         TurningDelay = -67,
         Material = Material.Air,
-        Perception = -5,
-        Might = -6,
-        Speed = -5,
+        PerceptionBonus = -5,
+        MightBonus = -6,
+        SpeedBonus = -5,
         Armor = 4,
         MagicResistance = 15,
-        SlimingImmune = true,
-        StoningImmune = true,
+        BindResistance = 100,
+        EngulfResistance = 100,
+        SuffocateResistance = 100,
         HeadType = HeadType.None,
         UpperExtremities = ExtremityType.None,
         LowerExtremities = ExtremityType.None,

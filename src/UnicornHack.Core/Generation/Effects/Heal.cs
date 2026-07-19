@@ -1,16 +1,18 @@
 using CSharpScriptSerialization;
-using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
 
-public class Heal : AmountEffect
+public class Heal : Effect
 {
-    protected override void ConfigureEffect(EffectComponent effect)
-    {
-        base.ConfigureEffect(effect);
+    private static readonly EffectMetadata _metadata = EffectMetadata.Resource(
+            EffectType.Heal, resourceProperty: nameof(Systems.Beings.BeingComponent.HitPoints),
+            resistanceProperty: nameof(Systems.Beings.BeingComponent.HealingResistance),
+            defaultAmount: "10*FocusModifier()", combinationFunction: ValueCombinationFunction.Sum);
 
-        effect.EffectType = EffectType.Heal;
-    }
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void RegisterMetadataProvider() => _ = _metadata;
+
+    public override EffectMetadata Metadata => _metadata;
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<Heal>(GetPropertyConditions<Heal>());

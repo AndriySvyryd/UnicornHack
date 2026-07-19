@@ -19,7 +19,7 @@ public class ChangeBuilderTest
     private static (GameManager Manager, GameEntity PlayerEntity, RoomChangeBuilder Listener)
         SetupGameWithListener()
     {
-        var game = WebTestHelper.CreateGame();
+        var game = TestHelper.CreateGame();
         var level = TestHelper.BuildRoom(TestMap, game);
         var manager = game.Manager;
 
@@ -31,7 +31,7 @@ public class ChangeBuilderTest
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);
-        WebTestHelper.RegisterPlayer(playerEntity, listener, manager);
+        listener.RegisterPlayerBuilder(playerEntity, manager);
 
         return (manager, playerEntity, listener);
     }
@@ -64,7 +64,7 @@ public class ChangeBuilderTest
             ActorActionType.EquipItem, swordEntity.Id, (int)EquipmentSlot.GraspPrimaryMelee);
 
         // Capture baseline — client now knows the ability in slot 0
-        var baseline = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
+        var baseline = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, game.Services));
         var slottedAbility = baseline.Abilities!.Values.Single(a => a.Slot == 0);
         var abilityEntityId = baseline.Abilities.Single(kvp => kvp.Value == slottedAbility).Key;
         var abilityEntity = manager.FindEntity(abilityEntityId)!;
@@ -89,7 +89,7 @@ public class ChangeBuilderTest
     {
         // Custom setup: clear the auto-slotted flask ability before the listener is
         // registered, so the client's initial state does not contain it.
-        var game = WebTestHelper.CreateGame();
+        var game = TestHelper.CreateGame();
         var level = TestHelper.BuildRoom(TestMap, game);
         var manager = game.Manager;
 
@@ -106,12 +106,12 @@ public class ChangeBuilderTest
         ability.Ability!.Slot = null;
 
         var listener = WebTestHelper.SetupListeners(manager);
-        WebTestHelper.RegisterPlayer(playerEntity, listener, manager);
+        listener.RegisterPlayerBuilder(playerEntity, manager);
 
         var player = playerEntity.Player!;
 
         Assert.DoesNotContain(ability.Id,
-            ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services)).Abilities!.Keys);
+            ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, game.Services)).Abilities!.Keys);
 
         // Queue Slot=N then Slot=null on the same ability so both transitions are
         // processed within one Turn. The listener observes Add + Remove on an entity
@@ -141,7 +141,7 @@ public class ChangeBuilderTest
         WebTestHelper.PerformAndVerify(player, listener, game.Services,
             ActorActionType.EquipItem, swordEntity.Id, (int)EquipmentSlot.GraspPrimaryMelee);
 
-        var slottedAbility = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services))
+        var slottedAbility = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, game.Services))
             .Abilities!.Single(kvp => kvp.Value.Slot == 0);
         var abilityEntityId = slottedAbility.Key;
         var abilityEntity = manager.FindEntity(abilityEntityId)!;
@@ -182,7 +182,7 @@ public class ChangeBuilderTest
         // genuine TargetingShapeSize change. (PerformAndVerify's baseline is
         // captured after listener mutations and would falsely flag this as
         // redundant.)
-        var baseline = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
+        var baseline = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, game.Services));
         var slottedAbility = baseline.Abilities!.Values.Single(a => a.Slot == 0);
         var abilityEntityId = baseline.Abilities.Single(kvp => kvp.Value == slottedAbility).Key;
         var abilityEntity = manager.FindEntity(abilityEntityId)!;
@@ -219,7 +219,7 @@ public class ChangeBuilderTest
 
         // Apply and verify final state aligns with a fresh server snapshot.
         ClientStateHelpers.ApplyChangeSets(baseline, playerChangeSets);
-        var fresh = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
+        var fresh = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, game.Services));
         ChangeSetAssert.AssertPlayerStatesEqual(fresh, baseline);
 
         Assert.Equal(0, fresh.Abilities![abilityEntityId].Slot);

@@ -26,10 +26,10 @@ public interface IDataProvider
 {
     ILoader<Branch> Branches { get; }
     IGroupedLoader<AbilityType, Ability> Abilities { get; }
-    IGroupedLoader<byte, Creature> Creatures { get; }
+    IIndexedGroupedLoader<byte, string, Creature> Creatures { get; }
     IGroupedLoader<ItemGroup, Item> Items { get; }
     ISingleLoader<ItemGroup> ItemGroups { get; }
-    ILoader<PlayerRace> PlayerRaces { get; }
+    IIndexedLoader<string, PlayerRace> PlayerRaces { get; }
     ILoader<DefiningMapFragment> DefiningMapFragments { get; }
     ILoader<ConnectingMapFragment> ConnectingMapFragments { get; }
     ILoader<NormalMapFragment> NormalMapFragments { get; }

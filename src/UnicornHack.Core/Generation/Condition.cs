@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Generation;
@@ -13,7 +14,8 @@ public abstract class Condition
     {
         var parameters = new[] { OwnerParameter };
 
-        return Expression.Lambda<Func<Entity, bool>>(GetExpression(), parameters).Compile();
+        return Expression.Lambda<Func<Entity, bool>>(GetExpression(), parameters)
+            .Compile(preferInterpretation: !RuntimeFeature.IsDynamicCodeSupported);
     }
 
     public abstract Expression GetExpression();
@@ -50,9 +52,7 @@ public class PropertyCondition : Condition
         var propertyDescription = PropertyDescription.Loader.Get(Name);
         var componentExpression = Expression.Call(
             OwnerParameter, Entity.FindComponentMethodInfo, Expression.Constant(propertyDescription.ComponentId));
-        var getValueMethodInfo = propertyDescription.GetType().GetMethod(nameof(PropertyDescription<int>.GetValue))!;
-        var propertyValueExpression = Expression.Call(
-            Expression.Constant(propertyDescription), getValueMethodInfo, componentExpression);
+        var propertyValueExpression = propertyDescription.CreateGetValueExpression(componentExpression);
 
         var valueExpression = Expression.Convert(Expression.Constant(Value), propertyDescription.PropertyType);
 

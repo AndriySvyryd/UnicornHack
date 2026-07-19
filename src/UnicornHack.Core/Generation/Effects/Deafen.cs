@@ -1,16 +1,20 @@
 using CSharpScriptSerialization;
-using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
 
-public class Deafen : DurationEffect
+public class Deafen : ResistedEffect
 {
-    protected override void ConfigureEffect(EffectComponent effect)
-    {
-        base.ConfigureEffect(effect);
+    private static readonly EffectMetadata _metadata =
+        EffectMetadata.Default(
+            EffectType.Deafen, AbilityData.Deafened.Name,
+            statusCategory: StatusCategory.Mental,
+            resistanceProperty: nameof(Systems.Beings.BeingComponent.DeafenResistance),
+            statusAbilityDuration: "100*FocusModifier()", defaultAmount: "600*FocusModifier()");
 
-        effect.EffectType = EffectType.Deafen;
-    }
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void RegisterMetadataProvider() => _ = _metadata;
+
+    public override EffectMetadata Metadata => _metadata;
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<Deafen>(GetPropertyConditions<Deafen>());

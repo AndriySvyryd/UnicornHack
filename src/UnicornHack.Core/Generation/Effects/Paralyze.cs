@@ -1,16 +1,21 @@
 using CSharpScriptSerialization;
-using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
 
-public class Paralyze : DurationEffect
+public class Paralyze : ResistedEffect
 {
-    protected override void ConfigureEffect(EffectComponent effect)
-    {
-        base.ConfigureEffect(effect);
+    private static readonly EffectMetadata _metadata =
+        EffectMetadata.Default(
+            EffectType.Paralyze, AbilityData.Paralyzed.Name,
+            statusCategory: StatusCategory.Mental,
+            resistanceProperty: nameof(Systems.Beings.BeingComponent.ParalyzeResistance),
+            statusAbilityDuration: "100*FocusModifier()",
+            defaultAmount: "200*FocusModifier()", durationPolicy: DurationPolicy.Extend);
 
-        effect.EffectType = EffectType.Paralyze;
-    }
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void RegisterMetadataProvider() => _ = _metadata;
+
+    public override EffectMetadata Metadata => _metadata;
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<Paralyze>(GetPropertyConditions<Paralyze>());

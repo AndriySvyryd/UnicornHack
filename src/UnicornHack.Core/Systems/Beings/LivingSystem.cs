@@ -1,6 +1,4 @@
 ﻿using UnicornHack.Systems.Knowledge;
-using UnicornHack.Systems.Levels;
-using UnicornHack.Systems.Time;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Beings;
@@ -10,24 +8,26 @@ public class LivingSystem :
     IGameSystem<PropertyValueChangedMessage<GameEntity, int>>,
     IGameSystem<EntityAddedMessage<GameEntity>>
 {
-    public const string AttributedAbilityName = "attributed";
+    /// <summary>
+    ///     The evasion every being has before its speed-derived agility bonus; a flat-footed target is
+    ///     reduced to this value.
+    /// </summary>
+    public const int BaseEvasion = 50;
 
     public MessageProcessingResult Process(XPGainedMessage message, GameManager manager)
     {
-        var player = message.Entity.Player!;
         var being = message.Entity.Being!;
 
-        var hpRegenerationRate = (float)player.NextLevelXP / (being.HitPointMaximum * 4);
-        var hpRegeneratingXp = message.ExperiencePoints + being.LeftoverHPRegenerationXP;
-        var hpRegenerated = (int)Math.Floor(hpRegeneratingXp / hpRegenerationRate);
-        being.LeftoverHPRegenerationXP = hpRegeneratingXp % hpRegenerationRate;
-        being.HitPoints += hpRegenerated;
+        if (being.Regeneration > 0)
+        {
+            being.HitPoints += being.Regeneration * message.ExperiencePoints;
+        }
 
-        var epRegenerationRate = (float)player.NextLevelXP / (being.EnergyPointMaximum * 4);
-        var epRegeneratingXp = message.ExperiencePoints + being.LeftoverEPRegenerationXP;
-        var epRegenerated = (int)Math.Floor(epRegeneratingXp / epRegenerationRate);
-        being.LeftoverEPRegenerationXP = epRegeneratingXp % epRegenerationRate;
-        being.EnergyPoints += epRegenerated;
+        if (being.EnergyRegeneration > 0)
+        {
+            var restoration = (long)being.EnergyRegeneration * message.ExperiencePoints;
+            being.EnergyPoints += (int)((restoration + 2) / 3);
+        }
 
         return MessageProcessingResult.ContinueProcessing;
     }
@@ -79,36 +79,12 @@ public class LivingSystem :
                 }
 
                 break;
-            case nameof(BeingComponent.Might):
-                UpdateMaxHp(message.NewValue, message.Entity, manager);
-
+            case nameof(BeingComponent.ReservedHitPoints):
+                being.HitPoints = being.HitPoints;
                 break;
-            case nameof(BeingComponent.Focus):
-                UpdateMaxEp(message.NewValue, message.Entity, manager);
-
+            case nameof(BeingComponent.ReservedEnergyPoints):
+                being.EnergyPoints = being.EnergyPoints;
                 break;
-            case nameof(BeingComponent.Perception):
-                UpdateAccuracy(message.NewValue, message.Entity, manager);
-
-                break;
-            case nameof(BeingComponent.Speed):
-            {
-                var effectiveSpeed = message.NewValue - being.Hindrance / 10;
-                UpdateMovementDelay(effectiveSpeed, message.Entity, manager);
-                UpdateTurningDelay(effectiveSpeed, message.Entity, manager);
-                UpdateEvasion(effectiveSpeed, message.Entity, manager);
-
-                break;
-            }
-            case nameof(BeingComponent.Hindrance):
-            {
-                var effectiveSpeed = being.Speed - message.NewValue / 10;
-                UpdateMovementDelay(effectiveSpeed, message.Entity, manager);
-                UpdateTurningDelay(effectiveSpeed, message.Entity, manager);
-                UpdateEvasion(effectiveSpeed, message.Entity, manager);
-
-                break;
-            }
         }
 
         return MessageProcessingResult.ContinueProcessing;
@@ -118,45 +94,10 @@ public class LivingSystem :
     {
         var being = message.Entity.Being!;
 
-        being.HitPointMaximum = 1;
-        being.HitPoints = 1;
-
-        UpdateMaxHp(being.Might, message.Entity, manager);
-        UpdateMaxEp(being.Focus, message.Entity, manager);
-        UpdateAccuracy(being.Perception, message.Entity, manager);
-
-        var effectiveSpeed = being.Speed - being.Hindrance / 10;
-        UpdateMovementDelay(effectiveSpeed, message.Entity, manager);
-        UpdateTurningDelay(effectiveSpeed, message.Entity, manager);
-        UpdateEvasion(effectiveSpeed, message.Entity, manager);
+        // Spawn at full health so the being counts as alive while the rest of its body and stat setup
+        // runs; several handlers (natural-weapon recalculation, etc.) skip a being that reads as dead.
+        being.HitPoints = being.HitPointMaximum;
+        being.EnergyPoints = being.EnergyPointMaximum;
         return MessageProcessingResult.ContinueProcessing;
     }
-
-    private void UpdateMaxHp(int might, GameEntity beingEntity, GameManager manager)
-        => manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(might * 10,
-            nameof(BeingComponent.HitPointMaximum), AttributedAbilityName, beingEntity);
-
-    private void UpdateMaxEp(int focus, GameEntity beingEntity, GameManager manager)
-        => manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(focus * 10,
-            nameof(BeingComponent.EnergyPointMaximum), AttributedAbilityName, beingEntity);
-
-    private void UpdateAccuracy(int perception, GameEntity beingEntity, GameManager manager)
-        => manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(perception * 10,
-            nameof(BeingComponent.Accuracy), AttributedAbilityName, beingEntity);
-
-    private void UpdateEvasion(int effectiveSpeed, GameEntity beingEntity, GameManager manager)
-        => manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(50 + effectiveSpeed * 5,
-            nameof(BeingComponent.Evasion), AttributedAbilityName, beingEntity);
-
-    private void UpdateMovementDelay(int effectiveSpeed, GameEntity beingEntity, GameManager manager)
-        => manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(effectiveSpeed == 0
-                ? 0
-                : TimeSystem.DefaultActionDelay * 10 / effectiveSpeed,
-            nameof(PositionComponent.MovementDelay), AttributedAbilityName, beingEntity);
-
-    private void UpdateTurningDelay(int effectiveSpeed, GameEntity beingEntity, GameManager manager)
-        => manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(effectiveSpeed == 0
-                ? 0
-                : TimeSystem.DefaultActionDelay * 10 / effectiveSpeed,
-            nameof(PositionComponent.TurningDelay), AttributedAbilityName, beingEntity);
 }

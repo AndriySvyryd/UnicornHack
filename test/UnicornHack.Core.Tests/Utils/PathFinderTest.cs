@@ -71,9 +71,9 @@ public class PathFinderTest
         }
 
         Assert.True(pathMatches, @"Expected:
-" + TestHelper.PrintMap(level, expectedPathArray) + @"
+" + TestAssert.PrintMap(level, expectedPathArray) + @"
 Actual:
-" + TestHelper.PrintMap(level, actualPathArray) + @"
+" + TestAssert.PrintMap(level, actualPathArray) + @"
 Seed: " + seed);
 
         return (level, expectedPath.Last());

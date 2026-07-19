@@ -5,14 +5,14 @@ public static partial class ItemData
     public static readonly Item SkillbookOfMediumWeapons = new Item
     {
         Name = "skillbook of medium weapons",
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
                 Name = "Consult",
                 Activation = ActivationType.WhileToggled,
                 Delay = "100",
-                Effects = new List<Effect> { new AddAbility { Duration = EffectDuration.Infinite, Name = "medium weapons", Level = 1 } }
+                Effects = new List<Effect> { new AddAbility { Name = "medium weapons" } }
             }
         },
         Type = ItemType.SkillBook,

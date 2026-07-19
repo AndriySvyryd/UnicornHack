@@ -6,7 +6,8 @@ public static partial class DefiningMapFragmentData
     {
         Name = "surface room",
         GenerationWeight = "$branch == 'surface' ? Infinity : 0",
-        Connections = [new LevelConnection { Direction = Directionality.Source, BranchName = "entrance", Glyph = '>' }],
+        NoTransform = true,
+        Connections = new List<LevelConnection> { new LevelConnection { Direction = Directionality.Source, BranchName = "entrance", Glyph = '>' } },
         NoRandomDoorways = true,
         Map = @"
 ###

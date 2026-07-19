@@ -68,11 +68,8 @@ public class Program
                 o => o.SerializerOptions = MessagePackSerializerOptions.Standard
                     .WithSecurity(MessagePackSecurity.UntrustedData)
                     .WithResolver(CompositeResolver.Create(
-                        // TODO: Remove all except GeneratedResolver
                         GeneratedResolver.Instance,
-                        BuiltinResolver.Instance,
-                        DynamicGenericResolver.Instance,
-                        PrimitiveObjectResolver.Instance)));
+                        BuiltinResolver.Instance)));
 
         if (!env.IsDevelopment())
         {

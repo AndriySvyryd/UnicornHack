@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Cerberous = new Creature
     {
         Name = "Cerberous",
-        Species = Species.Dog,
         SpeciesClass = SpeciesClass.Canine,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "Cerberous ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "100*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "100*MightModifier()" } }
             },
             new Ability
             {
+                Name = "Cerberous ability #2",
+                Type = AbilityType.RangedAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnRangedAttack,
                 Range = 20,
@@ -31,7 +34,11 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Burn { Damage = "100*FocusModifier()" } }
+                Effects = new List<Effect>
+                {
+                    new FireDamage { Amount = "100*FocusModifier()" },
+                    new FireDamage { Duration = EffectDuration.UntilTimeout, Amount = "100*FocusModifier()" }
+                }
             }
         },
         InitialLevel = 12,
@@ -40,10 +47,10 @@ public static partial class CreatureData
         Weight = 700,
         MovementDelay = -15,
         TurningDelay = -15,
-        Perception = -3,
-        Might = -4,
-        Speed = -3,
-        Focus = -4,
+        PerceptionBonus = -3,
+        MightBonus = -4,
+        SpeedBonus = -3,
+        FocusBonus = -4,
         Armor = 4,
         MagicResistance = 10,
         FireResistance = 75,

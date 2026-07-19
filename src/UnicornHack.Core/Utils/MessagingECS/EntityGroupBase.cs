@@ -11,7 +11,7 @@ public abstract class EntityGroupBase<TEntity> : IEntityGroup<TEntity>
     private List<IEntityChangeListener<TEntity>>? _changeListeners;
     private string? _entityAddedMessageName;
     private string? _entityRemovedMessageName;
-    private Dictionary<string, string>? _propertyValueChangedMessageNames;
+    private Dictionary<(string Property, string? NestedProperty), string>? _propertyValueChangedMessageNames;
 
     private const string EntityAddedMessageSuffix = "_EntityAdded";
     private const string EntityRemovedMessageSuffix = "_EntityRemoved";
@@ -34,13 +34,21 @@ public abstract class EntityGroupBase<TEntity> : IEntityGroup<TEntity>
         => _entityRemovedMessageName ??= Name + EntityRemovedMessageSuffix;
 
     public string GetPropertyValueChangedMessageName(string propertyName)
+        => GetOrCreatePropertyValueChangedMessageName(propertyName, nestedPropertyName: null);
+
+    public string GetPropertyValueChangedMessageName(string propertyName, string nestedPropertyName)
+        => GetOrCreatePropertyValueChangedMessageName(propertyName, nestedPropertyName);
+
+    private string GetOrCreatePropertyValueChangedMessageName(string propertyName, string? nestedPropertyName)
     {
         _propertyValueChangedMessageNames ??= [];
 
-        if (!_propertyValueChangedMessageNames.TryGetValue(propertyName, out var messageName))
+        var key = (propertyName, nestedPropertyName);
+        if (!_propertyValueChangedMessageNames.TryGetValue(key, out var messageName))
         {
-            messageName = Name + PropertyValueChangedMessageSuffix + propertyName;
-            _propertyValueChangedMessageNames[propertyName] = messageName;
+            messageName = Name + PropertyValueChangedMessageSuffix + propertyName
+                          + (nestedPropertyName == null ? "" : "." + nestedPropertyName);
+            _propertyValueChangedMessageNames[key] = messageName;
         }
 
         return messageName;
@@ -59,6 +67,10 @@ public abstract class EntityGroupBase<TEntity> : IEntityGroup<TEntity>
 
     public virtual bool HasPropertyValueSubscribers
         => _changeListeners is { Count: > 0 } || _propertyValueChangedMessageNames is { Count: > 0 };
+
+    public bool HasPropertyValueSubscribersFor(string propertyName, string? nestedPropertyName)
+        => _changeListeners is { Count: > 0 }
+           || _propertyValueChangedMessageNames?.ContainsKey((propertyName, nestedPropertyName)) == true;
 
     public abstract TEntity? FindEntity(int id);
     public abstract bool ContainsEntity(int id);
@@ -135,7 +147,8 @@ public abstract class EntityGroupBase<TEntity> : IEntityGroup<TEntity>
             var changes = entityChange.PropertyChanges;
             for (var i = 0; i < changes.Count; i++)
             {
-                if (_propertyValueChangedMessageNames.TryGetValue(changes.GetChangedPropertyName(i),
+                if (_propertyValueChangedMessageNames.TryGetValue(
+                    (changes.GetChangedPropertyName(i), changes.GetNestedPropertyName(i)),
                         out var messageName)
                     && entity.HasComponent(changes.GetChangedComponent(i).ComponentId))
                 {

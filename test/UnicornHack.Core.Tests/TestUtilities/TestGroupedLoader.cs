@@ -46,17 +46,7 @@ public class TestGroupedLoader<TKey, T> : TestLoader<T>, IGroupedLoader<TKey, T>
         {
             foreach (var item in _production.GetAllValues(key))
             {
-                var shadowed = false;
-                foreach (var test in TestItems)
-                {
-                    if (string.Equals(test.Name, item.Name, StringComparison.OrdinalIgnoreCase))
-                    {
-                        shadowed = true;
-                        break;
-                    }
-                }
-
-                if (!shadowed)
+                if (!IsShadowed(item))
                 {
                     result.Add(item);
                 }

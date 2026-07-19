@@ -1,6 +1,5 @@
 using UnicornHack.Services.LogEvents;
 using UnicornHack.Systems.Abilities;
-using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Items;
 
 namespace UnicornHack.Services;
@@ -13,7 +12,7 @@ public interface ILanguageService
     string? GetActorName(GameEntity? actorEntity, bool isIdentified);
     string GetDescription(string id, DescriptionCategory category);
     string GetString(ItemComponent item, int quantity, bool isIdentified);
-    string GetString(RaceComponent race, bool abbreviate);
+    string GetTemplateName(AbilityComponent race, bool abbreviate);
     string GetString(AbilityComponent ability);
     string GetString(Direction direction, bool abbreviate);
     string GetString(EquipmentSlot slot, GameEntity actorEntity, bool abbreviate);
@@ -23,18 +22,41 @@ public interface ILanguageService
     string GetString(in ItemActivationEvent @event);
     string? GetString(in AttackEvent @event);
     string GetString(in DeathEvent @event);
-    string GetString(in LeveledUpEvent @event);
+    string GetString(in StatusActivatedEvent @event);
+    string GetString(in ResourceEffectEvent @event);
     string NoDefaultAttack(bool melee);
     string NoAbilityInSlot(int slot);
     string AbilityCannotBeActivated(AbilityComponent ability);
+    string AbilityNotSlotted(AbilityComponent ability);
+    string AbilityAlreadyActive(AbilityComponent ability);
     string AbilityOnCooldown(AbilityComponent ability);
     string AbilityNotUsable(AbilityComponent ability);
+    string CannotCastAbility(AbilityComponent ability);
+    string CannotUseVerbalAbility(AbilityComponent ability);
+    string CannotUseDivineAbility(AbilityComponent ability);
+    string CannotUseDefaultAttack(AbilityComponent ability);
+    string CannotUseNonDefaultAbility(AbilityComponent ability);
+    string CannotUseComplexAbility(AbilityComponent ability);
+    string CannotUseNonAttackAbility(AbilityComponent ability);
+    string InvalidDigestionTarget(AbilityComponent ability);
+    string AbilityHasNoEffects(AbilityComponent ability);
     string NotEnoughEnergy(AbilityComponent ability);
+    string TooSlowToUseAbility(AbilityComponent ability);
+    string AbilityRequiresTarget(AbilityComponent ability);
+    string CannotTurnToUseAbility(AbilityComponent ability);
+    string StatusPreventsAction(AbilityComponent statusAbility);
+    string StatusPreventsAttemptedAction(AbilityComponent statusAbility);
+    string StatusPreventsMovement(AbilityComponent statusAbility);
+    string StatusPreventsItemManipulation(AbilityComponent statusAbility);
+    string StatusPreventsAbility(AbilityComponent statusAbility, AbilityComponent ability);
     string ItemNotInInventory();
     string NothingToPickUp();
     string Welcome(GameEntity playerEntity);
     string UnableToMove(Direction direction);
     string NoPath();
+    string TooAfraidToApproach(GameEntity source);
+    string CannotFleeSource(GameEntity source);
+    string SoundFrom(Direction direction);
 
     /// <summary>
     ///     Composes the localized hover-tooltip for a single room cell on the map screen.

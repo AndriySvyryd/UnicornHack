@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Unicorn = new Creature
     {
         Name = "unicorn",
-        Species = Species.Unicorn,
         SpeciesClass = SpeciesClass.Quadrupedal,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "unicorn ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "60*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "60*MightModifier()" } }
             },
             new Ability
             {
+                Name = "unicorn ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -31,7 +34,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "30*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "30*MightModifier()" } }
             }
         },
         InitialLevel = 4,
@@ -42,10 +45,10 @@ public static partial class CreatureData
         Weight = 1300,
         MovementDelay = -50,
         TurningDelay = -50,
-        Perception = -7,
-        Might = -8,
-        Speed = -7,
-        Focus = -8,
+        PerceptionBonus = -7,
+        MightBonus = -8,
+        SpeedBonus = -7,
+        FocusBonus = -8,
         Armor = 4,
         MagicResistance = 35,
         TorsoType = TorsoType.Quadruped,

@@ -5,17 +5,20 @@ public static partial class CreatureData
     public static readonly Creature Abollar = new Creature
     {
         Name = "abollar",
-        Species = Species.Abollar,
-        Abilities = new HashSet<Ability>
+        SpeciesClass = SpeciesClass.Aberration,
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "abollar ability #1",
                 Activation = ActivationType.OnMeleeAttack,
                 Action = AbilityAction.Modifier,
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "20" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "20*MightModifier()" } }
             },
             new Ability
             {
+                Name = "abollar ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -24,10 +27,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "10*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage() }
             },
             new Ability
             {
+                Name = "abollar ability #3",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -36,7 +41,10 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new ChangeProperty<int> { Duration = EffectDuration.UntilTimeout, DurationAmount = "10", PropertyName = "Focus", Value = -2 } }
+                Effects = new List<Effect>
+                {
+                    new ChangeProperty<int> { Duration = EffectDuration.UntilTimeout, DurationAmount = "10*FocusModifier()", Amount = "-2", PropertyName = "Focus" }
+                }
             }
         },
         InitialLevel = 21,
@@ -45,10 +53,10 @@ public static partial class CreatureData
         Noise = ActorNoiseType.Gurgle,
         Size = 8,
         Weight = 1200,
-        Perception = -5,
-        Might = -6,
-        Speed = -5,
-        Focus = -6,
+        PerceptionBonus = -5,
+        MightBonus = -6,
+        SpeedBonus = -5,
+        FocusBonus = -6,
         Armor = 2,
         MagicResistance = 40,
         TorsoType = TorsoType.Humanoid,

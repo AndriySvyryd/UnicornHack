@@ -5,18 +5,20 @@ public static partial class CreatureData
     public static readonly Creature Salamander = new Creature
     {
         Name = "salamander",
-        Species = Species.Elemental,
         SpeciesClass = SpeciesClass.Extraplanar,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "salamander ability #1",
                 Activation = ActivationType.OnMeleeAttack,
                 Action = AbilityAction.Modifier,
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "90" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "90*MightModifier()" } }
             },
             new Ability
             {
+                Name = "salamander ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -25,10 +27,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "10*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage() }
             },
             new Ability
             {
+                Name = "salamander ability #3",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -37,10 +41,16 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Burn { Damage = "30*MightModifier()" } }
+                Effects = new List<Effect>
+                {
+                    new FireDamage { Amount = "30*MightModifier()" },
+                    new FireDamage { Duration = EffectDuration.UntilTimeout, Amount = "30*MightModifier()" }
+                }
             },
             new Ability
             {
+                Name = "salamander ability #4",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -49,10 +59,16 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Burn { Damage = "70*MightModifier()" } }
+                Effects = new List<Effect>
+                {
+                    new FireDamage { Amount = "70*MightModifier()" },
+                    new FireDamage { Duration = EffectDuration.UntilTimeout, Amount = "70*MightModifier()" }
+                }
             },
             new Ability
             {
+                Name = "salamander ability #5",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -61,7 +77,11 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Burn { Damage = "100*MightModifier()" } }
+                Effects = new List<Effect>
+                {
+                    new FireDamage { Amount = "100*MightModifier()" },
+                    new FireDamage { Duration = EffectDuration.UntilTimeout, Amount = "100*MightModifier()" }
+                }
             }
         },
         InitialLevel = 10,
@@ -70,12 +90,11 @@ public static partial class CreatureData
         Noise = ActorNoiseType.Mumble,
         Size = 8,
         Weight = 1500,
-        Perception = -4,
-        Might = -4,
-        Speed = -4,
+        PerceptionBonus = -4,
+        MightBonus = -4,
+        SpeedBonus = -4,
         Armor = 5,
         FireResistance = 75,
-        SlimingImmune = true,
         TorsoType = TorsoType.Serpentine,
         UpperExtremities = ExtremityType.None,
         LowerExtremities = ExtremityType.None,

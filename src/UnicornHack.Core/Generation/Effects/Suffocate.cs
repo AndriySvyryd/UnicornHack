@@ -1,16 +1,20 @@
 using CSharpScriptSerialization;
-using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
 
-public class Suffocate : DurationEffect
+public class Suffocate : ResistedEffect
 {
-    protected override void ConfigureEffect(EffectComponent effect)
-    {
-        base.ConfigureEffect(effect);
+    private static readonly EffectMetadata _metadata =
+        EffectMetadata.Default(
+            EffectType.Suffocate, defaultDuration: EffectDuration.Instant,
+            statusCategory: StatusCategory.Physical,
+            resistanceProperty: nameof(Systems.Beings.BeingComponent.SuffocateResistance),
+            combinationFunction: ValueCombinationFunction.Sum);
 
-        effect.EffectType = EffectType.Suffocate;
-    }
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void RegisterMetadataProvider() => _ = _metadata;
+
+    public override EffectMetadata Metadata => _metadata;
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<Suffocate>(GetPropertyConditions<Suffocate>());

@@ -5,17 +5,19 @@ public static partial class ItemData
     public static readonly Item FreezingFocus = new Item
     {
         Name = "freezing focus",
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "freezing focus ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.OnMeleeAttack,
                 Range = 1,
                 Action = AbilityAction.Hit,
                 SuccessCondition = AbilitySuccessCondition.NormalAttack,
                 Accuracy = "5+RequirementsModifier()",
                 Delay = "100*RequirementsModifier()",
-                Effects = new List<Effect> { new Freeze { Damage = "40*RequirementsModifier()" } }
+                Effects = new List<Effect> { new ColdDamage { Amount = "40*RequirementsModifier()" } }
             }
         },
         Type = ItemType.WeaponMeleeShort,

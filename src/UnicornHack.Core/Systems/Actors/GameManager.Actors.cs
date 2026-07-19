@@ -50,14 +50,14 @@ public partial class GameManager
     private void InitializeActors(SequentialMessageQueue<GameManager> queue)
     {
         Add<PlayerComponent>(EntityComponent.Player, poolSize: 1);
-        Add<AIComponent>(EntityComponent.AI, poolSize: 64, maxPoolSize: 512);
+        Add<AIComponent>(EntityComponent.AI, poolSize: 256, maxPoolSize: 512);
 
         Players = CreateGroup(nameof(Players),
-            new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Player));
+            new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Player), capacity: 1);
 
         RoomActors = CreateGroup(nameof(RoomActors),
             new EntityMatcher<GameEntity>().AllOf((int)EntityComponent.Position, (int)EntityComponent.Being)
-                .AnyOf((int)EntityComponent.AI, (int)EntityComponent.Player));
+                .AnyOf((int)EntityComponent.AI, (int)EntityComponent.Player), capacity: 256);
 
         RoomActorsToRoomCellRelationship = new(
             nameof(RoomActorsToRoomCellRelationship),
@@ -66,27 +66,10 @@ public partial class GameManager
             new SimpleKeyValueGetter<GameEntity, int>(
                 component => ((PositionComponent)component).RoomId,
                 (int)EntityComponent.Position),
-            new KeyValueGetter<GameEntity, Point>(
-                (change, matcher, valueType) =>
-                {
-                    if (!matcher.TryGetValue<byte>(
-                            change, (int)EntityComponent.Position, nameof(PositionComponent.CellX), valueType,
-                            out var levelX)
-                        || !matcher.TryGetValue<byte>(
-                            change, (int)EntityComponent.Position, nameof(PositionComponent.CellY), valueType,
-                            out var levelY))
-                    {
-                        return (new Point(0, 0), false);
-                    }
-
-                    return (new Point(levelX, levelY), true);
-                },
-                new PropertyMatcher<GameEntity>()
-                    .With(component => ((PositionComponent)component).CellX, (int)EntityComponent.Position)
-                    .With(component => ((PositionComponent)component).CellY, (int)EntityComponent.Position)
-            ),
+            CreateCellKeyValueGetter(),
             (actorEntity, _) => actorEntity.RemoveComponent(EntityComponent.Position),
-            roomEntity => (SortedDictionary<Point, GameEntity>)roomEntity.Room!.Actors);
+            roomEntity => (SortedDictionary<Point, GameEntity>)roomEntity.Room!.Actors,
+            keepDependentAlive: true);
 
         SlottedAbilitiesToRoomActorsRelationship = new(
             nameof(SlottedAbilitiesToRoomActorsRelationship),

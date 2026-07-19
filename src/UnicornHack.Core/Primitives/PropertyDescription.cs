@@ -1,11 +1,21 @@
+using System.Linq.Expressions;
 using System.Reflection;
+using UnicornHack.Systems.Beings;
+using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Items;
+using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.DataLoading;
+using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Primitives;
 
 public abstract class PropertyDescription : ILoadable
 {
-    public string Name => PropertyInfo.Name;
+    public string Name
+    {
+        get;
+        init;
+    } = null!;
 
     public int ComponentId
     {
@@ -13,58 +23,68 @@ public abstract class PropertyDescription : ILoadable
         init;
     }
 
-    protected PropertyInfo PropertyInfo
+    public ValueCombinationFunction DefaultCombinationFunction
+    {
+        get;
+        init;
+    }
+
+    /// <summary>
+    ///     The property's declared CLR type - the concrete enum, or <see cref="int" />/<see cref="bool" /> -
+    ///     used to route change notifications with the correct type. Stored explicitly so a description needs
+    ///     no backing <see cref="System.Reflection.PropertyInfo" /> and can describe a property with no field.
+    /// </summary>
+    public Type DeclaredType
     {
         get;
         init;
     } = null!;
+
+    /// <summary>
+    ///     The backing component property, present only for a field-backed (<c>[Property&lt;T&gt;]</c>) description;
+    ///     <see langword="null" /> for a purely dynamic property resolved solely through the effect layers.
+    ///     Only reflection-based readers (e.g. compiled <see cref="Condition" />s) use it.
+    /// </summary>
+    protected PropertyInfo? PropertyInfo
+    {
+        get;
+        init;
+    }
 
     public abstract Type PropertyType
     {
         get;
     }
 
-    public bool IsCalculated
-    {
-        get;
-        init;
-    }
+    /// <summary>
+    ///     Raises the ECS property-value-changed notification for a resolved property, using the
+    ///     property's declared CLR type (int, bool, or the concrete enum) so it routes to the same
+    ///     typed message queue the legacy backing-field setter would have used.
+    /// </summary>
+    public abstract void RaiseResolvedChange(
+        Entity entity, int oldValue, int newValue, Component component);
 
+    public abstract Expression CreateGetValueExpression(Expression componentExpression);
+
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(BeingComponent))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(PhysicalComponent))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(ActiveEffectsComponent))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(ItemComponent))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(PositionComponent))]
     public static readonly AttributeLoader<PropertyAttribute, ComponentAttribute, PropertyDescription> Loader =
-        new(CreatePropertyDescription, typeof(PropertyDescription).Assembly);
+        new(CreatePropertyDescription,
+        [
+            typeof(BeingComponent),
+            typeof(PhysicalComponent),
+            typeof(ActiveEffectsComponent),
+            typeof(ItemComponent),
+            typeof(PositionComponent)
+        ]);
 
     private static PropertyDescription CreatePropertyDescription(
         PropertyInfo property,
         Type componentType,
         PropertyAttribute propertyAttribute,
         ComponentAttribute componentAttribute)
-        => (PropertyDescription)CreatePropertyDescriptionMethod
-            .MakeGenericMethod(property.PropertyType.IsEnum
-                ? property.PropertyType.GetEnumUnderlyingType().UnwrapNullableType()
-                : property.PropertyType.UnwrapNullableType())
-            .Invoke(null, [property, componentType, propertyAttribute, componentAttribute])!;
-
-    private static readonly MethodInfo CreatePropertyDescriptionMethod = typeof(PropertyDescription).GetTypeInfo()
-        .GetDeclaredMethods(nameof(CreatePropertyDescription)).Single(mi => mi.IsGenericMethodDefinition);
-
-#pragma warning disable RCS1213 // Remove unused member declaration.
-    private static PropertyDescription<T> CreatePropertyDescription<T>(
-        PropertyInfo property,
-        Type componentType,
-        PropertyAttribute propertyAttribute,
-        ComponentAttribute componentAttribute)
-        where T : struct, IComparable<T>
-        => new()
-        {
-            ComponentId = componentAttribute.Id,
-            PropertyInfo = property,
-            IsCalculated = propertyAttribute.IsCalculated,
-            MinValue = (T?)propertyAttribute.MinValue,
-            MaxValue = (T?)propertyAttribute.MaxValue,
-            DefaultValue = (T?)propertyAttribute.DefaultValue
-                           ?? (propertyAttribute.IsCalculated
-                               ? null
-                               : (T?)property.GetValue(Activator.CreateInstance(componentType)))
-        };
-#pragma warning restore RCS1213 // Remove unused member declaration.
+        => propertyAttribute.CreateDescription(property, componentAttribute);
 }

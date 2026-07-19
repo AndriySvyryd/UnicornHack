@@ -33,7 +33,7 @@ public class LevelLayoutTest
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
+        var dungeon = BranchData.Dungeon.Instantiate(game);
         var level = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
 
         var room = LevelLayout.CreateEmptyRoom(level, manager);
@@ -54,7 +54,7 @@ public class LevelLayoutTest
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
+        var dungeon = BranchData.Dungeon.Instantiate(game);
         var level = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
         var room = LevelLayout.CreateEmptyRoom(level, manager);
 
@@ -86,7 +86,7 @@ public class LevelLayoutTest
         var room = manager.CreateComponent<RoomComponent>(EntityComponent.Room);
         roomEntityReference.Referenced.Room = room;
 
-        // Self-initialised: every terrain getter returns Array.Empty<byte>() before any
+        // Self-initialized: every terrain getter returns Array.Empty<byte>() before any
         // allocation has happened, so reads and the release path are both safe.
         Assert.Empty(room.Terrain);
         Assert.Empty(room.KnownTerrain);
@@ -110,7 +110,7 @@ public class LevelLayoutTest
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
+        var dungeon = BranchData.Dungeon.Instantiate(game);
         var level = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
         var room = LevelLayout.CreateEmptyRoom(level, manager);
         var roomEntity = room.Entity;
@@ -272,52 +272,6 @@ public class LevelLayoutTest
         return string.Join(", ", failureCounts
             .OrderByDescending(kvp => kvp.Value)
             .Select(kvp => $"{kvp.Key}={kvp.Value}"));
-    }
-
-    /// <summary>
-    ///     Diagnostic-only: runs the same 200-seed sweep as
-    ///     <see cref="Default_constraint_meets_min_per_attempt_success_rate" /> but emits
-    ///     the per-attempt success rate and full failure-reason breakdown to the test
-    ///     output regardless of pass/fail, so changes that nudge the rate up or down are
-    ///     visible in CI logs alongside the dominant rejection cause.
-    /// </summary>
-    [Theory]
-    [MemberData(nameof(LayoutDefaultReliability))]
-    public void Diagnostic_per_attempt_failure_breakdown(LevelLayout layout, double _)
-    {
-        const int trials = 200;
-        var successes = 0;
-        var failureCounts = new Dictionary<string, int>();
-        var firstSeedByReason = new Dictionary<string, uint>();
-        var stats = new LevelGenerationStats();
-        var gameStats = new GenerationStats();
-        var prevSnapshot = stats.GraphFailureSnapshot();
-        for (uint seed = 1; seed <= trials; seed++)
-        {
-            var graph = layout.BuildGraph(layout.GetParameters(LevelGenerator.MaxDifficulty), new SimpleRandom { Seed = seed }, stats, gameStats);
-            var snapshot = stats.GraphFailureSnapshot();
-            if (graph is not null)
-            {
-                successes++;
-            }
-            else
-            {
-                var reason = AttributeFailure(prevSnapshot, snapshot);
-                failureCounts[reason] = failureCounts.GetValueOrDefault(reason) + 1;
-                firstSeedByReason.TryAdd(reason, seed);
-            }
-            prevSnapshot = snapshot;
-        }
-
-        var rate = (double)successes / trials;
-        _output.WriteLine(
-            $"{layout.GetType().Name} Sinuosity={layout.Sinuosity}: "
-            + $"per-attempt success {successes}/{trials} ({rate:P1}). "
-            + $"Failure breakdown: {FormatFailureBreakdown(failureCounts)}.");
-        foreach (var (reason, firstSeed) in firstSeedByReason)
-        {
-            _output.WriteLine($"  first {reason} seed: {firstSeed}");
-        }
     }
 
     /// <summary>
@@ -1043,7 +997,7 @@ public class LevelLayoutTest
     {
         var game = TestHelper.CreateGame(seed);
         var manager = game.Manager;
-        var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
+        var dungeon = BranchData.Dungeon.Instantiate(game);
 
         for (var attempt = 0; attempt < 20; attempt++)
         {

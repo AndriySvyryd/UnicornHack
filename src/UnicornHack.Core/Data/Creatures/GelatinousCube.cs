@@ -5,11 +5,13 @@ public static partial class CreatureData
     public static readonly Creature GelatinousCube = new Creature
     {
         Name = "gelatinous cube",
-        Species = Species.Blob,
-        Abilities = new HashSet<Ability>
+        SpeciesClass = SpeciesClass.Ooze,
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "gelatinous cube ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -18,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Paralyze { Duration = EffectDuration.UntilTimeout, DurationAmount = "4" } }
+                Effects = new List<Effect> { new Paralyze() }
             },
             new Ability
             {
+                Name = "gelatinous cube ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -30,22 +34,27 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 350,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Engulf { Duration = EffectDuration.UntilTimeout, DurationAmount = "7" } }
+                Effects = new List<Effect> { new Engulf { Amount = "400" } }
             },
             new Ability
             {
-                Activation = ActivationType.OnDigestion,
+                Name = "gelatinous cube ability #3",
+                Activation = ActivationType.Targeted,
+                Trigger = ActivationType.OnMeleeAttack,
+                Range = 1,
                 Action = AbilityAction.Digestion,
-                Cooldown = 100,
-                Effects = new List<Effect> { new Blight { Damage = "10*MightModifier()" }, new Corrode { Damage = "10*MightModifier()" } }
+                Delay = "100*SpeedModifier()",
+                Effects = new List<Effect> { new ToxinDamage { Duration = EffectDuration.UntilTimeout, Amount = "10*MightModifier()" }, new Corrode() }
             },
             new Ability
             {
+                Name = "gelatinous cube ability #4",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.OnMeleeHit,
                 Action = AbilityAction.Touch,
                 SuccessCondition = AbilitySuccessCondition.UnblockableAttack,
                 Accuracy = "10+PerceptionModifier()",
-                Effects = new List<Effect> { new Paralyze { Duration = EffectDuration.UntilTimeout, DurationAmount = "200" } }
+                Effects = new List<Effect> { new Paralyze() }
             }
         },
         InitialLevel = 6,
@@ -56,22 +65,24 @@ public static partial class CreatureData
         Weight = 600,
         MovementDelay = 100,
         TurningDelay = 100,
-        Perception = -6,
-        Might = -6,
-        Speed = -6,
-        Focus = -2,
+        PerceptionBonus = -6,
+        MightBonus = -6,
+        SpeedBonus = -6,
+        FocusBonus = -2,
         Armor = 1,
         AcidResistance = 75,
         ColdResistance = 75,
         ElectricityResistance = 75,
         FireResistance = 75,
-        StoningImmune = true,
+        BlindResistance = 100,
+        ParalyzeResistance = 100,
+        SuffocateResistance = 100,
         HeadType = HeadType.None,
         UpperExtremities = ExtremityType.None,
         LowerExtremities = ExtremityType.None,
         RespirationType = RespirationType.None,
         EyeCount = 0,
-        NoiseLevel = 0,
+        Quietness = 250,
         Mindless = true,
         NonAnimal = true
     };

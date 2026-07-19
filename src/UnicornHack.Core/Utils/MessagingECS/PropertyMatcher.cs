@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 namespace UnicornHack.Utils.MessagingECS;
 
@@ -8,7 +9,7 @@ public class PropertyMatcher<TEntity>
     public virtual PropertyMatcher<TEntity> With<T>(Expression<Func<Component, T>> getProperty, int componentId)
     {
         var propertyName = getProperty.GetSimplePropertyAccess()!.Name;
-        return new UnaryPropertyMatcher((componentId, propertyName, getProperty.Compile()));
+        return new UnaryPropertyMatcher((componentId, propertyName, getProperty.Compile(preferInterpretation: !RuntimeFeature.IsDynamicCodeSupported)));
     }
 
     public bool TryGetValue<T>(
@@ -52,6 +53,15 @@ public class PropertyMatcher<TEntity>
         }
 
         if (component == null
+            && entityChange.AddedComponent is { } addedComponent
+            && addedComponent.ComponentId == componentId
+            && type != ValueType.Current)
+        {
+            value = default;
+            return false;
+        }
+
+        if (component == null
             && type != ValueType.Old)
         {
             component = entityChange.Entity.FindComponent(componentId);
@@ -86,7 +96,7 @@ public class PropertyMatcher<TEntity>
             int componentId)
         {
             var propertyName = getProperty.GetSimplePropertyAccess().Name;
-            return new BinaryPropertyMatcher(_property, (componentId, propertyName, getProperty.Compile()));
+            return new BinaryPropertyMatcher(_property, (componentId, propertyName, getProperty.Compile(preferInterpretation: !RuntimeFeature.IsDynamicCodeSupported)));
         }
 
         protected override object? Find(int componentId, string propertyName)
@@ -127,7 +137,7 @@ public class PropertyMatcher<TEntity>
             };
 
             var propertyName = getProperty.GetSimplePropertyAccess().Name;
-            dictionary.Add((componentId, propertyName), getProperty.Compile());
+            dictionary.Add((componentId, propertyName), getProperty.Compile(preferInterpretation: !RuntimeFeature.IsDynamicCodeSupported));
 
             return new DictionaryPropertyMatcher(dictionary);
         }
@@ -166,7 +176,7 @@ public class PropertyMatcher<TEntity>
             int componentId)
         {
             var propertyName = getProperty.GetSimplePropertyAccess().Name;
-            _properties.Add((componentId, propertyName), getProperty.Compile());
+            _properties.Add((componentId, propertyName), getProperty.Compile(preferInterpretation: !RuntimeFeature.IsDynamicCodeSupported));
             return this;
         }
 

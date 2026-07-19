@@ -378,13 +378,6 @@ public class EnglishMorphologicalProcessor
         return phrase.Substring(startIndex: 0, length: firstWordLength);
     }
 
-    private static string GetLastWord(string phrase, out string firstPart)
-    {
-        var firstPartLength = phrase.LastIndexOf(value: ' ') + 1;
-        firstPart = phrase.Substring(startIndex: 0, length: firstPartLength);
-        return phrase.Substring(firstPartLength);
-    }
-
     private class SuffixReplacementStateMachine
     {
         private readonly State _initialState = new();

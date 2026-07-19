@@ -7,8 +7,11 @@ public static partial class AbilityData
         Name = "water sourcery",
         Type = AbilityType.Skill,
         Cost = 4,
-        Activation = ActivationType.Always,
-        Cumulative = true,
-        LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>> { { 1, new List<Effect> { new AddAbility { Name = "ice shard" } } } }
+        LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>>
+        {
+            { 1, new List<Effect> { new AddAbility { Name = "ice shard" } } },
+            { 2, new List<Effect>() },
+            { 3, new List<Effect>() }
+        }
     };
 }

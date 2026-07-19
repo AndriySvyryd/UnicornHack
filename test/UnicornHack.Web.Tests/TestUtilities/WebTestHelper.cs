@@ -8,21 +8,12 @@ namespace UnicornHack.TestUtilities;
 
 public static class WebTestHelper
 {
-    public static Game CreateGame(uint? seed = null) => TestHelper.CreateGame(seed);
-
     public static RoomChangeBuilder SetupListeners(GameManager manager)
     {
         var builder = new RoomChangeBuilder();
         builder.RegisterOnGroups(manager);
         return builder;
     }
-
-    public static void RegisterPlayer(
-        GameEntity playerEntity, RoomChangeBuilder builder, GameManager manager)
-        => builder.RegisterPlayerBuilder(playerEntity, manager);
-
-    public static PlayerChange GetState(GameEntity playerEntity, GameServices services)
-        => GameStateManager.GetState(playerEntity, services);
 
     public static Dictionary<int, List<TurnChangeSet>> PerformAction(
         PlayerComponent player,
@@ -47,7 +38,7 @@ public static class WebTestHelper
         int? target = null,
         int? target2 = null)
     {
-        var baseline = ClientStateHelpers.Deserialize(GetState(player.Entity, services));
+        var baseline = ClientStateHelpers.Deserialize(GameStateManager.GetState(player.Entity, services));
         var changeSets = PerformAction(player, builder, services, action, target, target2);
 
         if (changeSets.TryGetValue(player.Entity.Id, out var playerChangeSets))
@@ -59,7 +50,7 @@ public static class WebTestHelper
             Assert.Fail("Expected change sets for player, but received none");
         }
 
-        var fresh = ClientStateHelpers.Deserialize(GetState(player.Entity, services));
+        var fresh = ClientStateHelpers.Deserialize(GameStateManager.GetState(player.Entity, services));
         ChangeSetAssert.AssertPlayerStatesEqual(fresh, baseline);
         return fresh;
     }

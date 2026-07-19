@@ -8,13 +8,19 @@ public class GroupedCSScriptLoader<TKey, T> : CSScriptLoaderBase<T>, IGroupedLoa
     protected Dictionary<TKey, List<T>> Objects => _objects ??= Group();
     private readonly Func<T, IEnumerable<TKey>> _keySelector;
 
-    public GroupedCSScriptLoader(string relativePath, Func<T, TKey> keySelector, Type dataType)
+    public GroupedCSScriptLoader(
+        string relativePath,
+        Func<T, TKey> keySelector,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type dataType)
         : base(relativePath, dataType)
     {
         _keySelector = i => Sequence.Single(keySelector(i));
     }
 
-    public GroupedCSScriptLoader(string relativePath, Func<T, IEnumerable<TKey>> keySelector, Type dataType)
+    public GroupedCSScriptLoader(
+        string relativePath,
+        Func<T, IEnumerable<TKey>> keySelector,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type dataType)
         : base(relativePath, dataType)
     {
         _keySelector = keySelector;

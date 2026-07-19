@@ -1,21 +1,15 @@
-﻿namespace UnicornHack.Systems.Effects;
+namespace UnicornHack.Systems.Effects;
 
-// TODO: Separate into Effect and AppliedEffect
 [Component(Id = (int)EntityComponent.Effect)]
 public class EffectComponent : GameComponent
 {
-    private int? _affectedEntityId;
-    private GameEntity? _affectedEntity;
     private int? _sourceEffectId;
     private GameEntity? _sourceEffect;
     private int? _sourceAbilityId;
     private GameEntity? _sourceAbility;
     private int? _containingAbilityId;
     private string? _durationAmount;
-    private int? _expirationTick;
-    private int? _expirationXp;
     private bool _shouldTargetActivator;
-    private int? _appliedAmount;
     private string? _amount;
     private string? _secondaryAmount;
     private EffectType _effectType;
@@ -27,28 +21,6 @@ public class EffectComponent : GameComponent
     public EffectComponent()
     {
         ComponentId = (int)EntityComponent.Effect;
-    }
-
-    public int? AffectedEntityId
-    {
-        get => _affectedEntityId;
-        set => SetWithNotify(value, ref _affectedEntityId);
-    }
-
-    public GameEntity? AffectedEntity
-    {
-        get
-        {
-            _affectedEntity ??= Entity?.Manager?.FindEntity(_affectedEntityId);
-            Debug.Assert(_affectedEntity != null || _affectedEntityId == null,
-                $"AffectedEntity {_affectedEntityId} not loaded");
-            return _affectedEntity;
-        }
-        set
-        {
-            AffectedEntityId = value?.Id;
-            _affectedEntity = value;
-        }
     }
 
     public int? SourceEffectId
@@ -113,7 +85,7 @@ public class EffectComponent : GameComponent
         set => SetWithNotify(value, ref _duration);
     }
 
-    public Func<GameEntity, GameEntity, float>? DurationAmountFunction
+    public Func<GameEntity, GameEntity, GameEntity?, float>? DurationAmountFunction
     {
         get;
         set;
@@ -129,32 +101,13 @@ public class EffectComponent : GameComponent
         }
     }
 
-    public int? ExpirationTick
-    {
-        get => _expirationTick;
-        set => SetWithNotify(value, ref _expirationTick);
-    }
-
-    public int? ExpirationXp
-    {
-        get => _expirationXp;
-        set => SetWithNotify(value, ref _expirationXp);
-    }
-
     public bool ShouldTargetActivator
     {
         get => _shouldTargetActivator;
         set => SetWithNotify(value, ref _shouldTargetActivator);
     }
 
-    // The amount for an applied effect or a constant amount for an effect
-    public int? AppliedAmount
-    {
-        get => _appliedAmount;
-        set => SetWithNotify(value, ref _appliedAmount);
-    }
-
-    public Func<GameEntity, GameEntity, float>? AmountFunction
+    public Func<GameEntity, GameEntity, GameEntity?, float>? AmountFunction
     {
         get;
         set;
@@ -171,7 +124,7 @@ public class EffectComponent : GameComponent
         }
     }
 
-    public Func<GameEntity, GameEntity, float>? SecondaryAmountFunction
+    public Func<GameEntity, GameEntity, GameEntity?, float>? SecondaryAmountFunction
     {
         get;
         set;
@@ -206,6 +159,10 @@ public class EffectComponent : GameComponent
         set => SetWithNotify(value, ref _targetName);
     }
 
+    /// <summary>
+    ///     The target entity or embedded-effect index. Effect-specific negative values encode selectors;
+    ///     <see cref="DecreaseAbilityLevel" /> stores <c>-1 - AbilityType</c> here.
+    /// </summary>
     public int? TargetEntityId
     {
         get => _targetEntityId;
@@ -217,16 +174,15 @@ public class EffectComponent : GameComponent
         var manager = abilityEntity.Manager;
         using var entityReference = manager.CreateEntity();
         var clone = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+        clone.EffectType = EffectType;
         clone.ShouldTargetActivator = ShouldTargetActivator;
         clone.Duration = Duration;
         clone.DurationAmount = DurationAmount;
         clone.DurationAmountFunction = DurationAmountFunction;
-        clone.AppliedAmount = AppliedAmount;
         clone.Amount = Amount;
         clone.AmountFunction = AmountFunction;
         clone.SecondaryAmount = SecondaryAmount;
         clone.SecondaryAmountFunction = SecondaryAmountFunction;
-        clone.EffectType = EffectType;
         clone.CombinationFunction = CombinationFunction;
         clone.TargetName = TargetName;
         clone.TargetEntityId = TargetEntityId;
@@ -244,8 +200,6 @@ public class EffectComponent : GameComponent
 
     protected override void Clean()
     {
-        _affectedEntityId = default;
-        _affectedEntity = default;
         _sourceEffectId = default;
         _sourceEffect = default;
         _sourceAbilityId = default;
@@ -255,10 +209,7 @@ public class EffectComponent : GameComponent
         _duration = default;
         DurationAmountFunction = default;
         _durationAmount = default;
-        _expirationTick = default;
-        _expirationXp = default;
         _shouldTargetActivator = default;
-        _appliedAmount = default;
         AmountFunction = default;
         _amount = default;
         SecondaryAmountFunction = default;

@@ -33,6 +33,32 @@ public class EntityTest
     }
 
     [Fact]
+    public void Readding_the_same_component_is_a_noop_and_replacing_it_throws()
+    {
+        var manager = TestHelper.CreateGameManager();
+        using var entityReference = manager.CreateEntity();
+        var entity = entityReference.Referenced;
+        var position = entity.AddComponent<PositionComponent>((int)EntityComponent.Position);
+        var componentChanges = 0;
+        entity.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(GameEntity.Position))
+            {
+                componentChanges++;
+            }
+        };
+
+        entity.Position = position;
+
+        Assert.Equal(0, componentChanges);
+        Assert.Same(position, entity.Position);
+
+        var replacement = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
+        Assert.Throws<InvalidOperationException>(() => entity.Position = replacement);
+        Assert.Same(position, entity.Position);
+    }
+
+    [Fact]
     public void Setting_component_property_fires_events()
     {
         var manager = TestHelper.CreateGameManager();
@@ -138,7 +164,7 @@ public class EntityTest
         Assert.Null(manager.FindEntity(id));
 
         GameEntity? reused = null;
-        for (var i = 0; i < 1024 && reused is null; i++)
+        for (var i = 0; i < 8192 && reused is null; i++)
         {
             using var entityReference = manager.CreateEntity();
             if (ReferenceEquals(entityReference.Referenced, entity))
@@ -182,7 +208,7 @@ public class EntityTest
     // each non-match back to the pool so the FIFO queue rotates) until the instance reappears.
     private static bool PoolContainsEntity(GameManager manager, GameEntity target)
     {
-        for (var i = 0; i < 1024; i++)
+        for (var i = 0; i < 16384; i++)
         {
             using var entityReference = manager.CreateEntity();
             if (ReferenceEquals(entityReference.Referenced, target))

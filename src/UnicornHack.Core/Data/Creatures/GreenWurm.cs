@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature GreenWurm = new Creature
     {
         Name = "green wurm",
-        Species = Species.Dragon,
         SpeciesClass = SpeciesClass.Reptile,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "green wurm ability #1",
+                Type = AbilityType.RangedAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnRangedAttack,
                 Range = 20,
@@ -19,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Blight { Damage = "140*FocusModifier()" } }
+                Effects = new List<Effect> { new ToxinDamage { Duration = EffectDuration.UntilTimeout, Amount = "140*FocusModifier()" } }
             },
             new Ability
             {
+                Name = "green wurm ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -31,10 +34,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "90*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "90*MightModifier()" } }
             },
             new Ability
             {
+                Name = "green wurm ability #3",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -43,10 +48,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "50*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "50*MightModifier()" } }
             },
             new Ability
             {
+                Name = "green wurm ability #4",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -55,7 +62,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "50*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "50*MightModifier()" } }
             }
         },
         InitialLevel = 15,
@@ -66,12 +73,13 @@ public static partial class CreatureData
         Weight = 4500,
         MovementDelay = 33,
         TurningDelay = 33,
-        Perception = -2,
-        Might = -2,
-        Speed = -2,
-        Focus = -2,
+        PerceptionBonus = -2,
+        MightBonus = -2,
+        SpeedBonus = -2,
+        FocusBonus = -2,
         Armor = 5,
         MagicResistance = 10,
+        DecayResistance = 50,
         TorsoType = TorsoType.Quadruped,
         UpperExtremities = ExtremityType.None,
         LowerExtremities = ExtremityType.Claws,

@@ -1,6 +1,9 @@
+using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
 using CSharpScriptSerialization;
+using UnicornHack.Services;
+using UnicornHack.Services.English;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Utils.DataLoading;
@@ -31,24 +34,8 @@ public static class Program
         }
 
         // Add code in the lambdas below to make bulk changes
-        await SerializeAsync(Creature.Loader, c =>
-        {
-            foreach (var ability in c.Abilities)
-            {
-                Transform(ability);
-            }
-
-            return c;
-        });
-        await SerializeAsync(PlayerRace.Loader, r =>
-        {
-            foreach (var ability in r.Abilities)
-            {
-                Transform(ability);
-            }
-
-            return r;
-        });
+        await SerializeAsync(Creature.Loader);
+        await SerializeAsync(PlayerRace.Loader);
         await SerializeAsync(Item.Loader, i =>
         {
             var activatedAbilityFound = false;
@@ -63,8 +50,6 @@ public static class Program
 
                     activatedAbilityFound = true;
                 }
-
-                Transform(ability);
             }
 
             return i;
@@ -72,16 +57,16 @@ public static class Program
         await SerializeAsync(ItemGroup.Loader);
         await SerializeAsync(Ability.Loader, Transform);
         await SerializeAsync(Branch.Loader);
-        await SerializeAsync(NormalMapFragment.Loader);
-        await SerializeAsync(ConnectingMapFragment.Loader);
-        await SerializeAsync(DefiningMapFragment.Loader);
+        await SerializeAsync(NormalMapFragment.Loader, Transform);
+        await SerializeAsync(ConnectingMapFragment.Loader, Transform);
+        await SerializeAsync(DefiningMapFragment.Loader, Transform);
 
         Console.WriteLine();
         Console.WriteLine("Serialization completed successfully!");
         Console.WriteLine("Results placed in " + _directory);
     }
 
-    private static Ability Transform(Ability ability)
+    private static Ability? Transform(Ability ability)
     {
         if (ability.Effects == null)
         {
@@ -105,7 +90,58 @@ public static class Program
         return ability;
     }
 
-    private static async Task SerializeAsync<T>(CSScriptLoaderBase<T> loader, Func<T, T>? transform = null)
+    private static NormalMapFragment? Transform(NormalMapFragment fragment)
+    {
+        // Transform variants are materialized from their source at load time
+        // (see MapFragmentLoader) and must never be written back as data files;
+        // serialize only the source fragments.
+        if (fragment.Transform != MapFragmentTransform.Identity)
+        {
+            return null;
+        }
+
+        // Emit only the author-declared tags - the size / content / door markers are
+        // re-derived from the payload on every load, so they don't belong in the data.
+        fragment.ReduceTagsToAuthored();
+
+        return fragment;
+    }
+
+    private static DefiningMapFragment? Transform(DefiningMapFragment fragment)
+    {
+        // Transform variants are materialized from their source at load time
+        // (see MapFragmentLoader) and must never be written back as data files;
+        // serialize only the source fragments.
+        if (fragment.Transform != MapFragmentTransform.Identity)
+        {
+            return null;
+        }
+
+        // Emit only the author-declared tags - the size / content / door markers are
+        // re-derived from the payload on every load, so they don't belong in the data.
+        fragment.ReduceTagsToAuthored();
+
+        return fragment;
+    }
+
+    private static ConnectingMapFragment? Transform(ConnectingMapFragment fragment)
+    {
+        // Transform variants are materialized from their source at load time
+        // (see MapFragmentLoader) and must never be written back as data files;
+        // serialize only the source fragments.
+        if (fragment.Transform != MapFragmentTransform.Identity)
+        {
+            return null;
+        }
+
+        // Emit only the author-declared tags - the size / content / door markers are
+        // re-derived from the payload on every load, so they don't belong in the data.
+        fragment.ReduceTagsToAuthored();
+
+        return fragment;
+    }
+
+    private static async Task SerializeAsync<T>(CSScriptLoaderBase<T> loader, Func<T, T?>? transform = null)
         where T : class, ILoadable
     {
         Console.WriteLine("Serializing " + typeof(T).Name + " instances...");
@@ -118,6 +154,11 @@ public static class Program
             try
             {
                 var itemToSerialize = transform != null ? transform(item) : item;
+                if (itemToSerialize == null)
+                {
+                    continue;
+                }
+
                 string? script = null;
                 if (SerializeToScript)
                 {
@@ -147,14 +188,49 @@ public static class Program
         }
     }
 
-    private static void Verify(string script, PropertyDescription property)
-        => Verify(script, property, i => i.Name);
-
     private static void Verify(string script, Creature creature)
-        => Verify(script, creature, c => c.Name, getAbilities: c => c.Abilities);
+        => Verify(
+            script, creature, c => c.Name,
+            getAbilities: c => c.Abilities,
+            getAbilityReferences: c => c.AbilityReferences);
 
     private static void Verify(string script, PlayerRace player)
-        => Verify(script, player, p => p.Name, getAbilities: c => c.Abilities);
+        => Verify(
+            script, player, p => p.Name,
+            validate: race =>
+            {
+                foreach (var (level, effects) in race.Effects)
+                {
+                    if (effects.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    Validate(new Ability
+                    {
+                        Name = $"{race.Name} race level {level}",
+                        Type = AbilityType.Race,
+                        Activation = ActivationType.Always,
+                        Effects = effects
+                    }, race.Name, race);
+                }
+
+                if (race.Name == "human")
+                {
+                    var humanRaceAbility = race.GetRaceAbilityTemplate();
+                    if (humanRaceAbility is not LeveledAbility leveledHumanRaceAbility
+                        || leveledHumanRaceAbility.LeveledEffects.GetValueOrDefault(3) is not { } levelThreeEffects
+                        || levelThreeEffects.OfType<AddAbility>().SingleOrDefault()?.Ability?.Name
+                            != "Surge of Luck")
+                    {
+                        throw new InvalidOperationException(
+                            "Human race level 3 must grant Surge of Luck.");
+                    }
+                }
+
+                return null;
+            },
+            getAbilityReferences: race => race.AbilityReferences);
 
     private static void Verify(string script, Item item)
         => Verify(script, item, i => i.Name, i =>
@@ -177,11 +253,41 @@ public static class Program
     private static void Verify(string script, ItemGroup item)
         => Verify(script, item, i => i.Name);
 
-    // TODO: verify Name not null
     private static void Verify(string script, Ability ability)
         => Verify(script, ability, i => i.Name, a =>
         {
             Validate(a, "itself", ability);
+            if (a.Type == AbilityType.Skill
+                && (a is not LeveledAbility skill
+                    || !skill.LeveledEffects.Keys.Order().SequenceEqual([1, 2, 3])))
+            {
+                throw new InvalidOperationException(
+                    $"Skill '{a.Name}' must define exactly levels 1, 2, and 3.");
+            }
+
+            if (a.Type.IsStatusLike())
+            {
+                var language = new EnglishLanguageService();
+                var description = language.GetDescription(a.Name, DescriptionCategory.Ability);
+                if (string.IsNullOrWhiteSpace(description))
+                {
+                    throw new InvalidOperationException(
+                        $"Status ability '{a.Name}' has no tooltip description.");
+                }
+
+                if (a is LeveledAbility leveledAbility)
+                {
+                    foreach (var level in leveledAbility.LeveledEffects.Keys)
+                    {
+                        if (description.Contains($"Level {level}: No additional effects"))
+                        {
+                            throw new InvalidOperationException(
+                                $"Status ability '{a.Name}' level {level} has no effect or behavior description.");
+                        }
+                    }
+                }
+            }
+
             return null;
         });
 
@@ -226,7 +332,8 @@ public static class Program
     private static void Verify<T>(string? script, T variant,
         Func<T, string> getName,
         Func<T, string?>? validate = null,
-        Func<T, ISet<Ability>>? getAbilities = null)
+        Func<T, IReadOnlyList<Ability>>? getAbilities = null,
+        Func<T, ISet<AbilityReference>>? getAbilityReferences = null)
     {
         try
         {
@@ -247,9 +354,30 @@ public static class Program
             var abilities = getAbilities?.Invoke(serializedVariant);
             if (abilities != null)
             {
+                var abilityNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var ability in abilities)
                 {
                     Validate(ability, name, variant);
+                    if (!abilityNames.Add(ability.Name))
+                    {
+                        throw new InvalidOperationException(
+                            $"{name} defines more than one ability named '{ability.Name}'");
+                    }
+                }
+            }
+
+            var abilityReferences = getAbilityReferences?.Invoke(serializedVariant);
+            if (abilityReferences != null)
+            {
+                foreach (var reference in abilityReferences)
+                {
+                    if (string.IsNullOrWhiteSpace(reference.Name)
+                        || reference.Level <= 0
+                        || Ability.Loader.Find(reference.Name) == null)
+                    {
+                        throw new InvalidOperationException(
+                            $"Ability reference {reference.Name} level {reference.Level} on {name} is invalid");
+                    }
                 }
             }
         }
@@ -262,6 +390,11 @@ public static class Program
 
     private static void Validate<T>(Ability ability, string ownerName, T owner)
     {
+        if (string.IsNullOrWhiteSpace(ability.Name))
+        {
+            throw new InvalidOperationException($"Ability on {ownerName} has no name");
+        }
+
         if ((ability.Activation & ActivationType.Slottable) != 0
             && ability.Delay == null && ability.Cooldown == 0 && ability.XPCooldown == 0)
         {
@@ -299,7 +432,8 @@ public static class Program
         if ((ability.Effects == null
              || ability.Effects.Count == 0)
             && !onItem
-            && !(ability is LeveledAbility))
+            && !(ability is LeveledAbility)
+            && ability.Type != AbilityType.Status)
         {
             throw new InvalidOperationException(
                 $"Ability {ability.Name} on {ownerName} has no effects");
@@ -331,7 +465,12 @@ public static class Program
                     }
                     else
                     {
-                        Ability.Loader.Get(addAbility.Name);
+                        if (Ability.Loader.Find(addAbility.Name) == null
+                            && PlayerRace.Loader.FindByIndex(addAbility.Name) == null
+                            && Creature.Loader.FindByIndex(addAbility.Name) == null)
+                        {
+                            throw new InvalidOperationException($"Ability '{addAbility.Name}' not found");
+                        }
                     }
 
                     break;
@@ -347,25 +486,22 @@ public static class Program
                 case PhysicalDamage physicalDamage:
                     if (physicalDamage.ArmorPenetration != null)
                     {
-                        EffectApplicationSystem.CreateAmountFunction(physicalDamage.ArmorPenetration, ability.Name);
+                        EffectApplicationSystem.CreateAmountFunction(
+                            physicalDamage.ArmorPenetration, ability.Name, nameof(PhysicalDamage));
                     }
 
                     break;
-                case DamageEffect damageEffect:
-                    EffectApplicationSystem.CreateAmountFunction(damageEffect.Damage, ability.Name);
+            }
 
-                    break;
-                case DurationEffect durationEffect:
-                    if (durationEffect.DurationAmount != null)
-                    {
-                        EffectApplicationSystem.CreateAmountFunction(durationEffect.DurationAmount, ability.Name);
-                    }
+            if (effect.Amount != null)
+            {
+                EffectApplicationSystem.CreateAmountFunction(effect.Amount, ability.Name, effect.GetType().Name);
+            }
 
-                    break;
-                case AmountEffect amountEffect:
-                    EffectApplicationSystem.CreateAmountFunction(amountEffect.Amount, ability.Name);
-
-                    break;
+            if (effect.DurationAmount != null)
+            {
+                EffectApplicationSystem.CreateAmountFunction(
+                    effect.DurationAmount, ability.Name, effect.GetType().Name);
             }
         }
     }
@@ -379,24 +515,31 @@ public static class Program
             throw new InvalidOperationException("Invalid valued property: " + property.PropertyName);
         }
 
-        if (description.PropertyType != property.Value.GetType()
-            || description.PropertyType != typeof(T))
+        if (description.PropertyType != typeof(T))
         {
             throw new InvalidOperationException(
                 $"Valued property {property.PropertyName} should be of type {description.PropertyType}");
         }
 
-        if (property.Function != ValueCombinationFunction.Sum
-            && property.Function != ValueCombinationFunction.Percent)
+        var combinationFunction = property.CombinationFunction ?? ValueCombinationFunction.Default;
+        if (combinationFunction == ValueCombinationFunction.Default)
         {
-            if (description.MinValue?.CompareTo(property.Value) > 0)
+            combinationFunction = description.DefaultCombinationFunction;
+        }
+
+        if (combinationFunction != ValueCombinationFunction.Sum
+            && combinationFunction != ValueCombinationFunction.Percent
+            && int.TryParse(property.Amount, NumberStyles.Integer, CultureInfo.InvariantCulture, out var amount))
+        {
+            var value = (T)Convert.ChangeType(amount, typeof(T), CultureInfo.InvariantCulture);
+            if (description.MinValue?.CompareTo(value) > 0)
             {
                 throw new InvalidOperationException(
                     $"Valued property {property.PropertyName} should be lesser or equal to " +
                     description.MinValue);
             }
 
-            if (description.MaxValue?.CompareTo(property.Value) < 0)
+            if (description.MaxValue?.CompareTo(value) < 0)
             {
                 throw new InvalidOperationException(
                     $"Valued property {property.PropertyName} should be greater or equal to " +

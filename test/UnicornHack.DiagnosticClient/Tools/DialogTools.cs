@@ -79,9 +79,9 @@ public sealed class DialogTools
         => ShowDialog(GameQueryType.PostGameStatistics, [], cancellationToken);
 
     [McpServerTool, Description(
-        "Request a snapshot of the current room map (GameQueryType.RoomMap). Call get_dialog to inspect it.")]
-    public Task<string> show_room_map(CancellationToken cancellationToken = default)
-        => ShowDialog(GameQueryType.RoomMap, [], cancellationToken);
+        "Request a snapshot of the current level map (GameQueryType.LevelMap). Call get_dialog to inspect it.")]
+    public Task<string> show_level_map(CancellationToken cancellationToken = default)
+        => ShowDialog(GameQueryType.LevelMap, [], cancellationToken);
 
     private Task<string> ShowDialog(GameQueryType queryType, int[] arguments, CancellationToken cancellationToken)
         => WrapResult(

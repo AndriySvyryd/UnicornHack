@@ -54,19 +54,25 @@ public class PropertyValueChanges<T1> : IPropertyValueChanges
         _ => throw new IndexOutOfRangeException(nameof(index))
     };
 
+    public object? GetNestedItem(int index) => index switch
+    {
+        0 => _change0.NestedItem,
+        _ => throw new IndexOutOfRangeException(nameof(index))
+    };
+
+    public string? GetNestedPropertyName(int index) => index switch
+    {
+        0 => _change0.NestedPropertyName,
+        _ => throw new IndexOutOfRangeException(nameof(index))
+    };
+
     public T GetValue<T>(int index, ValueType type) => index switch
     {
         0 when _change0 is PropertyValueChange<T> change => type == ValueType.Current
             ? change.NewValue
             : change.OldValue,
-        < 0 or > 0 => throw new IndexOutOfRangeException(nameof(index)),
-        _ => throw new InvalidOperationException(
-            $"{typeof(T).Name} is not compatible with the change type {GetType(index)} at position {index}")
-    };
-
-    private Type GetType(int index) => index switch
-    {
-        0 => _change0.GetType().GenericTypeArguments[0],
+        0 => throw new InvalidOperationException(
+            $"{typeof(T).Name} is not compatible with the change type {typeof(T1).Name} at position {index}"),
         _ => throw new IndexOutOfRangeException(nameof(index))
     };
 

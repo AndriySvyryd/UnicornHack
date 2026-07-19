@@ -5,28 +5,12 @@ public static partial class PlayerRaceData
     public static readonly PlayerRace Human = new PlayerRace
     {
         Name = "human",
-        Species = Species.Human,
-        Abilities = new HashSet<Ability>
+        SpeciesClass = SpeciesClass.Humanoid,
+        Effects = new Dictionary<int, IReadOnlyList<Effect>>
         {
-            new Ability
             {
-                Name = "human innate",
-                Activation = ActivationType.Always,
-                Effects = new List<Effect>
-                {
-                    new ChangeProperty<bool> { PropertyName = "Infravisible", Value = true },
-                    new ChangeProperty<TorsoType> { PropertyName = "TorsoType", Value = TorsoType.Humanoid, Function = ValueCombinationFunction.Override },
-                    new ChangeProperty<ExtremityType> { PropertyName = "UpperExtremities", Value = ExtremityType.GraspingFingers, Function = ValueCombinationFunction.Override },
-                    new ChangeProperty<ExtremityType> { PropertyName = "LowerExtremities", Value = ExtremityType.Fingers, Function = ValueCombinationFunction.Override },
-                    new ChangeProperty<int> { PropertyName = "Size", Value = 6, Function = ValueCombinationFunction.MeanRoundUp }
-                }
-            },
-            new Ability
-            {
-                Name = "Surge of Luck ability",
-                Activation = ActivationType.WhileAboveLevel,
-                ActivationCondition = 3,
-                Effects = new List<Effect>
+                3,
+                new List<Effect>
                 {
                     new AddAbility
                     {
@@ -36,13 +20,16 @@ public static partial class PlayerRaceData
                             Activation = ActivationType.WhileToggled,
                             Cooldown = 200,
                             EnergyPointCost = 50,
-                            Effects = new List<Effect> { new ChangeProperty<int> { PropertyName = "HitPointMaximum", Value = 25 } }
+                            Effects = new List<Effect> { new ChangeProperty<int> { Amount = "25", PropertyName = "HitPointMaximum" } }
                         }
                     }
                 }
             }
         },
-        SkillPointRate = 3,
-        TraitPointRate = 3
+        Size = 6,
+        TorsoType = TorsoType.Humanoid,
+        UpperExtremities = ExtremityType.GraspingFingers,
+        LowerExtremities = ExtremityType.Fingers,
+        Infravisible = true
     };
 }

@@ -6,11 +6,13 @@ public readonly struct EntityChange<TEntity>
     public EntityChange(
         TEntity entity,
         IPropertyValueChanges? propertyChanges = null,
-        Component? removedComponent = null)
+        Component? removedComponent = null,
+        Component? addedComponent = null)
     {
         Entity = entity;
         PropertyChanges = propertyChanges ?? PropertyValueChanges.Instance;
         RemovedComponent = removedComponent;
+        AddedComponent = addedComponent;
     }
 
     public TEntity Entity
@@ -24,6 +26,11 @@ public readonly struct EntityChange<TEntity>
     }
 
     public Component? RemovedComponent
+    {
+        get;
+    }
+
+    public Component? AddedComponent
     {
         get;
     }

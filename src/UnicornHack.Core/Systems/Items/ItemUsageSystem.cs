@@ -57,6 +57,12 @@ public class ItemUsageSystem : IGameSystem<EquipItemMessage>
         equippedMessage.OldSlot = item.EquippedSlot;
         equippedMessage.SuppressLog = message.SuppressLog;
 
+        if (!message.Force
+            && !message.ActorEntity.Being!.CanMoveItems)
+        {
+            return equippedMessage;
+        }
+
         switch (message.Slot)
         {
             case EquipmentSlot.None:
@@ -176,9 +182,9 @@ public class ItemUsageSystem : IGameSystem<EquipItemMessage>
             if (item.EquippedSlot == EquipmentSlot.None
                 || (!message.Force
                     && item.Abilities.Select(a => a.Ability!)
-                        .Any(a => a.CooldownTick != null
-                                  || a.CooldownXpLeft != null
-                                  || (a.Activation & ActivationType.Slottable) != 0 && a.IsActive)))
+                            .Any(a => a.CooldownTick != null
+                                      || a.CooldownXpLeft != null
+                                      || (a.Activation & ActivationType.Slottable) != 0 && a.IsActive)))
             {
                 return equippedMessage;
             }

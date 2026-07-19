@@ -19,7 +19,7 @@ public sealed class TurnChangeSetFormatter : IMessagePackFormatter<TurnChangeSet
         var resolver = options.Resolver;
         writer.WriteArrayHeader(2);
         resolver.GetFormatterWithVerify<PlayerChange?>().Serialize(ref writer, value.PlayerState, options);
-        resolver.GetFormatterWithVerify<List<object?>?>().Serialize(ref writer, value.Events, options);
+        resolver.GetFormatterWithVerify<List<TurnEvent>?>().Serialize(ref writer, value.Events, options);
     }
 
     public TurnChangeSet? Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
@@ -42,7 +42,7 @@ public sealed class TurnChangeSetFormatter : IMessagePackFormatter<TurnChangeSet
                         .Deserialize(ref reader, options)!;
                     break;
                 case 1:
-                    result.Events = resolver.GetFormatterWithVerify<List<object?>?>()
+                    result.Events = resolver.GetFormatterWithVerify<List<TurnEvent>?>()
                         .Deserialize(ref reader, options);
                     break;
                 default:

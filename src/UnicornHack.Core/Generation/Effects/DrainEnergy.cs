@@ -1,16 +1,19 @@
 using CSharpScriptSerialization;
-using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
 
-public class DrainEnergy : AmountEffect
+public class DrainEnergy : ResistedEffect
 {
-    protected override void ConfigureEffect(EffectComponent effect)
-    {
-        base.ConfigureEffect(effect);
+    private static readonly EffectMetadata _metadata = EffectMetadata.Resource(
+            EffectType.DrainEnergy, nameof(Systems.Beings.BeingComponent.VoidResistance),
+            resourceProperty: nameof(Systems.Beings.BeingComponent.EnergyPoints),
+            restoresActivator: true,
+            defaultAmount: "10*FocusModifier()");
 
-        effect.EffectType = EffectType.DrainEnergy;
-    }
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void RegisterMetadataProvider() => _ = _metadata;
+
+    public override EffectMetadata Metadata => _metadata;
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<DrainEnergy>(GetPropertyConditions<DrainEnergy>());

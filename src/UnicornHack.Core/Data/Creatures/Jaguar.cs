@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Jaguar = new Creature
     {
         Name = "jaguar",
-        Species = Species.BigCat,
         SpeciesClass = SpeciesClass.Feline,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "jaguar ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,10 +20,16 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "50*MightModifier()" } }
+                Effects = new List<Effect>
+                {
+                    new PhysicalDamage { Amount = "50*MightModifier()" },
+                    new BleedDamage { Duration = EffectDuration.UntilTimeout, Amount = "15*MightModifier()" }
+                }
             },
             new Ability
             {
+                Name = "jaguar ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -31,10 +38,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "20*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "20*MightModifier()" } }
             },
             new Ability
             {
+                Name = "jaguar ability #3",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -43,7 +52,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "20*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "20*MightModifier()" } }
             }
         },
         InitialLevel = 4,
@@ -52,10 +61,10 @@ public static partial class CreatureData
         Weight = 600,
         MovementDelay = -20,
         TurningDelay = -20,
-        Perception = -7,
-        Might = -8,
-        Speed = -7,
-        Focus = -8,
+        PerceptionBonus = -7,
+        MightBonus = -8,
+        SpeedBonus = -7,
+        FocusBonus = -8,
         Armor = 2,
         TorsoType = TorsoType.Quadruped,
         UpperExtremities = ExtremityType.None,

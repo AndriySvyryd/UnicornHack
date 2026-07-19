@@ -1,4 +1,5 @@
-﻿using UnicornHack.Systems.Effects;
+﻿using System.Reflection;
+using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation;
 
@@ -6,13 +7,14 @@ namespace UnicornHack.Generation;
 ///     Indicates a property that can have its value affected by an <see cref="EffectComponent" />
 /// </summary>
 [AttributeUsage(AttributeTargets.Property)]
-public sealed class PropertyAttribute : Attribute
+public abstract class PropertyAttribute : Attribute
 {
-    public bool IsCalculated
+    /// <summary>The function used when a property effect specifies <see cref="ValueCombinationFunction.Default" />.</summary>
+    public ValueCombinationFunction DefaultCombinationFunction
     {
         get;
         set;
-    } = true;
+    } = ValueCombinationFunction.Sum;
 
     public object? MinValue
     {
@@ -30,5 +32,25 @@ public sealed class PropertyAttribute : Attribute
     {
         get;
         set;
+    }
+
+    internal abstract PropertyDescription CreateDescription(
+        PropertyInfo property, ComponentAttribute componentAttribute);
+}
+
+public sealed class PropertyAttribute<T> : PropertyAttribute
+    where T : struct
+{
+    internal override PropertyDescription CreateDescription(
+        PropertyInfo property, ComponentAttribute componentAttribute)
+    {
+        if (property.PropertyType != typeof(T))
+        {
+            throw new InvalidOperationException(
+                $"Property '{property.DeclaringType?.Name}.{property.Name}' has type"
+                + $" '{property.PropertyType}', but its attribute declares '{typeof(T)}'.");
+        }
+
+        return PropertyDescription<T>.Create(property, this, componentAttribute);
     }
 }

@@ -9,9 +9,9 @@ public static partial class CreatureData
         GenerationWeight = "0",
         GenerationFlags = CreatureGenerationFlags.NonGenocidable | CreatureGenerationFlags.NonPolymorphable,
         Weight = 0,
-        Perception = -9,
-        Might = -9,
-        Speed = -9,
-        Focus = -9
+        PerceptionBonus = -9,
+        MightBonus = -9,
+        SpeedBonus = -9,
+        FocusBonus = -9
     };
 }

@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Barghest = new Creature
     {
         Name = "barghest",
-        Species = Species.Dog,
         SpeciesClass = SpeciesClass.Canine | SpeciesClass.ShapeChanger,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "barghest ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "70*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "70*MightModifier()" } }
             },
             new Ability
             {
+                Name = "barghest ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -31,7 +34,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "50*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "50*MightModifier()" } }
             }
         },
         InitialLevel = 9,
@@ -41,10 +44,10 @@ public static partial class CreatureData
         Weight = 1200,
         MovementDelay = -25,
         TurningDelay = -25,
-        Perception = -5,
-        Might = -6,
-        Speed = -5,
-        Focus = -6,
+        PerceptionBonus = -5,
+        MightBonus = -6,
+        SpeedBonus = -5,
+        FocusBonus = -6,
         Armor = 4,
         MagicResistance = 10,
         TorsoType = TorsoType.Quadruped,

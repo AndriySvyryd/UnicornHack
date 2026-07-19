@@ -2,7 +2,6 @@ using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
-using UnicornHack.Systems.Senses;
 
 namespace UnicornHack.Utils.MessagingECS;
 
@@ -47,7 +46,7 @@ public class CollectionEntityRelationshipTest
             }
         }
 
-        Assert.Equal(1, manager.Queue.QueuedCount);
+        Assert.Equal(0, manager.Queue.QueuedCount);
     }
 
     [Fact]
@@ -75,6 +74,8 @@ public class CollectionEntityRelationshipTest
 
             Assert.Equal(2, manager.Effects.Count);
         }
+
+        manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(0, manager.Abilities.Count);
         Assert.Equal(0, manager.Effects.Count);
@@ -119,7 +120,43 @@ public class CollectionEntityRelationshipTest
 
         manager.IsLoading = false;
 
-        Assert.Equal(1, manager.Queue.QueuedCount);
+        Assert.Equal(0, manager.Queue.QueuedCount);
+    }
+
+    [Fact]
+    public void Removing_a_principal_with_dependents_allows_unrelated_orphans()
+    {
+        var manager = TestHelper.CreateGameManager();
+        manager.IsLoading = true;
+
+        using var orphanEffectReference = manager.CreateEntity();
+        var orphanEffectEntity = orphanEffectReference.Referenced;
+        var orphanEffect = orphanEffectEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
+        orphanEffect.ContainingAbilityId = 4;
+
+        using var abilityReference = manager.CreateEntity();
+        var abilityEntity = abilityReference.Referenced;
+        var ability = abilityEntity.AddComponent<AbilityComponent>((int)EntityComponent.Ability);
+
+        var dependentEffectReference = manager.CreateEntity();
+        var dependentEffectEntity = dependentEffectReference.Referenced;
+        var dependentEffect = dependentEffectEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
+        dependentEffect.ContainingAbilityId = abilityEntity.Id;
+        Assert.Same(dependentEffectEntity, Assert.Single(ability.Effects));
+
+        dependentEffectReference.Dispose();
+        abilityEntity.RemoveComponent(ability);
+
+        Assert.Null(dependentEffectEntity.Effect);
+        Assert.NotNull(orphanEffectEntity.Effect);
+
+        using var orphanPrincipalReference = manager.CreateEntity();
+        var orphanPrincipal = orphanPrincipalReference.Referenced;
+        orphanPrincipal.AddComponent<AbilityComponent>((int)EntityComponent.Ability);
+        Assert.Equal(4, orphanPrincipal.Id);
+        Assert.Same(orphanEffectEntity, Assert.Single(orphanPrincipal.Ability!.Effects));
+
+        manager.IsLoading = false;
     }
 
     [Fact]
@@ -139,7 +176,7 @@ public class CollectionEntityRelationshipTest
 
         manager.IsLoading = false;
 
-        Assert.Equal(1, manager.Queue.QueuedCount);
+        Assert.Equal(0, manager.Queue.QueuedCount);
     }
 
     [Fact]
@@ -152,14 +189,12 @@ public class CollectionEntityRelationshipTest
             var being = containerEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
             var physical = containerEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
             var item = containerEntity.AddComponent<ItemComponent>((int)EntityComponent.Item);
-            var sensor = containerEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
+            containerEntity.AddComponent<ActiveEffectsComponent>((int)EntityComponent.ActiveEffects);
 
-            Assert.Same(sensor.Items, item.Items);
-            Assert.Same(sensor.Items, physical.Items);
+            Assert.Same(item.Items, physical.Items);
             Assert.Same(physical.Items, being.Items);
 
-            Assert.Same(sensor.Abilities, item.Abilities);
-            Assert.Same(sensor.Abilities, physical.Abilities);
+            Assert.Same(item.Abilities, physical.Abilities);
             Assert.Same(physical.Abilities, being.Abilities);
         }
     }

@@ -50,7 +50,33 @@ public abstract class EntityIndexBase<TEntity, TKey> : IEntityChangeListener<TEn
 
     void IEntityChangeListener<TEntity>.OnPropertyValuesChanged(in EntityChange<TEntity> entityChange)
     {
-        Debug.Assert(entityChange.RemovedComponent == null);
+        if (entityChange.AddedComponent != null
+            || entityChange.RemovedComponent != null)
+        {
+            var hasOldKey = KeyValueGetter.TryGetKey(
+                entityChange, ValueType.PreferOld, out var componentOldKey);
+            var hasCurrentKey = KeyValueGetter.TryGetKey(
+                entityChange, ValueType.Current, out var componentCurrentKey);
+            if (hasOldKey == hasCurrentKey
+                && (!hasOldKey
+                    || EqualityComparer<TKey>.Default.Equals(componentOldKey, componentCurrentKey)))
+            {
+                return;
+            }
+
+            using var componentChangeReference = entityChange.Entity.AddReference(this);
+            if (hasOldKey)
+            {
+                TryRemoveEntity(componentOldKey, entityChange);
+            }
+
+            if (hasCurrentKey)
+            {
+                TryAddEntity(componentCurrentKey, entityChange);
+            }
+
+            return;
+        }
 
         var keyValueChanged = false;
         var changes = entityChange.PropertyChanges;
@@ -69,6 +95,12 @@ public abstract class EntityIndexBase<TEntity, TKey> : IEntityChangeListener<TEn
                 break;
             }
         }
+
+        // Keep the entity alive across the remove-then-add processing below - a primary-key move handled
+        // here, or a secondary-key/cell move handled by the subclass. When an index/relationship is the
+        // entity's only anchor (keepDependentAlive), the remove would otherwise drop its last reference and
+        // reclaim it before it is re-added.
+        using var reference = entityChange.Entity.AddReference(this);
 
         if (!keyValueChanged)
         {

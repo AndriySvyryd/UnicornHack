@@ -5,17 +5,19 @@ public static partial class ItemData
     public static readonly Item Dagger = new Item
     {
         Name = "dagger",
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "dagger ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.OnMeleeAttack,
                 Range = 1,
                 Action = AbilityAction.Slash,
                 SuccessCondition = AbilitySuccessCondition.NormalAttack,
                 Accuracy = "5+RequirementsModifier()",
                 Delay = "100*RequirementsModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "40*RequirementsModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "40*RequirementsModifier()" } }
             }
         },
         Type = ItemType.WeaponMeleeShort,

@@ -5,22 +5,7 @@ public static partial class CreatureData
     public static readonly Creature BoggartShaman = new Creature
     {
         Name = "boggart shaman",
-        Species = Species.Boggart,
-        Abilities = new HashSet<Ability>
-        {
-            new Ability
-            {
-                Activation = ActivationType.Targeted,
-                Trigger = ActivationType.OnRangedAttack,
-                Range = 20,
-                Action = AbilityAction.Spell,
-                SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                Accuracy = "5+PerceptionModifier()",
-                Cooldown = 100,
-                Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new ScriptedEffect { Script = "ArcaneSpell" } }
-            }
-        },
+        SpeciesClass = SpeciesClass.Humanoid,
         InitialLevel = 3,
         GenerationWeight = "5",
         Behavior = AIBehavior.GoldCollector | AIBehavior.MagicUser,
@@ -28,10 +13,10 @@ public static partial class CreatureData
         Weight = 1000,
         MovementDelay = 33,
         TurningDelay = 33,
-        Perception = -8,
-        Might = -8,
-        Speed = -8,
-        Focus = -8,
+        PerceptionBonus = -8,
+        MightBonus = -8,
+        SpeedBonus = -8,
+        FocusBonus = -8,
         MagicResistance = 5,
         TorsoType = TorsoType.Humanoid,
         UpperExtremities = ExtremityType.GraspingFingers,

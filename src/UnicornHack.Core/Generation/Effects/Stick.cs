@@ -1,16 +1,20 @@
 using CSharpScriptSerialization;
-using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
 
-public class Stick : DurationEffect
+public class Stick : ResistedEffect
 {
-    protected override void ConfigureEffect(EffectComponent effect)
-    {
-        base.ConfigureEffect(effect);
+    private static readonly EffectMetadata _metadata = EffectMetadata.Default(
+            EffectType.Stick, AbilityData.Stuck.Name,
+            statusCategory: StatusCategory.Physical,
+            resistanceProperty: nameof(Systems.Beings.BeingComponent.StickResistance),
+            statusAbilityDuration: "100*MightModifier()",
+            defaultAmount: "400*MightModifier()");
 
-        effect.EffectType = EffectType.Stick;
-    }
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void RegisterMetadataProvider() => _ = _metadata;
+
+    public override EffectMetadata Metadata => _metadata;
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<Stick>(GetPropertyConditions<Stick>());

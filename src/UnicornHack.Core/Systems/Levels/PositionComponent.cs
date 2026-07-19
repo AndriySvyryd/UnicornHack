@@ -3,15 +3,13 @@
 namespace UnicornHack.Systems.Levels;
 
 [Component(Id = (int)EntityComponent.Position)]
-public class PositionComponent : GameComponent, IKeepAliveComponent
+public class PositionComponent : GameComponent
 {
     private GameEntity? _roomEntity;
     private int _levelId;
-    private byte _cellX;
-    private byte _cellY;
+    private byte? _cellX;
+    private byte? _cellY;
     private Direction? _heading;
-    private int _movementDelay;
-    private int _turningDelay;
 
     public PositionComponent()
     {
@@ -43,25 +41,33 @@ public class PositionComponent : GameComponent, IKeepAliveComponent
         }
     }
 
-    public byte CellX
+    public byte? CellX
     {
         get => _cellX;
         set => SetWithNotify(value, ref _cellX);
     }
 
-    public byte CellY
+    public byte? CellY
     {
         get => _cellY;
         set => SetWithNotify(value, ref _cellY);
     }
 
-    public Point Cell
+    /// <summary>
+    ///     The cell within <see cref="RoomEntity" /> the entity occupies, or <c>null</c> when it is in the
+    ///     room but not at a cell of its own, such as an item carried inside a container. Such
+    ///     an entity keeps its <see cref="PositionComponent" /> (with <see cref="RoomId" /> tracking its
+    ///     holder's room) but is excluded from the room's by-cell actor/item indexes.
+    /// </summary>
+    public Point? Cell
     {
-        get => new(CellX, CellY);
+        get => _cellX is { } x && _cellY is { } y ? new Point(x, y) : null;
         set
         {
-            var levelXSet = NotifyChanging(value.X, ref _cellX, nameof(CellX), out var oldLevelX);
-            var levelYSet = NotifyChanging(value.Y, ref _cellY, nameof(CellY), out var oldLevelY);
+            var newX = value?.X;
+            var newY = value?.Y;
+            var levelXSet = NotifyChanging(newX, ref _cellX, nameof(CellX), out var oldLevelX);
+            var levelYSet = NotifyChanging(newY, ref _cellY, nameof(CellY), out var oldLevelY);
 
             if (Entity == null!)
             {
@@ -69,20 +75,20 @@ public class PositionComponent : GameComponent, IKeepAliveComponent
             }
 
             var anyChanges = false;
-            var cellXChange = PropertyValueChange<byte>.Empty;
+            var cellXChange = PropertyValueChange<byte?>.Empty;
             if (levelXSet)
             {
                 anyChanges = true;
                 NotifyChanged(nameof(CellX));
-                cellXChange = new PropertyValueChange<byte>(this, nameof(CellX), oldLevelX, value.X);
+                cellXChange = new PropertyValueChange<byte?>(this, nameof(CellX), oldLevelX, newX);
             }
 
-            var cellYChange = PropertyValueChange<byte>.Empty;
+            var cellYChange = PropertyValueChange<byte?>.Empty;
             if (levelYSet)
             {
                 anyChanges = true;
                 NotifyChanged(nameof(CellY));
-                cellYChange = new PropertyValueChange<byte>(this, nameof(CellY), oldLevelY, value.Y);
+                cellYChange = new PropertyValueChange<byte?>(this, nameof(CellY), oldLevelY, newY);
             }
 
             if (anyChanges)
@@ -98,19 +104,11 @@ public class PositionComponent : GameComponent, IKeepAliveComponent
         set => SetWithNotify(value, ref _heading);
     }
 
-    [Property(MinValue = 0)]
-    public int MovementDelay
-    {
-        get => _movementDelay;
-        set => SetWithNotify(value, ref _movementDelay);
-    }
+    [Property<int>(MinValue = 0)]
+    public int MovementDelay => Entity.ActiveEffects!.ResolveInt(nameof(MovementDelay));
 
-    [Property(MinValue = 0)]
-    public int TurningDelay
-    {
-        get => _turningDelay;
-        set => SetWithNotify(value, ref _turningDelay);
-    }
+    [Property<int>(MinValue = 0)]
+    public int TurningDelay => Entity.ActiveEffects!.ResolveInt(nameof(TurningDelay));
 
     public GameEntity? Knowledge
     {
@@ -142,20 +140,20 @@ public class PositionComponent : GameComponent, IKeepAliveComponent
             levelIdChange = new PropertyValueChange<int>(this, nameof(RoomId), oldRoomId, levelId);
         }
 
-        var cellXChange = PropertyValueChange<byte>.Empty;
+        var cellXChange = PropertyValueChange<byte?>.Empty;
         if (cellXSet)
         {
             anyChanges = true;
             NotifyChanged(nameof(CellX));
-            cellXChange = new PropertyValueChange<byte>(this, nameof(CellX), oldCellX, levelCell.X);
+            cellXChange = new PropertyValueChange<byte?>(this, nameof(CellX), oldCellX, levelCell.X);
         }
 
-        var cellYChange = PropertyValueChange<byte>.Empty;
+        var cellYChange = PropertyValueChange<byte?>.Empty;
         if (cellYSet)
         {
             anyChanges = true;
             NotifyChanged(nameof(CellY));
-            cellYChange = new PropertyValueChange<byte>(this, nameof(CellY), oldCellY, levelCell.Y);
+            cellYChange = new PropertyValueChange<byte?>(this, nameof(CellY), oldCellY, levelCell.Y);
         }
 
         if (anyChanges)
@@ -172,8 +170,6 @@ public class PositionComponent : GameComponent, IKeepAliveComponent
         _cellX = default;
         _cellY = default;
         _heading = default;
-        _movementDelay = default;
-        _turningDelay = default;
         Knowledge = default;
 
         base.Clean();

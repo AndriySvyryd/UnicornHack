@@ -5,11 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Gargoyle = new Creature
     {
         Name = "gargoyle",
-        Species = Species.Gargoyle,
-        Abilities = new HashSet<Ability>
+        SpeciesClass = SpeciesClass.Construct,
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "gargoyle ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -18,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "70*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "70*MightModifier()" } }
             },
             new Ability
             {
+                Name = "gargoyle ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -30,10 +34,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "70*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "70*MightModifier()" } }
             },
             new Ability
             {
+                Name = "gargoyle ability #3",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -42,7 +48,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "50*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "50*MightModifier()" } }
             }
         },
         InitialLevel = 6,
@@ -52,12 +58,13 @@ public static partial class CreatureData
         Weight = 1000,
         MovementDelay = 20,
         TurningDelay = 20,
-        Perception = -6,
-        Might = -6,
-        Speed = -6,
-        Focus = -6,
+        PerceptionBonus = -6,
+        MightBonus = -6,
+        SpeedBonus = -6,
+        FocusBonus = -6,
         Armor = 7,
-        StoningImmune = true,
+        SedateResistance = 50,
+        SuffocateResistance = 100,
         TorsoType = TorsoType.Humanoid,
         UpperExtremities = ExtremityType.GraspingFingers,
         LowerExtremities = ExtremityType.Fingers,

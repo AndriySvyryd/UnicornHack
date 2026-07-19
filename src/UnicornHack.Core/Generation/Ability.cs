@@ -1,5 +1,4 @@
 using CSharpScriptSerialization;
-using UnicornHack.Data.Abilities;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Utils.DataLoading;
 
@@ -10,6 +9,7 @@ public class Ability : ILoadable, ICSScriptSerializable
     private Func<GameEntity, GameEntity, float>? _accuracyFunction;
     private Func<GameEntity, GameEntity, float>? _delayFunction;
     private IReadOnlyList<Effect>? _effects;
+    private ActivationType? _activation;
 
     public string Name
     {
@@ -17,18 +17,16 @@ public class Ability : ILoadable, ICSScriptSerializable
         set;
     } = null!;
 
-    // TODO: Move to LanguageService
-    public string? EnglishDescription
-    {
-        get;
-        set;
-    }
-
     public AbilityType Type
     {
         get;
         set;
     }
+
+    public virtual int MaxLevel => 1;
+
+    public virtual bool ShouldCreateCarrier(int firstLevel, int lastLevel, int effectiveLevel)
+        => firstLevel <= MaxLevel;
 
     public int Cost
     {
@@ -38,9 +36,16 @@ public class Ability : ILoadable, ICSScriptSerializable
 
     public ActivationType Activation
     {
-        get;
-        set;
+        get => _activation ?? GetDefaultActivation(Type);
+        set => _activation = value;
     }
+
+    private static ActivationType GetDefaultActivation(AbilityType type)
+        => type.IsStatusLike()
+           || type.IsAdaptation()
+           || type is AbilityType.Skill or AbilityType.Faith or AbilityType.Race or AbilityType.Innate
+                ? ActivationType.Always
+                : ActivationType.Default;
 
     public int? ActivationCondition
     {
@@ -96,6 +101,12 @@ public class Ability : ILoadable, ICSScriptSerializable
         set;
     }
 
+    public int? Noise
+    {
+        get;
+        set;
+    }
+
     public AbilitySuccessCondition SuccessCondition
     {
         get;
@@ -118,8 +129,8 @@ public class Ability : ILoadable, ICSScriptSerializable
     }
 
     /// <summary>
-    ///     Amount of experience points adjusted by level depth that a player need to gain after the
-    ///     ability has been used or deactivated before it can be used again.
+    ///     Absolute experience points a player must gain after the ability is used or deactivated before
+    ///     it can be used again.
     /// </summary>
     public int XPCooldown
     {
@@ -140,7 +151,7 @@ public class Ability : ILoadable, ICSScriptSerializable
     }
 
     [MaybeNull]
-    public IReadOnlyList<Effect> Effects
+    public virtual IReadOnlyList<Effect> Effects
     {
         get => _effects;
         set
@@ -153,8 +164,13 @@ public class Ability : ILoadable, ICSScriptSerializable
         }
     }
 
-    public virtual AbilityComponent AddToEffect(GameEntity effectEntity, int level = 0)
+    public AbilityComponent CreateAbility(GameEntity effectEntity, int level)
     {
+        if (string.IsNullOrWhiteSpace(Name))
+        {
+            throw new InvalidOperationException("An ability must have a name before it can be instantiated.");
+        }
+
         var manager = effectEntity.Manager;
         var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
         ability.Name = Name;
@@ -168,6 +184,7 @@ public class Ability : ILoadable, ICSScriptSerializable
         ability.TargetingShapeSize = TargetingShapeSize;
         ability.TargetingShape = TargetingShape;
         ability.Action = Action;
+        ability.Noise = Noise;
         ability.SuccessCondition = SuccessCondition;
         ability.Accuracy = Accuracy;
         ability.Cooldown = Cooldown;
@@ -192,27 +209,56 @@ public class Ability : ILoadable, ICSScriptSerializable
         }
 
         effectEntity.Ability = ability;
-        AddEffects(Effects, ability, manager);
-
         return ability;
     }
 
-    protected static void AddEffects(IReadOnlyList<Effect>? effects, AbilityComponent ability, GameManager manager)
+    public virtual AbilityComponent? AddToEffect(
+        GameEntity effectEntity, int firstLevel = 0, int lastLevel = 0,
+        string? propagatedAmount = null, string? propagatedSecondaryAmount = null)
+    {
+        firstLevel = firstLevel == 0 ? 1 : firstLevel;
+        lastLevel = lastLevel == 0 ? MaxLevel : lastLevel;
+        if (firstLevel <= 0
+            || firstLevel > lastLevel)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(firstLevel), $"Invalid level range {firstLevel}..{lastLevel} for {Name}.");
+        }
+
+        if (firstLevel > 1)
+        {
+            return null;
+        }
+
+        var ability = CreateAbility(effectEntity, lastLevel);
+        AddEffects(Effects, ability, effectEntity.Manager, propagatedAmount, propagatedSecondaryAmount);
+        return ability;
+    }
+
+    protected static void AddEffects(
+        IReadOnlyList<Effect>? effects, AbilityComponent ability, GameManager manager,
+        string? propagatedAmount = null, string? propagatedSecondaryAmount = null)
     {
         if (effects != null)
         {
             foreach (var effect in effects)
             {
-                effect.AddToAbility(ability, manager);
+                effect.ContainingAbility = ability.Template!;
+                effect.AddToAbility(
+                    ability, manager,
+                    effect.Amount == Effect.PropagatedAmountPlaceholder
+                        ? propagatedAmount
+                        : null,
+                    propagatedSecondaryAmount);
             }
         }
     }
 
-    public AbilityComponent AddToAffectable(GameEntity affectableEntity, int level = 0)
+    public AbilityComponent AddToAffectable(GameEntity affectableEntity, int level = 1)
     {
         var manager = affectableEntity.Manager;
         using var abilityEntityReference = manager.CreateEntity();
-        var ability = AddToEffect(abilityEntityReference.Referenced, level);
+        var ability = AddToEffect(abilityEntityReference.Referenced, 1, level)!;
         ability.OwnerId = affectableEntity.Id;
 
         return ability;
@@ -228,10 +274,9 @@ public class Ability : ILoadable, ICSScriptSerializable
         where TAbility : Ability => new()
     {
         { nameof(Name), (_, v) => v != default },
-        { nameof(EnglishDescription), (_, v) => v != default },
         { nameof(Type), (_, v) => (AbilityType)v! != default },
         { nameof(Cost), (_, v) => (int)v! != default },
-        { nameof(Activation), (_, v) => (ActivationType)v! != default },
+        { nameof(Activation), (o, v) => (ActivationType)v! != GetDefaultActivation(o.Type) },
         { nameof(ActivationCondition), (_, v) => v != default },
         { nameof(ItemCondition), (_, v) => (ActivationType)v! != default },
         { nameof(Trigger), (_, v) => (ActivationType)v! != default },
@@ -241,6 +286,7 @@ public class Ability : ILoadable, ICSScriptSerializable
         { nameof(TargetingShapeSize), (_, v) => (int)v! != 1 },
         { nameof(TargetingShape), (_, v) => (TargetingShape)v! != default },
         { nameof(Action), (_, v) => (AbilityAction)v! != default },
+        { nameof(Noise), (_, v) => v != null },
         { nameof(SuccessCondition), (_, v) => (AbilitySuccessCondition)v! != default },
         { nameof(Accuracy), (_, v) => v != default },
         { nameof(Cooldown), (_, v) => (int)v! != default },

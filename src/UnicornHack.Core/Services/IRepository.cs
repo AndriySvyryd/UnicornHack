@@ -1,3 +1,5 @@
+using UnicornHack.Systems.Levels;
+
 namespace UnicornHack.Services;
 
 public interface IRepository
@@ -7,4 +9,5 @@ public interface IRepository
     void Remove(object entity);
     void RemoveTracked(object entity);
     void LoadRooms(IReadOnlyList<int> roomIds);
+    void DeleteLevel(GameLevel level);
 }

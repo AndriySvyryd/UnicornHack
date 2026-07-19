@@ -6,7 +6,7 @@ namespace UnicornHack.Hubs;
 
 public class SerializationContext
 {
-    public static readonly List<object?> DeletedBitArray = [new BitArray([false])];
+    public static readonly BitArray DeletedBitArray = new(1);
 
     public SerializationContext(GameDbContext dbContext, GameEntity observer, GameServices services)
     {

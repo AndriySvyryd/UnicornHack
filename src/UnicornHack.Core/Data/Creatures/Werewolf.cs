@@ -5,18 +5,20 @@ public static partial class CreatureData
     public static readonly Creature Werewolf = new Creature
     {
         Name = "werewolf",
-        Species = Species.Human,
         SpeciesClass = SpeciesClass.ShapeChanger,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "werewolf ability #1",
                 Activation = ActivationType.OnMeleeAttack,
                 Action = AbilityAction.Modifier,
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "50" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "50*MightModifier()" } }
             },
             new Ability
             {
+                Name = "werewolf ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -25,10 +27,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "10*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage() }
             },
             new Ability
             {
+                Name = "werewolf ability #3",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -37,7 +41,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 250,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new ConferLycanthropy { VariantName = "wolfwere" } }
+                Effects = new List<Effect> { new ConferLycanthropy { CreatureName = "wolfwere" } }
             }
         },
         InitialLevel = 5,
@@ -45,10 +49,10 @@ public static partial class CreatureData
         Behavior = AIBehavior.WeaponCollector,
         Noise = ActorNoiseType.Lycanthrope,
         Weight = 1000,
-        Perception = -7,
-        Might = -8,
-        Speed = -7,
-        Focus = -8,
+        PerceptionBonus = -7,
+        MightBonus = -8,
+        SpeedBonus = -7,
+        FocusBonus = -8,
         Regeneration = 3,
         MagicResistance = 10,
         TorsoType = TorsoType.Humanoid,

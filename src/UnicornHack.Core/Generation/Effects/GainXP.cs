@@ -1,16 +1,17 @@
 using CSharpScriptSerialization;
-using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
 
-public class GainXP : AmountEffect
+public class GainXP : Effect
 {
-    protected override void ConfigureEffect(EffectComponent effect)
-    {
-        base.ConfigureEffect(effect);
+    private static readonly EffectMetadata _metadata = EffectMetadata.Resource(
+        EffectType.GainXP, resourceProperty: nameof(Systems.Beings.BeingComponent.ExperiencePoints),
+        combinationFunction: ValueCombinationFunction.Sum);
 
-        effect.EffectType = EffectType.GainXP;
-    }
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void RegisterMetadataProvider() => _ = _metadata;
+
+    public override EffectMetadata Metadata => _metadata;
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<GainXP>(GetPropertyConditions<GainXP>());

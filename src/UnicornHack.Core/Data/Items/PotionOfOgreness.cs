@@ -5,7 +5,7 @@ public static partial class ItemData
     public static readonly Item PotionOfOgreness = new Item
     {
         Name = "potion of ogreness",
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
@@ -13,7 +13,7 @@ public static partial class ItemData
                 Activation = ActivationType.Manual,
                 Action = AbilityAction.Drink,
                 Delay = "100",
-                Effects = new List<Effect> { new ChangeRace { Duration = EffectDuration.Infinite, RaceName = "ogre" }, new RemoveItem() }
+                Effects = new List<Effect> { new AddAbility { Name = "ogre race" }, new RemoveItem() }
             }
         },
         Type = ItemType.Potion,

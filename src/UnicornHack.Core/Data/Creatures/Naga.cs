@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Naga = new Creature
     {
         Name = "naga",
-        Species = Species.Naga,
         SpeciesClass = SpeciesClass.Aberration,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "naga ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "70*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "70*MightModifier()" } }
             },
             new Ability
             {
+                Name = "naga ability #2",
+                Type = AbilityType.RangedAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnRangedAttack,
                 Range = 20,
@@ -31,7 +34,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Corrode { Damage = "70*MightModifier()" } }
+                Effects = new List<Effect> { new Corrode() }
             }
         },
         InitialLevel = 8,
@@ -41,14 +44,13 @@ public static partial class CreatureData
         Weight = 1500,
         MovementDelay = -15,
         TurningDelay = -15,
-        Perception = -5,
-        Might = -6,
-        Speed = -5,
-        Focus = -6,
+        PerceptionBonus = -5,
+        MightBonus = -6,
+        SpeedBonus = -5,
+        FocusBonus = -6,
         Armor = 4,
         MagicResistance = 5,
         AcidResistance = 75,
-        StoningImmune = true,
         TorsoType = TorsoType.Serpentine,
         UpperExtremities = ExtremityType.None,
         LowerExtremities = ExtremityType.None,

@@ -1,5 +1,4 @@
 ﻿using UnicornHack.Systems.Beings;
-using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Utils.MessagingECS;
 
@@ -14,18 +13,6 @@ public partial class GameManager
         private set;
     } = null!;
 
-    public EntityGroup<GameEntity> Races
-    {
-        get;
-        private set;
-    } = null!;
-
-    public CollectionEntityRelationship<GameEntity, HashSet<GameEntity>> RacesToBeingRelationship
-    {
-        get;
-        private set;
-    } = null!;
-
     public LivingSystem LivingSystem
     {
         get;
@@ -34,25 +21,11 @@ public partial class GameManager
 
     private void InitializeBeings(SequentialMessageQueue<GameManager> queue)
     {
-        Add<BeingComponent>(EntityComponent.Being, poolSize: 64, maxPoolSize: 512);
-        Add<PhysicalComponent>(EntityComponent.Physical, poolSize: 64, maxPoolSize: 512);
-        Add<RaceComponent>(EntityComponent.Race, poolSize: 64, maxPoolSize: 512);
+        Add<BeingComponent>(EntityComponent.Being, poolSize: 512, maxPoolSize: 1024);
+        Add<PhysicalComponent>(EntityComponent.Physical, poolSize: 512, maxPoolSize: 1024);
 
         Beings = CreateGroup(nameof(Beings), new EntityMatcher<GameEntity>()
-            .AllOf((int)EntityComponent.Being, (int)EntityComponent.Physical, (int)EntityComponent.Sensor));
-
-        Races = CreateGroup(nameof(Races), new EntityMatcher<GameEntity>()
-            .AllOf((int)EntityComponent.Race, (int)EntityComponent.Effect));
-
-        RacesToBeingRelationship = new(
-            nameof(RacesToBeingRelationship),
-            Races,
-            Beings,
-            new SimpleKeyValueGetter<GameEntity, int>(
-                component => ((EffectComponent)component).AffectedEntityId,
-                (int)EntityComponent.Effect),
-            (raceEntity, _) => raceEntity.RemoveComponent((int)EntityComponent.Race),
-            beingEntity => (HashSet<GameEntity>)beingEntity.Being!.Races);
+            .AllOf((int)EntityComponent.Being, (int)EntityComponent.Physical), capacity: 512);
 
         LivingSystem = new LivingSystem();
         queue.Register<XPGainedMessage>(LivingSystem, XPGainedMessage.Name, 0);
@@ -63,6 +36,10 @@ public partial class GameManager
             Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.HitPointMaximum)), 0);
         queue.Register<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,
             Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.EnergyPointMaximum)), 0);
+        queue.Register<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,
+            Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.ReservedHitPoints)), 0);
+        queue.Register<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,
+            Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.ReservedEnergyPoints)), 0);
         queue.Register<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,
             Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.Focus)), 0);
         queue.Register<PropertyValueChangedMessage<GameEntity, int>>(LivingSystem,

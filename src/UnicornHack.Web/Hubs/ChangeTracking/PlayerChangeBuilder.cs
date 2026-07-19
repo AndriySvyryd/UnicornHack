@@ -9,8 +9,8 @@ namespace UnicornHack.Hubs.ChangeTracking;
 public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
 {
     private readonly int _playerEntityId;
-    private readonly RaceChangeBuilder _raceBuilder;
     private readonly AbilityChangeBuilder _abilityBuilder;
+    private readonly EffectChangeBuilder _effectBuilder;
     private readonly LogChangeBuilder _logBuilder = new();
 
     private PlayerChange _pendingChange = new();
@@ -46,16 +46,22 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
         LastSentRoomId = playerEntity.Position?.RoomId ?? 0;
         RoomChangeBuilder = roomChangeBuilder;
 
-        _raceBuilder = new RaceChangeBuilder(playerEntity.Id);
         _abilityBuilder = new AbilityChangeBuilder(playerEntity.Id);
+        _abilityBuilder.ResetAccumulatorPlaceholders(playerEntity);
+        _effectBuilder = new EffectChangeBuilder(playerEntity.Id);
         _logBuilder.Reset(playerEntity);
     }
 
     public bool HasObservableChanges(GameManager manager)
     {
         var playerEntity = manager.FindEntity(_playerEntityId);
-        if (RoomChangeBuilder.HasChanges(playerEntity?.Position?.RoomEntity.Room)
-            || HasScalarChanges() || _raceBuilder.HasChanges || _abilityBuilder.HasChanges)
+        var position = playerEntity?.Position;
+        // The room the player occupies is tracked so the client keeps the actor list up to date.
+        var currentRoom = position?.RoomEntity.Room;
+        if (RoomChangeBuilder.HasChanges(currentRoom)
+            || HasScalarChanges() || _abilityBuilder.HasChanges
+            || _abilityBuilder.HasAccumulatorChanges
+            || _effectBuilder.HasChanges)
         {
             return true;
         }
@@ -65,8 +71,8 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
             return true;
         }
 
-        // Defensive check: if the player is in a different room, other changes should have been detected before this.
-        var currentRoomId = playerEntity?.Position?.RoomId ?? 0;
+        // A move to a different room is a change even when nothing else is; no position maps to room 0.
+        var currentRoomId = position?.RoomId ?? 0;
         return currentRoomId != LastSentRoomId;
     }
 
@@ -91,13 +97,20 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
         };
         LastSentTick = manager.Game.CurrentTick;
 
-        var currentRoomEntity = playerEntity.Position?.RoomEntity;
+        var position = playerEntity.Position;
+        var currentRoomEntity = position?.RoomEntity;
         var currentRoomId = currentRoomEntity?.Id ?? 0;
-        if (currentRoomId != LastSentRoomId && currentRoomEntity != null)
+        if (currentRoomEntity == null)
+        {
+            // The player has no position at all (e.g. being torn down); there is no room to send.
+            LastSentRoomId = 0;
+        }
+        else if (currentRoomId != LastSentRoomId)
         {
             // Player moved to a different level. Emit a full snapshot.
             change.Room = RoomChangeBuilder.SerializeRoom(
                 currentRoomEntity, new SerializationContext(null!, playerEntity, services));
+            RoomChangeBuilder.ResetActorBaseline(playerEntity);
             LastSentRoomId = currentRoomId;
         }
         else
@@ -110,18 +123,24 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
             }
         }
 
-        if (_raceBuilder.HasChanges)
+        Dictionary<int, AbilityChange>? serializedAbilities = null;
+        if (_abilityBuilder.HasChanges || _abilityBuilder.HasAccumulatorChanges)
         {
-            var serializedRaces = new Dictionary<int, RaceChange>();
-            _raceBuilder.WriteTo(serializedRaces, new SerializationContext(null!, playerEntity, services));
-            change.Races = serializedRaces;
+            serializedAbilities = new Dictionary<int, AbilityChange>();
+            if (_abilityBuilder.HasChanges)
+            {
+                _abilityBuilder.WriteTo(serializedAbilities, new SerializationContext(null!, playerEntity, services));
+            }
+
+            _abilityBuilder.WriteAccumulatorPlaceholdersTo(serializedAbilities, playerEntity);
+            change.Abilities = serializedAbilities;
         }
 
-        if (_abilityBuilder.HasChanges)
+        if (_effectBuilder.HasChanges)
         {
-            var serializedAbilities = new Dictionary<int, AbilityChange>();
-            _abilityBuilder.WriteTo(serializedAbilities, new SerializationContext(null!, playerEntity, services));
-            change.Abilities = serializedAbilities;
+            var effectChanges = new Dictionary<int, EffectChange>();
+            _effectBuilder.WriteTo(effectChanges);
+            change.Effects = effectChanges;
         }
 
         var serializedLog = _logBuilder.GetSerializedLogEntries(playerEntity);
@@ -131,7 +150,7 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
         }
 
         var pendingBits = _pendingChange.ChangedProperties!;
-        if (pendingBits[9])
+        if (pendingBits[5])
         {
             change.NextActionTick = _pendingChange.NextActionTick;
         }
@@ -177,8 +196,9 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
     public void Reset(GameEntity playerEntity)
     {
         _pendingChange = new PlayerChange();
-        _raceBuilder.Reset();
         _abilityBuilder.Reset();
+        _abilityBuilder.ResetAccumulatorPlaceholders(playerEntity);
+        _effectBuilder.Reset();
 
         LastSentRoomId = playerEntity.Position?.RoomId ?? 0;
         _logBuilder.Reset(playerEntity);
@@ -190,24 +210,25 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
         var player = playerEntity.Player!;
         var being = playerEntity.Being!;
 
-        var serializedLevel = RoomChangeBuilder.SerializeRoom(
-            playerEntity.Position!.RoomEntity, context);
-
-        var races = new Dictionary<int, RaceChange>();
-        foreach (var race in being.Races)
-        {
-            var change = RaceChangeBuilder.SerializeRace(race, context.Services);
-            change.ChangedProperties = null;
-            races.Add(race.Id, change);
-        }
+        var position = playerEntity.Position;
+        var onMap = position is { Cell: not null };
+        var serializedLevel = position == null
+            ? null
+            : RoomChangeBuilder.SerializeRoom(position.RoomEntity, context);
 
         var abilities = new Dictionary<int, AbilityChange>();
         foreach (var ability in being.Abilities
                      .Select(a => a.Ability!)
-                     .Where(a => a.Slot != null)
+                     .Where(a => !a.IsLeveledSupplement
+                                 && AbilityChangeBuilder.IsClientVisible(a))
                      .Select(a => a.Entity))
         {
             abilities.Add(ability.Id, AbilityChangeBuilder.SerializeAbility(ability, context.Services));
+        }
+
+        foreach (var (id, placeholder) in AbilityChangeBuilder.GetAccumulatorPlaceholders(playerEntity))
+        {
+            abilities.Add(id, placeholder);
         }
 
         var logEntries = new Dictionary<int, LogEntryChange>();
@@ -222,12 +243,12 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
         {
             ChangedProperties = null,
             Name = player.ProperName,
-            Id = playerEntity.Position.Knowledge!.Id,
+            Id = onMap ? position!.Knowledge?.Id ?? -1 : -1,
             PreviousTick = 0,
             CurrentTick = player.Game.CurrentTick,
             Room = serializedLevel,
-            Races = races,
             Abilities = abilities,
+            Effects = EffectChangeBuilder.SerializeSnapshot(playerEntity),
             Log = logEntries,
             NextActionTick = player.NextActionTick ?? 0,
             XP = being.ExperiencePoints,
@@ -243,15 +264,15 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
     public void RegisterOnGroups(GameManager manager)
     {
         manager.RoomActors.AddListener(this);
-        _raceBuilder.RegisterOnGroups(manager);
         _abilityBuilder.RegisterOnGroups(manager);
+        _effectBuilder.RegisterOnGroups(manager);
     }
 
     public void UnregisterFromGroups(GameManager manager)
     {
         manager.RoomActors.RemoveListener(this);
-        _raceBuilder.UnregisterFromGroups(manager);
         _abilityBuilder.UnregisterFromGroups(manager);
+        _effectBuilder.UnregisterFromGroups(manager);
     }
 
     void IEntityChangeListener<GameEntity>.OnEntityAdded(in EntityChange<GameEntity> entityChange)
@@ -263,14 +284,12 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
     }
 
     void IEntityChangeListener<GameEntity>.OnPropertyValuesChanged(in EntityChange<GameEntity> entityChange)
-    {
-        HandleScalarPropertyChanges(entityChange);
-    }
+        => HandleScalarPropertyChanges(entityChange);
 
     private bool HasScalarChanges()
     {
         var bits = _pendingChange.ChangedProperties!;
-        for (var i = 9; i < PlayerChange.PropertyCount; i++)
+        for (var i = 5; i < PlayerChange.PropertyCount; i++)
         {
             if (bits[i])
             {
@@ -333,6 +352,10 @@ public class PlayerChangeBuilder : IEntityChangeListener<GameEntity>
                         break;
                     case nameof(BeingComponent.EntropyState):
                         _pendingChange.Fortune = entityChange.Entity.Being!.EntropyState;
+                        handled = true;
+                        break;
+                    case nameof(BeingComponent.CanPerceiveIntention):
+                        RoomChangeBuilder.TrackObserverTelegraphVisibility(entityChange.Entity);
                         handled = true;
                         break;
                 }

@@ -5,7 +5,7 @@ public static partial class ItemData
     public static readonly Item PotionOfInhumanity = new Item
     {
         Name = "potion of inhumanity",
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
@@ -13,7 +13,7 @@ public static partial class ItemData
                 Activation = ActivationType.Manual,
                 Action = AbilityAction.Drink,
                 Delay = "100",
-                Effects = new List<Effect> { new ChangeRace { RaceName = "human", Remove = true }, new RemoveItem() }
+                Effects = new List<Effect> { new DecreaseAbilityLevel { Duration = EffectDuration.Instant, AbilityName = "human race" }, new RemoveItem() }
             }
         },
         Type = ItemType.Potion,

@@ -22,21 +22,21 @@ public static class ClientStateHelpers
             MaxEp = data.MaxEp,
             ReservedEp = data.ReservedEp,
             Fortune = data.Fortune,
-            Races = new Dictionary<int, RaceChange>(),
             Abilities = new Dictionary<int, AbilityChange>(),
+            Effects = new Dictionary<int, EffectChange>(),
             Log = new Dictionary<int, LogEntryChange>()
         };
 
         DeserializeLevel(data.Room!, player);
 
-        foreach (var kvp in data.Races!)
-        {
-            ExpandRace(kvp.Key, kvp.Value, player.Races!, isParentAdd: true);
-        }
-
         foreach (var kvp in data.Abilities!)
         {
             ExpandAbility(kvp.Key, kvp.Value, player.Abilities!, isParentAdd: true);
+        }
+
+        foreach (var kvp in data.Effects!)
+        {
+            ExpandEffect(kvp.Key, kvp.Value, player.Effects!, isParentAdd: true);
         }
 
         foreach (var kvp in data.Log!)
@@ -59,6 +59,16 @@ public static class ClientStateHelpers
     {
         var setValues = data.ChangedProperties!;
 
+        if (setValues[1])
+        {
+            player.Name = data.Name;
+        }
+
+        if (setValues[2])
+        {
+            player.Id = data.Id;
+        }
+
         if (setValues[3])
         {
             player.PreviousTick = data.PreviousTick;
@@ -71,6 +81,11 @@ public static class ClientStateHelpers
 
         if (setValues[5])
         {
+            player.NextActionTick = data.NextActionTick;
+        }
+
+        if (setValues[6])
+        {
             if (data.Room!.ChangedProperties != null)
             {
                 ApplyLevelDelta(player, data.Room);
@@ -78,14 +93,6 @@ public static class ClientStateHelpers
             else
             {
                 DeserializeLevel(data.Room, player);
-            }
-        }
-
-        if (setValues[6])
-        {
-            foreach (var kvp in data.Races!)
-            {
-                ExpandRace(kvp.Key, kvp.Value, player.Races!, isParentAdd: false);
             }
         }
 
@@ -99,15 +106,18 @@ public static class ClientStateHelpers
 
         if (setValues[8])
         {
-            foreach (var kvp in data.Log!)
+            foreach (var kvp in data.Effects!)
             {
-                ExpandLogEntry(kvp.Key, kvp.Value, player.Log!, isParentAdd: false);
+                ExpandEffect(kvp.Key, kvp.Value, player.Effects!, isParentAdd: false);
             }
         }
 
         if (setValues[9])
         {
-            player.NextActionTick = data.NextActionTick;
+            foreach (var kvp in data.Log!)
+            {
+                ExpandLogEntry(kvp.Key, kvp.Value, player.Log!, isParentAdd: false);
+            }
         }
 
         if (setValues[10])
@@ -144,6 +154,7 @@ public static class ClientStateHelpers
         {
             player.Fortune = data.Fortune;
         }
+
     }
 
     private static void DeserializeLevel(RoomChange data, PlayerChange player)
@@ -558,8 +569,8 @@ public static class ClientStateHelpers
         }
     }
 
-    public static void ExpandRace(
-        int id, RaceChange data, Dictionary<int, RaceChange> collection, bool isParentAdd)
+    public static void ExpandEffect(
+        int id, EffectChange data, Dictionary<int, EffectChange> collection, bool isParentAdd)
     {
         if (isParentAdd)
         {
@@ -571,7 +582,7 @@ public static class ClientStateHelpers
         if (setValues == null)
         {
             Debug.Assert(!collection.ContainsKey(id),
-                $"Race {id} already exists but received ChangedProperties=null (expected delta with bits set)");
+                $"Effect {id} already exists but received ChangedProperties=null (expected delta with bits set)");
             collection[id] = data;
             return;
         }
@@ -580,7 +591,7 @@ public static class ClientStateHelpers
         {
             if (!collection.TryGetValue(id, out var existing))
             {
-                throw new InvalidOperationException($"Race {id} not found for update");
+                throw new InvalidOperationException($"Effect {id} not found for update");
             }
 
             for (var i = 1; i < setValues.Length; i++)
@@ -593,17 +604,23 @@ public static class ClientStateHelpers
                 switch (i)
                 {
                     case 1:
-                        existing.Name = data.Name;
+                        existing.EffectType = data.EffectType;
                         break;
                     case 2:
-                        existing.ShortName = data.ShortName;
+                        existing.ExpirationTick = data.ExpirationTick;
+                        break;
+                    case 3:
+                        existing.Magnitude = data.Magnitude;
+                        break;
+                    case 4:
+                        existing.InForce = data.InForce;
                         break;
                 }
             }
         }
         else if (!collection.Remove(id))
         {
-            throw new InvalidOperationException($"Race {id} not found for removal");
+            throw new InvalidOperationException($"Effect {id} not found for removal");
         }
     }
 
@@ -663,6 +680,27 @@ public static class ClientStateHelpers
                         break;
                     case 7:
                         existing.TargetingShapeSize = data.TargetingShapeSize;
+                        break;
+                    case 8:
+                        existing.Type = data.Type;
+                        break;
+                    case 9:
+                        existing.Accumulator = data.Accumulator;
+                        break;
+                    case 10:
+                        existing.Level = data.Level;
+                        break;
+                    case 11:
+                        existing.LevelReduction = data.LevelReduction;
+                        break;
+                    case 12:
+                        existing.ExpirationTarget = data.ExpirationTarget;
+                        break;
+                    case 13:
+                        existing.ExpirationEvent = data.ExpirationEvent;
+                        break;
+                    case 14:
+                        existing.Noise = data.Noise;
                         break;
                 }
             }

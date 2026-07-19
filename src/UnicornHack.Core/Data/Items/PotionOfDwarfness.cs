@@ -5,7 +5,7 @@ public static partial class ItemData
     public static readonly Item PotionOfDwarfness = new Item
     {
         Name = "potion of dwarfness",
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
@@ -13,12 +13,11 @@ public static partial class ItemData
                 Activation = ActivationType.Manual,
                 Action = AbilityAction.Drink,
                 Delay = "100",
-                Effects = new List<Effect> { new ChangeRace { Duration = EffectDuration.Infinite, RaceName = "dwarf" }, new RemoveItem() }
+                Effects = new List<Effect> { new AddAbility { Name = "dwarf race" }, new RemoveItem() }
             }
         },
         Type = ItemType.Potion,
         GenerationWeight = "2",
-        Material = Material.Glass,
-        Weight = 1
+        Material = Material.Glass
     };
 }

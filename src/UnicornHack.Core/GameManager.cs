@@ -14,7 +14,7 @@ public partial class GameManager :
 
     public GameManager()
         : base((int)EntityComponent.ComponentCount,
-         entityPoolSize: 1024, entityMaxPoolSize: 16384, entityDictionaryCapacity: 16384)
+         entityPoolSize: 8192, entityMaxPoolSize: 16384, entityDictionaryCapacity: 16384)
     {
         _componentPropertyNames = new string[(int)EntityComponent.ComponentCount];
     }
@@ -133,7 +133,7 @@ public partial class GameManager :
     /// </summary>
     private static void RemoveAllComponents(GameEntity entity)
     {
-        for (var componentId = (int)EntityComponent.Knowledge; componentId >= 0; componentId--)
+        for (var componentId = (int)EntityComponent.ComponentCount - 1; componentId >= 0; componentId--)
         {
             if (entity.Id == 0)
             {

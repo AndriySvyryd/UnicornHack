@@ -1,5 +1,6 @@
 ﻿using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
+using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
@@ -16,6 +17,27 @@ public class PlayerSystem :
 {
     public MessageProcessingResult Process(PerformActionMessage message, GameManager manager)
     {
+        var player = message.Actor.Player!;
+        ProcessTimedEffects(message.Actor, player, manager);
+        if (!message.Actor.Being!.IsAlive)
+        {
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        if (!CanAct(message.Actor, manager))
+        {
+            if (EffectApplicationSystem.GetAbilitiesAffectingProperty(
+                    message.Actor, nameof(BeingComponent.UnableToActPercent), AbilityType.Status)
+                .FirstOrDefault() is { } statusAbility)
+            {
+                manager.LoggingSystem.WriteLog(
+                    manager.Game.Services.Language.StatusPreventsAction(statusAbility), message.Actor, manager);
+            }
+            ResetNextAction(player);
+            player.NextActionTick += TimeSystem.DefaultActionDelay;
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
         if (!ProcessTurn(message, manager))
         {
             manager.Game.ActingPlayer = message.Actor;
@@ -41,6 +63,8 @@ public class PlayerSystem :
             return false;
         }
 
+        var performedAction = action.Value;
+
         if (!player.QueuedAction)
         {
             player.CommandHistory.Add(new PlayerCommand
@@ -49,16 +73,54 @@ public class PlayerSystem :
                 Id = ++playerEntity.Game.NextCommandId,
                 PlayerId = playerEntity.Id,
                 Tick = manager.Game.CurrentTick,
-                Action = action.Value,
+                Action = performedAction,
                 Target = target,
                 Target2 = target2
             });
         }
 
+        if (!IsAllowedWhileTaunted(playerEntity, performedAction))
+        {
+            if (manager.AffectableAbilitiesIndex[
+                    (playerEntity.Id, AbilityData.Taunted.Name)]?.Ability is { } tauntedAbility)
+            {
+                manager.LoggingSystem.WriteLog(
+                    manager.Game.Services.Language.StatusPreventsAttemptedAction(tauntedAbility),
+                    playerEntity, manager);
+            }
+
+            performedAction = ActorActionType.Wait;
+        } else if (GetPanicDirection(playerEntity, playerEntity.Position!, manager) is { } panicDirection)
+        {
+            performedAction = ActorActionType.MoveOneCell;
+            target = (int)panicDirection;
+            target2 = null;
+        }
+        else
+        {
+            RandomizeActionTargetIfConfused(playerEntity, ref performedAction, ref target, ref target2, manager);
+        }
+
+        if (performedAction is ActorActionType.PickupItem
+            or ActorActionType.DropItem
+            or ActorActionType.EquipItem
+            or ActorActionType.UnequipItem
+            && !playerEntity.Being!.CanMoveItems
+            && EffectApplicationSystem.GetAbilitiesAffectingProperty(
+                    playerEntity, nameof(BeingComponent.CanMoveItems), AbilityType.Status)
+                .FirstOrDefault() is { } itemStatus)
+        {
+            manager.LoggingSystem.WriteLog(
+                manager.Game.Services.Language.StatusPreventsItemManipulation(itemStatus), playerEntity, manager);
+            ResetNextAction(player);
+            return false;
+        }
+
+        EnqueueActionNoise(playerEntity, performedAction, target, manager);
         ResetNextAction(player);
 
         var position = playerEntity.Position!;
-        switch (action)
+        switch (performedAction)
         {
             case ActorActionType.Wait:
                 player.NextActionTick += TimeSystem.DefaultActionDelay;
@@ -75,7 +137,7 @@ public class PlayerSystem :
                         break;
                     default:
                         Move(moveDirection, playerEntity, manager,
-                            onlyChangeHeading: action == ActorActionType.ChangeHeading);
+                            onlyChangeHeading: performedAction == ActorActionType.ChangeHeading);
                         break;
                 }
 
@@ -90,9 +152,9 @@ public class PlayerSystem :
                     break;
                 }
 
-                if (position.Cell.DistanceTo(targetCell) == 1)
+                if (position.Cell!.Value.DistanceTo(targetCell) == 1)
                 {
-                    return Move(position.Cell.DifferenceTo(targetCell).AsDirection(), playerEntity, manager);
+                    return Move(position.Cell!.Value.DifferenceTo(targetCell).AsDirection(), playerEntity, manager);
                 }
 
                 if (!Move(targetCell, playerEntity, manager))
@@ -127,7 +189,7 @@ public class PlayerSystem :
                 // id; `target`, when supplied, is the ability slot the picked-up item's
                 // primary ability should land in. A null target accepts the auto-slot
                 // pick from AbilitySlottingSystem (first free slot).
-                var itemToPickUp = position.RoomEntity.Room!.Items.GetValueOrDefault(position.Cell);
+                var itemToPickUp = position.RoomEntity.Room!.Items.GetValueOrDefault(position.Cell!.Value);
                 if (itemToPickUp == null)
                 {
                     manager.LoggingSystem.WriteLog(
@@ -239,6 +301,16 @@ public class PlayerSystem :
                 ActivateAbility(playerEntity, target, target2, manager);
                 break;
             case ActorActionType.TravelToRoom:
+                if (!playerEntity.Being!.CanMove
+                    && EffectApplicationSystem.GetAbilitiesAffectingProperty(
+                            playerEntity, nameof(BeingComponent.CanMove), AbilityType.Status)
+                        .FirstOrDefault() is { } movementStatus)
+                {
+                    manager.LoggingSystem.WriteLog(
+                        manager.Game.Services.Language.StatusPreventsMovement(movementStatus), playerEntity, manager);
+                    return false;
+                }
+
                 if (!manager.TravelSystem.TravelToRoom(playerEntity, target!.Value, manager))
                 {
                     return false;
@@ -247,9 +319,10 @@ public class PlayerSystem :
                 break;
             default:
                 throw new InvalidOperationException(
-                    $"Action {action} on character {playerEntity.Player!.ProperName} is invalid.");
+                    $"Action {performedAction} on character {playerEntity.Player!.ProperName} is invalid.");
         }
 
+        AddRandomMove(playerEntity, manager);
         return true;
     }
 
@@ -287,7 +360,7 @@ public class PlayerSystem :
         if ((ability.Activation & ActivationType.Manual) == 0)
         {
             // TODO: Also check LOS and move closer if none
-            if (position.Cell.DistanceTo(targetCell) > ability.Range)
+            if (position.Cell!.Value.DistanceTo(targetCell) > ability.Range)
             {
                 if (!Move(targetCell, actorEntity, manager))
                 {
@@ -312,7 +385,7 @@ public class PlayerSystem :
         // TODO: avoid actors and connections
         var position = playerEntity.Position!;
         var direction = manager.TravelSystem.GetFirstStepFromShortestPath(
-            position.RoomEntity.Room!, position.Cell, targetCell, position.Heading!.Value, knownOnly: true);
+            position.RoomEntity.Room!, position.Cell!.Value, targetCell, position.Heading!.Value, knownOnly: true);
         if (direction == null)
         {
             manager.LoggingSystem.WriteLog(manager.Game.Services.Language.NoPath(), playerEntity, manager);
@@ -329,8 +402,16 @@ public class PlayerSystem :
             && player != null)
         {
             var manager = message.Entity.Manager;
-            manager.LoggingSystem.WriteLog(
-                manager.Game.Services.Language.UnableToMove(message.TargetHeading), message.Entity, manager);
+            var language = manager.Game.Services.Language;
+            var statusAbility = !message.Entity.Being!.CanMove
+                ? EffectApplicationSystem.GetAbilitiesAffectingProperty(
+                        message.Entity, nameof(BeingComponent.CanMove), AbilityType.Status)
+                    .FirstOrDefault()
+                : null;
+            manager.LoggingSystem.WriteLog(statusAbility != null
+                    ? language.StatusPreventsMovement(statusAbility)
+                    : language.UnableToMove(message.TargetHeading),
+                message.Entity, manager);
             ResetNextAction(player);
 
             if (manager.Game.ActingPlayer == null)

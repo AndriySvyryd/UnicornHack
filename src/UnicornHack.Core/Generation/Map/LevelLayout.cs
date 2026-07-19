@@ -2384,6 +2384,11 @@ public abstract class LevelLayout
             {
                 roomParameters.CreatureGenerator.Fill(room, chunks);
                 roomParameters.ItemGenerator.Fill(room, chunks);
+
+                // Creature/item abilities and their effects enqueue lifecycle notifications. Drain once the
+                // fully wired room is populated so a large level cannot exceed the queue's hard limit before
+                // LevelGenerator performs its final generation flush.
+                manager.Queue.ProcessQueue(manager);
             }
 
             return allChunks;

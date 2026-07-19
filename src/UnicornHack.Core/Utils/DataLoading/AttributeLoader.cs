@@ -8,24 +8,26 @@ public class AttributeLoader<TPropertyAttribute, TClassAttribute, TLoadable> : L
     where TLoadable : class, ILoadable
 {
     private readonly Func<PropertyInfo, Type, TPropertyAttribute, TClassAttribute, TLoadable> _createLoadable;
-    private readonly Assembly _targetAssembly;
+    private readonly IReadOnlyList<Type> _targetTypes;
     private readonly object _lockRoot = new();
 
     public AttributeLoader(
         Func<PropertyInfo, Type, TPropertyAttribute, TClassAttribute, TLoadable> createLoadable,
-        Assembly targetAssembly)
+        IReadOnlyList<Type> targetTypes)
     {
         _createLoadable = createLoadable;
-        _targetAssembly = targetAssembly;
+        _targetTypes = targetTypes;
     }
 
-    protected override Dictionary<string, TLoadable> Load()
+    [UnconditionalSuppressMessage("Trimming", "IL2075",
+        Justification = "The supplied types are explicitly rooted with DynamicDependency attributes at the loader declaration.")]
+    protected override Dictionary<string, TLoadable> CreateNameLookup()
     {
         lock (_lockRoot)
         {
             var lookup = new Dictionary<string, TLoadable>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var type in _targetAssembly.GetTypes())
+            foreach (var type in _targetTypes)
             {
                 var typeAttribute =
                     (TClassAttribute?)type.GetCustomAttribute(typeof(TClassAttribute), inherit: true);

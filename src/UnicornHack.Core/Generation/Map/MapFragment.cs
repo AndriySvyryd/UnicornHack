@@ -35,7 +35,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     public const char CreatureWildcardGlyph = '%';
 
     /// <summary>
-    ///     Canonical glyph &#8594; <see cref="Systems.Levels.RoomFeatures" /> table. Authored on a
+    ///     Canonical glyph - <see cref="Systems.Levels.RoomFeatures" /> table. Authored on a
     ///     fragment's <see cref="Map" /> payload exactly like any other tile glyph; the
     ///     underlying tile resolves to <see cref="Primitives.MapFeature.StoneFloor" /> and the
     ///     <see cref="Chunk.FeaturePoints" /> entry records which feature should be realized
@@ -192,17 +192,17 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         }.ToFrozenDictionary();
 
     /// <summary>
-    ///     Single source of truth for the payload glyph &#8594; <see cref="MapFeature" />
+    ///     Single source of truth for the payload glyph, <see cref="MapFeature" />
     ///     mapping. Used by <see cref="Write" /> when committing a tile and by
     ///     <see cref="EvaluatePayloadOverlapCompatibility" /> to evaluate shifted-overlap
     ///     compatibility against placed neighbors. Glyphs that don't carry a tile (space)
     ///     return <see cref="MapFeature.Default" />. The default branch covers <c>'.'</c>,
     ///     <c>'+'</c> (doorway candidate), <c>'&lt;'</c>/<c>'&gt;'</c> (connections),
     ///     <c>'%'</c> (creature wildcard), <c>'$'</c> (feature wildcard pre-binding),
-    ///     <c>'^'</c> (trap), and any annotated glyph &#8212; all of which sit on plain
+    ///     <c>'^'</c> (trap), and any annotated glyph - all of which sit on plain
     ///     stone floor.
     /// </summary>
-    private static MapFeature GlyphToFeature(char c)
+    public static MapFeature GlyphToFeature(char c)
         => TryGlyphToFeature(c, out var feature) ? feature : MapFeature.StoneFloor;
 
     /// <summary>
@@ -417,6 +417,20 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     }
 
     /// <summary>
+    ///     The subset of <see cref="Tags" /> that the auto-derivation pass
+    ///     (<see cref="ApplyTagDerivations" />) produced from the payload - the size tag, the
+    ///     content tags for feature/connection glyphs, and the per-orientation door tags. These
+    ///     are not author-declared and are re-derived on every load, so they are excluded from the
+    ///     authored serialization surface (see <see cref="ReduceTagsToAuthored" />). Has no public
+    ///     setter, so it is never itself serialized.
+    /// </summary>
+    public IReadOnlyCollection<string>? DerivedTags
+    {
+        get;
+        private set;
+    }
+
+    /// <summary>
     ///     Per-fragment annotation table: each key is a glyph used in <see cref="Map" /> and
     ///     the value is a non-empty string of substitute glyphs. At chunk placement time, for
     ///     every cell whose payload glyph matches a key, one substitute is picked uniformly at
@@ -500,13 +514,15 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     } = MapFragmentTransform.Identity;
 
     /// <summary>
-    ///     Size of the symmetry orbit this fragment would expand into when materialized by
-    ///     <see cref="MapFragmentLoader{T}" />. Derived from the fragment's transform-
-    ///     exclusion flags via <see cref="MapFragmentTransforms.GetOrbit" /> (1, 2, 4, or 8
-    ///     depending on the combination of <see cref="NoMirror" />,
-    ///     <see cref="NoTurnOver" />, and <see cref="NoTransform" />).
+    ///     Size of the symmetry orbit this fragment expands into when materialized by
+    ///     <see cref="MapFragmentLoader{T}" />. A dynamic-map-only fragment has no authored geometry to
+    ///     transform and therefore has one variant. Static maps derive their count from the transform-
+    ///     exclusion flags via <see cref="MapFragmentTransforms.GetOrbit" />.
     /// </summary>
-    public int VariantCount => MapFragmentTransforms.GetOrbit(NoMirror, NoTurnOver, NoTransform).Length;
+    public int VariantCount
+        => !string.IsNullOrEmpty(Map)
+            ? MapFragmentTransforms.GetOrbit(NoMirror, NoTurnOver, NoTransform).Length
+            : 1;
 
     /// <summary>
     ///     Multiplier applied to the result of <c>GetWeight</c> so that the total pick
@@ -713,14 +729,11 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     protected static readonly ParameterExpression RoomFeaturesParameter =
         Expression.Parameter(typeof(RoomFeatures), name: "roomFeatures");
 
-    // GetValueOrDefault(IReadOnlyDictionary<string,int>, string) — used by the visitor
-    // to emit the $instances / $globalInstances overrides as direct dict lookups keyed
-    // by SourceName, with zero allocation and a 0 fallback for unseen keys.
-    private static readonly MethodInfo _getStringIntOrDefault = typeof(CollectionExtensions)
-        .GetMethods(BindingFlags.Public | BindingFlags.Static)
-        .First(m => m.Name == nameof(CollectionExtensions.GetValueOrDefault)
-            && m.GetParameters().Length == 2)
-        .MakeGenericMethod(typeof(string), typeof(int));
+    private static readonly MethodInfo GetStringIntOrDefaultMethod = typeof(MapFragment)
+        .GetMethod(nameof(GetStringIntOrDefault), BindingFlags.NonPublic | BindingFlags.Static)!;
+
+    private static int GetStringIntOrDefault(IReadOnlyDictionary<string, int> values, string key)
+        => values.GetValueOrDefault(key);
 
     /// <summary>
     ///     Builds an <see cref="UnicornExpressionVisitor" /> that exposes the shared
@@ -735,10 +748,10 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
             new Dictionary<string, Expression>(StringComparer.Ordinal)
             {
                 ["instances"] = Expression.Call(
-                    null, _getStringIntOrDefault,
+                    null, GetStringIntOrDefaultMethod,
                     FragmentInstancesByNameParameter, SourceNameParameter),
                 ["globalInstances"] = Expression.Call(
-                    null, _getStringIntOrDefault,
+                    null, GetStringIntOrDefaultMethod,
                     GlobalFragmentInstancesByNameParameter, SourceNameParameter)
             });
 
@@ -1094,11 +1107,14 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         }
 
         var payloadTileCount = PayloadArea.Width * PayloadArea.Height;
-        positives.Add(payloadTileCount <= SizeSmallMaxTiles
+        var derived = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var sizeTag = payloadTileCount <= SizeSmallMaxTiles
             ? "size-small"
             : payloadTileCount <= SizeMediumMaxTiles
                 ? "size-medium"
-                : "size-large");
+                : "size-large";
+        positives.Add(sizeTag);
+        derived.Add(sizeTag);
 
         // Content auto-tags derived from feature & connection glyphs in the authored payload.
         // Authors can still negate them via the `!`-prefix mechanism above. Content tags are
@@ -1140,6 +1156,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                 if (generic is not null)
                 {
                     positives.Add(generic);
+                    derived.Add(generic);
                 }
 
                 // Specific feature tag (e.g. `small-fountain`, `weapon-stand`).
@@ -1148,6 +1165,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
                     && FeatureTagNames.TryGetValue(feature.Value, out var canonical))
                 {
                     positives.Add(canonical);
+                    derived.Add(canonical);
                 }
 
                 if (glyph == DoorwayGlyph)
@@ -1176,23 +1194,61 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         if (doorNorth)
         {
             positives.Add("door-n");
+            derived.Add("door-n");
         }
         if (doorSouth)
         {
             positives.Add("door-s");
+            derived.Add("door-s");
         }
         if (doorWest)
         {
             positives.Add("door-w");
+            derived.Add("door-w");
         }
         if (doorEast)
         {
             positives.Add("door-e");
+            derived.Add("door-e");
         }
 
         Tags = positives;
         AntiTags = negatives;
+        DerivedTags = derived;
         return payloadDoorwayCount;
+    }
+
+    /// <summary>
+    ///     Reduces <see cref="Tags" /> to the author-declared surface for serialization: drops every
+    ///     auto-<see cref="DerivedTags" /> entry (the size / content / door markers that
+    ///     <see cref="ApplyTagDerivations" /> re-produces from the payload on load) and re-encodes each
+    ///     <see cref="AntiTags" /> opt-out as its authored <c>!</c>-prefixed entry. Clears the collection
+    ///     to <see langword="null" /> when nothing author-declared remains. Called by the editor before
+    ///     serializing a source fragment so generated markers never leak back into the data files.
+    /// </summary>
+    public void ReduceTagsToAuthored()
+    {
+        var authored = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (Tags is not null)
+        {
+            foreach (var tag in Tags)
+            {
+                if (DerivedTags is null || !DerivedTags.Contains(tag))
+                {
+                    authored.Add(tag);
+                }
+            }
+        }
+
+        if (AntiTags is not null)
+        {
+            foreach (var antiTag in AntiTags)
+            {
+                authored.Add("!" + antiTag);
+            }
+        }
+
+        Tags = authored.Count == 0 ? null : authored;
     }
 
     /// <summary>
@@ -2535,7 +2591,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///     satisfies every preserved condition recorded for that cell and writes it via
     ///     <see cref="TerrainSystem.SetTerrain" />. The filled cells are then grouped
     ///     into maximal axis-aligned rectangles and emitted as synthetic chunks with
-    ///     <see cref="NormalMapFragmentData.DeferredFillFragment" /> as their fragment.
+    ///     <see cref="NormalMapFragmentData.Deferred" /> as their fragment.
     ///     <para>
     ///         Cells whose preserved conditions can only be honoured by leaving the cell
     ///         empty (any <see cref="EdgeConditionKind.Unfilled" /> or
@@ -2812,7 +2868,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
     ///     and each seed is grown right then down for deterministic output.
     ///     <para>
     ///         Each synthesized chunk is recorded against
-    ///         <see cref="NormalMapFragmentData.DeferredFillFragment" />.<see cref="MapFragment.SourceName" />
+    ///         <see cref="NormalMapFragmentData.Deferred" />.<see cref="MapFragment.SourceName" />
     ///         on the per-level and per-game <see cref="GenerationStats.FragmentInstancesByName" />
     ///         counters via <see cref="RoomLayout.IncrementInstanceCounts" /> — same path
     ///         every other placed fragment uses — so post-mortem diagnostics (see the
@@ -2833,7 +2889,7 @@ public abstract class MapFragment : ICSScriptSerializable, ILoadable
         filled.Sort(static (a, b) => a.Y != b.Y ? a.Y - b.Y : a.X - b.X);
         var remaining = new HashSet<Point>(filled);
         var deferredFragment = room.Level.Game.Services.Data.NormalMapFragments
-            .Get(NormalMapFragmentData.DeferredFillFragment.Name);
+            .Get(NormalMapFragmentData.Deferred.Name);
 
         foreach (var seed in filled)
         {

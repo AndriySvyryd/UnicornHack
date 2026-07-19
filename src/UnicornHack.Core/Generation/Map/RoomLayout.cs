@@ -1,6 +1,7 @@
 using System.Buffers;
 using UnicornHack.Data.Fragments;
 using UnicornHack.Systems.Levels;
+using UnicornHack.Utils;
 
 namespace UnicornHack.Generation.Map;
 
@@ -687,13 +688,14 @@ public abstract class RoomLayout
     {
         var pointToIndex = room.PointToIndex!;
         var tileCount = room.TileCount;
+        var corridorPathWorkspace = new WeightedGraphSearch.PathWorkspace(tileCount);
         // Pooled visited mask indexed by cell index, reused across every flood-fill in this repair
         // (cleared per iteration) instead of allocating a HashSet<Point> each time.
         var reached = ArrayPool<bool>.Shared.Rent(tileCount);
         try
         {
             // First try the corridor-based repair: it carves doorway-to-doorway corridors that look
-            // intentional and keeps the generated terrain identical to before for the common case.
+            // intentional.
             var lastReachedCount = -1;
             for (var iteration = 0; iteration < chunks.Count; iteration++)
             {
@@ -723,7 +725,8 @@ public abstract class RoomLayout
                 if (nearestReached == null || !Connect(
                 nearestReached, unreached,
                 preservedConditions,
-                roomParameters))
+                roomParameters,
+                corridorPathWorkspace))
                 {
                     break;
                 }
@@ -1285,7 +1288,7 @@ public abstract class RoomLayout
         {
             var candidate = chunks[i];
             if (candidate == target
-                || candidate.Fragment.Name == NormalMapFragmentData.DeferredFillFragment.Name
+                || candidate.Fragment.Name == NormalMapFragmentData.Deferred.Name
                 || !IsChunkReached(candidate, reached, pointToIndex))
             {
                 // Skip the target itself and synthetic deferred-fill chunks (their
@@ -1310,7 +1313,7 @@ public abstract class RoomLayout
     /// <summary>
     ///     Returns whether <paramref name="chunk" /> is mutually reachable with the
     ///     reference chunk (<paramref name="reached" /> contains the flood-fill from
-    ///     it). Synthetic <see cref="NormalMapFragmentData.DeferredFillFragment" />
+    ///     it). Synthetic <see cref="NormalMapFragmentData.Deferred" />
     ///     chunks are reported as reached regardless: their cells are pure floor
     ///     adjacent to the chunks whose preserved conditions produced them and become
     ///     part of the flood-fill set the next time it runs. For all other chunks
@@ -1319,7 +1322,7 @@ public abstract class RoomLayout
     /// </summary>
     private static bool IsChunkReached(Chunk chunk, bool[] reached, short[,] pointToIndex)
     {
-        if (chunk.Fragment.Name == NormalMapFragmentData.DeferredFillFragment.Name)
+        if (chunk.Fragment.Name == NormalMapFragmentData.Deferred.Name)
         {
             return true;
         }
@@ -1403,9 +1406,10 @@ public abstract class RoomLayout
     ///     Probes both directions through <see cref="FindCorridorPath" /> and keeps the
     ///     path that traverses fewer non-corridor (wall / feature) tiles.
     /// </summary>
-    protected bool Connect(Chunk source, Chunk target,
+    private bool Connect(Chunk source, Chunk target,
         Dictionary<Point, EdgeConditionKind[]> preservedConditions,
         RoomParameters roomParameters,
+        WeightedGraphSearch.PathWorkspace workspace,
         bool allowDiagonals = false, int width = 1, bool addColumns = false)
     {
         var from = source.GetGoodConnectionPoint(target);
@@ -1413,11 +1417,14 @@ public abstract class RoomLayout
 
         // Both calls return the path in source→target order. The "alternative" runs the
         // pathfinder with the endpoints swapped (which may discover a different route
-        // through the room's open space because Dijkstra tie-breaks on enqueue order)
+        // through the room's open space because target-directed search and tie-breaking can select
+        // a different equal-cost route)
         // and asks FindCorridorPath to flip its output so Connect can treat both
         // candidates uniformly.
-        var path = FindCorridorPath(from, to, source.Room, allowDiagonals, reverse: false);
-        var alternativePath = FindCorridorPath(to, from, source.Room, allowDiagonals, reverse: true);
+        var path = FindCorridorPath(
+            from, to, source.Room, allowDiagonals, reverse: false, workspace);
+        var alternativePath = FindCorridorPath(
+            to, from, source.Room, allowDiagonals, reverse: true, workspace);
 
         var corridor =
             path.FragmentFeaturesHit > alternativePath.FragmentFeaturesHit
@@ -1500,12 +1507,9 @@ public abstract class RoomLayout
     }
 
     /// <summary>
-    ///     Dijkstra-style pathfinder from <paramref name="source" /> to
-    ///     <paramref name="target" />. Walkable tiles cost 1 step, walls cost a large
-    ///     penalty so corridors prefer existing open space but can still carve through
-    ///     adjacent chunk walls when no open route exists (e.g. tight-packed lots where
-    ///     two chunks share a wall column). The wall tiles on the resulting path are
-    ///     converted to archways by <see cref="WriteCorridor" />.
+    ///     Finds a minimum-cost corridor path. Walkable tiles cost one step, walls cost ten, and the
+    ///     outer ring carries a large penalty. The admissible grid-distance heuristic excludes the
+    ///     zero-cost final step onto the target.
     /// </summary>
     /// <param name="reverse">
     ///     When <c>false</c> (default), the returned <see cref="Corridor.Path" /> runs
@@ -1516,139 +1520,107 @@ public abstract class RoomLayout
     ///     processing.
     /// </param>
     private static Corridor FindCorridorPath(
-        Point source, Point target, RoomComponent room, bool allowDiagonals, bool reverse)
+        Point source, Point target, RoomComponent room, bool allowDiagonals, bool reverse,
+        WeightedGraphSearch.PathWorkspace workspace)
     {
         if (source.Equals(target))
         {
             return new Corridor([source], 0);
         }
 
-        var width = room.Width;
-        var height = room.Height;
         var pointToIndex = room.PointToIndex!;
         var indexToPoint = room.IndexToPoint!;
-
-        var tileCount = room.TileCount;
-        // Pooled scratch arrays (only the [0, tileCount) prefix is touched). Returned before each
-        // normal return below.
-        var dist = ArrayPool<int>.Shared.Rent(tileCount);
-        var parent = ArrayPool<short>.Shared.Rent(tileCount);
-        for (var i = 0; i < tileCount; i++)
-        {
-            dist[i] = int.MaxValue;
-            parent[i] = -1;
-        }
-
         var sourceIdx = pointToIndex[source.X, source.Y];
         var targetIdx = pointToIndex[target.X, target.Y];
-        dist[sourceIdx] = 0;
-
-        var open = new PriorityQueue<short, int>();
-        open.Enqueue(sourceIdx, 0);
-
-        while (open.TryDequeue(out var currentIdx, out var currentDist))
+        var pathIndexes = workspace.Path;
+        var graph = new CorridorGraph(room, target, allowDiagonals);
+        var found = WeightedGraphSearch.TryGetShortestPathAStar(
+            graph, sourceIdx, targetIdx, int.MaxValue, workspace, pathIndexes, out _);
+        if (!found)
         {
-            if (currentIdx == targetIdx)
-            {
-                break;
-            }
-
-            // Stale entry — a better cost has already been processed.
-            if (currentDist > dist[currentIdx])
-            {
-                continue;
-            }
-
-            var current = indexToPoint[currentIdx];
-            foreach (var neighbor in Neighbors8(room, current.X, current.Y, allowDiagonals))
-            {
-                var nx = neighbor.X;
-                var ny = neighbor.Y;
-                var nIdx = pointToIndex[nx, ny];
-                var isTarget = nIdx == targetIdx;
-                var stepCost = isTarget
-                    ? 0
-                    : GetCorridorStepCost(room.Terrain[nIdx]);
-
-                // Impassable tiles (fragment features like DeityAltar/SmallFountain,
-                // pools, statues, etc.) report int.MaxValue. Skip them outright.
-                if (stepCost == int.MaxValue)
-                {
-                    continue;
-                }
-
-                // Strongly discourage routing a corridor along the room's outer ring: an open
-                // (unfilled / floor) gap there is otherwise as cheap as any interior tile, so the
-                // planner happily snakes corridors flush against the boundary, leaving walkable
-                // tiles exposed to the level void. Penalizing the ring (except at the corridor's
-                // own door endpoint) makes a short interior wall-carve cheaper than a boundary
-                // detour, keeping floor enclosed without blocking the rare case where the boundary
-                // is the only route.
-                if (!isTarget && (nx == 0 || ny == 0 || nx == width - 1 || ny == height - 1))
-                {
-                    stepCost += OuterRingCorridorPenalty;
-                }
-
-                var candidateDist = currentDist + stepCost;
-                if (candidateDist >= dist[nIdx])
-                {
-                    continue;
-                }
-
-                dist[nIdx] = candidateDist;
-                parent[nIdx] = currentIdx;
-                open.Enqueue(nIdx, candidateDist);
-            }
-        }
-
-        if (dist[targetIdx] == int.MaxValue)
-        {
-            // Truly unreachable (shouldn't happen with wall traversal allowed).
-            ArrayPool<int>.Shared.Return(dist);
-            ArrayPool<short>.Shared.Return(parent);
             return new Corridor([source], 1);
         }
 
-        // Walk the parent chain from target back to source. The natural reconstruction
-        // order is target→source; flipping to source→target is the default. The reverse
-        // flag suppresses the flip so the alternative-direction probe in Connect can
-        // line both candidates up in source→target order without an extra reverse pass.
-        // Number of wall tiles traversed by the chosen path becomes the "hit" score so
-        // Connect can prefer the direction with fewer carves.
         var hits = 0;
-        var path = new List<Point>();
-        var cursor = targetIdx;
-        var safetyBudget = room.TileCount + 1;
-        while (cursor != -1)
+        var path = new List<Point>(pathIndexes.Count);
+        foreach (var index in pathIndexes)
         {
-            if (--safetyBudget < 0)
-            {
-                throw new InvalidOperationException(
-                    $"FindCorridorPath parent chain exceeded TileCount={room.TileCount} iterations "
-                    + $"(source={source}, target={target}); likely cycle in parent[].");
-            }
-
-            var point = indexToPoint[cursor];
-            if (GetCorridorStepCost(room.Terrain[cursor]) >= 10)
+            var point = indexToPoint[index];
+            if (GetCorridorStepCost(room.Terrain[index]) >= 10)
             {
                 hits++;
             }
-            path.Add(point);
-            if (cursor == sourceIdx)
-            {
-                break;
-            }
 
-            cursor = parent[cursor];
+            path.Add(point);
         }
+
         if (!reverse)
         {
             path.Reverse();
         }
 
-        ArrayPool<int>.Shared.Return(dist);
-        ArrayPool<short>.Shared.Return(parent);
         return new Corridor(path, hits);
+    }
+
+    private readonly struct CorridorGraph(
+        RoomComponent room, Point target, bool allowDiagonals) : IWeightedGraph
+    {
+        public int NodeCount => room.TileCount;
+        public int NeighborCount => allowDiagonals ? 8 : 4;
+
+        public bool TryGetNeighbor(
+            int node, int neighborIndex, out int neighbor, out int distance)
+        {
+            var current = room.IndexToPoint![node];
+            var (offsetX, offsetY) = neighborIndex switch
+            {
+                0 => (1, 0),
+                1 => (-1, 0),
+                2 => (0, 1),
+                3 => (0, -1),
+                4 => (1, 1),
+                5 => (1, -1),
+                6 => (-1, 1),
+                7 => (-1, -1),
+                _ => throw new ArgumentOutOfRangeException(nameof(neighborIndex))
+            };
+            var x = current.X + offsetX;
+            var y = current.Y + offsetY;
+            if (x < 0 || x >= room.Width || y < 0 || y >= room.Height)
+            {
+                neighbor = 0;
+                distance = 0;
+                return false;
+            }
+
+            neighbor = room.PointToIndex![x, y];
+            var isTarget = x == target.X && y == target.Y;
+            distance = isTarget
+                ? 0
+                : GetCorridorStepCost(room.Terrain[neighbor]);
+            if (distance == int.MaxValue)
+            {
+                return false;
+            }
+
+            if (!isTarget
+                && (x == 0 || y == 0 || x == room.Width - 1 || y == room.Height - 1))
+            {
+                distance += OuterRingCorridorPenalty;
+            }
+
+            return true;
+        }
+
+        public int GetEstimatedDistance(int node, int targetNode)
+        {
+            Debug.Assert(targetNode == room.PointToIndex![target.X, target.Y]);
+            var point = room.IndexToPoint![node];
+            var distance = allowDiagonals
+                ? point.DistanceTo(target)
+                : point.OrthogonalDistanceTo(target);
+            return Math.Max(0, distance - 1);
+        }
     }
 
     private const int OuterRingCorridorPenalty = 1001;

@@ -16,7 +16,7 @@ public class EnsureGeneratedRetryTest
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
+        var dungeon = BranchData.Dungeon.Instantiate(game);
         var level = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
 
         var generated = LevelGenerator.EnsureGenerated(level);
@@ -33,7 +33,7 @@ public class EnsureGeneratedRetryTest
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
+        var dungeon = BranchData.Dungeon.Instantiate(game);
         var level = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
         Assert.True(LevelGenerator.EnsureGenerated(level));
 

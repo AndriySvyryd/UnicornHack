@@ -291,7 +291,8 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
             return true;
         }
 
-        Debug.Assert(_orphanedEntities.Count == 0, $"Orphaned entities found in {Name} for principal {key}");
+        Debug.Assert(!_orphanedEntities.ContainsKey(key),
+            $"Orphaned entities found in {Name} for principal {key}");
 
         return false;
     }
@@ -531,8 +532,8 @@ public class LookupEntityRelationship<TEntity, TKey, TDictionary> : EntityRelati
                 return;
             }
 
-            Debug.Assert(_relationship._orphanedEntities.Count == 0,
-                $"Orphaned entities found in {_relationship.Name}");
+            Debug.Assert(!_relationship._orphanedEntities.ContainsKey(principal.Id),
+                $"Orphaned entities found in {_relationship.Name} for principal {principal.Id}");
 
             foreach (var dependent in dependents.Values)
             {

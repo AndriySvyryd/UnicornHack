@@ -4,7 +4,11 @@ namespace UnicornHack.Editor;
 
 public static class Extensions
 {
-    public static bool TryCreateInstance<T>(this Type type, [NotNullWhen(returnValue: true)] out T? instance)
+    public static bool TryCreateInstance<T>(
+        [DynamicallyAccessedMembers(
+            DynamicallyAccessedMemberTypes.PublicParameterlessConstructor
+            | DynamicallyAccessedMemberTypes.NonPublicConstructors)] this Type type,
+        [NotNullWhen(returnValue: true)] out T? instance)
         where T : class
     {
         try

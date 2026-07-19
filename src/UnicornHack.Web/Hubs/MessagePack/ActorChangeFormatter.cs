@@ -106,6 +106,7 @@ public sealed class ActorChangeFormatter : IMessagePackFormatter<ActorChange?>
         {
             resolver.GetFormatterWithVerify<AttackSummary?>().Serialize(ref writer, value.RangeDefense, options);
         }
+
     }
 
     public ActorChange? Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)

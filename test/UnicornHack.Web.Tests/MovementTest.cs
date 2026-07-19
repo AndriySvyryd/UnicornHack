@@ -3,6 +3,7 @@ using UnicornHack.Generation;
 using UnicornHack.Hubs.ChangeTracking;
 using UnicornHack.Services;
 using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 using Xunit;
 
@@ -19,7 +20,7 @@ public class MovementTest
 
     private static (PlayerComponent Player, RoomChangeBuilder Listener, GameServices Services) SetupGame()
     {
-        var game = WebTestHelper.CreateGame();
+        var game = TestHelper.CreateGame();
         var level = TestHelper.BuildRoom(TestMap, game);
         var manager = game.Manager;
 
@@ -27,7 +28,7 @@ public class MovementTest
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);
-        WebTestHelper.RegisterPlayer(playerEntity, listener, manager);
+        listener.RegisterPlayerBuilder(playerEntity, manager);
 
         return (playerEntity.Player!, listener, game.Services);
     }
@@ -47,7 +48,7 @@ public class MovementTest
     [Fact]
     public void MoveBlocked()
     {
-        var game = WebTestHelper.CreateGame();
+        var game = TestHelper.CreateGame();
         var level = TestHelper.BuildRoom(@"
 .....
 ..#..
@@ -60,12 +61,15 @@ public class MovementTest
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);
-        WebTestHelper.RegisterPlayer(playerEntity, listener, manager);
+        listener.RegisterPlayerBuilder(playerEntity, manager);
 
-        var baseline = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
+        var baseline = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, game.Services));
+        Assert.True(baseline.Room!.Actors!.Values.Single(a => a.BaseName == "player").IsCurrentlyPerceived);
+        Assert.True(playerEntity.Position!.Knowledge!.Knowledge!.SensedType.CanIdentify());
 
         var fresh = WebTestHelper.PerformAndVerify(
             playerEntity.Player!, listener, game.Services, ActorActionType.MoveOneCell, (int)Direction.North);
+        Assert.True(playerEntity.Position!.Knowledge!.Knowledge!.SensedType.CanIdentify());
 
         // Tick should advance even if blocked
         Assert.True(fresh.CurrentTick >= baseline.CurrentTick);
@@ -74,6 +78,7 @@ public class MovementTest
         var playerActor = fresh.Room!.Actors!.Values.Single(a => a.BaseName == "player");
         Assert.Equal(2, playerActor.LevelX);
         Assert.Equal(2, playerActor.LevelY);
+        Assert.True(playerActor.IsCurrentlyPerceived);
     }
 
     [Fact]
@@ -109,7 +114,7 @@ public class MovementTest
     [Fact]
     public void MoveOntoConnection_TransitionsToTargetLevel()
     {
-        var game = WebTestHelper.CreateGame();
+        var game = TestHelper.CreateGame();
         var manager = game.Manager;
 
         // Level 1 holds a downward connection at (1,2). Player starts north of it.
@@ -141,10 +146,10 @@ public class MovementTest
         // The cell the player lands on in level 2. level1 is a different branch from level2, so
         // travellng there deletes level1 entirely — and with it the up-stair (an incoming
         // connection of level1), so capture the receiving cell before the move.
-        var receivingCell = up.Position!.Cell;
+        var receivingCell = up.Position!.Cell!.Value;
 
         var listener = WebTestHelper.SetupListeners(manager);
-        WebTestHelper.RegisterPlayer(playerEntity, listener, manager);
+        listener.RegisterPlayerBuilder(playerEntity, manager);
 
         // Pre-condition: player on level 1.
         Assert.Equal(level1.EntityId, playerEntity.Position!.RoomId);
@@ -162,7 +167,10 @@ public class MovementTest
         Assert.Equal(level2.Height, fresh.Room!.Height);
 
         // The player actor in the change set must be on level 2 at the receiving cell.
-        var playerActor = fresh.Room!.Actors!.Values.Single(a => a.BaseName == "player");
+        var playerActorEntry = fresh.Room!.Actors!.Single(a => a.Value.BaseName == "player");
+        var playerActor = playerActorEntry.Value;
+        Assert.Equal(playerActorEntry.Key, fresh.Id);
+        Assert.Equal(playerEntity.Position.Knowledge!.Id, fresh.Id);
         Assert.Equal(receivingCell.X, playerActor.LevelX);
         Assert.Equal(receivingCell.Y, playerActor.LevelY);
     }
@@ -178,7 +186,7 @@ public class MovementTest
     [Fact]
     public void RoomGridCoordinates_UpdateOnTransition()
     {
-        var game = WebTestHelper.CreateGame();
+        var game = TestHelper.CreateGame();
         var manager = game.Manager;
 
         var level1 = TestHelper.BuildRoom(@"
@@ -210,10 +218,10 @@ public class MovementTest
         up.Connection!.TargetCell = down.Position!.Cell;
 
         var listener = WebTestHelper.SetupListeners(manager);
-        WebTestHelper.RegisterPlayer(playerEntity, listener, manager);
+        listener.RegisterPlayerBuilder(playerEntity, manager);
 
         // Baseline: player on level 1, whose grid coordinates are the default (0,0).
-        var baseline = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
+        var baseline = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, game.Services));
         Assert.Equal(level1.GridX, baseline.Room!.GridX);
         Assert.Equal(level1.GridY, baseline.Room!.GridY);
 
@@ -239,7 +247,7 @@ public class MovementTest
     [Fact]
     public void MoveOntoIntraLevelDoor_EmitsRoomScopedConnectionEvent()
     {
-        var game = WebTestHelper.CreateGame();
+        var game = TestHelper.CreateGame();
         var manager = game.Manager;
 
         // Two rooms wired into a single GameLevel. The player starts adjacent to a
@@ -274,7 +282,7 @@ public class MovementTest
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);
-        WebTestHelper.RegisterPlayer(playerEntity, listener, manager);
+        listener.RegisterPlayerBuilder(playerEntity, manager);
 
         var changeSets = WebTestHelper.PerformAction(
             playerEntity.Player!, listener, game.Services,
@@ -288,11 +296,10 @@ public class MovementTest
 
         // Exactly one event, of type SteppedOnConnection, scope Room, pointing at our
         // freshly-created connection entity.
-        var single = Assert.Single(allEvents);
-        var stepped = Assert.IsType<SteppedOnConnectionEvent>(single);
+        var stepped = Assert.Single(allEvents);
         Assert.Equal(TurnEventType.SteppedOnConnection, stepped.Type);
-        Assert.Equal(ConnectionScope.Room, stepped.Scope);
-        Assert.Equal(connectionEntity.Id, stepped.ConnectionId);
+        Assert.Equal((int)ConnectionScope.Room, stepped.Value1);
+        Assert.Equal(connectionEntity.Id, stepped.Value2);
 
         // The player must be standing on the connection tile (intra-level travel stops
         // them on the door rather than carrying them through).
@@ -312,7 +319,7 @@ public class MovementTest
     [Fact]
     public void ActorChangesInAbandonedRoom_DoNotLeakIntoTheNewRoomChangeSet()
     {
-        var game = WebTestHelper.CreateGame();
+        var game = TestHelper.CreateGame();
         var manager = game.Manager;
 
         // Level 1 holds a downward connection at (1,2) and a creature the player can see.
@@ -326,7 +333,7 @@ public class MovementTest
 
         // A creature adjacent to the player (so it is perceived and a knowledge entity is
         // created), which stays behind on level 1 when the player descends.
-        CreatureData.Human.Instantiate(level1, new Point(2, 1));
+        CreatureData.HumanWarrior.Instantiate(level1, new Point(2, 1));
         manager.Queue.ProcessQueue(manager);
 
         // Level 2 holds a matching upward connection at (1,1).
@@ -346,13 +353,13 @@ public class MovementTest
         up.Connection!.TargetCell = down.Position!.Cell;
 
         var listener = WebTestHelper.SetupListeners(manager);
-        WebTestHelper.RegisterPlayer(playerEntity, listener, manager);
+        listener.RegisterPlayerBuilder(playerEntity, manager);
 
         // Take a turn so the player's field of view is computed and the creature becomes a
         // known actor in the client's level-1 view.
         WebTestHelper.PerformAndVerify(
             playerEntity.Player!, listener, game.Services, ActorActionType.ChangeHeading, (int)Direction.East);
-        var baseline = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
+        var baseline = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, game.Services));
         Assert.Contains(baseline.Room!.Actors!.Values, a => a.BaseName != "player");
 
         // Walk south onto the connection -> transition to level 2 (full snapshot, no creature).
@@ -368,5 +375,52 @@ public class MovementTest
 
         // The level-2 view must contain only the player; the abandoned creature never appears.
         Assert.DoesNotContain(fresh.Room!.Actors!.Values, a => a.BaseName != "player");
+    }
+
+    [Fact]
+    public void Known_actor_room_change_is_deleted_then_added_for_the_observer_room()
+    {
+        var game = TestHelper.CreateGame();
+        var manager = game.Manager;
+        var observedRoom = TestHelper.BuildRoom(TestMap, game);
+        var otherRoom = TestHelper.BuildRoom(TestMap, game);
+        var playerEntity = PlayerRace.InstantiatePlayer(
+            "Dudley", Sex.Male, observedRoom, new Point(1, 1));
+        manager.Queue.ProcessQueue(manager);
+
+        var actorEntity = CreatureData.HumanWarrior.Instantiate(observedRoom, new Point(2, 1));
+        manager.Queue.ProcessQueue(manager);
+        var knowledgeReference = manager.CreateEntity();
+        var knowledgeEntity = knowledgeReference.Referenced;
+        knowledgeEntity.Knowledge = manager.CreateComponent<KnowledgeComponent>(EntityComponent.Knowledge);
+        knowledgeEntity.Knowledge.KnownEntityId = actorEntity.Id;
+        knowledgeEntity.Knowledge.SensedType = SenseType.Sight;
+        knowledgeEntity.Knowledge.IsIdentified = true;
+        knowledgeEntity.Position = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
+        knowledgeEntity.Position.SetRoomPosition(observedRoom.EntityId, new Point(2, 1));
+        knowledgeEntity.Position.Heading = Direction.East;
+
+        var listener = WebTestHelper.SetupListeners(manager);
+        listener.RegisterPlayerBuilder(playerEntity, manager);
+        var playerBuilder = Assert.Single(listener.PlayerBuilders);
+
+        knowledgeEntity.Position.RoomId = otherRoom.EntityId;
+
+        Assert.True(playerBuilder.HasObservableChanges(manager));
+        var movedOut = playerBuilder.BuildChangeSet(manager, game.Services);
+        Assert.Equal(1, movedOut.Room!.Actors![knowledgeEntity.Id].ChangedProperties!.Length);
+
+        listener.Reset(manager);
+        knowledgeEntity.Position.RoomId = observedRoom.EntityId;
+
+        Assert.True(playerBuilder.HasObservableChanges(manager));
+        var movedIn = playerBuilder.BuildChangeSet(manager, game.Services);
+        var added = movedIn.Room!.Actors![knowledgeEntity.Id];
+        Assert.Null(added.ChangedProperties);
+        Assert.Equal(2, added.LevelX);
+        Assert.Equal(1, added.LevelY);
+
+        knowledgeEntity.Position = null;
+        knowledgeEntity.Knowledge = null;
     }
 }

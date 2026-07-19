@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Aitvaras = new Creature
     {
         Name = "aitvaras",
-        Species = Species.Aitvaras,
         SpeciesClass = SpeciesClass.Bird,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "aitvaras ability #1",
+                Type = AbilityType.RangedAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnRangedAttack,
                 Range = 20,
@@ -19,7 +20,11 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Burn { Damage = "70*FocusModifier()" } }
+                Effects = new List<Effect>
+                {
+                    new FireDamage { Amount = "70*FocusModifier()" },
+                    new FireDamage { Duration = EffectDuration.UntilTimeout, Amount = "70*FocusModifier()" }
+                }
             }
         },
         InitialLevel = 6,
@@ -28,10 +33,10 @@ public static partial class CreatureData
         Weight = 30,
         MovementDelay = 100,
         TurningDelay = 100,
-        Perception = -6,
-        Might = -6,
-        Speed = -6,
-        Focus = -6,
+        PerceptionBonus = -6,
+        MightBonus = -6,
+        SpeedBonus = -6,
+        FocusBonus = -6,
         Armor = 2,
         MagicResistance = 15,
         FireResistance = 75,

@@ -1,16 +1,18 @@
 using CSharpScriptSerialization;
-using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
 
-public class SonicDamage : DamageEffect
+public class SonicDamage : ResistedEffect
 {
-    protected override void ConfigureEffect(EffectComponent effect)
-    {
-        base.ConfigureEffect(effect);
+    private static readonly EffectMetadata _metadata =
+        EffectMetadata.Resource(
+            EffectType.SonicDamage, nameof(Systems.Beings.BeingComponent.SonicResistance),
+            inflicts: [new(EffectType.Daze, 8, 0)], defaultAmount: "10*FocusModifier()");
 
-        effect.EffectType = EffectType.SonicDamage;
-    }
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void RegisterMetadataProvider() => _ = _metadata;
+
+    public override EffectMetadata Metadata => _metadata;
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<SonicDamage>(GetPropertyConditions<SonicDamage>());

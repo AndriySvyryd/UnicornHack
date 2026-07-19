@@ -46,8 +46,6 @@ public class RoomChangeBuilder
 
         // Cross-room entries were already pruned by HasObservableChanges (which always runs and
         // prunes before this is reached), so the builders hold only this room's entries.
-        var hasTerrainChanges = TerrainChangeBuilder.HasChanges(room);
-
         var context = new SerializationContext(null!, observer, services);
         var change = new RoomChange();
         var hasChanges = false;
@@ -85,7 +83,7 @@ public class RoomChangeBuilder
             }
         }
 
-        if (hasTerrainChanges)
+        if (TerrainChangeBuilder.HasChanges(room))
         {
             TerrainChangeBuilder.WriteToRoomChange(room, change);
             hasChanges = true;
@@ -105,14 +103,13 @@ public class RoomChangeBuilder
     ///         mark would skip entries for the other clients.
     ///     </para>
     /// </summary>
-    public void Reset(GameEntity roomEntity)
+    public void Reset(GameManager manager)
     {
         _actorBuilder.Reset();
         _itemBuilder.Reset();
         _connectionBuilder.Reset();
         _eventBuilder.Reset();
 
-        var manager = roomEntity.Manager;
         foreach (var builder in PlayerBuilders)
         {
             var playerEntity = manager.FindEntity(builder.PlayerEntityId)!;
@@ -261,6 +258,7 @@ public class RoomChangeBuilder
     /// </summary>
     public void RegisterPlayerBuilder(GameEntity playerEntity, GameManager manager)
     {
+        _actorBuilder.ResetBaseline(playerEntity);
         foreach (var existing in PlayerBuilders)
         {
             if (existing.PlayerEntityId == playerEntity.Id)
@@ -274,6 +272,12 @@ public class RoomChangeBuilder
         builder.RegisterOnGroups(manager);
         PlayerBuilders.Add(builder);
     }
+
+    internal void ResetActorBaseline(GameEntity playerEntity)
+        => _actorBuilder.ResetBaseline(playerEntity);
+
+    internal void TrackObserverTelegraphVisibility(GameEntity playerEntity)
+        => _actorBuilder.TrackObserverTelegraphVisibility(playerEntity);
 
     public void UnregisterFromGroups(GameManager manager)
     {

@@ -81,6 +81,14 @@ public class RoomComponent : GameComponent, IKeepAliveComponent
         }
         set
         {
+            if (value == null)
+            {
+                BranchName = null!;
+                Depth = 0;
+                _level = null;
+                return;
+            }
+
             BranchName = value.BranchName;
             Depth = value.Depth;
             _level = value;
@@ -211,6 +219,7 @@ public class RoomComponent : GameComponent, IKeepAliveComponent
         set;
     }
 
+    // The dictionaries are sorted for deterministic behavior
     public IReadOnlyDictionary<Point, GameEntity> Actors
     {
         get;

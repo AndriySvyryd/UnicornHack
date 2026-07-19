@@ -5,18 +5,20 @@ public static partial class CreatureData
     public static readonly Creature Vampire = new Creature
     {
         Name = "vampire",
-        Species = Species.Vampire,
         SpeciesClass = SpeciesClass.ShapeChanger | SpeciesClass.Undead,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "vampire ability #1",
                 Activation = ActivationType.OnMeleeAttack,
                 Action = AbilityAction.Modifier,
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "40" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "40*MightModifier()" } }
             },
             new Ability
             {
+                Name = "vampire ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -25,10 +27,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "15*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "15*MightModifier()" } }
             },
             new Ability
             {
+                Name = "vampire ability #3",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -41,6 +45,8 @@ public static partial class CreatureData
             },
             new Ability
             {
+                Name = "vampire ability #4",
+                Type = AbilityType.RangedSpell,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnRangedAttack,
                 Range = 20,
@@ -49,7 +55,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Wither { Damage = "40*FocusModifier()" } }
+                Effects = new List<Effect>
+                {
+                    new Wither { Amount = "40*FocusModifier()" },
+                    new Wither { Duration = EffectDuration.UntilTimeout, Amount = "40*FocusModifier()" },
+                    new Enervate()
+                }
             }
         },
         InitialLevel = 20,
@@ -58,12 +69,14 @@ public static partial class CreatureData
         Weight = 1000,
         MovementDelay = -15,
         TurningDelay = -15,
-        Perception = 1,
-        Speed = 1,
-        Focus = 6,
+        PerceptionBonus = 1,
+        SpeedBonus = 1,
+        FocusBonus = 6,
         Regeneration = 3,
+        HealingResistance = 150,
         Armor = 7,
         MagicResistance = 30,
+        SuffocateResistance = 100,
         TorsoType = TorsoType.Humanoid,
         UpperExtremities = ExtremityType.GraspingFingers,
         LowerExtremities = ExtremityType.Fingers,

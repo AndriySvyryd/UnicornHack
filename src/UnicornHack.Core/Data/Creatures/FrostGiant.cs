@@ -5,17 +5,20 @@ public static partial class CreatureData
     public static readonly Creature FrostGiant = new Creature
     {
         Name = "frost giant",
-        Species = Species.Giant,
-        Abilities = new HashSet<Ability>
+        SpeciesClass = SpeciesClass.Humanoid,
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "frost giant ability #1",
                 Activation = ActivationType.OnMeleeAttack,
                 Action = AbilityAction.Modifier,
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "110" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "110*MightModifier()" } }
             },
             new Ability
             {
+                Name = "frost giant ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -24,7 +27,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "10*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage() }
             }
         },
         InitialLevel = 10,
@@ -34,10 +37,10 @@ public static partial class CreatureData
         Noise = ActorNoiseType.Boast,
         Size = 16,
         Weight = 2250,
-        Perception = -4,
-        Might = -4,
-        Speed = -4,
-        Focus = -4,
+        PerceptionBonus = -4,
+        MightBonus = -4,
+        SpeedBonus = -4,
+        FocusBonus = -4,
         Armor = 3,
         MagicResistance = 5,
         ColdResistance = 75,

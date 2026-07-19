@@ -17,6 +17,14 @@ public interface ILoader<T> where T : class, ILoadable
     IReadOnlyList<T> GetAsList();
 }
 
+/// <summary><see cref="ILoader{T}" /> with a unique secondary index.</summary>
+public interface IIndexedLoader<TIndexKey, T> : ILoader<T>
+    where T : class, ILoadable
+    where TIndexKey : notnull
+{
+    T? FindByIndex(TIndexKey key);
+}
+
 /// <summary>
 ///     <see cref="ILoader{T}" /> with a secondary index keyed by <typeparamref name="TKey" />.
 /// </summary>
@@ -28,9 +36,18 @@ public interface IGroupedLoader<TKey, T> : ILoader<T>
     IEnumerable<TKey> GetAllKeys();
 }
 
+/// <summary><see cref="IGroupedLoader{TKey,T}" /> with an additional unique secondary index.</summary>
+public interface IIndexedGroupedLoader<TKey, TIndexKey, T> :
+    IGroupedLoader<TKey, T>, IIndexedLoader<TIndexKey, T>
+    where T : class, ILoadable
+    where TKey : notnull
+    where TIndexKey : notnull
+{
+}
+
 /// <summary>
 ///     <see cref="ILoader{T}" /> for sources known to hold exactly one canonical value
-///     (e.g. <see cref="UnicornHack.Generation.ItemGroup" />).
+///     (e.g. <see cref="ItemGroup" />).
 /// </summary>
 public interface ISingleLoader<T> : ILoader<T> where T : class, ILoadable, new()
 {

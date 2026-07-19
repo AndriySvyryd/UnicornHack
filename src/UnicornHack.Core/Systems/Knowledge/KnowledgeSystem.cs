@@ -1,3 +1,4 @@
+using System.Buffers;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
@@ -13,7 +14,8 @@ public class KnowledgeSystem :
     IGameSystem<VisibleTerrainChangedMessage>,
     IGameSystem<TraveledMessage>,
     IGameSystem<ItemMovedMessage>,
-    IGameSystem<EffectsAppliedMessage>
+    IGameSystem<AttackResultMessage>,
+    IGameSystem<SoundMessage>
 {
     public MessageProcessingResult Process(VisibleTerrainChangedMessage message, GameManager manager)
     {
@@ -72,21 +74,31 @@ public class KnowledgeSystem :
         IReadOnlyDictionary<Point, GameEntity> knownPositions,
         GameManager manager,
         RoomComponent room,
-        Point? additionalCellToTest = null)
+        Point? additionalCellToTest = null,
+        SenseType forcedSense = SenseType.None,
+        SenseType preservedSenseMask = SenseType.Sound)
     {
         var position = entity.Position;
-        if (position == null)
+        if (position?.Cell is not { } cell)
         {
             return;
         }
 
-        SenseType sensedType;
-        if ((sensedType = manager.SensorySystem.SensedByPlayer(entity, position.Cell)) != SenseType.None
-            || (additionalCellToTest != null
-                && (sensedType = manager.SensorySystem.SensedByPlayer(entity, additionalCellToTest.Value))
-                != SenseType.None))
+        var sensedType = forcedSense | manager.SensorySystem.SensedByPlayer(entity, cell);
+        if (sensedType == SenseType.None
+            && additionalCellToTest is { } additionalCell)
         {
-            var conflictingKnowledge = knownPositions.GetValueOrDefault(position.Cell);
+            sensedType = manager.SensorySystem.SensedByPlayer(entity, additionalCell);
+        }
+
+        if (position.Knowledge?.Knowledge is { } existingKnowledge)
+        {
+            sensedType |= existingKnowledge.SensedType & preservedSenseMask;
+        }
+
+        if (sensedType != SenseType.None)
+        {
+            var conflictingKnowledge = knownPositions.GetValueOrDefault(cell);
             if (conflictingKnowledge != null)
             {
                 var conflictingEntityId = conflictingKnowledge.Knowledge!.KnownEntityId;
@@ -105,7 +117,8 @@ public class KnowledgeSystem :
                 {
                     var playerPosition = playerEntity.Position!;
                     if (position.RoomId == playerPosition.RoomId
-                        && position.Cell.DistanceTo(playerPosition.Cell) <= 2)
+                        && playerPosition.Cell is { } playerCell
+                        && cell.DistanceTo(playerCell) <= 2)
                     {
                         var player = playerEntity.Player!;
                         if (player.QueuedAction)
@@ -125,7 +138,7 @@ public class KnowledgeSystem :
             {
                 var knowledgePosition = knowledge.Position!;
                 if (room != knowledgePosition.RoomEntity?.Room
-                    || manager.SensorySystem.SensedByPlayer(knowledge, knowledgePosition.Cell) != SenseType.None)
+                    || manager.SensorySystem.SensedByPlayer(knowledge, knowledgePosition.Cell!.Value) != SenseType.None)
                 {
                     knowledge.RemoveComponent(EntityComponent.Knowledge);
                     knowledge.RemoveComponent(EntityComponent.Position);
@@ -156,7 +169,7 @@ public class KnowledgeSystem :
             knowledgeEntityReference.Knowledge = knowledgeComponent;
 
             var knowledgePosition = manager.CreateComponent<PositionComponent>(EntityComponent.Position);
-            knowledgePosition.SetRoomPosition(position.RoomId, position.Cell);
+            knowledgePosition.SetRoomPosition(position.RoomId, position.Cell!.Value);
             knowledgePosition.Heading = position.Heading;
 
             knowledgeEntityReference.Position = knowledgePosition;
@@ -170,7 +183,7 @@ public class KnowledgeSystem :
             }
 
             var knowledgePosition = knowledgeEntity.Position!;
-            knowledgePosition.SetRoomPosition(position.RoomId, position.Cell);
+            knowledgePosition.SetRoomPosition(position.RoomId, position.Cell!.Value);
             knowledgePosition.Heading = position.Heading;
         }
     }
@@ -205,18 +218,26 @@ public class KnowledgeSystem :
                         itemEntity.Item!.ContainerEntity?.Position?.RoomEntity.Room;
             if (room != null)
             {
+                // A player always knows where they just dropped an item, so a drop out of a player's own
+                // possession records the item's knowledge even when it spilled onto a cell the player can't
+                // currently see.
+                var forcedSense = message.InitialContainer is { } initialContainer
+                    && manager.ItemMovingSystem.GetTopContainer(initialContainer, manager)
+                        .HasComponent(EntityComponent.Player)
+                    ? SenseType.Touch
+                    : SenseType.None;
+
                 UpdateEntityKnowledge(itemEntity, room.KnownItems, manager, room,
-                    additionalCellToTest: message.InitialRoomCell);
+                    additionalCellToTest: message.InitialRoomCell, forcedSense: forcedSense);
             }
         }
 
         return MessageProcessingResult.ContinueProcessing;
     }
 
-    public MessageProcessingResult Process(EffectsAppliedMessage message, GameManager manager)
+    public MessageProcessingResult Process(AttackResultMessage message, GameManager manager)
     {
-        if ((message.AbilityTrigger & ActivationType.OnAttack) == 0
-            || message.TargetEntity == null)
+        if (!message.RevealsAttacker)
         {
             return MessageProcessingResult.ContinueProcessing;
         }
@@ -234,6 +255,60 @@ public class KnowledgeSystem :
                 UpdateKnowledge(message.ActivatorEntity.Position!, attackerSensed, manager);
             }
         }
+
+        return MessageProcessingResult.ContinueProcessing;
+    }
+
+    public MessageProcessingResult Process(SoundMessage message, GameManager manager)
+    {
+        var source = message.Source;
+        if (source.Position is not { Cell: { } sourceCell } sourcePosition)
+        {
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
+        var room = sourcePosition.RoomEntity.Room!;
+        var exactSoundSense = SenseType.None;
+        var players = ArrayPool<GameEntity>.Shared.Rent(manager.Players.Count);
+        var playerCount = 0;
+        foreach (var player in manager.Players)
+        {
+            if (player != source)
+            {
+                players[playerCount++] = player;
+            }
+        }
+
+        var soundSenses = ArrayPool<SenseType>.Shared.Rent(playerCount);
+        try
+        {
+            manager.SensorySystem.CalculateSensedSound(
+                source, message.ActionNoise,
+                players.AsSpan(0, playerCount), soundSenses.AsSpan(0, playerCount));
+            for (var i = 0; i < playerCount; i++)
+            {
+                var player = players[i];
+                var actionSense = manager.SensorySystem.CanSense(player, source, sourceCell)
+                                  | soundSenses[i];
+                exactSoundSense |= soundSenses[i] & SenseType.Sound;
+                if ((actionSense & SenseType.SoundDistant) != 0
+                    && (actionSense & (SenseType.Sight | SenseType.Touch | SenseType.Telepathy | SenseType.Sound)) == 0)
+                {
+                    var direction = player.Position!.Cell!.Value.DifferenceTo(sourceCell).GetUnit().AsDirection();
+                    manager.LoggingSystem.WriteLog(
+                        manager.Game.Services.Language.SoundFrom(direction), player, manager);
+                }
+            }
+        }
+        finally
+        {
+            ArrayPool<SenseType>.Shared.Return(soundSenses);
+            ArrayPool<GameEntity>.Shared.Return(players, clearArray: true);
+        }
+
+        UpdateEntityKnowledge(
+            source, room.KnownActors, manager, room,
+            forcedSense: exactSoundSense, preservedSenseMask: SenseType.None);
 
         return MessageProcessingResult.ContinueProcessing;
     }

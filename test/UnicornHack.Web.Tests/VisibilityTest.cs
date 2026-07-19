@@ -18,7 +18,7 @@ public class VisibilityTest
 .....
 .....
 .....";
-        var game = WebTestHelper.CreateGame();
+        var game = TestHelper.CreateGame();
         var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
@@ -26,9 +26,9 @@ public class VisibilityTest
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);
-        WebTestHelper.RegisterPlayer(playerEntity, listener, manager);
+        listener.RegisterPlayerBuilder(playerEntity, manager);
 
-        var state = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
+        var state = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, game.Services));
 
         // Verify terrain arrays are populated
         Assert.Equal(level.Width, state.Room!.Width);
@@ -63,7 +63,7 @@ public class VisibilityTest
 ..........
 ..........
 ..........";
-        var game = WebTestHelper.CreateGame();
+        var game = TestHelper.CreateGame();
         var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
@@ -71,9 +71,9 @@ public class VisibilityTest
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);
-        WebTestHelper.RegisterPlayer(playerEntity, listener, manager);
+        listener.RegisterPlayerBuilder(playerEntity, manager);
 
-        var before = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
+        var before = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, game.Services));
 
         // Move south several times
         for (var i = 0; i < 5; i++)
@@ -82,7 +82,7 @@ public class VisibilityTest
                 ActorActionType.MoveOneCell, (int)Direction.South);
         }
 
-        var after = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
+        var after = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, game.Services));
 
         // Should see more explored tiles after moving
         var beforeExplored = CountExploredTiles(before);
@@ -105,29 +105,30 @@ public class VisibilityTest
 ..........
 ..........
 ..........";
-        var game = WebTestHelper.CreateGame();
+        var game = TestHelper.CreateGame();
         var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(5, 5));
         manager.Queue.ProcessQueue(manager);
 
-        // Place NPC near the edge of visibility
-        CreatureData.Human.Instantiate(level, new Point(1, 1));
+        // Place the NPC in the open, a couple of tiles north of the player.
+        CreatureData.HumanWarrior.Instantiate(level, new Point(5, 3));
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);
-        WebTestHelper.RegisterPlayer(playerEntity, listener, manager);
+        listener.RegisterPlayerBuilder(playerEntity, manager);
 
-        var initial = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
+        // Moving recomputes the player's field of view, which brings the nearby NPC into view.
+        WebTestHelper.PerformAndVerify(playerEntity.Player!, listener, game.Services,
+            ActorActionType.MoveOneCell, (int)Direction.North);
 
-        // Wait a few turns — NPC may move
-        for (var i = 0; i < 3; i++)
-        {
-            WebTestHelper.PerformAndVerify(playerEntity.Player!, listener, game.Services, ActorActionType.Wait);
-        }
+        var after = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, game.Services));
 
-        var after = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
+        var npc = after.Room!.Actors!.Values.SingleOrDefault(a => a.BaseName != "player");
+        Assert.NotNull(npc);
+        Assert.True(npc!.IsCurrentlyPerceived,
+            "NPC in the open should be perceived once the player's field of view updates");
     }
 
     private static int CountExploredTiles(PlayerChange state)
@@ -158,7 +159,7 @@ public class VisibilityTest
 ..........
 ..........
 ..........";
-        var game = WebTestHelper.CreateGame();
+        var game = TestHelper.CreateGame();
         var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
@@ -170,9 +171,9 @@ public class VisibilityTest
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);
-        WebTestHelper.RegisterPlayer(playerEntity, listener, manager);
+        listener.RegisterPlayerBuilder(playerEntity, manager);
 
-        var state = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
+        var state = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, game.Services));
 
         // Item should be present and perceived
         Assert.NotEmpty(state.Room!.Items!);
@@ -201,7 +202,7 @@ public class VisibilityTest
 ..........
 ..........
 ..........";
-        var game = WebTestHelper.CreateGame();
+        var game = TestHelper.CreateGame();
         var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
@@ -214,10 +215,10 @@ public class VisibilityTest
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);
-        WebTestHelper.RegisterPlayer(playerEntity, listener, manager);
+        listener.RegisterPlayerBuilder(playerEntity, manager);
 
         // Initial state: item is perceived
-        var initial = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
+        var initial = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, game.Services));
         var swordItem = initial.Room!.Items!.Values.SingleOrDefault(i => i.BaseName == "long sword");
         Assert.NotNull(swordItem);
         Assert.True(swordItem.IsCurrentlyPerceived, "Item should be perceived initially");
@@ -245,7 +246,7 @@ public class VisibilityTest
             ActorActionType.MoveOneCell, (int)Direction.North);
 
         // Full refresh: the item should still be in the state but with IsCurrentlyPerceived=false
-        var afterState = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
+        var afterState = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, game.Services));
         var swordAfter = afterState.Room!.Items!.Values.SingleOrDefault(i => i.BaseName == "long sword");
         Assert.NotNull(swordAfter);
         Assert.False(swordAfter.IsCurrentlyPerceived, "Item behind wall should not be perceived after move");
@@ -285,7 +286,7 @@ public class VisibilityTest
 .........................
 .........................
 .........................";
-        var game = WebTestHelper.CreateGame();
+        var game = TestHelper.CreateGame();
         var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
@@ -298,10 +299,10 @@ public class VisibilityTest
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);
-        WebTestHelper.RegisterPlayer(playerEntity, listener, manager);
+        listener.RegisterPlayerBuilder(playerEntity, manager);
 
         // Establish baseline: item is perceived
-        var baseline = ClientStateHelpers.Deserialize(WebTestHelper.GetState(playerEntity, game.Services));
+        var baseline = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, game.Services));
         var swordItem = baseline.Room!.Items!.Values.SingleOrDefault(i => i.BaseName == "long sword");
         Assert.NotNull(swordItem);
         Assert.True(swordItem.IsCurrentlyPerceived, "Item should be perceived at baseline");
@@ -365,14 +366,14 @@ public class VisibilityTest
 .........................
 .........................
 .........................";
-        var game = WebTestHelper.CreateGame();
+        var game = TestHelper.CreateGame();
         var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
         // Place several NPCs south of the wall (invisible to the player initially)
-        CreatureData.Human.Instantiate(level, new Point(3, 20));
-        CreatureData.Human.Instantiate(level, new Point(7, 22));
-        CreatureData.Human.Instantiate(level, new Point(10, 18));
+        CreatureData.HumanWarrior.Instantiate(level, new Point(3, 20));
+        CreatureData.HumanWarrior.Instantiate(level, new Point(7, 22));
+        CreatureData.HumanWarrior.Instantiate(level, new Point(10, 18));
         manager.Queue.ProcessQueue(manager);
 
         // Player starts far north
@@ -380,7 +381,7 @@ public class VisibilityTest
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);
-        WebTestHelper.RegisterPlayer(playerEntity, listener, manager);
+        listener.RegisterPlayerBuilder(playerEntity, manager);
 
         var player = playerEntity.Player!;
 
@@ -459,13 +460,13 @@ public class VisibilityTest
 .........................
 .........................
 .........................";
-        var game = WebTestHelper.CreateGame();
+        var game = TestHelper.CreateGame();
         var level = TestHelper.BuildRoom(map, game);
         var manager = game.Manager;
 
         // Place creatures and item south of where the player will be — visible in south-facing FOV.
-        CreatureData.Human.Instantiate(level, new Point(12, 13));
-        CreatureData.Human.Instantiate(level, new Point(10, 13));
+        CreatureData.HumanWarrior.Instantiate(level, new Point(12, 13));
+        CreatureData.HumanWarrior.Instantiate(level, new Point(10, 13));
         ItemData.LongSword.Instantiate(level, new Point(13, 13));
         manager.Queue.ProcessQueue(manager);
 
@@ -478,7 +479,7 @@ public class VisibilityTest
         manager.Queue.ProcessQueue(manager);
 
         var listener = WebTestHelper.SetupListeners(manager);
-        WebTestHelper.RegisterPlayer(playerEntity, listener, manager);
+        listener.RegisterPlayerBuilder(playerEntity, manager);
 
         var player = playerEntity.Player!;
 

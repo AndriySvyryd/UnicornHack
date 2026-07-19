@@ -151,7 +151,7 @@ action=MoveOneCell target=0 target2= tick=124 can_act=True hp=18/20 ep=10/10
 
 | Tool | Mapping |
 |---|---|
-| `show_dialog(query_type, arguments=[])` | `ShowDialog`. Server replies via `ReceiveUIRequest`; inspect with `get_dialog`. `query_type` values: `0=Clear 1=SlottableAbilities 2=PlayerAttributes 3=PlayerInventory 4=PlayerAdaptations 5=PlayerSkills 6=AbilityAttributes 7=ActorAttributes 8=ItemAttributes 9=StaticDescription 10=PostGameStatistics 11=RoomMap`. |
+| `show_dialog(query_type, arguments=[])` | `ShowDialog`. Server replies via `ReceiveUIRequest`; inspect with `get_dialog`. `query_type` values: `0=Clear 1=SlottableAbilities 2=PlayerAttributes 3=PlayerInventory 4=PlayerAdaptations 5=PlayerSkills 6=AbilityAttributes 7=ActorAttributes 8=ItemAttributes 9=StaticDescription 10=PostGameStatistics 11=LevelMap`. |
 | `describe(topic_id, category)` | `QueryStaticDescription`. `category` is `DescriptionCategory`. |
 | `send_message(text)` | `SendMessage`. **Currently fails server-side** because the server reads `Context.User.Identity.Name` and authentication is not wired up. |
 

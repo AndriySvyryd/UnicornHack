@@ -44,13 +44,12 @@ public sealed class PlayerChangeFormatter : IMessagePackFormatter<PlayerChange?>
 
         if (values == null || values[5])
         {
-            resolver.GetFormatterWithVerify<RoomChange?>().Serialize(ref writer, value.Room, options);
+            writer.Write(value.NextActionTick);
         }
 
         if (values == null || values[6])
         {
-            resolver.GetFormatterWithVerify<Dictionary<int, RaceChange>?>()
-                .Serialize(ref writer, value.Races, options);
+            resolver.GetFormatterWithVerify<RoomChange?>().Serialize(ref writer, value.Room, options);
         }
 
         if (values == null || values[7])
@@ -61,13 +60,14 @@ public sealed class PlayerChangeFormatter : IMessagePackFormatter<PlayerChange?>
 
         if (values == null || values[8])
         {
-            resolver.GetFormatterWithVerify<Dictionary<int, LogEntryChange>?>()
-                .Serialize(ref writer, value.Log, options);
+            resolver.GetFormatterWithVerify<Dictionary<int, EffectChange>?>()
+                .Serialize(ref writer, value.Effects, options);
         }
 
         if (values == null || values[9])
         {
-            writer.Write(value.NextActionTick);
+            resolver.GetFormatterWithVerify<Dictionary<int, LogEntryChange>?>()
+                .Serialize(ref writer, value.Log, options);
         }
 
         if (values == null || values[10])
@@ -104,6 +104,7 @@ public sealed class PlayerChangeFormatter : IMessagePackFormatter<PlayerChange?>
         {
             writer.Write(value.Fortune);
         }
+
     }
 
     public PlayerChange? Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
@@ -149,11 +150,10 @@ public sealed class PlayerChangeFormatter : IMessagePackFormatter<PlayerChange?>
                     result.CurrentTick = reader.ReadInt32();
                     break;
                 case 5:
-                    result.Room = resolver.GetFormatterWithVerify<RoomChange?>()
-                        .Deserialize(ref reader, options);
+                    result.NextActionTick = reader.ReadInt32();
                     break;
                 case 6:
-                    result.Races = resolver.GetFormatterWithVerify<Dictionary<int, RaceChange>?>()
+                    result.Room = resolver.GetFormatterWithVerify<RoomChange?>()
                         .Deserialize(ref reader, options);
                     break;
                 case 7:
@@ -161,11 +161,12 @@ public sealed class PlayerChangeFormatter : IMessagePackFormatter<PlayerChange?>
                         .Deserialize(ref reader, options);
                     break;
                 case 8:
-                    result.Log = resolver.GetFormatterWithVerify<Dictionary<int, LogEntryChange>?>()
+                    result.Effects = resolver.GetFormatterWithVerify<Dictionary<int, EffectChange>?>()
                         .Deserialize(ref reader, options);
                     break;
                 case 9:
-                    result.NextActionTick = reader.ReadInt32();
+                    result.Log = resolver.GetFormatterWithVerify<Dictionary<int, LogEntryChange>?>()
+                        .Deserialize(ref reader, options);
                     break;
                 case 10:
                     result.XP = reader.ReadInt32();

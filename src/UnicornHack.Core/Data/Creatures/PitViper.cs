@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature PitViper = new Creature
     {
         Name = "pit viper",
-        Species = Species.Snake,
         SpeciesClass = SpeciesClass.Reptile,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "pit viper ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,7 +20,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Blight { Damage = "50*MightModifier()" } }
+                Effects = new List<Effect> { new ToxinDamage { Duration = EffectDuration.UntilTimeout, Amount = "50*MightModifier()" } }
             }
         },
         InitialLevel = 6,
@@ -28,11 +29,12 @@ public static partial class CreatureData
         Weight = 100,
         MovementDelay = -20,
         TurningDelay = -20,
-        Perception = -6,
-        Might = -6,
-        Speed = -6,
-        Focus = -6,
+        PerceptionBonus = -6,
+        MightBonus = -6,
+        SpeedBonus = -6,
+        FocusBonus = -6,
         Armor = 4,
+        DecayResistance = 50,
         TorsoType = TorsoType.Serpentine,
         UpperExtremities = ExtremityType.None,
         LowerExtremities = ExtremityType.None,

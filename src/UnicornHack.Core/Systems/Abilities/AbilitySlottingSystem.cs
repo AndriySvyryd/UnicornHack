@@ -57,12 +57,14 @@ public class AbilitySlottingSystem :
 
             if (!ability.IsUsable)
             {
-                throw new InvalidOperationException($"Ability {ability.EntityId} is not usable.");
+                throw new InvalidOperationException(
+                    $"Ability {ability.EntityId} ({ability.Name}, level {ability.Level}) is not usable.");
             }
 
             if ((message.Slot.Value == DefaultMeleeAttackSlot
-                 || message.Slot.Value == DefaultRangedAttackSlot)
-                && ability.Type != AbilityType.DefaultAttack)
+                && ability.Type != AbilityType.DefaultMeleeAttack)
+                || (message.Slot.Value == DefaultRangedAttackSlot
+                && ability.Type != AbilityType.DefaultRangedAttack))
             {
                 throw new InvalidOperationException(
                     "Ability " + ability.EntityId + " cannot be the default attack for " + ability.OwnerId);
@@ -70,7 +72,7 @@ public class AbilitySlottingSystem :
 
             if (message.Slot.Value != DefaultMeleeAttackSlot
                 && message.Slot.Value != DefaultRangedAttackSlot
-                && ability.Type == AbilityType.DefaultAttack)
+                && ability.Type.IsDefaultAttack())
             {
                 throw new InvalidOperationException(
                     "Ability " + ability.EntityId + " can only be the default attack for " + ability.OwnerId);
@@ -83,10 +85,7 @@ public class AbilitySlottingSystem :
             if (ability.IsActive
                 && ability.Slot != null)
             {
-                var deactivateMessage =
-                    DeactivateAbilityMessage.Create(manager);
-                deactivateMessage.AbilityEntity = ability.Entity;
-                deactivateMessage.ActivatorEntity = ability.OwnerEntity!;
+                var deactivateMessage = DeactivateAbilityMessage.Create(ability, ability.OwnerEntity!, manager);
 
                 manager.Process(deactivateMessage);
             }
@@ -129,7 +128,12 @@ public class AbilitySlottingSystem :
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        var ability = message.Entity.Ability!;
+        // The ability can already be gone if it was torn down in the same tick it was added, so tolerate a null Ability here.
+        if (message.Entity.Ability is not { } ability)
+        {
+            return MessageProcessingResult.ContinueProcessing;
+        }
+
         if ((ability.Activation & ActivationType.Slottable) != 0
             && ability.Type == AbilityType.Item)
         {
@@ -206,7 +210,7 @@ public class AbilitySlottingSystem :
         // Physical.Capacity
         if (message.NewValue < message.OldValue)
         {
-            foreach (var abilityEntity in message.Entity.Physical!.Abilities)
+            foreach (var abilityEntity in message.Entity.ActiveEffects!.Abilities)
             {
                 var abilitySlot = abilityEntity.Ability!.Slot;
                 if (abilitySlot.HasValue

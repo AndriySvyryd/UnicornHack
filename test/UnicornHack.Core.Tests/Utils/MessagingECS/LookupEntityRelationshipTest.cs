@@ -4,7 +4,6 @@ using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Systems.Senses;
 
 namespace UnicornHack.Utils.MessagingECS;
 
@@ -125,99 +124,10 @@ public class LookupEntityRelationshipTest
         var manager = TestHelper.CreateGameManager();
         using var raceEntityReference = manager.CreateEntity();
         var raceEntity = raceEntityReference.Referenced;
-        raceEntity.AddComponent<RaceComponent>((int)EntityComponent.Race);
+        raceEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
         var effect = raceEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
 
-        Assert.Throws<InvalidOperationException>(() => effect.AffectedEntityId = 2);
-    }
-
-    [Fact]
-    public void Referenced_entity_not_present_is_found_when_loaded()
-    {
-        var manager = TestHelper.CreateGameManager();
-        manager.IsLoading = true;
-
-        using (var raceEntityReference = manager.CreateEntity())
-        {
-            var raceEntity = raceEntityReference.Referenced;
-            raceEntity.AddComponent<RaceComponent>((int)EntityComponent.Race);
-            var effect = raceEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
-            effect.Duration = EffectDuration.Infinite;
-            effect.AffectedEntityId = 2;
-
-            using (var beingEntityReference = manager.CreateEntity())
-            {
-                var beingEntity = beingEntityReference.Referenced;
-                beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
-                beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
-                beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
-
-                Assert.Equal(2, beingEntity.Id);
-                Assert.Same(raceEntity, beingEntity.Being!.Races.Single());
-            }
-        }
-
-        manager.IsLoading = false;
-
-        Assert.Equal(1, manager.Queue.QueuedCount);
-    }
-
-    [Fact]
-    public void Queues_messages_for_registered_events()
-    {
-        var manager = TestHelper.CreateGameManager();
-
-        Assert.Equal(nameof(manager.RacesToBeingRelationship), manager.RacesToBeingRelationship.Name);
-
-        RelationshipTestSystem testSystem;
-        using (var beingEntityReference = ((IEntityManager)manager).CreateEntity())
-        {
-            var beingEntity = (GameEntity)beingEntityReference.Referenced;
-            beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
-            beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
-            beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
-
-            using (var raceEntityReference = manager.CreateEntity())
-            {
-                var raceEntity = raceEntityReference.Referenced;
-                var effect = raceEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
-                effect.EffectType = EffectType.Move;
-                effect.Duration = EffectDuration.Infinite;
-                effect.AffectedEntityId = beingEntity.Id;
-                var race = manager.CreateComponent<RaceComponent>((int)EntityComponent.Race);
-
-                manager.Queue.ProcessQueue(manager);
-
-                testSystem = new RelationshipTestSystem(raceEntity, race, manager.RacesToBeingRelationship.Dependents);
-
-                manager.Queue.Register<EntityAddedMessage<GameEntity>>(
-                    testSystem, manager.RacesToBeingRelationship.Dependents.GetEntityAddedMessageName(), 10);
-                manager.Queue.Register<EntityRemovedMessage<GameEntity>>(
-                    testSystem, manager.RacesToBeingRelationship.Dependents.GetEntityRemovedMessageName(), 10);
-                manager.Queue.Register<PropertyValueChangedMessage<GameEntity, Species>>(
-                    testSystem, manager.RacesToBeingRelationship.Dependents.GetPropertyValueChangedMessageName(
-                        nameof(RaceComponent.Species)), 10);
-                manager.RacesToBeingRelationship.Dependents.AddListener(testSystem);
-
-                raceEntity.Race = race;
-
-                Assert.Equal(2, manager.Queue.QueuedCount);
-
-                race.Species = Species.Dragon;
-
-                Assert.Equal(3, manager.Queue.QueuedCount);
-            }
-        }
-
-        Assert.Equal(1, manager.Beings.Count);
-        Assert.Equal(0, manager.ContainedItems.Count);
-
-        manager.Queue.ProcessQueue(manager);
-
-        Assert.Equal(0, manager.Queue.QueuedCount);
-        Assert.Equal(0, manager.Beings.Count);
-        Assert.Equal(3, testSystem.MessagesProcessed);
-        Assert.Equal(3, testSystem.GroupChangesDetected);
+        Assert.Throws<InvalidOperationException>(() => effect.ContainingAbilityId = 2);
     }
 
     [Fact]
@@ -425,70 +335,6 @@ public class LookupEntityRelationshipTest
         Assert.Single(levelEntity.Room!.KnownActors);
     }
 
-    [Fact]
-    public void Dependent_listener_receives_property_changes()
-    {
-        var manager = TestHelper.CreateGameManager();
-        var listener = new DependentTestListener();
-        manager.RacesToBeingRelationship.AddDependentsListener(listener);
-
-        using var beingEntityReference = manager.CreateEntity();
-        var beingEntity = beingEntityReference.Referenced;
-        beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
-        beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
-        beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
-
-        using var raceEntityReference = manager.CreateEntity();
-        var raceEntity = raceEntityReference.Referenced;
-        var effect = raceEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
-        effect.EffectType = EffectType.Move;
-        effect.Duration = EffectDuration.Infinite;
-        effect.AffectedEntityId = beingEntity.Id;
-        var race = manager.CreateComponent<RaceComponent>((int)EntityComponent.Race);
-        raceEntity.Race = race;
-
-        Assert.Equal(1, listener.AddedCount);
-        Assert.Equal(0, listener.PropertyChangedCount);
-
-        race.Species = Species.Dragon;
-
-        Assert.Equal(1, listener.PropertyChangedCount);
-        Assert.Same(raceEntity, listener.LastPropertyChangedEntity);
-        Assert.Same(beingEntity, listener.LastPrincipal);
-    }
-
-    [Fact]
-    public void Dependent_listener_does_not_receive_property_changes_on_removal()
-    {
-        var manager = TestHelper.CreateGameManager();
-        var listener = new DependentTestListener();
-        manager.RacesToBeingRelationship.AddDependentsListener(listener);
-
-        using var beingEntityReference = manager.CreateEntity();
-        var beingEntity = beingEntityReference.Referenced;
-        beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
-        beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
-        beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
-
-        using var raceEntityReference = manager.CreateEntity();
-        var raceEntity = raceEntityReference.Referenced;
-        var effect = raceEntity.AddComponent<EffectComponent>((int)EntityComponent.Effect);
-        effect.EffectType = EffectType.Move;
-        effect.Duration = EffectDuration.Infinite;
-        effect.AffectedEntityId = beingEntity.Id;
-        var race = manager.CreateComponent<RaceComponent>((int)EntityComponent.Race);
-        raceEntity.Race = race;
-
-        Assert.Equal(1, listener.AddedCount);
-
-        // Removing the Race component removes the entity from the Races group,
-        // which should not fire a property change on the dependent listener.
-        raceEntity.Race = null;
-
-        Assert.Equal(0, listener.PropertyChangedCount);
-        Assert.Equal(1, listener.RemovedCount);
-    }
-
     /// <summary>
     ///     Regression: a single dependent group (e.g. <c>KnownPositions</c>) is shared by
     ///     multiple lookup relationships that differ only by their secondary principal
@@ -678,6 +524,149 @@ public class LookupEntityRelationshipTest
         Assert.Same(itemKnowledgeEntity, levelEntity.Room.KnownItems[sharedCell]);
     }
 
+    [Fact]
+    public void Referenced_entity_not_present_is_found_when_loaded()
+    {
+        var manager = TestHelper.CreateGameManager();
+        manager.IsLoading = true;
+
+        using (var actorEntityReference = manager.CreateEntity())
+        {
+            var actorEntity = actorEntityReference.Referenced;
+            actorEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
+            actorEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+            var position = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
+            position.RoomId = 2;
+            position.Cell = new Point(2, 3);
+            actorEntity.Position = position;
+
+            // During loading the actor can't be linked yet: the room it references doesn't exist.
+            Assert.False(manager.RoomActorsToRoomCellRelationship.Dependents.ContainsEntity(actorEntity.Id));
+
+            using (var roomEntityReference = manager.CreateEntity())
+            {
+                var roomEntity = roomEntityReference.Referenced;
+                roomEntity.AddComponent<RoomComponent>((int)EntityComponent.Room);
+
+                Assert.Equal(2, roomEntity.Id);
+
+                // Once its principal exists the deferred dependent is linked into the room's cell.
+                Assert.Same(actorEntity, roomEntity.Room!.Actors.GetValueOrDefault(new Point(2, 3)));
+            }
+        }
+
+        manager.IsLoading = false;
+    }
+
+    [Fact]
+    public void Queues_messages_for_registered_events()
+    {
+        var manager = TestHelper.CreateGameManager();
+
+        Assert.Equal(nameof(manager.RoomActorsToRoomCellRelationship),
+            manager.RoomActorsToRoomCellRelationship.Name);
+
+        using var roomEntityReference = manager.CreateEntity();
+        var roomEntity = roomEntityReference.Referenced;
+        roomEntity.AddComponent<RoomComponent>((int)EntityComponent.Room);
+
+        RelationshipTestSystem testSystem;
+        using (var actorEntityReference = manager.CreateEntity())
+        {
+            var actorEntity = actorEntityReference.Referenced;
+            actorEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
+            var being = actorEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+            var position = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
+            position.RoomId = roomEntity.Id;
+            position.Cell = new Point(2, 3);
+
+            manager.Queue.ProcessQueue(manager);
+
+            testSystem = new RelationshipTestSystem(
+                actorEntity, being, manager.RoomActorsToRoomCellRelationship.Dependents);
+
+            manager.Queue.Register<EntityAddedMessage<GameEntity>>(
+                testSystem, manager.RoomActorsToRoomCellRelationship.Dependents.GetEntityAddedMessageName(), 10);
+            manager.Queue.Register<EntityRemovedMessage<GameEntity>>(
+                testSystem, manager.RoomActorsToRoomCellRelationship.Dependents.GetEntityRemovedMessageName(), 10);
+            manager.Queue.Register<PropertyValueChangedMessage<GameEntity, int>>(
+                testSystem, manager.RoomActorsToRoomCellRelationship.Dependents.GetPropertyValueChangedMessageName(
+                    nameof(BeingComponent.EntropyState)), 10);
+            manager.RoomActorsToRoomCellRelationship.Dependents.AddListener(testSystem);
+
+            // Linking the actor into the room's cell queues an add; changing a registered property queues a
+            // property change; unlinking it (removing its Position) queues a remove.
+            actorEntity.Position = position;
+            being.EntropyState = 5;
+            actorEntity.Position = null;
+
+            manager.Queue.ProcessQueue(manager);
+
+            Assert.Equal(3, testSystem.MessagesProcessed);
+            Assert.Equal(3, testSystem.GroupChangesDetected);
+        }
+    }
+
+    [Fact]
+    public void Dependent_listener_receives_property_changes()
+    {
+        var manager = TestHelper.CreateGameManager();
+        var listener = new DependentTestListener();
+        manager.RoomActorsToRoomCellRelationship.AddDependentsListener(listener);
+
+        using var roomEntityReference = manager.CreateEntity();
+        var roomEntity = roomEntityReference.Referenced;
+        roomEntity.AddComponent<RoomComponent>((int)EntityComponent.Room);
+
+        using var actorEntityReference = manager.CreateEntity();
+        var actorEntity = actorEntityReference.Referenced;
+        actorEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
+        var being = actorEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+        var position = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
+        position.RoomId = roomEntity.Id;
+        position.Cell = new Point(2, 3);
+        actorEntity.Position = position;
+
+        Assert.Equal(1, listener.AddedCount);
+        Assert.Equal(0, listener.PropertyChangedCount);
+
+        being.EntropyState = 5;
+
+        Assert.Equal(1, listener.PropertyChangedCount);
+        Assert.Same(actorEntity, listener.LastPropertyChangedEntity);
+        Assert.Same(roomEntity, listener.LastPrincipal);
+    }
+
+    [Fact]
+    public void Dependent_listener_does_not_receive_property_changes_on_removal()
+    {
+        var manager = TestHelper.CreateGameManager();
+        var listener = new DependentTestListener();
+        manager.RoomActorsToRoomCellRelationship.AddDependentsListener(listener);
+
+        using var roomEntityReference = manager.CreateEntity();
+        var roomEntity = roomEntityReference.Referenced;
+        roomEntity.AddComponent<RoomComponent>((int)EntityComponent.Room);
+
+        using var actorEntityReference = manager.CreateEntity();
+        var actorEntity = actorEntityReference.Referenced;
+        actorEntity.AddComponent<AIComponent>((int)EntityComponent.AI);
+        actorEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
+        var position = manager.CreateComponent<PositionComponent>((int)EntityComponent.Position);
+        position.RoomId = roomEntity.Id;
+        position.Cell = new Point(2, 3);
+        actorEntity.Position = position;
+
+        Assert.Equal(1, listener.AddedCount);
+
+        // Removing the Position removes the entity from the RoomActors group,
+        // which should not fire a property change on the dependent listener.
+        actorEntity.Position = null;
+
+        Assert.Equal(0, listener.PropertyChangedCount);
+        Assert.Equal(1, listener.RemovedCount);
+    }
+
     private class DependentTestListener : IDependentEntityChangeListener<GameEntity>
     {
         public int AddedCount
@@ -718,7 +707,7 @@ public class LookupEntityRelationshipTest
     private class RelationshipTestSystem :
         IGameSystem<EntityAddedMessage<GameEntity>>,
         IGameSystem<EntityRemovedMessage<GameEntity>>,
-        IGameSystem<PropertyValueChangedMessage<GameEntity, Species>>,
+        IGameSystem<PropertyValueChangedMessage<GameEntity, int>>,
         IEntityChangeListener<GameEntity>
     {
         private readonly GameEntity _testEntity;
@@ -760,22 +749,21 @@ public class LookupEntityRelationshipTest
         {
             Assert.Same(_testEntity, message.Entity);
             Assert.Same(_group, message.Group);
-            Assert.Null(message.RemovedComponent);
             Assert.Equal(0, message.PropertyChanges.Count);
 
             MessagesProcessed++;
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, Species> message,
+        public MessageProcessingResult Process(PropertyValueChangedMessage<GameEntity, int> message,
             GameManager state)
         {
             Assert.Same(_testEntity, message.Entity);
             Assert.Equal(_testComponent.ComponentId, message.ChangedComponent?.ComponentId);
             Assert.Same(_testComponent, message.ChangedComponent);
-            Assert.Equal(nameof(RaceComponent.Species), message.ChangedPropertyName);
-            Assert.Equal(Species.Default, message.OldValue);
-            Assert.Equal(Species.Dragon, message.NewValue);
+            Assert.Equal(nameof(BeingComponent.EntropyState), message.ChangedPropertyName);
+            Assert.Equal(0, message.OldValue);
+            Assert.Equal(5, message.NewValue);
 
             MessagesProcessed++;
             return MessageProcessingResult.ContinueProcessing;
@@ -793,7 +781,6 @@ public class LookupEntityRelationshipTest
         public void OnEntityRemoved(in EntityChange<GameEntity> entityChange)
         {
             Assert.Same(_testEntity, entityChange.Entity);
-            Assert.Null(entityChange.RemovedComponent);
             Assert.Equal(0, entityChange.PropertyChanges.Count);
 
             GroupChangesDetected++;
@@ -807,9 +794,9 @@ public class LookupEntityRelationshipTest
             Assert.Equal(1, entityChange.PropertyChanges.Count);
             Assert.Equal(_testComponent.ComponentId, changes.GetChangedComponent(0).ComponentId);
             Assert.Same(_testComponent, changes.GetChangedComponent(0));
-            Assert.Equal(nameof(RaceComponent.Species), changes.GetChangedPropertyName(0));
-            Assert.Equal(Species.Default, changes.GetValue<Species>(0, ValueType.Old));
-            Assert.Equal(Species.Dragon, changes.GetValue<Species>(0, ValueType.Current));
+            Assert.Equal(nameof(BeingComponent.EntropyState), changes.GetChangedPropertyName(0));
+            Assert.Equal(0, changes.GetValue<int>(0, ValueType.Old));
+            Assert.Equal(5, changes.GetValue<int>(0, ValueType.Current));
 
             GroupChangesDetected++;
         }

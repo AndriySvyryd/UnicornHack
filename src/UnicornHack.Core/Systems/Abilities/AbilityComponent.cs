@@ -17,6 +17,7 @@ public class AbilityComponent : GameComponent
     private int _targetingShapeSize = 1;
     private TargetingShape _targetingShape;
     private AbilityAction _action;
+    private int? _noise;
     private AbilitySuccessCondition _successCondition;
     private string? _accuracy;
     private int _cooldown;
@@ -52,7 +53,16 @@ public class AbilityComponent : GameComponent
                 return _template;
             }
 
-            _template = Ability.Loader.Find(_name);
+            var separator = _name.LastIndexOf('#');
+            var templateName = separator > 0
+                               && int.TryParse(_name[(separator + 1)..], out _)
+                ? _name[..separator]
+                : _name;
+            _template = Ability.Loader.Find(templateName)
+                        ?? Entity.Manager.Game.Services.Data.PlayerRaces
+                            .FindByIndex(templateName)?.GetRaceAbilityTemplate()
+                        ?? Entity.Manager.Game.Services.Data.Creatures
+                            .FindByIndex(templateName)?.GetRaceAbilityTemplate();
             _templateLoaded = true;
             return _template;
         }
@@ -61,6 +71,20 @@ public class AbilityComponent : GameComponent
         {
             _template = value;
             _templateLoaded = true;
+        }
+    }
+
+    public bool IsLeveledSupplement
+    {
+        get
+        {
+            if (Name is not { } name)
+            {
+                return false;
+            }
+
+            var separator = name.LastIndexOf('#');
+            return separator > 0;
         }
     }
 
@@ -112,6 +136,12 @@ public class AbilityComponent : GameComponent
     {
         get => _action;
         set => SetWithNotify(value, ref _action);
+    }
+
+    public int? Noise
+    {
+        get => _noise;
+        set => SetWithNotify(value, ref _noise);
     }
 
     public int? ActivationCondition
@@ -270,12 +300,14 @@ public class AbilityComponent : GameComponent
         ability.TargetingShapeSize = TargetingShapeSize;
         ability.TargetingShape = TargetingShape;
         ability.Action = Action;
+        ability.Noise = Noise;
         ability.SuccessCondition = SuccessCondition;
         ability.Cooldown = Cooldown;
         ability.Accuracy = Accuracy;
         ability.XPCooldown = XPCooldown;
         ability.Delay = Delay;
         ability.EnergyCost = EnergyCost;
+        ability.Template = Template;
 
         abilityEffectEntity.Ability = ability;
 
@@ -306,6 +338,7 @@ public class AbilityComponent : GameComponent
         _targetingShapeSize = default;
         _targetingShape = default;
         _action = default;
+        _noise = default;
         _successCondition = default;
         _accuracy = default;
         AccuracyFunction = default;

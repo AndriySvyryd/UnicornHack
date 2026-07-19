@@ -5,7 +5,6 @@ using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
-using UnicornHack.Systems.Senses;
 using UnicornHack.Utils;
 using UnicornHack.Utils.MessagingECS;
 
@@ -121,22 +120,6 @@ public class GameEntity : Entity
         }
     }
 
-    public RaceComponent? Race
-    {
-        get => (RaceComponent?)FindComponent((int)EntityComponent.Race);
-        set
-        {
-            if (value == null)
-            {
-                RemoveComponent(EntityComponent.Race);
-            }
-            else
-            {
-                AddComponent(value);
-            }
-        }
-    }
-
     public ItemComponent? Item
     {
         get => (ItemComponent?)FindComponent((int)EntityComponent.Item);
@@ -201,22 +184,6 @@ public class GameEntity : Entity
         }
     }
 
-    public SensorComponent? Sensor
-    {
-        get => (SensorComponent?)FindComponent((int)EntityComponent.Sensor);
-        set
-        {
-            if (value == null)
-            {
-                RemoveComponent(EntityComponent.Sensor);
-            }
-            else
-            {
-                AddComponent(value);
-            }
-        }
-    }
-
     public KnowledgeComponent? Knowledge
     {
         get => (KnowledgeComponent?)FindComponent((int)EntityComponent.Knowledge);
@@ -225,6 +192,22 @@ public class GameEntity : Entity
             if (value == null)
             {
                 RemoveComponent(EntityComponent.Knowledge);
+            }
+            else
+            {
+                AddComponent(value);
+            }
+        }
+    }
+
+    public ActiveEffectsComponent? ActiveEffects
+    {
+        get => (ActiveEffectsComponent?)FindComponent((int)EntityComponent.ActiveEffects);
+        set
+        {
+            if (value == null)
+            {
+                RemoveComponent(EntityComponent.ActiveEffects);
             }
             else
             {

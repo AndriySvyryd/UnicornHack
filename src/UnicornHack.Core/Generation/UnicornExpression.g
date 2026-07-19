@@ -21,6 +21,7 @@ primaryExpression
    : Integer=INTEGER                                                 #integerLiteralExpression
    | Float=FLOAT                                                     #floatLiteralExpression
    | String=STRING_LITERAL                                           #stringLiteralExpression
+   | NULL                                                            #nullLiteralExpression
    | INFINITY                                                        #constantExpression
    | '$' Variable=IDENTIFIER '[' Index=expression ']'                #indexedVariableExpression
    | '$' Variable=IDENTIFIER                                         #variableExpression
@@ -102,6 +103,10 @@ fragment DIGIT
 
 INFINITY
    : 'Infinity'
+   ;
+
+NULL
+   : 'null'
    ;
 
 IDENTIFIER

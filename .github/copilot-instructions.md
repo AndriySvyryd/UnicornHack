@@ -89,8 +89,6 @@ Initial load (`GetState`): uses `PlayerChangeListener.SerializePlayer` - a full 
 - Mind performance, especially for database operations; avoid unnecessary allocations and GC pressure in game loops.
 - On hot paths, prefer more efficient code even if less readable; use object pooling where appropriate.
 
-## ECS Architecture Guidelines
-
 ### Entity Management
 - Create entities via `GameManager.CreateEntity()`; add/remove components through entity properties or methods; manage relationships via specialized relationship classes.
 
@@ -104,7 +102,6 @@ Relationships maintain navigation properties on components for efficient access 
 | `KnowledgeComponent.KnownEntityId` | `knowledge.KnownEntity` | Known entity |
 | `ItemComponent.ContainerId` | `item.ContainerEntity` | Container entity |
 | `AbilityComponent.OwnerId` | `ability.OwnerEntity` | Owner entity |
-| `EffectComponent.AffectedEntityId` | `effect.AffectedEntity` | Affected entity |
 | `EffectComponent.SourceAbilityId` | `effect.SourceAbility` | Source ability entity |
 | `EffectComponent.SourceEffectId` | `effect.SourceEffect` | Source effect entity |
 | `EffectComponent.ContainingAbilityId` | `effect.ContainingAbility` | Containing ability entity |
@@ -113,15 +110,17 @@ Collections maintained by relationships:
 - `level.Actors/Items/Connections` - `Dictionary<Point, GameEntity>` of actors/items/connections on this level
 - `level.KnownActors/KnownItems/KnownConnections` - knowledge entities keyed by position
 - `level.IncomingConnections` - connections targeting this level
-- `being.Races/Abilities/AppliedEffects/Items/SlottedAbilities` - related entity collections
+- `being.Races/Abilities/Items/SlottedAbilities` - related entity collections
 - `ability.Effects` - effects belonging to this ability
 - `position.Knowledge` - back-reference from a level entity to its knowledge entity
 
 ### Component Design
 - Inherit from `GameComponent`; use `SetWithNotify()` for change notifications; implement `IKeepAliveComponent` to persist; release resources in `Clean()`.
+- Data only: no business logic, no calls into systems, no cross-entity or index maintenance. Anything reactive belongs in a relationship or system.
 
 ### System Implementation
 - Implement `IGameSystem<TMessage>`; register handlers in `GameManager.InitializeSystems()`; use `MessageProcessingResult` to control flow; process entities through entity groups, not direct iteration.
+- Stateless: hold no data/state fields. Shared indexes, reverse lookups, and relationships live on the `GameManager` (as relationship/index objects), not as fields on the system.
 
 ### Message Handling
 - Messages are lightweight data carriers; use specific types per event; process in order through the sequential message queue; return appropriate `MessageProcessingResult` values.
@@ -151,3 +150,6 @@ Collections maintained by relationships:
 ## Editor and Tooling
 
 - Use established serialization patterns and existing templates; use `CSClassSerializer` for codegen; maintain backwards compatibility for saved game data.
+- Content lives as C# data files under `UnicornHack.Core/Data/` (creatures, items, abilities, map fragments, ...), loaded by the generators' `Loader`s and generated back out by the `UnicornHack.Editor` console app, which round-trips every type through `CSClassSerializer` into a `New` output folder.
+- Each generation class controls its own serialization via a static `PropertyCSScriptSerializer<T>` built from `GetPropertyConditions<T>()` (a property -> "should emit" predicate, usually "differs from the base/default"). When adding or renaming a serialized property on a generation class, update its `GetPropertyConditions` (and the `Data/` files) so the editor round-trip stays byte-identical.
+- Runtime-only changes (systems, message handlers, resolved-property logic) have no serialization surface - only generation classes under `Generation/` and the `Data/` files affect the editor. After changing a generation class, run the editor and diff its `New` output against `Data/` to confirm content round-trips unchanged.

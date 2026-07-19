@@ -5,7 +5,7 @@ public static partial class ItemData
     public static readonly Item PotionOfExperience = new Item
     {
         Name = "potion of experience",
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {

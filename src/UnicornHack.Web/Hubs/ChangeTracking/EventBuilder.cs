@@ -18,7 +18,7 @@ namespace UnicornHack.Hubs.ChangeTracking;
 /// </remarks>
 public class EventBuilder : IGameSystem<SteppedOnConnectionMessage>
 {
-    private readonly Dictionary<int, List<object?>> _pendingByPlayer = new();
+    private readonly Dictionary<int, List<TurnEvent>> _pendingByPlayer = new();
 
     public MessageProcessingResult Process(SteppedOnConnectionMessage message, GameManager manager)
     {
@@ -53,10 +53,11 @@ public class EventBuilder : IGameSystem<SteppedOnConnectionMessage>
             _pendingByPlayer[actor.Id] = list;
         }
 
-        list.Add(new SteppedOnConnectionEvent
+        list.Add(new TurnEvent
         {
-            Scope = scope,
-            ConnectionId = message.ConnectionEntity.Id
+            Type = TurnEventType.SteppedOnConnection,
+            Value1 = (int)scope,
+            Value2 = message.ConnectionEntity.Id
         });
 
         return MessageProcessingResult.ContinueProcessing;
@@ -66,7 +67,7 @@ public class EventBuilder : IGameSystem<SteppedOnConnectionMessage>
     ///     Returns the events recorded for the given player since the last
     ///     <see cref="Reset" />, or <c>null</c> if there are none.
     /// </summary>
-    public List<object?>? GetEvents(int playerEntityId)
+    public List<TurnEvent>? GetEvents(int playerEntityId)
         => _pendingByPlayer.TryGetValue(playerEntityId, out var list) && list.Count > 0
             ? list
             : null;

@@ -107,7 +107,7 @@ public class TerminalBranchConnectionTest
         LevelGenerator.EnsureGenerated(level);
 
         var exitRoom = level.Rooms.Single(r => (r.Features & RoomFeatures.Exit) != 0);
-        // No inter-level connection \u2014 the only Connections entries (if any) should be
+        // No inter-level connection - the only Connections entries (if any) should be
         // intra-level, never spanning to a different GameLevel.
         var outboundInterLevel = exitRoom.Connections.Values
             .Select(c => c.Connection!)

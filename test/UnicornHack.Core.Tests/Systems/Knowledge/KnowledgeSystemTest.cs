@@ -1,5 +1,6 @@
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
+using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
 
@@ -57,7 +58,7 @@ public class KnowledgeSystemTest
         Assert.Equal(connection.Position.Cell, connectionKnowledge.Position!.Cell);
         Assert.Equal(connection.Position.Heading, connectionKnowledge.Position.Heading);
         Assert.Same(connection, connectionKnowledge.Knowledge!.KnownEntity);
-        Assert.Equal(SenseType.Sight, connectionKnowledge.Knowledge.SensedType);
+        Assert.Equal(SenseType.Sight | SenseType.Touch, connectionKnowledge.Knowledge.SensedType);
         Assert.Same(level.KnownConnections.GetValueOrDefault(new Point(0, 1)), connectionKnowledge);
 
         var travelMessage = TravelMessage.Create(manager);
@@ -84,7 +85,7 @@ public class KnowledgeSystemTest
         Assert.Equal(undine.Position.Cell, nymphKnowledge.Position.Cell);
         Assert.Equal(undine.Position.Heading, nymphKnowledge.Position.Heading);
         Assert.Same(undine, nymphKnowledge.Knowledge.KnownEntity);
-        Assert.Equal(SenseType.Sight, nymphKnowledge.Knowledge.SensedType);
+        Assert.Equal(SenseType.Touch, nymphKnowledge.Knowledge.SensedType);
         Assert.Same(level.KnownActors.GetValueOrDefault(new Point(1, 1)), nymphKnowledge);
 
         Assert.Equal(dagger.Position.Cell, daggerKnowledge.Position.Cell);
@@ -118,7 +119,7 @@ public class KnowledgeSystemTest
         var travelMessage = TravelMessage.Create(manager);
         travelMessage.ActorEntity = player;
         travelMessage.TargetHeading = Direction.South;
-        travelMessage.TargetCell = player.Position.Cell;
+        travelMessage.TargetCell = player.Position.Cell!.Value;
         manager.Enqueue(travelMessage);
 
         manager.Queue.ProcessQueue(manager);
@@ -130,5 +131,32 @@ public class KnowledgeSystemTest
         Assert.True(nymphKnowledge.Knowledge.IsIdentified);
         // Knowledge position should remain at the last known location
         Assert.Equal(new Point(0, 0), nymphKnowledge.Position!.Cell);
+    }
+
+    [Fact]
+    public void Revealed_room_keeps_an_offscreen_attacker_visible()
+    {
+        var game = TestHelper.CreateGame(seed: 1u);
+        game.Options.RevealRooms = true;
+        var room = TestHelper.BuildRoom(".....", game);
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, room, new Point(0, 0));
+        player.Position!.Heading = Direction.West;
+        var attacker = CreatureData.HumanWarrior.Instantiate(room, new Point(4, 0));
+        var manager = game.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.True((manager.SensorySystem.CanSense(player, attacker) & SenseType.Sight) != 0);
+        Assert.True((attacker.Position!.Knowledge!.Knowledge!.SensedType & SenseType.Sight) != 0);
+
+        var attack = AttackResultMessage.Create(manager);
+        attack.ActivatorEntity = attacker;
+        attack.TargetEntity = player;
+        attack.AbilityAction = AbilityAction.Punch;
+        attack.Hit = false;
+        attack.RevealsAttacker = true;
+        manager.Enqueue(attack);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.True((attacker.Position.Knowledge!.Knowledge!.SensedType & SenseType.Sight) != 0);
     }
 }

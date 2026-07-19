@@ -16,10 +16,7 @@ namespace UnicornHack.DiagnosticClient.Connection;
 ///     Manages the SignalR connection to <c>UnicornHack.Web</c>'s <c>GameHub</c>.
 ///     Mirrors the configuration used by the Unity client
 ///     (<c>Assets/Scripts/NetworkCommunicationManager.cs</c>) so the wire format matches.
-///     Uses the server's <see cref="GeneratedResolver" />: every change-tracked DTO has a
-///     hand-written formatter (see <c>UnicornHack.Web/Hubs/MessagePack/*</c>) that only
-///     invokes a property setter when its <c>ChangedProperties</c> bit is set, so the
-///     setter side effect that re-sets the same bit is always a no-op.
+///     Uses server DTOs and sparse formatters that implement the same wire contract as the production client.
 ///     The MCP server stays alive while the game server is stopped or restarted:
 ///     SignalR auto-reconnects forever, and <see cref="EnsureReadyAsync" /> lazily
 ///     (re)connects + re-runs <c>GetState</c> on the next tool invocation.
@@ -56,7 +53,7 @@ public sealed class GameConnection : IAsyncDisposable
 
     public bool StateReady => _stateReady;
 
-    public List<object?>? LastUIRequest { get; private set; }
+    public DialogData? LastUIRequest { get; private set; }
 
     public IReadOnlyCollection<(string user, string message)> Chat => _chat.ToArray();
 
@@ -126,7 +123,7 @@ public sealed class GameConnection : IAsyncDisposable
         try
         {
             _turnTracker.ArmForNextChangeSets();
-            await _hub!.InvokeAsync(
+            await _hub!.InvokeAsync<string?>(
                 "PerformAction", _options.PlayerName, (int)action, target, target2, cancellationToken)
                 .ConfigureAwait(false);
         }
@@ -136,13 +133,14 @@ public sealed class GameConnection : IAsyncDisposable
         }
     }
 
-    public async Task<List<object?>?> QueryGameAsync(int queryType, int[] arguments, CancellationToken cancellationToken)
+    public async Task<DialogData?> QueryGameAsync(
+        int queryType, int[] arguments, CancellationToken cancellationToken)
     {
         await EnsureReadyAsync(cancellationToken).ConfigureAwait(false);
         await _callLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var payload = await _hub!.InvokeAsync<List<object?>>(
+            var payload = await _hub!.InvokeAsync<DialogData>(
                 "QueryGame", _options.PlayerName, queryType, arguments, cancellationToken)
                 .ConfigureAwait(false);
             LastUIRequest = (GameQueryType)queryType == GameQueryType.Clear ? null : payload;
@@ -154,7 +152,8 @@ public sealed class GameConnection : IAsyncDisposable
         }
     }
 
-    public async Task<List<object?>?> ShowDialogAsync(int queryType, int[] arguments, CancellationToken cancellationToken)
+    public async Task<DialogData?> ShowDialogAsync(
+        int queryType, int[] arguments, CancellationToken cancellationToken)
     {
         // The hub's ShowDialog broadcasts via ReceiveUIRequest, but for diagnostic use
         // we want the synchronous payload, so delegate to QueryGame.
@@ -175,7 +174,7 @@ public sealed class GameConnection : IAsyncDisposable
         // currently has no authentication wired up, so this will throw NRE on the server.
         // Exposed for completeness; failures surface to the caller.
         await EnsureReadyAsync(cancellationToken).ConfigureAwait(false);
-        await _hub!.InvokeAsync("SendMessage", message, cancellationToken).ConfigureAwait(false);
+        await _hub!.InvokeAsync<string?>("SendMessage", message, cancellationToken).ConfigureAwait(false);
     }
 
     private void BuildHub()
@@ -190,8 +189,7 @@ public sealed class GameConnection : IAsyncDisposable
 
         var resolver = CompositeResolver.Create(
             GeneratedResolver.Instance,
-            BuiltinResolver.Instance,
-            PrimitiveObjectResolver.Instance);
+            BuiltinResolver.Instance);
 
         var serializerOptions = MessagePackSerializerOptions.Standard
             .WithSecurity(MessagePackSecurity.UntrustedData)
@@ -279,10 +277,10 @@ public sealed class GameConnection : IAsyncDisposable
             }
         });
 
-        hub.On<List<object?>>("ReceiveUIRequest", payload =>
+        hub.On<DialogData>("ReceiveUIRequest", payload =>
         {
             LastUIRequest = payload;
-            _logger.LogInformation("Received UI request with {Count} elements", payload?.Count ?? 0);
+            _logger.LogInformation("Received UI request");
         });
 
         hub.On<string, string>("ReceiveMessage", (user, message) =>

@@ -5,11 +5,13 @@ public static partial class CreatureData
     public static readonly Creature ElectricEel = new Creature
     {
         Name = "electric eel",
-        Species = Species.Eel,
-        Abilities = new HashSet<Ability>
+        SpeciesClass = SpeciesClass.Aquatic,
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "electric eel ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -18,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Shock { Damage = "140*MightModifier()" } }
+                Effects = new List<Effect> { new ShockDamage { Amount = "140*MightModifier()" } }
             },
             new Ability
             {
+                Name = "electric eel ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -30,7 +34,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Bind { Duration = EffectDuration.UntilTimeout, DurationAmount = "10" } }
+                Effects = new List<Effect> { new Bind() }
             }
         },
         InitialLevel = 7,
@@ -39,10 +43,10 @@ public static partial class CreatureData
         Weight = 600,
         MovementDelay = 20,
         TurningDelay = 20,
-        Perception = -6,
-        Might = -6,
-        Speed = -6,
-        Focus = -6,
+        PerceptionBonus = -6,
+        MightBonus = -6,
+        SpeedBonus = -6,
+        FocusBonus = -6,
         Armor = 6,
         ElectricityResistance = 75,
         UpperExtremities = ExtremityType.None,

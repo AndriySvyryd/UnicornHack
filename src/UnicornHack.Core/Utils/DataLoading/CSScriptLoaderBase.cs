@@ -15,6 +15,7 @@ public abstract class CSScriptLoaderBase<T> : Loader<T>
         get;
     }
 
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
     public Type DataType
     {
         get;
@@ -29,14 +30,16 @@ public abstract class CSScriptLoaderBase<T> : Loader<T>
     private readonly object _lockRoot = new();
 
     // Loader shouldn't be declared on dataType to allow it to be loaded lazily
-    protected CSScriptLoaderBase(string relativePath, Type dataType)
+    protected CSScriptLoaderBase(
+        string relativePath,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type dataType)
     {
         BasePath = Path.Combine(AppContext.BaseDirectory, relativePath);
         RelativePath = relativePath;
         DataType = dataType;
     }
 
-    protected override Dictionary<string, T> Load()
+    protected override Dictionary<string, T> CreateNameLookup()
     {
         lock (_lockRoot)
         {

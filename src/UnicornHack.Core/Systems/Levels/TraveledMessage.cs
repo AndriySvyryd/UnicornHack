@@ -46,6 +46,18 @@ public class TraveledMessage : IMessage
         set;
     }
 
+    public string InitialBranchName
+    {
+        get;
+        set;
+    } = null!;
+
+    public byte InitialDepth
+    {
+        get;
+        set;
+    }
+
     public Direction TargetHeading
     {
         get;
@@ -66,9 +78,9 @@ public class TraveledMessage : IMessage
 
     string IMessage.MessageName
     {
-        get;
-        set;
-    } = null!;
+        get => Name;
+        set => Debug.Assert(value == Name);
+    }
 
     public void Clean()
     {
@@ -76,6 +88,8 @@ public class TraveledMessage : IMessage
         InitialLevel = default!;
         InitialHeading = default;
         InitialLevelCell = default;
+        InitialBranchName = default!;
+        InitialDepth = default;
         TargetHeading = default;
         TargetCell = default;
         Successful = default;

@@ -3,8 +3,17 @@ using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
 
-public class AddAbility : DurationEffect
+public class AddAbility : Effect
 {
+    private static readonly EffectMetadata _metadata = EffectMetadata.Default(
+            EffectType.AddAbility, defaultDuration: EffectDuration.Infinite,
+            combinationFunction: ValueCombinationFunction.Sum,
+            defaultAmount: "1",
+            applicationHandler: Apply);
+
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void RegisterMetadataProvider() => _ = _metadata;
+
     public Ability? Ability
     {
         get;
@@ -17,34 +26,39 @@ public class AddAbility : DurationEffect
         set;
     } = null!;
 
-    public int Level
+    public override EffectMetadata Metadata => _metadata;
+
+    private static void Apply(in EffectApplicationContext context)
     {
-        get;
-        set;
+        var addedName = context.Effect.Component.TargetName;
+        Debug.Assert(addedName != null);
+
+        context.System.ApplyAddAbility(
+            context,
+            addedName,
+            context.Amount);
     }
 
-    public ValueCombinationFunction Function
+    protected override void ConfigureEffect(EffectComponent effect, string? secondaryAmountOverride)
     {
-        get;
-        set;
-    }
+        base.ConfigureEffect(effect, secondaryAmountOverride);
 
-    protected override void ConfigureEffect(EffectComponent effect)
-    {
-        base.ConfigureEffect(effect);
-
-        effect.EffectType = EffectType.AddAbility;
-
-        if (Ability != null)
+        if (Ability == null)
         {
-            Ability.AddToEffect(effect.Entity);
+            effect.TargetName = Name;
         }
         else
         {
-            effect.TargetName = Name;
-            effect.AppliedAmount = Level;
-            effect.CombinationFunction = Function;
+            if (string.IsNullOrWhiteSpace(Ability.Name))
+            {
+                throw new InvalidOperationException(
+                    $"An ability embedded in '{ContainingAbility.Name}' must have a name.");
+            }
+
+            effect.TargetName = Ability.Name;
         }
+
+        Ability?.AddToEffect(effect.Entity);
     }
 
     private static readonly CSScriptSerializer Serializer =
@@ -53,12 +67,10 @@ public class AddAbility : DurationEffect
     protected static new Dictionary<string, Func<TEffect, object?, bool>>
         GetPropertyConditions<TEffect>() where TEffect : Effect
     {
-        var propertyConditions = DurationEffect.GetPropertyConditions<TEffect>();
+        var propertyConditions = Effect.GetPropertyConditions<TEffect>();
 
         propertyConditions.Add(nameof(Ability), (_, v) => v != default);
         propertyConditions.Add(nameof(Name), (_, v) => v != default);
-        propertyConditions.Add(nameof(Level), (_, v) => (int)v! != default);
-        propertyConditions.Add(nameof(Function), (_, v) => (ValueCombinationFunction)v! != default);
         return propertyConditions;
     }
 

@@ -9,11 +9,11 @@ namespace UnicornHack;
 public static class Extensions
 {
     public static IReadOnlyCollection<T> GetFlags<T>(this T flags)
-        where T : Enum
+        where T : struct, Enum
     {
         var values = new List<T>();
         var defaultValue = Enum.ToObject(typeof(T), value: 0);
-        foreach (Enum enumValue in Enum.GetValues(typeof(T)))
+        foreach (var enumValue in Enum.GetValues<T>())
         {
             if (enumValue.Equals(defaultValue))
             {
@@ -86,7 +86,7 @@ public static class Extensions
     }
 
     public static IReadOnlyCollection<T> GetNonRedundantFlags<T>(this T flags, bool removeComposites)
-        where T : Enum
+        where T : struct, Enum
     {
         var values = new HashSet<T>(flags.GetFlags());
         foreach (var currentValue in values.ToList())
@@ -237,6 +237,10 @@ public static class Extensions
         return expression;
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2072",
+        Justification = "The declaring interface property is embedded in the caller's expression tree.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2067",
+        Justification = "Relationship component properties are rooted by PropertyDescription.Loader.")]
     private static PropertyInfo BindRuntimeProperty(PropertyInfo propertyInfo, Type parameterType)
     {
         var declaringType = propertyInfo.DeclaringType;
@@ -268,11 +272,15 @@ public static class Extensions
         return propertyInfo;
     }
 
-    public static (Delegate Get, Delegate ComponentGet, Delegate? Set) GetPropertyAccessors(
-        this LambdaExpression propertyAccessExpression)
-        => new PropertyAccessorExpressionVisitor().GetPropertyAccessors(propertyAccessExpression);
+    public static (
+        Func<TEntity, TProperty> Get,
+        Func<Component, TProperty> ComponentGet,
+        Action<TEntity, TProperty>? Set) GetPropertyAccessors<TEntity, TProperty>(
+        this Expression<Func<TEntity, TProperty>> propertyAccessExpression)
+        => new PropertyAccessorExpressionVisitor<TEntity, TProperty>()
+            .GetPropertyAccessors(propertyAccessExpression);
 
-    private class PropertyAccessorExpressionVisitor : ExpressionVisitor
+    private class PropertyAccessorExpressionVisitor<TEntity, TProperty> : ExpressionVisitor
     {
         private ParameterExpression _rootParameter = null!;
         private Type _resultType = null!;
@@ -282,8 +290,11 @@ public static class Extensions
         private Expression? _setExpression;
         private bool _isLastMember;
 
-        public (Delegate Get, Delegate ComponentGet, Delegate? Set) GetPropertyAccessors(
-            LambdaExpression propertyAccessExpression)
+        public (
+            Func<TEntity, TProperty> Get,
+            Func<Component, TProperty> ComponentGet,
+            Action<TEntity, TProperty>? Set) GetPropertyAccessors(
+            Expression<Func<TEntity, TProperty>> propertyAccessExpression)
         {
             if (propertyAccessExpression.Parameters.Count != 1)
             {
@@ -300,11 +311,18 @@ public static class Extensions
 
             var getExpression = Visit(propertyAccessExpression.Body);
 
-            var get = Expression.Lambda(getExpression, _rootParameter).Compile();
-            var componentGet = Expression.Lambda(_componentGetExpression, _componentParameter).Compile();
+            var preferInterpretation = !RuntimeFeature.IsDynamicCodeSupported;
+
+            var get = Expression.Lambda<Func<TEntity, TProperty>>(getExpression, _rootParameter)
+                .Compile(preferInterpretation);
+            var componentGet = Expression.Lambda<Func<Component, TProperty>>(
+                    _componentGetExpression, _componentParameter)
+                .Compile(preferInterpretation);
             var set = _setExpression == null
                 ? null
-                : Expression.Lambda(_setExpression, _rootParameter, _valueParameter).Compile();
+                : Expression.Lambda<Action<TEntity, TProperty>>(
+                        _setExpression, _rootParameter, _valueParameter)
+                    .Compile(preferInterpretation);
             return (get, componentGet, set);
         }
 
@@ -403,14 +421,6 @@ public static class Extensions
 
             Expression propertyAccess = Expression.Property(getExpression, runtimeProperty);
 
-            var propertyType = propertyAccess.Type;
-            if (propertyType.IsValueType
-                && Nullable.GetUnderlyingType(propertyType) == null)
-            {
-                propertyAccess = Expression.Convert(
-                    propertyAccess, typeof(Nullable<>).MakeGenericType(propertyType));
-            }
-
             var condition = Expression.Equal(getExpression, Expression.Constant(null, getExpression.Type));
 
             if (isLastMember)
@@ -449,7 +459,10 @@ public static class Extensions
         }
     }
 
-    public static MethodInfo GetRequiredRuntimeMethod(this Type type, string name, params Type[] parameters)
+    public static MethodInfo GetRequiredRuntimeMethod(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] this Type type,
+        string name,
+        params Type[] parameters)
     {
         var method = type.GetTypeInfo().GetRuntimeMethod(name, parameters);
         if (method == null)
@@ -490,6 +503,8 @@ public static class Extensions
         return singleImplementation?.GenericTypeArguments.FirstOrDefault();
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2070",
+        Justification = "Only generic interface identity is inspected; no interface members are invoked.")]
     public static IEnumerable<Type> GetGenericTypeImplementations(this Type type, Type interfaceOrBaseType)
     {
         var typeInfo = type.GetTypeInfo();

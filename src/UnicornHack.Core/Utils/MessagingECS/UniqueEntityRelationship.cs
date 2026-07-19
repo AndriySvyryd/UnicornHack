@@ -161,7 +161,8 @@ public class UniqueEntityRelationship<TEntity> : EntityRelationshipBase<TEntity>
             return true;
         }
 
-        Debug.Assert(OrphanedEntities.Count == 0, $"Orphaned entities found in {Name}");
+        Debug.Assert(!OrphanedEntities.ContainsKey(key),
+            $"Orphaned entities found in {Name} for principal {key}");
 
         return false;
     }
@@ -257,8 +258,8 @@ public class UniqueEntityRelationship<TEntity> : EntityRelationshipBase<TEntity>
                 return;
             }
 
-            Debug.Assert(_relationship.OrphanedEntities.Count == 0,
-                $"Orphaned entities found in {_relationship.Name}");
+            Debug.Assert(!_relationship.OrphanedEntities.ContainsKey(principal.Id),
+                $"Orphaned entities found in {_relationship.Name} for principal {principal.Id}");
 
             var dependentChange = new EntityChange<TEntity>(dependent);
 

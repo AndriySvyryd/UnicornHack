@@ -172,7 +172,8 @@ public class CollectionEntityRelationship<TEntity, TCollection> : EntityRelation
             return true;
         }
 
-        Debug.Assert(OrphanedEntities.Count == 0, $"Orphaned entities found in {Name}");
+        Debug.Assert(!OrphanedEntities.ContainsKey(key),
+            $"Orphaned entities found in {Name} for principal {key}");
 
         return false;
     }
@@ -278,8 +279,8 @@ public class CollectionEntityRelationship<TEntity, TCollection> : EntityRelation
                 return;
             }
 
-            Debug.Assert(_relationship.OrphanedEntities.Count == 0,
-                $"Orphaned entities found in {_relationship.Name}");
+            Debug.Assert(!_relationship.OrphanedEntities.ContainsKey(principal.Id),
+                $"Orphaned entities found in {_relationship.Name} for principal {principal.Id}");
 
             foreach (var dependent in dependents)
             {

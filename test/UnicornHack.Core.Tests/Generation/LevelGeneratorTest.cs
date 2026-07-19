@@ -24,7 +24,7 @@ public class LevelGeneratorTest
     {
         var game = TestHelper.CreateGame(seed);
         var manager = game.Manager;
-        var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
+        var dungeon = BranchData.Dungeon.Instantiate(game);
 
         var firstLevel = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed, manager);
         LevelGenerator.EnsureGenerated(firstLevel);
@@ -124,7 +124,7 @@ public class LevelGeneratorTest
     public void Picker_increments_FragmentSelectionAttempts()
     {
         var game = TestHelper.CreateGame(seed: 1u);
-        var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
+        var dungeon = BranchData.Dungeon.Instantiate(game);
         var level = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, game.Manager);
 
         var stats = level.GenerationStats;
@@ -139,7 +139,7 @@ public class LevelGeneratorTest
     public void Picker_returns_a_fragment_with_positive_weight_for_dungeon_branch()
     {
         var game = TestHelper.CreateGame(seed: 1u);
-        var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
+        var dungeon = BranchData.Dungeon.Instantiate(game);
         var level = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, game.Manager);
 
         var picked = LevelGenerator.PickFragmentForRoom(level, RoomFeatures.Normal, level.GenerationStats);

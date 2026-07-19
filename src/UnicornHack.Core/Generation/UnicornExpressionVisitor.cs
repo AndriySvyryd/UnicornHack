@@ -1,5 +1,6 @@
 ﻿using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
 using static System.Linq.Expressions.Expression;
@@ -36,6 +37,15 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
     private static readonly MethodInfo _stringConcat = typeof(string)
         .GetRequiredRuntimeMethod(nameof(string.Concat), typeof(string), typeof(string));
 
+    private static readonly PropertyInfo _stringLength = typeof(string)
+        .GetProperty(nameof(string.Length))!;
+
+    private static readonly MethodInfo _stringDictionaryTryGetValue = typeof(IReadOnlyDictionary<string, int>)
+        .GetMethod(nameof(IReadOnlyDictionary<string, int>.TryGetValue))!;
+
+    private static readonly MethodInfo _featureDictionaryTryGetValue = typeof(IReadOnlyDictionary<RoomFeatures, int>)
+        .GetMethod(nameof(IReadOnlyDictionary<RoomFeatures, int>.TryGetValue))!;
+
     public UnicornExpressionVisitor(IEnumerable<ParameterExpression> parameters)
     {
         _orderedParameters = parameters;
@@ -70,6 +80,12 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
     } = new();
 
     public T Translate<T, TResult>(string expression)
+        where T : Delegate
+        => TranslateExpression<T, TResult>(expression)
+            .Compile(preferInterpretation: !RuntimeFeature.IsDynamicCodeSupported);
+
+    public Expression<T> TranslateExpression<T, TResult>(string expression)
+        where T : Delegate
     {
         var inputStream = new AntlrInputStream(expression);
         var unicornLexer = new UnicornExpressionLexer(inputStream);
@@ -107,7 +123,7 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
             result = Convert(result, typeof(TResult));
         }
 
-        return Lambda<T>(result, _orderedParameters).Compile();
+        return Lambda<T>(result, _orderedParameters);
     }
 
     public override Expression VisitErrorNode(IErrorNode node)
@@ -267,6 +283,10 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
         UnicornExpressionParser.StringLiteralExpressionContext context)
         => Constant(context.String.Text[1..^1]);
 
+    public override Expression VisitNullLiteralExpression(
+        UnicornExpressionParser.NullLiteralExpressionContext context)
+        => Constant(null);
+
     public override Expression VisitConstantExpression(
         UnicornExpressionParser.ConstantExpressionContext context)
         => Constant(double.PositiveInfinity);
@@ -280,8 +300,14 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
         }
 
         var expression = Visit(context.Expression);
-        var member = expression.Type.GetMember(context.Member.Text).Single();
-        return MakeMemberAccess(expression, member);
+        if (expression.Type == typeof(string)
+            && context.Member.Text == nameof(string.Length))
+        {
+            return MakeMemberAccess(expression, _stringLength);
+        }
+
+        throw new InvalidOperationException(
+            $"Member '{context.Member.Text}' is not supported on {expression.Type}.");
     }
 
     public override Expression VisitVariableExpression(
@@ -310,26 +336,32 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
         // We only support IReadOnlyDictionary<,> today; that's the only declared indexed
         // parameter ($tagInstances). Throw eagerly for any other parameter so the author
         // gets a useful error at script-compile time.
-        var dictInterface = (parameter.Type.IsGenericType
-                && parameter.Type.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>)
-                ? parameter.Type
-                : null)
-            ?? parameter.Type.GetInterfaces()
-                .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>))
-            ?? throw new InvalidOperationException(
+        Type keyType;
+        MethodInfo tryGetValue;
+        if (parameter.Type == typeof(IReadOnlyDictionary<string, int>))
+        {
+            keyType = typeof(string);
+            tryGetValue = _stringDictionaryTryGetValue;
+        }
+        else if (parameter.Type == typeof(IReadOnlyDictionary<RoomFeatures, int>))
+        {
+            keyType = typeof(RoomFeatures);
+            tryGetValue = _featureDictionaryTryGetValue;
+        }
+        else
+        {
+            throw new InvalidOperationException(
                 $"Indexer access '[]' is only supported on IReadOnlyDictionary<,> parameters; '${context.Variable.Text}' has type {parameter.Type}.");
-
-        var typeArgs = dictInterface.GetGenericArguments();
-        var keyType = typeArgs[0];
-        var valueType = typeArgs[1];
-        var getOrDefault = typeof(CollectionExtensions)
-            .GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .First(m => m.Name == nameof(CollectionExtensions.GetValueOrDefault)
-                && m.GetParameters().Length == 2)
-            .MakeGenericMethod(keyType, valueType);
+        }
 
         var convertedKey = key.Type == keyType ? key : Convert(key, keyType);
-        return Call(null, getOrDefault, Convert(parameter, dictInterface), convertedKey);
+        var value = Variable(typeof(int), "value");
+        return Block(
+            [value],
+            Condition(
+                Call(parameter, tryGetValue, convertedKey, value),
+                value,
+                Default(value.Type)));
     }
 
     public override Expression VisitInvocationExpression(
@@ -396,12 +428,30 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
         => Visit(context.expression());
 
     private static Type GetCommonType(Expression left, Expression right)
-        => left.Type == right.Type
+    {
+        if (left is ConstantExpression { Value: null })
+        {
+            return right.Type.IsValueType && Nullable.GetUnderlyingType(right.Type) == null
+                ? typeof(Nullable<>).MakeGenericType(right.Type)
+                : right.Type;
+        }
+
+        if (right is ConstantExpression { Value: null })
+        {
+            return left.Type.IsValueType && Nullable.GetUnderlyingType(left.Type) == null
+                ? typeof(Nullable<>).MakeGenericType(left.Type)
+                : left.Type;
+        }
+
+        return left.Type == right.Type
             ? left.Type
             : left.Type.IsNumeric() && right.Type.IsNumeric()
                 ? typeof(double)
                 : typeof(object);
+    }
 
     private Expression Convert(Expression left, Type type)
-        => left.Type != type ? Expression.Convert(left, type) : left;
+        => left is ConstantExpression { Value: null }
+            ? Constant(null, type)
+            : left.Type != type ? Expression.Convert(left, type) : left;
 }

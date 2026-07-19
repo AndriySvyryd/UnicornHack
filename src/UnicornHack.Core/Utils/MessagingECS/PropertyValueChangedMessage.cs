@@ -34,6 +34,10 @@ public class PropertyValueChangedMessage<TEntity, T> : IMessage
         set;
     } = null!;
 
+    public object? NestedItem { get; set; }
+
+    public string? NestedPropertyName { get; set; }
+
     public T OldValue
     {
         get;
@@ -55,6 +59,8 @@ public class PropertyValueChangedMessage<TEntity, T> : IMessage
     public void Clean()
     {
         ChangedPropertyName = default!;
+        NestedItem = default;
+        NestedPropertyName = default;
         OldValue = default!;
         NewValue = default!;
         ChangedComponent = default!;

@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature GoreMole = new Creature
     {
         Name = "gore mole",
-        Species = Species.Mole,
         SpeciesClass = SpeciesClass.Rodent,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "gore mole ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,7 +20,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "30*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "30*MightModifier()" } }
             }
         },
         InitialLevel = 3,
@@ -29,10 +30,10 @@ public static partial class CreatureData
         Weight = 100,
         MovementDelay = 300,
         TurningDelay = 300,
-        Perception = -8,
-        Might = -8,
-        Speed = -8,
-        Focus = -8,
+        PerceptionBonus = -8,
+        MightBonus = -8,
+        SpeedBonus = -8,
+        FocusBonus = -8,
         MagicResistance = 10,
         TorsoType = TorsoType.Quadruped,
         UpperExtremities = ExtremityType.None,

@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature LargeScorpion = new Creature
     {
         Name = "large scorpion",
-        Species = Species.Scorpion,
         SpeciesClass = SpeciesClass.Vermin,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "large scorpion ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "10*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage() }
             },
             new Ability
             {
+                Name = "large scorpion ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -31,10 +34,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "10*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage() }
             },
             new Ability
             {
+                Name = "large scorpion ability #3",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -43,7 +48,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Blight { Damage = "20*MightModifier()" } }
+                Effects = new List<Effect> { new ToxinDamage { Duration = EffectDuration.UntilTimeout, Amount = "20*MightModifier()" } }
             }
         },
         InitialLevel = 5,
@@ -51,11 +56,12 @@ public static partial class CreatureData
         Weight = 150,
         MovementDelay = -20,
         TurningDelay = -20,
-        Perception = -7,
-        Might = -8,
-        Speed = -7,
-        Focus = -8,
+        PerceptionBonus = -7,
+        MightBonus = -8,
+        SpeedBonus = -7,
+        FocusBonus = -8,
         Armor = 3,
+        DecayResistance = 50,
         TorsoType = TorsoType.Quadruped,
         UpperExtremities = ExtremityType.None,
         LowerExtremities = ExtremityType.Claws,

@@ -5,12 +5,13 @@ public static partial class ItemData
     public static readonly Item FieryAegis = new Item
     {
         Name = "fiery aegis",
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "fiery aegis ability #1",
                 Activation = ActivationType.WhileEquipped,
-                Effects = new List<Effect> { new ChangeProperty<int> { PropertyName = "Deflection", Value = 10 }, new ChangeProperty<int> { PropertyName = "Armor", Value = 2 } }
+                Effects = new List<Effect> { new ChangeProperty<int> { Amount = "10", PropertyName = "Deflection" }, new ChangeProperty<int> { Amount = "2", PropertyName = "Armor" } }
             },
             new Ability
             {
@@ -20,7 +21,7 @@ public static partial class ItemData
                 Cooldown = 200,
                 Delay = "50",
                 EnergyPointCost = 20,
-                Effects = new List<Effect> { new ChangeProperty<int> { Duration = EffectDuration.Infinite, PropertyName = "FireResistance", Value = 30 } }
+                Effects = new List<Effect> { new ChangeProperty<int> { Amount = "30", PropertyName = "FireResistance" } }
             }
         },
         Type = ItemType.Shield,

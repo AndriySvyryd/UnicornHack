@@ -26,6 +26,16 @@ public interface IEntityManager
     void OnPropertyValueChanged<T>(
         string propertyName, T oldValue, T newValue, int componentId, Component component);
 
+    void OnCollectionChanged(
+        Component component,
+        string propertyName,
+        in EntityCollectionChange oldValue,
+        in EntityCollectionChange newValue);
+
+    void OnNestedPropertyValueChanged<T>(
+        Component component, string propertyName, string nestedPropertyName,
+        object nestedItem, T oldValue, T newValue);
+
     void OnPropertyValuesChanged(Entity entity, IPropertyValueChanges changes);
 
     void RemoveFromSecondaryTracker(ITrackable trackable);

@@ -5,17 +5,20 @@ public static partial class CreatureData
     public static readonly Creature BogTroll = new Creature
     {
         Name = "bog troll",
-        Species = Species.Troll,
-        Abilities = new HashSet<Ability>
+        SpeciesClass = SpeciesClass.Humanoid,
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "bog troll ability #1",
                 Activation = ActivationType.OnMeleeAttack,
                 Action = AbilityAction.Modifier,
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "90" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "90*MightModifier()" } }
             },
             new Ability
             {
+                Name = "bog troll ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -24,10 +27,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "10*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage() }
             },
             new Ability
             {
+                Name = "bog troll ability #3",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -36,10 +41,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "90*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "90*MightModifier()" } }
             },
             new Ability
             {
+                Name = "bog troll ability #4",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -48,7 +55,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "70*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "70*MightModifier()" } }
             }
         },
         InitialLevel = 11,
@@ -59,10 +66,10 @@ public static partial class CreatureData
         Weight = 1200,
         MovementDelay = -15,
         TurningDelay = -15,
-        Perception = -4,
-        Might = -4,
-        Speed = -4,
-        Focus = -4,
+        PerceptionBonus = -4,
+        MightBonus = -4,
+        SpeedBonus = -4,
+        FocusBonus = -4,
         Regeneration = 3,
         Armor = 3,
         MagicResistance = 20,

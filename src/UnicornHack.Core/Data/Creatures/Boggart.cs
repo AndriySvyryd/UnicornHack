@@ -5,17 +5,20 @@ public static partial class CreatureData
     public static readonly Creature Boggart = new Creature
     {
         Name = "boggart",
-        Species = Species.Boggart,
-        Abilities = new HashSet<Ability>
+        SpeciesClass = SpeciesClass.Humanoid,
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "boggart ability #1",
                 Activation = ActivationType.OnMeleeAttack,
                 Action = AbilityAction.Modifier,
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "20" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "20*MightModifier()" } }
             },
             new Ability
             {
+                Name = "boggart ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -24,7 +27,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "10*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage() }
             }
         },
         InitialLevel = 1,
@@ -34,10 +37,10 @@ public static partial class CreatureData
         Weight = 400,
         MovementDelay = 100,
         TurningDelay = 100,
-        Perception = -9,
-        Might = -8,
-        Speed = -8,
-        Focus = -9,
+        PerceptionBonus = -9,
+        MightBonus = -8,
+        SpeedBonus = -8,
+        FocusBonus = -9,
         TorsoType = TorsoType.Humanoid,
         UpperExtremities = ExtremityType.GraspingFingers,
         LowerExtremities = ExtremityType.Fingers,

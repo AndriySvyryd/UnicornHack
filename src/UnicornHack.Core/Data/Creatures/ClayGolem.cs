@@ -5,11 +5,13 @@ public static partial class CreatureData
     public static readonly Creature ClayGolem = new Creature
     {
         Name = "clay golem",
-        Species = Species.Golem,
-        Abilities = new HashSet<Ability>
+        SpeciesClass = SpeciesClass.Construct,
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "clay golem ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -18,7 +20,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "160*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "160*MightModifier()" } }
             }
         },
         InitialLevel = 11,
@@ -28,13 +30,15 @@ public static partial class CreatureData
         MovementDelay = 71,
         TurningDelay = 71,
         Material = Material.Mineral,
-        Perception = -4,
-        Might = -4,
-        Speed = -4,
+        PerceptionBonus = -4,
+        MightBonus = -4,
+        SpeedBonus = -4,
         Armor = 1,
         MagicResistance = 20,
         ElectricityResistance = 75,
-        SlimingImmune = true,
+        FascinateResistance = 100,
+        SedateResistance = 100,
+        SuffocateResistance = 100,
         TorsoType = TorsoType.Humanoid,
         UpperExtremities = ExtremityType.GraspingFingers,
         LowerExtremities = ExtremityType.Fingers,

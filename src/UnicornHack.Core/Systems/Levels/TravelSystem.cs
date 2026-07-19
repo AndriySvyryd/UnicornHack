@@ -1,5 +1,6 @@
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Beings;
+using UnicornHack.Systems.Effects;
 using UnicornHack.Utils.MessagingECS;
 
 namespace UnicornHack.Systems.Levels;
@@ -25,13 +26,26 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
     {
         var position = message.ActorEntity.Position!;
         var heading = position.Heading!.Value;
-        var traveledMessage = TraveledMessage.Create(manager);
-        traveledMessage.Entity = message.ActorEntity;
-        traveledMessage.InitialLevel = position.RoomEntity;
-        traveledMessage.InitialHeading = heading;
-        traveledMessage.InitialLevelCell = position.Cell;
-        traveledMessage.TargetHeading = message.TargetHeading;
-        traveledMessage.TargetCell = message.TargetCell;
+        Debug.Assert(message.Distance is null or >= 0);
+        Point? requestedTargetCell;
+        if (message.Distance is not { } distance)
+        {
+            requestedTargetCell = message.TargetCell;
+        }
+        else if (distance == 0)
+        {
+            requestedTargetCell = position.Cell;
+        }
+        else
+        {
+            var targetVector = message.TargetHeading.AsVector();
+            requestedTargetCell = position.Cell!.Value.Translate(
+                new Vector(targetVector.X * distance, targetVector.Y * distance));
+        }
+
+        Debug.Assert(requestedTargetCell != null);
+        var traveledMessage = CreateTraveledMessage(
+            message.ActorEntity, position, message.TargetHeading, requestedTargetCell.Value, manager);
 
         if (position.MovementDelay == 0)
         {
@@ -45,12 +59,15 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         {
             var octants = turnDirection.ClosestOctantsTo(heading);
 
-            delay += (position.TurningDelay * octants) / 4;
+            if (!message.SuppressDelay)
+            {
+                delay += (position.TurningDelay * octants) / 4;
+            }
 
             position.Heading = turnDirection;
         }
 
-        if (position.Cell == message.TargetCell)
+        if (position.Cell == requestedTargetCell.Value)
         {
             traveledMessage.Successful = true;
             if (delay != 0)
@@ -61,7 +78,15 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
             return traveledMessage;
         }
 
-        var targetCell = message.TargetCell;
+        // A rooted actor may turn, but it can't move to a different cell.
+        if (!message.ActorEntity.Being!.CanMove)
+        {
+            return traveledMessage;
+        }
+
+        var engulfedVictim = manager.EngulferToVictimRelationship.GetVictim(message.ActorEntity);
+
+        var targetCell = requestedTargetCell.Value;
         var currentRoom = position.RoomEntity.Room!;
         if (!CanMoveTo(targetCell, currentRoom))
         {
@@ -112,8 +137,45 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
             }
         }
 
+        if (engulfedVictim != null
+            && targetRoomEntity != position.RoomEntity)
+        {
+            return traveledMessage;
+        }
+
+        Point? victimInitialCell = null;
+        Point? victimTargetCell = null;
+        if (engulfedVictim != null)
+        {
+            if (engulfedVictim.Position is not { Cell: { } currentVictimCell } victimPosition
+                || victimPosition.RoomId != position.RoomId)
+            {
+                return traveledMessage;
+            }
+
+            var movement = traveledMessage.InitialLevelCell.DifferenceTo(targetCell);
+            var pairedTarget = currentVictimCell.Translate(movement);
+            if (!currentRoom.IsValid(pairedTarget)
+                || !CanMoveTo(pairedTarget, currentRoom))
+            {
+                return traveledMessage;
+            }
+
+            var conflictingVictimTarget = currentRoom.Actors.GetValueOrDefault(pairedTarget);
+            if (conflictingVictimTarget != null
+                && conflictingVictimTarget != message.ActorEntity
+                && conflictingVictimTarget != engulfedVictim)
+            {
+                return traveledMessage;
+            }
+
+            victimInitialCell = currentVictimCell;
+            victimTargetCell = pairedTarget;
+        }
+
         var conflictingActor = targetRoomEntity.Room!.Actors.GetValueOrDefault(targetCell);
         if (conflictingActor != null
+            && conflictingActor != engulfedVictim
             && (!message.MoveOffConflicting
                 || !MoveOffCell(conflictingActor, manager)))
         {
@@ -126,31 +188,96 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
             return traveledMessage;
         }
 
+        // TODO: Calculate delay based on terrain
+        if (!message.SuppressDelay)
+        {
+            delay += position.MovementDelay;
+        }
+        if (engulfedVictim != null
+            && victimInitialCell.HasValue
+            && victimTargetCell.HasValue)
+        {
+            var initialVictimCell = victimInitialCell.Value;
+            var victimDestination = victimTargetCell.Value;
+
+            // Move the actor vacating an occupied destination first when the pair crosses cells.
+            if (targetCell == initialVictimCell)
+            {
+                var victimTraveled = MoveActor(
+                    engulfedVictim, targetRoomEntity, victimDestination, delay: 0, manager);
+                manager.Enqueue(victimTraveled);
+                MoveActor(
+                    message.ActorEntity, targetRoomEntity, targetCell, delay, manager, traveledMessage);
+            }
+            else
+            {
+                MoveActor(
+                    message.ActorEntity, targetRoomEntity, targetCell, delay, manager, traveledMessage);
+                var victimTraveled = MoveActor(
+                    engulfedVictim, targetRoomEntity, victimDestination, delay: 0, manager);
+                manager.Enqueue(victimTraveled);
+            }
+        }
+        else
+        {
+            MoveActor(
+                message.ActorEntity, targetRoomEntity, targetCell, delay, manager, traveledMessage);
+        }
+
+        return traveledMessage;
+    }
+
+    private TraveledMessage MoveActor(
+        GameEntity actorEntity, GameEntity targetRoomEntity, Point targetCell, int delay,
+        GameManager manager, TraveledMessage? traveledMessage = null)
+    {
+        var position = actorEntity.Position!;
+        traveledMessage ??= CreateTraveledMessage(
+            actorEntity, position, position.Heading!.Value, targetCell, manager);
+        var currentRoom = position.RoomEntity.Room!;
         if (position.RoomId != targetRoomEntity.Id)
         {
-            EnterRoom(message.ActorEntity, position, currentRoom, targetRoomEntity, targetCell, manager);
+            EnterRoom(actorEntity, position, currentRoom, targetRoomEntity, targetCell, manager);
         }
         else
         {
             position.Cell = targetCell;
         }
 
-        if (message.ActorEntity.HasComponent(EntityComponent.Player))
+        traveledMessage.Successful = true;
+
+        // Moving keeps bleeding wounds open longer.
+        manager.EffectApplicationSystem.ExtendEffectsOnMovement(actorEntity, manager);
+
+        if (actorEntity.HasComponent(EntityComponent.Player)
+            && position.RoomEntity.Room!.Connections.GetValueOrDefault(position.Cell!.Value)
+                is { } landedConnection)
         {
-            var landedConnection = position.RoomEntity.Room!.Connections.GetValueOrDefault(position.Cell);
-            if (landedConnection != null)
-            {
-                var stepMessage = SteppedOnConnectionMessage.Create(manager);
-                stepMessage.ActorEntity = message.ActorEntity;
-                stepMessage.ConnectionEntity = landedConnection;
-                manager.Enqueue(stepMessage);
-            }
+            var stepMessage = SteppedOnConnectionMessage.Create(manager);
+            stepMessage.ActorEntity = actorEntity;
+            stepMessage.ConnectionEntity = landedConnection;
+            manager.Enqueue(stepMessage);
         }
 
-        // TODO: take terrain into account
-        delay += position.MovementDelay;
-        DelayMessage.Enqueue(message.ActorEntity, delay, manager);
+        if (delay != 0)
+        {
+            DelayMessage.Enqueue(actorEntity, delay, manager);
+        }
 
+        return traveledMessage;
+    }
+
+    private static TraveledMessage CreateTraveledMessage(
+        GameEntity actorEntity, PositionComponent position, Direction targetHeading, Point targetCell,
+        GameManager manager)
+    {
+        var traveledMessage = TraveledMessage.Create(manager);
+        traveledMessage.Entity = actorEntity;
+        traveledMessage.InitialLevel = position.RoomEntity;
+        traveledMessage.InitialHeading = position.Heading!.Value;
+        traveledMessage.InitialLevelCell = position.Cell!.Value;
+        traveledMessage.TargetHeading = targetHeading;
+        traveledMessage.TargetCell = targetCell;
         return traveledMessage;
     }
 
@@ -172,6 +299,12 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
     /// </summary>
     public bool TravelToRoom(GameEntity actorEntity, int targetRoomId, GameManager manager)
     {
+        if (EffectApplicationSystem.GetAbilityLevel(actorEntity, AbilityData.Engulfed.Name) > 0
+            || manager.EngulferToVictimRelationship.GetVictim(actorEntity) != null)
+        {
+            return false;
+        }
+
         var position = actorEntity.Position!;
         var currentRoom = position.RoomEntity.Room!;
 
@@ -206,7 +339,7 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         var targetDoorCell = connectionToTarget.TargetCell!.Value;
 
         var initialRoomEntity = position.RoomEntity;
-        var initialCell = position.Cell;
+        var initialCell = position.Cell!.Value;
         var initialHeading = position.Heading!.Value;
 
         EnterRoom(actorEntity, position, currentRoom, targetRoomEntity, targetDoorCell, manager);
@@ -226,6 +359,43 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
 
         DelayMessage.Enqueue(actorEntity, position.MovementDelay, manager);
         return true;
+    }
+
+    // When an actor moves to a new room, its inventory items (and nested contents) keep their Position but
+    // must have their RoomId realigned to the actor's new room.
+    private static void PropagateRoomId(GameEntity holder, int roomId, GameManager manager)
+    {
+        var items = manager.EntityItemsToContainerRelationship.GetDependents(holder);
+        if (items != null)
+        {
+            foreach (var item in items)
+            {
+                if (item.Position is { } itemPosition
+                    && itemPosition.RoomId != roomId)
+                {
+                    itemPosition.RoomId = roomId;
+                }
+
+                PropagateRoomId(item, roomId, manager);
+            }
+        }
+
+        if (holder.Being is { } being)
+        {
+            UpdateNaturalWeaponRoom(being.PrimaryNaturalWeaponId, roomId, manager);
+            UpdateNaturalWeaponRoom(being.SecondaryNaturalWeaponId, roomId, manager);
+
+        }
+    }
+
+    private static void UpdateNaturalWeaponRoom(int? weaponId, int roomId, GameManager manager)
+    {
+        if (weaponId is { } id
+            && manager.FindEntity(id)?.Position is { } weaponPosition
+            && weaponPosition.RoomId != roomId)
+        {
+            weaponPosition.RoomId = roomId;
+        }
     }
 
     /// <summary>
@@ -250,6 +420,8 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         var isIntraLevel = newRoom.Level == currentRoom.Level;
 
         position.SetRoomPosition(targetRoomEntity.Id, targetCell);
+
+        PropagateRoomId(actorEntity, targetRoomEntity.Id, manager);
 
         foreach (var conn in newRoom.Connections.Values)
         {
@@ -329,6 +501,9 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         {
             DeleteRoom(room, level, manager);
         }
+
+        manager.Game.Repository.DeleteLevel(level);
+        level.Branch.Levels.Remove(level);
     }
 
     /// <summary>
@@ -339,17 +514,15 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
     /// </summary>
     public void DeleteBranchContents(GameBranch branch, GameManager manager)
     {
-        foreach (var level in branch.Levels)
+        foreach (var level in branch.Levels.ToList())
         {
             DeleteLevelContents(level, manager);
         }
-
-        branch.Levels.Clear();
     }
 
     /// <summary>
-    ///     Deletes <paramref name="room" />'s contents (deferred) and tears the room entity down,
-    ///     removing it from <paramref name="level" />.
+    ///     Deletes <paramref name="room" />'s contents (deferred) and tears the room entity down.
+    ///     The containing level is deleted after all loaded rooms are removed.
     /// </summary>
     private void DeleteRoom(RoomComponent room, GameLevel level, GameManager manager)
     {
@@ -364,21 +537,23 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
     private bool MoveOffCell(GameEntity entity, GameManager manager, bool pretend = false)
     {
         var position = entity.Position!;
-        var possibleDirectionsToMove = GetPossibleMovementDirections(position, safe: true);
-        if (possibleDirectionsToMove.Count == 0)
+        Span<Direction> possibleDirectionsToMove = stackalloc Direction[8];
+        var directionCount = GetPossibleMovementDirections(
+            position, safe: true, possibleDirectionsToMove);
+        if (directionCount == 0)
         {
             // TODO: cascade move actors
             return false;
         }
 
-        var directionIndex = manager.Game.Random.Next(minValue: 0, maxValue: possibleDirectionsToMove.Count);
+        var directionIndex = manager.Game.Random.Next(minValue: 0, maxValue: directionCount);
 
-        position.Cell = position.Cell.Translate(possibleDirectionsToMove[directionIndex].AsVector());
+        position.Cell = position.Cell!.Value.Translate(possibleDirectionsToMove[directionIndex].AsVector());
 
         var travelMessage = TravelMessage.Create(manager);
         travelMessage.ActorEntity = entity;
         travelMessage.TargetHeading = position.Heading!.Value;
-        travelMessage.TargetCell = position.Cell;
+        travelMessage.TargetCell = position.Cell!.Value;
 
         var traveledMessage = TryTravel(travelMessage, manager, pretend);
         var successful = traveledMessage.Successful;
@@ -396,11 +571,12 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
     }
 
     public Direction? GetFirstStepFromShortestPath(
-        RoomComponent room, Point origin, Point target, Direction initialDirection, bool knownOnly = false)
+        RoomComponent room, Point origin, Point target, Direction initialDirection,
+        bool knownOnly = false, bool avoidActors = false)
     {
         var nextPoint = target;
 
-        var path = GetShortestPath(room, origin, target, initialDirection, knownOnly);
+        var path = GetShortestPath(room, origin, target, initialDirection, knownOnly, avoidActors);
         if (path == null)
         {
             return null;
@@ -417,8 +593,12 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
     }
 
     public List<Point>? GetShortestPath(
-        RoomComponent room, Point start, Point target, Direction initialDirection, bool knownOnly = false)
-        => knownOnly
+        RoomComponent room, Point start, Point target, Direction initialDirection,
+        bool knownOnly = false, bool avoidActors = false)
+        => avoidActors
+            ? room.PathFinder!.FindPath(
+                start, target, initialDirection, CanMoveToAvoidingActors, (room, target, knownOnly))
+            : knownOnly
             ? room.PathFinder!.FindPath(start, target, initialDirection, CanMoveToKnown, room)
             : room.PathFinder!.FindPath(start, target, initialDirection, CanMoveTo, room);
 
@@ -426,17 +606,38 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
         PositionComponent currentPosition,
         bool safe)
     {
-        var availableDirections = new List<Direction>();
+        Span<Direction> directions = stackalloc Direction[8];
+        var count = GetPossibleMovementDirections(currentPosition, safe, directions);
+        var availableDirections = new List<Direction>(count);
+        for (var i = 0; i < count; i++)
+        {
+            availableDirections.Add(directions[i]);
+        }
+
+        return availableDirections;
+    }
+
+    public int GetPossibleMovementDirections(
+        PositionComponent currentPosition,
+        bool safe,
+        Span<Direction> availableDirections)
+    {
+        if (availableDirections.Length < 8)
+        {
+            throw new ArgumentException("The destination must contain at least eight elements.", nameof(availableDirections));
+        }
+
+        var count = 0;
+        var level = currentPosition.RoomEntity.Room!;
         for (var i = 0; i < 8; i++)
         {
-            var level = currentPosition.RoomEntity.Room!;
-            if (CanMoveTo(currentPosition.Cell, i, level) == null)
+            if (CanMoveTo(currentPosition.Cell!.Value, i, level) == null)
             {
                 continue;
             }
 
             var direction = Vector.MovementDirections[i];
-            var targetCell = currentPosition.Cell.Translate(direction);
+            var targetCell = currentPosition.Cell!.Value.Translate(direction);
             var connectionEntity = level.Connections.GetValueOrDefault(targetCell);
             if (connectionEntity != null)
             {
@@ -448,10 +649,10 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
                 continue;
             }
 
-            availableDirections.Add((Direction)i);
+            availableDirections[count++] = (Direction)i;
         }
 
-        return availableDirections;
+        return count;
     }
 
     // TODO: Use locomotion type
@@ -460,6 +661,109 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
 
     public bool CanMoveTo(Point location, RoomComponent room)
         => CanMoveTo(location.X, location.Y, room) != null;
+
+    /// <summary>
+    ///     Whether an actor can occupy <paramref name="cell" /> in <paramref name="room" />: it is a valid
+    ///     in-room cell, passable, and not already holding another actor.
+    /// </summary>
+    public bool IsActorFreeCell(Point cell, RoomComponent room)
+        => room.IsValid(cell)
+            && CanMoveTo(cell, room)
+            && !room.Actors.ContainsKey(cell);
+
+    /// <summary>
+    ///     Finds a cell in <paramref name="room" /> satisfying <paramref name="condition" />, skipping any
+    ///     <paramref name="excluded" /> cell; returns null if none qualifies. With an <paramref name="origin" />
+    ///     it steps outward ring by ring up to <paramref name="maxRadius" /> - distance 0 being the origin
+    ///     itself - visiting every cell on each concentric square (Chebyshev) ring in direction order starting
+    ///     from <paramref name="direction" /> (or East when none is given), so a displaced entity
+    ///     spills over along its heading and otherwise settles on the nearest match. Without an origin it scans
+    ///     the whole room.
+    /// </summary>
+    public Point? FindCell(
+        RoomComponent room,
+        Func<Point, RoomComponent, bool> condition,
+        Point? origin = null,
+        int maxRadius = 3,
+        Point? excluded = null,
+        Direction? direction = null)
+    {
+        if (origin is { } start)
+        {
+            // Distance 0 is the origin itself.
+            if (start != excluded
+                && condition(start, room))
+            {
+                return start;
+            }
+
+            // Step outward through concentric Chebyshev squares so a nearer cell always wins. Each octant
+            // contributes exactly distance cells; alternating their local traversal direction keeps the
+            // ring continuous, while the requested direction only rotates the first octant visited.
+            var firstOctant = (direction ?? Direction.East).AsOctants();
+            for (var distance = 1; distance <= maxRadius; distance++)
+            {
+                for (var octantOffset = 0; octantOffset < 8; octantOffset++)
+                {
+                    var octant = (firstOctant + octantOffset) & 7;
+                    var forwards = (octant & 1) == 0;
+                    for (var index = 0; index < distance; index++)
+                    {
+                        var octantY = forwards ? index : distance - index;
+                        var relative = TransformFromOctant(distance, octantY, octant);
+                        var x = start.X + relative.X;
+                        var y = start.Y + relative.Y;
+                        if (x < 0 || x >= room.Width
+                            || y < 0 || y >= room.Height)
+                        {
+                            continue;
+                        }
+
+                        var cell = new Point((byte)x, (byte)y);
+                        if (cell == excluded)
+                        {
+                            continue;
+                        }
+
+                        if (condition(cell, room))
+                        {
+                            return cell;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        if (room.IndexToPoint is { } points)
+        {
+            foreach (var cell in points)
+            {
+                if (cell != excluded
+                    && condition(cell, room))
+                {
+                    return cell;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static Vector TransformFromOctant(int x, int y, int octant)
+        => octant switch
+        {
+            0 => new Vector(x, -y),
+            1 => new Vector(y, -x),
+            2 => new Vector(-y, -x),
+            3 => new Vector(-x, -y),
+            4 => new Vector(-x, y),
+            5 => new Vector(-y, x),
+            6 => new Vector(y, x),
+            7 => new Vector(x, y),
+            _ => throw new ArgumentOutOfRangeException(nameof(octant))
+        };
 
     private int? CanMoveTo(Point location, int directionIndex, RoomComponent room)
     {
@@ -489,5 +793,22 @@ public class TravelSystem : IGameSystem<TravelMessage>, IGameSystem<DiedMessage>
 
         var index = room.PointToIndex![locationX, locationY];
         return room.KnownTerrain[index].CanMoveTo() ? index : null;
+    }
+
+    private short? CanMoveToAvoidingActors(
+        byte locationX, byte locationY, (RoomComponent Room, Point Target, bool KnownOnly) state)
+    {
+        var index = state.KnownOnly
+            ? CanMoveToKnown(locationX, locationY, state.Room)
+            : CanMoveTo(locationX, locationY, state.Room);
+        if (index == null)
+        {
+            return null;
+        }
+
+        var cell = state.Room.IndexToPoint![index.Value];
+        return cell == state.Target || !state.Room.Actors.ContainsKey(cell)
+            ? index
+            : null;
     }
 }

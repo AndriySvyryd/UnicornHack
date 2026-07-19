@@ -5,13 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Firefly = new Creature
     {
         Name = "firefly",
-        Species = Species.Beetle,
         SpeciesClass = SpeciesClass.Vermin,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
                 Name = "fire sting",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -20,7 +20,11 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Burn { Damage = "10*MightModifier()" } }
+                Effects = new List<Effect>
+                {
+                    new FireDamage { Amount = "10*MightModifier()" },
+                    new FireDamage { Duration = EffectDuration.UntilTimeout, Amount = "10*MightModifier()" }
+                }
             }
         },
         InitialLevel = 1,
@@ -28,10 +32,10 @@ public static partial class CreatureData
         Noise = ActorNoiseType.Buzz,
         Size = 1,
         Weight = 10,
-        Perception = -9,
-        Might = -9,
-        Speed = -5,
-        Focus = -9,
+        PerceptionBonus = -2,
+        MightBonus = -9,
+        SpeedBonus = -5,
+        FocusBonus = -9,
         TorsoType = TorsoType.Quadruped,
         UpperExtremities = ExtremityType.None,
         LowerExtremities = ExtremityType.Claws,

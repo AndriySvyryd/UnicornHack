@@ -295,7 +295,7 @@ public class TreeLevelLayoutTest
 
         var game = TestHelper.CreateGame(seed);
         var manager = game.Manager;
-        var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
+        var dungeon = BranchData.Dungeon.Instantiate(game);
 
         // Try a few seeds in case the placement engine doesn't find a valid arrangement
         // on the first try -- it's the chunk size constraint we're verifying, not generation
@@ -335,7 +335,7 @@ public class TreeLevelLayoutTest
         // a depth-1 special case on the Dungeon branch.
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var entrance = TestHelper.InstantiateBranch(BranchData.Entrance, game);
+        var entrance = BranchData.Entrance.Instantiate(game);
 
         var firstLevel = LevelGenerator.CreateEmpty(entrance, depth: 1, seed: 1u, manager);
         LevelGenerator.EnsureGenerated(firstLevel);
@@ -362,7 +362,7 @@ public class TreeLevelLayoutTest
 
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
+        var dungeon = BranchData.Dungeon.Instantiate(game);
         var firstLevel = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
         LevelGenerator.Generate(firstLevel);
 
@@ -370,7 +370,7 @@ public class TreeLevelLayoutTest
         // queue backlog side effects between runs.
         var deepGame = TestHelper.CreateGame(seed: 1u);
         var deepManager = deepGame.Manager;
-        var deepDungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, deepGame);
+        var deepDungeon = BranchData.Dungeon.Instantiate(deepGame);
         var deepLevel = LevelGenerator.CreateEmpty(deepDungeon, depth: 5, seed: 1u, deepManager);
         LevelGenerator.Generate(deepLevel);
 

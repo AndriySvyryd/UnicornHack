@@ -1,6 +1,7 @@
 using UnicornHack.Systems.Beings;
+using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
-using UnicornHack.Systems.Senses;
+using UnicornHack.Systems.Levels;
 
 namespace UnicornHack.Utils.MessagingECS;
 
@@ -15,6 +16,7 @@ public class UniqueEntityRelationshipTest
             var weaponEntity = weaponEntityReference.Referenced;
             weaponEntity.AddComponent<ItemComponent>((int)EntityComponent.Item);
             weaponEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
+            weaponEntity.AddComponent<PositionComponent>((int)EntityComponent.Position);
 
             Assert.Null(manager.BeingToPrimaryNaturalWeaponRelationship.GetDependent(weaponEntity));
 
@@ -23,7 +25,7 @@ public class UniqueEntityRelationshipTest
                 var beingEntity = beingEntityReference.Referenced;
                 var being = beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
                 beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
-                beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
+                beingEntity.AddComponent<ActiveEffectsComponent>((int)EntityComponent.ActiveEffects);
                 being.PrimaryNaturalWeaponId = weaponEntity.Id;
 
                 Assert.True(manager.BeingToPrimaryNaturalWeaponRelationship.Dependents.ContainsEntity(beingEntity.Id));
@@ -39,7 +41,7 @@ public class UniqueEntityRelationshipTest
             }
         }
 
-        Assert.Equal(3, manager.Queue.QueuedCount);
+        Assert.Equal(2, manager.Queue.QueuedCount);
     }
 
     [Fact]
@@ -51,27 +53,28 @@ public class UniqueEntityRelationshipTest
             var beingEntity = beingEntityReference.Referenced;
             var being = beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
             beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
-            beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
+            beingEntity.AddComponent<ActiveEffectsComponent>((int)EntityComponent.ActiveEffects);
 
             using (var weaponEntityReference = manager.CreateEntity())
             {
                 var weaponEntity = weaponEntityReference.Referenced;
                 weaponEntity.AddComponent<ItemComponent>((int)EntityComponent.Item);
                 weaponEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
+                weaponEntity.AddComponent<PositionComponent>((int)EntityComponent.Position);
 
                 being.PrimaryNaturalWeaponId = weaponEntity.Id;
             }
 
-            Assert.Equal(1, manager.ContainedItems.Count);
+            Assert.Equal(1, manager.RoomItems.Count);
         }
 
-        Assert.Equal(1, manager.ContainedItems.Count);
-        Assert.Equal(3, manager.Queue.QueuedCount);
+        Assert.Equal(1, manager.RoomItems.Count);
+        Assert.Equal(2, manager.Queue.QueuedCount);
 
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(0, manager.Beings.Count);
-        Assert.Equal(0, manager.ContainedItems.Count);
+        Assert.Equal(0, manager.RoomItems.Count);
         Assert.Equal(0, manager.Queue.QueuedCount);
     }
 
@@ -83,12 +86,12 @@ public class UniqueEntityRelationshipTest
         var beingEntity = beingEntityReference.Referenced;
         var being = beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
         beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
-        beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
 
         using var weaponEntityReference = manager.CreateEntity();
         var weaponEntity = weaponEntityReference.Referenced;
         weaponEntity.AddComponent<ItemComponent>((int)EntityComponent.Item);
         weaponEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
+        weaponEntity.AddComponent<PositionComponent>((int)EntityComponent.Position);
 
         being.PrimaryNaturalWeaponId = weaponEntity.Id;
 
@@ -97,7 +100,6 @@ public class UniqueEntityRelationshipTest
         var conflictingBeing =
             conflictingBeingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
         conflictingBeingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
-        conflictingBeingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
 
         Assert.Throws<InvalidOperationException>(() => conflictingBeing.PrimaryNaturalWeaponId = 1);
     }
@@ -109,7 +111,6 @@ public class UniqueEntityRelationshipTest
         using var beingEntityReference = manager.CreateEntity();
         var beingEntity = beingEntityReference.Referenced;
         var being = beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
-        beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
         being.PrimaryNaturalWeaponId = 1;
 
         Assert.Throws<InvalidOperationException>(() =>
@@ -127,7 +128,6 @@ public class UniqueEntityRelationshipTest
             var beingEntity = beingEntityReference.Referenced;
             var being = beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
             beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
-            beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
             being.PrimaryNaturalWeaponId = 2;
 
             using (var weaponEntityReference = manager.CreateEntity())
@@ -135,6 +135,7 @@ public class UniqueEntityRelationshipTest
                 var weaponEntity = weaponEntityReference.Referenced;
                 weaponEntity.AddComponent<ItemComponent>((int)EntityComponent.Item);
                 weaponEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
+                weaponEntity.AddComponent<PositionComponent>((int)EntityComponent.Position);
 
                 Assert.Equal(2, weaponEntity.Id);
                 Assert.Same(beingEntity, manager.BeingToPrimaryNaturalWeaponRelationship.GetDependent(weaponEntity));
@@ -157,11 +158,10 @@ public class UniqueEntityRelationshipTest
             var beingEntity = beingEntityReference.Referenced;
             var being = beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
             beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
-            beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
             being.PrimaryNaturalWeaponId = 1;
         }
 
-        Assert.Equal(0, manager.ContainedItems.Count);
+        Assert.Equal(0, manager.RoomItems.Count);
 
         manager.IsLoading = false;
 
@@ -179,7 +179,6 @@ public class UniqueEntityRelationshipTest
             var beingEntity = beingEntityReference.Referenced;
             var being = beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
             beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
-            beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
             being.PrimaryNaturalWeaponId = 1;
 
             using (var conflictingBeingEntityReference = manager.CreateEntity())
@@ -187,7 +186,6 @@ public class UniqueEntityRelationshipTest
                 var conflictingBeingEntity = conflictingBeingEntityReference.Referenced;
                 var conflictingBeing = conflictingBeingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
                 conflictingBeingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
-                conflictingBeingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
 
                 Assert.Throws<InvalidOperationException>(() => conflictingBeing.PrimaryNaturalWeaponId = 1);
             }
@@ -208,13 +206,14 @@ public class UniqueEntityRelationshipTest
             var weaponEntity = weaponEntityReference.Referenced;
             weaponEntity.AddComponent<ItemComponent>((int)EntityComponent.Item);
             weaponEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
+            weaponEntity.AddComponent<PositionComponent>((int)EntityComponent.Position);
 
             using (var beingEntityReference = ((IEntityManager)manager).CreateEntity())
             {
                 var beingEntity = (GameEntity)beingEntityReference.Referenced;
                 var being = beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
                 beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
-                beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
+                beingEntity.AddComponent<ActiveEffectsComponent>((int)EntityComponent.ActiveEffects);
 
                 manager.Queue.ProcessQueue(manager);
 
@@ -230,26 +229,26 @@ public class UniqueEntityRelationshipTest
                 manager.Queue.Register<PropertyValueChangedMessage<GameEntity, int>>(
                     testSystem, manager.BeingToPrimaryNaturalWeaponRelationship.Dependents
                         .GetPropertyValueChangedMessageName(
-                            nameof(BeingComponent.ColdResistance)), 10);
+                            nameof(BeingComponent.ExperiencePoints)), 10);
                 manager.BeingToPrimaryNaturalWeaponRelationship.Dependents.AddListener(testSystem);
 
                 being.PrimaryNaturalWeaponId = weaponEntity.Id;
 
                 Assert.Equal(1, manager.Queue.QueuedCount);
 
-                being.ColdResistance = 10;
+                being.ExperiencePoints = 10;
 
                 Assert.Equal(2, manager.Queue.QueuedCount);
             }
         }
 
         Assert.Equal(1, manager.Beings.Count);
-        Assert.Equal(1, manager.ContainedItems.Count);
+        Assert.Equal(1, manager.RoomItems.Count);
 
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(0, manager.Beings.Count);
-        Assert.Equal(0, manager.ContainedItems.Count);
+        Assert.Equal(0, manager.RoomItems.Count);
         Assert.Equal(0, manager.Queue.QueuedCount);
         Assert.Equal(3, testSystem.MessagesProcessed);
         Assert.Equal(3, testSystem.GroupChangesDetected);
@@ -266,18 +265,18 @@ public class UniqueEntityRelationshipTest
         var weaponEntity = weaponEntityReference.Referenced;
         weaponEntity.AddComponent<ItemComponent>((int)EntityComponent.Item);
         weaponEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
+        weaponEntity.AddComponent<PositionComponent>((int)EntityComponent.Position);
 
         using var beingEntityReference = manager.CreateEntity();
         var beingEntity = beingEntityReference.Referenced;
         var being = beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
         beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
-        beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
         being.PrimaryNaturalWeaponId = weaponEntity.Id;
 
         Assert.Equal(1, listener.AddedCount);
         Assert.Equal(0, listener.PropertyChangedCount);
 
-        being.ColdResistance = 10;
+        being.ExperiencePoints = 10;
 
         Assert.Equal(1, listener.PropertyChangedCount);
         Assert.Same(beingEntity, listener.LastPropertyChangedEntity);
@@ -300,12 +299,12 @@ public class UniqueEntityRelationshipTest
         var weaponEntity = weaponEntityReference.Referenced;
         weaponEntity.AddComponent<ItemComponent>((int)EntityComponent.Item);
         weaponEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
+        weaponEntity.AddComponent<PositionComponent>((int)EntityComponent.Position);
 
         using var beingEntityReference = manager.CreateEntity();
         var beingEntity = beingEntityReference.Referenced;
         var being = beingEntity.AddComponent<BeingComponent>((int)EntityComponent.Being);
         beingEntity.AddComponent<PhysicalComponent>((int)EntityComponent.Physical);
-        beingEntity.AddComponent<SensorComponent>((int)EntityComponent.Sensor);
         being.PrimaryNaturalWeaponId = weaponEntity.Id;
 
         Assert.Equal(1, listener.AddedCount);
@@ -413,7 +412,7 @@ public class UniqueEntityRelationshipTest
             Assert.Same(_testEntity, message.Entity);
             Assert.Equal(_testComponent.ComponentId, message.ChangedComponent?.ComponentId);
             Assert.Same(_testComponent, message.ChangedComponent);
-            Assert.Equal(nameof(BeingComponent.ColdResistance), message.ChangedPropertyName);
+            Assert.Equal(nameof(BeingComponent.ExperiencePoints), message.ChangedPropertyName);
             Assert.Equal(0, message.OldValue);
             Assert.Equal(10, message.NewValue);
 
@@ -448,7 +447,7 @@ public class UniqueEntityRelationshipTest
             Assert.Equal(1, entityChange.PropertyChanges.Count);
             Assert.Equal(_testComponent.ComponentId, changes.GetChangedComponent(0).ComponentId);
             Assert.Same(_testComponent, changes.GetChangedComponent(0));
-            Assert.Equal(nameof(BeingComponent.ColdResistance), changes.GetChangedPropertyName(0));
+            Assert.Equal(nameof(BeingComponent.ExperiencePoints), changes.GetChangedPropertyName(0));
             Assert.Equal(0, changes.GetValue<int>(0, ValueType.Old));
             Assert.Equal(10, changes.GetValue<int>(0, ValueType.Current));
 

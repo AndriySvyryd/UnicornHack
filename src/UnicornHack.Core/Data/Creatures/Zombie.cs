@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Zombie = new Creature
     {
         Name = "zombie",
-        Species = Species.Human,
         SpeciesClass = SpeciesClass.Undead,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "zombie ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,7 +20,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "40*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "40*MightModifier()" } }
             }
         },
         InitialLevel = 4,
@@ -28,11 +29,15 @@ public static partial class CreatureData
         Behavior = AIBehavior.Stalking,
         Noise = ActorNoiseType.Moan,
         Weight = 1000,
-        Perception = -7,
-        Might = -8,
-        Speed = -7,
-        Focus = -2,
+        PerceptionBonus = -7,
+        MightBonus = -8,
+        SpeedBonus = -7,
+        FocusBonus = -2,
+        HealingResistance = 150,
         ColdResistance = 75,
+        FrightenResistance = 100,
+        SedateResistance = 100,
+        SuffocateResistance = 100,
         TorsoType = TorsoType.Humanoid,
         UpperExtremities = ExtremityType.GraspingFingers,
         LowerExtremities = ExtremityType.Fingers,

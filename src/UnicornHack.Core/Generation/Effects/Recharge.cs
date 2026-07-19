@@ -1,16 +1,18 @@
 using CSharpScriptSerialization;
-using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
 
-public class Recharge : AmountEffect
+public class Recharge : Effect
 {
-    protected override void ConfigureEffect(EffectComponent effect)
-    {
-        base.ConfigureEffect(effect);
+    private static readonly EffectMetadata _metadata = EffectMetadata.Resource(
+            EffectType.Recharge, resourceProperty: nameof(Systems.Beings.BeingComponent.EnergyPoints),
+            resistanceProperty: nameof(Systems.Beings.BeingComponent.EnergyRestorationResistance),
+            defaultAmount: "10*FocusModifier()", combinationFunction: ValueCombinationFunction.Sum);
 
-        effect.EffectType = EffectType.Recharge;
-    }
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void RegisterMetadataProvider() => _ = _metadata;
+
+    public override EffectMetadata Metadata => _metadata;
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<Recharge>(GetPropertyConditions<Recharge>());

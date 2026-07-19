@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Text;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
@@ -19,7 +18,17 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
     /// </summary>
     private readonly Dictionary<int, LastEmittedValues> _lastEmittedValues = [];
 
+    protected override bool CaptureSnapshots => false;
+
+    protected override bool WasKnownAtCycleStart(int id) => _lastEmittedValues.ContainsKey(id);
+
     private readonly record struct LastEmittedValues(
+        bool IsCurrentlyPerceived,
+        int Hp,
+        int MaxHp,
+        int Ep,
+        int MaxEp,
+        int NextActionTick,
         ActorActionChange? NextAction,
         AttackSummary? MeleeAttack,
         AttackSummary? RangeAttack,
@@ -38,6 +47,24 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
         manager.KnownPositions.RemoveListener(this);
         manager.KnownActorsToCellRelationship.RemoveDependentsListener(this);
         manager.RoomActors.RemoveListener(this);
+    }
+
+    public void TrackObserverTelegraphVisibility(GameEntity observer)
+    {
+        if (observer.Position?.RoomEntity.Room is not { } room)
+        {
+            return;
+        }
+
+        foreach (var knowledgeEntity in room.KnownActors.Values)
+        {
+            if (knowledgeEntity.Knowledge?.KnownEntity.AI == null)
+            {
+                continue;
+            }
+
+            GetOrCreateChange(knowledgeEntity, EntityState.Modified).ChangedProperties![12] = true;
+        }
     }
 
     /// <summary>
@@ -103,10 +130,10 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
                 switch (propertyName)
                 {
                     case nameof(PositionComponent.CellX):
-                        change.LevelX = entity.Position!.CellX;
+                        change.LevelX = entity.Position!.CellX!.Value;
                         break;
                     case nameof(PositionComponent.CellY):
-                        change.LevelY = entity.Position!.CellY;
+                        change.LevelY = entity.Position!.CellY!.Value;
                         break;
                     case nameof(PositionComponent.Heading):
                         change.Heading = (byte)entity.Position!.Heading!;
@@ -132,7 +159,8 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
                     change.BaseName = !canIdentify
                         ? null
                         : knownEntity.AI != null
-                            ? knownEntity.Being!.Races.First().Race!.TemplateName
+                            ? entity.Game.Services.Language.GetTemplateName(
+                                knownEntity.Being!.Races.First().Ability!, abbreviate: false)
                             : "player";
                     change.Name = !canIdentify
                         ? null
@@ -155,7 +183,11 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
                 switch (propertyName)
                 {
                     case nameof(BeingComponent.HitPoints):
-                        change.Hp = entity.Being!.HitPoints;
+                        var hitPoints = entity.Being!.HitPoints;
+                        if (changes.GetValue<int>(i, Utils.MessagingECS.ValueType.Old) != hitPoints)
+                        {
+                            change.Hp = hitPoints;
+                        }
                         break;
                     case nameof(BeingComponent.HitPointMaximum):
                         change.MaxHp = entity.Being!.HitPointMaximum;
@@ -195,12 +227,30 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
         var being = knownEntity?.Being;
         if (actorKnowledge == null || being == null)
         {
-            return new ActorChange { ChangedProperties = new BitArray(1) };
+            return new ActorChange { ChangedProperties = SerializationContext.DeletedBitArray };
         }
 
         var ai = knownEntity!.AI;
         var currentlyPerceived = actorKnowledge.SensedType.CanIdentify();
         var perceptionChanged = tracked.ChangedProperties![6];
+        var last = _lastEmittedValues.GetValueOrDefault(entity.Id);
+
+        if (tracked.ChangedProperties[7] && being.HitPoints == last.Hp)
+        {
+            tracked.ChangedProperties[7] = false;
+        }
+        if (tracked.ChangedProperties[8] && being.HitPointMaximum == last.MaxHp)
+        {
+            tracked.ChangedProperties[8] = false;
+        }
+        if (tracked.ChangedProperties[9] && being.EnergyPoints == last.Ep)
+        {
+            tracked.ChangedProperties[9] = false;
+        }
+        if (tracked.ChangedProperties[10] && being.EnergyPointMaximum == last.MaxEp)
+        {
+            tracked.ChangedProperties[10] = false;
+        }
 
         if (perceptionChanged
             && (tracked.ChangedProperties[4] || tracked.ChangedProperties[5]))
@@ -218,11 +268,12 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
         }
         else if (ai != null && currentlyPerceived
             && (perceptionChanged || tracked.ChangedProperties[11]
-                || tracked.ChangedProperties[1]))
+                || tracked.ChangedProperties[1] || tracked.ChangedProperties[12]))
         {
             tracked.NextActionTick = ai.NextActionTick ?? 0;
             var nextAction = SerializeNextAction(ai, context);
             var lastNextAction = _lastEmittedValues.GetValueOrDefault(entity.Id).NextAction;
+            tracked.ChangedProperties[12] = false;
             if (!NextActionEquals(nextAction, lastNextAction))
             {
                 tracked.NextAction = nextAction;
@@ -241,8 +292,6 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
 
         if (ai != null)
         {
-            var last = _lastEmittedValues.GetValueOrDefault(entity.Id);
-
             if (currentlyPerceived)
             {
                 if (actorKnowledge.IsIdentified)
@@ -302,6 +351,24 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
             }
         }
 
+        if (perceptionChanged
+            && currentlyPerceived == last.IsCurrentlyPerceived)
+        {
+            tracked.ChangedProperties[6] = false;
+        }
+
+        if (tracked.ChangedProperties[11]
+            && tracked.NextActionTick == last.NextActionTick)
+        {
+            tracked.ChangedProperties[11] = false;
+        }
+
+        if (tracked.ChangedProperties[12]
+            && NextActionEquals(tracked.NextAction, last.NextAction))
+        {
+            tracked.ChangedProperties[12] = false;
+        }
+
         return HasModifiedBits(tracked.ChangedProperties) ? tracked : null;
     }
 
@@ -327,12 +394,40 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
         var bits = emitted.ChangedProperties;
         var isFullSnapshot = bits == null;
         var existing = _lastEmittedValues.GetValueOrDefault(id);
+        var currentlyPerceived = isFullSnapshot || (bits != null && bits.Length > 6 && bits[6])
+            ? emitted.IsCurrentlyPerceived
+            : existing.IsCurrentlyPerceived;
+        var hp = isFullSnapshot || (bits != null && bits.Length > 7 && bits[7]) ? emitted.Hp : existing.Hp;
+        var maxHp = isFullSnapshot || (bits != null && bits.Length > 8 && bits[8]) ? emitted.MaxHp : existing.MaxHp;
+        var ep = isFullSnapshot || (bits != null && bits.Length > 9 && bits[9]) ? emitted.Ep : existing.Ep;
+        var maxEp = isFullSnapshot || (bits != null && bits.Length > 10 && bits[10]) ? emitted.MaxEp : existing.MaxEp;
+        var nextActionTick = isFullSnapshot || (bits != null && bits.Length > 11 && bits[11])
+            ? emitted.NextActionTick
+            : existing.NextActionTick;
         var nextAction = (isFullSnapshot || (bits != null && bits.Length > 12 && bits[12])) ? emitted.NextAction : existing.NextAction;
         var melee = (isFullSnapshot || (bits != null && bits.Length > 13 && bits[13])) ? emitted.MeleeAttack : existing.MeleeAttack;
         var range = (isFullSnapshot || (bits != null && bits.Length > 14 && bits[14])) ? emitted.RangeAttack : existing.RangeAttack;
         var meleeDef = (isFullSnapshot || (bits != null && bits.Length > 15 && bits[15])) ? emitted.MeleeDefense : existing.MeleeDefense;
         var rangeDef = (isFullSnapshot || (bits != null && bits.Length > 16 && bits[16])) ? emitted.RangeDefense : existing.RangeDefense;
-        _lastEmittedValues[id] = new LastEmittedValues(nextAction, melee, range, meleeDef, rangeDef);
+        _lastEmittedValues[id] = new LastEmittedValues(
+            currentlyPerceived, hp, maxHp, ep, maxEp,
+            nextActionTick, nextAction, melee, range, meleeDef, rangeDef);
+    }
+
+    internal void ResetBaseline(GameEntity playerEntity)
+    {
+        _lastEmittedValues.Clear();
+        if (playerEntity.Position?.RoomEntity.Room is not { } room)
+        {
+            return;
+        }
+
+        var context = new SerializationContext(null!, playerEntity, playerEntity.Game.Services);
+        foreach (var knowledgeEntity in room.KnownActors.Values)
+        {
+            var snapshot = SerializeActor(knowledgeEntity, context);
+            OnAfterEmit(knowledgeEntity.Id, knowledgeEntity, snapshot, EntityState.Added);
+        }
     }
 
     private static bool NextActionEquals(ActorActionChange? a, ActorActionChange? b)
@@ -389,11 +484,12 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
             var change = new ActorChange
             {
                 ChangedProperties = null,
-                LevelX = position.CellX,
-                LevelY = position.CellY,
+                LevelX = position.CellX!.Value,
+                LevelY = position.CellY!.Value,
                 Heading = (byte)position.Heading!,
                 BaseName = ai != null
-                    ? knownEntity.Being!.Races.First().Race!.TemplateName
+                    ? context.Services.Language.GetTemplateName(
+                        knownEntity.Being!.Races.First().Ability!, abbreviate: false)
                     : "player",
                 Name = context.Services.Language.GetActorName(knownEntity, actorKnowledge.IsIdentified),
                 IsCurrentlyPerceived = currentlyPerceived,
@@ -437,8 +533,8 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
             return new ActorChange
             {
                 ChangedProperties = null,
-                LevelX = position.CellX,
-                LevelY = position.CellY,
+                LevelX = position.CellX!.Value,
+                LevelY = position.CellY!.Value,
                 Heading = (byte)position.Heading!
             };
         }
@@ -446,7 +542,8 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
 
     private static ActorActionChange? SerializeNextAction(AIComponent ai, SerializationContext context)
     {
-        if (ai.NextAction == null)
+        if (ai.NextAction == null
+            || context.Observer.Being is { CanPerceiveIntention: false })
         {
             return null;
         }
@@ -484,7 +581,7 @@ public class ActorChangeBuilder : ChangeBuilder<ActorChange>
                 {
                     Type = ai.NextAction!.Value,
                     Name = actionLabel + context.Services.Language.GetString(direction, abbreviate: true),
-                    Target = ai.Entity.Position!.Cell.Translate(direction.AsVector()).ToInt32(),
+                    Target = ai.Entity.Position!.Cell!.Value.Translate(direction.AsVector()).ToInt32(),
                     TargetingShape = TargetingShape.Line,
                     TargetingShapeSize = 0
                 };

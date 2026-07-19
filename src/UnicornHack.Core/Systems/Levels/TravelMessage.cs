@@ -28,7 +28,13 @@ public class TravelMessage : IMessage
         set;
     }
 
-    public Point TargetCell
+    public Point? TargetCell
+    {
+        get;
+        set;
+    }
+
+    public int? Distance
     {
         get;
         set;
@@ -40,17 +46,25 @@ public class TravelMessage : IMessage
         set;
     }
 
-    string IMessage.MessageName
+    public bool SuppressDelay
     {
         get;
         set;
-    } = null!;
+    }
+
+    string IMessage.MessageName
+    {
+        get => Name;
+        set => Debug.Assert(value == Name);
+    }
 
     public void Clean()
     {
         ActorEntity = default!;
         TargetHeading = default;
         TargetCell = default;
+        Distance = default;
         MoveOffConflicting = default;
+        SuppressDelay = default;
     }
 }

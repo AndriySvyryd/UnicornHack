@@ -1,5 +1,7 @@
 namespace UnicornHack.Generation.Map;
 
+using UnicornHack.Generation.Map.TestFragments;
+
 public class MapFragmentLoaderTest
 {
     [Fact]
@@ -61,6 +63,32 @@ public class MapFragmentLoaderTest
         // Source fragment's GenerationWeight is "10" → sum across 8 variants must equal 10.
         Assert.Equal(10f, totalWeight, precision: 4);
     }
+
+    [Fact]
+    public void Loader_does_not_transform_or_dilute_a_dynamic_map_without_a_static_map()
+    {
+        var loader = new MapFragmentLoader<DefiningMapFragment>(
+            "nonexistent_path", typeof(DynamicFragmentData));
+
+        var fragment = Assert.Single(loader.GetAsList());
+
+        Assert.True(string.IsNullOrEmpty(fragment.Map));
+        Assert.Equal(MapFragmentTransform.Identity, fragment.Transform);
+        Assert.Equal(1, fragment.VariantCount);
+        Assert.Equal(10f,
+            fragment.GetWeight("any", depth: 1, instances: 0, tagInstances: new Dictionary<string, int>()));
+    }
+
+    [Fact]
+    public void Fov_test_fragment_is_only_discovered_by_the_test_loader()
+    {
+        Assert.Null(DefiningMapFragment.Loader.Find("FOVTest"));
+
+        var testLoader = new MapFragmentLoader<DefiningMapFragment>(
+            "nonexistent_path", typeof(TestDefiningMapFragmentData));
+
+        Assert.NotNull(testLoader.Find("FOVTest"));
+    }
 }
 
 public static class AsymmetricFragmentData
@@ -103,5 +131,15 @@ public static class WeightedFragmentData
         Map = "ABC\nDEF",
         GenerationWeight = "10",
         NoRandomDoorways = true
+    };
+}
+
+public static class DynamicFragmentData
+{
+    public static readonly DefiningMapFragment Fragment = new()
+    {
+        Name = "Dynamic",
+        DynamicMap = new RectangleMap { MinSize = new Dimensions(3, 3) },
+        GenerationWeight = "10"
     };
 }

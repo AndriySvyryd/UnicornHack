@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Quasit = new Creature
     {
         Name = "quasit",
-        Species = Species.Imp,
         SpeciesClass = SpeciesClass.Demon,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "quasit ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "20*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "20*MightModifier()" } }
             },
             new Ability
             {
+                Name = "quasit ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -31,7 +34,10 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new ChangeProperty<int> { Duration = EffectDuration.UntilTimeout, DurationAmount = "5", PropertyName = "Speed", Value = -1 } }
+                Effects = new List<Effect>
+                {
+                    new ChangeProperty<int> { Duration = EffectDuration.UntilTimeout, DurationAmount = "5*MightModifier()", Amount = "-1", PropertyName = "Speed" }
+                }
             }
         },
         InitialLevel = 3,
@@ -42,10 +48,10 @@ public static partial class CreatureData
         Weight = 200,
         MovementDelay = -20,
         TurningDelay = -20,
-        Perception = -8,
-        Might = -8,
-        Speed = -8,
-        Focus = -8,
+        PerceptionBonus = -8,
+        MightBonus = -8,
+        SpeedBonus = -8,
+        FocusBonus = -8,
         Regeneration = 3,
         Armor = 4,
         MagicResistance = 10,

@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature VampireBat = new Creature
     {
         Name = "vampire bat",
-        Species = Species.Bat,
         SpeciesClass = SpeciesClass.Bird,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "vampire bat ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "30*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "30*MightModifier()" } }
             },
             new Ability
             {
+                Name = "vampire bat ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -31,7 +34,10 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new ChangeProperty<int> { Duration = EffectDuration.UntilTimeout, DurationAmount = "5", PropertyName = "Might", Value = -1 } }
+                Effects = new List<Effect>
+                {
+                    new ChangeProperty<int> { Duration = EffectDuration.UntilTimeout, DurationAmount = "5*MightModifier()", Amount = "-1", PropertyName = "Might" }
+                }
             }
         },
         InitialLevel = 5,
@@ -43,10 +49,10 @@ public static partial class CreatureData
         Weight = 100,
         MovementDelay = -40,
         TurningDelay = -40,
-        Perception = -7,
-        Might = -8,
-        Speed = -7,
-        Focus = -8,
+        PerceptionBonus = -7,
+        MightBonus = -8,
+        SpeedBonus = -7,
+        FocusBonus = -8,
         Regeneration = 3,
         Armor = 2,
         TorsoType = TorsoType.Quadruped,
@@ -54,7 +60,7 @@ public static partial class CreatureData
         LowerExtremities = ExtremityType.Claws,
         LocomotionType = LocomotionType.Flying,
         SlotCapacity = 1,
-        NoiseLevel = 0,
+        Quietness = 250,
         Infravisible = true
     };
 }

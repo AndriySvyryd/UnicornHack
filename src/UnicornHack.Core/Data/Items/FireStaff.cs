@@ -5,10 +5,12 @@ public static partial class ItemData
     public static readonly Item FireStaff = new Item
     {
         Name = "fire staff",
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "fire staff ability #1",
+                Type = AbilityType.RangedAttack,
                 Activation = ActivationType.OnRangedAttack,
                 Trigger = ActivationType.OnRangedAttack,
                 Range = 10,
@@ -16,7 +18,12 @@ public static partial class ItemData
                 SuccessCondition = AbilitySuccessCondition.NormalAttack,
                 Accuracy = "5+RequirementsModifier()",
                 Delay = "100*RequirementsModifier()",
-                Effects = new List<Effect> { new Burn { Damage = "30*RequirementsModifier()" }, new Activate { Projectile = "fire bolt" } }
+                Effects = new List<Effect>
+                {
+                    new FireDamage { Amount = "30*RequirementsModifier()" },
+                    new FireDamage { Duration = EffectDuration.UntilTimeout, Amount = "30*RequirementsModifier()" },
+                    new Activate { Projectile = "fire bolt" }
+                }
             }
         },
         Type = ItemType.WeaponRangedLong,

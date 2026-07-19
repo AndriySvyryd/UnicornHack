@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature DeepSheep = new Creature
     {
         Name = "deep sheep",
-        Species = Species.Quadruped,
         SpeciesClass = SpeciesClass.Quadrupedal,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "deep sheep ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "40*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "40*MightModifier()" } }
             },
             new Ability
             {
+                Name = "deep sheep ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -31,7 +34,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "20*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "20*MightModifier()" } }
             }
         },
         InitialLevel = 2,
@@ -41,10 +44,10 @@ public static partial class CreatureData
         Weight = 600,
         MovementDelay = 33,
         TurningDelay = 33,
-        Perception = -8,
-        Might = -8,
-        Speed = -8,
-        Focus = -8,
+        PerceptionBonus = -8,
+        MightBonus = -8,
+        SpeedBonus = -8,
+        FocusBonus = -8,
         Armor = 1,
         TorsoType = TorsoType.Quadruped,
         UpperExtremities = ExtremityType.None,

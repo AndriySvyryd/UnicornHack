@@ -5,17 +5,18 @@ public static partial class CreatureData
     public static readonly Creature FloatingEye = new Creature
     {
         Name = "floating eye",
-        Species = Species.FloatingSphere,
         SpeciesClass = SpeciesClass.Aberration,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "floating eye ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.OnMeleeHit,
                 Action = AbilityAction.Gaze,
                 SuccessCondition = AbilitySuccessCondition.UnblockableAttack,
                 Accuracy = "10+PerceptionModifier()",
-                Effects = new List<Effect> { new Paralyze { Duration = EffectDuration.UntilTimeout, DurationAmount = "200" } }
+                Effects = new List<Effect> { new Paralyze() }
             }
         },
         InitialLevel = 2,
@@ -26,10 +27,10 @@ public static partial class CreatureData
         Weight = 10,
         MovementDelay = 1100,
         TurningDelay = 1100,
-        Perception = -8,
-        Might = -8,
-        Speed = -8,
-        Focus = -8,
+        PerceptionBonus = -8,
+        MightBonus = -8,
+        SpeedBonus = -8,
+        FocusBonus = -8,
         MagicResistance = 5,
         HeadType = HeadType.None,
         UpperExtremities = ExtremityType.None,
@@ -37,7 +38,7 @@ public static partial class CreatureData
         RespirationType = RespirationType.None,
         LocomotionType = LocomotionType.Flying,
         SlotCapacity = 0,
-        NoiseLevel = 0,
+        Quietness = 250,
         Infravisible = true,
         Infravision = true,
         Mindless = true,

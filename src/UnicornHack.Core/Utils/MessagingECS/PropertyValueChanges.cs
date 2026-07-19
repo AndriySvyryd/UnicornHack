@@ -16,6 +16,12 @@ public class PropertyValueChanges : IPropertyValueChanges
     public string GetChangedPropertyName(int index)
         => throw new IndexOutOfRangeException(nameof(index));
 
+    public object? GetNestedItem(int index)
+        => throw new IndexOutOfRangeException(nameof(index));
+
+    public string? GetNestedPropertyName(int index)
+        => throw new IndexOutOfRangeException(nameof(index));
+
     public T GetChange<T>(int index)
         => throw new IndexOutOfRangeException(nameof(index));
 

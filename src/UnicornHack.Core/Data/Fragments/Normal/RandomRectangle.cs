@@ -6,6 +6,6 @@ public static partial class NormalMapFragmentData
     {
         Name = "randomRectangle",
         DynamicMap = new RectangleMap { MinSize = new Dimensions { Width = 5, Height = 5 } },
-        Tags = ["door-n", "door-s", "door-e", "door-w"]
+        Tags = new HashSet<string> { "door-n", "door-s", "door-e", "door-w" }
     };
 }

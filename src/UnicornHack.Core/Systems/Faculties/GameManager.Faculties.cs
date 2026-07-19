@@ -1,4 +1,4 @@
-using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Faculties;
 using UnicornHack.Systems.Items;
@@ -32,7 +32,7 @@ public partial class GameManager
         BeingToPrimaryNaturalWeaponRelationship = new(
             nameof(BeingToPrimaryNaturalWeaponRelationship),
             Beings,
-            ContainedItems,
+            RoomItems,
             new SimpleKeyValueGetter<GameEntity, int>(
                 component => ((BeingComponent)component).PrimaryNaturalWeaponId,
                 (int)EntityComponent.Being),
@@ -43,7 +43,7 @@ public partial class GameManager
         BeingToSecondaryNaturalWeaponRelationship = new(
             nameof(BeingToSecondaryNaturalWeaponRelationship),
             Beings,
-            ContainedItems,
+            RoomItems,
             new SimpleKeyValueGetter<GameEntity, int>(
                 component => ((BeingComponent)component).SecondaryNaturalWeaponId,
                 (int)EntityComponent.Being),
@@ -56,26 +56,8 @@ public partial class GameManager
         queue.Register<PropertyValueChangedMessage<GameEntity, ExtremityType>>(SkillAbilitiesSystem,
             Beings.GetPropertyValueChangedMessageName(nameof(BeingComponent.UpperExtremities)), 0);
         queue.Register<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-            Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.HandWeapons)), 0);
-        queue.Register<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-            Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.ShortWeapons)), 0);
-        queue.Register<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-            Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.MediumWeapons)), 0);
-        queue.Register<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-            Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.LongWeapons)), 0);
-        queue.Register<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-            Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.CloseRangeWeapons)), 0);
-        queue.Register<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-            Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.ShortRangeWeapons)), 0);
-        queue.Register<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-            Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.MediumRangeWeapons)), 0);
-        queue.Register<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-            Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.LongRangeWeapons)), 0);
-        queue.Register<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-            Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.LightArmor)), 0);
-        queue.Register<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-            Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.HeavyArmor)), 0);
-        queue.Register<PropertyValueChangedMessage<GameEntity, int>>(SkillAbilitiesSystem,
-            Players.GetPropertyValueChangedMessageName(nameof(PlayerComponent.Artifice)), 0);
+            AbilitiesToAffectableRelationship.Dependents.GetPropertyValueChangedMessageName(
+                nameof(AbilityComponent.Level)),
+            0);
     }
 }

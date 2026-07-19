@@ -15,8 +15,6 @@ public class ItemComponent : GameComponent
     private EquipmentSlot _equippedSlot;
     private int _maxStackSize;
     private int? _count;
-    private IReadOnlyCollection<GameEntity>? _abilities;
-    private IReadOnlyCollection<GameEntity>? _appliedEffects;
     private IReadOnlyCollection<GameEntity>? _items;
 
     public ItemComponent()
@@ -98,87 +96,28 @@ public class ItemComponent : GameComponent
         }
     }
 
-    public IReadOnlyCollection<GameEntity> Abilities
-    {
-        get
-        {
-            if (_abilities == null)
-            {
-                var abilities = Entity.Being?.Abilities;
-                if (abilities != null)
-                {
-                    _abilities = abilities;
-                }
-                else
-                {
-                    _abilities = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
-                    abilities = Entity.Physical?.Abilities
-                                ?? Entity.Sensor?.Abilities;
-                    if (abilities != null)
-                    {
-                        _abilities = abilities;
-                    }
-                }
-            }
-
-            return _abilities;
-        }
-    }
-
-    public IReadOnlyCollection<GameEntity> AppliedEffects
-    {
-        get
-        {
-            if (_appliedEffects == null)
-            {
-                var appliedEffects = Entity.Being?.AppliedEffects;
-                if (appliedEffects != null)
-                {
-                    _appliedEffects = appliedEffects;
-                }
-                else
-                {
-                    _appliedEffects = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
-                    appliedEffects = Entity.Physical?.AppliedEffects
-                                     ?? Entity.Sensor?.AppliedEffects;
-                    if (appliedEffects != null)
-                    {
-                        _appliedEffects = appliedEffects;
-                    }
-                }
-            }
-
-            return _appliedEffects;
-        }
-    }
-
     public IReadOnlyCollection<GameEntity> Items
     {
         get
         {
             if (_items == null)
             {
-                var items = Entity.Being?.Items;
-
+                // Assign a provisional set before delegating so a sibling component's Items getter that
+                // delegates back here (e.g. PhysicalComponent) sees a non-null value and doesn't recurse.
+                _items = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
+                var items = Entity.Being?.Items
+                            ?? Entity.Physical?.Items;
                 if (items != null)
                 {
                     _items = items;
-                }
-                else
-                {
-                    _items = new HashSet<GameEntity>(EntityEqualityComparer<GameEntity>.Instance);
-                    items = Entity.Physical?.Items
-                            ?? Entity.Sensor?.Items;
-                    if (items != null)
-                    {
-                        _items = items;
-                    }
                 }
             }
 
             return _items;
         }
     }
+
+    public IReadOnlyCollection<GameEntity> Abilities => Entity.ActiveEffects!.Abilities;
 
     public int GetQuantity()
         => Count ?? ((Entity.Physical?.Capacity ?? 0) == 0
@@ -196,8 +135,6 @@ public class ItemComponent : GameComponent
         _equippedSlot = default;
         _maxStackSize = default;
         _count = default;
-        _abilities = default;
-        _appliedEffects = default;
         _items = default;
 
         base.Clean();

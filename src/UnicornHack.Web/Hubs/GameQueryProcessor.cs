@@ -1,215 +1,244 @@
 using UnicornHack.Data.Abilities;
+using UnicornHack.Generation.Effects;
 using UnicornHack.Hubs.ChangeTracking;
 using UnicornHack.Services;
 using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Hubs;
 
 public static class GameQueryProcessor
 {
-    public static List<object?> SerializeSlottedAbility(GameEntity abilityEntity, SerializationContext context)
+    public static AbilityChange SerializeSlottedAbility(GameEntity abilityEntity, SerializationContext context)
     {
         var ability = abilityEntity.Ability!;
-        return
-        [
-            null,
-            context.Services.Language.GetString(ability),
-            (int)ability.Activation,
-            ability.Slot,
-            ability.CooldownTick,
-            ability.CooldownXpLeft,
-            (int)ability.TargetingShape,
-            ability.TargetingShapeSize
-        ];
+        return new AbilityChange
+        {
+            ChangedProperties = null,
+            Name = context.Services.Language.GetString(ability),
+            Activation = (int)ability.Activation,
+            Slot = ability.Slot,
+            CooldownTick = ability.CooldownTick,
+            CooldownXpLeft = ability.CooldownXpLeft,
+            TargetingShape = (int)ability.TargetingShape,
+            TargetingShapeSize = ability.TargetingShapeSize,
+            Type = (int)ability.Type,
+            Accumulator = AbilityChangeBuilder.GetAccumulator(abilityEntity),
+            Level = ability.Level,
+            Noise = ability.Noise
+        };
     }
 
-    public static List<object?> SerializeInventoryItem(GameEntity itemEntity, SerializationContext context)
+    public static Item SerializeInventoryItem(GameEntity itemEntity, SerializationContext context)
     {
         var item = itemEntity.Item!;
         var manager = context.Manager;
-        var properties = new List<object?>(6)
-        {
-            null,
-            (int)item.Type,
-            item.TemplateName,
-            context.Services.Language.GetString(item, item.GetQuantity(), true)
-        };
 
         var slots = manager.ItemUsageSystem.GetEquipableSlots(item, context.Observer.Physical!.Size)
             .GetNonRedundantFlags(removeComposites: true)
             .Select(s => SerializeEquipmentSlot(s, context))
-            .ToDictionary(s => (int)s[0], s => s);
-        properties.Add(slots.Count > 0 ? slots : null);
-        properties.Add(item.EquippedSlot == EquipmentSlot.None
-            ? null
-            : SerializeEquipmentSlot(item.EquippedSlot, context));
-        return properties;
+            .ToDictionary(s => s.Id);
+        return new Item
+        {
+            ChangedProperties = null,
+            Type = item.Type,
+            BaseName = item.TemplateName,
+            Name = context.Services.Language.GetString(item, item.GetQuantity(), true),
+            EquippableSlots = slots,
+            EquippedSlot = item.EquippedSlot == EquipmentSlot.None
+                ? null
+                : SerializeEquipmentSlot(item.EquippedSlot, context)
+        };
     }
 
-    public static List<object?> SerializeItems(GameEntity playerEntity, SerializationContext context)
-        =>
-        [
-            playerEntity.Being!.Items
+    public static PlayerInventory SerializeItems(GameEntity playerEntity, SerializationContext context)
+        => new()
+        {
+            Items = playerEntity.Being!.Items
                 .ToDictionary(t => t.Item!.EntityId, t => SerializeInventoryItem(t, context))
-        ];
+        };
 
-    public static List<object?> SerializeAdaptations(GameEntity playerEntity, SerializationContext context)
+    public static PlayerAdaptations SerializeAdaptations(GameEntity playerEntity, SerializationContext context)
     {
         var traits = new List<(string, int)>();
-        var mutations = new List<(string, int)>();
-        foreach (var effectEntity in playerEntity.Being!.AppliedEffects)
+        var feats = new List<(string, int)>();
+
+        // Traits and feats are granted abilities carried on the being (AddAbility now records a
+        // directive that instantiates the ability rather than a lingering applied effect). Surface each
+        // one at its combined level, keyed by the authored template name.
+        foreach (var abilityEntity in playerEntity.ActiveEffects!.Abilities)
         {
-            var effect = effectEntity.Effect!;
-            if (effect.EffectType != EffectType.AddAbility
-                || effect.TargetName == null
-                || !(context.Services.Data.Abilities.Find(effect.TargetName) is LeveledAbility template))
+            var ability = abilityEntity.Ability!;
+            if (ability.IsLeveledSupplement
+                || ability.Name is not { } name
+                || context.Services.Data.Abilities.Find(name) is not LeveledAbility template)
             {
                 continue;
             }
 
-            switch (template.Type)
+            if (template.Type.IsTraitLike())
             {
-                case AbilityType.Trait:
-                    traits.Add((template.Name, effect.AppliedAmount!.Value));
-                    break;
-                case AbilityType.Mutation:
-                    mutations.Add((template.Name, effect.AppliedAmount!.Value));
-                    break;
-                default:
-                    continue;
+                traits.Add((template.Name, ability.Level));
+            }
+            else if (template.Type.IsFeatLike())
+            {
+                feats.Add((template.Name, ability.Level));
             }
         }
 
-        return new List<object?>(4)
+        return new PlayerAdaptations
         {
-            playerEntity.Player!.TraitPoints, playerEntity.Player.MutationPoints, traits, mutations
+            Traits = traits.ToDictionary(entry => entry.Item1, entry => entry.Item2),
+            Feats = feats.ToDictionary(entry => entry.Item1, entry => entry.Item2)
         };
     }
 
-    public static List<object?> SerializeSkills(GameEntity playerEntity, SerializationContext context)
+    public static PlayerSkills SerializeSkills(GameEntity playerEntity, SerializationContext context)
     {
         var manager = context.Manager;
         var playerId = playerEntity.Id;
 
-        return new List<object?>(32)
+        return new PlayerSkills
         {
-            null,
-            GetAbilityLevel(AbilityData.HandWeapons.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.ShortWeapons.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.MediumWeapons.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.LongWeapons.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.CloseRangeWeapons.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.ShortRangeWeapons.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.MediumRangeWeapons.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.LongRangeWeapons.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.OneHanded.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.TwoHanded.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.DualWielding.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.Acrobatics.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.LightArmor.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.HeavyArmor.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.AirSourcery.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.BloodSourcery.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.EarthSourcery.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.FireSourcery.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.SpiritSourcery.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.WaterSourcery.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.Conjuration.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.Enchantment.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.Evocation.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.Malediction.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.Illusion.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.Transmutation.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.Assassination.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.Stealth.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.Artifice.Name, playerId, manager),
-            GetAbilityLevel(AbilityData.Leadership.Name, playerId, manager),
-            playerEntity.Player!.SkillPoints
+            ChangedProperties = null,
+            HandWeapons = GetAbilityLevel(AbilityData.HandWeapons.Name, playerId, manager),
+            ShortWeapons = GetAbilityLevel(AbilityData.ShortWeapons.Name, playerId, manager),
+            MediumWeapons = GetAbilityLevel(AbilityData.MediumWeapons.Name, playerId, manager),
+            LongWeapons = GetAbilityLevel(AbilityData.LongWeapons.Name, playerId, manager),
+            CloseRangeWeapons = GetAbilityLevel(AbilityData.CloseRangeWeapons.Name, playerId, manager),
+            ShortRangeWeapons = GetAbilityLevel(AbilityData.ShortRangeWeapons.Name, playerId, manager),
+            MediumRangeWeapons = GetAbilityLevel(AbilityData.MediumRangeWeapons.Name, playerId, manager),
+            LongRangeWeapons = GetAbilityLevel(AbilityData.LongRangeWeapons.Name, playerId, manager),
+            OneHanded = GetAbilityLevel(AbilityData.OneHanded.Name, playerId, manager),
+            TwoHanded = GetAbilityLevel(AbilityData.TwoHanded.Name, playerId, manager),
+            DualWielding = GetAbilityLevel(AbilityData.DualWielding.Name, playerId, manager),
+            Acrobatics = GetAbilityLevel(AbilityData.Acrobatics.Name, playerId, manager),
+            LightArmor = GetAbilityLevel(AbilityData.LightArmor.Name, playerId, manager),
+            HeavyArmor = GetAbilityLevel(AbilityData.HeavyArmor.Name, playerId, manager),
+            AirSourcery = GetAbilityLevel(AbilityData.AirSourcery.Name, playerId, manager),
+            BloodSourcery = GetAbilityLevel(AbilityData.BloodSourcery.Name, playerId, manager),
+            EarthSourcery = GetAbilityLevel(AbilityData.EarthSourcery.Name, playerId, manager),
+            FireSourcery = GetAbilityLevel(AbilityData.FireSourcery.Name, playerId, manager),
+            SpiritSourcery = GetAbilityLevel(AbilityData.SpiritSourcery.Name, playerId, manager),
+            WaterSourcery = GetAbilityLevel(AbilityData.WaterSourcery.Name, playerId, manager),
+            Conjuration = GetAbilityLevel(AbilityData.Conjuration.Name, playerId, manager),
+            Enchantment = GetAbilityLevel(AbilityData.Enchantment.Name, playerId, manager),
+            Evocation = GetAbilityLevel(AbilityData.Evocation.Name, playerId, manager),
+            Malediction = GetAbilityLevel(AbilityData.Malediction.Name, playerId, manager),
+            Illusion = GetAbilityLevel(AbilityData.Illusion.Name, playerId, manager),
+            Transmutation = GetAbilityLevel(AbilityData.Transmutation.Name, playerId, manager),
+            Assassination = GetAbilityLevel(AbilityData.Assassination.Name, playerId, manager),
+            Stealth = GetAbilityLevel(AbilityData.Stealth.Name, playerId, manager),
+            Artifice = GetAbilityLevel(AbilityData.Artifice.Name, playerId, manager),
+            Leadership = GetAbilityLevel(AbilityData.Leadership.Name, playerId, manager)
         };
     }
 
-    public static List<object?> SerializeActorAttributes(
+    public static ActorAttributes SerializeActorAttributes(
         GameEntity? actorEntity, bool isIdentified, SerializationContext context)
     {
         if (!isIdentified)
         {
-            return SerializationContext.DeletedBitArray;
+            return new ActorAttributes { ChangedProperties = SerializationContext.DeletedBitArray };
         }
 
         var being = actorEntity!.Being!;
-        var sensor = actorEntity.Sensor!;
         var physical = actorEntity.Physical!;
         var description = actorEntity.HasComponent(EntityComponent.Player)
             ? ""
             : context.Services.Language.GetDescription(
-                actorEntity.Being!.Races.First().Race!.TemplateName,
+                context.Services.Language.GetTemplateName(actorEntity.Being!.Races.First().Ability!, abbreviate: false),
                 DescriptionCategory.Creature);
-        var result = new List<object?>(45)
+        var result = new ActorAttributes
         {
-            null,
-            context.Services.Language.GetActorName(actorEntity, isIdentified),
-            description,
-            actorEntity.Manager.XPSystem.GetXPLevel(actorEntity),
-            actorEntity.Position!.MovementDelay,
-            physical.Size,
-            physical.Weight,
-            sensor.PrimaryFOVQuadrants,
-            sensor.PrimaryVisionRange,
-            sensor.TotalFOVQuadrants,
-            sensor.SecondaryVisionRange,
-            sensor.Infravision,
-            sensor.InvisibilityDetection,
-            physical.Infravisible,
-            being.Visibility,
-            being.HitPoints,
-            being.HitPointMaximum,
-            being.EnergyPoints,
-            being.EnergyPointMaximum,
-            being.Might,
-            being.Speed,
-            being.Focus,
-            being.Perception,
-            being.Regeneration,
-            being.EnergyRegeneration,
-            being.Armor,
-            being.Deflection,
-            being.Accuracy,
-            being.Evasion,
-            being.Hindrance,
-            being.PhysicalResistance,
-            being.MagicResistance,
-            being.BleedingResistance,
-            being.AcidResistance,
-            being.ColdResistance,
-            being.ElectricityResistance,
-            being.FireResistance,
-            being.PsychicResistance,
-            being.ToxinResistance,
-            being.VoidResistance,
-            being.SonicResistance,
-            being.StunResistance,
-            being.LightResistance,
-            being.WaterResistance
+            ChangedProperties = null,
+            Name = context.Services.Language.GetActorName(actorEntity, isIdentified),
+            Description = description,
+            Level = being.Races.Sum(race => race.Ability!.Level),
+            MovementDelay = actorEntity.Position!.MovementDelay,
+            Size = physical.Size,
+            Weight = physical.Weight,
+            PrimaryFOVQuadrants = being.PrimaryFOVQuadrants,
+            PrimaryVisionRange = being.PrimaryVisionRange,
+            TotalFOVQuadrants = being.TotalFOVQuadrants,
+            SecondaryVisionRange = being.SecondaryVisionRange,
+            Infravision = being.Infravision,
+            InvisibilityDetection = being.InvisibilityDetection,
+            Infravisible = physical.Infravisible,
+            Visibility = being.Visibility,
+            HitPoints = being.HitPoints,
+            HitPointMaximum = being.HitPointMaximum,
+            EnergyPoints = being.EnergyPoints,
+            EnergyPointMaximum = being.EnergyPointMaximum,
+            Might = being.Might,
+            Speed = being.Speed,
+            Focus = being.Focus,
+            Perception = being.Perception,
+            Regeneration = being.Regeneration,
+            EnergyRegeneration = being.EnergyRegeneration,
+            Armor = being.Armor,
+            Deflection = being.Deflection,
+            Accuracy = being.Accuracy,
+            Evasion = being.Evasion,
+            Hindrance = being.Hindrance,
+            PhysicalResistance = being.PhysicalResistance,
+            MagicResistance = being.MagicResistance,
+            BleedingResistance = being.BleedingResistance,
+            AcidResistance = being.AcidResistance,
+            ColdResistance = being.ColdResistance,
+            ElectricityResistance = being.ElectricityResistance,
+            FireResistance = being.FireResistance,
+            PsychicResistance = being.PsychicResistance,
+            ToxinResistance = being.ToxinResistance,
+            VoidResistance = being.VoidResistance,
+            SonicResistance = being.SonicResistance,
+            StunResistance = being.StunResistance,
+            LightResistance = being.LightResistance,
+            WaterResistance = being.WaterResistance
         };
 
         var isPlayer = actorEntity.HasComponent(EntityComponent.Player);
-        var abilities = actorEntity.Being!.Abilities
-            .Where(a => a.Ability!.IsUsable
-                    && ((!isPlayer
-                            && a.Ability.Activation != ActivationType.Default
-                            && a.Ability.Activation != ActivationType.Always
-                            && a.Ability.Activation != ActivationType.OnMeleeAttack
-                            && a.Ability.Activation != ActivationType.OnRangedAttack)
-                        || (isPlayer
-                            && a.Ability.Type == AbilityType.DefaultAttack)))
+        var abilities = actorEntity.ActiveEffects!.Abilities
+            .Where(a => !a.Ability!.IsLeveledSupplement
+                        && (a.Ability.Type.IsStatusLike()
+                        || (a.Ability.IsUsable
+                            && ((!isPlayer
+                                    && a.Ability.Activation != ActivationType.Default
+                                    && a.Ability.Activation != ActivationType.Always
+                                    && a.Ability.Activation != ActivationType.OnMeleeAttack
+                                    && a.Ability.Activation != ActivationType.OnRangedAttack)
+                                || (isPlayer
+                                    && a.Ability.Type.IsDefaultAttack())))))
             .Select(a => SerializeAbilityAttributes(a, actorEntity, context))
             .ToList();
-        result.Add(abilities);
+        foreach (var accumulator in actorEntity.ActiveEffects.Accumulators)
+        {
+            var metadata = Effect.GetMetadata(accumulator.EffectType);
+            if (metadata.StatusAbilityName is not { } abilityName
+                || actorEntity.Manager.AffectableAbilitiesIndex[(actorEntity.Id, abilityName)] != null)
+            {
+                continue;
+            }
+
+            abilities.Add(new AbilityAttributes
+            {
+                ChangedProperties = null,
+                Id = AbilityChangeBuilder.GetAccumulatorPlaceholderId(accumulator.EffectType),
+                Name = AbilityChangeBuilder.GetAccumulatorPlaceholderName(accumulator.EffectType),
+                Level = 0,
+                Activation = ActivationType.Always,
+                Accumulator = accumulator.Value
+            });
+        }
+
+        result.Abilities = abilities;
+        result.Effects = EffectChangeBuilder.SerializeSnapshot(actorEntity);
 
         return result;
     }
 
-    public static List<object?> SerializeAbilityAttributes(
+    public static AbilityAttributes SerializeAbilityAttributes(
         GameEntity abilityEntity, GameEntity activator, SerializationContext context)
     {
         var manager = context.Manager;
@@ -223,48 +252,47 @@ public static class GameQueryProcessor
         var stats = manager.AbilityActivationSystem.GetAttackStats(activateMessage);
         manager.ReturnMessage(activateMessage);
 
-        var result = new List<object?>(ability.Template == null ? 20 : 21)
+        return new AbilityAttributes
         {
-            null,
-            ability.EntityId,
-            context.Services.Language.GetString(ability),
-            ability.Level,
-            (int)ability.Activation,
-            ability.ActivationCondition,
-            (int)ability.TargetingShape,
-            ability.TargetingShapeSize,
-            ability.Range,
-            ability.MinHeadingDeviation,
-            ability.MaxHeadingDeviation,
-            ability.EnergyCost,
-            stats.Delay,
-            ability.Cooldown,
-            ability.CooldownTick == null ? 0 : ability.CooldownTick.Value - manager.Game.CurrentTick,
-            ability.XPCooldown,
-            ability.CooldownXpLeft ?? 0,
-            stats.SelfEffects.ToDictionary(e => e.Effect!.EntityId, e => SerializeEffectAttributes(e, activator, context)),
-            stats.SubAttacks.Select(s => SerializeSubAttack(s, activator, context)).ToList()
-        };
-
-        if (ability.Template != null)
-        {
+            ChangedProperties = null,
+            Id = ability.EntityId,
+            Name = context.Services.Language.GetString(ability),
+            Level = ability.Level,
+            Activation = ability.Activation,
+            ActivationCondition = ability.ActivationCondition,
+            TargetingShape = ability.TargetingShape,
+            TargetingShapeSize = ability.TargetingShapeSize,
+            Range = ability.Range,
+            MinHeadingDeviation = ability.MinHeadingDeviation,
+            MaxHeadingDeviation = ability.MaxHeadingDeviation,
+            EnergyCost = ability.EnergyCost,
+            Delay = stats.Delay,
+            Cooldown = ability.Cooldown,
+            CooldownTicksLeft = ability.CooldownTick == null
+                ? 0
+                : ability.CooldownTick.Value - manager.Game.CurrentTick,
+            XpCooldown = ability.XPCooldown,
+            XpCooldownLeft = ability.CooldownXpLeft ?? 0,
+            Noise = ActorSystemBase.GetAbilityNoise(ability),
+            SelfEffects = stats.SelfEffects.ToDictionary(
+                e => e.Effect!.EntityId, e => SerializeEffectAttributes(e, activator, context)),
+            SubAbilities = stats.SubAttacks.Select(s => SerializeSubAttack(s, activator, context)).ToList(),
             // ability.Name may legitimately be null for synthesized sub-abilities (e.g. inner attack
             // abilities of a wielded weapon).
             // TODO: Generate a name for synthesized abilities
-            result.Add(ability.Name is { } name
-                ? context.Services.Data.Abilities.Find(name)?.EnglishDescription ?? ""
-                : "");
-        }
-
-        return result;
+            Description = ability.Template != null && ability.Name is { } name
+                ? context.Services.Language.GetDescription(name, DescriptionCategory.Ability)
+                : "",
+            Accumulator = AbilityChangeBuilder.GetAccumulator(abilityEntity)
+        };
     }
 
-    public static List<object?> SerializeItemAttributes(
+    public static ItemAttributes SerializeItemAttributes(
         GameEntity? itemEntity, bool isIdentified, SerializationContext context)
     {
         if (!isIdentified)
         {
-            return SerializationContext.DeletedBitArray;
+            return new ItemAttributes { ChangedProperties = SerializationContext.DeletedBitArray };
         }
 
         var manager = itemEntity!.Manager;
@@ -274,23 +302,24 @@ public static class GameQueryProcessor
         var equipableSlots = manager.ItemUsageSystem.GetEquipableSlots(item, context.Observer.Physical!.Size)
             .GetNonRedundantFlags(removeComposites: true)
             .Select(s => SerializeEquipmentSlot(s, context))
-            .ToDictionary(s => (int)s[0], s => s);
-        return new List<object?>(13)
+            .ToDictionary(s => s.Id);
+        return new ItemAttributes
         {
-            null,
-            context.Services.Language.GetString(item, item.GetQuantity(), isIdentified),
-            context.Services.Language.GetDescription(item.TemplateName, DescriptionCategory.Item),
-            (int)item.Type,
-            (int)physical.Material,
-            physical.Weight,
-            (int)(template.Complexity ?? ItemComplexity.Normal),
-            template.RequiredMight ?? 0,
-            template.RequiredSpeed ?? 0,
-            template.RequiredFocus ?? 0,
-            template.RequiredPerception ?? 0,
-            equipableSlots,
-            physical.Abilities
-                .Where(a => a.Ability!.IsUsable
+            ChangedProperties = null,
+            Name = context.Services.Language.GetString(item, item.GetQuantity(), isIdentified),
+            Description = context.Services.Language.GetDescription(item.TemplateName, DescriptionCategory.Item),
+            Type = item.Type,
+            Material = physical.Material,
+            Weight = physical.Weight,
+            Complexity = template.Complexity ?? ItemComplexity.Normal,
+            RequiredMight = template.RequiredMight ?? 0,
+            RequiredSpeed = template.RequiredSpeed ?? 0,
+            RequiredFocus = template.RequiredFocus ?? 0,
+            RequiredPerception = template.RequiredPerception ?? 0,
+            EquippableSlots = equipableSlots,
+            Abilities = physical.Abilities
+                .Where(a => !a.Ability!.IsLeveledSupplement
+                            && a.Ability.IsUsable
                             && a.Ability.Activation != ActivationType.Default
                             && a.Ability.Activation != ActivationType.Always
                             && (a.Ability.Name == null
@@ -303,43 +332,44 @@ public static class GameQueryProcessor
     private static int GetAbilityLevel(string abilityName, int playerId, GameManager manager)
         => manager.AffectableAbilitiesIndex[(playerId, abilityName)]?.Ability!.Level ?? 0;
 
-    private static List<object?> SerializeEffectAttributes(
+    private static EffectAttributes SerializeEffectAttributes(
         GameEntity effectEntity, GameEntity activator, SerializationContext context)
     {
         var effect = effectEntity.Effect!;
-        return new List<object?>(8)
+        var application = new EffectApplication(effect);
+        return new EffectAttributes
         {
-            (int)effect.EffectType,
-            effect.ShouldTargetActivator,
-            effect.AppliedAmount != null
-                ? effect.AppliedAmount.ToString()
-                : effect.Amount == null
-                    ? null
-                    : context.Manager.EffectApplicationSystem.GetAmount(effect, activator)
-                      + " (" + effect.Amount + ")",
-            (int)effect.CombinationFunction,
-            effect.TargetName,
-            effect.SecondaryAmount,
-            (int)effect.Duration,
-            effect.DurationAmount
+            Type = effect.EffectType,
+            ShouldTargetActivator = effect.ShouldTargetActivator,
+            Amount = effect.Amount == null
+                ? null
+                : application.GetAmount(context.Manager.EffectApplicationSystem, activator, activator)
+                  + " (" + effect.Amount + ")",
+            Function = application.CombinationFunction,
+            TargetName = effect.TargetName,
+            SecondaryAmount = effect.SecondaryAmount,
+            Duration = effect.Duration,
+            DurationAmount = effect.DurationAmount
         };
     }
 
-    private static List<object> SerializeSubAttack(SubAttackStats stats, GameEntity activator, SerializationContext context)
-        => new(3)
+    private static SubAbilityAttributes SerializeSubAttack(
+        SubAttackStats stats, GameEntity activator, SerializationContext context)
+        => new()
         {
-            (int)stats.SuccessCondition,
-            stats.Accuracy,
-            stats.Effects.Where(e => e.Effect!.EffectType != EffectType.Activate)
-                .ToDictionary(e => e.Effect!.EntityId, e => SerializeEffectAttributes(e, activator, context))
+            SuccessCondition = stats.SuccessCondition,
+            Accuracy = stats.Accuracy,
+            Effects = stats.Effects.ToDictionary(
+                e => e.Effect!.EntityId, e => SerializeEffectAttributes(e, activator, context))
         };
 
-    private static List<object> SerializeEquipmentSlot(EquipmentSlot slot, SerializationContext context) => new(3)
-    {
-        (int)slot,
-        context.Services.Language.GetString(slot, context.Observer, abbreviate: true),
-        context.Services.Language.GetString(slot, context.Observer, abbreviate: false)
-    };
+    private static EquippableSlot SerializeEquipmentSlot(EquipmentSlot slot, SerializationContext context)
+        => new()
+        {
+            Id = (int)slot,
+            ShortName = context.Services.Language.GetString(slot, context.Observer, abbreviate: true),
+            Name = context.Services.Language.GetString(slot, context.Observer, abbreviate: false)
+        };
 
     /// <summary>
     ///     Serializes the room graph for the level the player is currently in. Per-room reveal
@@ -356,7 +386,7 @@ public static class GameQueryProcessor
     ///     "Adjacent" follows non-hidden intra-level connections; hidden corridors don't reveal
     ///     anything until traversed.
     /// </summary>
-    public static LevelMap SerializeRoomMap(GameEntity playerEntity)
+    public static LevelMap SerializeLevelMap(GameEntity playerEntity)
     {
         var currentRoom = playerEntity.Position?.RoomEntity.Room;
         if (currentRoom == null)
@@ -378,8 +408,8 @@ public static class GameQueryProcessor
         foreach (var connectionEntity in currentRoom.Connections.Values)
         {
             var connection = connectionEntity.Connection!;
-            var targetRoom = connection.TargetRoomEntity.Room;
-            if (targetRoom == null || targetRoom.Level != gameLevel || connection.Hidden)
+            var targetRoom = connection.TargetRoomEntity.Room!;
+            if (targetRoom.Level != gameLevel || connection.Hidden)
             {
                 continue;
             }
@@ -394,8 +424,8 @@ public static class GameQueryProcessor
             foreach (var connectionEntity in room.Connections.Values)
             {
                 var connection = connectionEntity.Connection!;
-                var targetRoom = connection.TargetRoomEntity.Room;
-                if (targetRoom == null || targetRoom.Level != room.Level || connection.Hidden)
+                var targetRoom = connection.TargetRoomEntity.Room!;
+                if (targetRoom.Level != room.Level || connection.Hidden)
                 {
                     continue;
                 }

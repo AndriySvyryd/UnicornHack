@@ -15,18 +15,14 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
     <PackageReference Include="ModelContextProtocol" />
   </ItemGroup>
 
   <ItemGroup>
-    <!--
-      Reuses the server's *Change DTOs and GeneratedResolver directly. The hand-written
-      formatters under UnicornHack.Web/Hubs/MessagePack only invoke a property setter
-      when its ChangedProperties bit is set, so the setter side effect that re-sets the
-      same bit is always a no-op.
-    -->
+    <!-- Reuses server DTOs and sparse formatters that implement the production-client wire contract. -->
     <ProjectReference Include="..\..\src\UnicornHack.Web\UnicornHack.Web.csproj" />
   </ItemGroup>
 

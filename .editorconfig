@@ -441,3 +441,4 @@ dotnet_diagnostic.SA1308.severity = silent
 dotnet_diagnostic.SA1311.severity = silent
 dotnet_diagnostic.SA1313.severity = silent
 dotnet_diagnostic.SA1314.severity = silent
+dotnet_diagnostic.CA2255.severity = none

@@ -1,16 +1,18 @@
 using CSharpScriptSerialization;
-using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
 
-public class LightDamage : DamageEffect
+public class LightDamage : ResistedEffect
 {
-    protected override void ConfigureEffect(EffectComponent effect)
-    {
-        base.ConfigureEffect(effect);
+    private static readonly EffectMetadata _metadata =
+        EffectMetadata.Resource(
+            EffectType.LightDamage, nameof(Systems.Beings.BeingComponent.LightResistance),
+            inflicts: [new(EffectType.Blind, 4, 0)], defaultAmount: "10*FocusModifier()");
 
-        effect.EffectType = EffectType.LightDamage;
-    }
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void RegisterMetadataProvider() => _ = _metadata;
+
+    public override EffectMetadata Metadata => _metadata;
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<LightDamage>(GetPropertyConditions<LightDamage>());

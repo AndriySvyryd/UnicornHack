@@ -525,7 +525,7 @@ A###
         var visibleTerrain = GetVisibleTerrain(
             level, origin: new Point(0, 0), heading, new byte[level.TileCount], noFalloff);
 
-        TestHelper.AssertVisibility(level, expectedVisibility, visibleTerrain);
+        TestAssert.AssertVisibility(level, expectedVisibility, visibleTerrain);
     }
 
     public static byte[] GetVisibleTerrain(
@@ -563,7 +563,7 @@ A###
             originDistance = distance;
         }
 
-        TestHelper.AssertVisibility(level, expectedVisibility, visibleTerrain);
+        TestAssert.AssertVisibility(level, expectedVisibility, visibleTerrain);
     }
 
     public static List<(Point, byte)> GetLOS(RoomComponent level, Point target, Point origin)

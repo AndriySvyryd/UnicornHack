@@ -2,12 +2,10 @@ namespace UnicornHack.Data.Abilities;
 
 public static partial class AbilityData
 {
-    public static readonly WieldingAbility OneHandedRangedAttack = new WieldingAbility
+    public static readonly Ability OneHandedRangedAttack = new Ability
     {
         Name = "one handed ranged attack",
-        Type = AbilityType.DefaultAttack,
-        Effects = new List<Effect> { new Activate() },
-        WieldingStyle = WieldingStyle.OneHanded,
-        ItemType = ItemType.WeaponRanged
+        Type = AbilityType.DefaultRangedAttack,
+        Effects = new List<Effect> { new Activate { WeaponSlot = EquipmentSlot.GraspSingleRanged } }
     };
 }

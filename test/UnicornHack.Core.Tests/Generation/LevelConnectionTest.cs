@@ -218,7 +218,7 @@ public class LevelConnectionTest
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
+        var dungeon = BranchData.Dungeon.Instantiate(game);
         var sourceLevel = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
         var room = LevelLayout.CreateEmptyRoom(sourceLevel, manager);
 
@@ -239,7 +239,7 @@ public class LevelConnectionTest
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
+        var dungeon = BranchData.Dungeon.Instantiate(game);
 
         // The exit room sources a connection to a fresh target level, creating a dangling
         // incoming on that level's entrance placeholder.
@@ -270,7 +270,7 @@ public class LevelConnectionTest
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
+        var dungeon = BranchData.Dungeon.Instantiate(game);
         var sourceLevel = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
 
         var exitRoom = LevelLayout.CreateEmptyRoom(sourceLevel, manager);
@@ -299,7 +299,7 @@ public class LevelConnectionTest
     {
         var game = TestHelper.CreateGame(seed: 1u);
         var manager = game.Manager;
-        var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
+        var dungeon = BranchData.Dungeon.Instantiate(game);
 
         var sourceLevel = LevelGenerator.CreateEmpty(dungeon, depth: 1, seed: 1u, manager);
         var sourceRoom = LevelLayout.CreateEmptyRoom(sourceLevel, manager);

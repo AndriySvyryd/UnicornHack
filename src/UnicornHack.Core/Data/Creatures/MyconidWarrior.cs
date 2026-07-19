@@ -5,11 +5,13 @@ public static partial class CreatureData
     public static readonly Creature MyconidWarrior = new Creature
     {
         Name = "myconid warrior",
-        Species = Species.Fungus,
-        Abilities = new HashSet<Ability>
+        SpeciesClass = SpeciesClass.Plant,
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "myconid warrior ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -18,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Blight { Damage = "30*MightModifier()" } }
+                Effects = new List<Effect> { new ToxinDamage { Duration = EffectDuration.UntilTimeout, Amount = "30*MightModifier()" } }
             },
             new Ability
             {
+                Name = "myconid warrior ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -40,18 +44,21 @@ public static partial class CreatureData
         Weight = 100,
         MovementDelay = 1100,
         TurningDelay = 1100,
-        Perception = -8,
-        Might = -8,
-        Speed = -8,
-        Focus = -4,
+        PerceptionBonus = -8,
+        MightBonus = -8,
+        SpeedBonus = -8,
+        FocusBonus = -4,
         Armor = 1,
+        BlindResistance = 100,
+        DecayResistance = 50,
+        SuffocateResistance = 100,
         HeadType = HeadType.None,
         UpperExtremities = ExtremityType.None,
         LowerExtremities = ExtremityType.None,
         RespirationType = RespirationType.None,
         SlotCapacity = 0,
         EyeCount = 0,
-        NoiseLevel = 0,
+        Quietness = 250,
         Mindless = true,
         NonAnimal = true
     };

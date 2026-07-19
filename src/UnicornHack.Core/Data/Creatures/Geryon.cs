@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Geryon = new Creature
     {
         Name = "Geryon",
-        Species = Species.Giant,
         SpeciesClass = SpeciesClass.Aberration,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "Geryon ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "100*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "100*MightModifier()" } }
             },
             new Ability
             {
+                Name = "Geryon ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -31,10 +34,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "100*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "100*MightModifier()" } }
             },
             new Ability
             {
+                Name = "Geryon ability #3",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -43,7 +48,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new Blight { Damage = "50*MightModifier()" } }
+                Effects = new List<Effect> { new ToxinDamage { Duration = EffectDuration.UntilTimeout, Amount = "50*MightModifier()" } }
             }
         },
         InitialLevel = 30,
@@ -56,10 +61,10 @@ public static partial class CreatureData
         Weight = 2500,
         MovementDelay = 300,
         TurningDelay = 300,
-        Perception = 6,
-        Might = 6,
-        Speed = 6,
-        Focus = 6,
+        PerceptionBonus = 6,
+        MightBonus = 6,
+        SpeedBonus = 6,
+        FocusBonus = 6,
         Armor = 6,
         MagicResistance = 37,
         FireResistance = 75,

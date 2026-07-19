@@ -76,21 +76,24 @@ public class TestLoader<T> : ILoader<T> where T : class, ILoadable
         foreach (var item in Production.GetAll())
         {
             // Names in the test set shadow production entries with the same name.
-            var shadowed = false;
-            foreach (var test in _testItems)
-            {
-                if (string.Equals(test.Name, item.Name, StringComparison.OrdinalIgnoreCase))
-                {
-                    shadowed = true;
-                    break;
-                }
-            }
-
-            if (!shadowed)
+            if (!IsShadowed(item))
             {
                 yield return item;
             }
         }
+    }
+
+    protected bool IsShadowed(T item)
+    {
+        foreach (var test in _testItems)
+        {
+            if (string.Equals(test.Name, item.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public IReadOnlyList<T> GetAsList() => GetAll().ToList();

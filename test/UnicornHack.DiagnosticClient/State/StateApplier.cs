@@ -25,9 +25,9 @@ internal static class StateApplier
     public static PlayerChange AdoptFullSnapshot(PlayerChange snapshot)
     {
         // Ensure non-null collections so reads don't need null guards everywhere.
-        snapshot.Races ??= new Dictionary<int, RaceChange>();
         snapshot.Abilities ??= new Dictionary<int, AbilityChange>();
         snapshot.Log ??= new Dictionary<int, LogEntryChange>();
+        snapshot.Effects ??= new Dictionary<int, EffectChange>();
 
         if (snapshot.Room is { } room)
         {
@@ -57,6 +57,14 @@ internal static class StateApplier
 
         canonical.PreviousTick = delta.PreviousTick;
         canonical.CurrentTick = delta.CurrentTick;
+        if (bits[1])
+        {
+            canonical.Name = delta.Name;
+        }
+        if (bits[2])
+        {
+            canonical.Id = delta.Id;
+        }
 
         for (var i = 5; i < bits.Length; i++)
         {
@@ -67,18 +75,20 @@ internal static class StateApplier
             switch (i)
             {
                 case 5:
-                    canonical.Room = MergeRoom(canonical.Room, delta.Room);
+                    canonical.NextActionTick = delta.NextActionTick;
                     break;
                 case 6:
-                    MergeRaces(canonical, delta.Races);
+                    canonical.Room = MergeRoom(canonical.Room, delta.Room);
                     break;
                 case 7:
                     MergeAbilities(canonical, delta.Abilities);
                     break;
                 case 8:
+                    MergeEffects(canonical, delta.Effects);
+                    break;
+                case 9:
                     MergeLog(canonical, delta.Log);
                     break;
-                case 9: canonical.NextActionTick = delta.NextActionTick; break;
                 case 10: canonical.XP = delta.XP; break;
                 case 11: canonical.Hp = delta.Hp; break;
                 case 12: canonical.MaxHp = delta.MaxHp; break;
@@ -97,9 +107,9 @@ internal static class StateApplier
         canonical.PreviousTick = snapshot.PreviousTick;
         canonical.CurrentTick = snapshot.CurrentTick;
         canonical.Room = snapshot.Room;
-        canonical.Races = snapshot.Races ?? new Dictionary<int, RaceChange>();
         canonical.Abilities = snapshot.Abilities ?? new Dictionary<int, AbilityChange>();
         canonical.Log = snapshot.Log ?? new Dictionary<int, LogEntryChange>();
+        canonical.Effects = snapshot.Effects ?? new Dictionary<int, EffectChange>();
         canonical.NextActionTick = snapshot.NextActionTick;
         canonical.XP = snapshot.XP;
         canonical.Hp = snapshot.Hp;
@@ -341,31 +351,6 @@ internal static class StateApplier
         }
     }
 
-    private static void MergeRaces(PlayerChange player, Dictionary<int, RaceChange>? delta)
-    {
-        if (delta is null) return;
-        player.Races ??= new Dictionary<int, RaceChange>();
-        foreach (var (id, child) in delta)
-        {
-            var bits = child.ChangedProperties;
-            if (bits is null) { player.Races[id] = child; continue; }
-            if (bits.Length <= 1) { player.Races.Remove(id); continue; }
-            if (!player.Races.TryGetValue(id, out var current))
-            {
-                throw OrphanDelta("Race", id);
-            }
-            for (var i = 1; i < bits.Length; i++)
-            {
-                if (!bits[i]) continue;
-                switch (i)
-                {
-                    case 1: current.Name = child.Name; break;
-                    case 2: current.ShortName = child.ShortName; break;
-                }
-            }
-        }
-    }
-
     private static void MergeAbilities(PlayerChange player, Dictionary<int, AbilityChange>? delta)
     {
         if (delta is null) return;
@@ -391,6 +376,13 @@ internal static class StateApplier
                     case 5: current.CooldownXpLeft = child.CooldownXpLeft; break;
                     case 6: current.TargetingShape = child.TargetingShape; break;
                     case 7: current.TargetingShapeSize = child.TargetingShapeSize; break;
+                    case 8: current.Type = child.Type; break;
+                    case 9: current.Accumulator = child.Accumulator; break;
+                    case 10: current.Level = child.Level; break;
+                    case 11: current.LevelReduction = child.LevelReduction; break;
+                    case 12: current.ExpirationTarget = child.ExpirationTarget; break;
+                    case 13: current.ExpirationEvent = child.ExpirationEvent; break;
+                    case 14: current.Noise = child.Noise; break;
                 }
             }
         }
@@ -404,6 +396,33 @@ internal static class StateApplier
         {
             // Log entries are append-only; bits != null always carries full content.
             player.Log[id] = child;
+        }
+    }
+
+    private static void MergeEffects(PlayerChange player, Dictionary<int, EffectChange>? delta)
+    {
+        if (delta is null) return;
+        player.Effects ??= new Dictionary<int, EffectChange>();
+        foreach (var (id, child) in delta)
+        {
+            var bits = child.ChangedProperties;
+            if (bits is null) { player.Effects[id] = child; continue; }
+            if (bits.Length <= 1) { player.Effects.Remove(id); continue; }
+            if (!player.Effects.TryGetValue(id, out var current))
+            {
+                throw OrphanDelta("Effect", id);
+            }
+            for (var i = 1; i < bits.Length; i++)
+            {
+                if (!bits[i]) continue;
+                switch (i)
+                {
+                    case 1: current.EffectType = child.EffectType; break;
+                    case 2: current.ExpirationTick = child.ExpirationTick; break;
+                    case 3: current.Magnitude = child.Magnitude; break;
+                    case 4: current.InForce = child.InForce; break;
+                }
+            }
         }
     }
 

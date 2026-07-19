@@ -19,7 +19,7 @@ public static class ChangeSetAssert
         Assert.True(expected.Fortune == actual.Fortune, $"Player Fortune expected {expected.Fortune}, actual {actual.Fortune}");
 
         AssertAbilitiesEqual(expected.Abilities!, actual.Abilities!);
-        AssertRacesEqual(expected.Races!, actual.Races!);
+        AssertEffectsEqual(expected.Effects!, actual.Effects!);
         AssertLogContainsAll(expected.Log!, actual.Log!);
         AssertLevelEqual(expected.Room!, actual.Room!);
     }
@@ -42,22 +42,26 @@ public static class ChangeSetAssert
             Assert.True(exp.CooldownXpLeft == act.CooldownXpLeft, $"Ability {kvp.Key} '{exp.Name}': CooldownXpLeft expected {exp.CooldownXpLeft}, actual {act.CooldownXpLeft}");
             Assert.True(exp.TargetingShape == act.TargetingShape, $"Ability {kvp.Key} '{exp.Name}': TargetingShape expected {exp.TargetingShape}, actual {act.TargetingShape}");
             Assert.True(exp.TargetingShapeSize == act.TargetingShapeSize, $"Ability {kvp.Key} '{exp.Name}': TargetingShapeSize expected {exp.TargetingShapeSize}, actual {act.TargetingShapeSize}");
+            Assert.True(exp.Type == act.Type, $"Ability {kvp.Key} '{exp.Name}': Type expected {exp.Type}, actual {act.Type}");
+            Assert.True(exp.Accumulator == act.Accumulator, $"Ability {kvp.Key} '{exp.Name}': Accumulator expected {exp.Accumulator}, actual {act.Accumulator}");
+            Assert.True(exp.Level == act.Level, $"Ability {kvp.Key} '{exp.Name}': Level expected {exp.Level}, actual {act.Level}");
+            Assert.True(exp.ExpirationTarget == act.ExpirationTarget, $"Ability {kvp.Key} '{exp.Name}': ExpirationTarget expected {exp.ExpirationTarget}, actual {act.ExpirationTarget}");
+            Assert.True(exp.Noise == act.Noise, $"Ability {kvp.Key} '{exp.Name}': Noise expected {exp.Noise}, actual {act.Noise}");
+            Assert.True(exp.ExpirationEvent == act.ExpirationEvent, $"Ability {kvp.Key} '{exp.Name}': ExpirationEvent expected {exp.ExpirationEvent}, actual {act.ExpirationEvent}");
+            Assert.True(exp.LevelReduction == act.LevelReduction, $"Ability {kvp.Key} '{exp.Name}': LevelReduction expected {exp.LevelReduction}, actual {act.LevelReduction}");
         }
     }
 
-    private static void AssertRacesEqual(Dictionary<int, RaceChange> expected, Dictionary<int, RaceChange> actual)
+    private static void AssertEffectsEqual(Dictionary<int, EffectChange> expected, Dictionary<int, EffectChange> actual)
     {
-        var expectedKeys = expected.Keys.OrderBy(k => k).ToList();
-        var actualKeys = actual.Keys.OrderBy(k => k).ToList();
-        Assert.True(expectedKeys.SequenceEqual(actualKeys),
-            $"Race keys differ. Expected: [{string.Join(", ", expectedKeys)}], Actual: [{string.Join(", ", actualKeys)}]");
-
-        foreach (var kvp in expected)
+        Assert.Equal(expected.Keys.OrderBy(key => key), actual.Keys.OrderBy(key => key));
+        foreach (var (id, expectedEffect) in expected)
         {
-            var exp = kvp.Value;
-            var act = actual[kvp.Key];
-            Assert.True(exp.Name == act.Name, $"Race {kvp.Key}: Name expected '{exp.Name}', actual '{act.Name}'");
-            Assert.True(exp.ShortName == act.ShortName, $"Race {kvp.Key} '{exp.Name}': ShortName expected '{exp.ShortName}', actual '{act.ShortName}'");
+            var actualEffect = actual[id];
+            Assert.Equal(expectedEffect.EffectType, actualEffect.EffectType);
+            Assert.Equal(expectedEffect.ExpirationTick, actualEffect.ExpirationTick);
+            Assert.Equal(expectedEffect.Magnitude, actualEffect.Magnitude);
+            Assert.Equal(expectedEffect.InForce, actualEffect.InForce);
         }
     }
 
@@ -215,14 +219,14 @@ public static class ChangeSetAssert
                 }
             }
 
-            if (player.ChangedProperties![6] && player.Races != null)
-            {
-                AssertNoRedundantEntityChanges(player.Races, runningState.Races!, AssertRacePropertiesChanged);
-            }
-
-            if (player.ChangedProperties[7] && player.Abilities != null)
+            if (player.ChangedProperties![7] && player.Abilities != null)
             {
                 AssertNoRedundantEntityChanges(player.Abilities, runningState.Abilities!, AssertAbilityPropertiesChanged);
+            }
+
+            if (player.ChangedProperties[8] && player.Effects != null)
+            {
+                AssertNoRedundantEntityChanges(player.Effects, runningState.Effects!, AssertEffectPropertiesChanged);
             }
 
             ClientStateHelpers.ApplyDelta(runningState, player);
@@ -337,27 +341,6 @@ public static class ChangeSetAssert
         }
     }
 
-    private static void AssertRacePropertiesChanged(int id, RaceChange change, RaceChange baseline)
-    {
-        var bits = change.ChangedProperties!;
-        for (var i = 1; i < bits.Length; i++)
-        {
-            if (!bits[i])
-            {
-                continue;
-            }
-
-            var same = i switch
-            {
-                1 => change.Name == baseline.Name,
-                2 => change.ShortName == baseline.ShortName,
-                _ => false
-            };
-
-            Assert.False(same, $"Race {id}: property index {i} flagged but value unchanged from baseline");
-        }
-    }
-
     private static void AssertAbilityPropertiesChanged(int id, AbilityChange change, AbilityChange baseline)
     {
         var bits = change.ChangedProperties!;
@@ -377,10 +360,40 @@ public static class ChangeSetAssert
                 5 => change.CooldownXpLeft == baseline.CooldownXpLeft,
                 6 => change.TargetingShape == baseline.TargetingShape,
                 7 => change.TargetingShapeSize == baseline.TargetingShapeSize,
+                8 => change.Type == baseline.Type,
+                9 => change.Accumulator == baseline.Accumulator,
+                10 => change.Level == baseline.Level,
+                11 => change.LevelReduction == baseline.LevelReduction,
+                12 => change.ExpirationTarget == baseline.ExpirationTarget,
+                13 => change.ExpirationEvent == baseline.ExpirationEvent,
+                14 => change.Noise == baseline.Noise,
                 _ => false
             };
 
             Assert.False(same, $"Ability {id}: property index {i} flagged but value unchanged from baseline");
+        }
+    }
+
+    private static void AssertEffectPropertiesChanged(int id, EffectChange change, EffectChange baseline)
+    {
+        var bits = change.ChangedProperties!;
+        for (var i = 1; i < bits.Length; i++)
+        {
+            if (!bits[i])
+            {
+                continue;
+            }
+
+            var same = i switch
+            {
+                1 => change.EffectType == baseline.EffectType,
+                2 => change.ExpirationTick == baseline.ExpirationTick,
+                3 => change.Magnitude == baseline.Magnitude,
+                4 => change.InForce == baseline.InForce,
+                _ => false
+            };
+
+            Assert.False(same, $"Effect {id}: property index {i} flagged but value unchanged from baseline");
         }
     }
 

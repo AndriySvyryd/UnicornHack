@@ -5,11 +5,13 @@ public static partial class CreatureData
     public static readonly Creature WizardOfYendor = new Creature
     {
         Name = "Wizard of Yendor",
-        Species = Species.Human,
-        Abilities = new HashSet<Ability>
+        SpeciesClass = SpeciesClass.Humanoid,
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "Wizard of Yendor ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -18,19 +20,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "50*MightModifier()" } }
-            },
-            new Ability
-            {
-                Activation = ActivationType.Targeted,
-                Trigger = ActivationType.OnRangedAttack,
-                Range = 20,
-                Action = AbilityAction.Spell,
-                SuccessCondition = AbilitySuccessCondition.NormalAttack,
-                Accuracy = "5+PerceptionModifier()",
-                Cooldown = 100,
-                Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new ScriptedEffect { Script = "ArcaneSpell" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "50*MightModifier()" } }
             }
         },
         InitialLevel = 30,
@@ -40,10 +30,10 @@ public static partial class CreatureData
         Noise = ActorNoiseType.Cuss,
         Sex = Sex.Male,
         Weight = 1000,
-        Perception = 6,
-        Focus = 6,
-        EnergyRegeneration = 3,
+        PerceptionBonus = 6,
+        FocusBonus = 6,
         Regeneration = 3,
+        EnergyRegeneration = 2,
         Armor = 9,
         MagicResistance = 50,
         FireResistance = 75,

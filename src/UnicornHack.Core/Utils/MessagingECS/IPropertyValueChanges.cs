@@ -9,6 +9,8 @@ public interface IPropertyValueChanges
 
     Component GetChangedComponent(int index);
     string GetChangedPropertyName(int index);
+    object? GetNestedItem(int index);
+    string? GetNestedPropertyName(int index);
     T GetValue<T>(int index, ValueType type);
 
     void EnqueuePropertyValueChangedMessage<TEntity>(int index, string messageName)

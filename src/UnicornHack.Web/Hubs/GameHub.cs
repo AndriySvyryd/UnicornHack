@@ -40,7 +40,11 @@ public class GameHub : Hub
     public async Task<PlayerChange> GetState(string playerName)
     {
         var session = (await GetSessionAsync(playerName, createIfMissing: true).ConfigureAwait(false))!;
-        await session.Sync.WaitAsync(60_000).ConfigureAwait(false);
+        if (session.IsDisposed)
+        {
+            throw SessionUnavailable();
+        }
+
         try
         {
             var gameState = GameStateManager.GetState(session.Player.Entity, _gameServices);
@@ -49,56 +53,65 @@ public class GameHub : Hub
         }
         finally
         {
-            session.Sync.Release();
+            if (_defaultGameOptions.DisableSessionCache)
+            {
+                await DisposeSessionAsync(session).ConfigureAwait(false);
+            }
         }
     }
 
     public async Task ShowDialog(string playerName, int intQueryType, int[] arguments)
     {
         var results = (GameQueryType)intQueryType == GameQueryType.Clear
-            ? SerializationContext.DeletedBitArray
+            ? DialogData.Deleted()
             : await QueryGameAsync(playerName, intQueryType, arguments).ConfigureAwait(false);
 
         // TODO: only send to clients watching this player
         await Clients.All.SendAsync("ReceiveUIRequest", results).ConfigureAwait(false);
     }
 
-    public Task<List<object?>> QueryGame(string playerName, int intQueryType, int[] arguments)
+    public Task<DialogData> QueryGame(string playerName, int intQueryType, int[] arguments)
         => QueryGameAsync(playerName, intQueryType, arguments);
 
-    private async Task<List<object?>> QueryGameAsync(string playerName, int intQueryType, int[] arguments)
+    private async Task<DialogData> QueryGameAsync(string playerName, int intQueryType, int[] arguments)
     {
         var queryType = (GameQueryType)intQueryType;
         if (queryType == GameQueryType.Clear)
         {
-            return SerializationContext.DeletedBitArray;
+            return DialogData.Deleted();
         }
 
+        // Query serializers only read the in-memory game graph, so concurrent dialogs and tooltips
+        // do not participate in mutation synchronization.
         var session = await GetSessionAsync(playerName, createIfMissing: false).ConfigureAwait(false);
-        if (session == null)
+        if (session == null || session.IsDisposed)
         {
-            return SerializationContext.DeletedBitArray;
+            return DialogData.Deleted();
         }
 
-        if (session.Player.Entity.Being!.IsAlive != true)
+        try
         {
-            return SerializationContext.DeletedBitArray;
+            if (session.Player.Entity.Being!.IsAlive != true)
+            {
+                return DialogData.Deleted();
+            }
+
+            return QueryGameInternal(session, intQueryType, queryType, arguments);
         }
-
-        // Wait for any in-flight mutation to finish so we don't read torn state,
-        // then release immediately: this query is read-only and should not block
-        // other readers or the player's next action.
-        await session.Sync.WaitAsync().ConfigureAwait(false);
-        session.Sync.Release();
-
-        return QueryGameInternal(session, intQueryType, queryType, arguments);
+        finally
+        {
+            if (_defaultGameOptions.DisableSessionCache)
+            {
+                await DisposeSessionAsync(session).ConfigureAwait(false);
+            }
+        }
     }
 
-    private List<object?> QueryGameInternal(
+    private DialogData QueryGameInternal(
         GameSession session, int intQueryType, GameQueryType queryType, int[] arguments)
     {
         var player = session.Player;
-        var result = new List<object?> { null };
+        var result = new DialogData();
         var setValues = new bool[13];
         setValues[intQueryType + 1] = true;
         if (queryType == GameQueryType.SlottableAbilities)
@@ -106,7 +119,7 @@ public class GameHub : Hub
             // SlottableAbilities tags an extra bit at intQueryType to mark that a slot id follows.
             setValues[intQueryType] = true;
         }
-        result[0] = new BitArray(setValues);
+        result.ChangedProperties = new BitArray(setValues);
 
         var manager = player.Entity.Manager;
         var context = new SerializationContext(session.DbContext, player.Entity, _gameServices);
@@ -114,9 +127,8 @@ public class GameHub : Hub
         {
             case GameQueryType.SlottableAbilities:
                 var slot = arguments[0];
-                result.Add(slot);
-                var abilities = new Dictionary<int, List<object?>>();
-                result.Add(abilities);
+                result.AbilitySlot = slot;
+                var abilities = result.SlottableAbilities;
 
                 foreach (var slottableAbilityEntity in manager.AbilitiesToAffectableRelationship.GetDependents(
                              player.Entity))
@@ -129,39 +141,39 @@ public class GameHub : Hub
 
                     if (slot == AbilitySlottingSystem.DefaultMeleeAttackSlot)
                     {
-                        if (ability.Type == AbilityType.DefaultAttack
-                            && ((WieldingAbility)ability.Template!).ItemType == ItemType.WeaponMelee)
+                        if (ability.Type == AbilityType.DefaultMeleeAttack
+                            && (ability.Trigger & ActivationType.OnMeleeAttack) != 0)
                         {
-                            abilities.Add(ability.EntityId, GameQueryProcessor.SerializeSlottedAbility(slottableAbilityEntity, context)!);
+                            abilities.Add(ability.EntityId, GameQueryProcessor.SerializeSlottedAbility(slottableAbilityEntity, context));
                         }
                     }
                     else if (slot == AbilitySlottingSystem.DefaultRangedAttackSlot)
                     {
-                        if (ability.Type == AbilityType.DefaultAttack
-                            && ((WieldingAbility)ability.Template!).ItemType == ItemType.WeaponRanged)
+                        if (ability.Type == AbilityType.DefaultRangedAttack
+                            && (ability.Trigger & ActivationType.OnRangedAttack) != 0)
                         {
-                            abilities.Add(ability.EntityId, GameQueryProcessor.SerializeSlottedAbility(slottableAbilityEntity, context)!);
+                            abilities.Add(ability.EntityId, GameQueryProcessor.SerializeSlottedAbility(slottableAbilityEntity, context));
                         }
                     }
                     else if ((ability.Activation & ActivationType.Slottable) != 0
-                             && ability.Type != AbilityType.DefaultAttack)
+                             && !ability.Type.IsDefaultAttack())
                     {
-                        abilities.Add(ability.EntityId, GameQueryProcessor.SerializeSlottedAbility(slottableAbilityEntity, context)!);
+                        abilities.Add(ability.EntityId, GameQueryProcessor.SerializeSlottedAbility(slottableAbilityEntity, context));
                     }
                 }
 
                 break;
             case GameQueryType.PlayerAttributes:
-                result.Add(GameQueryProcessor.SerializeActorAttributes(player.Entity, true, context));
+                result.PlayerAttributes = GameQueryProcessor.SerializeActorAttributes(player.Entity, true, context);
                 break;
             case GameQueryType.PlayerInventory:
-                result.Add(GameQueryProcessor.SerializeItems(player.Entity, context));
+                result.PlayerInventory = GameQueryProcessor.SerializeItems(player.Entity, context);
                 break;
             case GameQueryType.PlayerAdaptations:
-                result.Add(GameQueryProcessor.SerializeAdaptations(player.Entity, context));
+                result.PlayerAdaptations = GameQueryProcessor.SerializeAdaptations(player.Entity, context);
                 break;
             case GameQueryType.PlayerSkills:
-                result.Add(GameQueryProcessor.SerializeSkills(player.Entity, context));
+                result.PlayerSkills = GameQueryProcessor.SerializeSkills(player.Entity, context);
                 break;
             case GameQueryType.AbilityAttributes:
                 var abilityEntity = manager.FindEntity(arguments[0])!;
@@ -171,14 +183,15 @@ public class GameHub : Hub
                     ? player.Entity!
                     : ownerEntity;
 
-                result.Add(GameQueryProcessor.SerializeAbilityAttributes(abilityEntity, activatorEntity, context));
+                result.AbilityAttributes = GameQueryProcessor.SerializeAbilityAttributes(
+                    abilityEntity, activatorEntity, context);
                 break;
             case GameQueryType.ActorAttributes:
             {
                 var actorKnowledge = manager.FindEntity(arguments[0])?.Knowledge;
 
-                result.Add(GameQueryProcessor.SerializeActorAttributes(
-                    actorKnowledge?.KnownEntity, actorKnowledge?.IsIdentified ?? false, context));
+                result.ActorAttributes = GameQueryProcessor.SerializeActorAttributes(
+                    actorKnowledge?.KnownEntity, actorKnowledge?.IsIdentified ?? false, context);
                 break;
             }
             case GameQueryType.ItemAttributes:
@@ -188,19 +201,21 @@ public class GameHub : Hub
 
                 if (item != null)
                 {
-                    result.Add(GameQueryProcessor.SerializeItemAttributes(itemEntity, true, context));
+                    result.ItemAttributes = GameQueryProcessor.SerializeItemAttributes(itemEntity, true, context);
                 }
                 else
                 {
-                    result.Add(GameQueryProcessor.SerializeItemAttributes(
-                        itemKnowledge?.KnownEntity, itemKnowledge?.IsIdentified ?? false, context));
+                    result.ItemAttributes = GameQueryProcessor.SerializeItemAttributes(
+                        itemKnowledge?.KnownEntity, itemKnowledge?.IsIdentified ?? false, context);
                 }
 
                 break;
-            case GameQueryType.RoomMap:
-                result.Add(GameQueryProcessor.SerializeRoomMap(player.Entity));
+            case GameQueryType.LevelMap:
+                result.LevelMap = GameQueryProcessor.SerializeLevelMap(player.Entity);
                 break;
-            // TODO: Handle PostGameStatistics
+            case GameQueryType.PostGameStatistics:
+                result.PostGameStatistics = new PostGameStatistics();
+                break;
             default:
                 throw new InvalidOperationException($"Query type {intQueryType} not supported");
         }
@@ -214,14 +229,18 @@ public class GameHub : Hub
     public async Task PerformAction(string playerName, int intAction, int? target, int? target2)
     {
         var action = (ActorActionType?)intAction;
-        var session = (await GetSessionAsync(playerName, createIfMissing: true).ConfigureAwait(false))!;
-
         Dictionary<int, List<TurnChangeSet>> changeSets;
         int previousTick;
-        await session.Sync.WaitAsync().ConfigureAwait(false);
+        var session = (await GetSessionAsync(playerName, createIfMissing: true).ConfigureAwait(false))!;
+        await session.MutationLock.WaitAsync().ConfigureAwait(false);
         try
         {
-            if (session.Game.CurrentTick != session.Player.NextActionTick)
+            if (session.IsDisposed)
+            {
+                throw SessionUnavailable();
+            }
+
+            if (session.Player.Game.CurrentTick != session.Player.NextActionTick)
             {
                 // TODO: Log action sent out of turn instead
                 throw new InvalidOperationException("Action sent out of turn");
@@ -230,31 +249,27 @@ public class GameHub : Hub
             session.Player.NextAction = action;
             session.Player.NextActionTarget = target;
             session.Player.NextActionTarget2 = target2;
-
-            previousTick = session.Game.CurrentTick;
+            previousTick = session.Player.Game.CurrentTick;
             changeSets = GameStateManager.Turn(
                 session.Player, session.RoomChangeBuilder, _gameServices,
                 dbContext: session.DbContext);
-
-            session.DbContext.SaveChanges();
-
-            // TODO: Log turn ended prematurely
-            Debug.Assert(session.Game.CurrentTick == session.Player.NextActionTick, "Turn ended prematurely");
+            await session.DbContext.SaveChangesAsync().ConfigureAwait(false);
         }
         finally
         {
-            session.Sync.Release();
+            session.MutationLock.Release();
         }
 
-        // Sending happens after releasing the per-session lock to allow concurrent
-        // ReceiveChangeSets emission to multiple players without serializing through
-        // the per-session semaphore.
-        var manager = session.Game.Manager;
+        // TODO: Log turn ended prematurely
+        Debug.Assert(session.Player.Game.CurrentTick == session.Player.NextActionTick, "Turn ended prematurely");
+        var manager = session.Player.Game.Manager;
+        var changeSetResponses = new List<List<TurnChangeSet>>(manager.Players.Count);
+        List<DialogData>? uiResponses = null;
         var died = false;
         foreach (var playerEntity in manager.Players)
         {
             if (!changeSets.TryGetValue(playerEntity.Id, out var playerChangeSets)
-                && previousTick != session.Game.CurrentTick)
+                && previousTick != session.Player.Game.CurrentTick)
             {
                 throw new InvalidOperationException(
                     $"No change sets for player {playerEntity.Id}. "
@@ -262,32 +277,49 @@ public class GameHub : Hub
                     + $"NextActionTick: {session.Player.NextActionTick}.");
             }
 
-            // TODO: only send to clients watching this player
-            await Clients.All.SendAsync("ReceiveChangeSets", playerChangeSets ?? []).ConfigureAwait(false);
-
+            changeSetResponses.Add(playerChangeSets ?? []);
             if (!playerEntity.Being!.IsAlive)
             {
-                var results = await QueryGameAsync(playerName, (int)GameQueryType.PostGameStatistics, []).ConfigureAwait(false);
-                // TODO: only send to clients watching this player
-                await Clients.All.SendAsync("ReceiveUIRequest", results).ConfigureAwait(false);
+                var results = QueryGameInternal(
+                    session, (int)GameQueryType.PostGameStatistics,
+                    GameQueryType.PostGameStatistics, []);
+                (uiResponses ??= []).Add(results);
                 died = true;
             }
         }
 
-        if (died)
+        try
         {
-            // Drop the session so a subsequent PerformAction creates a fresh character.
-            // TODO: Game over screen, disallow creating a new character with the same name
-            EvictSession(playerName, disposeNow: true);
+            foreach (var response in changeSetResponses)
+            {
+                // TODO: only send to clients watching this player
+                await Clients.All.SendAsync("ReceiveChangeSets", response).ConfigureAwait(false);
+            }
+
+            if (uiResponses != null)
+            {
+                foreach (var response in uiResponses)
+                {
+                    // TODO: only send to clients watching this player
+                    await Clients.All.SendAsync("ReceiveUIRequest", response).ConfigureAwait(false);
+                }
+            }
         }
-        else if (_defaultGameOptions.DisableSessionCache)
+        finally
         {
-            // Diagnostic mode: force the next hub call to reload from the database
-            // so we exercise the LoadRooms query path on every action.
-            EvictSession(playerName, disposeNow: true);
+            if (_defaultGameOptions.DisableSessionCache)
+            {
+                await DisposeSessionAsync(session).ConfigureAwait(false);
+            }
+            else if (died)
+            {
+                // TODO: Game over screen, disallow creating a new character with the same name
+                var key = GetSessionCacheKey(playerName);
+                _gameServices.SharedCache.Remove(key);
+                await DisposeSessionAsync(session).ConfigureAwait(false);
+            }
         }
     }
-
 
     /// <summary>
     ///     Returns the cached session for the given player name, optionally creating a
@@ -297,127 +329,150 @@ public class GameHub : Hub
     /// </summary>
     private async Task<GameSession?> GetSessionAsync(string playerName, bool createIfMissing)
     {
-        var key = GetSessionCacheKey(playerName);
-        while (true)
+        if (_defaultGameOptions.DisableSessionCache)
         {
-            _gameServices.SharedCache.GetOrCreate(
-                key, entry => CreateSessionCacheEntry(entry, playerName, createIfMissing));
-            var cached = (Lazy<GameSession?>?)_gameServices.SharedCache.Get(key);
-            if (cached == null)
-            {
-                // Eviction raced us between insert and read; retry.
-                continue;
-            }
-
-            GameSession? session;
-            try
-            {
-                session = await Task.Run(() => cached.Value).ConfigureAwait(false);
-            }
-            catch
-            {
-                _gameServices.SharedCache.Remove(key);
-                throw;
-            }
-
-            if (session == null)
-            {
-                // Only reachable when createIfMissing == false and the player has no save.
-                _gameServices.SharedCache.Remove(key);
-                return null;
-            }
-
-            if (session.IsValidFor(playerName))
-            {
-                return session;
-            }
-
-            // Safety check failed: remove (don't dispose — PostEvictionCallback recognizes
-            // EvictionReason.Removed and skips disposal) then retry.
-            _gameServices.SharedCache.Remove(key);
+            return await LoadSessionAsync(playerName, createIfMissing).ConfigureAwait(false);
         }
-    }
 
-    private Lazy<GameSession?> CreateSessionCacheEntry(ICacheEntry entry, string playerName, bool createIfMissing)
-    {
-        entry.SlidingExpiration = TimeSpan.FromHours(1);
-        entry.PostEvictionCallbacks.Add(new PostEvictionCallbackRegistration
+        var key = GetSessionCacheKey(playerName);
+        _gameServices.SharedCache.GetOrCreate(
+            key, entry =>
+            {
+                entry.SlidingExpiration = TimeSpan.FromHours(1);
+                entry.PostEvictionCallbacks.Add(new PostEvictionCallbackRegistration
+                {
+                    EvictionCallback = SessionEvictionCallback
+                });
+                return new Lazy<Task<GameSession?>>(
+                    () => LoadSessionAsync(playerName, createIfMissing),
+                    LazyThreadSafetyMode.ExecutionAndPublication);
+            });
+        var cached = (Lazy<Task<GameSession?>>?)_gameServices.SharedCache.Get(key);
+        if (cached == null)
         {
-            EvictionCallback = SessionEvictionCallback
-        });
-        return new Lazy<GameSession?>(
-            () => LoadSession(playerName, createIfMissing),
-            LazyThreadSafetyMode.ExecutionAndPublication);
+            throw SessionUnavailable();
+        }
+
+        GameSession? session;
+        try
+        {
+            session = await cached.Value.ConfigureAwait(false);
+        }
+        catch
+        {
+            _gameServices.SharedCache.Remove(key);
+            throw;
+        }
+
+        if (session == null)
+        {
+            // Only reachable when createIfMissing == false and the player has no save.
+            _gameServices.SharedCache.Remove(key);
+            return null;
+        }
+
+        if (session.IsValidFor(playerName))
+        {
+            return session;
+        }
+
+        // Explicit-removal callbacks intentionally skip cleanup. Remove the stale cache entry first,
+        // then await disposal of its materialized session before failing this invocation.
+        _gameServices.SharedCache.Remove(key);
+        await DisposeSessionAsync(session).ConfigureAwait(false);
+        throw SessionUnavailable();
     }
 
-    private static void SessionEvictionCallback(object key, object? value, EvictionReason reason, object? state)
+    private static async void SessionEvictionCallback(
+        object key, object? value, EvictionReason reason, object? state)
     {
         if (reason == EvictionReason.Removed)
         {
-            // Explicit cache.Remove, the caller decides
-            // whether to dispose; the eviction callback intentionally leaves the session alive.
+            // Every explicit removal site either has no materialized session (null/faulted Lazy) or
+            // awaits its disposal after removal. Only automatic eviction disposes here.
             return;
         }
 
-        if (value is Lazy<GameSession?> lazy && lazy.IsValueCreated && lazy.Value is { } session)
+        if (value is Lazy<Task<GameSession?>> lazy && lazy.IsValueCreated)
         {
-            UnwireSession(session);
-            session.Dispose();
+            try
+            {
+                if (await lazy.Value.ConfigureAwait(false) is { } session)
+                {
+                    await DisposeSessionAsync(session).ConfigureAwait(false);
+                }
+            }
+            catch
+            {
+                // The load path owns cleanup when session construction fails.
+            }
         }
     }
 
-    private void EvictSession(string playerName, bool disposeNow)
+    private static async Task DisposeSessionAsync(GameSession session)
     {
-        var key = GetSessionCacheKey(playerName);
-        var cached = (Lazy<GameSession?>?)_gameServices.SharedCache.Get(key);
-        _gameServices.SharedCache.Remove(key);
-        if (disposeNow && cached is { IsValueCreated: true } && cached.Value is { } session)
+        await session.MutationLock.WaitAsync().ConfigureAwait(false);
+        try
         {
-            UnwireSession(session);
-            session.Dispose();
+            if (session.IsDisposed)
+            {
+                return;
+            }
+
+            session.MarkDisposed();
+            DetachAndUnwire(session.DbContext);
+            await session.DisposeContextAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            session.MutationLock.Release();
         }
     }
+
+    private static HubException SessionUnavailable()
+        => new("The game session changed while processing the request. Retry the request.");
 
     private static (string, string) GetSessionCacheKey(string playerName)
         => ("GameSession", playerName.ToLowerInvariant());
 
-    /// <summary>
-    ///     Loads an existing player from DB into a fresh long-lived DbContext, or returns
-    ///     null if no such player exists or the player is dead. When
-    ///     <paramref name="createIfMissing" /> is <c>true</c>, falls through to
-    ///     <see cref="CreateNewSession" /> in that case.
-    /// </summary>
-    private GameSession? LoadSession(string playerName, bool createIfMissing)
+    private async Task<GameSession?> LoadSessionAsync(string playerName, bool createIfMissing)
     {
-        var dbContext = _dbContextFactory.CreateDbContext();
+        var dbContext = await _dbContextFactory.CreateDbContextAsync().ConfigureAwait(false);
+        var sessionLoaded = false;
         try
         {
-            var session = TryLoadSessionFromDb(dbContext, playerName);
+            var session = await TryLoadSessionFromDbAsync(dbContext, playerName).ConfigureAwait(false);
             if (session != null)
             {
+                sessionLoaded = true;
                 return session;
             }
-
-            dbContext.Dispose();
         }
-        catch
+        finally
         {
-            dbContext.Dispose();
-            throw;
+            if (!sessionLoaded)
+            {
+                DetachAndUnwire(dbContext);
+                await dbContext.DisposeAsync().ConfigureAwait(false);
+            }
         }
 
-        return createIfMissing ? CreateNewSession(playerName) : null;
+        return createIfMissing
+            ? await CreateNewSessionAsync(playerName).ConfigureAwait(false)
+            : null;
     }
 
-    private GameSession? TryLoadSessionFromDb(GameDbContext dbContext, string playerName)
+    private async Task<GameSession?> TryLoadSessionFromDbAsync(
+        GameDbContext dbContext, string playerName)
     {
-        var loadedGame = dbContext.PlayerComponents
+        var loadedGame = await dbContext.PlayerComponents
             .Where(playerComponent => playerComponent.ProperName == playerName)
             .Join(dbContext.Games,
                 playerComponent => playerComponent.GameId, game => game.Id,
                 (_, game) => game)
             .AsNoTracking()
-            .FirstOrDefault();
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
 
         if (loadedGame == null)
         {
@@ -430,26 +485,27 @@ public class GameHub : Hub
         // OnTracked needs DbContext.Manager set before SaveChanges fires the events.
         WireDbContext(dbContext, loadedGame);
         EntityAttacher.Attach(loadedGame, dbContext);
-        loadedGame = dbContext.LoadGame(loadedGame.Id);
+        loadedGame = await dbContext.LoadGameAsync(loadedGame.Id).ConfigureAwait(false);
 
         if (!dbContext.PlayerComponents.Local.Any(pc => pc.Entity.Being!.IsAlive))
         {
             // TODO: Preserve replays and game stats
-            dbContext.Clean(loadedGame);
+            await dbContext.CleanAsync(loadedGame).ConfigureAwait(false);
             return null;
         }
 
         var player = dbContext.PlayerComponents.Local.First(
-            p => p.ProperName.Equals(playerName, StringComparison.OrdinalIgnoreCase));
+            p => string.Equals(p.ProperName, playerName, StringComparison.OrdinalIgnoreCase));
 
-        var roomChangeBuilder = GetOrCreateRoomChangeBuilder(loadedGame);
-        dbContext.RoomChangeBuilder = roomChangeBuilder;
-        return new GameSession(dbContext, player);
+        var roomChangeBuilder = new RoomChangeBuilder();
+        roomChangeBuilder.RegisterOnGroups(loadedGame.Manager);
+        return new GameSession(dbContext, player, roomChangeBuilder);
     }
 
-    private GameSession CreateNewSession(string playerName)
+    private async Task<GameSession> CreateNewSessionAsync(string playerName)
     {
-        var dbContext = _dbContextFactory.CreateDbContext();
+        var dbContext = await _dbContextFactory.CreateDbContextAsync().ConfigureAwait(false);
+        RoomChangeBuilder? roomChangeBuilder = null;
         try
         {
             uint seed;
@@ -476,7 +532,7 @@ public class GameHub : Hub
             // OnTracked needs DbContext.Manager set before SaveChanges fires the events.
             WireDbContext(dbContext, game);
             dbContext.Games.Add(game);
-            dbContext.SaveChanges();
+            await dbContext.SaveChangesAsync().ConfigureAwait(false);
 
             var manager = game.Manager;
             var surfaceBranch = _gameServices.Data.Branches.Find("surface")!.Instantiate(game);
@@ -513,22 +569,21 @@ public class GameHub : Hub
             manager.LoggingSystem.WriteLog(game.Services.Language.Welcome(playerEntity), playerEntity, manager);
 
             // Run the first turn without collecting changes to seed initial state.
-            var bootstrapBuilder = GetOrCreateRoomChangeBuilder(game);
-            dbContext.RoomChangeBuilder = bootstrapBuilder;
-            GameStateManager.Turn(playerEntity.Player!, bootstrapBuilder, _gameServices,
+            roomChangeBuilder = new RoomChangeBuilder();
+            roomChangeBuilder.RegisterOnGroups(game.Manager);
+            GameStateManager.Turn(playerEntity.Player!, roomChangeBuilder, _gameServices,
                 collectChanges: false);
-            dbContext.SaveChanges();
+            await dbContext.SaveChangesAsync().ConfigureAwait(false);
 
-            bootstrapBuilder.RegisterPlayerBuilder(playerEntity, manager);
-            SeedRoomChangeBuilderCache(game, bootstrapBuilder);
-            _gameServices.SharedCache.Set(game, game,
-                new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
+            roomChangeBuilder.RegisterPlayerBuilder(playerEntity, manager);
 
-            return new GameSession(dbContext, playerEntity.Player!);
+            return new GameSession(dbContext, playerEntity.Player!, roomChangeBuilder);
         }
         catch
         {
-            dbContext.Dispose();
+            roomChangeBuilder?.UnregisterFromGroups(dbContext.Manager);
+            DetachAndUnwire(dbContext);
+            await dbContext.DisposeAsync().ConfigureAwait(false);
             throw;
         }
     }
@@ -566,81 +621,33 @@ public class GameHub : Hub
     }
 
     /// <summary>
-    ///     Inverse of <see cref="WireDbContext" />. Detaches change-tracker subscriptions
-    ///     and removes the per-game <see cref="RoomChangeBuilder" /> from its
-    ///     <see cref="GameManager" /> groups before the session is disposed. Safe to call
-    ///     during eviction (or any cleanup path) and tolerant of partial-dispose races.
-    ///     <para>
-    ///         <see cref="OnTracked" />/<see cref="OnStateChanged" /> are static methods,
-    ///         so subscribing/unsubscribing by method group yields delegates that are
-    ///         considered equal — no need to cache the delegate instance on the session.
-    ///     </para>
+    ///     Detaches every tracked entry while <see cref="OnStateChanged" /> is still subscribed, so the
+    ///     <see cref="EntityState.Detached" /> transitions fire <c>ITrackable.StopTracking</c> — resetting
+    ///     each entity/component tracking flag and releasing its EF-tracking reference — then removes the
+    ///     change-tracker subscriptions. This MUST run before the pooled <see cref="GameDbContext" /> is
+    ///     disposed: <see cref="DbContext.Dispose" /> returns the context to its pool and EF's pool reset
+    ///     clears tracked entries WITHOUT raising <c>Detached</c>, so the release would otherwise be
+    ///     skipped. Also used by the load/create error paths that dispose a wired context before a
+    ///     <see cref="GameSession" /> exists; tolerant of never-wired or mid-fault contexts.
     /// </summary>
-    private static void UnwireSession(GameSession session)
+    private static void DetachAndUnwire(GameDbContext dbContext)
     {
         try
         {
-            session.DbContext.ChangeTracker.Tracked -= OnTracked;
-            session.DbContext.ChangeTracker.StateChanged -= OnStateChanged;
-        }
-        catch
-        {
-            // Ignore if the context is already in a partial-dispose state.
-        }
-
-        try
-        {
-            session.RoomChangeBuilder.UnregisterFromGroups(session.Game.Manager);
-        }
-        catch
-        {
-            // Same defensive handling.
-        }
-    }
-
-    /// <summary>
-    ///     Returns the per-game <see cref="RoomChangeBuilder" />, registering listeners on
-    ///     <see cref="Game.Manager" /> exactly once across all sessions. Synchronization
-    ///     and single-initialization are provided by <see cref="IMemoryCache" /> +
-    ///     <see cref="Lazy{T}" /> with <see cref="LazyThreadSafetyMode.ExecutionAndPublication" />:
-    ///     even if two threads race past the GetOrCreate insert, both re-read the canonical
-    ///     entry and converge on a single <c>Lazy</c> whose factory runs at most once.
-    /// </summary>
-    private RoomChangeBuilder GetOrCreateRoomChangeBuilder(Game game)
-    {
-        if (game.Id == 0)
-        {
-            var bootstrap = new RoomChangeBuilder();
-            bootstrap.RegisterOnGroups(game.Manager);
-            return bootstrap;
-        }
-
-        var key = GetRoomChangeBuilderCacheKey(game);
-
-        _gameServices.SharedCache.GetOrCreate(key, entry =>
-        {
-            entry.SlidingExpiration = TimeSpan.FromHours(1);
-            return new Lazy<RoomChangeBuilder>(() =>
+            // TODO: Use a method that doesn't allocate a new list for each call
+            foreach (var entry in dbContext.ChangeTracker.Entries().ToList())
             {
-                var builder = new RoomChangeBuilder();
-                builder.RegisterOnGroups(game.Manager);
-                return builder;
-            }, LazyThreadSafetyMode.ExecutionAndPublication);
-        });
+                entry.State = EntityState.Detached;
+            }
 
-        return ((Lazy<RoomChangeBuilder>)_gameServices.SharedCache.Get(key)!).Value;
+            dbContext.ChangeTracker.Tracked -= OnTracked;
+            dbContext.ChangeTracker.StateChanged -= OnStateChanged;
+        }
+        catch
+        {
+            // Tolerant of partial-dispose / never-wired / mid-fault contexts.
+        }
     }
-
-    private void SeedRoomChangeBuilderCache(Game game, RoomChangeBuilder builder)
-    {
-        Debug.Assert(game.Id != 0, "SeedRoomChangeBuilderCache called before SaveChanges");
-        var lazy = new Lazy<RoomChangeBuilder>(() => builder, LazyThreadSafetyMode.PublicationOnly);
-        _ = lazy.Value;
-        _gameServices.SharedCache.Set(GetRoomChangeBuilderCacheKey(game), lazy,
-            new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromHours(1)));
-    }
-
-    private static (string, int) GetRoomChangeBuilderCacheKey(Game game) => ("RoomChangeBuilder", game.Id);
 
     private static void OnTracked(object? sender, EntityTrackedEventArgs args)
     {

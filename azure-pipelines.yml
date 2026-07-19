@@ -31,10 +31,23 @@ steps:
     arguments: '--configuration $(buildConfiguration) --collect "Code coverage"'
 
 - task: DotNetCoreCLI@2
-  displayName: 'Benchmark'
+  displayName: 'Benchmark Core'
   inputs:
     command: 'run'
-    arguments: '--configuration $(buildConfiguration) --project test\UnicornHack.Core.PerformanceTests\UnicornHack.Core.PerformanceTests.csproj --filter * --artifacts $(Build.ArtifactStagingDirectory)'
+    arguments: '--configuration $(buildConfiguration) --project test\UnicornHack.Core.PerformanceTests\UnicornHack.Core.PerformanceTests.csproj -- --filter *EffectSystemPerfTest* --job short --artifacts $(Build.ArtifactStagingDirectory)\CoreBenchmarks'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Benchmark Web'
+  inputs:
+    command: 'run'
+    arguments: '--configuration $(buildConfiguration) --project test\UnicornHack.Web.PerformanceTests\UnicornHack.Web.PerformanceTests.csproj -- --filter *ChangeDetectionPerfTest* --artifacts $(Build.ArtifactStagingDirectory)\WebBenchmarks'
+
+- task: PowerShell@2
+  displayName: 'Check Performance Thresholds'
+  inputs:
+    filePath: 'test\Test-PerformanceThresholds.ps1'
+    arguments: '-CoreResultsPath "$(Build.ArtifactStagingDirectory)\CoreBenchmarks" -WebResultsPath "$(Build.ArtifactStagingDirectory)\WebBenchmarks"'
+    pwsh: true
 
 - task: DotNetCoreCLI@2
   displayName: 'Publish'

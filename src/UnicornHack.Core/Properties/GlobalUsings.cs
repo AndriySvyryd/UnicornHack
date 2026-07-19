@@ -4,6 +4,7 @@ global using System.Diagnostics;
 global using System.Diagnostics.CodeAnalysis;
 global using System.Linq;
 global using System.Text;
+global using UnicornHack.Data.Abilities;
 global using UnicornHack.Generation;
 global using UnicornHack.Generation.Effects;
 global using UnicornHack.Generation.Map;

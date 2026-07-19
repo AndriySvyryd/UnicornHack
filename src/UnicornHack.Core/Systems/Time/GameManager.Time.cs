@@ -33,8 +33,8 @@ public partial class GameManager
             new EntityMatcher<GameEntity>().AnyOf(
                 (int)EntityComponent.AI,
                 (int)EntityComponent.Player,
-                (int)EntityComponent.Effect,
-                (int)EntityComponent.Ability));
+                (int)EntityComponent.Ability,
+                (int)EntityComponent.ActiveEffects), capacity: 1024);
 
         TemporalEntitiesIndex = new SortedUniqueEntityIndex<GameEntity, (int Tick, int Id)>(
             nameof(TemporalEntitiesIndex),
@@ -42,45 +42,53 @@ public partial class GameManager
             new KeyValueGetter<GameEntity, (int Tick, int Id)>(
                 (change, matcher, valueType) =>
                 {
+                    // The entity's temporal key is the earliest of its next action / ability cooldown and
+                    // its next timed-modifier expiry, so a single slot schedules whichever comes first.
+                    int? earliest = null;
+
                     if (matcher.TryGetValue<int?>(
                             change, (int)EntityComponent.Ability, nameof(AbilityComponent.CooldownTick), valueType,
                             out var abilityTick)
                         && abilityTick.HasValue)
                     {
-                        return ((abilityTick.Value, change.Entity.Id), true);
-                    }
-
-                    if (matcher.TryGetValue<int?>(
-                            change, (int)EntityComponent.Effect, nameof(EffectComponent.ExpirationTick), valueType,
-                            out var effectTick)
-                        && effectTick.HasValue)
-                    {
-                        return ((effectTick.Value, change.Entity.Id), true);
+                        earliest = abilityTick.Value;
                     }
 
                     if (matcher.TryGetValue<int?>(
                             change, (int)EntityComponent.AI, nameof(AIComponent.NextActionTick), valueType,
                             out var aiTick)
-                        && aiTick.HasValue)
+                        && aiTick.HasValue
+                        && (earliest == null || aiTick.Value < earliest.Value))
                     {
-                        return ((aiTick.Value, change.Entity.Id), true);
+                        earliest = aiTick.Value;
                     }
 
                     if (matcher.TryGetValue<int?>(
                             change, (int)EntityComponent.Player, nameof(PlayerComponent.NextActionTick), valueType,
                             out var playerTick)
-                        && playerTick.HasValue)
+                        && playerTick.HasValue
+                        && (earliest == null || playerTick.Value < earliest.Value))
                     {
-                        return ((playerTick.Value, change.Entity.Id), true);
+                        earliest = playerTick.Value;
                     }
 
-                    return ((0, 0), false);
+                    if (matcher.TryGetValue<int?>(
+                            change, (int)EntityComponent.ActiveEffects,
+                            nameof(ActiveEffectsComponent.NextEffectTick), valueType, out var effectTick)
+                        && effectTick.HasValue
+                        && (earliest == null || effectTick.Value < earliest.Value))
+                    {
+                        earliest = effectTick.Value;
+                    }
+
+                    return earliest.HasValue ? ((earliest.Value, change.Entity.Id), true) : ((0, 0), false);
                 },
                 new PropertyMatcher<GameEntity>()
                     .With(component => ((AIComponent)component).NextActionTick, (int)EntityComponent.AI)
                     .With(component => ((PlayerComponent)component).NextActionTick, (int)EntityComponent.Player)
-                    .With(component => ((EffectComponent)component).ExpirationTick, (int)EntityComponent.Effect)
                     .With(component => ((AbilityComponent)component).CooldownTick, (int)EntityComponent.Ability)
+                    .With(component => ((ActiveEffectsComponent)component).NextEffectTick,
+                        (int)EntityComponent.ActiveEffects)
             ),
             TickComparer.Instance);
 

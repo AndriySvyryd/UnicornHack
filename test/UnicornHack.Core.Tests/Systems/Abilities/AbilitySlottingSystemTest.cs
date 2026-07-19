@@ -35,10 +35,10 @@ public class AbilitySlottingSystemTest
             var bleedingEffectEntity = effectEntityReference.Referenced;
 
             var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
-            effect.Duration = EffectDuration.Infinite;
             effect.EffectType = EffectType.ChangeProperty;
+            effect.Duration = EffectDuration.Infinite;
             effect.TargetName = nameof(BeingComponent.BleedingResistance);
-            effect.AppliedAmount = 10;
+            effect.Amount = "10";
             effect.ContainingAbilityId = toggledAbility.Id;
 
             bleedingEffectEntity.Effect = effect;
@@ -69,9 +69,9 @@ public class AbilitySlottingSystemTest
             var bleedingEffectEntity = effectEntityReference.Referenced;
 
             var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+            effect.EffectType = EffectType.BleedDamage;
             effect.Duration = EffectDuration.Infinite;
-            effect.EffectType = EffectType.Bleed;
-            effect.AppliedAmount = 10;
+            effect.Amount = "10";
             effect.ContainingAbilityId = targetedAbility.Id;
 
             bleedingEffectEntity.Effect = effect;
@@ -121,6 +121,10 @@ public class AbilitySlottingSystemTest
 
         var attackAbility = manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.DoubleMeleeAttack.Name)];
         setSlotMessage.AbilityEntity = attackAbility;
+        setSlotMessage.Slot = AbilitySlottingSystem.DefaultRangedAttackSlot;
+        Assert.Throws<InvalidOperationException>(() => manager.AbilitySlottingSystem.Process(setSlotMessage, manager));
+
+        setSlotMessage.AbilityEntity = attackAbility;
         setSlotMessage.Slot = 2;
         Assert.Throws<InvalidOperationException>(() => manager.AbilitySlottingSystem.Process(setSlotMessage, manager));
 
@@ -131,7 +135,7 @@ public class AbilitySlottingSystemTest
         Assert.Throws<InvalidOperationException>(() => manager.AbilitySlottingSystem.Process(setSlotMessage, manager));
         Assert.Null(targetedAbility.Ability.Slot);
 
-        var alwaysAbility = playerEntity.Being.Abilities
+        var alwaysAbility = playerEntity.ActiveEffects!.Abilities
             .First(a => (a.Ability!.Activation & ActivationType.Always) != 0);
         setSlotMessage = SetAbilitySlotMessage.Create(manager);
         setSlotMessage.AbilityEntity = alwaysAbility;
@@ -147,7 +151,8 @@ public class AbilitySlottingSystemTest
         Assert.True(playerEntity.Physical.Capacity > 1);
         Assert.Equal(playerEntity.Physical.Capacity - 1, targetedAbility.Ability.Slot);
 
-        playerEntity.Physical.Capacity = 3;
+        manager.EffectApplicationSystem.UpdateOrAddPropertyModifier(
+            3 - playerEntity.Physical.Capacity, nameof(PhysicalComponent.Capacity), playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
         Assert.Null(targetedAbility.Ability.Slot);
     }
@@ -213,7 +218,8 @@ public class AbilitySlottingSystemTest
 
         manager.Queue.ProcessQueue(manager);
 
-        playerEntity.Physical!.Capacity = 2;
+        manager.EffectApplicationSystem.UpdateOrAddPropertyModifier(
+            2 - playerEntity.Physical!.Capacity, nameof(PhysicalComponent.Capacity), playerEntity, manager);
         manager.Queue.ProcessQueue(manager);
 
         Assert.Null(coinItem.ContainerId);

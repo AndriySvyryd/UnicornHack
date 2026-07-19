@@ -89,7 +89,7 @@ public static class GameStateManager
                 }
             }
 
-            roomChangeBuilder.Reset(currentPlayer.Entity.Position!.RoomEntity);
+            roomChangeBuilder.Reset(manager);
 
             if (result is TurnResult.PlayerTurn or TurnResult.GameOver)
             {

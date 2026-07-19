@@ -13,6 +13,7 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
 #if DEBUG
     // ReSharper disable once CollectionNeverQueried.Local
     private readonly List<object> _owners = new();
+    private object? _tracker;
 #endif
     private IObjectPool? _pool;
     private int _referenceCount;
@@ -77,13 +78,25 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
         Debug.Assert(_id != 0);
 
         var componentId = component.ComponentId;
+        var existingComponent = _components![componentId];
+        if (ReferenceEquals(existingComponent, component))
+        {
+            return component;
+        }
+
+        if (existingComponent != null)
+        {
+            throw new InvalidOperationException(
+                $"Entity '{Id}' already has component '{componentId}'. Remove it before adding a replacement.");
+        }
+
         var propertyName = GetComponentPropertyName(componentId);
         if (propertyName != null)
         {
             FirePropertyChanging(propertyName);
         }
 
-        _components![componentId] = component;
+        _components[componentId] = component;
 
         if (component is IKeepAliveComponent)
         {
@@ -208,10 +221,6 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
         }
     }
 
-    public void HandlePropertyValueChanged<T>(
-        string propertyName, T oldValue, T newValue, int componentId, Component component)
-        => Manager.OnPropertyValueChanged(propertyName, oldValue, newValue, componentId, component);
-
     public void HandlePropertyValuesChanged(IPropertyValueChanges changes)
     {
         Manager.OnPropertyValuesChanged(this, changes);
@@ -301,8 +310,14 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
 
     void ITrackable.StartTracking(object tracker)
     {
-        Debug.Assert(!_tracked, $"Entity {Id} is already tracked by {tracker}");
-
+        // Tracking is idempotent for the same tracker (an ORM may re-raise tracking for an entity it already
+        // tracks, e.g. split-query fixup re-materialising the same instance); only a second, different tracker
+        // taking over an already-tracked entity is a double-tracking bug.
+#if DEBUG
+        Debug.Assert(!_tracked || ReferenceEquals(_tracker, tracker),
+            $"Entity {Id} is already tracked by a different tracker");
+        _tracker = tracker;
+#endif
         _tracked = true;
     }
 
@@ -311,6 +326,9 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
         Debug.Assert(_tracked, $"Entity {Id} is not tracked by {tracker}");
 
         _tracked = false;
+#if DEBUG
+        _tracker = null;
+#endif
         if (_disposing)
         {
             Reset();

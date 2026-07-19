@@ -1,5 +1,6 @@
 using UnicornHack.Data.Branches;
 using UnicornHack.Systems.Levels;
+using UnicornHack.Utils;
 
 namespace UnicornHack.Data;
 
@@ -60,7 +61,7 @@ public class FragmentCompositionDistributionProbe(ITestOutputHelper output)
         for (var s = 1u; s <= seedCount; s++)
         {
             var game = TestHelper.CreateGame(s);
-            var dungeon = TestHelper.InstantiateBranch(BranchData.Dungeon, game);
+            var dungeon = BranchData.Dungeon.Instantiate(game);
             for (byte d = 1; d <= depthsPerSeed; d++)
             {
                 var level = LevelGenerator.CreateEmpty(dungeon, depth: d, s, game.Manager);
@@ -160,6 +161,12 @@ public class FragmentCompositionDistributionProbe(ITestOutputHelper output)
             .OrderBy(kv => kv.Key, StringComparer.Ordinal))
         {
             output.WriteLine($"  {name,-30}  samples={sampleCount,3}  min={min,8:F4}  max={max,8:F4}");
+        }
+
+        output.WriteLine("Per-attempt layout generation diagnostics:");
+        foreach (var data in LevelLayoutTest.LayoutDefaultReliability())
+        {
+            ReportLayoutFailureBreakdown((LevelLayout)data[0]);
         }
 
         // --- Assertions ---
@@ -270,4 +277,66 @@ public class FragmentCompositionDistributionProbe(ITestOutputHelper output)
             }
         }
     }
+
+    private void ReportLayoutFailureBreakdown(LevelLayout layout)
+    {
+        const int trials = 200;
+        var successes = 0;
+        var failureCounts = new Dictionary<string, int>();
+        var firstSeedByReason = new Dictionary<string, uint>();
+        var stats = new LevelGenerationStats();
+        var gameStats = new GenerationStats();
+        var previousSnapshot = stats.GraphFailureSnapshot();
+        for (uint seed = 1; seed <= trials; seed++)
+        {
+            var graph = layout.BuildGraph(
+                layout.GetParameters(LevelGenerator.MaxDifficulty), new SimpleRandom { Seed = seed }, stats, gameStats);
+            var snapshot = stats.GraphFailureSnapshot();
+            if (graph is not null)
+            {
+                successes++;
+            }
+            else
+            {
+                var reason = AttributeFailure(previousSnapshot, snapshot);
+                failureCounts[reason] = failureCounts.GetValueOrDefault(reason) + 1;
+                firstSeedByReason.TryAdd(reason, seed);
+            }
+
+            previousSnapshot = snapshot;
+        }
+
+        var rate = (double)successes / trials;
+        output.WriteLine(
+            $"{layout.GetType().Name} Sinuosity={layout.Sinuosity}: "
+            + $"per-attempt success {successes}/{trials} ({rate:P1}). "
+            + $"Failure breakdown: {FormatFailureBreakdown(failureCounts)}.");
+        foreach (var (reason, firstSeed) in firstSeedByReason)
+        {
+            output.WriteLine($"  first {reason} seed: {firstSeed}");
+        }
+    }
+
+    private static string AttributeFailure(
+        IReadOnlyDictionary<string, int> before,
+        IReadOnlyDictionary<string, int> after)
+    {
+        var changed = after
+            .Where(kvp => kvp.Value > before[kvp.Key])
+            .Select(kvp => kvp.Key.StartsWith("RoomGraph") ? kvp.Key["RoomGraph".Length..] : kvp.Key)
+            .ToList();
+        return changed.Count switch
+        {
+            0 => "Unknown",
+            1 => changed[0],
+            _ => string.Join("+", changed)
+        };
+    }
+
+    private static string FormatFailureBreakdown(Dictionary<string, int> failureCounts)
+        => failureCounts.Count == 0
+            ? "none"
+            : string.Join(", ", failureCounts
+                .OrderByDescending(kvp => kvp.Value)
+                .Select(kvp => $"{kvp.Key}={kvp.Value}"));
 }

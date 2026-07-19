@@ -16,10 +16,10 @@ public class DataProvider : IDataProvider
 
     public virtual ILoader<Branch> Branches => Branch.Loader;
     public virtual IGroupedLoader<AbilityType, Ability> Abilities => Ability.Loader;
-    public virtual IGroupedLoader<byte, Creature> Creatures => Creature.Loader;
+    public virtual IIndexedGroupedLoader<byte, string, Creature> Creatures => Creature.Loader;
     public virtual IGroupedLoader<ItemGroup, Item> Items => Item.Loader;
     public virtual ISingleLoader<ItemGroup> ItemGroups => ItemGroup.Loader;
-    public virtual ILoader<PlayerRace> PlayerRaces => PlayerRace.Loader;
+    public virtual IIndexedLoader<string, PlayerRace> PlayerRaces => PlayerRace.Loader;
     public virtual ILoader<DefiningMapFragment> DefiningMapFragments => DefiningMapFragment.Loader;
     public virtual ILoader<ConnectingMapFragment> ConnectingMapFragments => ConnectingMapFragment.Loader;
     public virtual ILoader<NormalMapFragment> NormalMapFragments => NormalMapFragment.Loader;

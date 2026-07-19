@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Hyenawere = new Creature
     {
         Name = "hyenawere",
-        Species = Species.Hyena,
         SpeciesClass = SpeciesClass.Canine | SpeciesClass.ShapeChanger,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "hyenawere ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,10 +20,12 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "50*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "50*MightModifier()" } }
             },
             new Ability
             {
+                Name = "hyenawere ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -31,7 +34,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 250,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new ConferLycanthropy { VariantName = "hyenawere" } }
+                Effects = new List<Effect> { new ConferLycanthropy { CreatureName = "hyenawere" } }
             }
         },
         InitialLevel = 3,
@@ -40,10 +43,10 @@ public static partial class CreatureData
         Noise = ActorNoiseType.Laugh,
         Size = 2,
         Weight = 150,
-        Perception = -8,
-        Might = -8,
-        Speed = -8,
-        Focus = -8,
+        PerceptionBonus = -8,
+        MightBonus = -8,
+        SpeedBonus = -8,
+        FocusBonus = -8,
         Regeneration = 3,
         Armor = 2,
         MagicResistance = 5,

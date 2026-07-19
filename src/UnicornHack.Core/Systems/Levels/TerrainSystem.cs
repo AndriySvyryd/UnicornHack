@@ -86,23 +86,4 @@ public static class TerrainSystem
 
         return changed;
     }
-
-    public static IEnumerable<Point> GetAdjacentPoints(
-        RoomComponent room, Point point, Direction startingDirection, bool includeInitial = false)
-    {
-        if (includeInitial)
-        {
-            yield return point;
-        }
-
-        for (var i = 0; i < 8; i++)
-        {
-            var newPoint = point.Translate(startingDirection.Rotate(i).AsVector());
-            if (newPoint.X < room.Width
-                && newPoint.Y < room.Height)
-            {
-                yield return newPoint;
-            }
-        }
-    }
 }

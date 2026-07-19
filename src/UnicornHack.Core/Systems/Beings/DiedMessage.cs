@@ -28,9 +28,9 @@ public class DiedMessage : IMessage
 
     string IMessage.MessageName
     {
-        get;
-        set;
-    } = null!;
+        get => Name;
+        set => Debug.Assert(value == Name);
+    }
 
     public void Clean()
         => BeingEntity = default!;

@@ -24,6 +24,7 @@ public class UniqueEntityIndexTest
         position.RoomId = level.EntityId;
         position.Cell = new Point(2, 3);
         beingEntity.Position = position;
+        beingEntity.AddComponent<ActiveEffectsComponent>((int)EntityComponent.ActiveEffects);
 
         using var innateAbilityReference = manager.CreateEntity();
         var innateAbilityEntity = innateAbilityReference.Referenced;
@@ -42,8 +43,9 @@ public class UniqueEntityIndexTest
 
         innateAbilityEntity.Ability = innateAbility;
 
-        manager.EffectApplicationSystem.AddPropertyEffect(nameof(PhysicalComponent.Capacity),
-            AbilitySlottingSystem.DefaultSlotCapacity + 2, innateAbilityEntity.Id, manager);
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            AbilitySlottingSystem.DefaultSlotCapacity + 2, nameof(PhysicalComponent.Capacity),
+            innateAbility.Name, beingEntity);
 
         manager.Queue.ProcessQueue(manager);
 

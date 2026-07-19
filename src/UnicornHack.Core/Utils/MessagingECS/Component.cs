@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using UnicornHack.Utils.Caching;
 
@@ -13,6 +14,7 @@ public abstract class Component :
 
 #if DEBUG
     private readonly List<object> _owners = new();
+    private object? _tracker;
 #endif
     private int _referenceCount;
     private IObjectPool? _pool;
@@ -62,9 +64,58 @@ public abstract class Component :
         if (NotifyChanging(value, ref field, propertyName, out var oldValue))
         {
             NotifyChanged(propertyName);
-            Entity?.HandlePropertyValueChanged(propertyName, oldValue, value, ComponentId, this);
+            Entity?.Manager.OnPropertyValueChanged(propertyName, oldValue, value, ComponentId, this);
         }
     }
+
+    protected void OnCollectionChanged<TItem>(
+        NotifyCollectionChangedEventArgs args,
+        string propertyName)
+        where TItem : NotificationCollectionItem
+    {
+        if (args.Action is NotifyCollectionChangedAction.Reset or NotifyCollectionChangedAction.Move)
+        {
+            return;
+        }
+
+        if (args.OldItems != null)
+        {
+            foreach (TItem item in args.OldItems)
+            {
+                item.SetContainingComponent(null, null);
+                RaiseCollectionChanged(
+                    propertyName,
+                    new EntityCollectionChange(EntityCollectionChangeAction.Remove, item),
+                    default);
+            }
+        }
+
+        if (args.NewItems != null)
+        {
+            foreach (TItem item in args.NewItems)
+            {
+                Debug.Assert(item.ContainingComponent == this
+                             && item.ContainingPropertyName == propertyName);
+                RaiseCollectionChanged(
+                    propertyName,
+                    default,
+                    new EntityCollectionChange(EntityCollectionChangeAction.Add, item));
+            }
+        }
+    }
+
+    internal void OnNestedPropertyValueChanged<T>(
+        string propertyName, string nestedPropertyName, object item, T oldValue, T newValue)
+    {
+        Entity?.Manager.OnNestedPropertyValueChanged(
+            this, propertyName, nestedPropertyName, item, oldValue, newValue);
+    }
+
+    private void RaiseCollectionChanged(
+        string propertyName,
+        in EntityCollectionChange oldValue,
+        in EntityCollectionChange newValue)
+        => Entity?.Manager.OnCollectionChanged(this, propertyName, oldValue, newValue);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected bool NotifyChanging<T>(
@@ -92,8 +143,14 @@ public abstract class Component :
 
     void ITrackable.StartTracking(object tracker)
     {
-        Debug.Assert(!_tracked, $"Component {GetType().Name} is already tracked by {tracker}");
-
+        // Tracking is idempotent for the same tracker (an ORM may re-raise tracking for a component it already
+        // tracks, e.g. split-query fixup re-materialising the same instance); only a second, different tracker
+        // taking over an already-tracked component is a double-tracking bug.
+#if DEBUG
+        Debug.Assert(!_tracked || ReferenceEquals(_tracker, tracker),
+            $"Component {GetType().Name} is already tracked by a different tracker");
+        _tracker = tracker;
+#endif
         _tracked = true;
     }
 
@@ -102,6 +159,9 @@ public abstract class Component :
         Debug.Assert(_tracked, $"Component {GetType().Name} is not tracked by {tracker}");
 
         _tracked = false;
+#if DEBUG
+        _tracker = null;
+#endif
         ((IReferenceable)this).AddReference(tracker);
         ((IReferenceable)this).RemoveReference(tracker);
     }

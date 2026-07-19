@@ -5,12 +5,13 @@ public static partial class CreatureData
     public static readonly Creature Ghost = new Creature
     {
         Name = "ghost",
-        Species = Species.Ghost,
         SpeciesClass = SpeciesClass.Undead,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "ghost ability #1",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -19,7 +20,21 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "10*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage(), new Wither() }
+            },
+            new Ability
+            {
+                Name = "ghost ability #2",
+                Type = AbilityType.RangedAttack,
+                Activation = ActivationType.Targeted,
+                Trigger = ActivationType.OnRangedAttack,
+                Range = 10,
+                Action = AbilityAction.Gaze,
+                SuccessCondition = AbilitySuccessCondition.NormalAttack,
+                Accuracy = "5+PerceptionModifier()",
+                Cooldown = 300,
+                Delay = "100*SpeedModifier()",
+                Effects = new List<Effect> { new Frighten() }
             }
         },
         InitialLevel = 10,
@@ -30,15 +45,17 @@ public static partial class CreatureData
         MovementDelay = 300,
         TurningDelay = 300,
         Material = Material.Air,
-        Perception = -4,
-        Might = -4,
-        Speed = -4,
+        PerceptionBonus = -4,
+        MightBonus = -4,
+        SpeedBonus = -4,
+        HealingResistance = 200,
         Armor = 7,
         MagicResistance = 7,
         ColdResistance = 75,
+        BindResistance = 100,
+        StickResistance = 100,
+        SuffocateResistance = 100,
         VoidResistance = 75,
-        SlimingImmune = true,
-        StoningImmune = true,
         TorsoType = TorsoType.Humanoid,
         UpperExtremities = ExtremityType.GraspingFingers,
         LowerExtremities = ExtremityType.Fingers,

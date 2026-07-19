@@ -2,7 +2,7 @@
 
 This document is the source of truth for authoring `MapFragment` data (the `*.cs` files
 under [src/UnicornHack.Core/Data/Fragments/](../../Data/Fragments)). It describes the
-glyph vocabulary, edge-condition syntax, transform behaviour, tag system,
+glyph vocabulary, edge-condition syntax, transform behavior, tag system,
 `GenerationWeight` DSL, annotations, and the relevant fragment properties — all from the
 current code, not aspirational. When code and this doc disagree, the code wins; please
 update the doc.
@@ -54,7 +54,7 @@ These commit a `MapFeature` to the terrain when the chunk is placed. The mapping
 
 `MapFragment.FeatureGlyphs` maps each glyph to a `RoomFeatures` bit. The underlying tile
 resolves to the feature's `MapFeature` (see `RoomFeatureToMapFeature`); `Chunk.FeaturePoints`
-records the binding so room finalization can wire up entity behaviour later.
+records the binding so room finalization can wire up entity behavior later.
 
 | Glyph | `RoomFeatures` | Generic tag | Specific tag |
 |---|---|---|---|
@@ -229,7 +229,7 @@ demand-aware weight bonus. After `EnsureInitialized` the collection contains:
    - `door-n` / `door-s` / `door-e` / `door-w` for each payload edge that hosts at least
      one `+` doorway glyph. Re-derived per variant by `CreateVariant`.
 
-#### Connection tags (`entrance` / `exit` / `shortcut`)
+### Connection tags (`entrance` / `exit` / `shortcut`)
 
 The three connection-sourcing roles each have a canonical tag in `FeatureTagNames`. A
 `ConnectingMapFragment` that carries the tag matching the room's current need (`entrance`
@@ -256,7 +256,7 @@ weight linearly from it:
   in `AntiTags`.
 - The final multiplier is `1 + n * (DemandTagBonus - 1)` for a non-negative net `n`, or
   `1 / (1 + |n| * (DemandTagBonus - 1))` for a negative net — so one net demand match
-  multiplies the weight by `DemandTagBonus` (`4f`) and one net anti-tag match divides by
+  multiplies the weight by `DemandTagBonus` and one net anti-tag match divides by
   it. Matches accumulate linearly, not exponentially.
 - A `Tags` entry of `wildcard-feature` matches every outstanding placeable bit (bonus
   applied per outstanding bit not already matched directly). Wildcard does not cover
@@ -336,7 +336,7 @@ These are on `MapFragment` unless otherwise noted.
 their perimeter walls collapse into a single shared column (wall-merge). Setting
 `NoOverwrite = true` on a fragment forbids any neighbor from shifting onto **this** chunk
 afterward — useful for vaults, framed shrines, and altar rooms that depend on exact wall
-thickness. Default `false` preserves the old `UniformRoomLayout` behaviour and lets
+thickness. Default `false` preserves the old `UniformRoomLayout` behavior and lets
 dense layouts share walls freely.
 
 ## 8. Authoring checklist

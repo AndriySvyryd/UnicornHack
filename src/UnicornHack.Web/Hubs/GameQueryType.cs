@@ -13,5 +13,5 @@ public enum GameQueryType
     ItemAttributes,
     StaticDescription,
     PostGameStatistics,
-    RoomMap
+    LevelMap
 }

@@ -5,10 +5,12 @@ public static partial class ItemData
     public static readonly Item ThrowingKnives = new Item
     {
         Name = "throwing knives",
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "throwing knives ability #1",
+                Type = AbilityType.RangedAttack,
                 Activation = ActivationType.OnRangedAttack,
                 Trigger = ActivationType.OnRangedAttack,
                 Range = 15,
@@ -16,7 +18,7 @@ public static partial class ItemData
                 SuccessCondition = AbilitySuccessCondition.NormalAttack,
                 Accuracy = "5+RequirementsModifier()",
                 Delay = "100*RequirementsModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "30*RequirementsModifier()" }, new Activate { Projectile = "throwing knife" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "30*RequirementsModifier()" }, new Activate { Projectile = "throwing knife" } }
             }
         },
         Type = ItemType.WeaponRangedClose,

@@ -1,11 +1,18 @@
 using CSharpScriptSerialization;
-using UnicornHack.Systems.Effects;
 
 namespace UnicornHack.Generation.Effects;
 
 public class DisableItem : Effect
 {
-    protected override void ConfigureEffect(EffectComponent effect) => effect.EffectType = EffectType.DisableItem;
+    private static readonly EffectMetadata _metadata =
+        EffectMetadata.Default(
+            EffectType.DisableItem, defaultDuration: EffectDuration.Instant,
+            combinationFunction: ValueCombinationFunction.Sum);
+
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void RegisterMetadataProvider() => _ = _metadata;
+
+    public override EffectMetadata Metadata => _metadata;
 
     private static readonly CSScriptSerializer Serializer =
         new PropertyCSScriptSerializer<DisableItem>(GetPropertyConditions<DisableItem>());

@@ -5,14 +5,14 @@ public static partial class ItemData
     public static readonly Item SkillbookOfLongRangeWeapons = new Item
     {
         Name = "skillbook of long range weapons",
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
                 Name = "Consult",
                 Activation = ActivationType.WhileToggled,
                 Delay = "100",
-                Effects = new List<Effect> { new AddAbility { Duration = EffectDuration.Infinite, Name = "long range weapons", Level = 1 } }
+                Effects = new List<Effect> { new AddAbility { Name = "long range weapons" } }
             }
         },
         Type = ItemType.SkillBook,

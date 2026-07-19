@@ -1,4 +1,3 @@
-using System.Collections;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.MessagingECS;
@@ -61,10 +60,10 @@ public class ItemChangeBuilder : ChangeBuilder<ItemChange>
                 switch (propertyName)
                 {
                     case nameof(PositionComponent.CellX):
-                        change.LevelX = entity.Position!.CellX;
+                        change.LevelX = entity.Position!.CellX!.Value;
                         break;
                     case nameof(PositionComponent.CellY):
-                        change.LevelY = entity.Position!.CellY;
+                        change.LevelY = entity.Position!.CellY!.Value;
                         break;
                 }
             }
@@ -105,7 +104,7 @@ public class ItemChangeBuilder : ChangeBuilder<ItemChange>
         if (itemKnowledge == null || item == null)
         {
             // Stale reference — treat as removal.
-            return new ItemChange { ChangedProperties = new BitArray(1) };
+            return new ItemChange { ChangedProperties = SerializationContext.DeletedBitArray };
         }
 
         return HasModifiedBits(tracked.ChangedProperties) ? tracked : null;
@@ -121,8 +120,8 @@ public class ItemChangeBuilder : ChangeBuilder<ItemChange>
 
         var change = new ItemChange
         {
-            LevelX = position.CellX,
-            LevelY = position.CellY,
+            LevelX = position.CellX!.Value,
+            LevelY = position.CellY!.Value,
             IsCurrentlyPerceived = currentlyPerceived
         };
 

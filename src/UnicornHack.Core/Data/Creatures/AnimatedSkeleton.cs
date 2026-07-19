@@ -5,18 +5,20 @@ public static partial class CreatureData
     public static readonly Creature AnimatedSkeleton = new Creature
     {
         Name = "animated skeleton",
-        Species = Species.Skeleton,
         SpeciesClass = SpeciesClass.Undead,
-        Abilities = new HashSet<Ability>
+        Abilities = new List<Ability>
         {
             new Ability
             {
+                Name = "animated skeleton ability #1",
                 Activation = ActivationType.OnMeleeAttack,
                 Action = AbilityAction.Modifier,
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "30" } }
+                Effects = new List<Effect> { new PhysicalDamage { Amount = "30*MightModifier()" } }
             },
             new Ability
             {
+                Name = "animated skeleton ability #2",
+                Type = AbilityType.MeleeAttack,
                 Activation = ActivationType.Targeted,
                 Trigger = ActivationType.OnMeleeAttack,
                 Range = 1,
@@ -25,7 +27,7 @@ public static partial class CreatureData
                 Accuracy = "5+PerceptionModifier()",
                 Cooldown = 100,
                 Delay = "100*SpeedModifier()",
-                Effects = new List<Effect> { new PhysicalDamage { Damage = "10*MightModifier()" } }
+                Effects = new List<Effect> { new PhysicalDamage() }
             }
         },
         InitialLevel = 3,
@@ -35,13 +37,17 @@ public static partial class CreatureData
         Weight = 300,
         MovementDelay = 100,
         TurningDelay = 100,
-        Perception = -8,
-        Might = -8,
-        Speed = -8,
-        Focus = -4,
+        PerceptionBonus = -8,
+        MightBonus = -8,
+        SpeedBonus = -8,
+        FocusBonus = -4,
+        HealingResistance = 200,
         PhysicalResistance = 20,
         ColdResistance = 75,
-        StoningImmune = true,
+        DoomResistance = 100,
+        FrightenResistance = 100,
+        SedateResistance = 100,
+        SuffocateResistance = 100,
         TorsoType = TorsoType.Humanoid,
         UpperExtremities = ExtremityType.GraspingFingers,
         LowerExtremities = ExtremityType.Fingers,

@@ -1,4 +1,3 @@
-using System.Collections;
 using UnicornHack.Systems.Knowledge;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.MessagingECS;
@@ -38,7 +37,7 @@ public class ConnectionChangeBuilder : ChangeBuilder<ConnectionChange>
         if (entity.Knowledge?.KnownEntity.Connection == null)
         {
             // Stale reference — emit a removal sentinel.
-            return new ConnectionChange { ChangedProperties = new BitArray(1) };
+            return new ConnectionChange { ChangedProperties = SerializationContext.DeletedBitArray };
         }
 
         return SerializeConnection(entity);
@@ -50,8 +49,8 @@ public class ConnectionChangeBuilder : ChangeBuilder<ConnectionChange>
         var position = knownEntity.Position!;
         return new ConnectionChange
         {
-            LevelX = position.CellX,
-            LevelY = position.CellY,
+            LevelX = position.CellX!.Value,
+            LevelY = position.CellY!.Value,
             Orientation = knownEntity.Connection!.Orientation
         };
     }

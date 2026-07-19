@@ -43,7 +43,7 @@ public static class Program
         // benchmarks in this same assembly and avoids the regenerate/restore step.
         var config = ManualConfig.CreateEmpty()
             .WithOptions(ConfigOptions.JoinSummary)
-            .AddJob(Job.Default.WithToolchain(InProcessNoEmitToolchain.Instance))
+            .AddJob(Job.ShortRun.WithToolchain(InProcessNoEmitToolchain.Instance))
             .AddLogger(DefaultConfig.Instance.GetLoggers().ToArray())
             .AddColumnProvider(DefaultConfig.Instance.GetColumnProviders().ToArray())
             .AddAnalyser(DefaultConfig.Instance.GetAnalysers().ToArray())

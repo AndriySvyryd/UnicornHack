@@ -47,7 +47,8 @@ public class EntityGroupTest
         using (var entityReference = ((IEntityManager)manager).CreateEntity())
         {
             var entity = (GameEntity)entityReference.Referenced;
-            var effect = manager.CreateComponent<EffectComponent>((int)EntityComponent.Effect);
+            var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+            effect.EffectType = EffectType.ChangeProperty;
 
             testSystem = new GroupTestSystem(entity, effect);
 
@@ -74,6 +75,70 @@ public class EntityGroupTest
 
         Assert.Equal(0, manager.Queue.QueuedCount);
         Assert.Equal(3, testSystem.MessagesProcessed);
+    }
+
+    [Fact]
+    public void Queues_typed_messages_for_registered_nested_property_changes()
+    {
+        var manager = TestHelper.CreateGameManager();
+        using var entityReference = manager.CreateEntity();
+        var entity = entityReference.Referenced;
+        entity.ActiveEffects = manager.CreateComponent<ActiveEffectsComponent>(EntityComponent.ActiveEffects);
+        var propertyEffect = new ActivePropertyEffect(0, 0, 0, EffectType.Stun, null);
+        propertyEffect = entity.ActiveEffects.AddPropertyEffect(propertyEffect);
+        var testSystem = new NestedGroupTestSystem(entity, entity.ActiveEffects, propertyEffect);
+
+        var messageName = manager.AffectableEntities.GetPropertyValueChangedMessageName(
+            nameof(ActiveEffectsComponent.PropertyEffects),
+            nameof(ActivePropertyEffect.MagnitudePrimary));
+        manager.Queue.Register<PropertyValueChangedMessage<GameEntity, int>>(testSystem, messageName, 10);
+
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(0, testSystem.MessagesProcessed);
+
+        propertyEffect.MagnitudePrimary = 10;
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(1, testSystem.MessagesProcessed);
+
+        entity.ActiveEffects.PropertyEffects.Remove(propertyEffect);
+        manager.Queue.ProcessQueue(manager);
+        propertyEffect.MagnitudePrimary = 20;
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(1, testSystem.MessagesProcessed);
+    }
+
+    private sealed class NestedGroupTestSystem :
+        IGameSystem<PropertyValueChangedMessage<GameEntity, int>>
+    {
+        private readonly GameEntity _entity;
+        private readonly ActiveEffectsComponent _component;
+        private readonly ActivePropertyEffect _propertyEffect;
+
+        public NestedGroupTestSystem(
+            GameEntity entity, ActiveEffectsComponent component, ActivePropertyEffect propertyEffect)
+        {
+            _entity = entity;
+            _component = component;
+            _propertyEffect = propertyEffect;
+        }
+
+        public int MessagesProcessed { get; private set; }
+
+        public MessageProcessingResult Process(
+            PropertyValueChangedMessage<GameEntity, int> message, GameManager state)
+        {
+            Assert.Same(_entity, message.Entity);
+            Assert.Same(_component, message.ChangedComponent);
+            Assert.Equal(nameof(ActiveEffectsComponent.PropertyEffects), message.ChangedPropertyName);
+            Assert.Same(_propertyEffect, message.NestedItem);
+            Assert.Equal(nameof(ActivePropertyEffect.MagnitudePrimary), message.NestedPropertyName);
+            Assert.Equal(0, message.OldValue);
+            Assert.Equal(10, message.NewValue);
+
+            MessagesProcessed++;
+            return MessageProcessingResult.ContinueProcessing;
+        }
     }
 
     private class GroupTestSystem :
@@ -141,7 +206,8 @@ public class EntityGroupTest
 
         using var entityReference = manager.CreateEntity();
         var entity = entityReference.Referenced;
-        var effect = manager.CreateComponent<EffectComponent>((int)EntityComponent.Effect);
+        var effect = manager.CreateComponent<EffectComponent>(EntityComponent.Effect);
+        effect.EffectType = EffectType.ChangeProperty;
         entity.Effect = effect;
 
         Assert.Equal(1, listener.AddedCount);

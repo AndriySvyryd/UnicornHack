@@ -5,7 +5,7 @@ public static partial class CreatureData
     public static readonly Creature Halfling = new Creature
     {
         Name = "halfling",
-        Species = Species.Halfling,
+        SpeciesClass = SpeciesClass.Humanoid,
         InitialLevel = 1,
         GenerationWeight = "0",
         GenerationFlags = CreatureGenerationFlags.NonPolymorphable,
@@ -14,10 +14,10 @@ public static partial class CreatureData
         Weight = 500,
         MovementDelay = 33,
         TurningDelay = 33,
-        Perception = -1,
-        Might = -8,
-        Speed = -4,
-        Focus = -8,
+        PerceptionBonus = -1,
+        MightBonus = -8,
+        SpeedBonus = -4,
+        FocusBonus = -8,
         MagicResistance = 5,
         TorsoType = TorsoType.Humanoid,
         UpperExtremities = ExtremityType.GraspingFingers,

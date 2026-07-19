@@ -125,7 +125,8 @@ public sealed class ReadTools
         }
     }
 
-    [McpServerTool, Description("List the player's abilities. Columns: id name slot activation cooldown_tick cooldown_xp_left targeting.")]
+    [McpServerTool,
+        Description("List the player's abilities. Columns: id name slot activation cooldown_tick cooldown_xp_left targeting accumulator.")]
     public string get_abilities(bool only_slotted = false)
     {
         lock (_store.Sync)
@@ -136,7 +137,7 @@ public sealed class ReadTools
                 return "(no ability data)";
             }
             var sb = new StringBuilder();
-            sb.Append("id\tname\tslot\tactivation\tcd_tick\tcd_xp\tshape:size\n");
+            sb.Append("id\tname\tslot\tactivation\tcd_tick\tcd_xp\tshape:size\taccumulator\n");
             foreach (var (id, a) in abilities.OrderBy(kv => kv.Key))
             {
                 if (only_slotted && a.Slot is null)
@@ -148,27 +149,30 @@ public sealed class ReadTools
                   .Append('\t').Append(a.Activation)
                   .Append('\t').Append(a.CooldownTick?.ToString(CultureInfo.InvariantCulture) ?? "-")
                   .Append('\t').Append(a.CooldownXpLeft?.ToString(CultureInfo.InvariantCulture) ?? "-")
-                  .Append('\t').Append(a.TargetingShape).Append(':').Append(a.TargetingShapeSize).Append('\n');
+                  .Append('\t').Append(a.TargetingShape).Append(':').Append(a.TargetingShapeSize)
+                  .Append('\t').Append(a.Accumulator?.ToString(CultureInfo.InvariantCulture) ?? "-").Append('\n');
             }
             return sb.ToString();
         }
     }
 
-    [McpServerTool, Description("List the player's races/species components. Columns: id name short_name.")]
+    [McpServerTool, Description("List the player's race abilities. Columns: id name level.")]
     public string get_races()
     {
         lock (_store.Sync)
         {
             var p = _store.Player;
-            if (p?.Races is not { } races)
+            if (p?.Abilities is not { } abilities)
             {
                 return "(no race data)";
             }
             var sb = new StringBuilder();
-            sb.Append("id\tname\tshort\n");
-            foreach (var (id, r) in races.OrderBy(kv => kv.Key))
+            sb.Append("id\tname\tlevel\n");
+            foreach (var (id, ability) in abilities
+                         .Where(kv => kv.Value.Type == (int)AbilityType.Race)
+                         .OrderBy(kv => kv.Key))
             {
-                sb.Append(id).Append('\t').Append(r.Name ?? "?").Append('\t').Append(r.ShortName ?? "?").Append('\n');
+                sb.Append(id).Append('\t').Append(ability.Name ?? "?").Append('\t').Append(ability.Level).Append('\n');
             }
             return sb.ToString();
         }
@@ -291,14 +295,15 @@ public sealed class ReadTools
             var sb = new StringBuilder();
             foreach (var ev in events)
             {
-                switch (ev)
+                switch (ev.Type)
                 {
-                    case SteppedOnConnectionEvent soc:
-                        sb.Append("SteppedOnConnection scope=").Append(soc.Scope)
-                          .Append(" connection_id=").Append(soc.ConnectionId).Append('\n');
+                    case TurnEventType.SteppedOnConnection:
+                        sb.Append("SteppedOnConnection scope=").Append((ConnectionScope)ev.Value1)
+                            .Append(" connection_id=").Append(ev.Value2).Append('\n');
                         break;
                     default:
-                        sb.Append(ev.GetType().Name).Append('\n');
+                        sb.Append(ev.Type).Append(" value1=").Append(ev.Value1)
+                            .Append(" value2=").Append(ev.Value2).Append('\n');
                         break;
                 }
             }
@@ -311,8 +316,11 @@ public sealed class ReadTools
     {
         lock (_store.Sync)
         {
-            return $"hub={_conn.ConnectionState} state_ready={_conn.StateReady} last_tick={_store.LastTick} last_log_id={_store.LastObservedLogId} "
-                 + $"races={_store.Player?.Races?.Count ?? 0} abilities={_store.Player?.Abilities?.Count ?? 0} "
+              var abilities = _store.Player?.Abilities;
+              var raceCount = abilities?.Values.Count(a => a.Type == (int)AbilityType.Race) ?? 0;
+              return $"hub={_conn.ConnectionState} state_ready={_conn.StateReady} last_tick={_store.LastTick} last_log_id={_store.LastObservedLogId} "
+                  + $"races={raceCount} abilities={abilities?.Count ?? 0} "
+                  + $"effects={_store.Player?.Effects?.Count ?? 0} "
                  + $"actors={_store.Player?.Room?.Actors?.Count ?? 0} items={_store.Player?.Room?.Items?.Count ?? 0} "
                  + $"events={_store.LastEvents.Count}"
                  + (_store.LastApplyError is { } err ? $" apply_error=\"{err}\"" : "");

@@ -12,9 +12,9 @@ namespace UnicornHack.Systems.Knowledge;
 public class LoggingSystem :
     IGameSystem<ItemMovedMessage>,
     IGameSystem<ItemEquippedMessage>,
-    IGameSystem<EffectsAppliedMessage>,
-    IGameSystem<DiedMessage>,
-    IGameSystem<LeveledUpMessage>
+    IGameSystem<AttackResultMessage>,
+    IGameSystem<ItemActivationResultMessage>,
+    IGameSystem<DiedMessage>
 {
     // TODO: Write to log for first encounter with a creature or item
 
@@ -117,79 +117,52 @@ public class LoggingSystem :
         return MessageProcessingResult.ContinueProcessing;
     }
 
-    public MessageProcessingResult Process(EffectsAppliedMessage message, GameManager manager)
+    public MessageProcessingResult Process(AttackResultMessage message, GameManager manager)
     {
-        if (message.TargetEntity == null)
+        foreach (var playerEntity in manager.Players)
         {
-            return MessageProcessingResult.ContinueProcessing;
-        }
-
-        var ability = message.AbilityEntity.Ability!;
-        if ((ability.Activation & ActivationType.OnAttack) != 0
-            || (ability.Action != AbilityAction.Default
-                && ability.Action != AbilityAction.Modifier
-                && ability.Action != AbilityAction.Drink))
-        {
-            foreach (var playerEntity in manager.Players)
+            var attackerSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity) ??
+                                 SenseType.None;
+            var victimSensed = manager.SensorySystem.CanSense(playerEntity, message.TargetEntity) ??
+                               SenseType.None;
+            if (attackerSensed == SenseType.None
+                && victimSensed == SenseType.None)
             {
-                var attackerSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity) ??
-                                     SenseType.None;
-                var victimSensed = manager.SensorySystem.CanSense(playerEntity, message.TargetEntity) ??
-                                   SenseType.None;
-                if (attackerSensed == SenseType.None
-                    && victimSensed == SenseType.None)
-                {
-                    continue;
-                }
-
-                var weaponId = message.AppliedEffects
-                    .SingleOrDefault(e => e.Effect!.EffectType == EffectType.Activate)?
-                    .Effect!.TargetEntityId;
-                var weapon = manager.FindEntity(weaponId);
-                var logMessage = manager.Game.Services.Language.GetString(new AttackEvent(
-                    playerEntity, message.ActivatorEntity, message.TargetEntity,
-                    attackerSensed, victimSensed, message.AppliedEffects, ability.Action,
-                    weapon, ranged: (message.AbilityTrigger & ActivationType.OnRangedAttack) != 0,
-                    hit: message.SuccessfulApplication));
-                WriteLog(logMessage, playerEntity, manager);
+                continue;
             }
 
-            return MessageProcessingResult.ContinueProcessing;
+            var logMessage = manager.Game.Services.Language.GetString(new AttackEvent(
+                playerEntity, message.ActivatorEntity, message.TargetEntity,
+                attackerSensed, victimSensed, message.ResourceChanges, message.AbilityAction,
+                message.WeaponEntity, message.Ranged, message.Hit));
+            WriteLog(logMessage, playerEntity, manager);
         }
 
-        var activatableId = message.AppliedEffects
-            .SingleOrDefault(e => e.Effect!.EffectType == EffectType.Activate)?
-            .Effect!.TargetEntityId;
-        var activatableEntity = manager.FindEntity(activatableId);
-        if (activatableEntity?.HasComponent(EntityComponent.Item) == false)
-        {
-            activatableEntity = activatableEntity.Ability?.OwnerEntity;
-        }
+        return MessageProcessingResult.ContinueProcessing;
+    }
 
-        if ((ability.Activation & ActivationType.Manual) != 0
-            && activatableEntity?.HasComponent(EntityComponent.Item) == true)
+    public MessageProcessingResult Process(ItemActivationResultMessage message, GameManager manager)
+    {
+        foreach (var playerEntity in manager.Players)
         {
-            foreach (var playerEntity in manager.Players)
+            var activatorSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity) ??
+                                  SenseType.None;
+            var targetSensed = manager.SensorySystem.CanSense(playerEntity, message.TargetEntity) ??
+                               SenseType.None;
+
+            if (activatorSensed == SenseType.None
+                && targetSensed == SenseType.None)
             {
-                var activatorSensed = manager.SensorySystem.CanSense(playerEntity, message.ActivatorEntity) ??
-                                      SenseType.None;
-                var targetSensed = manager.SensorySystem.CanSense(playerEntity, message.TargetEntity) ??
-                                   SenseType.None;
-
-                if (activatorSensed == SenseType.None
-                    && targetSensed == SenseType.None)
-                {
-                    continue;
-                }
-
-                var consumed = message.AppliedEffects
-                    .Any(e => e.Effect!.EffectType == EffectType.RemoveItem);
-                var itemSensed = manager.SensorySystem.CanSense(playerEntity, activatableEntity) ?? activatorSensed;
-                var logMessage = manager.Game.Services.Language.GetString(new ItemActivationEvent(
-                    playerEntity, activatableEntity, message.ActivatorEntity, message.TargetEntity, itemSensed,
-                    activatorSensed, targetSensed, consumed, message.SuccessfulApplication));
-                WriteLog(logMessage, playerEntity, manager);
+                continue;
             }
+
+            var itemSensed = playerEntity == message.ActivatorEntity
+                ? activatorSensed
+                : manager.SensorySystem.CanSense(playerEntity, message.ItemEntity) ?? activatorSensed;
+            var logMessage = manager.Game.Services.Language.GetString(new ItemActivationEvent(
+                playerEntity, message.ItemEntity, message.ActivatorEntity, message.TargetEntity, itemSensed,
+                activatorSensed, targetSensed, message.ItemConsumed, message.Successful));
+            WriteLog(logMessage, playerEntity, manager);
         }
 
         return MessageProcessingResult.ContinueProcessing;
@@ -208,24 +181,6 @@ public class LoggingSystem :
 
             var logMessage = manager.Game.Services.Language.GetString(
                 new DeathEvent(playerEntity, message.BeingEntity, deceasedSensed));
-            WriteLog(logMessage, playerEntity, manager);
-        }
-
-        return MessageProcessingResult.ContinueProcessing;
-    }
-
-    public MessageProcessingResult Process(LeveledUpMessage message, GameManager manager)
-    {
-        foreach (var playerEntity in manager.Players)
-        {
-            if (manager.SensorySystem.CanSense(playerEntity, message.Entity) == SenseType.None)
-            {
-                continue;
-            }
-
-            var logMessage = manager.Game.Services.Language.GetString(new LeveledUpEvent(
-                playerEntity, message.Entity, message.Race,
-                message.SkillPointsGained, message.TraitPointsGained, message.MutationPointsGained));
             WriteLog(logMessage, playerEntity, manager);
         }
 

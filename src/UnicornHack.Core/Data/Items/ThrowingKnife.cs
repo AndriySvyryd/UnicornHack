@@ -5,7 +5,7 @@ public static partial class ItemData
     public static readonly Item ThrowingKnife = new Item
     {
         Name = "throwing knife",
-        Abilities = new HashSet<Ability> { new Ability { Activation = ActivationType.OnRangedAttack, Action = AbilityAction.Hit } },
+        Abilities = new List<Ability> { new Ability { Name = "hit", Activation = ActivationType.OnRangedAttack, Action = AbilityAction.Hit } },
         Type = ItemType.WeaponProjectile,
         GenerationWeight = "0",
         Material = Material.Steel,
