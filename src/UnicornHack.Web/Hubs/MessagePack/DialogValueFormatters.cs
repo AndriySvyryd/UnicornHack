@@ -166,6 +166,32 @@ public sealed class SubAbilityAttributesFormatter : FixedArrayFormatter<SubAbili
     }
 }
 
+public sealed class ConditionalGrantAttributesFormatter : FixedArrayFormatter<ConditionalGrantAttributes>
+{
+    public static readonly ConditionalGrantAttributesFormatter Instance = new();
+    protected override int FieldCount => 3;
+
+    protected override void SerializeFields(
+        ref MessagePackWriter writer, ConditionalGrantAttributes value, MessagePackSerializerOptions options)
+    {
+        writer.Write(value.Name);
+        writer.Write(value.Level);
+        writer.Write(value.LevelExpression);
+    }
+
+    protected override void DeserializeField(
+        ref MessagePackReader reader, ConditionalGrantAttributes value, int field,
+        MessagePackSerializerOptions options)
+    {
+        switch (field)
+        {
+            case 0: value.Name = reader.ReadString()!; break;
+            case 1: value.Level = reader.ReadInt32(); break;
+            case 2: value.LevelExpression = reader.ReadString()!; break;
+        }
+    }
+}
+
 public sealed class PostGameStatisticsFormatter : FixedArrayFormatter<PostGameStatistics>
 {
     public static readonly PostGameStatisticsFormatter Instance = new();

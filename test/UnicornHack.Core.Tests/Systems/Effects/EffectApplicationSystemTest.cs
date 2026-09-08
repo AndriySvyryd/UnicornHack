@@ -8,6 +8,7 @@ using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
 using UnicornHack.Utils.MessagingECS;
+using static UnicornHack.TestHelper;
 
 namespace UnicornHack.Systems.Effects;
 
@@ -188,14 +189,12 @@ public class EffectApplicationSystemTest
     {
         var (target, manager) = CreateEffectTarget();
         var activeEffects = target.ActiveEffects!;
-        activeEffects.AddPropertyEffect(new ActivePropertyEffect(0, 0, 0, EffectType.ChangeProperty, null)
-        {
-            ExpirationEvent = EffectDuration.UntilNextRoom
-        });
-        activeEffects.AddPropertyEffect(new ActivePropertyEffect(0, 0, 0, EffectType.ChangeProperty, null)
-        {
-            ExpirationEvent = EffectDuration.UntilNextLevel
-        });
+        activeEffects.AddPropertyEffect(CreatePropertyEffect(activeEffects,
+            0, 0, 0, EffectType.ChangeProperty, null,
+            expirationEvent: EffectDuration.UntilNextRoom));
+        activeEffects.AddPropertyEffect(CreatePropertyEffect(activeEffects,
+            0, 0, 0, EffectType.ChangeProperty, null,
+            expirationEvent: EffectDuration.UntilNextLevel));
         var roomAbility = manager.EffectApplicationSystem.AddAbilityEffect(
             target, AbilityData.Acrobatics);
         roomAbility.ExpirationEvent = EffectDuration.UntilNextRoom;
@@ -283,8 +282,8 @@ public class EffectApplicationSystemTest
     public void Partial_suppression_keeps_only_records_contributing_active_levels()
     {
         var (target, manager) = CreateEffectTarget();
-        var firstSource = CreateSourceAbility(target, manager);
-        var secondSource = CreateSourceAbility(target, manager);
+        var firstSource = CreateSourceAbility(target);
+        var secondSource = CreateSourceAbility(target);
         var firstRecord = manager.EffectApplicationSystem.AddAbilityEffect(
             target, AbilityData.Acrobatics, level: 2, firstSource.Id);
         var secondRecord = manager.EffectApplicationSystem.AddAbilityEffect(
@@ -338,8 +337,8 @@ public class EffectApplicationSystemTest
                 [3] = []
             }
         };
-        var firstSource = CreateSourceAbility(target, manager);
-        var secondSource = CreateSourceAbility(target, manager);
+        var firstSource = CreateSourceAbility(target);
+        var secondSource = CreateSourceAbility(target);
 
         manager.EffectApplicationSystem.AddAbilityEffect(target, template, level: 1, firstSource.Id);
         var secondRecord = manager.EffectApplicationSystem.AddAbilityEffect(
@@ -359,8 +358,8 @@ public class EffectApplicationSystemTest
             Type = AbilityType.Trait,
             LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>> { [1] = [] }
         };
-        var firstSource = CreateSourceAbility(target, manager);
-        var secondSource = CreateSourceAbility(target, manager);
+        var firstSource = CreateSourceAbility(target);
+        var secondSource = CreateSourceAbility(target);
 
         manager.EffectApplicationSystem.AddAbilityEffect(target, template, level: 1, firstSource.Id);
         var secondRecord = manager.EffectApplicationSystem.AddAbilityEffect(
@@ -470,8 +469,8 @@ public class EffectApplicationSystemTest
     public void Instant_decrease_removes_matching_positive_records_without_persisting_a_decrease()
     {
         var (target, manager) = CreateEffectTarget();
-        var firstSource = CreateSourceAbility(target, manager);
-        var secondSource = CreateSourceAbility(target, manager);
+        var firstSource = CreateSourceAbility(target);
+        var secondSource = CreateSourceAbility(target);
         manager.EffectApplicationSystem.AddAbilityEffect(
             target, AbilityData.Acrobatics, level: 2, firstSource.Id);
         manager.EffectApplicationSystem.AddAbilityEffect(
@@ -617,21 +616,12 @@ public class EffectApplicationSystemTest
             EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Greased.Name));
     }
 
-    private static (GameEntity Target, GameManager Manager) CreateEffectTarget()
-    {
-        var room = TestHelper.BuildRoom(".");
-        var target = CreatureData.HumanWarrior.Instantiate(room, new Point(0, 0));
-        var manager = target.Manager;
-        manager.Queue.ProcessQueue(manager);
-        return (target, manager);
-    }
-
     [Fact]
     public void Per_source_build_up_resets_when_an_instant_application_changes_source()
     {
         var (target, manager) = CreateEffectTarget();
-        var firstSource = CreateSourceAbility(target, manager);
-        var secondSource = CreateSourceAbility(target, manager);
+        var firstSource = CreateSourceAbility(target);
+        var secondSource = CreateSourceAbility(target);
 
         manager.EffectApplicationSystem.ApplyStatus(EffectApplicationContext.CreateStatus(
             EffectType.Frighten, target, amount: 80, firstSource.Id));
@@ -654,20 +644,18 @@ public class EffectApplicationSystemTest
     public void Only_the_strongest_lingering_per_source_build_up_is_applied()
     {
         var (target, manager) = CreateEffectTarget();
-        var firstSource = CreateSourceAbility(target, manager);
-        var secondSource = CreateSourceAbility(target, manager);
-        var weaker = new ActivePropertyEffect(0, 0, 0, EffectType.Frighten, null)
-        {
-            CombinationFunction = ValueCombinationFunction.BuildUpPerSource,
-            SourceAbilityEntityId = firstSource.Id,
-            MagnitudePrimary = 20
-        };
-        var stronger = new ActivePropertyEffect(0, 0, 0, EffectType.Frighten, null)
-        {
-            CombinationFunction = ValueCombinationFunction.BuildUpPerSource,
-            SourceAbilityEntityId = secondSource.Id,
-            MagnitudePrimary = 30
-        };
+        var firstSource = CreateSourceAbility(target);
+        var secondSource = CreateSourceAbility(target);
+        var weaker = CreatePropertyEffect(target.ActiveEffects!,
+            0, 0, 0, EffectType.Frighten, null,
+            combinationFunction: ValueCombinationFunction.BuildUpPerSource,
+            sourceAbilityEntityId: firstSource.Id,
+            magnitudePrimary: 20);
+        var stronger = CreatePropertyEffect(target.ActiveEffects!,
+            0, 0, 0, EffectType.Frighten, null,
+            combinationFunction: ValueCombinationFunction.BuildUpPerSource,
+            sourceAbilityEntityId: secondSource.Id,
+            magnitudePrimary: 30);
         var activeEffects = target.ActiveEffects!;
         weaker = activeEffects.AddPropertyEffect(weaker);
         stronger = activeEffects.AddPropertyEffect(stronger);
@@ -696,7 +684,7 @@ public class EffectApplicationSystemTest
     public void Per_source_status_is_removed_with_its_marker_and_can_reactivate()
     {
         var (target, manager) = CreateEffectTarget();
-        var source = CreateSourceAbility(target, manager);
+        var source = CreateSourceAbility(target);
 
         manager.EffectApplicationSystem.ApplyStatus(EffectApplicationContext.CreateStatus(
             EffectType.Frighten, target, 6 * EffectApplicationSystem.BuildUpThreshold, source.Id));
@@ -713,7 +701,7 @@ public class EffectApplicationSystemTest
         Assert.Equal(0, accumulator.Value);
         Assert.False(EffectApplicationSystem.GetAbilityLevel(target, AbilityData.Frightened.Name) > 0);
 
-        var replacementSource = CreateSourceAbility(target, manager);
+        var replacementSource = CreateSourceAbility(target);
         manager.EffectApplicationSystem.ApplyStatus(EffectApplicationContext.CreateStatus(
             EffectType.Frighten, target, amount: 240, replacementSource.Id));
 
@@ -726,7 +714,7 @@ public class EffectApplicationSystemTest
     public void Instant_per_source_application_preserves_a_matching_lingering_marker()
     {
         var (target, manager) = CreateEffectTarget();
-        var source = CreateSourceAbility(target, manager);
+        var source = CreateSourceAbility(target);
 
         ApplyAuthoredStatus(
             target, source, EffectType.Frighten, amount: 30,
@@ -745,17 +733,6 @@ public class EffectApplicationSystemTest
             effect => effect.EffectType == EffectType.Frighten));
         Assert.Equal(magnitude, marker.MagnitudePrimary);
         Assert.Equal(expirationTick, marker.ExpirationTarget);
-    }
-
-    private static GameEntity CreateSourceAbility(GameEntity owner, GameManager manager)
-    {
-        using var abilityReference = manager.CreateEntity();
-        var abilityEntity = abilityReference.Referenced;
-        var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
-        ability.OwnerEntity = owner;
-        abilityEntity.Ability = ability;
-        manager.Queue.ProcessQueue(manager);
-        return abilityEntity;
     }
 
     private static void ApplyAuthoredStatus(
@@ -876,7 +853,7 @@ public class EffectApplicationSystemTest
             EffectType.AddAbility, "test ability", level: 2);
         var secondComponent = activeEffects.AddComponentEffect(
             EffectType.DecreaseAbilityLevel, targetName: null,
-            conditionValue: (int)AbilityType.Status);
+            conditionValue: (int)AbilityType.Debuff);
 
         Assert.Contains(activeEffects.PropertyEffects, effect => ReferenceEquals(effect, firstProperty));
         Assert.Contains(activeEffects.PropertyEffects, effect => ReferenceEquals(effect, secondProperty));
@@ -895,13 +872,17 @@ public class EffectApplicationSystemTest
         Assert.Equal(firstComponentId + 1, secondComponent.InstanceId);
         Assert.Equal(nameof(BeingComponent.Might), firstProperty.TargetName);
         Assert.Equal(2, firstComponent.Level);
-        Assert.Equal((int)AbilityType.Status, secondComponent.ConditionValue);
+        Assert.Equal((int)AbilityType.Debuff, secondComponent.ConditionValue);
     }
 
     [Fact]
     public void Active_effect_instance_ids_remain_strictly_increasing_after_removing_the_highest_entry()
     {
-        var activeEffects = new ActiveEffectsComponent();
+        var manager = TestHelper.CreateGameManager();
+        using var entityReference = manager.CreateEntity();
+        var entity = entityReference.Referenced;
+        entity.ActiveEffects = manager.CreateComponent<ActiveEffectsComponent>(EntityComponent.ActiveEffects);
+        var activeEffects = entity.ActiveEffects;
         var firstProperty = activeEffects.AddPropertyEffect(EffectType.Default);
         var middleProperty = activeEffects.AddPropertyEffect(EffectType.Default);
         var lastProperty = activeEffects.AddPropertyEffect(EffectType.Default);
@@ -954,7 +935,7 @@ public class EffectApplicationSystemTest
         Assert.Null(componentEffect.ContainingComponent);
         componentEffect.Level = 3;
 
-        var accumulator = new EffectAccumulator { EffectType = EffectType.Paralyze };
+        var accumulator = CreateAccumulator(entity.ActiveEffects, EffectType.Paralyze);
         entity.ActiveEffects.Accumulators.Add(accumulator);
         Assert.Same(entity.ActiveEffects, accumulator.ContainingComponent);
         entity.ActiveEffects.Accumulators.Remove(accumulator);
@@ -983,10 +964,14 @@ public class EffectApplicationSystemTest
     [Fact]
     public void Effect_iteration_does_not_skip_entries_removed_during_processing()
     {
-        var activeEffects = new ActiveEffectsComponent();
-        activeEffects.AddPropertyEffect(new ActivePropertyEffect(0, 0, 0, EffectType.Heal, null));
-        activeEffects.AddPropertyEffect(new ActivePropertyEffect(0, 0, 0, EffectType.BleedDamage, null));
-        activeEffects.AddPropertyEffect(new ActivePropertyEffect(0, 0, 0, EffectType.Stun, null));
+        var manager = TestHelper.CreateGameManager();
+        using var entityReference = manager.CreateEntity();
+        var entity = entityReference.Referenced;
+        entity.ActiveEffects = manager.CreateComponent<ActiveEffectsComponent>(EntityComponent.ActiveEffects);
+        var activeEffects = entity.ActiveEffects;
+        activeEffects.AddPropertyEffect(CreatePropertyEffect(activeEffects, 0, 0, 0, EffectType.Heal, null));
+        activeEffects.AddPropertyEffect(CreatePropertyEffect(activeEffects, 0, 0, 0, EffectType.BleedDamage, null));
+        activeEffects.AddPropertyEffect(CreatePropertyEffect(activeEffects, 0, 0, 0, EffectType.Stun, null));
         var processed = new List<EffectType>();
 
         ActiveEffectsComponent.ForEachEffect(
@@ -1006,9 +991,12 @@ public class EffectApplicationSystemTest
     public void Effect_collections_manage_item_ownership_on_replace_and_clear()
     {
         var manager = TestHelper.CreateGameManager();
-        var activeEffects = manager.CreateComponent<ActiveEffectsComponent>(EntityComponent.ActiveEffects);
-        var first = new ActivePropertyEffect(0, 0, 0, EffectType.Default, null);
-        var replacement = new ActivePropertyEffect(0, 0, 0, EffectType.Default, null);
+        using var entityReference = manager.CreateEntity();
+        var entity = entityReference.Referenced;
+        entity.ActiveEffects = manager.CreateComponent<ActiveEffectsComponent>(EntityComponent.ActiveEffects);
+        var activeEffects = entity.ActiveEffects;
+        var first = CreatePropertyEffect(activeEffects, 0, 0, 0, EffectType.Default, null);
+        var replacement = CreatePropertyEffect(activeEffects, 0, 0, 0, EffectType.Default, null);
 
         activeEffects.PropertyEffects.Add(first);
         activeEffects.PropertyEffects[0] = replacement;
@@ -1023,8 +1011,8 @@ public class EffectApplicationSystemTest
         Assert.Null(replacement.ContainingComponent);
         Assert.Null(replacement.ContainingPropertyName);
 
-        var firstAccumulator = new EffectAccumulator { EffectType = EffectType.Paralyze };
-        var replacementAccumulator = new EffectAccumulator { EffectType = EffectType.Paralyze };
+        var firstAccumulator = CreateAccumulator(activeEffects, EffectType.Paralyze);
+        var replacementAccumulator = CreateAccumulator(activeEffects, EffectType.Paralyze);
 
         activeEffects.Accumulators.Add(firstAccumulator);
         ((IList<EffectAccumulator>)activeEffects.Accumulators)[0] = replacementAccumulator;
@@ -1814,10 +1802,9 @@ public class EffectApplicationSystemTest
         // teardown drops every instance kind by source ability, not only ChangeProperty (the narrow
         // predecessor would have left this behind). It has no TargetName, so the resolver ignores it
         // while it lingers.
-        playerEntity.ActiveEffects.PropertyEffects.Add(new ActivePropertyEffect(0, 0, playerEntity.ActiveEffects.PropertyEffects.Count, EffectType.Confuse, null)
-        {
-            SourceAbilityEntityId = toggledAbility.Id
-        });
+        playerEntity.ActiveEffects.PropertyEffects.Add(CreatePropertyEffect(playerEntity.ActiveEffects,
+            0, 0, playerEntity.ActiveEffects.PropertyEffects.Count, EffectType.Confuse, null,
+            sourceAbilityEntityId: toggledAbility.Id));
 
         var deactivateMessage = DeactivateAbilityMessage.Create(
             toggledAbility.Ability, playerEntity, manager);
@@ -2016,7 +2003,7 @@ public class EffectApplicationSystemTest
         var playerEntity = PlayerRace.InstantiatePlayer(
             "Dudley", Sex.Male, level, new Point(0, 0));
         manager.Queue.ProcessQueue(manager);
-        var sourceAbility = CreateSourceAbility(playerEntity, manager);
+        var sourceAbility = CreateSourceAbility(playerEntity);
         var race = manager.Game.Services.Data.PlayerRaces.Get("ogre");
 
         var raceTemplate = race.GetRaceAbilityTemplate();
@@ -2072,23 +2059,21 @@ public class EffectApplicationSystemTest
         Assert.Equal(10, effects.ResolveInt(nameof(BeingComponent.Might)));
 
         // A -3 Sum status modifier.
-        effects.PropertyEffects.Add(new ActivePropertyEffect(0, 0, 1, EffectType.ChangeProperty, nameof(BeingComponent.Might))
-        {
-            CombinationFunction = ValueCombinationFunction.Sum,
-            MagnitudePrimary = -3,
-            SourceAbilityActivation = ActivationType.Targeted
-        });
+        effects.PropertyEffects.Add(CreatePropertyEffect(effects,
+            0, 0, 1, EffectType.ChangeProperty, nameof(BeingComponent.Might),
+            combinationFunction: ValueCombinationFunction.Sum,
+            sourceAbilityActivation: ActivationType.Targeted,
+            magnitudePrimary: -3));
         effects.TryRefresh(nameof(BeingComponent.Might), isBool: false, out _, out _);
         Assert.Equal(7, effects.ResolveInt(nameof(BeingComponent.Might)));
 
         // An Override(5) from an innate (Always) source sorts before the status Sum,
         // so the fold is Override(5) then Sum(-3) = 2.
-        effects.PropertyEffects.Add(new ActivePropertyEffect(0, 0, 2, EffectType.ChangeProperty, nameof(BeingComponent.Might))
-        {
-            CombinationFunction = ValueCombinationFunction.Override,
-            MagnitudePrimary = 5,
-            SourceAbilityActivation = ActivationType.Always
-        });
+        effects.PropertyEffects.Add(CreatePropertyEffect(effects,
+            0, 0, 2, EffectType.ChangeProperty, nameof(BeingComponent.Might),
+            combinationFunction: ValueCombinationFunction.Override,
+            sourceAbilityActivation: ActivationType.Always,
+            magnitudePrimary: 5));
         effects.TryRefresh(nameof(BeingComponent.Might), isBool: false, out _, out _);
         Assert.Equal(2, effects.ResolveInt(nameof(BeingComponent.Might)));
     }
@@ -2105,12 +2090,11 @@ public class EffectApplicationSystemTest
         entity.ActiveEffects = effects;
 
         AddBaseEffect(effects, nameof(BeingComponent.Might), 2);
-        effects.PropertyEffects.Add(new ActivePropertyEffect(0, 0, 1, EffectType.ChangeProperty, nameof(BeingComponent.Might))
-        {
-            CombinationFunction = ValueCombinationFunction.Sum,
-            MagnitudePrimary = -10,
-            SourceAbilityActivation = ActivationType.Targeted
-        });
+        effects.PropertyEffects.Add(CreatePropertyEffect(effects,
+            0, 0, 1, EffectType.ChangeProperty, nameof(BeingComponent.Might),
+            combinationFunction: ValueCombinationFunction.Sum,
+            sourceAbilityActivation: ActivationType.Targeted,
+            magnitudePrimary: -10));
 
         // Might has MinValue = 0, so 2 + (-10) clamps to 0.
         Assert.Equal(0, effects.ResolveInt(nameof(BeingComponent.Might)));
@@ -2130,12 +2114,11 @@ public class EffectApplicationSystemTest
         AddBaseEffect(effects, nameof(BeingComponent.Might), 10);
         Assert.Equal(10, effects.ResolveInt(nameof(BeingComponent.Might)));
         // Mutating the store without refreshing keeps the cached value.
-        effects.PropertyEffects.Add(new ActivePropertyEffect(0, 0, 1, EffectType.ChangeProperty, nameof(BeingComponent.Might))
-        {
-            CombinationFunction = ValueCombinationFunction.Sum,
-            MagnitudePrimary = 4,
-            SourceAbilityActivation = ActivationType.Targeted
-        });
+        effects.PropertyEffects.Add(CreatePropertyEffect(effects,
+            0, 0, 1, EffectType.ChangeProperty, nameof(BeingComponent.Might),
+            combinationFunction: ValueCombinationFunction.Sum,
+            sourceAbilityActivation: ActivationType.Targeted,
+            magnitudePrimary: 4));
         Assert.Equal(10, effects.ResolveInt(nameof(BeingComponent.Might)));
 
         // Refresh captures the old cached value, folds in the new contribution and caches the result.
@@ -2179,18 +2162,16 @@ public class EffectApplicationSystemTest
         var owner = ownerReference.Referenced;
         owner.ActiveEffects = manager.CreateComponent<ActiveEffectsComponent>(EntityComponent.ActiveEffects);
 
-        owner.ActiveEffects.AddPropertyEffect(new ActivePropertyEffect(0, 0, 0, EffectType.ChangeProperty, nameof(BeingComponent.Might))
-        {
-            CombinationFunction = ValueCombinationFunction.Override,
-            MagnitudePrimary = 3,
-            SourceAbilityActivation = ActivationType.Always
-        });
-        owner.ActiveEffects.AddPropertyEffect(new ActivePropertyEffect(0, 0, 0, EffectType.ChangeProperty, nameof(BeingComponent.Might))
-        {
-            CombinationFunction = ValueCombinationFunction.Override,
-            MagnitudePrimary = 5,
-            SourceAbilityActivation = ActivationType.Always
-        });
+        owner.ActiveEffects.AddPropertyEffect(CreatePropertyEffect(owner.ActiveEffects,
+            0, 0, 0, EffectType.ChangeProperty, nameof(BeingComponent.Might),
+            combinationFunction: ValueCombinationFunction.Override,
+            sourceAbilityActivation: ActivationType.Always,
+            magnitudePrimary: 3));
+        owner.ActiveEffects.AddPropertyEffect(CreatePropertyEffect(owner.ActiveEffects,
+            0, 0, 0, EffectType.ChangeProperty, nameof(BeingComponent.Might),
+            combinationFunction: ValueCombinationFunction.Override,
+            sourceAbilityActivation: ActivationType.Always,
+            magnitudePrimary: 5));
 
         Assert.Equal(5, owner.ActiveEffects.ResolveInt(nameof(BeingComponent.Might)));
     }
@@ -2208,12 +2189,11 @@ public class EffectApplicationSystemTest
 
         Assert.False(effects.ResolveBool(nameof(BeingComponent.Infravision)));
 
-        effects.PropertyEffects.Add(new ActivePropertyEffect(0, 0, 1, EffectType.ChangeProperty, nameof(BeingComponent.Infravision))
-        {
-            CombinationFunction = ValueCombinationFunction.Override,
-            MagnitudePrimary = 1,
-            SourceAbilityActivation = ActivationType.Always
-        });
+        effects.PropertyEffects.Add(CreatePropertyEffect(effects,
+            0, 0, 1, EffectType.ChangeProperty, nameof(BeingComponent.Infravision),
+            combinationFunction: ValueCombinationFunction.Override,
+            sourceAbilityActivation: ActivationType.Always,
+            magnitudePrimary: 1));
         effects.TryRefresh(nameof(BeingComponent.Infravision), isBool: true, out _, out _);
 
         Assert.True(effects.ResolveBool(nameof(BeingComponent.Infravision)));
@@ -2233,18 +2213,16 @@ public class EffectApplicationSystemTest
         AddBaseEffect(effects, nameof(BeingComponent.Might), 10);
         // Both modifiers are the same activation tier, so function precedence decides order:
         // Percent (Absolute-ish, higher precedence) applies before Sum: 10 * 150% = 15, then +2 = 17.
-        effects.PropertyEffects.Add(new ActivePropertyEffect(0, 0, 1, EffectType.ChangeProperty, nameof(BeingComponent.Might))
-        {
-            CombinationFunction = ValueCombinationFunction.Sum,
-            MagnitudePrimary = 2,
-            SourceAbilityActivation = ActivationType.Targeted
-        });
-        effects.PropertyEffects.Add(new ActivePropertyEffect(0, 0, 2, EffectType.ChangeProperty, nameof(BeingComponent.Might))
-        {
-            CombinationFunction = ValueCombinationFunction.Percent,
-            MagnitudePrimary = 150,
-            SourceAbilityActivation = ActivationType.Targeted
-        });
+        effects.PropertyEffects.Add(CreatePropertyEffect(effects,
+            0, 0, 1, EffectType.ChangeProperty, nameof(BeingComponent.Might),
+            combinationFunction: ValueCombinationFunction.Sum,
+            sourceAbilityActivation: ActivationType.Targeted,
+            magnitudePrimary: 2));
+        effects.PropertyEffects.Add(CreatePropertyEffect(effects,
+            0, 0, 2, EffectType.ChangeProperty, nameof(BeingComponent.Might),
+            combinationFunction: ValueCombinationFunction.Percent,
+            sourceAbilityActivation: ActivationType.Targeted,
+            magnitudePrimary: 150));
 
         Assert.Equal(17, effects.ResolveInt(nameof(BeingComponent.Might)));
     }
@@ -2325,12 +2303,11 @@ public class EffectApplicationSystemTest
 
         // Might (the input) starts at 10; a dynamic instance contributes the current Might to Evasion.
         var mightBase = AddBaseEffect(effects, nameof(BeingComponent.Might), 10);
-        var dynamic = new ActivePropertyEffect(0, 0, 1, EffectType.ChangeProperty, nameof(BeingComponent.Evasion))
-        {
-            CombinationFunction = ValueCombinationFunction.Sum,
-            MagnitudePrimary = effects.ResolveInt(nameof(BeingComponent.Might)),
-            SourceAbilityActivation = ActivationType.Targeted
-        };
+        var dynamic = CreatePropertyEffect(effects,
+            0, 0, 1, EffectType.ChangeProperty, nameof(BeingComponent.Evasion),
+            combinationFunction: ValueCombinationFunction.Sum,
+            sourceAbilityActivation: ActivationType.Targeted,
+            magnitudePrimary: effects.ResolveInt(nameof(BeingComponent.Might)));
         effects.PropertyEffects.Add(dynamic);
         effects.RegisterDynamicMagnitude(
             dynamic,
@@ -2370,10 +2347,9 @@ public class EffectApplicationSystemTest
         var effects = manager.CreateComponent<ActiveEffectsComponent>(EntityComponent.ActiveEffects);
         entity.ActiveEffects = effects;
 
-        var instance = new ActivePropertyEffect(0, 0, 1, EffectType.ChangeProperty, nameof(BeingComponent.Might))
-        {
-            CombinationFunction = ValueCombinationFunction.Sum
-        };
+        var instance = CreatePropertyEffect(effects,
+            0, 0, 1, EffectType.ChangeProperty, nameof(BeingComponent.Might),
+            combinationFunction: ValueCombinationFunction.Sum);
         effects.PropertyEffects.Add(instance);
 
         // A magnitude that feeds Might may not also read Might - that would be an unresolvable cycle.
@@ -2397,9 +2373,9 @@ public class EffectApplicationSystemTest
         var effects = manager.CreateComponent<ActiveEffectsComponent>(EntityComponent.ActiveEffects);
         entity.ActiveEffects = effects;
 
-        var evasionFromMight = new ActivePropertyEffect(
+        var evasionFromMight = CreatePropertyEffect(effects,
             0, 0, 0, EffectType.ChangeProperty, nameof(BeingComponent.Evasion));
-        var mightFromEvasion = new ActivePropertyEffect(
+        var mightFromEvasion = CreatePropertyEffect(effects,
             0, 0, 0, EffectType.ChangeProperty, nameof(BeingComponent.Might));
         effects.AddPropertyEffect(evasionFromMight);
         effects.AddPropertyEffect(mightFromEvasion);
@@ -2428,7 +2404,7 @@ public class EffectApplicationSystemTest
             carrier = carrierReference.Referenced;
             carrier.Ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
             carrier.Ability.Name = "batch status";
-            carrier.Ability.Type = AbilityType.Status;
+            carrier.Ability.Type = AbilityType.Debuff;
             carrier.Ability.OwnerId = player.Id;
         }
 
@@ -2514,6 +2490,41 @@ public class EffectApplicationSystemTest
             EffectApplicationSystem.CreateAmountFunction(modifierExpression, "cache test", "test effect"));
     }
 
+    [Theory]
+    [InlineData("AbilityLevel('level expression source') + 2", 5)]
+    [InlineData("AbilityLevel('level expression source') / 2", 1)]
+    [InlineData("Min(AbilityLevel('level expression source'), 2)", 2)]
+    [InlineData("Max(AbilityLevel('level expression source'), 4)", 4)]
+    [InlineData("Abs(AbilityLevel('level expression source') - 5)", 2)]
+    [InlineData("AbilityLevel('level expression source') >= 3 ? 7 : 0", 7)]
+    public void Level_expressions_support_shared_arithmetic_and_functions(
+        string expression, int expectedLevel)
+    {
+        var source = new Ability
+        {
+            Name = "level expression source",
+            Effects = []
+        };
+        var dependent = new Ability
+        {
+            Name = "level expression dependent",
+            LevelExpression = expression,
+            Effects = []
+        };
+        var game = TestHelper.CreateGame();
+        ((TestDataProvider)game.Services.Data).AddAbilities(source, dependent);
+        var room = TestHelper.BuildRoom(".", game);
+        var player = PlayerRace.InstantiatePlayer(
+            "Dudley", Sex.Male, room, new Point(0, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+        manager.EffectApplicationSystem.AddAbilityEffect(player, source, level: 3);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(expectedLevel, dependent.GetExpressionLevel(player));
+        Assert.Equal([dependent], source.LevelExpressionDependents);
+    }
+
     [Fact]
     public void Self_referential_amount_expression_throws_when_registering_dynamic_magnitude()
     {
@@ -2564,12 +2575,9 @@ public class EffectApplicationSystemTest
 
         // A dynamic instance whose contribution to Evasion tracks the being's Might. Evasion is otherwise
         // derived from Perception/Speed, so Might only reaches it through this dynamic magnitude.
-        var dynamic = new ActivePropertyEffect(0, 0, effects.PropertyEffects.Count, EffectType.ChangeProperty, nameof(BeingComponent.Evasion))
-        {
-            CombinationFunction = ValueCombinationFunction.Sum,
-            MagnitudePrimary = 0,
-            SourceAbilityActivation = ActivationType.Default
-        };
+        var dynamic = CreatePropertyEffect(effects,
+            0, 0, effects.PropertyEffects.Count, EffectType.ChangeProperty, nameof(BeingComponent.Evasion),
+            combinationFunction: ValueCombinationFunction.Sum);
         effects.PropertyEffects.Add(dynamic);
         effects.RegisterDynamicMagnitude(
             dynamic, new[] { nameof(BeingComponent.Might) }, () => being.Might);
@@ -2608,7 +2616,8 @@ public class EffectApplicationSystemTest
 
         // Replace the modifier while the ability is inactive, then reactivate it. Might changes again and
         // the dynamic Evasion contribution follows the cascade.
-        TestHelper.QueueAbilityDeactivation(toggledAbility, playerEntity, manager);
+        manager.Enqueue(DeactivateAbilityMessage.Create(
+            toggledAbility.Ability!, playerEntity, manager));
         manager.Queue.ProcessQueue(manager);
         mightEffectEntity.Effect = null;
         using (var effectReference = manager.CreateEntity())
@@ -2691,7 +2700,8 @@ public class EffectApplicationSystemTest
         Assert.Equal(evasionBefore + dynamic.MagnitudePrimary, being.Evasion);
 
         // Turning the ability off drops the modifier and its dynamic-magnitude binding.
-        TestHelper.QueueAbilityDeactivation(buffAbility, playerEntity, manager);
+        manager.Enqueue(DeactivateAbilityMessage.Create(
+            buffAbility.Ability!, playerEntity, manager));
         manager.Queue.ProcessQueue(manager);
 
         Assert.DoesNotContain(effects.PropertyEffects, e => e.SourceAbilityEntityId == buffAbility.Id);
@@ -2757,7 +2767,7 @@ public class EffectApplicationSystemTest
         Assert.All(formOverrides, effect =>
         {
             Assert.Equal(EffectType.ChangeProperty, effect.EffectType);
-            Assert.Equal(AbilityType.Status, effect.SourceAbilityType);
+            Assert.Equal(AbilityType.Debuff, effect.SourceAbilityType);
             Assert.Equal(ValueCombinationFunction.Override, effect.CombinationFunction);
         });
         var polymorphedAbilityCount = being.Abilities.Count;
@@ -2916,20 +2926,17 @@ public class EffectApplicationSystemTest
         var abilityB = CreateAbility(manager, playerEntity, "buff b");
 
         // Two instances from ability A (one contributing a resolved property, one bare) and one from B.
-        activeEffects.PropertyEffects.Add(new ActivePropertyEffect(0, 0, activeEffects.PropertyEffects.Count, EffectType.ChangeProperty, nameof(BeingComponent.Armor))
-        {
-            CombinationFunction = ValueCombinationFunction.Sum,
-            SourceAbilityEntityId = abilityA.Id,
-            MagnitudePrimary = 5
-        });
-        activeEffects.PropertyEffects.Add(new ActivePropertyEffect(0, 0, activeEffects.PropertyEffects.Count, EffectType.Confuse, null)
-        {
-            SourceAbilityEntityId = abilityA.Id
-        });
-        activeEffects.PropertyEffects.Add(new ActivePropertyEffect(0, 0, activeEffects.PropertyEffects.Count, EffectType.Confuse, null)
-        {
-            SourceAbilityEntityId = abilityB.Id
-        });
+        activeEffects.PropertyEffects.Add(CreatePropertyEffect(activeEffects,
+            0, 0, activeEffects.PropertyEffects.Count, EffectType.ChangeProperty, nameof(BeingComponent.Armor),
+            combinationFunction: ValueCombinationFunction.Sum,
+            sourceAbilityEntityId: abilityA.Id,
+            magnitudePrimary: 5));
+        activeEffects.PropertyEffects.Add(CreatePropertyEffect(activeEffects,
+            0, 0, activeEffects.PropertyEffects.Count, EffectType.Confuse, null,
+            sourceAbilityEntityId: abilityA.Id));
+        activeEffects.PropertyEffects.Add(CreatePropertyEffect(activeEffects,
+            0, 0, activeEffects.PropertyEffects.Count, EffectType.Confuse, null,
+            sourceAbilityEntityId: abilityB.Id));
 
         manager.EffectApplicationSystem.RemoveMatchingPropertyEffects(
             activeEffects, playerEntity,
@@ -2982,7 +2989,7 @@ public class EffectApplicationSystemTest
         manager.Queue.ProcessQueue(manager);
 
         var statusAbilityEntity = CreateAbility(manager, playerEntity, "test status");
-        statusAbilityEntity.Ability!.Type = AbilityType.Status;
+        statusAbilityEntity.Ability!.Type = AbilityType.Debuff;
         var traitAbilityEntity = CreateAbility(manager, playerEntity, "test trait");
         traitAbilityEntity.Ability!.Type = AbilityType.Trait;
         var activeEffects = playerEntity.ActiveEffects!;
@@ -3002,7 +3009,7 @@ public class EffectApplicationSystemTest
 
         var status = Assert.Single(
             EffectApplicationSystem.GetAbilitiesAffectingProperty(
-                playerEntity, nameof(BeingComponent.Armor), AbilityType.Status));
+                playerEntity, nameof(BeingComponent.Armor), AbilityType.Debuff));
         Assert.Same(statusAbilityEntity.Ability, status);
     }
 
@@ -3073,12 +3080,11 @@ public class EffectApplicationSystemTest
         var activeEffects = playerEntity.ActiveEffects!;
 
         Assert.Throws<InvalidOperationException>(() =>
-            activeEffects.PropertyEffects.Add(new ActivePropertyEffect(0, 0, activeEffects.PropertyEffects.Count, EffectType.ChangeProperty, nameof(BeingComponent.Armor))
-            {
-                CombinationFunction = ValueCombinationFunction.Sum,
-                SourceAbilityEntityId = 987654321,
-                MagnitudePrimary = 5
-            }));
+            activeEffects.PropertyEffects.Add(CreatePropertyEffect(activeEffects,
+                0, 0, activeEffects.PropertyEffects.Count, EffectType.ChangeProperty, nameof(BeingComponent.Armor),
+                combinationFunction: ValueCombinationFunction.Sum,
+                sourceAbilityEntityId: 987654321,
+                magnitudePrimary: 5)));
     }
 
     [Fact]
@@ -3151,12 +3157,12 @@ public class EffectApplicationSystemTest
             Creature.Loader.GetId("wolfwere").ToString(CultureInfo.InvariantCulture),
             statusEffect.SecondaryAmount);
 
-        // The resisted L1 contribution does not outpace regular status decay.
+        // The resisted L1 contribution does not outpace regular status decay, so its spent bank is removed.
         manager.EffectApplicationSystem.ApplyLingeringBuildUpEffect(
             source, playerEntity, TimeSystem.DefaultActionDelay, manager);
         manager.EffectApplicationSystem.RealizeBuildUps(
             playerEntity, TimeSystem.DefaultActionDelay, manager);
-        Assert.Equal(-10, counter.Value);
+        Assert.False(playerEntity.ActiveEffects.Accumulators.ContainsKey(EffectType.ConferLycanthropy));
 
         // Reaching the next threshold adds the cumulative L2 Polymorph while retaining the L1 source.
         manager.EffectApplicationSystem.BankBuildUp(
@@ -3423,6 +3429,204 @@ public class EffectApplicationSystemTest
         Assert.Equal(initialXp + 5000, playerEntity.Being.ExperiencePoints);
     }
 
+    [Fact]
+    public void Removed_property_effect_is_cleaned_and_returned_to_pool()
+    {
+        var target = CreatePoolTarget();
+        var activeEffects = target.ActiveEffects!;
+        var original = activeEffects.AddPropertyEffect(
+            EffectType.ChangeProperty,
+            nameof(BeingComponent.Might),
+            ValueCombinationFunction.Sum,
+            sourceAbilityType: AbilityType.Buff,
+            sourceAbilityActivation: ActivationType.WhileToggled,
+            magnitudePrimary: 7,
+            magnitudeSecondary: 11,
+            expirationTarget: 17,
+            expirationEvent: EffectDuration.UntilTimeout);
+        var notifications = 0;
+        original.PropertyChanged += (_, _) => notifications++;
+
+        activeEffects.PropertyEffects.Remove(original);
+        target.Manager.Queue.ProcessQueue(target.Manager);
+        var reused = RentPropertyEffect(activeEffects, original);
+
+        Assert.Equal(EffectType.ChangeProperty, reused.EffectType);
+        Assert.Equal(nameof(BeingComponent.Focus), reused.TargetName);
+        Assert.Equal(0, reused.MagnitudePrimary);
+        Assert.Null(reused.SourceAbilityEntityId);
+        Assert.Null(reused.ExpirationTarget);
+        Assert.Null(reused.ExpirationEvent);
+
+        reused.MagnitudePrimary = 1;
+        Assert.Equal(0, notifications);
+    }
+
+    [Fact]
+    public void Removed_component_effect_is_cleaned_and_returned_to_pool()
+    {
+        var target = CreatePoolTarget();
+        var activeEffects = target.ActiveEffects!;
+        var original = activeEffects.AddComponentEffect(
+            EffectType.AddAbility,
+            "test ability",
+            conditionValue: 789,
+            level: 3,
+            expirationTarget: 17,
+            expirationEvent: EffectDuration.UntilTimeout);
+
+        activeEffects.ComponentEffects.Remove(original);
+        target.Manager.Queue.ProcessQueue(target.Manager);
+        var reused = RentComponentEffect(activeEffects, original);
+
+        Assert.Equal(EffectType.AddAbility, reused.EffectType);
+        Assert.Equal("replacement ability", reused.TargetName);
+        Assert.Equal(0, reused.CarrierId);
+        Assert.Equal(0, reused.SourceAbilityEntityId);
+        Assert.Null(reused.ConditionValue);
+        Assert.Equal(1, reused.Level);
+        Assert.Null(reused.ExpirationTarget);
+        Assert.Null(reused.ExpirationEvent);
+    }
+
+    [Fact]
+    public void Removed_effect_accumulator_is_cleaned_and_returned_to_pool()
+    {
+        var target = CreatePoolTarget();
+        var activeEffects = target.ActiveEffects!;
+        var original = activeEffects.AddAccumulator(EffectType.Paralyze);
+        original.Value = 37;
+        var notifications = 0;
+        original.PropertyChanged += (_, _) => notifications++;
+
+        activeEffects.Accumulators.Remove(original);
+        target.Manager.Queue.ProcessQueue(target.Manager);
+        var reused = RentAccumulator(activeEffects, original);
+
+        Assert.Equal(EffectType.Stun, reused.EffectType);
+        Assert.Equal(0, reused.Value);
+        Assert.Equal(target.GameId, reused.GameId);
+        Assert.Equal(target.Id, reused.EntityId);
+
+        reused.Value = 1;
+        Assert.Equal(0, notifications);
+    }
+
+    [Fact]
+    public void Active_effects_are_retired_when_entity_manager_is_reset_before_component_cleanup()
+    {
+        var manager = TestHelper.CreateGameManager();
+        var entityReference = manager.CreateEntity();
+        var entity = entityReference.Referenced;
+        var activeEffects = manager.CreateComponent<ActiveEffectsComponent>(EntityComponent.ActiveEffects);
+        entity.ActiveEffects = activeEffects;
+        var propertyEffect = activeEffects.AddPropertyEffect(
+            EffectType.ChangeProperty, nameof(BeingComponent.Might));
+        var componentEffect = activeEffects.AddComponentEffect(EffectType.AddAbility, "test ability");
+        var accumulator = activeEffects.AddAccumulator(EffectType.Paralyze);
+        var tracker = new object();
+        ((ITrackable)activeEffects).StartTracking(tracker);
+
+        entityReference.Dispose();
+        ((ITrackable)entity).StopTracking(tracker);
+        ((ITrackable)activeEffects).StopTracking(tracker);
+        manager.Queue.ProcessQueue(manager);
+
+        using var replacementReference = manager.CreateEntity();
+        var replacementEntity = replacementReference.Referenced;
+        replacementEntity.ActiveEffects =
+            manager.CreateComponent<ActiveEffectsComponent>(EntityComponent.ActiveEffects);
+        Assert.Same(propertyEffect, RentPropertyEffect(replacementEntity.ActiveEffects, propertyEffect));
+        Assert.Same(componentEffect, RentComponentEffect(replacementEntity.ActiveEffects, componentEffect));
+        Assert.Same(accumulator, RentAccumulator(replacementEntity.ActiveEffects, accumulator));
+    }
+
+    [Fact]
+    public void Tracked_effect_is_not_returned_to_pool_during_collection_notification()
+    {
+        var target = CreatePoolTarget();
+        var activeEffects = target.ActiveEffects!;
+        var original = activeEffects.AddComponentEffect(EffectType.AddAbility, "test ability");
+        var tracker = new object();
+        ((ITrackable)original).StartTracking(tracker);
+        activeEffects.ComponentEffects.CollectionChanged += (_, args) =>
+        {
+            if (args.OldItems?.Contains(original) == true)
+            {
+                ((ITrackable)original).StopTracking(tracker);
+            }
+        };
+
+        activeEffects.ComponentEffects.Remove(original);
+        var replacement = activeEffects.AddComponentEffect(EffectType.AddAbility, "replacement ability");
+
+        Assert.NotSame(original, replacement);
+        target.Manager.Queue.ProcessQueue(target.Manager);
+        Assert.Same(original, RentComponentEffect(activeEffects, original));
+    }
+
+    private static GameEntity CreatePoolTarget()
+    {
+        var room = TestHelper.BuildRoom(".");
+        var player = PlayerRace.InstantiatePlayer(
+            "Dudley", Sex.Male, room, new Point(0, 0));
+        player.Manager.Queue.ProcessQueue(player.Manager);
+        return player;
+    }
+
+    private static ActivePropertyEffect RentPropertyEffect(
+        ActiveEffectsComponent activeEffects, ActivePropertyEffect expected)
+    {
+        for (var i = 0; i < 16384; i++)
+        {
+            var candidate = activeEffects.AddPropertyEffect(
+                EffectType.ChangeProperty, nameof(BeingComponent.Focus));
+            if (ReferenceEquals(candidate, expected))
+            {
+                return candidate;
+            }
+
+            activeEffects.PropertyEffects.Remove(candidate);
+        }
+
+        throw new Xunit.Sdk.XunitException("Property effect was not returned to its pool.");
+    }
+
+    private static ActiveComponentEffect RentComponentEffect(
+        ActiveEffectsComponent activeEffects, ActiveComponentEffect expected)
+    {
+        for (var i = 0; i < 4096; i++)
+        {
+            var candidate = activeEffects.AddComponentEffect(
+                EffectType.AddAbility, "replacement ability");
+            if (ReferenceEquals(candidate, expected))
+            {
+                return candidate;
+            }
+
+            activeEffects.ComponentEffects.Remove(candidate);
+        }
+
+        throw new Xunit.Sdk.XunitException("Component effect was not returned to its pool.");
+    }
+
+    private static EffectAccumulator RentAccumulator(
+        ActiveEffectsComponent activeEffects, EffectAccumulator expected)
+    {
+        for (var i = 0; i < 4096; i++)
+        {
+            var candidate = activeEffects.AddAccumulator(EffectType.Stun);
+            if (ReferenceEquals(candidate, expected))
+            {
+                return candidate;
+            }
+
+            activeEffects.Accumulators.Remove(candidate);
+        }
+
+        throw new Xunit.Sdk.XunitException("Effect accumulator was not returned to its pool.");
+    }
+
     private static GameEntity CreateAbility(GameManager manager, GameEntity owner, string name)
     {
         GameEntity abilityEntity;
@@ -3443,15 +3647,14 @@ public class EffectApplicationSystemTest
         ActiveEffectsComponent activeEffects, int sourceAbilityId, ActivationType activation, int amount,
         int? expirationTick, GameManager manager)
     {
-        var instance = new ActivePropertyEffect(0, 0, activeEffects.PropertyEffects.Count, EffectType.ChangeProperty, nameof(BeingComponent.Armor))
-        {
-            CombinationFunction = ValueCombinationFunction.Sum,
-            SourceAbilityEntityId = sourceAbilityId,
-            SourceAbilityActivation = activation,
-            MagnitudePrimary = amount,
-            ExpirationEvent = expirationTick == null ? null : EffectDuration.UntilTimeout,
-            ExpirationTarget = expirationTick
-        };
+        var instance = CreatePropertyEffect(activeEffects,
+            0, 0, activeEffects.PropertyEffects.Count, EffectType.ChangeProperty, nameof(BeingComponent.Armor),
+            combinationFunction: ValueCombinationFunction.Sum,
+            sourceAbilityEntityId: sourceAbilityId,
+            sourceAbilityActivation: activation,
+            magnitudePrimary: amount,
+            expirationTarget: expirationTick,
+            expirationEvent: expirationTick == null ? null : EffectDuration.UntilTimeout);
         activeEffects.PropertyEffects.Add(instance);
         // Adding an instance directly bypasses the apply path, so refresh as the real pipeline would.
         activeEffects.TryRefresh(nameof(BeingComponent.Armor), isBool: false, out _, out _);
@@ -3461,12 +3664,11 @@ public class EffectApplicationSystemTest
     private static ActivePropertyEffect AddBaseEffect(
         ActiveEffectsComponent activeEffects, string property, int amount)
     {
-        var instance = new ActivePropertyEffect(0, 0, 0, EffectType.ChangeProperty, property)
-        {
-            CombinationFunction = ValueCombinationFunction.Override,
-            SourceAbilityActivation = ActivationType.Always,
-            MagnitudePrimary = amount
-        };
+        var instance = CreatePropertyEffect(activeEffects,
+            0, 0, 0, EffectType.ChangeProperty, property,
+            combinationFunction: ValueCombinationFunction.Override,
+            sourceAbilityActivation: ActivationType.Always,
+            magnitudePrimary: amount);
         return activeEffects.AddPropertyEffect(instance);
     }
 

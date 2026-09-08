@@ -1,5 +1,6 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 using UnicornHack.Data;
 using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Creatures;
@@ -11,12 +12,77 @@ using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Systems.Time;
 using UnicornHack.Utils;
+using UnicornHack.Utils.Caching;
+using UnicornHack.Utils.MessagingECS;
 using Xunit;
 
 namespace UnicornHack.Persistence;
 
 public class PersistenceEffectTest
 {
+    [Fact]
+    public void Queried_poolable_objects_are_assigned_to_object_pools()
+    {
+        Assert.SkipUnless(
+            PersistedGame.IsLocalDbAvailable, "SQL Server LocalDB is not available in this environment.");
+
+        using var persisted = PersistedGame.CreateAndSave();
+        var activeEffects = persisted.PlayerEntity.ActiveEffects!;
+        activeEffects.AddComponentEffect(
+            EffectType.DecreaseAbilityLevel, targetName: null,
+            conditionValue: (int)AbilityType.Debuff);
+        activeEffects.AddAccumulator(EffectType.Doom);
+        persisted.Context.SaveChanges();
+
+        persisted.Reload();
+
+        var poolableObjects = persisted.Context.ChangeTracker.Entries()
+            .Select(entry => entry.Entity)
+            .OfType<IPoolable>()
+            .ToList();
+        Assert.Contains(poolableObjects, instance => instance is GameEntity);
+        Assert.Contains(poolableObjects, instance => instance is Component);
+        Assert.Contains(poolableObjects, instance => instance is ActivePropertyEffect);
+        Assert.Contains(poolableObjects, instance => instance is ActiveComponentEffect);
+        Assert.Contains(poolableObjects, instance => instance is EffectAccumulator);
+        Assert.All(poolableObjects, instance => Assert.NotNull(GetObjectPool(instance)));
+
+        static object? GetObjectPool(IPoolable instance)
+        {
+            var declaringType = instance switch
+            {
+                Entity => typeof(Entity),
+                Component => typeof(Component),
+                PooledTrackableCollectionItem => typeof(PooledTrackableCollectionItem),
+                _ => throw new InvalidOperationException(instance.GetType().Name)
+            };
+            return declaringType.GetField("_pool", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(instance);
+        }
+    }
+
+    [Fact]
+    public void Querying_a_poolable_type_requires_a_wired_game_manager()
+    {
+        Assert.SkipUnless(
+            PersistedGame.IsLocalDbAvailable, "SQL Server LocalDB is not available in this environment.");
+
+        using var persisted = PersistedGame.CreateAndSave();
+        var context = persisted.Context;
+        var manager = context.Manager;
+        context.Manager = null!;
+        try
+        {
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => context.Entities.AsNoTracking().First());
+            Assert.Contains("must be assigned", exception.Message);
+        }
+        finally
+        {
+            context.Manager = manager;
+        }
+    }
+
     [Fact]
     public void Ability_noise_penalty_survives_reload_without_a_registered_template()
     {
@@ -56,7 +122,7 @@ public class PersistenceEffectTest
         var ability = new Ability
         {
             Name = "test timed ability decrease",
-            Type = AbilityType.Status,
+            Type = AbilityType.Debuff,
             Activation = ActivationType.Manual,
             Effects =
             [
@@ -131,7 +197,7 @@ public class PersistenceEffectTest
         var ability = new Ability
         {
             Name = "test room-bound ability decrease",
-            Type = AbilityType.Status,
+            Type = AbilityType.Debuff,
             Activation = ActivationType.Manual,
             Effects =
             [
@@ -186,6 +252,52 @@ public class PersistenceEffectTest
         Assert.Same(AbilityData.WaterSourcery, authoritative.Template);
         Assert.Null(manager.AffectableAbilitiesIndex[
             (player.Id, AbilityData.WaterSourcery.Name + "#2")]);
+    }
+
+    [Fact]
+    public void Expression_and_unconditional_grants_combine_with_a_decrease_after_reload()
+    {
+        Assert.SkipUnless(
+            PersistedGame.IsLocalDbAvailable, "SQL Server LocalDB is not available in this environment.");
+
+        using var persisted = PersistedGame.CreateAndSave();
+        var player = persisted.PlayerEntity;
+        var manager = player.Manager;
+        manager.EffectApplicationSystem.AddAbilityEffect(player, AbilityData.WaterSourcery);
+        manager.Queue.ProcessQueue(manager);
+        manager.EffectApplicationSystem.AddAbilityEffect(
+            player, AbilityData.IceShard, sourceAbilityEntityId: 1000);
+        var decrease = TestHelper.ApplyAbilityLevelDecrease(
+            player, abilityName: AbilityData.IceShard.Name);
+        Assert.Equal(1, manager.AffectableAbilitiesIndex[
+            (player.Id, AbilityData.IceShard.Name)]!.Ability!.Level);
+        persisted.Context.SaveChanges();
+
+        persisted.Reload();
+
+        player = persisted.PlayerEntity;
+        manager = player.Manager;
+        var records = player.ActiveEffects!.ComponentEffects.GetValues(AbilityData.IceShard.Name);
+        Assert.Equal(2, records.Count(record => record.EffectType == EffectType.AddAbility));
+        Assert.Single(records, TestHelper.IsLevelExpressionGrant);
+        Assert.Contains(records, record => record is
+        {
+            EffectType: EffectType.AddAbility,
+            ConditionValue: null,
+            Level: 1
+        });
+        Assert.Contains(decrease.InstanceId, player.ActiveEffects.ComponentEffects
+            .Where(record => record.EffectType == EffectType.DecreaseAbilityLevel)
+            .Select(record => record.InstanceId));
+        Assert.Equal(1, manager.AffectableAbilitiesIndex[
+            (player.Id, AbilityData.IceShard.Name)]!.Ability!.Level);
+
+        manager.EffectApplicationSystem.AddAbilityEffect(player, AbilityData.WaterSourcery);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(2, manager.AffectableAbilitiesIndex[
+            (player.Id, AbilityData.IceShard.Name)]!.Ability!.Level);
+        Assert.Equal(2, Assert.Single(records, TestHelper.IsLevelExpressionGrant).Level);
     }
 
     [Fact]
@@ -350,23 +462,17 @@ public class PersistenceEffectTest
 
         using var persisted = PersistedGame.CreateAndSave();
         var activeEffects = persisted.PlayerEntity.ActiveEffects!;
-        var propertyEffect = new ActivePropertyEffect(0, 0, 0, EffectType.ChangeProperty, nameof(BeingComponent.AcidResistance))
-        {
-            ExpirationTarget = 10,
-            ExpirationEvent = EffectDuration.UntilTimeout,
-            MagnitudePrimary = 1
-        };
+        var propertyEffect = activeEffects.AddPropertyEffect(
+            EffectType.ChangeProperty, nameof(BeingComponent.AcidResistance),
+            magnitudePrimary: 1,
+            expirationTarget: 10,
+            expirationEvent: EffectDuration.UntilTimeout);
         var componentEffect = activeEffects.AddComponentEffect(
             EffectType.DecreaseAbilityLevel, targetName: null,
             conditionValue: (int)AbilityType.Race, level: 1,
             expirationTarget: 10, expirationEvent: EffectDuration.UntilTimeout);
-        var accumulator = new EffectAccumulator
-        {
-            EffectType = EffectType.Doom,
-            Value = 1
-        };
-        propertyEffect = activeEffects.AddPropertyEffect(propertyEffect);
-        activeEffects.Accumulators.Add(accumulator);
+        var accumulator = activeEffects.AddAccumulator(EffectType.Doom);
+        accumulator.Value = 1;
 
         Assert.Same(activeEffects, propertyEffect.ContainingComponent);
         Assert.Same(activeEffects, componentEffect.ContainingComponent);
@@ -385,7 +491,7 @@ public class PersistenceEffectTest
         propertyEffect.ExpirationTarget = 12;
         propertyEffect.ExpirationEvent = EffectDuration.UntilXPGained;
         componentEffect.Level = 3;
-        componentEffect.ConditionValue = (int)AbilityType.Status;
+        componentEffect.ConditionValue = (int)AbilityType.Debuff;
         componentEffect.ExpirationTarget = 11;
         componentEffect.ExpirationEvent = EffectDuration.UntilXPGained;
         accumulator.Value = 4;
@@ -411,7 +517,7 @@ public class PersistenceEffectTest
         Assert.Equal(EffectDuration.UntilXPGained, reloadedPropertyEffect.ExpirationEvent);
         Assert.Equal(3, reloadedComponentEffect.Level);
         Assert.Null(reloadedComponentEffect.TargetName);
-        Assert.Equal((int)AbilityType.Status, reloadedComponentEffect.ConditionValue);
+        Assert.Equal((int)AbilityType.Debuff, reloadedComponentEffect.ConditionValue);
         Assert.Equal(11, reloadedComponentEffect.ExpirationTarget);
         Assert.Equal(EffectDuration.UntilXPGained, reloadedComponentEffect.ExpirationEvent);
         Assert.Equal(4, reloadedAccumulator.Value);
@@ -443,6 +549,8 @@ public class PersistenceEffectTest
                 EffectType.AddAbility, $"id test {marker}"))
             .ToArray();
 
+        var removedPropertyId = propertyEffects[2].InstanceId;
+        var removedComponentId = componentEffects[2].InstanceId;
         activeEffects.PropertyEffects.Remove(propertyEffects[2]);
         activeEffects.ComponentEffects.Remove(componentEffects[2]);
 
@@ -451,8 +559,8 @@ public class PersistenceEffectTest
         var replacementComponent = activeEffects.AddComponentEffect(
             EffectType.AddAbility, "id test replacement");
 
-        Assert.True(replacementProperty.InstanceId > propertyEffects[2].InstanceId);
-        Assert.True(replacementComponent.InstanceId > componentEffects[2].InstanceId);
+        Assert.True(replacementProperty.InstanceId > removedPropertyId);
+        Assert.True(replacementComponent.InstanceId > removedComponentId);
         var replacementPropertyId = replacementProperty.InstanceId;
         var replacementComponentId = replacementComponent.InstanceId;
         persisted.Context.SaveChanges();

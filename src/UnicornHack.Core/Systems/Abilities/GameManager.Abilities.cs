@@ -51,7 +51,7 @@ public partial class GameManager
         private set;
     } = null!;
 
-    private void InitializeAbilities(SequentialMessageQueue<GameManager> queue)
+    private void InitializeAbilities(SequentialMessageQueue<GameEntity> queue)
     {
         Add<AbilityComponent>(EntityComponent.Ability, poolSize: 4096, maxPoolSize: 8192);
 

@@ -84,7 +84,7 @@ public class EntityGroupTest
         using var entityReference = manager.CreateEntity();
         var entity = entityReference.Referenced;
         entity.ActiveEffects = manager.CreateComponent<ActiveEffectsComponent>(EntityComponent.ActiveEffects);
-        var propertyEffect = new ActivePropertyEffect(0, 0, 0, EffectType.Stun, null);
+        var propertyEffect = CreatePropertyEffect(entity.ActiveEffects, 0, 0, 0, EffectType.Stun, null);
         propertyEffect = entity.ActiveEffects.AddPropertyEffect(propertyEffect);
         var testSystem = new NestedGroupTestSystem(entity, entity.ActiveEffects, propertyEffect);
 

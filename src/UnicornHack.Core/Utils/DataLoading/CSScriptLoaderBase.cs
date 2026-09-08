@@ -48,12 +48,17 @@ public abstract class CSScriptLoaderBase<T> : Loader<T>
             if (CSScriptLoaderHelpers.LoadScripts && Directory.Exists(BasePath))
             {
                 foreach (var file in Directory.EnumerateFiles(
-                             BasePath, FilePattern, SearchOption.TopDirectoryOnly))
+                             BasePath, FilePattern, SearchOption.AllDirectories))
                 {
                     try
                     {
                         var instance = CSScriptLoaderHelpers.LoadFile<T>(file);
-                        lookup[instance.Name] = instance;
+                        ValidateSourcePath(instance, file);
+                        if (!lookup.TryAdd(instance.Name, instance))
+                        {
+                            throw new InvalidOperationException(
+                                $"Duplicate {typeof(T).Name} name '{instance.Name}'.");
+                        }
                     }
                     catch (Exception e)
                     {
@@ -73,11 +78,21 @@ public abstract class CSScriptLoaderBase<T> : Loader<T>
                         throw new InvalidOperationException($"{DataType.Name}.{field.Name} is null");
                     }
 
-                    lookup[instance.Name] = instance;
+                    if (!lookup.TryAdd(instance.Name, instance))
+                    {
+                        throw new InvalidOperationException(
+                            $"Duplicate {typeof(T).Name} name '{instance.Name}'.");
+                    }
                 }
             }
 
             return lookup;
         }
     }
+
+    protected virtual void ValidateSourcePath(T item, string sourcePath)
+    {
+    }
+
+    public virtual string GetOutputRelativePath(T item) => RelativePath;
 }

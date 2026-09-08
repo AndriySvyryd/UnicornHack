@@ -94,18 +94,10 @@ public class ActiveEffectsComponent : GameComponent
         var nextId = Math.Max(
             NextPropertyEffectId,
             GetNextInstanceId(PropertyEffects, static instance => instance.InstanceId));
-        var effect = new ActivePropertyEffect(
-            GameId, EntityId, nextId, effectType, targetName)
-        {
-            CombinationFunction = combinationFunction,
-            SourceAbilityEntityId = sourceAbilityEntityId,
-            SourceAbilityType = sourceAbilityType,
-            SourceAbilityActivation = sourceAbilityActivation,
-            MagnitudePrimary = magnitudePrimary,
-            MagnitudeSecondary = magnitudeSecondary,
-            ExpirationTarget = expirationTarget,
-            ExpirationEvent = expirationEvent
-        };
+        var effect = Entity.Manager.RentActivePropertyEffect(
+            GameId, EntityId, nextId, effectType, targetName, combinationFunction,
+            sourceAbilityEntityId, sourceAbilityType, sourceAbilityActivation,
+            magnitudePrimary, magnitudeSecondary, expirationTarget, expirationEvent);
         NextPropertyEffectId = checked(nextId + 1);
         PropertyEffects.Add(effect);
         return effect;
@@ -124,19 +116,19 @@ public class ActiveEffectsComponent : GameComponent
         var nextId = Math.Max(
             NextComponentEffectId,
             GetNextInstanceId(ComponentEffects, static instance => instance.InstanceId));
-        var effect = new ActiveComponentEffect(
-            GameId, EntityId, nextId, effectType, targetName)
-        {
-            CarrierId = carrierId,
-            SourceAbilityEntityId = sourceAbilityEntityId,
-            ConditionValue = conditionValue,
-            Level = level,
-            ExpirationTarget = expirationTarget,
-            ExpirationEvent = expirationEvent
-        };
+        var effect = Entity.Manager.RentActiveComponentEffect(
+            GameId, EntityId, nextId, effectType, targetName, carrierId,
+            sourceAbilityEntityId, conditionValue, level, expirationTarget, expirationEvent);
         NextComponentEffectId = checked(nextId + 1);
         ComponentEffects.Add(effect);
         return effect;
+    }
+
+    public EffectAccumulator AddAccumulator(EffectType effectType)
+    {
+        var accumulator = Entity.Manager.RentEffectAccumulator(GameId, EntityId, effectType);
+        Accumulators.Add(accumulator);
+        return accumulator;
     }
 
     /// <summary>
@@ -581,9 +573,21 @@ public class ActiveEffectsComponent : GameComponent
         _nextEffectTick = default;
         _nextPropertyEffectId = default;
         _nextComponentEffectId = default;
-        PropertyEffects.Clear();
-        ComponentEffects.Clear();
-        Accumulators.Clear();
+        // Clear the collections in reverse order to avoid allocations and reindexing on each removal.
+        for (var i = PropertyEffects.Count - 1; i >= 0; i--)
+        {
+            PropertyEffects.RemoveAt(i);
+        }
+
+        for (var i = ComponentEffects.Count - 1; i >= 0; i--)
+        {
+            ComponentEffects.RemoveAt(i);
+        }
+
+        for (var i = Accumulators.Count - 1; i >= 0; i--)
+        {
+            Accumulators.RemoveAt(i);
+        }
         ((List<GameEntity>)Abilities).Clear();
         _resolvedCache?.Clear();
         _contributionScratch?.Clear();

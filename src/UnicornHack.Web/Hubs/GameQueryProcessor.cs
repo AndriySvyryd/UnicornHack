@@ -244,13 +244,23 @@ public static class GameQueryProcessor
         var manager = context.Manager;
         var ability = abilityEntity.Ability!;
 
-        var activateMessage = ActivateAbilityMessage.Create(manager);
-        activateMessage.AbilityEntity = abilityEntity;
-        activateMessage.ActivatorEntity = activator;
-        activateMessage.TargetEntity = activator;
-
-        var stats = manager.AbilityActivationSystem.GetAttackStats(activateMessage);
-        manager.ReturnMessage(activateMessage);
+        AttackStats stats;
+        if (ability.Effects.Count == 0)
+        {
+            stats = new AttackStats();
+        }
+        else
+        {
+            var activateMessage = ActivateAbilityMessage.Create(manager);
+            activateMessage.AbilityEntity = abilityEntity;
+            activateMessage.ActivatorEntity = activator;
+            activateMessage.TargetEntity = activator;
+            stats = manager.AbilityActivationSystem.GetAttackStats(activateMessage);
+            manager.ReturnMessage(activateMessage);
+        }
+        var expressionOwner = ability.OwnerEntity is { ActiveEffects: not null } owner
+            ? owner
+            : activator;
 
         return new AbilityAttributes
         {
@@ -283,7 +293,16 @@ public static class GameQueryProcessor
             Description = ability.Template != null && ability.Name is { } name
                 ? context.Services.Language.GetDescription(name, DescriptionCategory.Ability)
                 : "",
-            Accumulator = AbilityChangeBuilder.GetAccumulator(abilityEntity)
+            Accumulator = AbilityChangeBuilder.GetAccumulator(abilityEntity),
+            ConditionalGrants = ability.Template?.LevelExpressionDependents
+                .OrderBy(dependent => dependent.Name, StringComparer.Ordinal)
+                .Select(dependent => new ConditionalGrantAttributes
+                {
+                    Name = dependent.Name,
+                    Level = Math.Max(0, dependent.GetExpressionLevel(expressionOwner)),
+                    LevelExpression = dependent.LevelExpression!
+                })
+                .ToList() ?? []
         };
     }
 

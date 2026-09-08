@@ -1,6 +1,7 @@
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
 using UnicornHack.Generation;
+using UnicornHack.Generation.Effects;
 using UnicornHack.Hubs.ChangeTracking;
 using UnicornHack.Services;
 using UnicornHack.Systems.Abilities;
@@ -113,6 +114,51 @@ public class AbilityTest
         {
             Assert.Contains(subAttack.Effects.Values, effect => effect.Type == EffectType.Activate);
         });
+    }
+
+    [Fact]
+    public void Ability_details_include_possible_expression_grants()
+    {
+        var (player, _, services, manager) = SetupGame(withNpc: false);
+        var source = new LeveledAbility
+        {
+            Name = "detail expression source",
+            Type = AbilityType.Skill,
+            LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>>
+            {
+                [1] = [], [2] = [], [3] = []
+            }
+        };
+        var dependent = new Ability
+        {
+            Name = "detail expression dependent",
+            Type = AbilityType.RangedSpell,
+            LevelExpression =
+                "AbilityLevel('detail expression source') >= 2"
+                + " ? AbilityLevel('detail expression source') : 0",
+            Effects = []
+        };
+        ((TestDataProvider)services.Data).AddAbilities(source, dependent);
+
+        manager.EffectApplicationSystem.AddAbilityEffect(player.Entity, source);
+        manager.Queue.ProcessQueue(manager);
+        var sourceEntity = manager.AffectableAbilitiesIndex[(player.Entity.Id, source.Name)]!;
+        var context = new SerializationContext(null!, player.Entity, services);
+
+        var unavailable = Assert.Single(
+            GameQueryProcessor.SerializeAbilityAttributes(
+                sourceEntity, player.Entity, context).ConditionalGrants);
+        Assert.Equal(dependent.Name, unavailable.Name);
+        Assert.Equal(0, unavailable.Level);
+        Assert.Equal(dependent.LevelExpression, unavailable.LevelExpression);
+
+        manager.EffectApplicationSystem.AddAbilityEffect(player.Entity, source);
+        manager.Queue.ProcessQueue(manager);
+
+        var available = Assert.Single(
+            GameQueryProcessor.SerializeAbilityAttributes(
+                sourceEntity, player.Entity, context).ConditionalGrants);
+        Assert.Equal(2, available.Level);
     }
 
     [Fact]

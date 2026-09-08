@@ -32,12 +32,16 @@ public class ObservableLookupCollectionTest
     [Fact]
     public void List_lookup_tracks_duplicate_keys_and_collection_mutations()
     {
-        var component = new ActiveEffectsComponent();
+        var manager = TestHelper.CreateGameManager();
+        using var entityReference = manager.CreateEntity();
+        var entity = entityReference.Referenced;
+        entity.ActiveEffects = manager.CreateComponent<ActiveEffectsComponent>(EntityComponent.ActiveEffects);
+        var component = entity.ActiveEffects;
         var collection = component.PropertyEffects;
-        var first = new ActivePropertyEffect(0, 0, 0, EffectType.Default, "Speed");
-        var other = new ActivePropertyEffect(0, 0, 0, EffectType.Default, "Might");
-        var second = new ActivePropertyEffect(0, 0, 0, EffectType.Default, "Speed");
-        var unkeyed = new ActivePropertyEffect(0, 0, 0, EffectType.Default, null);
+        var first = CreatePropertyEffect(component, 0, 0, 0, EffectType.Default, "Speed");
+        var other = CreatePropertyEffect(component, 0, 0, 0, EffectType.Default, "Might");
+        var second = CreatePropertyEffect(component, 0, 0, 0, EffectType.Default, "Speed");
+        var unkeyed = CreatePropertyEffect(component, 0, 0, 0, EffectType.Default, null);
 
         collection.Add(first);
         collection.Add(other);
@@ -54,7 +58,7 @@ public class ObservableLookupCollectionTest
         collection.Move(0, 2);
         Assert.Equal([second, first], collection.GetValues("Speed"));
 
-        var replacement = new ActivePropertyEffect(0, 0, 0, EffectType.Default, "Might");
+        var replacement = CreatePropertyEffect(component, 0, 0, 0, EffectType.Default, "Might");
         collection[0] = replacement;
 
         Assert.Equal([first], collection.GetValues("Speed"));
@@ -76,9 +80,15 @@ public class ObservableLookupCollectionTest
     [Fact]
     public void Component_effect_collection_is_keyed_by_added_name()
     {
-        var component = new ActiveEffectsComponent();
-        var first = component.AddComponentEffect(EffectType.Default, "Muted");
-        var second = component.AddComponentEffect(EffectType.Default, "Muted");
+        var manager = TestHelper.CreateGameManager();
+        using var entityReference = manager.CreateEntity();
+        var entity = entityReference.Referenced;
+        entity.ActiveEffects = manager.CreateComponent<ActiveEffectsComponent>(EntityComponent.ActiveEffects);
+        var component = entity.ActiveEffects;
+        var first = CreateComponentEffect(component, 0, 0, 0, EffectType.Default, "Muted");
+        var second = CreateComponentEffect(component, 0, 0, 1, EffectType.Default, "Muted");
+        component.ComponentEffects.Add(first);
+        component.ComponentEffects.Add(second);
 
         Assert.Equal([first, second], component.ComponentEffects.GetValues("Muted"));
     }

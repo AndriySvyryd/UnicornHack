@@ -47,7 +47,7 @@ public partial class GameManager
         private set;
     } = null!;
 
-    private void InitializeActors(SequentialMessageQueue<GameManager> queue)
+    private void InitializeActors(SequentialMessageQueue<GameEntity> queue)
     {
         Add<PlayerComponent>(EntityComponent.Player, poolSize: 1);
         Add<AIComponent>(EntityComponent.AI, poolSize: 256, maxPoolSize: 512);

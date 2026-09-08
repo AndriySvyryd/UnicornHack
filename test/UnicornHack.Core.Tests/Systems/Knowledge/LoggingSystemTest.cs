@@ -113,7 +113,9 @@ public class LoggingSystemTest
         VerifyCreatureAttack(
             CreatureData.Firefly, "fire sting", success: true,
             "The firefly stings you! [<damage 4='11'>11</damage> pts.]",
-            "The firefly stings Dudley. (<damage 4='11'>11</damage> pts.)");
+            "The firefly stings Dudley. (<damage 4='11'>11</damage> pts.)",
+            "The firefly sets you on fire.",
+            "The firefly sets Dudley on fire.");
         VerifyCreatureAttack(
             CreatureData.Undine, "undine ability #1", success: true,
             "The undine punches you! [<damage 9='238'>238</damage> pts.]",
@@ -188,6 +190,47 @@ public class LoggingSystemTest
                      && entry.Message.Contains("firefly", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public void Lingering_attack_effect_is_announced_before_its_later_damage()
+    {
+        var level = TestHelper.BuildRoom("..");
+        var firefly = CreatureData.Firefly.Instantiate(level, new Point(0, 0));
+        var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(1, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        RemovePhysicalDefense(player, manager);
+        manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
+            10000, nameof(BeingComponent.HitPointMaximum), "test health", player);
+        manager.Queue.ProcessQueue(manager);
+        player.Being!.HitPoints = player.Being.HitPointMaximum;
+        player.Player!.LogEntries.Clear();
+
+        var ability = firefly.ActiveEffects!.Abilities.Single(
+            candidate => candidate.Ability!.Name == "fire sting");
+        var activation = ActivateAbilityMessage.Create(manager);
+        activation.AbilityEntity = ability;
+        activation.ActivatorEntity = firefly;
+        activation.TargetEntity = player;
+        manager.Enqueue(activation);
+        ((TestRandom)manager.Game.Random).EnqueueNextBool(false);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(
+            [
+                "The firefly stings you! [<damage 4='11'>11</damage> pts.]",
+                "The firefly sets you on fire."
+            ],
+            player.Player.LogEntries.Select(entry => entry.Message));
+
+        player.Player.LogEntries.Clear();
+        manager.EffectApplicationSystem.ApplyLingeringResourceEffects(
+            player, TimeSystem.DefaultActionDelay);
+        manager.Queue.ProcessQueue(manager);
+
+        AssertLog(player, "You take <damage 4='11'>11</damage> damage.");
+    }
+
     private static void VerifyRangedWeaponAttack(
         Item weaponTemplate, EquipmentSlot slot, string expectedMessage)
     {
@@ -226,7 +269,8 @@ public class LoggingSystemTest
 
     private static void VerifyCreatureAttack(
         Creature attackerTemplate, string abilityName, bool success,
-        string expectedMessage, string expectedObserverMessage)
+        string expectedMessage, string expectedObserverMessage,
+        string? expectedLingeringMessage = null, string? expectedObserverLingeringMessage = null)
     {
         var level = TestHelper.BuildRoom("...");
         var attacker = attackerTemplate.Instantiate(level, new Point(0, 0));
@@ -245,7 +289,9 @@ public class LoggingSystemTest
         ability.Ability!.Slot ??= 9;
         Verify(
             attacker, player, player, observer, ability, success,
-            expectedMessage, expectedObserverMessage, manager);
+            expectedMessage, expectedObserverMessage, manager,
+            expectedLingeringMessage: expectedLingeringMessage,
+            expectedObserverLingeringMessage: expectedObserverLingeringMessage);
     }
 
     private static void RemovePhysicalDefense(GameEntity target, GameManager manager)
@@ -268,7 +314,9 @@ public class LoggingSystemTest
         string expectedMessage1,
         string expectedMessage2,
         GameManager manager,
-        bool enqueueOutcome = true)
+        bool enqueueOutcome = true,
+        string? expectedLingeringMessage = null,
+        string? expectedObserverLingeringMessage = null)
     {
         player1.Player!.LogEntries.Clear();
         player2.Player!.LogEntries.Clear();
@@ -288,11 +336,15 @@ public class LoggingSystemTest
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(
-            [expectedMessage1],
+            expectedLingeringMessage == null
+                ? [expectedMessage1]
+                : [expectedMessage1, expectedLingeringMessage],
             player1.Player.LogEntries.Select(entry => entry.Message));
         player1.Player.LogEntries.Clear();
         Assert.Equal(
-            [expectedMessage2],
+            expectedObserverLingeringMessage == null
+                ? [expectedMessage2]
+                : [expectedMessage2, expectedObserverLingeringMessage],
             player2.Player!.LogEntries.Select(entry => entry.Message));
         player2.Player.LogEntries.Clear();
     }
@@ -413,11 +465,10 @@ public class LoggingSystemTest
         void AddDamageOverTimeEffect(
             EffectType effectType, int amount,
             ValueCombinationFunction combinationFunction = ValueCombinationFunction.Subtract)
-            => effects.Add(new ActivePropertyEffect(0, 0, effects.Count, effectType, targetName: null)
-            {
-                CombinationFunction = combinationFunction,
-                MagnitudePrimary = amount
-            });
+            => effects.Add(CreatePropertyEffect(playerEntity.ActiveEffects!,
+                0, 0, effects.Count, effectType, targetName: null,
+                combinationFunction: combinationFunction,
+                magnitudePrimary: amount));
     }
 
     [Fact]
@@ -429,12 +480,10 @@ public class LoggingSystemTest
         var manager = player.Manager;
         manager.Queue.ProcessQueue(manager);
 
-        blob.ActiveEffects!.PropertyEffects.Add(new ActivePropertyEffect(
-            0, 0, blob.ActiveEffects.PropertyEffects.Count, EffectType.ToxinDamage, targetName: null)
-        {
-            CombinationFunction = ValueCombinationFunction.Subtract,
-            MagnitudePrimary = 7
-        });
+        blob.ActiveEffects!.PropertyEffects.Add(CreatePropertyEffect(blob.ActiveEffects,
+            0, 0, blob.ActiveEffects.PropertyEffects.Count, EffectType.ToxinDamage, targetName: null,
+            combinationFunction: ValueCombinationFunction.Subtract,
+            magnitudePrimary: 7));
         player.Player!.LogEntries.Clear();
 
         manager.EffectApplicationSystem.ApplyLingeringResourceEffects(
@@ -477,10 +526,9 @@ public class LoggingSystemTest
             playerEntity.Player.LogEntries.Select(entry => entry.Message));
 
         playerEntity.Player.LogEntries.Clear();
-        playerEntity.ActiveEffects!.PropertyEffects.Add(new ActivePropertyEffect(0, 0, playerEntity.ActiveEffects.PropertyEffects.Count, EffectType.Heal, null)
-        {
-            MagnitudePrimary = 20
-        });
+        playerEntity.ActiveEffects!.PropertyEffects.Add(CreatePropertyEffect(playerEntity.ActiveEffects,
+            0, 0, playerEntity.ActiveEffects.PropertyEffects.Count, EffectType.Heal, null,
+            magnitudePrimary: 20));
 
         manager.EffectApplicationSystem.ApplyLingeringResourceEffects(
             playerEntity, TimeSystem.DefaultActionDelay);

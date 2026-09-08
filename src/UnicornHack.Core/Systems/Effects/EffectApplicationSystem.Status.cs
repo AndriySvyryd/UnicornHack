@@ -44,11 +44,12 @@ public partial class EffectApplicationSystem
             {
                 if (application.Duration != EffectDuration.Instant)
                 {
-                    var previousSource = FindPerSourceBuildUpSource(target, effectType);
+                    var previousSourceAbilityId = FindPerSourceBuildUpSource(
+                        target, effectType)?.SourceAbilityEntityId;
                     AddBuildUpSource(
                         application.Component, target, amount, secondaryAmount, expiration,
                         sourceAbilityId, context.Manager);
-                    if (ResetBuildUpOnSourceChange(effectType, previousSource, target))
+                    if (ResetBuildUpOnSourceChange(effectType, previousSourceAbilityId, target))
                     {
                         EnsureStatusAbility(effectType, target, context.Manager);
                     }
@@ -58,7 +59,8 @@ public partial class EffectApplicationSystem
 
                 if (sourceAbilityId != null)
                 {
-                    var previousSource = FindPerSourceBuildUpSource(target, effectType);
+                    var previousSourceAbilityId = FindPerSourceBuildUpSource(
+                        target, effectType)?.SourceAbilityEntityId;
                     if (combinationFunction == ValueCombinationFunction.BuildUpPerSource)
                     {
                         RemoveNonMatchingPerSourceBuildUpSources(
@@ -75,12 +77,13 @@ public partial class EffectApplicationSystem
                             sourceAbilityId, context.Manager);
                     }
 
-                    ResetBuildUpOnSourceChange(effectType, previousSource, target);
+                    ResetBuildUpOnSourceChange(effectType, previousSourceAbilityId, target);
                 }
             }
             else if (isBuildUp && sourceAbilityId != null)
             {
-                var previousSource = FindPerSourceBuildUpSource(target, effectType);
+                var previousSourceAbilityId = FindPerSourceBuildUpSource(
+                    target, effectType)?.SourceAbilityEntityId;
                 if (combinationFunction == ValueCombinationFunction.BuildUpPerSource)
                 {
                     RemoveNonMatchingPerSourceBuildUpSources(
@@ -89,7 +92,7 @@ public partial class EffectApplicationSystem
 
                 AddDirectBuildUpSource(
                     effectType, target, sourceAbilityId.Value);
-                ResetBuildUpOnSourceChange(effectType, previousSource, target);
+                ResetBuildUpOnSourceChange(effectType, previousSourceAbilityId, target);
             }
 
             ApplyBankedStatus(
@@ -237,11 +240,11 @@ public partial class EffectApplicationSystem
     }
 
     private static bool ResetBuildUpOnSourceChange(
-        EffectType effectType, ActivePropertyEffect? previousSource, GameEntity targetEntity)
+        EffectType effectType, int? previousSourceAbilityId, GameEntity targetEntity)
     {
-        if (previousSource == null
+        if (previousSourceAbilityId == null
             || FindPerSourceBuildUpSource(targetEntity, effectType) is not { } currentSource
-            || previousSource.SourceAbilityEntityId == currentSource.SourceAbilityEntityId)
+            || previousSourceAbilityId == currentSource.SourceAbilityEntityId)
         {
             return false;
         }
@@ -445,7 +448,8 @@ public partial class EffectApplicationSystem
 
         var template = manager.Game.Services.Data.Abilities.Get(abilityName);
         var currentLevel = GetComponentEffectLevel(
-            targetEntity, abilityName, EffectType.AddAbility, sourceAbilityEntityId: 0);
+            targetEntity, abilityName, EffectType.AddAbility, sourceAbilityEntityId: 0,
+            onlyUnconditional: true);
         var levelsToAdd = 0;
 
         if (isBuildUp)
@@ -502,7 +506,8 @@ public partial class EffectApplicationSystem
 
         var existingLevel = 0;
         foreach (var record in GetOrderedComponentEffectRecords(
-                     abilityName, targetEntity, EffectType.AddAbility, sourceAbilityEntityId: 0))
+                     abilityName, targetEntity, EffectType.AddAbility, sourceAbilityEntityId: 0,
+                     onlyUnconditional: true))
         {
             existingLevel += record.Level;
             var expiration = GetStatusAbilityExpiration(metadata, targetEntity, existingLevel);
@@ -529,7 +534,8 @@ public partial class EffectApplicationSystem
     {
         var activeEffects = targetEntity.ActiveEffects!;
         var record = FindComponentEffect(
-            targetEntity, EffectType.AddAbility, abilityName, sourceAbilityEntityId: 0);
+            targetEntity, EffectType.AddAbility, abilityName, sourceAbilityEntityId: 0,
+            onlyUnconditional: true);
 
         if (record == null)
         {
@@ -724,11 +730,7 @@ public partial class EffectApplicationSystem
         var accumulator = activeEffects.Accumulators.GetValueOrDefault(effectType);
         if (accumulator == null)
         {
-            accumulator = new EffectAccumulator
-            {
-                EffectType = effectType
-            };
-            activeEffects.Accumulators.Add(accumulator);
+            accumulator = activeEffects.AddAccumulator(effectType);
         }
 
         // Combine this application's banked contribution with the accumulator per the effect type's duration

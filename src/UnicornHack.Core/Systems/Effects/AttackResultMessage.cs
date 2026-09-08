@@ -53,6 +53,11 @@ public sealed class AttackResultMessage : EffectResultMessage
         set;
     }
 
+    public Dictionary<EffectType, int> LingeringEffects
+    {
+        get;
+    } = [];
+
     public override void Clean()
     {
         WeaponEntity = default;
@@ -60,6 +65,7 @@ public sealed class AttackResultMessage : EffectResultMessage
         Ranged = default;
         Hit = default;
         RevealsAttacker = default;
+        LingeringEffects.Clear();
         base.Clean();
     }
 }

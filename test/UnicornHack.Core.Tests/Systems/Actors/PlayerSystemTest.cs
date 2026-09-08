@@ -561,15 +561,17 @@ public class PlayerSystemTest
         Assert.Null(manager.AbilitySlottingSystem.GetFirstFreeSlot(playerEntity));
         Assert.Empty(being.Items);
         Assert.NotEmpty(room.Items);
+        player.LogEntries.Clear();
 
         player.NextAction = ActorActionType.PickupItem;
         AdvanceTurnMessage.Enqueue(manager);
         manager.Queue.ProcessQueue(manager);
 
-        // Item didn't transfer (capacity check inside ItemMovingSystem.TryMove
-        // refuses the move); pickup is silent today (see ItemMovingSystem TODO).
+        // Item didn't transfer because the capacity check inside ItemMovingSystem.TryMove refused the move.
         Assert.NotEmpty(room.Items);
         Assert.Empty(being.Items);
+        var log = Assert.Single(player.LogEntries);
+        Assert.Equal(manager.Game.Services.Language.InventoryFull(), log.Message);
     }
 
     [Fact]

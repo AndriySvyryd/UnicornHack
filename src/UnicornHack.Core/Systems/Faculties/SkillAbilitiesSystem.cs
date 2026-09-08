@@ -1,5 +1,6 @@
 ﻿using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
+using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Utils;
 using UnicornHack.Utils.MessagingECS;
@@ -8,7 +9,9 @@ namespace UnicornHack.Systems.Faculties;
 
 public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
     IGameSystem<PropertyValueChangedMessage<GameEntity, ExtremityType>>,
-    IGameSystem<PropertyValueChangedMessage<GameEntity, int>>
+    IGameSystem<PropertyValueChangedMessage<GameEntity, int>>,
+    IGameSystem<EntityAddedMessage<GameEntity>>,
+    IGameSystem<EntityRemovedMessage<GameEntity>>
 {
     public const string EquippedAbilityName = "equipped";
 
@@ -99,15 +102,16 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
     public MessageProcessingResult Process(
         PropertyValueChangedMessage<GameEntity, int> message, GameManager manager)
     {
-        // The message carries an AbilityComponent.Level change; react only to the weapon/armor skill
-        // abilities that feed the owning actor's hindrance (and, for weapon skills, its default attacks).
-        if (message.Entity.Ability is not { Name: { } skillName } ability)
+        if (message.Entity.Ability is not { } ability
+            || ability.OwnerEntity is not { } ownerEntity)
         {
             return MessageProcessingResult.ContinueProcessing;
         }
 
-        var ownerEntity = ability.OwnerEntity;
-        if (ownerEntity?.Being is not { IsAlive: true })
+        SynchronizeDependents(ability.Name, ownerEntity, manager);
+
+        if (ability.Name is not { } skillName
+            || ownerEntity.Being is not { IsAlive: true })
         {
             return MessageProcessingResult.ContinueProcessing;
         }
@@ -129,6 +133,114 @@ public class SkillAbilitiesSystem : IGameSystem<ItemEquippedMessage>,
 
         return MessageProcessingResult.ContinueProcessing;
     }
+
+    public MessageProcessingResult Process(
+        EntityAddedMessage<GameEntity> message, GameManager manager)
+    {
+        if (message.Group.Name != nameof(GameManager.AbilitiesToAffectableRelationship))
+        {
+            throw new InvalidOperationException(message.Group.Name);
+        }
+
+        if (message.Entity.Ability is { } ability
+            && message.PrincipalEntity is { } owner)
+        {
+            SynchronizeDependents(ability.Name, owner, manager);
+        }
+
+        return MessageProcessingResult.ContinueProcessing;
+    }
+
+    public MessageProcessingResult Process(
+        EntityRemovedMessage<GameEntity> message, GameManager manager)
+    {
+        if (message.Group.Name != nameof(GameManager.AbilitiesToAffectableRelationship))
+        {
+            throw new InvalidOperationException(message.Group.Name);
+        }
+
+        if (message.RemovedComponent is AbilityComponent ability
+            && message.PrincipalEntity is { } owner)
+        {
+            SynchronizeDependents(ability.Name, owner, manager);
+        }
+
+        return MessageProcessingResult.ContinueProcessing;
+    }
+
+    private static void SynchronizeDependents(
+        string? abilityName, GameEntity owner, GameManager manager)
+    {
+        if (abilityName == null
+            || Ability.FindTemplate(manager, abilityName) is not { } template)
+        {
+            return;
+        }
+
+        foreach (var dependent in template.LevelExpressionDependents)
+        {
+            SynchronizeExpressionAbilityLevel(owner, dependent, manager);
+        }
+    }
+
+    public static void SynchronizeExpressionAbilityLevel(
+        GameEntity targetEntity, Ability template, GameManager manager)
+    {
+        Debug.Assert(template.LevelExpression != null);
+        if (targetEntity.ActiveEffects is not { } activeEffects)
+        {
+            return;
+        }
+
+        ActiveComponentEffect? record = null;
+        foreach (var candidate in activeEffects.ComponentEffects.GetValues(template.Name))
+        {
+            if (IsLevelExpressionGrant(candidate))
+            {
+                record = candidate;
+                break;
+            }
+        }
+
+        var level = template.GetExpressionLevel(targetEntity);
+        if (level <= 0)
+        {
+            if (record != null)
+            {
+                EffectApplicationSystem.DetachComponentCarrier(
+                    record, targetEntity, manager);
+            }
+
+            return;
+        }
+
+        if (record == null)
+        {
+            activeEffects.AddComponentEffect(
+                EffectType.AddAbility, template.Name,
+                conditionValue: ActiveComponentEffect.LevelExpressionConditionValue,
+                level: level);
+        }
+        else
+        {
+            if (record.Level == level)
+            {
+                return;
+            }
+
+            record.Level = level;
+        }
+
+        manager.EffectApplicationSystem.RelevelAbility(
+            template.Name, targetEntity, manager, template);
+    }
+
+    public static bool IsLevelExpressionGrant(ActiveComponentEffect record)
+        => record is
+        {
+            EffectType: EffectType.AddAbility,
+            ConditionValue: ActiveComponentEffect.LevelExpressionConditionValue
+        };
 
     private bool RecalculateWeaponAbilities(GameEntity actorEntity, bool melee, GameManager manager)
     {

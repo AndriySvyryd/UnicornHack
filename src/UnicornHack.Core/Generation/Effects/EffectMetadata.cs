@@ -216,8 +216,7 @@ public sealed class EffectMetadata
                 new EffectApplicationHandler(static (in context) =>
                     context.System.ApplyResourceEffect(
                         context.Effect.Component, context.TargetEntity, context.ActivatorEntity,
-                        context.Amount,
-                        context.Result, context.Manager, context.Pretend))
+                        context.Amount, context.Result, context.Manager, context.Pretend))
         });
 
     private static IReadOnlyList<InflictedStatus> AddDamageClears(

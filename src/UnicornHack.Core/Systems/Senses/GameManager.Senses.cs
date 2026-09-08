@@ -14,7 +14,7 @@ public partial class GameManager
         private set;
     } = null!;
 
-    private void InitializeSenses(SequentialMessageQueue<GameManager> queue)
+    private void InitializeSenses(SequentialMessageQueue<GameEntity> queue)
     {
         SensorySystem = new SensorySystem();
         queue.Register<TraveledMessage>(SensorySystem, TraveledMessage.Name, 3);

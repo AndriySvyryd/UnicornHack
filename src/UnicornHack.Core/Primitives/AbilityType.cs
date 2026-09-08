@@ -55,7 +55,7 @@ public enum AbilityType
     ///     while the condition is in force; its contained effects are the condition's property riders, and
     ///     its presence is what game logic and the client read instead of a bespoke calculated bool.
     /// </summary>
-    Status = 11,
+    Debuff = 11,
 
     /// <summary>A temporary beneficial condition.</summary>
     Buff = 12,
@@ -109,7 +109,7 @@ public static class AbilityTypeExtensions
         => type is AbilityType.MeleeSpell or AbilityType.RangedSpell;
 
     public static bool IsStatusLike(this AbilityType type)
-        => type is AbilityType.Status or AbilityType.Buff or AbilityType.Boon or AbilityType.Curse;
+        => type is AbilityType.Debuff or AbilityType.Buff or AbilityType.Boon or AbilityType.Curse;
 
     public static bool IsTraitLike(this AbilityType type)
         => type is AbilityType.Trait or AbilityType.Flaw;

@@ -24,6 +24,9 @@ public partial class EffectApplicationSystem
     private static readonly ParameterExpression AbilityLevelParameter =
         Expression.Parameter(typeof(int), name: "level");
 
+    private static readonly ParameterExpression AbilityOwnerParameter =
+        Expression.Parameter(typeof(GameEntity), name: "owner");
+
     private static readonly EffectExpressionVisitor _translator =
         new([EffectParameter, ActivatorParameter, TargetParameter]);
 
@@ -59,6 +62,28 @@ public partial class EffectApplicationSystem
 
     private static readonly MethodInfo _speedModifierMethod = typeof(EffectApplicationSystem)
         .GetMethod(nameof(GetSpeedModifier), BindingFlags.NonPublic | BindingFlags.Static)!;
+
+    internal static (Func<GameEntity, int> Function, IReadOnlyList<string> Dependencies)
+        CreateLevelExpression(
+        string expression, string abilityName)
+    {
+        try
+        {
+            var translator = new UnicornExpressionVisitor([AbilityOwnerParameter]);
+            var tree = translator.TranslateExpression<Func<GameEntity, int>, int>(
+                expression, convertResult: false);
+            var dependencies = new ExpressionDependencyVisitor();
+            dependencies.Visit(tree.Body);
+            return (
+                tree.Compile(preferInterpretation: !RuntimeFeature.IsDynamicCodeSupported),
+                dependencies.Dependencies);
+        }
+        catch (Exception e)
+        {
+            throw new InvalidOperationException(
+                $"Error while parsing the LevelExpression for {abilityName}", e);
+        }
+    }
 
     public int GetDurationAmount(
         EffectComponent effect, GameEntity activatorEntity, GameEntity? targetEntity)
@@ -264,14 +289,14 @@ public partial class EffectApplicationSystem
                 Func<GameEntity, GameEntity, GameEntity?, float>, float>(expression);
         }
 
-        var inputVisitor = new AmountInputExpressionVisitor();
-        inputVisitor.Visit(tree.Body);
+        var dependencies = new ExpressionDependencyVisitor();
+        dependencies.Visit(tree.Body);
         return new AmountExpression(
             tree,
             new Lazy<Func<GameEntity, GameEntity, GameEntity?, float>>(
                 () => tree.Compile(preferInterpretation: !RuntimeFeature.IsDynamicCodeSupported),
                 LazyThreadSafetyMode.ExecutionAndPublication),
-            inputVisitor.InputProperties.ToArray());
+            dependencies.Dependencies.ToArray());
     }
 
     private sealed class AmountExpression(
@@ -284,9 +309,9 @@ public partial class EffectApplicationSystem
         public string[] InputProperties { get; } = inputProperties;
     }
 
-    private sealed class AmountInputExpressionVisitor : ExpressionVisitor
+    private sealed class ExpressionDependencyVisitor : ExpressionVisitor
     {
-        public List<string> InputProperties { get; } = [];
+        public List<string> Dependencies { get; } = [];
 
         protected override Expression VisitMember(MemberExpression node)
         {
@@ -304,6 +329,12 @@ public partial class EffectApplicationSystem
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
+            if (node.Method == UnicornExpressionVisitor.AbilityLevelMethod
+                && node.Arguments[1] is ConstantExpression { Value: string abilityName })
+            {
+                Add(abilityName);
+            }
+
             for (var i = 0; i < AmountInputModifiers.Length; i++)
             {
                 var modifier = AmountInputModifiers[i];
@@ -323,11 +354,11 @@ public partial class EffectApplicationSystem
             return base.VisitMethodCall(node);
         }
 
-        private void Add(string property)
+        private void Add(string value)
         {
-            if (!InputProperties.Contains(property))
+            if (!Dependencies.Contains(value))
             {
-                InputProperties.Add(property);
+                Dependencies.Add(value);
             }
         }
     }

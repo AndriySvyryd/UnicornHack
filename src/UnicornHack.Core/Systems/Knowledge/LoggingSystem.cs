@@ -136,6 +136,15 @@ public class LoggingSystem :
                 attackerSensed, victimSensed, message.ResourceChanges, message.AbilityAction,
                 message.WeaponEntity, message.Ranged, message.Hit));
             WriteLog(logMessage, playerEntity, manager);
+
+            if (message.LingeringEffects.Count != 0)
+            {
+                var lingeringMessage = manager.Game.Services.Language.GetString(
+                    new LingeringAttackEvent(
+                        playerEntity, message.ActivatorEntity, message.TargetEntity,
+                        attackerSensed, victimSensed, message.LingeringEffects));
+                WriteLog(lingeringMessage, playerEntity, manager);
+            }
         }
 
         return MessageProcessingResult.ContinueProcessing;

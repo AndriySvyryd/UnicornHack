@@ -212,7 +212,7 @@ public class AbilityActivationSystem :
             if (GetBlockedCapabilityProperty(ability, activator.Being) is { } blockedCapability)
             {
                 var preventingStatus = EffectApplicationSystem.GetAbilitiesAffectingProperty(
-                    activator, blockedCapability, AbilityType.Status).FirstOrDefault();
+                    activator, blockedCapability, AbilityType.Debuff).FirstOrDefault();
                 return Fail(
                     preventingStatus != null
                         ? language.StatusPreventsAbility(preventingStatus, ability)
@@ -1306,7 +1306,8 @@ public class AbilityActivationSystem :
         var capturedActivator = message.ActivatorEntity
                                 ?? throw new InvalidOperationException(
                                     "DeactivateAbilityMessage has no captured activator.");
-        if (!ReferenceEquals(message.AbilityEntity.Ability, capturedAbility))
+        if (!ReferenceEquals(message.AbilityEntity.Ability, capturedAbility)
+            || capturedActivator.ActiveEffects == null)
         {
             DeactivateInnerAbilities(message.Effects, capturedActivator, manager);
             manager.EffectApplicationSystem.RemoveAbilityComponentEffects(

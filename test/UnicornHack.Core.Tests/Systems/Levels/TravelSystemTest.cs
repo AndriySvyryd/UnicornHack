@@ -1,6 +1,7 @@
 using UnicornHack.Data.Abilities;
 using UnicornHack.Data.Creatures;
 using UnicornHack.Data.Items;
+using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Time;
@@ -338,12 +339,11 @@ public class TravelSystemTest
         Engulf(engulfer, victim, manager);
 
         var initialExpiration = manager.Game.CurrentTick + 1000;
-        var bleeding = new ActivePropertyEffect(0, 0, 0, EffectType.BleedDamage, null)
-        {
-            MagnitudePrimary = 1,
-            ExpirationEvent = EffectDuration.UntilTimeout,
-            ExpirationTarget = initialExpiration
-        };
+        var bleeding = CreatePropertyEffect(victim.ActiveEffects!,
+            0, 0, 0, EffectType.BleedDamage, null,
+            magnitudePrimary: 1,
+            expirationTarget: initialExpiration,
+            expirationEvent: EffectDuration.UntilTimeout);
         bleeding = victim.ActiveEffects!.AddPropertyEffect(bleeding);
 
         var travel = TravelMessage.Create(manager);
@@ -710,6 +710,14 @@ public class TravelSystemTest
         connectionEntity.Connection = connection;
 
         var npc = CreatureData.HumanWarrior.Instantiate(roomA, new Point(0, 0));
+        using var abilityReference = manager.CreateEntity();
+        var abilityEntity = abilityReference.Referenced;
+        var ability = manager.CreateComponent<AbilityComponent>(EntityComponent.Ability);
+        ability.Name = "test continuous ability";
+        ability.OwnerEntity = npc;
+        ability.Activation = ActivationType.Always;
+        ability.IsActive = true;
+        abilityEntity.Ability = ability;
         ItemData.GoldCoin.Instantiate(roomA, new Point(2, 0));
         var player = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, roomA, new Point(1, 2));
         manager.Queue.ProcessQueue(manager);

@@ -39,7 +39,7 @@ public partial class GameManager
         private set;
     } = null!;
 
-    private void InitializeItems(SequentialMessageQueue<GameManager> queue)
+    private void InitializeItems(SequentialMessageQueue<GameEntity> queue)
     {
         Add<ItemComponent>(EntityComponent.Item, poolSize: 256, maxPoolSize: 512);
 

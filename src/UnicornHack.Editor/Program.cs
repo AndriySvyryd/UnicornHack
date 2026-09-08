@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using CSharpScriptSerialization;
 using UnicornHack.Services;
@@ -146,9 +147,6 @@ public static class Program
     {
         Console.WriteLine("Serializing " + typeof(T).Name + " instances...");
 
-        var directory = Path.Combine(_directory, loader.RelativePath);
-        Directory.CreateDirectory(directory);
-
         foreach (var item in loader.GetAll())
         {
             try
@@ -159,14 +157,17 @@ public static class Program
                     continue;
                 }
 
+                var directory = Path.Combine(
+                    _directory, loader.GetOutputRelativePath(itemToSerialize));
+                Directory.CreateDirectory(directory);
+
                 string? script = null;
                 if (SerializeToScript)
                 {
                     // TODO: use .editorconfig
                     script = CSScriptSerializer.Serialize(itemToSerialize);
                     await File.WriteAllTextAsync(
-                        Path.Combine(
-                            loader.RelativePath,
+                        Path.Combine(directory,
                             CSScriptLoaderHelpers.GetScriptFilename(itemToSerialize.Name)),
                         script);
                 }
@@ -395,6 +396,15 @@ public static class Program
             throw new InvalidOperationException($"Ability on {ownerName} has no name");
         }
 
+        if (ability.LevelExpression is { } levelExpression)
+        {
+            var ownerParameter = Expression.Parameter(typeof(GameEntity), "owner");
+            var visitor = new UnicornExpressionVisitor(
+                [ownerParameter], ValidateLevelExpressionInvocation);
+            visitor.TranslateExpression<Func<GameEntity, int>, int>(
+                levelExpression, convertResult: false);
+        }
+
         if ((ability.Activation & ActivationType.Slottable) != 0
             && ability.Delay == null && ability.Cooldown == 0 && ability.XPCooldown == 0)
         {
@@ -433,7 +443,7 @@ public static class Program
              || ability.Effects.Count == 0)
             && !onItem
             && !(ability is LeveledAbility)
-            && ability.Type != AbilityType.Status)
+            && ability.Type != AbilityType.Debuff)
         {
             throw new InvalidOperationException(
                 $"Ability {ability.Name} on {ownerName} has no effects");
@@ -503,6 +513,27 @@ public static class Program
                 EffectApplicationSystem.CreateAmountFunction(
                     effect.DurationAmount, ability.Name, effect.GetType().Name);
             }
+        }
+    }
+
+    private static void ValidateLevelExpressionInvocation(
+        string function, IReadOnlyList<Expression> arguments)
+    {
+        if (function != "AbilityLevel")
+        {
+            return;
+        }
+
+        if (arguments is not [ConstantExpression { Value: string abilityName }])
+        {
+            throw new InvalidOperationException(
+                "Function AbilityLevel expects one string-literal argument.");
+        }
+
+        if (Ability.Loader.Find(abilityName) == null)
+        {
+            throw new InvalidOperationException(
+                $"AbilityLevel references unknown ability '{abilityName}'.");
         }
     }
 

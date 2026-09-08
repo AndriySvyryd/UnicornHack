@@ -32,9 +32,15 @@ public class ItemMovingSystem : IGameSystem<MoveItemMessage>, IGameSystem<Travel
             moved = TryMove(message, manager);
         }
 
-        manager.Enqueue(moved);
+        if (!moved.Successful
+            && !message.SuppressLog
+            && message.TargetContainerEntity is { Player: not null } playerEntity)
+        {
+            manager.LoggingSystem.WriteLog(
+                manager.Game.Services.Language.InventoryFull(), playerEntity, manager);
+        }
 
-        // TODO: log a message on failure
+        manager.Enqueue(moved);
         return MessageProcessingResult.ContinueProcessing;
     }
 

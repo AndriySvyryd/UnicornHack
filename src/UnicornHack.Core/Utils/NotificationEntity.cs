@@ -32,6 +32,12 @@ public abstract class NotificationEntity : INotifyPropertyChanged, INotifyProper
     {
     }
 
+    protected void ClearNotificationHandlers()
+    {
+        PropertyChanged = null;
+        PropertyChanging = null;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected void FirePropertyChanging(string propertyName)
         => PropertyChanging?.Invoke(this, new PropertyChangingEventArgs(propertyName));

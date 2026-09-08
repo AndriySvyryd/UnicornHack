@@ -597,7 +597,7 @@ public class GameHub : Hub
         game.Options.RevealRooms = _defaultGameOptions.RevealRooms;
         if (game.Manager == null!)
         {
-            var queue = new SequentialMessageQueue<GameManager>();
+            var queue = new SequentialMessageQueue<GameEntity>();
             var gameManager = new GameManager { Game = game };
             gameManager.Initialize(queue);
             game.Manager = gameManager;

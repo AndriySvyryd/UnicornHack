@@ -69,8 +69,7 @@ public static class GameStateManager
                 foreach (var builder in builders!)
                 {
                     if (builder.HasObservableChanges(manager)
-                        || (result is TurnResult.PlayerTurn
-                            && changeSetsAccumulator.ContainsKey(builder.PlayerEntityId)))
+                        || result is TurnResult.PlayerTurn or TurnResult.GameOver)
                     {
                         var changeSet = new TurnChangeSet
                         {

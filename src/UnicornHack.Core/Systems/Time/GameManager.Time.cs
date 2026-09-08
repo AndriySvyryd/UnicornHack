@@ -27,7 +27,7 @@ public partial class GameManager
         private set;
     } = null!;
 
-    private void InitializeTime(SequentialMessageQueue<GameManager> queue)
+    private void InitializeTime(SequentialMessageQueue<GameEntity> queue)
     {
         TemporalEntities = CreateGroup(nameof(TemporalEntities),
             new EntityMatcher<GameEntity>().AnyOf(

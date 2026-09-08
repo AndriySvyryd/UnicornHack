@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
+using UnicornHack.Systems.Effects;
 using static System.Linq.Expressions.Expression;
 
 namespace UnicornHack.Generation;
@@ -10,6 +11,7 @@ namespace UnicornHack.Generation;
 public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
 {
     private readonly IEnumerable<ParameterExpression> _orderedParameters;
+    private readonly Action<string, IReadOnlyList<Expression>>? _invocationValidator;
 
     private static readonly MethodInfo _minMethod =
         typeof(Math).GetMethod(nameof(Math.Min), [typeof(int), typeof(int)])!;
@@ -46,6 +48,9 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
     private static readonly MethodInfo _featureDictionaryTryGetValue = typeof(IReadOnlyDictionary<RoomFeatures, int>)
         .GetMethod(nameof(IReadOnlyDictionary<RoomFeatures, int>.TryGetValue))!;
 
+    internal static MethodInfo AbilityLevelMethod { get; } = typeof(EffectApplicationSystem)
+        .GetMethod(nameof(EffectApplicationSystem.GetAbilityLevel), [typeof(GameEntity), typeof(string)])!;
+
     public UnicornExpressionVisitor(IEnumerable<ParameterExpression> parameters)
     {
         _orderedParameters = parameters;
@@ -74,6 +79,12 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
         }
     }
 
+    public UnicornExpressionVisitor(
+        IEnumerable<ParameterExpression> parameters,
+        Action<string, IReadOnlyList<Expression>> invocationValidator)
+        : this(parameters)
+        => _invocationValidator = invocationValidator;
+
     protected Dictionary<string, Expression> Parameters
     {
         get;
@@ -84,7 +95,8 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
         => TranslateExpression<T, TResult>(expression)
             .Compile(preferInterpretation: !RuntimeFeature.IsDynamicCodeSupported);
 
-    public Expression<T> TranslateExpression<T, TResult>(string expression)
+    public Expression<T> TranslateExpression<T, TResult>(
+        string expression, bool convertResult = true)
         where T : Delegate
     {
         var inputStream = new AntlrInputStream(expression);
@@ -120,6 +132,12 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
 
         if (result.Type != typeof(TResult))
         {
+            if (!convertResult)
+            {
+                throw new InvalidOperationException(
+                    $"Expression must return {typeof(TResult).Name}, not {result.Type.Name}.");
+            }
+
             result = Convert(result, typeof(TResult));
         }
 
@@ -373,6 +391,8 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
         }
 
         var children = context.expression().Select(Visit).ToList();
+        var function = context.Function.Text;
+        _invocationValidator?.Invoke(function, children);
 
         var commonType = children.Count == 0
             ? typeof(object)
@@ -380,14 +400,19 @@ public class UnicornExpressionVisitor : UnicornExpressionBaseVisitor<Expression>
                 ? GetCommonType(children[0], children[1])
                 : children[0].Type;
 
-        var function = context.Function.Text;
-
         return CreateInvocation(function, children, commonType);
     }
 
     protected virtual Expression CreateInvocation(
         string function, IEnumerable<Expression> children, Type childrenCommonType)
     {
+        if (function == "AbilityLevel")
+        {
+            return Call(
+                AbilityLevelMethod,
+                [Parameters["owner"], .. children]);
+        }
+
         MethodInfo method;
         switch (function)
         {

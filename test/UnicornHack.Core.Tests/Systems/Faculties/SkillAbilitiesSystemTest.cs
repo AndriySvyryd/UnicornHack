@@ -62,13 +62,13 @@ public class SkillAbilitiesSystemTest
             Effects = []
         };
 
-        Assert.True(TestHelper.GrantAbilityLevel(trait, playerEntity));
+        manager.EffectApplicationSystem.AddAbilityEffect(playerEntity, trait);
         manager.Queue.ProcessQueue(manager);
 
         var granted = manager.AffectableAbilitiesIndex[(playerEntity.Id, trait.Name)]!.Ability!;
         Assert.Equal(1, granted.Level);
         Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(playerEntity, trait.Name));
-        Assert.True(TestHelper.GrantAbilityLevel(trait, playerEntity));
+        manager.EffectApplicationSystem.AddAbilityEffect(playerEntity, trait);
         manager.Queue.ProcessQueue(manager);
         Assert.Equal(2, granted.Level);
         Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(playerEntity, trait.Name));
@@ -143,6 +143,275 @@ public class SkillAbilitiesSystemTest
         Assert.Same(first, second);
         Assert.Equal(2, first.Level);
         Assert.Null(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.Stunned.Name + "#2")]);
+    }
+
+    [Fact]
+    public void Expression_levels_combine_with_unconditional_grants_and_decreases()
+    {
+        var sourceA = new LeveledAbility
+        {
+            Name = "expression source a",
+            Type = AbilityType.Skill,
+            LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>>
+            {
+                [1] = [], [2] = [], [3] = []
+            }
+        };
+        var sourceB = new LeveledAbility
+        {
+            Name = "expression source b",
+            Type = AbilityType.Skill,
+            LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>>
+            {
+                [1] = [], [2] = [], [3] = []
+            }
+        };
+        var dependent = new Ability
+        {
+            Name = "expression dependent",
+            Type = AbilityType.RangedSpell,
+            LevelExpression =
+                "AbilityLevel('expression source a') + AbilityLevel('expression source b') >= 2"
+                + " ? AbilityLevel('expression source a') + AbilityLevel('expression source b') : 0",
+            Effects = []
+        };
+        var game = TestHelper.CreateGame();
+        var data = (TestDataProvider)game.Services.Data;
+        data.AddAbilities(sourceA, sourceB, dependent);
+        var level = TestHelper.BuildRoom(".", game);
+        var playerEntity = PlayerRace.InstantiatePlayer(
+            "Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = playerEntity.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        manager.EffectApplicationSystem.AddAbilityEffect(playerEntity, sourceA);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Null(manager.AffectableAbilitiesIndex[(playerEntity.Id, dependent.Name)]);
+
+        manager.EffectApplicationSystem.AddAbilityEffect(playerEntity, sourceB);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(2, GetAbilityLevel());
+        Assert.Single(playerEntity.ActiveEffects!.ComponentEffects.GetValues(dependent.Name),
+            TestHelper.IsLevelExpressionGrant);
+
+        manager.EffectApplicationSystem.AddAbilityEffect(
+            playerEntity, dependent, sourceAbilityEntityId: 1000);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(3, GetAbilityLevel());
+        Assert.Equal(2, playerEntity.ActiveEffects.ComponentEffects.GetValues(dependent.Name).Count);
+
+        var decrease = TestHelper.ApplyAbilityLevelDecrease(
+            playerEntity, abilityName: dependent.Name,
+            duration: EffectDuration.UntilTimeout);
+        Assert.Equal(2, GetAbilityLevel());
+
+        manager.EffectApplicationSystem.AddAbilityEffect(playerEntity, sourceA);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(3, GetAbilityLevel());
+
+        manager.EffectApplicationSystem.RemoveAbility(
+            playerEntity, sourceB.Name, manager);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(2, GetAbilityLevel());
+
+        manager.EffectApplicationSystem.RemoveAbility(
+            playerEntity, dependent.Name, manager, sourceAbilityEntityId: 1000);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(1, GetAbilityLevel());
+
+        manager.Game.CurrentTick = decrease.ExpirationTarget!.Value;
+        manager.EffectApplicationSystem.ExpireTimedPropertyEffects(playerEntity, manager);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(2, GetAbilityLevel());
+
+        var typeDecrease = TestHelper.ApplyAbilityLevelDecrease(
+            playerEntity, abilityType: AbilityType.RangedSpell,
+            duration: EffectDuration.UntilTimeout);
+        Assert.Equal(1, GetAbilityLevel());
+
+        manager.Game.CurrentTick = typeDecrease.ExpirationTarget!.Value;
+        manager.EffectApplicationSystem.ExpireTimedPropertyEffects(playerEntity, manager);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(2, GetAbilityLevel());
+
+        manager.EffectApplicationSystem.RemoveAbility(
+            playerEntity, sourceA.Name, manager);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Null(manager.AffectableAbilitiesIndex[(playerEntity.Id, dependent.Name)]);
+
+        int GetAbilityLevel()
+            => manager.AffectableAbilitiesIndex[(playerEntity.Id, dependent.Name)]!.Ability!.Level;
+    }
+
+    [Fact]
+    public void Non_positive_expression_result_removes_the_grant()
+    {
+        var source = new Ability
+        {
+            Name = "negative expression source",
+            Effects = []
+        };
+        var dependent = new Ability
+        {
+            Name = "negative expression dependent",
+            LevelExpression = "AbilityLevel('negative expression source') == 1 ? 1 : -1",
+            Effects = []
+        };
+        var game = TestHelper.CreateGame();
+        ((TestDataProvider)game.Services.Data).AddAbilities(source, dependent);
+        var level = TestHelper.BuildRoom(".", game);
+        var player = PlayerRace.InstantiatePlayer(
+            "Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Null(manager.AffectableAbilitiesIndex[(player.Id, dependent.Name)]);
+
+        manager.EffectApplicationSystem.AddAbilityEffect(player, source);
+        manager.Queue.ProcessQueue(manager);
+        Assert.Equal(1, EffectApplicationSystem.GetAbilityLevel(player, dependent.Name));
+
+        manager.EffectApplicationSystem.AddAbilityEffect(player, source);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Null(manager.AffectableAbilitiesIndex[(player.Id, dependent.Name)]);
+        Assert.DoesNotContain(
+            player.ActiveEffects!.ComponentEffects.GetValues(dependent.Name),
+            TestHelper.IsLevelExpressionGrant);
+    }
+
+    [Fact]
+    public void Source_level_change_synchronizes_all_expression_dependents()
+    {
+        var source = new Ability
+        {
+            Name = "fan-out expression source",
+            Effects = []
+        };
+        var firstDependent = new Ability
+        {
+            Name = "first fan-out expression dependent",
+            LevelExpression = "AbilityLevel('fan-out expression source')",
+            Effects = []
+        };
+        var secondDependent = new Ability
+        {
+            Name = "second fan-out expression dependent",
+            LevelExpression =
+                "AbilityLevel('fan-out expression source') > 0"
+                + " ? AbilityLevel('fan-out expression source') + 1 : 0",
+            Effects = []
+        };
+        var game = TestHelper.CreateGame();
+        ((TestDataProvider)game.Services.Data).AddAbilities(
+            source, firstDependent, secondDependent);
+        var level = TestHelper.BuildRoom(".", game);
+        var player = PlayerRace.InstantiatePlayer(
+            "Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Null(manager.AffectableAbilitiesIndex[(player.Id, firstDependent.Name)]);
+        Assert.Null(manager.AffectableAbilitiesIndex[(player.Id, secondDependent.Name)]);
+
+        manager.EffectApplicationSystem.AddAbilityEffect(player, source, level: 2);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(2, EffectApplicationSystem.GetAbilityLevel(player, firstDependent.Name));
+        Assert.Equal(3, EffectApplicationSystem.GetAbilityLevel(player, secondDependent.Name));
+        Assert.Equal([firstDependent, secondDependent], source.LevelExpressionDependents);
+    }
+
+    [Fact]
+    public void Repeated_source_references_register_one_dependency_and_all_contributions()
+    {
+        var source = new Ability
+        {
+            Name = "repeated expression source",
+            Effects = []
+        };
+        var dependent = new Ability
+        {
+            Name = "repeated expression dependent",
+            LevelExpression =
+                "AbilityLevel('repeated expression source') + AbilityLevel('repeated expression source')",
+            Effects = []
+        };
+        var game = TestHelper.CreateGame();
+        ((TestDataProvider)game.Services.Data).AddAbilities(source, dependent);
+        var level = TestHelper.BuildRoom(".", game);
+        var player = PlayerRace.InstantiatePlayer(
+            "Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        manager.EffectApplicationSystem.AddAbilityEffect(player, source, level: 2);
+        manager.Queue.ProcessQueue(manager);
+
+        Assert.Equal(4, EffectApplicationSystem.GetAbilityLevel(player, dependent.Name));
+        Assert.Equal([dependent], source.LevelExpressionDependents);
+    }
+
+    [Fact]
+    public void Level_expression_drives_a_leveled_ability()
+    {
+        var source = new LeveledAbility
+        {
+            Name = "leveled expression source",
+            Type = AbilityType.Skill,
+            LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>>
+            {
+                [1] = [], [2] = [], [3] = []
+            }
+        };
+        var dependent = new LeveledAbility
+        {
+            Name = "leveled expression dependent",
+            Type = AbilityType.Feat,
+            LevelExpression = "AbilityLevel('leveled expression source')",
+            LeveledEffects = new Dictionary<int, IReadOnlyList<Effect>>
+            {
+                [1] = [new Heal { Amount = "1" }],
+                [2] = [new Heal { Amount = "2" }]
+            }
+        };
+        var game = TestHelper.CreateGame();
+        ((TestDataProvider)game.Services.Data).AddAbilities(source, dependent);
+        var level = TestHelper.BuildRoom(".", game);
+        var playerEntity = PlayerRace.InstantiatePlayer(
+            "Dudley", Sex.Male, level, new Point(0, 0));
+        var manager = playerEntity.Manager;
+        manager.Queue.ProcessQueue(manager);
+
+        manager.EffectApplicationSystem.AddAbilityEffect(playerEntity, source, level: 2);
+        manager.Queue.ProcessQueue(manager);
+
+        var ability = manager.AffectableAbilitiesIndex[(playerEntity.Id, dependent.Name)]!.Ability!;
+        Assert.Equal(2, ability.Level);
+        Assert.Equal(["1", "2"], ability.Effects.Select(effect => effect.Effect!.Amount));
+    }
+
+    [Fact]
+    public void Ability_loader_rejects_cyclic_level_expressions()
+    {
+        var first = new Ability
+        {
+            Name = "expression cycle first",
+            LevelExpression = "AbilityLevel('expression cycle second')"
+        };
+        var second = new Ability
+        {
+            Name = "expression cycle second",
+            LevelExpression = "AbilityLevel('expression cycle first')"
+        };
+        var cycleException = Assert.Throws<InvalidOperationException>(
+            () => AbilityLoader.Prepare(new Dictionary<string, Ability>(StringComparer.OrdinalIgnoreCase)
+            {
+                [first.Name] = first,
+                [second.Name] = second
+            }));
+        Assert.Contains("cycle", cycleException.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -387,20 +656,20 @@ public class SkillAbilitiesSystemTest
         Assert.Equal(1,
             manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)]!.Ability!.Level);
 
-        Assert.True(TestHelper.GrantAbilityLevel(
-            AbilityData.WaterSourcery, playerEntity));
+        manager.EffectApplicationSystem.AddAbilityEffect(
+            playerEntity, AbilityData.WaterSourcery);
 
         manager.Queue.ProcessQueue(manager);
 
         Assert.Equal(2,
             manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)]!.Ability!.Level);
-        Assert.True(TestHelper.GrantAbilityLevel(
-            AbilityData.WaterSourcery, playerEntity));
+        manager.EffectApplicationSystem.AddAbilityEffect(
+            playerEntity, AbilityData.WaterSourcery);
         manager.Queue.ProcessQueue(manager);
         Assert.Equal(3,
             manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)]!.Ability!.Level);
-        Assert.True(TestHelper.GrantAbilityLevel(
-            AbilityData.WaterSourcery, playerEntity));
+        manager.EffectApplicationSystem.AddAbilityEffect(
+            playerEntity, AbilityData.WaterSourcery);
         manager.Queue.ProcessQueue(manager);
         Assert.Equal(4,
             manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)]!.Ability!.Level);
@@ -414,7 +683,8 @@ public class SkillAbilitiesSystemTest
         Assert.True(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)]!.Ability!
             .IsUsable);
 
-        TestHelper.QueueAbilityDeactivation(conjurationBookAbility, playerEntity, manager);
+        manager.Enqueue(DeactivateAbilityMessage.Create(
+            conjurationBookAbility.Ability!, playerEntity, manager));
 
         var moveItemMessage = MoveItemMessage.Create(manager);
         moveItemMessage.ItemEntity = firstWaterBook;
@@ -436,15 +706,6 @@ public class SkillAbilitiesSystemTest
         Assert.Null(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.Conjuration.Name)]);
         Assert.True(manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.IceShard.Name)]!.Ability!
             .IsUsable);
-
-        var deactivateMessage = DeactivateAbilityMessage.Create(
-            manager.AffectableAbilitiesIndex[
-                (playerEntity.Id, AbilityData.WaterSourcery.Name)]!.Ability!,
-            playerEntity,
-            manager);
-        manager.Enqueue(deactivateMessage);
-
-        manager.Queue.ProcessQueue(manager);
 
         manager.AffectableAbilitiesIndex[(playerEntity.Id, AbilityData.WaterSourcery.Name)]!.Ability = null;
 

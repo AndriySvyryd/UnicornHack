@@ -16,6 +16,7 @@ public interface IEntityManager
     void RemoveEntity(Entity entity);
     Entity? FindEntity(int id);
     Entity? LoadEntity(int id);
+    string GetComponentPropertyName(int componentId);
 
     TComponent CreateComponent<TComponent>(int componentId)
         where TComponent : Component, new();

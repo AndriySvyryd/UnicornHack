@@ -84,6 +84,15 @@ public class MessagePackTest
             TargetingShape = TargetingShape.Line,
             Accumulator = 42,
             Noise = 18,
+            ConditionalGrants =
+            [
+                new ConditionalGrantAttributes
+                {
+                    Name = "ice shard",
+                    Level = 2,
+                    LevelExpression = "AbilityLevel('conjuration') + AbilityLevel('water sourcery')"
+                }
+            ],
             SelfEffects = { [6] = effect },
             SubAbilities =
             [
@@ -200,6 +209,12 @@ public class MessagePackTest
         Assert.Equal("3", result.AbilityAttributes!.SelfEffects[6].SecondaryAmount);
         Assert.Equal(8, Assert.Single(result.AbilityAttributes.SubAbilities).Accuracy);
         Assert.Equal(18, result.AbilityAttributes.Noise);
+        var conditionalGrant = Assert.Single(result.AbilityAttributes.ConditionalGrants);
+        Assert.Equal("ice shard", conditionalGrant.Name);
+        Assert.Equal(2, conditionalGrant.Level);
+        Assert.Equal(
+            "AbilityLevel('conjuration') + AbilityLevel('water sourcery')",
+            conditionalGrant.LevelExpression);
         Assert.Equal(19, result.ActorAttributes!.WaterResistance);
         Assert.Equal(21, result.ActorAttributes.EnergyRegeneration);
         Assert.Equal(20, result.ItemAttributes!.RequiredMight);

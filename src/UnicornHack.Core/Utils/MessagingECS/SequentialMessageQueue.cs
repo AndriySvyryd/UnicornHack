@@ -3,33 +3,34 @@
 /// <summary>
 ///     A message queue that processes messages in the order they were enqueued
 /// </summary>
-public class SequentialMessageQueue<TState> : IMessageQueue
+public class SequentialMessageQueue<TEntity> : IMessageQueue
+    where TEntity : Entity, new()
 {
     private bool _suspended;
     private readonly Queue<string> _mainQueue = new(512);
     private readonly List<string> _secondaryQueue = new();
 
-    private readonly Dictionary<string, IMessageSpecificQueue<TState>> _namedQueues = new();
+    private readonly Dictionary<string, IMessageSpecificQueue> _namedQueues = new();
 
     public int QueuedCount => _mainQueue.Count;
 
-    public void Register<TMessage>(IMessageConsumer<TMessage, TState> consumer, string name, int order)
+    public void Register<TMessage>(IMessageConsumer<TMessage> consumer, string name, int order)
         where TMessage : class, IMessage, new()
     {
         if (!_namedQueues.TryGetValue(name, out var specificQueue))
         {
-            specificQueue = new MessageSpecificQueue<TMessage, TState>();
+            specificQueue = new MessageSpecificQueue<TMessage, TEntity>();
             _namedQueues.Add(name, specificQueue);
         }
 
-        ((MessageSpecificQueue<TMessage, TState>)specificQueue).Add(consumer, order);
+        ((MessageSpecificQueue<TMessage, TEntity>)specificQueue).Add(consumer, order);
     }
 
     public TMessage CreateMessage<TMessage>(string name)
         where TMessage : class, IMessage, new()
     {
         var message = _namedQueues.TryGetValue(name, out var specificQueue)
-            ? ((MessageSpecificQueue<TMessage, TState>)specificQueue).CreateMessage()
+            ? ((MessageSpecificQueue<TMessage, TEntity>)specificQueue).CreateMessage()
             : new TMessage();
         message.MessageName = name;
 
@@ -41,7 +42,7 @@ public class SequentialMessageQueue<TState> : IMessageQueue
     {
         if (_namedQueues.TryGetValue(message.MessageName, out var specificQueue))
         {
-            ((MessageSpecificQueue<TMessage, TState>)specificQueue).ReturnMessage(message);
+            ((MessageSpecificQueue<TMessage, TEntity>)specificQueue).ReturnMessage(message);
         }
         else
         {
@@ -60,7 +61,7 @@ public class SequentialMessageQueue<TState> : IMessageQueue
             return;
         }
 
-        ((MessageSpecificQueue<TMessage, TState>)specificQueue).Enqueue(message);
+        ((MessageSpecificQueue<TMessage, TEntity>)specificQueue).Enqueue(message);
         if (!lowPriority)
         {
             _mainQueue.Enqueue(message.MessageName);
@@ -79,37 +80,43 @@ public class SequentialMessageQueue<TState> : IMessageQueue
         }
     }
 
-    public void ProcessQueue(TState state)
+    public void ProcessQueue(EntityManager<TEntity> manager)
     {
         var i = 0;
-        while (_mainQueue.Count != 0)
+        while (true)
         {
-            if (++i > 65536)
+            while (_mainQueue.Count != 0)
             {
-                throw new InvalidOperationException("Queue is in infinite loop");
+                if (++i > 65536)
+                {
+                    throw new InvalidOperationException("Queue is in infinite loop");
+                }
+
+                var messageName = _mainQueue.Dequeue();
+                if (_namedQueues.TryGetValue(messageName, out var specificQueue))
+                {
+                    specificQueue.ProcessNext(manager);
+                }
             }
 
-            var messageName = _mainQueue.Dequeue();
-            if (_namedQueues.TryGetValue(messageName, out var specificQueue))
+            if (_secondaryQueue.Count == 0)
             {
-                specificQueue.ProcessNext(state, this);
+                break;
             }
-        }
 
-        if (_secondaryQueue.Count != 0)
-        {
             _mainQueue.EnqueueRange(_secondaryQueue);
             _secondaryQueue.Clear();
-            ProcessQueue(state);
         }
+
+        manager.OnMessageQueueDrained();
     }
 
-    public void Process<TMessage>(TMessage message, TState state)
+    public void Process<TMessage>(TMessage message, EntityManager<TEntity> manager)
         where TMessage : class, IMessage, new()
     {
         if (_namedQueues.TryGetValue(message.MessageName, out var specificQueue))
         {
-            ((MessageSpecificQueue<TMessage, TState>)specificQueue).Process(message, state);
+            ((MessageSpecificQueue<TMessage, TEntity>)specificQueue).Process(message, manager);
         }
     }
 
@@ -117,9 +124,9 @@ public class SequentialMessageQueue<TState> : IMessageQueue
 
     private struct QueueSuspender : IDisposable
     {
-        private readonly SequentialMessageQueue<TState> _queue;
+        private readonly SequentialMessageQueue<TEntity> _queue;
 
-        public QueueSuspender(SequentialMessageQueue<TState> queue)
+        public QueueSuspender(SequentialMessageQueue<TEntity> queue)
         {
             _queue = queue;
             _queue._suspended = true;

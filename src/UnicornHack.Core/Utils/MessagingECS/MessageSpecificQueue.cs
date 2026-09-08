@@ -1,14 +1,15 @@
 ﻿namespace UnicornHack.Utils.MessagingECS;
 
 /// <summary>
-///     Implementation detail of <see cref="SequentialMessageQueue{TState}" />
+///     Implementation detail of <see cref="SequentialMessageQueue{TEntity}" />
 /// </summary>
 /// <typeparam name="TMessage"> The message type </typeparam>
-/// <typeparam name="TState"> The state type </typeparam>
-public class MessageSpecificQueue<TMessage, TState> : IMessageSpecificQueue<TState>
+/// <typeparam name="TEntity"> The entity type </typeparam>
+public class MessageSpecificQueue<TMessage, TEntity> : IMessageSpecificQueue
     where TMessage : class, IMessage, new()
+    where TEntity : Entity, new()
 {
-    private readonly SortedList<int, IMessageConsumer<TMessage, TState>> _consumers = new();
+    private readonly SortedList<int, IMessageConsumer<TMessage>> _consumers = new();
 
     private readonly Queue<TMessage> _queue = new();
 
@@ -22,7 +23,7 @@ public class MessageSpecificQueue<TMessage, TState> : IMessageSpecificQueue<TSta
     private int _poolTail;
     private int _poolCount;
 
-    public void Add(IMessageConsumer<TMessage, TState> consumer, int order)
+    public void Add(IMessageConsumer<TMessage> consumer, int order)
         => _consumers.Add(order, consumer);
 
     public TMessage CreateMessage()
@@ -55,15 +56,16 @@ public class MessageSpecificQueue<TMessage, TState> : IMessageSpecificQueue<TSta
 
     public void Enqueue(TMessage body) => _queue.Enqueue(body);
 
-    public void ProcessNext(TState state, IMessageQueue queue) => Process(_queue.Dequeue(), state);
+    public void ProcessNext(IEntityManager manager)
+        => Process(_queue.Dequeue(), manager);
 
-    public void Process(TMessage message, TState state)
+    public void Process(TMessage message, IEntityManager manager)
     {
         // ReSharper disable once ForCanBeConvertedToForeach
         for (var i = 0; i < _consumers.Values.Count; i++)
         {
             var messageConsumer = _consumers.Values[i];
-            if (messageConsumer.Process(message, state) == MessageProcessingResult.StopProcessing)
+            if (messageConsumer.Process(message, manager) == MessageProcessingResult.StopProcessing)
             {
                 break;
             }

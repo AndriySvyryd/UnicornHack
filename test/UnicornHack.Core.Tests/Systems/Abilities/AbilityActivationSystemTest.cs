@@ -282,7 +282,7 @@ public class AbilityActivationSystemTest
         var manager = level.Entity.Manager;
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 0));
         playerEntity.Position!.Heading = Direction.West;
-        TestHelper.GrantAbilityLevel(AbilityData.Conjuration, playerEntity);
+        manager.EffectApplicationSystem.AddAbilityEffect(playerEntity, AbilityData.Conjuration);
         manager.Queue.ProcessQueue(manager);
 
         var target = CreatureData.Undine.Instantiate(level, new Point(2, 2));
@@ -317,7 +317,7 @@ public class AbilityActivationSystemTest
             target.ActiveEffects!.PropertyEffects,
             effect => effect.TargetName == nameof(BeingComponent.Evasion)
                       && effect.CombinationFunction == ValueCombinationFunction.Percent
-                      && effect.SourceAbilityType == AbilityType.Status
+                      && effect.SourceAbilityType == AbilityType.Debuff
                       && effect.SourceAbilityActivation == ActivationType.Always);
         var missChanceAtLevelTwo = manager.AbilityActivationSystem.GetEvasionProbability(
             iceShard, playerEntity, target, null, accuracy);
@@ -342,7 +342,7 @@ public class AbilityActivationSystemTest
         var level = TestHelper.BuildRoom(TestMap);
         var manager = level.Entity.Manager;
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 0));
-        TestHelper.GrantAbilityLevel(AbilityData.Conjuration, playerEntity);
+        manager.EffectApplicationSystem.AddAbilityEffect(playerEntity, AbilityData.Conjuration);
         var target = CreatureData.Undine.Instantiate(level, new Point(2, 2));
         manager.Queue.ProcessQueue(manager);
 
@@ -382,7 +382,7 @@ public class AbilityActivationSystemTest
         var level = TestHelper.BuildRoom(TestMap);
         var manager = level.Entity.Manager;
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 0));
-        TestHelper.GrantAbilityLevel(AbilityData.Conjuration, playerEntity);
+        manager.EffectApplicationSystem.AddAbilityEffect(playerEntity, AbilityData.Conjuration);
         var target = CreatureData.Undine.Instantiate(level, new Point(2, 2));
         manager.Queue.ProcessQueue(manager);
 
@@ -414,7 +414,7 @@ public class AbilityActivationSystemTest
         var level = TestHelper.BuildRoom(TestMap);
         var manager = level.Entity.Manager;
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 0));
-        TestHelper.GrantAbilityLevel(AbilityData.Conjuration, playerEntity);
+        manager.EffectApplicationSystem.AddAbilityEffect(playerEntity, AbilityData.Conjuration);
         var target = CreatureData.Undine.Instantiate(level, new Point(2, 2));
         manager.Queue.ProcessQueue(manager);
 
@@ -685,7 +685,7 @@ public class AbilityActivationSystemTest
 
         var playerEntity = PlayerRace.InstantiatePlayer("Dudley", Sex.Male, level, new Point(2, 0));
         playerEntity.Position!.Heading = Direction.West;
-        TestHelper.GrantAbilityLevel(AbilityData.Conjuration, playerEntity);
+        manager.EffectApplicationSystem.AddAbilityEffect(playerEntity, AbilityData.Conjuration);
 
         manager.Queue.ProcessQueue(manager);
 

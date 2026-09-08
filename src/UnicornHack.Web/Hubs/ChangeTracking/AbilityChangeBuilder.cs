@@ -361,7 +361,7 @@ public class AbilityChangeBuilder : ChangeBuilder<AbilityChange>
                 ChangedProperties = null,
                 Name = GetAccumulatorPlaceholderName(accumulator.EffectType),
                 Activation = (int)ActivationType.Always,
-                Type = (int)AbilityType.Status,
+                Type = (int)AbilityType.Debuff,
                 Accumulator = accumulator.Value,
                 Level = 0
             });

@@ -13,32 +13,52 @@ public class EffectAccumulatorCollection : ObservableLookupCollection<EffectType
 
     protected override void InsertItem(int index, EffectAccumulator item)
     {
-        item.SetContainingComponent(_component, _propertyName);
+        Attach(item);
         base.InsertItem(index, item);
     }
 
     protected override void SetItem(int index, EffectAccumulator item)
     {
-        this[index].SetContainingComponent(null, null);
-        item.SetContainingComponent(_component, _propertyName);
+        var replaced = this[index];
+        if (ReferenceEquals(replaced, item))
+        {
+            base.SetItem(index, item);
+            return;
+        }
+
+        Attach(item);
+        Detach(replaced);
         base.SetItem(index, item);
     }
 
     protected override void RemoveItem(int index)
     {
-        this[index].SetContainingComponent(null, null);
+        var removed = this[index];
+        Detach(removed);
         base.RemoveItem(index);
     }
 
     protected override void ClearItems()
     {
-        foreach (var item in this)
+        for (var i = Count - 1; i >= 0; i--)
         {
+            var item = this[i];
             item.SetContainingComponent(null, null);
+            Detach(item);
         }
 
         base.ClearItems();
     }
 
     protected override EffectType GetKey(EffectAccumulator item) => item.EffectType;
+
+    private void Attach(EffectAccumulator item)
+    {
+        item.Attach(_component);
+        item.SetContainingComponent(_component, _propertyName);
+    }
+
+    private void Detach(EffectAccumulator item)
+        => item.Detach(_component.Manager as GameManager
+            ?? throw new InvalidOperationException("Active effects require a game manager."));
 }

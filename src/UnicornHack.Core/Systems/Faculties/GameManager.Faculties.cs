@@ -27,7 +27,7 @@ public partial class GameManager
         private set;
     } = null!;
 
-    private void InitializeFaculties(SequentialMessageQueue<GameManager> queue)
+    private void InitializeFaculties(SequentialMessageQueue<GameEntity> queue)
     {
         BeingToPrimaryNaturalWeaponRelationship = new(
             nameof(BeingToPrimaryNaturalWeaponRelationship),
@@ -59,5 +59,11 @@ public partial class GameManager
             AbilitiesToAffectableRelationship.Dependents.GetPropertyValueChangedMessageName(
                 nameof(AbilityComponent.Level)),
             0);
+        queue.Register<EntityAddedMessage<GameEntity>>(
+            SkillAbilitiesSystem,
+            AbilitiesToAffectableRelationship.Dependents.GetEntityAddedMessageName(), 3);
+        queue.Register<EntityRemovedMessage<GameEntity>>(
+            SkillAbilitiesSystem,
+            AbilitiesToAffectableRelationship.Dependents.GetEntityRemovedMessageName(), 1);
     }
 }

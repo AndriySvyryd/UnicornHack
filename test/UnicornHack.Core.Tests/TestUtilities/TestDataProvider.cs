@@ -40,4 +40,12 @@ public sealed class TestDataProvider : DataProvider
     public override TestLoader<ConnectingMapFragment> ConnectingMapFragments { get; }
     public override TestLoader<NormalMapFragment> NormalMapFragments { get; }
     public override TestLoader<PropertyDescription> PropertyDescriptions { get; }
+
+    public void AddAbilities(params Ability[] abilities)
+    {
+        var lookup = Abilities.TestItems.Concat(abilities).ToDictionary(
+            ability => ability.Name, StringComparer.OrdinalIgnoreCase);
+        AbilityLoader.Prepare(lookup);
+        Abilities.AddRange(abilities);
+    }
 }

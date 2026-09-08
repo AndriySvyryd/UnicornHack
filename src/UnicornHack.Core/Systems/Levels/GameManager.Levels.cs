@@ -44,7 +44,7 @@ public partial class GameManager
         private set;
     } = null!;
 
-    private void InitializeLevels(SequentialMessageQueue<GameManager> queue)
+    private void InitializeLevels(SequentialMessageQueue<GameEntity> queue)
     {
         Add<RoomComponent>(EntityComponent.Room, poolSize: 32, maxPoolSize: 64);
         Add<ConnectionComponent>(EntityComponent.Connection, poolSize: 64, maxPoolSize: 128);

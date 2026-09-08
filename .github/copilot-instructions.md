@@ -27,7 +27,7 @@ When a player acts, the server processes all turns until the player can act agai
 
 Server flow (`GameStateManager.Turn`):
 1. Per turn: clear terrain dicts -> capture visible terrain snapshot -> `TimeSystem.AdvanceSingleTurn()` -> compute visible terrain changes.
-2. Per registered `PlayerChangeListener`: if `HasObservableChanges` -> `BuildChangeSet()` -> append to that player's list (a forced emit also happens on the terminating `PlayerTurn` tick to keep the last state aligned).
+2. Per registered `PlayerChangeListener`: if `HasObservableChanges` -> `BuildChangeSet()` -> append to that player's list (a forced emit also happens on a terminating `PlayerTurn` or `GameOver` tick to keep the final state aligned).
 3. `levelChangeBuilder.Clear()` -> repeat until `TurnResult.PlayerTurn` or `GameOver`.
 4. Returns `Dictionary<int, List<TurnChangeSet>>` keyed by player entity id; the hub sends each player their list in one `ReceiveChangeSets` call.
 
@@ -131,6 +131,15 @@ Collections maintained by relationships:
 - Abilities/effects: abilities define what entities can do; effects modify properties temporarily/permanently via the effect application system.
 - Level generation: levels are procedurally generated from map fragments; use the appropriate generators for creatures, items, and terrain.
 - Data loading: game data loads through CS script loaders using attribute-based configuration; follow established data-definition patterns.
+- Queued messages and pooled objects may outlive entity state. `Clean()` must release references and mutable pooled state.
+- Use `entity.ActiveEffects.PropertyEffects` for effects that modify properties and `entity.ActiveEffects.ComponentEffects` for effects that modify components. Do not recover either by scanning effect entities.
+- For related-entity property tracking, register `IDependentEntityChangeListener<TEntity>` through `relationship.AddDependentsListener()` so callbacks include the principal; do not emulate relationship semantics with flat-group scans.
+- `ManyToManyEntityRelationship<TEntity,TItem>` owns reverse indexes for observable item collections. Set an item's FK before adding it and replace/remove the item instead of mutating its FK in place.
+- Procedural generation must use `GameLevel.GenerationRandom`, never `game.Random`.
+- Use thread-local pools for reusable mutable objects. Keep immutable write-once memoization caches process-wide (normally `ConcurrentDictionary`); thread-local copies only duplicate compilation/data.
+- With EF `ChangingAndChangedNotifications`, owned collection elements must notify changes and owner collections must be observable. Remove entries explicitly/reverse-indexed; do not rely on `List.RemoveAll` notification behavior.
+- BitArray-gated MessagePack formatters serialize only set properties. On deserialize, read bit 0 first, reset loop length to `values.Length`, and skip unset indices before reading values; wire position is not the property index.
+- Editor round-trip validation is semantic as well as textual. Re-run isolated collection-wrapping-only diffs before accepting them as serializer nondeterminism; never dismiss value, path, or membership changes as formatting noise.
 
 ## Implementation Guidelines
 
@@ -142,6 +151,7 @@ Collections maintained by relationships:
 
 - Write unit tests in Core.Tests using `TestHelper`; mock dependencies via established patterns; cover edge cases; use performance tests for critical paths.
 - Web.Tests: tests change tracking and serialization without a database; `WebTestHelper` creates an in-memory game, builds levels, and wires up services.
+- Arrays rented from `ArrayPool` may exceed their logical size. Use the owning count (for terrain, `TileCount`) for copies and iteration.
 
 ## Web Layer Guidelines
 
@@ -151,5 +161,6 @@ Collections maintained by relationships:
 
 - Use established serialization patterns and existing templates; use `CSClassSerializer` for codegen; maintain backwards compatibility for saved game data.
 - Content lives as C# data files under `UnicornHack.Core/Data/` (creatures, items, abilities, map fragments, ...), loaded by the generators' `Loader`s and generated back out by the `UnicornHack.Editor` console app, which round-trips every type through `CSClassSerializer` into a `New` output folder.
+- Ability data is organized under `Data/Abilities/` by broad role: `Skills/`, `Status/`, `Attacks/`, and `Spells/`; cross-cutting templates such as `Innate.cs` remain at the root. `AbilityLoader` owns this mapping and the editor reproduces it.
 - Each generation class controls its own serialization via a static `PropertyCSScriptSerializer<T>` built from `GetPropertyConditions<T>()` (a property -> "should emit" predicate, usually "differs from the base/default"). When adding or renaming a serialized property on a generation class, update its `GetPropertyConditions` (and the `Data/` files) so the editor round-trip stays byte-identical.
 - Runtime-only changes (systems, message handlers, resolved-property logic) have no serialization surface - only generation classes under `Generation/` and the `Data/` files affect the editor. After changing a generation class, run the editor and diff its `New` output against `Data/` to confirm content round-trips unchanged.

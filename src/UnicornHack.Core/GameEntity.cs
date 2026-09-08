@@ -232,14 +232,6 @@ public class GameEntity : Entity
         gameComponent.EntityId = Id;
     }
 
-    protected override string GetComponentPropertyName(int componentId)
-    {
-        var name = Manager?.GetComponentPropertyName(componentId);
-        Debug.Assert(name != null);
-
-        return name;
-    }
-
     public TComponent GetOrAddComponent<TComponent>(EntityComponent componentId)
         where TComponent : Component, new()
         => GetOrAddComponent<TComponent>((int)componentId);

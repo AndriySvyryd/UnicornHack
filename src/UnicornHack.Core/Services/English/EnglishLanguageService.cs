@@ -5,6 +5,7 @@ using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Beings;
 using UnicornHack.Systems.Items;
 using UnicornHack.Systems.Levels;
+using UnicornHack.Utils.DataLoading;
 
 namespace UnicornHack.Services.English;
 
@@ -69,14 +70,11 @@ public class EnglishLanguageService : ILanguageService
     protected virtual string GetAbilityDescription(string abilityName)
     {
         int? currentLevel = null;
-        var levelSeparator = abilityName.LastIndexOf('#');
-        if (levelSeparator > 0
-            && int.TryParse(
-                abilityName.AsSpan(levelSeparator + 1), NumberStyles.None,
-                CultureInfo.InvariantCulture, out var parsedLevel))
+        if (Ability.TryGetLeveledTemplateName(
+                abilityName, out var templateName, out var parsedLevel))
         {
             currentLevel = parsedLevel;
-            abilityName = abilityName[..levelSeparator];
+            abilityName = templateName;
         }
 
         var description = GetBaseAbilityDescription(abilityName);
@@ -997,6 +995,54 @@ public class EnglishLanguageService : ILanguageService
             : sentence;
     }
 
+    public virtual string GetString(in LingeringAttackEvent @event)
+    {
+        var sourcePerson = @event.SensorEntity == @event.SourceEntity
+            ? EnglishPerson.Second
+            : EnglishPerson.Third;
+        var targetPerson = @event.SensorEntity == @event.TargetEntity
+            ? EnglishPerson.Second
+            : EnglishPerson.Third;
+        var source = GetString(@event.SourceEntity, sourcePerson, @event.SourceSensed);
+        var target = GetString(@event.TargetEntity, targetPerson, @event.TargetSensed);
+        var clauses = @event.Effects.Select(effect => GetClause(effect.Key));
+
+        return ToSentence(source, string.Join(" and ", clauses));
+
+        string GetClause(EffectType effectType)
+        {
+            var verbForm = sourcePerson == EnglishPerson.Third
+                ? EnglishVerbForm.ThirdPersonSingularPresent
+                : EnglishVerbForm.BareInfinitive;
+
+            string Conjugate(string verb)
+                => EnglishMorphologicalProcessor.ProcessVerb(verb, verbForm);
+
+            return effectType switch
+            {
+                EffectType.AcidDamage => $"{Conjugate("coat")} {target} in acid",
+                EffectType.BleedDamage => $"{Conjugate("lacerate")} {target}",
+                EffectType.ToxinDamage => $"{Conjugate("poison")} {target}",
+                EffectType.FireDamage => $"{Conjugate("set")} {target} on fire",
+                EffectType.DrainEnergy => $"{Conjugate("start")} draining energy from {target}",
+                EffectType.DrainLife => $"{Conjugate("start")} draining life from {target}",
+                EffectType.ColdDamage => $"{Conjugate("wrap")} {target} in frost",
+                EffectType.LightDamage => $"{Conjugate("surround")} {target} with radiance",
+                EffectType.PhysicalDamage => $"{Conjugate("crush")} {target}",
+                EffectType.PsychicDamage => $"{Conjugate("fill")} {target} with anguish",
+                EffectType.ShockDamage => $"{Conjugate("shock")} {target}",
+                EffectType.WaterDamage => $"{Conjugate("soak")} {target}",
+                EffectType.SonicDamage => $"{Conjugate("rattle")} {target}",
+                EffectType.Wither => $"{Conjugate("cause")} {target} to wither",
+                EffectType.GainXP => $"{Conjugate("awaken")} new insight in {target}",
+                EffectType.Heal => $"{Conjugate("restore")} {target}",
+                EffectType.Recharge => $"{Conjugate("invigorate")} {target}",
+                _ => $"{Conjugate("apply")} continuous "
+                     + $"{CSScriptLoaderHelpers.GetNameFromIdentifier(effectType.ToString())} to {target}"
+            };
+        }
+    }
+
     public virtual string GetString(in ResourceEffectEvent @event)
     {
         var targetPerson = @event.SensorEntity == @event.TargetEntity
@@ -1195,6 +1241,9 @@ public class EnglishLanguageService : ILanguageService
 
     public string ItemNotInInventory()
         => "You don't have that item.";
+
+    public string InventoryFull()
+        => "You can't carry any more items.";
 
     public string NothingToPickUp()
         => "There's nothing to pick up here.";

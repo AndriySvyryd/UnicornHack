@@ -6,7 +6,7 @@ namespace UnicornHack.Hubs.MessagePack;
 public sealed class AbilityAttributesFormatter : FixedArrayFormatter<AbilityAttributes>
 {
     public static readonly AbilityAttributesFormatter Instance = new();
-    protected override int FieldCount => 22;
+    protected override int FieldCount => 23;
 
     protected override void SerializeFields(
         ref MessagePackWriter writer, AbilityAttributes value, MessagePackSerializerOptions options)
@@ -36,6 +36,8 @@ public sealed class AbilityAttributesFormatter : FixedArrayFormatter<AbilityAttr
         writer.Write(value.Description);
         WriteNullableInt(ref writer, value.Accumulator);
         writer.Write(value.Noise);
+        resolver.GetFormatterWithVerify<List<ConditionalGrantAttributes>>()
+            .Serialize(ref writer, value.ConditionalGrants, options);
     }
 
     protected override void DeserializeField(
@@ -66,6 +68,8 @@ public sealed class AbilityAttributesFormatter : FixedArrayFormatter<AbilityAttr
             case 19: value.Description = reader.ReadString(); break;
             case 20: value.Accumulator = ReadNullableInt(ref reader); break;
             case 21: value.Noise = reader.ReadInt32(); break;
+            case 22: value.ConditionalGrants = resolver.GetFormatterWithVerify<List<ConditionalGrantAttributes>>()
+                .Deserialize(ref reader, options); break;
         }
     }
 }

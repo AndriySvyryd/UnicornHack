@@ -16,7 +16,7 @@ public class ManyToManyEntityRelationshipTest
 
         // An item whose foreign key is null/0 is not a reference, so it is neither indexed nor subject to the
         // referential-integrity check (which would otherwise throw for an unresolved key).
-        AddItem(playerEntity.ActiveEffects!.PropertyEffects, sourceAbilityId: null);
+        AddItem(playerEntity.ActiveEffects!, sourceAbilityId: null);
 
         Assert.Empty(manager.AppliedEffectsToSourceAbilityRelationship.GetDependents(0));
     }
@@ -31,12 +31,13 @@ public class ManyToManyEntityRelationshipTest
 
         var relationship = manager.AppliedEffectsToSourceAbilityRelationship;
         var ability = CreateAbility(manager, playerEntity, "buff");
-        var effects = playerEntity.ActiveEffects!.PropertyEffects;
+        var activeEffects = playerEntity.ActiveEffects!;
+        var effects = activeEffects.PropertyEffects;
 
         // Two items from the same dependent reference the same principal: the dependent is tracked once, with
         // a reference count of two.
-        var first = AddItem(effects, ability.Id);
-        var second = AddItem(effects, ability.Id);
+        var first = AddItem(activeEffects, ability.Id);
+        var second = AddItem(activeEffects, ability.Id);
         Assert.Single(relationship.GetDependents(ability.Id));
         Assert.Contains(playerEntity, relationship.GetDependents(ability.Id));
 
@@ -59,7 +60,7 @@ public class ManyToManyEntityRelationshipTest
 
         var firstAbility = CreateAbility(manager, playerEntity, "first");
         var secondAbility = CreateAbility(manager, playerEntity, "second");
-        var effect = AddItem(playerEntity.ActiveEffects!.PropertyEffects, firstAbility.Id);
+        var effect = AddItem(playerEntity.ActiveEffects!, firstAbility.Id);
         var relationship = manager.AppliedEffectsToSourceAbilityRelationship;
 
         effect.SourceAbilityEntityId = secondAbility.Id;
@@ -153,7 +154,7 @@ public class ManyToManyEntityRelationshipTest
 
         var relationship = manager.AppliedEffectsToSourceAbilityRelationship;
         var ability = CreateAbility(manager, playerEntity, "aura");
-        AddItem(creature.ActiveEffects!.PropertyEffects, ability.Id);
+        AddItem(creature.ActiveEffects!, ability.Id);
         Assert.Contains(creature, relationship.GetDependents(ability.Id));
 
         // Deleting the dependent takes it out of the dependent group, so the relationship stops tracking its
@@ -178,14 +179,14 @@ public class ManyToManyEntityRelationshipTest
 
         // Adding an item whose foreign key does not resolve to a live principal throws.
         Assert.Throws<InvalidOperationException>(() =>
-            AddItem(playerEntity.ActiveEffects!.PropertyEffects, missingPrincipal));
+            AddItem(playerEntity.ActiveEffects!, missingPrincipal));
 
         // ...but the check is suspended while the manager is loading, since the principal may be materialized
         // later in the load; the item is still indexed.
         manager.IsLoading = true;
         try
         {
-            AddItem(creature.ActiveEffects!.PropertyEffects, missingPrincipal);
+            AddItem(creature.ActiveEffects!, missingPrincipal);
         }
         finally
         {
@@ -213,13 +214,12 @@ public class ManyToManyEntityRelationshipTest
     }
 
     private static ActivePropertyEffect AddItem(
-        ICollection<ActivePropertyEffect> effects, int? sourceAbilityId)
+        ActiveEffectsComponent activeEffects, int? sourceAbilityId)
     {
-        var instance = new ActivePropertyEffect(0, 0, effects.Count, EffectType.Confuse, null)
-        {
-            SourceAbilityEntityId = sourceAbilityId
-        };
-        effects.Add(instance);
+        var instance = CreatePropertyEffect(
+            activeEffects, 0, 0, activeEffects.PropertyEffects.Count, EffectType.Confuse, null,
+            sourceAbilityEntityId: sourceAbilityId);
+        activeEffects.PropertyEffects.Add(instance);
         return instance;
     }
 }

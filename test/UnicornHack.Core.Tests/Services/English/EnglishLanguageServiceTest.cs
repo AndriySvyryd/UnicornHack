@@ -1,8 +1,10 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using UnicornHack.Data.Abilities;
+using UnicornHack.Data.Creatures;
 using UnicornHack.Generation.Effects;
 using UnicornHack.Services.English;
+using UnicornHack.Services.LogEvents;
 using UnicornHack.Systems.Beings;
 
 namespace UnicornHack.Services;
@@ -48,6 +50,57 @@ public class EnglishLanguageServiceTest
                 statusAbility.Type.IsStatusLike(),
                 $"Effect '{effectType}' references non-status ability '{abilityName}'.");
         }
+    }
+
+    [Fact]
+    public void Every_lingering_resource_effect_has_a_custom_application_message()
+    {
+        var expectedMessages = new Dictionary<EffectType, string>
+        {
+            [EffectType.AcidDamage] = "The firefly coats you in acid.",
+            [EffectType.BleedDamage] = "The firefly lacerates you.",
+            [EffectType.ToxinDamage] = "The firefly poisons you.",
+            [EffectType.FireDamage] = "The firefly sets you on fire.",
+            [EffectType.DrainEnergy] = "The firefly starts draining energy from you.",
+            [EffectType.DrainLife] = "The firefly starts draining life from you.",
+            [EffectType.ColdDamage] = "The firefly wraps you in frost.",
+            [EffectType.LightDamage] = "The firefly surrounds you with radiance.",
+            [EffectType.PhysicalDamage] = "The firefly crushes you.",
+            [EffectType.PsychicDamage] = "The firefly fills you with anguish.",
+            [EffectType.ShockDamage] = "The firefly shocks you.",
+            [EffectType.WaterDamage] = "The firefly soaks you.",
+            [EffectType.SonicDamage] = "The firefly rattles you.",
+            [EffectType.Wither] = "The firefly causes you to wither.",
+            [EffectType.GainXP] = "The firefly awakens new insight in you.",
+            [EffectType.Heal] = "The firefly restores you.",
+            [EffectType.Recharge] = "The firefly invigorates you."
+        };
+        var resourceEffects = Enum.GetValues<EffectType>()
+            .Where(effectType => effectType != EffectType.Default
+                                 && Effect.GetMetadata(effectType).ResourceProperty != null)
+            .ToHashSet();
+        Assert.Equal(expectedMessages.Keys.ToHashSet(), resourceEffects);
+
+        var level = TestHelper.BuildRoom("..");
+        var firefly = CreatureData.Firefly.Instantiate(level, new Point(0, 0));
+        var player = PlayerRace.InstantiatePlayer(
+            "Dudley", Sex.Male, level, new Point(1, 0));
+        var manager = player.Manager;
+        manager.Queue.ProcessQueue(manager);
+        var language = new EnglishLanguageService();
+
+        foreach (var (effectType, expectedMessage) in expectedMessages)
+        {
+            var message = language.GetString(new LingeringAttackEvent(
+                player, firefly, player, SenseType.Sight, SenseType.Sight,
+                new Dictionary<EffectType, int> { [effectType] = 1 }));
+            Assert.Equal(expectedMessage, message);
+        }
+
+        var fallbackMessage = language.GetString(new LingeringAttackEvent(
+            player, firefly, player, SenseType.Sight, SenseType.Sight,
+            new Dictionary<EffectType, int> { [EffectType.Stun] = 1 }));
+        Assert.Equal("The firefly applies continuous stun to you.", fallbackMessage);
     }
 
     [Fact]
@@ -100,7 +153,7 @@ public class EnglishLanguageServiceTest
             AbilityData.Warded.Name, DescriptionCategory.Ability);
 
         Assert.Contains("Level 1:", description);
-        Assert.Contains("each Status ability level -1", description);
+        Assert.Contains("each Debuff ability level -1", description);
         Assert.Contains("Level 3:", description);
         Assert.DoesNotContain("includes earlier levels", description);
     }

@@ -49,7 +49,7 @@ public abstract class Component :
         }
     }
 
-    protected IEntityManager? Manager
+    protected internal IEntityManager? Manager
     {
         get;
         set;

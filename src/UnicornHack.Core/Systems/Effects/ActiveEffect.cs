@@ -1,12 +1,10 @@
-using UnicornHack.Utils;
-
 namespace UnicornHack.Systems.Effects;
 
 /// <summary>
 ///     Common persisted state for a lingering property modifier or structural effect record owned by an
 ///     <see cref="ActiveEffectsComponent" />.
 /// </summary>
-public abstract class ActiveEffect : NotificationCollectionItem
+public abstract class ActiveEffect : PooledTrackableCollectionItem
 {
     private int _gameId;
     private int _entityId;
@@ -16,14 +14,26 @@ public abstract class ActiveEffect : NotificationCollectionItem
     private int? _expirationTarget;
     private EffectDuration? _expirationEvent;
 
-    protected ActiveEffect(
+    protected internal void Initialize(
         int gameId, int entityId, int instanceId, EffectType effectType, string? targetName)
     {
-        GameId = gameId;
-        EntityId = entityId;
-        InstanceId = instanceId;
-        EffectType = effectType;
-        TargetName = targetName;
+        if (IsTracked || ContainingComponent != null)
+        {
+            throw new InvalidOperationException("A tracked or attached active effect cannot be initialized.");
+        }
+
+        SetState(gameId, entityId, instanceId, effectType, targetName);
+        OnEffectTypeChanged(effectType);
+    }
+
+    private void SetState(
+        int gameId, int entityId, int instanceId, EffectType effectType, string? targetName)
+    {
+        _gameId = gameId;
+        _entityId = entityId;
+        _instanceId = instanceId;
+        _effectType = effectType;
+        _targetName = targetName;
     }
 
     /// <summary>Id of the game containing the owning <see cref="ActiveEffectsComponent" />.</summary>
@@ -52,7 +62,13 @@ public abstract class ActiveEffect : NotificationCollectionItem
         get => _effectType;
         private set
         {
+            if (_effectType == value)
+            {
+                return;
+            }
+
             SetWithNotify(value, ref _effectType);
+            OnEffectTypeChanged(value);
         }
     }
 
@@ -87,6 +103,22 @@ public abstract class ActiveEffect : NotificationCollectionItem
     }
 
     protected virtual void OnEffectTypeChanged(EffectType effectType)
+    {
+    }
+
+    protected override void Reset()
+    {
+        CleanCore();
+        _gameId = default;
+        _entityId = default;
+        _instanceId = default;
+        _effectType = default;
+        _targetName = default;
+        _expirationTarget = default;
+        _expirationEvent = default;
+    }
+
+    protected virtual void CleanCore()
     {
     }
 }

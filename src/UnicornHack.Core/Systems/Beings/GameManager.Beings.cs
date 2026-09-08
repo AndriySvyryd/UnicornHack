@@ -19,7 +19,7 @@ public partial class GameManager
         private set;
     } = null!;
 
-    private void InitializeBeings(SequentialMessageQueue<GameManager> queue)
+    private void InitializeBeings(SequentialMessageQueue<GameEntity> queue)
     {
         Add<BeingComponent>(EntityComponent.Being, poolSize: 512, maxPoolSize: 1024);
         Add<PhysicalComponent>(EntityComponent.Physical, poolSize: 512, maxPoolSize: 1024);

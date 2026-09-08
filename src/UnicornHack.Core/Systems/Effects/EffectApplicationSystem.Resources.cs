@@ -58,6 +58,12 @@ public partial class EffectApplicationSystem
         }
         else
         {
+            if (result is AttackResultMessage attackResult)
+            {
+                attackResult.LingeringEffects.TryGetValue(effect.EffectType, out var existing);
+                attackResult.LingeringEffects[effect.EffectType] = checked(existing + resourceAmount);
+            }
+
             var periodicEffects = target.ActiveEffects!;
             var expiration = GetExpiration(effect, activatorEntity, targetEntity, manager);
             var sourceAbilityActivation = effect.ContainingAbility?.Ability?.Activation ?? ActivationType.Default;

@@ -62,6 +62,10 @@ public abstract class EntityManager<TEntity> : IEntityManager
 
     protected abstract void InitializeSystems(IMessageQueue queue);
 
+    protected internal virtual void OnMessageQueueDrained()
+    {
+    }
+
     public void Enqueue<TMessage>(TMessage message, bool lowPriority = false)
         where TMessage : class, IMessage, new()
         => Queue.Enqueue(message, lowPriority);
@@ -79,6 +83,9 @@ public abstract class EntityManager<TEntity> : IEntityManager
         => _componentPools[componentId] =
             new ListObjectPool<TComponent>(() => new TComponent(), poolSize, maxPoolSize, poolSize);
 
+    public virtual object? Rent(Type type)
+        => type == typeof(TEntity) ? _entityPool.Rent() : null;
+
     protected EntityGroup<TEntity> CreateGroup(string name, EntityMatcher<TEntity> matcher, int capacity = 8)
     {
         var group = new EntityGroup<TEntity>(name, matcher, capacity);
@@ -93,6 +100,8 @@ public abstract class EntityManager<TEntity> : IEntityManager
     }
 
     public abstract int GetNextEntityId();
+
+    public abstract string GetComponentPropertyName(int componentId);
 
     ITransientReference<Entity> IEntityManager.CreateEntity() => CreateEntity();
 

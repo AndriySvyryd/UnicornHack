@@ -197,19 +197,21 @@ public partial class EffectApplicationSystem
     {
         var instance = activeEffects.PropertyEffects[index];
         var metadata = instance.Metadata!;
-        var previousSource = instance.CombinationFunction == ValueCombinationFunction.BuildUpPerSource
-            ? FindPerSourceBuildUpSource(targetEntity, instance.EffectType)
+        var previousSourceAbilityId = instance.CombinationFunction == ValueCombinationFunction.BuildUpPerSource
+            ? FindPerSourceBuildUpSource(targetEntity, instance.EffectType)?.SourceAbilityEntityId
             : null;
+        var effectType = instance.EffectType;
+        var targetName = instance.TargetName;
         activeEffects.UnregisterDynamicMagnitude(instance);
         activeEffects.PropertyEffects.RemoveAt(index);
-        ResetBuildUpOnSourceChange(instance.EffectType, previousSource, targetEntity);
+        ResetBuildUpOnSourceChange(effectType, previousSourceAbilityId, targetEntity);
 
         if (metadata.StatusAbilityName != null)
         {
-            EnsureStatusAbility(instance.EffectType, targetEntity, manager);
+            EnsureStatusAbility(effectType, targetEntity, manager);
         }
 
-        return instance.TargetName;
+        return targetName;
     }
 
     private ActivePropertyEffect AddOrUpdateChangePropertyInstance(
@@ -361,7 +363,7 @@ public partial class EffectApplicationSystem
         var expirationTick = manager.Game.CurrentTick + duration;
         activeEffects.AddPropertyEffect(
             EffectType.ChangeProperty, property, ValueCombinationFunction.Override,
-            sourceAbilityType: AbilityType.Status,
+            sourceAbilityType: AbilityType.Debuff,
             magnitudePrimary: amount,
             expirationTarget: expirationTick,
             expirationEvent: EffectDuration.UntilTimeout);

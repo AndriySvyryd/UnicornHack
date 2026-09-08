@@ -23,6 +23,7 @@ public interface ILanguageService
     string? GetString(in AttackEvent @event);
     string GetString(in DeathEvent @event);
     string GetString(in StatusActivatedEvent @event);
+    string GetString(in LingeringAttackEvent @event);
     string GetString(in ResourceEffectEvent @event);
     string NoDefaultAttack(bool melee);
     string NoAbilityInSlot(int slot);
@@ -50,6 +51,7 @@ public interface ILanguageService
     string StatusPreventsItemManipulation(AbilityComponent statusAbility);
     string StatusPreventsAbility(AbilityComponent statusAbility, AbilityComponent ability);
     string ItemNotInInventory();
+    string InventoryFull();
     string NothingToPickUp();
     string Welcome(GameEntity playerEntity);
     string UnableToMove(Direction direction);

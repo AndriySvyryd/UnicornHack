@@ -69,7 +69,7 @@ public partial class GameManager
         private set;
     } = null!;
 
-    private void InitializeKnowledge(SequentialMessageQueue<GameManager> queue)
+    private void InitializeKnowledge(SequentialMessageQueue<GameEntity> queue)
     {
         Add<KnowledgeComponent>(EntityComponent.Knowledge, poolSize: 32, maxPoolSize: 64);
 

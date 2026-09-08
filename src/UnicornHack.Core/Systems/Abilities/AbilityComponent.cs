@@ -53,16 +53,7 @@ public class AbilityComponent : GameComponent
                 return _template;
             }
 
-            var separator = _name.LastIndexOf('#');
-            var templateName = separator > 0
-                               && int.TryParse(_name[(separator + 1)..], out _)
-                ? _name[..separator]
-                : _name;
-            _template = Ability.Loader.Find(templateName)
-                        ?? Entity.Manager.Game.Services.Data.PlayerRaces
-                            .FindByIndex(templateName)?.GetRaceAbilityTemplate()
-                        ?? Entity.Manager.Game.Services.Data.Creatures
-                            .FindByIndex(templateName)?.GetRaceAbilityTemplate();
+            _template = Ability.FindTemplate(Entity.Manager, _name);
             _templateLoaded = true;
             return _template;
         }
@@ -83,8 +74,7 @@ public class AbilityComponent : GameComponent
                 return false;
             }
 
-            var separator = name.LastIndexOf('#');
-            return separator > 0;
+            return name.LastIndexOf('#') > 0;
         }
     }
 

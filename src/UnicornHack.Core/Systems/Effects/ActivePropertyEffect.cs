@@ -15,12 +15,12 @@ public class ActivePropertyEffect : ActiveEffect
     private int _magnitudePrimary;
     private int _magnitudeSecondary;
 
-    public ActivePropertyEffect(
-        int gameId, int entityId, int instanceId, EffectType effectType, string? targetName)
-        : base(gameId, entityId, instanceId, effectType, targetName)
+    public ActivePropertyEffect()
     {
-        Metadata = effectType == EffectType.Default ? null : Effect.GetMetadata(effectType);
     }
+
+    protected override void OnEffectTypeChanged(EffectType effectType)
+        => Metadata = effectType == EffectType.Default ? null : Effect.GetMetadata(effectType);
 
     public EffectMetadata? Metadata
     {
@@ -76,5 +76,16 @@ public class ActivePropertyEffect : ActiveEffect
     {
         get => _magnitudeSecondary;
         set => SetWithNotify(value, ref _magnitudeSecondary);
+    }
+
+    protected override void CleanCore()
+    {
+        _combinationFunction = default;
+        _sourceAbilityEntityId = default;
+        _sourceAbilityType = default;
+        _sourceAbilityActivation = default;
+        _magnitudePrimary = default;
+        _magnitudeSecondary = default;
+        Metadata = null;
     }
 }

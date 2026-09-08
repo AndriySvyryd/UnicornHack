@@ -32,7 +32,7 @@ public static class EffectTestHelper
         var reactivate = abilityEntity.Ability!.IsActive;
         if (reactivate)
         {
-            TestHelper.QueueAbilityDeactivation(abilityEntity, entity, manager);
+            manager.Enqueue(DeactivateAbilityMessage.Create(abilityEntity.Ability!, entity, manager));
             manager.Queue.ProcessQueue(manager);
         }
 

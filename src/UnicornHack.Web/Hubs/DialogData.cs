@@ -194,7 +194,7 @@ public class ActorAttributes
 [MessagePackObject]
 public class AbilityAttributes
 {
-    [Key(0)] public BitArray? ChangedProperties { get; set; } = new(22);
+    [Key(0)] public BitArray? ChangedProperties { get; set; } = new(23);
     [Key(1)] public int Id { get; set; } = -1;
     [Key(2)] public string? Name { get; set; }
     [Key(3)] public int Level { get; set; }
@@ -216,6 +216,15 @@ public class AbilityAttributes
     [Key(19)] public string? Description { get; set; }
     [Key(20)] public int? Accumulator { get; set; }
     [Key(21)] public int Noise { get; set; }
+    [Key(22)] public List<ConditionalGrantAttributes> ConditionalGrants { get; set; } = [];
+}
+
+[MessagePackObject]
+public class ConditionalGrantAttributes
+{
+    [Key(0)] public string Name { get; set; } = "";
+    [Key(1)] public int Level { get; set; }
+    [Key(2)] public string LevelExpression { get; set; } = "";
 }
 
 [MessagePackObject]

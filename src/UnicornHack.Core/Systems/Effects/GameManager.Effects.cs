@@ -1,6 +1,7 @@
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Effects;
 using UnicornHack.Systems.Levels;
+using UnicornHack.Utils.Caching;
 using UnicornHack.Utils.MessagingECS;
 
 // ReSharper disable once CheckNamespace
@@ -8,6 +9,76 @@ namespace UnicornHack;
 
 public partial class GameManager
 {
+    internal ListObjectPool<ActivePropertyEffect> ActivePropertyEffectPool { get; } =
+        new(() => new ActivePropertyEffect(), initialSize: 4096, maxSize: 8192, preallocatedCount: 0);
+
+    internal ListObjectPool<ActiveComponentEffect> ActiveComponentEffectPool { get; } =
+        new(() => new ActiveComponentEffect(), initialSize: 1024, maxSize: 2048, preallocatedCount: 0);
+
+    internal ListObjectPool<EffectAccumulator> EffectAccumulatorPool { get; } =
+        new(() => new EffectAccumulator(), initialSize: 1024, maxSize: 2048, preallocatedCount: 0);
+
+    public ActivePropertyEffect RentActivePropertyEffect(
+        int gameId,
+        int entityId,
+        int instanceId,
+        EffectType effectType,
+        string? targetName,
+        ValueCombinationFunction combinationFunction = ValueCombinationFunction.Default,
+        int? sourceAbilityEntityId = null,
+        AbilityType sourceAbilityType = AbilityType.Default,
+        ActivationType sourceAbilityActivation = ActivationType.Default,
+        int magnitudePrimary = 0,
+        int magnitudeSecondary = 0,
+        int? expirationTarget = null,
+        EffectDuration? expirationEvent = null)
+    {
+        var effect = ActivePropertyEffectPool.Rent();
+        effect.Initialize(gameId, entityId, instanceId, effectType, targetName);
+        effect.CombinationFunction = combinationFunction;
+        effect.SourceAbilityEntityId = sourceAbilityEntityId;
+        effect.SourceAbilityType = sourceAbilityType;
+        effect.SourceAbilityActivation = sourceAbilityActivation;
+        effect.MagnitudePrimary = magnitudePrimary;
+        effect.MagnitudeSecondary = magnitudeSecondary;
+        effect.ExpirationTarget = expirationTarget;
+        effect.ExpirationEvent = expirationEvent;
+        return effect;
+    }
+
+    public ActiveComponentEffect RentActiveComponentEffect(
+        int gameId,
+        int entityId,
+        int instanceId,
+        EffectType effectType,
+        string? targetName,
+        int carrierId = 0,
+        int sourceAbilityEntityId = 0,
+        int? conditionValue = null,
+        int level = 1,
+        int? expirationTarget = null,
+        EffectDuration? expirationEvent = null)
+    {
+        var effect = ActiveComponentEffectPool.Rent();
+        effect.Initialize(gameId, entityId, instanceId, effectType, targetName);
+        effect.CarrierId = carrierId;
+        effect.SourceAbilityEntityId = sourceAbilityEntityId;
+        effect.ConditionValue = conditionValue;
+        effect.Level = level;
+        effect.ExpirationTarget = expirationTarget;
+        effect.ExpirationEvent = expirationEvent;
+        return effect;
+    }
+
+    public EffectAccumulator RentEffectAccumulator(
+        int gameId, int entityId, EffectType effectType, int value = 0)
+    {
+        var accumulator = EffectAccumulatorPool.Rent();
+        accumulator.Initialize(gameId, entityId, effectType);
+        accumulator.Value = value;
+        return accumulator;
+    }
+
     public EntityGroup<GameEntity> Effects
     {
         get;
@@ -44,7 +115,7 @@ public partial class GameManager
         private set;
     } = null!;
 
-    private void InitializeEffects(SequentialMessageQueue<GameManager> queue)
+    private void InitializeEffects(SequentialMessageQueue<GameEntity> queue)
     {
         Add<EffectComponent>(EntityComponent.Effect, poolSize: 4096, maxPoolSize: 9216);
         Add<ActiveEffectsComponent>(EntityComponent.ActiveEffects, poolSize: 1024, maxPoolSize: 2048);

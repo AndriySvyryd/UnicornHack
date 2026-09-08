@@ -91,10 +91,7 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
         }
 
         var propertyName = GetComponentPropertyName(componentId);
-        if (propertyName != null)
-        {
-            FirePropertyChanging(propertyName);
-        }
+        FirePropertyChanging(propertyName);
 
         _components[componentId] = component;
 
@@ -105,10 +102,7 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
 
         InitializeComponent(component);
 
-        if (propertyName != null)
-        {
-            FirePropertyChanged(propertyName);
-        }
+        FirePropertyChanged(propertyName);
 
         Manager?.OnComponentAdded(component);
         return component;
@@ -156,10 +150,7 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
         }
 
         var propertyName = GetComponentPropertyName(componentId);
-        if (propertyName != null)
-        {
-            FirePropertyChanging(propertyName);
-        }
+        FirePropertyChanging(propertyName);
 
         _components![componentId] = null;
 
@@ -172,10 +163,7 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
             RemoveReference(component);
         }
 
-        if (propertyName != null)
-        {
-            FirePropertyChanged(propertyName);
-        }
+        FirePropertyChanged(propertyName);
     }
 
     public bool HasComponent(int componentId)
@@ -229,7 +217,8 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
         changes.Return();
     }
 
-    protected virtual string? GetComponentPropertyName(int componentId) => null;
+    private string GetComponentPropertyName(int componentId)
+        => Manager.GetComponentPropertyName(componentId);
 
     public TransientReference<Entity, TOwner> AddReference<TOwner>(TOwner owner)
         where TOwner : notnull
@@ -342,7 +331,7 @@ public class Entity : NotificationEntity, IReferenceable, ITrackable, IPoolable,
         ForEachComponent(stringBuilder, (sb, componentId, _) =>
         {
             sb.Append(" ");
-            sb.Append(GetComponentPropertyName(componentId) ?? componentId.ToString());
+            sb.Append(GetComponentPropertyName(componentId));
         });
 
         return stringBuilder.ToString();

@@ -1,11 +1,14 @@
 using System.Threading;
+using System.Globalization;
 using Microsoft.Extensions.Caching.Memory;
+using UnicornHack.Data.Creatures;
 using UnicornHack.Generation.Effects;
 using UnicornHack.Services;
 using UnicornHack.Services.English;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Systems.Actors;
 using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Faculties;
 using UnicornHack.Systems.Levels;
 using UnicornHack.Utils.MessagingECS;
 
@@ -15,17 +18,7 @@ namespace UnicornHack;
 
 public static class TestHelper
 {
-    public static bool GrantAbilityLevel(Ability ability, GameEntity playerEntity)
-    {
-        if (!ability.Type.IsGrantable())
-        {
-            throw new InvalidOperationException(
-                $"Ability {ability.Name} of type {ability.Type} cannot be granted");
-        }
-
-        playerEntity.Manager.EffectApplicationSystem.AddAbilityEffect(playerEntity, ability);
-        return true;
-    }
+    private static int TestAbilityId;
 
     public static void AdvanceToNextPlayerTurn(GameManager manager)
     {
@@ -81,12 +74,68 @@ public static class TestHelper
     public static GameManager CreateGameManager(Game? game = null)
     {
         var manager = new GameManager { Game = game ?? CreateGame() };
-        manager.Initialize(new SequentialMessageQueue<GameManager>());
+        manager.Initialize(new SequentialMessageQueue<GameEntity>());
         return manager;
     }
 
     public static RoomComponent BuildRoom(string map = "", Game? game = null, uint? seed = null, byte depth = 0)
         => BuildRoomWithChunks(map, game, seed, depth).Item1;
+
+    public static (GameEntity Target, GameManager Manager) CreateEffectTarget()
+    {
+        var room = BuildRoom(".");
+        var target = CreatureData.HumanWarrior.Instantiate(room, new Point(0, 0));
+        var manager = target.Manager;
+        manager.Queue.ProcessQueue(manager);
+        return (target, manager);
+    }
+
+    public static GameEntity CreateSourceAbility(GameEntity owner)
+    {
+        var template = new Ability
+        {
+            Name = "test source ability " + Interlocked.Increment(ref TestAbilityId),
+            Effects = []
+        };
+        var ability = template.AddToAffectable(owner);
+        owner.Manager.Queue.ProcessQueue(owner.Manager);
+        return ability.Entity;
+    }
+
+    public static ActiveComponentEffect ApplyAbilityLevelDecrease(
+        GameEntity target, int amount = 1,
+        string? abilityName = null, AbilityType? abilityType = null,
+        EffectDuration duration = EffectDuration.Infinite, int durationAmount = 1)
+    {
+        var decrease = new DecreaseAbilityLevel
+        {
+            AbilityName = abilityName,
+            AbilityType = abilityType,
+            Amount = amount.ToString(CultureInfo.InvariantCulture),
+            Duration = duration,
+            DurationAmount = duration is EffectDuration.UntilTimeout or EffectDuration.UntilXPGained
+                ? durationAmount.ToString(CultureInfo.InvariantCulture)
+                : null
+        };
+        var template = new Ability
+        {
+            Name = "test ability decrease " + Interlocked.Increment(ref TestAbilityId),
+            Activation = ActivationType.Manual,
+            Effects = [decrease]
+        };
+        var ability = template.AddToAffectable(target);
+        target.Manager.Queue.ProcessQueue(target.Manager);
+        ApplyEffect(Assert.Single(ability.Effects), target, target, target.Manager);
+        target.Manager.Queue.ProcessQueue(target.Manager);
+
+        return Assert.Single(
+            target.ActiveEffects!.ComponentEffects,
+            record => record.EffectType == EffectType.DecreaseAbilityLevel
+                      && record.SourceAbilityEntityId == ability.EntityId);
+    }
+
+    public static bool IsLevelExpressionGrant(ActiveComponentEffect record)
+        => SkillAbilitiesSystem.IsLevelExpressionGrant(record);
 
     /// <summary>
     ///     Builds a <see cref="RoomParameters" /> sized to
@@ -243,12 +292,6 @@ public static class TestHelper
         manager.Enqueue(activateAbilityMessage);
 
         return abilityEntity;
-    }
-
-    public static void QueueAbilityDeactivation(
-        GameEntity abilityEntity, GameEntity activatorEntity, GameManager manager)
-    {
-        manager.Enqueue(DeactivateAbilityMessage.Create(abilityEntity.Ability!, activatorEntity, manager));
     }
 
     public static void ApplyEffect(

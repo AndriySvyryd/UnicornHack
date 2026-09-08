@@ -104,7 +104,7 @@ public class EffectTest
             GameStateManager.GetState(playerEntity, manager.Game.Services));
 
         var chilled = Assert.Single(
-            state.Abilities!.Values, a => a.Type == (int)AbilityType.Status && a.Name == "Chilled");
+            state.Abilities!.Values, a => a.Type == (int)AbilityType.Debuff && a.Name == "Chilled");
         Assert.Equal(0, chilled.Accumulator);
         Assert.Equal((int)EffectDuration.UntilNextRoom, chilled.ExpirationEvent);
         Assert.Empty(state.Effects!);
@@ -231,7 +231,7 @@ public class EffectTest
         var delta = playerBuilder.BuildChangeSet(manager, manager.Game.Services);
         var deltaStatus = Assert.Single(
             delta.Abilities!.Values,
-            ability => ability.Type == (int)AbilityType.Status);
+            ability => ability.Type == (int)AbilityType.Debuff);
         Assert.Equal("Stunned", deltaStatus.Name);
         Assert.Equal(2, deltaStatus.Level);
 
@@ -239,7 +239,7 @@ public class EffectTest
             GameStateManager.GetState(playerEntity, manager.Game.Services));
         var stateStatus = Assert.Single(
             state.Abilities!.Values,
-            ability => ability.Type == (int)AbilityType.Status);
+            ability => ability.Type == (int)AbilityType.Debuff);
         Assert.Equal("Stunned", stateStatus.Name);
         Assert.Equal(2, stateStatus.Level);
 
@@ -407,7 +407,7 @@ public class EffectTest
 
         // The in-force incapacitation surfaces as its status ability and carries the current build-up.
         var stunned = Assert.Single(
-            state.Abilities!.Values, a => a.Type == (int)AbilityType.Status && a.Name == "Stunned");
+            state.Abilities!.Values, a => a.Type == (int)AbilityType.Debuff && a.Name == "Stunned");
         Assert.Equal(0, stunned.Accumulator);
         Assert.Equal(1, stunned.Level);
         Assert.NotNull(stunned.ExpirationTarget);
@@ -498,18 +498,17 @@ public class EffectTest
         // A raw property modifier is an applied effect but not a displayable condition.
         manager.EffectApplicationSystem.UpdateOrAddPropertyEffect(
             5, nameof(BeingComponent.HitPointMaximum), "test", playerEntity);
-        playerEntity.ActiveEffects!.AddPropertyEffect(new ActivePropertyEffect(0, 0, 0, EffectType.Heal, null)
-        {
-            MagnitudePrimary = 5,
-            ExpirationEvent = EffectDuration.UntilTimeout,
-            ExpirationTarget = manager.Game.CurrentTick + 100
-        });
+        playerEntity.ActiveEffects!.AddPropertyEffect(
+            EffectType.Heal,
+            magnitudePrimary: 5,
+            expirationTarget: manager.Game.CurrentTick + 100,
+            expirationEvent: EffectDuration.UntilTimeout);
         manager.Queue.ProcessQueue(manager);
 
         var state = ClientStateHelpers.Deserialize(
             GameStateManager.GetState(playerEntity, manager.Game.Services));
 
-        Assert.DoesNotContain(state.Abilities!.Values, ability => ability.Type == (int)AbilityType.Status);
+        Assert.DoesNotContain(state.Abilities!.Values, ability => ability.Type == (int)AbilityType.Debuff);
         Assert.Empty(state.Effects!);
     }
 
@@ -533,7 +532,7 @@ public class EffectTest
         ClientStateHelpers.ApplyChangeSets(baseline, playerChangeSets!);
 
         var confused = Assert.Single(
-            baseline.Abilities!.Values, a => a.Type == (int)AbilityType.Status && a.Name == "Confused");
+            baseline.Abilities!.Values, a => a.Type == (int)AbilityType.Debuff && a.Name == "Confused");
         Assert.Equal(0, confused.Accumulator);
 
         var fresh = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, services));
@@ -558,7 +557,7 @@ public class EffectTest
 
         var addSets = WebTestHelper.PerformAction(player, listener, services, ActorActionType.Wait);
         ClientStateHelpers.ApplyChangeSets(baseline, addSets[playerEntity.Id]);
-        Assert.Contains(baseline.Abilities!.Values, a => a.Type == (int)AbilityType.Status && a.Name == "Confused");
+        Assert.Contains(baseline.Abilities!.Values, a => a.Type == (int)AbilityType.Debuff && a.Name == "Confused");
 
         // Waiting draws the build-up down each turn; once it is spent the status ability is lifted, and that
         // removal must be carried to the client. Advance until the server lifts it (a cap guards against a
@@ -573,7 +572,7 @@ public class EffectTest
         }
 
         Assert.False(EffectApplicationSystem.GetAbilityLevel(playerEntity, "confused") > 0);
-        Assert.DoesNotContain(baseline.Abilities!.Values, a => a.Type == (int)AbilityType.Status && a.Name == "Confused");
+        Assert.DoesNotContain(baseline.Abilities!.Values, a => a.Type == (int)AbilityType.Debuff && a.Name == "Confused");
 
         var fresh = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, services));
         ChangeSetAssert.AssertPlayerStatesEqual(fresh, baseline);
@@ -629,7 +628,7 @@ public class EffectTest
         var afterApply = ClientStateHelpers.Deserialize(GameStateManager.GetState(playerEntity, services));
         Assert.Contains(
             afterApply.Abilities!.Values,
-            ability => ability.Type == (int)AbilityType.Status);
+            ability => ability.Type == (int)AbilityType.Debuff);
         var bleed = Assert.Single(afterApply.Effects!.Values);
         Assert.Equal(EffectType.BleedDamage, bleed.EffectType);
         Assert.Equal(100, bleed.Magnitude);

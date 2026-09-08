@@ -51,7 +51,7 @@ public partial class EffectApplicationSystem
         var manager = targetEntity.Manager;
         foreach (var existing in activeEffects.ComponentEffects.GetValues(addedName))
         {
-            if (existing.EffectType != EffectType.AddAbility
+            if (!IsUnconditionalAbilityGrant(existing)
                 || existing.SourceAbilityEntityId != sourceAbilityEntityId)
             {
                 continue;
@@ -110,7 +110,8 @@ public partial class EffectApplicationSystem
         GameEntity targetEntity, string abilityName, GameManager manager, int sourceAbilityEntityId = 0)
     {
         var level = GetComponentEffectLevel(
-            targetEntity, abilityName, EffectType.AddAbility, sourceAbilityEntityId);
+            targetEntity, abilityName, EffectType.AddAbility, sourceAbilityEntityId,
+            onlyUnconditional: true);
         if (level != 0)
         {
             RemoveAbilityLevels(
@@ -123,18 +124,34 @@ public partial class EffectApplicationSystem
         GameEntity targetEntity, GameManager manager)
     {
         var records = GetOrderedComponentEffectRecords(
-            abilityName, targetEntity, EffectType.AddAbility, sourceAbilityEntityId);
-        var removedRecords = new List<ActiveComponentEffect>(levelsToRemove);
+            abilityName, targetEntity, EffectType.AddAbility, sourceAbilityEntityId,
+            onlyUnconditional: true);
+        List<ActiveComponentEffect>? removedRecords = null;
         for (var i = records.Count - 1; i >= 0 && levelsToRemove > 0; i--)
         {
             var record = records[i];
-            Debug.Assert(record.Level == 1);
-            removedRecords.Add(record);
-            levelsToRemove--;
+            if (record.Level <= levelsToRemove)
+            {
+                (removedRecords ??= []).Add(record);
+                levelsToRemove -= record.Level;
+            }
+            else
+            {
+                record.Level -= levelsToRemove;
+                levelsToRemove = 0;
+            }
         }
 
         Debug.Assert(levelsToRemove == 0);
-        DetachComponentCarriers(removedRecords, targetEntity, manager);
+        if (removedRecords != null)
+        {
+            DetachComponentCarriers(removedRecords, targetEntity, manager);
+        }
+        else
+        {
+            manager.EffectApplicationSystem.RelevelAbility(
+                abilityName, targetEntity, manager);
+        }
     }
 
     private static ActiveComponentEffect AddComponentEffectRecord(
@@ -481,6 +498,8 @@ public partial class EffectApplicationSystem
         var firstRecord = detachedRecords[0];
         var targetName = firstRecord.TargetName;
         var effectType = firstRecord.EffectType;
+        var conditionValue = firstRecord.ConditionValue;
+        var sourceAbilityEntityId = firstRecord.SourceAbilityEntityId;
         if (effectType == EffectType.AddAbility)
         {
             HashSet<int>? queuedCarrierIds = null;
@@ -517,7 +536,7 @@ public partial class EffectApplicationSystem
         else if (effectType == EffectType.DecreaseAbilityLevel)
         {
             manager.EffectApplicationSystem.ReconcileDecreasedAbilities(
-                firstRecord, targetEntity, manager);
+                targetName, conditionValue, sourceAbilityEntityId, targetEntity, manager);
         }
     }
 
@@ -586,16 +605,21 @@ public partial class EffectApplicationSystem
 
         if (updatedRecord == null)
         {
+            var recordTargetName = record.TargetName;
+            var recordConditionValue = record.ConditionValue;
+            var recordSourceAbilityEntityId = record.SourceAbilityEntityId;
             activeEffects.ComponentEffects.Remove(record);
+            ReconcileDecreasedAbilities(
+                recordTargetName, recordConditionValue, recordSourceAbilityEntityId,
+                targetEntity, context.Manager);
         }
         else
         {
             record.Level = previousLevel;
             record.ExpirationEvent = previousExpiration.Event;
             record.ExpirationTarget = previousExpiration.Target;
+            ReconcileDecreasedAbilities(record, targetEntity, context.Manager);
         }
-
-        ReconcileDecreasedAbilities(record, targetEntity, context.Manager);
         throw new InvalidOperationException(
             $"{EffectType.DecreaseAbilityLevel} cannot suppress every race on entity {targetEntity.Id}. ");
     }
@@ -642,7 +666,7 @@ public partial class EffectApplicationSystem
             List<ActiveComponentEffect>? namedRecords = null;
             foreach (var record in componentEffects.GetValues(abilityName))
             {
-                if (record.EffectType != EffectType.AddAbility
+                if (!IsUnconditionalAbilityGrant(record)
                     || IsSourceAbility(sourceAbilityId, abilityName, manager))
                 {
                     continue;
@@ -662,7 +686,7 @@ public partial class EffectApplicationSystem
         Dictionary<string, List<ActiveComponentEffect>>? matchingRecords = null;
         foreach (var record in componentEffects)
         {
-            if (record.EffectType != EffectType.AddAbility
+            if (!IsUnconditionalAbilityGrant(record)
                 || record.TargetName is not { } targetName
                 || IsSourceAbility(sourceAbilityId, targetName, manager)
                 || abilityType != null && FindAbilityTemplate(manager, targetName)?.Type != abilityType)
@@ -722,25 +746,34 @@ public partial class EffectApplicationSystem
 
     private void ReconcileDecreasedAbilities(
         ActiveComponentEffect decrease, GameEntity targetEntity, GameManager manager)
+        => ReconcileDecreasedAbilities(
+            decrease.TargetName, decrease.ConditionValue, decrease.SourceAbilityEntityId,
+            targetEntity, manager);
+
+    private void ReconcileDecreasedAbilities(
+        string? targetName, int? conditionValue, int sourceAbilityEntityId,
+        GameEntity targetEntity, GameManager manager)
     {
-        if (GetDecreasedAbilityType(decrease) is not { } targetType)
+        if (conditionValue is not { } targetTypeValue)
         {
-            RelevelAbility(decrease.TargetName!, targetEntity, manager);
+            RelevelAbility(targetName!, targetEntity, manager);
             return;
         }
+
+        var targetType = (AbilityType)targetTypeValue;
 
         HashSet<string>? affectedAbilityNames = null;
         foreach (var record in targetEntity.ActiveEffects!.ComponentEffects)
         {
             if (record.EffectType != EffectType.AddAbility
-                || record.TargetName is not { } targetName
-                || FindAbilityTemplate(manager, targetName)?.Type != targetType
-                || IsSourceAbility(decrease, targetName, manager))
+                || record.TargetName is not { } abilityName
+                || FindAbilityTemplate(manager, abilityName)?.Type != targetType
+                || IsSourceAbility(sourceAbilityEntityId, abilityName, manager))
             {
                 continue;
             }
 
-            (affectedAbilityNames ??= []).Add(targetName);
+            (affectedAbilityNames ??= []).Add(abilityName);
         }
 
         if (affectedAbilityNames == null)
@@ -764,14 +797,13 @@ public partial class EffectApplicationSystem
 
     private static int GetComponentEffectLevel(
         GameEntity targetEntity, string addedName, EffectType effectType,
-        int? sourceAbilityEntityId = null)
+        int? sourceAbilityEntityId = null, bool onlyUnconditional = false)
     {
         var level = 0;
         foreach (var record in targetEntity.ActiveEffects!.ComponentEffects.GetValues(addedName))
         {
-            if (record.EffectType == effectType
-                && (sourceAbilityEntityId == null
-                    || record.SourceAbilityEntityId == sourceAbilityEntityId))
+            if (MatchesComponentEffect(
+                    record, effectType, sourceAbilityEntityId, onlyUnconditional))
             {
                 level = checked(level + record.Level);
             }
@@ -789,7 +821,7 @@ public partial class EffectApplicationSystem
         foreach (var record in activeEffects.ComponentEffects.GetValues(abilityName))
         {
             if (record.EffectType != EffectType.DecreaseAbilityLevel
-                || record.ConditionValue != null
+                || IsTypeWideAbilityDecrease(record)
                 || IsSourceAbility(record, abilityName, manager))
             {
                 continue;
@@ -817,16 +849,31 @@ public partial class EffectApplicationSystem
     }
 
     private static AbilityType? GetDecreasedAbilityType(ActiveComponentEffect record)
-        => record.ConditionValue is { } value ? (AbilityType)value : null;
+        => IsTypeWideAbilityDecrease(record)
+            ? (AbilityType)record.ConditionValue!.Value
+            : null;
+
+    private static bool IsUnconditionalAbilityGrant(ActiveComponentEffect record)
+        => record is { EffectType: EffectType.AddAbility, ConditionValue: null };
+
+    private static bool IsTypeWideAbilityDecrease(ActiveComponentEffect record)
+        => record.EffectType == EffectType.DecreaseAbilityLevel
+           && record.ConditionValue != null;
+
+    private static bool MatchesComponentEffect(
+        ActiveComponentEffect record, EffectType effectType,
+        int? sourceAbilityEntityId, bool onlyUnconditional)
+        => record.EffectType == effectType
+           && (!onlyUnconditional || record.ConditionValue == null)
+           && (sourceAbilityEntityId == null
+               || record.SourceAbilityEntityId == sourceAbilityEntityId);
 
     private static AbilityType? GetAbilityType(GameEntity targetEntity, string abilityName)
         => targetEntity.Manager.AffectableAbilitiesIndex[(targetEntity.Id, abilityName)]?.Ability?.Type
            ?? FindAbilityTemplate(targetEntity.Manager, abilityName)?.Type;
 
     private static Ability? FindAbilityTemplate(GameManager manager, string abilityName)
-        => manager.Game.Services.Data.Abilities.Find(abilityName)
-           ?? manager.Game.Services.Data.PlayerRaces.FindByIndex(abilityName)?.GetRaceAbilityTemplate()
-           ?? manager.Game.Services.Data.Creatures.FindByIndex(abilityName)?.GetRaceAbilityTemplate();
+        => Ability.FindTemplate(manager, abilityName);
 
     private static bool IsSourceAbility(ActiveComponentEffect record, string abilityName, GameManager manager)
         => IsSourceAbility(record.SourceAbilityEntityId, abilityName, manager);
@@ -864,14 +911,13 @@ public partial class EffectApplicationSystem
     // the ability's combined level.
     private static List<ActiveComponentEffect> GetOrderedComponentEffectRecords(
         string addedName, GameEntity targetEntity, EffectType effectType,
-        int? sourceAbilityEntityId = null)
+        int? sourceAbilityEntityId = null, bool onlyUnconditional = false)
     {
         var contributions = new List<ActiveComponentEffect>();
         foreach (var record in targetEntity.ActiveEffects!.ComponentEffects.GetValues(addedName))
         {
-            if (record.EffectType == effectType
-                && (sourceAbilityEntityId == null
-                    || record.SourceAbilityEntityId == sourceAbilityEntityId))
+            if (MatchesComponentEffect(
+                    record, effectType, sourceAbilityEntityId, onlyUnconditional))
             {
                 contributions.Add(record);
             }
@@ -885,13 +931,12 @@ public partial class EffectApplicationSystem
     // Finds the structural directive that attached the named component to the target, or null.
     internal static ActiveComponentEffect? FindComponentEffect(
         GameEntity targetEntity, EffectType effectType, string addedName,
-        int? sourceAbilityEntityId = null)
+        int? sourceAbilityEntityId = null, bool onlyUnconditional = false)
     {
         foreach (var record in targetEntity.ActiveEffects!.ComponentEffects.GetValues(addedName))
         {
-            if (record.EffectType == effectType
-                && (sourceAbilityEntityId == null
-                    || record.SourceAbilityEntityId == sourceAbilityEntityId))
+            if (MatchesComponentEffect(
+                    record, effectType, sourceAbilityEntityId, onlyUnconditional))
             {
                 return record;
             }
@@ -1035,7 +1080,7 @@ public partial class EffectApplicationSystem
                             EffectType: EffectType.ChangeProperty,
                             CombinationFunction: ValueCombinationFunction.Override,
                             SourceAbilityEntityId: null,
-                            SourceAbilityType: AbilityType.Status,
+                            SourceAbilityType: AbilityType.Debuff,
                             ExpirationEvent: EffectDuration.UntilTimeout
                         }
                         && forms.Any(form => form.ExpirationTarget == instance.ExpirationTarget),

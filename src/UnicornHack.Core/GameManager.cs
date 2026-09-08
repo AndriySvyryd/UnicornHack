@@ -1,5 +1,12 @@
 ﻿using UnicornHack.Utils.Caching;
 using UnicornHack.Utils.MessagingECS;
+using UnicornHack.Systems.Abilities;
+using UnicornHack.Systems.Actors;
+using UnicornHack.Systems.Beings;
+using UnicornHack.Systems.Effects;
+using UnicornHack.Systems.Items;
+using UnicornHack.Systems.Knowledge;
+using UnicornHack.Systems.Levels;
 
 namespace UnicornHack;
 
@@ -11,6 +18,7 @@ public partial class GameManager :
     IGameSystem<DeleteEntityMessage>
 {
     private readonly string[] _componentPropertyNames;
+    private List<PooledTrackableCollectionItem>? _itemsToRelease;
 
     public GameManager()
         : base((int)EntityComponent.ComponentCount,
@@ -25,7 +33,7 @@ public partial class GameManager :
         set;
     } = null!;
 
-    public new SequentialMessageQueue<GameManager> Queue => (SequentialMessageQueue<GameManager>)base.Queue;
+    public new SequentialMessageQueue<GameEntity> Queue => (SequentialMessageQueue<GameEntity>)base.Queue;
 
     public ListObjectPool<List<(Point, byte)>> PointByteListArrayPool
     {
@@ -44,7 +52,7 @@ public partial class GameManager :
 
     protected override void InitializeSystems(IMessageQueue queue)
     {
-        var gameQueue = (SequentialMessageQueue<GameManager>)queue;
+        var gameQueue = (SequentialMessageQueue<GameEntity>)queue;
         gameQueue.Register<RemoveComponentMessage>(this, RemoveComponentMessage.Name, order: 0);
         gameQueue.Register<EntityReferenceMessage<GameEntity>>(this, EntityReferenceMessage<GameEntity>.Name, order: 0);
         gameQueue.Register<DeleteEntityMessage>(this, DeleteEntityMessage.Name, order: 0);
@@ -62,6 +70,91 @@ public partial class GameManager :
     }
 
     public override int GetNextEntityId() => ++Game.NextEntityId;
+
+    public override object? Rent(Type type)
+    {
+        if (type == typeof(GameEntity))
+        {
+            return base.Rent(type);
+        }
+
+        if (type == typeof(EffectComponent))
+        {
+            return CreateComponent<EffectComponent>(EntityComponent.Effect);
+        }
+
+        if (type == typeof(AbilityComponent))
+        {
+            return CreateComponent<AbilityComponent>(EntityComponent.Ability);
+        }
+
+        if (type == typeof(ActivePropertyEffect))
+        {
+            return ActivePropertyEffectPool.Rent();
+        }
+
+        if (type == typeof(ActiveEffectsComponent))
+        {
+            return CreateComponent<ActiveEffectsComponent>(EntityComponent.ActiveEffects);
+        }
+
+        if (type == typeof(ActiveComponentEffect))
+        {
+            return ActiveComponentEffectPool.Rent();
+        }
+
+        if (type == typeof(EffectAccumulator))
+        {
+            return EffectAccumulatorPool.Rent();
+        }
+
+        if (type == typeof(BeingComponent))
+        {
+            return CreateComponent<BeingComponent>(EntityComponent.Being);
+        }
+
+        if (type == typeof(PhysicalComponent))
+        {
+            return CreateComponent<PhysicalComponent>(EntityComponent.Physical);
+        }
+
+        if (type == typeof(PositionComponent))
+        {
+            return CreateComponent<PositionComponent>(EntityComponent.Position);
+        }
+
+        if (type == typeof(AIComponent))
+        {
+            return CreateComponent<AIComponent>(EntityComponent.AI);
+        }
+
+        if (type == typeof(ItemComponent))
+        {
+            return CreateComponent<ItemComponent>(EntityComponent.Item);
+        }
+
+        if (type == typeof(ConnectionComponent))
+        {
+            return CreateComponent<ConnectionComponent>(EntityComponent.Connection);
+        }
+
+        if (type == typeof(KnowledgeComponent))
+        {
+            return CreateComponent<KnowledgeComponent>(EntityComponent.Knowledge);
+        }
+
+        if (type == typeof(RoomComponent))
+        {
+            return CreateComponent<RoomComponent>(EntityComponent.Room);
+        }
+
+        if (type == typeof(PlayerComponent))
+        {
+            return CreateComponent<PlayerComponent>(EntityComponent.Player);
+        }
+
+        return null;
+    }
 
     protected override GameEntity CreateEntityNoReference()
     {
@@ -88,7 +181,7 @@ public partial class GameManager :
         base.Add<TComponent>(componentId, poolSize, maxPoolSize);
     }
 
-    public string GetComponentPropertyName(int componentId)
+    public override string GetComponentPropertyName(int componentId)
         => _componentPropertyNames[componentId];
 
     public GameEntity? FindEntity(int? id) => id.HasValue ? base.FindEntity(id.Value) : null;
@@ -108,6 +201,24 @@ public partial class GameManager :
     public void Process<TMessage>(TMessage message)
         where TMessage : class, IMessage, new()
         => Queue.Process(message, this);
+
+    protected internal override void OnMessageQueueDrained()
+    {
+        if (_itemsToRelease == null)
+        {
+            return;
+        }
+
+        foreach (var item in _itemsToRelease)
+        {
+            item.Release(this);
+        }
+
+        _itemsToRelease.Clear();
+    }
+
+    internal void AddToReleaseQueue(PooledTrackableCollectionItem item)
+        => (_itemsToRelease ??= []).Add(item);
 
     MessageProcessingResult IMessageConsumer<RemoveComponentMessage, GameManager>.Process(
         RemoveComponentMessage message, GameManager manager)

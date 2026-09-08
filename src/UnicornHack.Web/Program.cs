@@ -37,6 +37,7 @@ public class Program
                     sql => sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
                 .ConfigureWarnings(w => w.Default(WarningBehavior.Throw)
                     .Log(CoreEventId.SensitiveDataLoggingEnabledWarning));
+            options.AddInterceptors(PooledMaterializationInterceptor.Instance);
 
             if (env.IsDevelopment())
             {

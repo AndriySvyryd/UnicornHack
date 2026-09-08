@@ -27,7 +27,7 @@ public class PlayerSystem :
         if (!CanAct(message.Actor, manager))
         {
             if (EffectApplicationSystem.GetAbilitiesAffectingProperty(
-                    message.Actor, nameof(BeingComponent.UnableToActPercent), AbilityType.Status)
+                    message.Actor, nameof(BeingComponent.UnableToActPercent), AbilityType.Debuff)
                 .FirstOrDefault() is { } statusAbility)
             {
                 manager.LoggingSystem.WriteLog(
@@ -107,7 +107,7 @@ public class PlayerSystem :
             or ActorActionType.UnequipItem
             && !playerEntity.Being!.CanMoveItems
             && EffectApplicationSystem.GetAbilitiesAffectingProperty(
-                    playerEntity, nameof(BeingComponent.CanMoveItems), AbilityType.Status)
+                    playerEntity, nameof(BeingComponent.CanMoveItems), AbilityType.Debuff)
                 .FirstOrDefault() is { } itemStatus)
         {
             manager.LoggingSystem.WriteLog(
@@ -303,7 +303,7 @@ public class PlayerSystem :
             case ActorActionType.TravelToRoom:
                 if (!playerEntity.Being!.CanMove
                     && EffectApplicationSystem.GetAbilitiesAffectingProperty(
-                            playerEntity, nameof(BeingComponent.CanMove), AbilityType.Status)
+                            playerEntity, nameof(BeingComponent.CanMove), AbilityType.Debuff)
                         .FirstOrDefault() is { } movementStatus)
                 {
                     manager.LoggingSystem.WriteLog(
@@ -405,7 +405,7 @@ public class PlayerSystem :
             var language = manager.Game.Services.Language;
             var statusAbility = !message.Entity.Being!.CanMove
                 ? EffectApplicationSystem.GetAbilitiesAffectingProperty(
-                        message.Entity, nameof(BeingComponent.CanMove), AbilityType.Status)
+                        message.Entity, nameof(BeingComponent.CanMove), AbilityType.Debuff)
                     .FirstOrDefault()
                 : null;
             manager.LoggingSystem.WriteLog(statusAbility != null

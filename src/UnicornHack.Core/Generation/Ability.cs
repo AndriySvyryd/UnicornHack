@@ -1,4 +1,5 @@
 using CSharpScriptSerialization;
+using System.Globalization;
 using UnicornHack.Systems.Abilities;
 using UnicornHack.Utils.DataLoading;
 
@@ -8,8 +9,11 @@ public class Ability : ILoadable, ICSScriptSerializable
 {
     private Func<GameEntity, GameEntity, float>? _accuracyFunction;
     private Func<GameEntity, GameEntity, float>? _delayFunction;
+    private Func<GameEntity, int>? _levelFunction;
+    private List<Ability>? _levelExpressionDependents;
     private IReadOnlyList<Effect>? _effects;
     private ActivationType? _activation;
+    private string? _levelExpression;
 
     public string Name
     {
@@ -21,6 +25,61 @@ public class Ability : ILoadable, ICSScriptSerializable
     {
         get;
         set;
+    }
+
+    /// <summary>
+    ///     Computes a level granted by the owner's other abilities. A non-positive result grants nothing.
+    /// </summary>
+    public string? LevelExpression
+    {
+        get => _levelExpression;
+        set
+        {
+            _levelExpression = value;
+            _levelFunction = null;
+        }
+    }
+
+    public IReadOnlyList<Ability> LevelExpressionDependents => _levelExpressionDependents ?? [];
+
+    internal void SetLevelFunction(Func<GameEntity, int> function) => _levelFunction = function;
+
+    public int GetExpressionLevel(GameEntity owner)
+        => _levelFunction?.Invoke(owner)
+           ?? throw new InvalidOperationException(
+               $"The level expression for '{Name}' has not been prepared.");
+
+    internal void ClearLevelExpressionDependents() => _levelExpressionDependents?.Clear();
+
+    internal void AddLevelExpressionDependent(Ability dependent)
+        => (_levelExpressionDependents ??= []).Add(dependent);
+
+    internal static bool TryGetLeveledTemplateName(
+        string abilityName, out string templateName, out int level)
+    {
+        var separator = abilityName.LastIndexOf('#');
+        if (separator > 0
+            && int.TryParse(
+                abilityName.AsSpan(separator + 1), NumberStyles.None,
+                CultureInfo.InvariantCulture, out level))
+        {
+            templateName = abilityName[..separator];
+            return true;
+        }
+
+        templateName = abilityName;
+        level = 0;
+        return false;
+    }
+
+    internal static Ability? FindTemplate(GameManager manager, string abilityName)
+    {
+        TryGetLeveledTemplateName(abilityName, out var templateName, out _);
+        return manager.Game.Services.Data.Abilities.Find(templateName)
+               ?? manager.Game.Services.Data.PlayerRaces
+                   .FindByIndex(templateName)?.GetRaceAbilityTemplate()
+               ?? manager.Game.Services.Data.Creatures
+                   .FindByIndex(templateName)?.GetRaceAbilityTemplate();
     }
 
     public virtual int MaxLevel => 1;
@@ -264,8 +323,7 @@ public class Ability : ILoadable, ICSScriptSerializable
         return ability;
     }
 
-    public static readonly GroupedCSScriptLoader<AbilityType, Ability> Loader =
-        new(@"Data\Abilities\", c => c.Type, typeof(AbilityData));
+    public static readonly AbilityLoader Loader = new(@"Data\Abilities\");
 
     private static readonly PropertyCSScriptSerializer<Ability> Serializer =
         new(GetPropertyConditions<Ability>());
@@ -275,6 +333,7 @@ public class Ability : ILoadable, ICSScriptSerializable
     {
         { nameof(Name), (_, v) => v != default },
         { nameof(Type), (_, v) => (AbilityType)v! != default },
+        { nameof(LevelExpression), (_, v) => v != default },
         { nameof(Cost), (_, v) => (int)v! != default },
         { nameof(Activation), (o, v) => (ActivationType)v! != GetDefaultActivation(o.Type) },
         { nameof(ActivationCondition), (_, v) => v != default },

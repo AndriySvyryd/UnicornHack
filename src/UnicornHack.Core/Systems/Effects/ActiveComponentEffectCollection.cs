@@ -1,7 +1,7 @@
 namespace UnicornHack.Systems.Effects;
 
 public class ActiveComponentEffectCollection
-    : ObservableListLookupCollection<string, ActiveComponentEffect>
+    : PooledTrackableObservableLookupCollection<ActiveComponentEffect>
 {
     public ActiveComponentEffectCollection(ActiveEffectsComponent component, string propertyName)
         : base(component, propertyName)

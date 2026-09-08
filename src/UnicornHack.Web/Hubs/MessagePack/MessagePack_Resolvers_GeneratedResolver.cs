@@ -105,7 +105,9 @@ namespace MessagePack.Resolvers
                 { typeof(Dictionary<int, EquippableSlot>), 58 },
                 { typeof(Dictionary<int, EffectAttributes>), 59 },
                 { typeof(List<SubAbilityAttributes>), 60 },
-                { typeof(List<AbilityAttributes>), 61 }
+                { typeof(List<AbilityAttributes>), 61 },
+                { typeof(ConditionalGrantAttributes), 62 },
+                { typeof(List<ConditionalGrantAttributes>), 63 }
             };
         }
 
@@ -232,6 +234,10 @@ namespace MessagePack.Resolvers
                     return new ListFormatter<SubAbilityAttributes>();
                 case 61:
                     return new ListFormatter<AbilityAttributes>();
+                case 62:
+                    return ConditionalGrantAttributesFormatter.Instance;
+                case 63:
+                    return new ListFormatter<ConditionalGrantAttributes>();
                 default:
                     return null;
             }

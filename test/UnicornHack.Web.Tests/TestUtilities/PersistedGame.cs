@@ -282,7 +282,7 @@ public sealed class PersistedGame : IDisposable
         if (game.Manager == null!)
         {
             var manager = new GameManager { Game = game };
-            manager.Initialize(new SequentialMessageQueue<GameManager>());
+            manager.Initialize(new SequentialMessageQueue<GameEntity>());
             game.Manager = manager;
         }
     }

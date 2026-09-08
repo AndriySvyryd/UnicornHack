@@ -14,7 +14,7 @@ public class AttackStats
     {
         get;
         set;
-    } = null!;
+    } = [];
 
     public List<SubAttackStats> SubAttacks
     {

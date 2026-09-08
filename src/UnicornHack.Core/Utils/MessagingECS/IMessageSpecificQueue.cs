@@ -1,7 +1,6 @@
 ﻿namespace UnicornHack.Utils.MessagingECS;
 
-// ReSharper disable once TypeParameterCanBeVariant
-public interface IMessageSpecificQueue<TState>
+public interface IMessageSpecificQueue
 {
-    void ProcessNext(TState state, IMessageQueue queue);
+    void ProcessNext(IEntityManager manager);
 }
